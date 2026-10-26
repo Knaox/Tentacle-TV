@@ -8,6 +8,7 @@ import type { AudioBridgeControl, AudioBridgeReplayGainMode } from "./audioBridg
 import { edlFrom, formatFileOptions, partialStreamOptions } from "./audioOptions";
 import type { QueueEntry, QueueOp } from "./audioQueue";
 import { effectiveGainMode, replayGainOptions } from "./replayGain";
+import { deckChain, fadeInExpr, type FadedSource } from "./crossfadeFilter";
 
 /** Les options d'un fichier : départ, fin provisoire tolérée, gain. */
 export function entryOptions(entry: QueueEntry, mode: AudioBridgeReplayGainMode): Record<string, string> {
@@ -16,6 +17,9 @@ export function entryOptions(entry: QueueEntry, mode: AudioBridgeReplayGainMode)
   Object.assign(options, partialStreamOptions(entry.source.complete));
   const gain = effectiveGainMode(mode, entry.track.albumKey, entry.neighbours);
   Object.assign(options, replayGainOptions(gain, entry.source.replayGain));
+  // Le titre qui arrive d'une transition douce : sa courbe d'entrée, dans SA chaîne (`crossfadeFilter.ts`).
+  const fadeInS = (entry.source as FadedSource).fadeInS;
+  if (fadeInS !== undefined && fadeInS > 0) options["af"] = deckChain(fadeInExpr(fadeInS));
   return options;
 }
 

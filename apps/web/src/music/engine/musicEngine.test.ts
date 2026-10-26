@@ -150,6 +150,23 @@ describe("adaptateur du moteur natif", () => {
     expect(engine.getState().positionMs).toBeGreaterThanOrEqual(1500);
   });
 
+  it("transition douce : la PAGE décide du fondu titre par titre, la coquille l'exécute", async () => {
+    const f = fakeBridge();
+    const engine = await createMpvAudioEngine(f.bridge, auth, prefs);
+    engine.setCrossfade?.(6_000);
+    expect(f.calls.at(-1)).toEqual(["audio_control", { action: "crossfade", value: 6_000 }]);
+    engine.play(testTrack("t1", "A"), testSource("/a"), 0);
+    engine.setNext(testTrack("t2", "B"), testSource("/b"));
+    expect(f.calls.at(-1)?.[1]).toMatchObject({ crossfadeMs: 6_000 });
+    // Le titre suivant du même album, dans l'ordre : aucun fondu (enchaînement sans blanc).
+    f.push({ type: "advanced", fromKey: "t1", toKey: "t2" });
+    engine.setNext({ ...testTrack("t3", "B"), trackNumber: 2 }, testSource("/c"));
+    expect(f.calls.at(-1)?.[1]).not.toHaveProperty("crossfadeMs");
+    engine.setCrossfade?.(0);
+    engine.setNext(testTrack("t4", "C"), testSource("/d"));
+    expect(f.calls.at(-1)?.[1]).not.toHaveProperty("crossfadeMs");
+  });
+
   it("arrêt : désabonné, et l'instance native est rendue", async () => {
     const f = fakeBridge();
     const engine = await createMpvAudioEngine(f.bridge, auth, prefs);

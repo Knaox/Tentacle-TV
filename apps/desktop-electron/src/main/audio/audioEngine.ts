@@ -18,15 +18,18 @@ import {
   applyProperty, buildState, deriveStatus, durationOf, freshFlags, NO_PROPS, OBSERVED_PROPERTIES, type EngineFlags, type LiveProps, type Settings,
 } from "./audioEngineState";
 import { FileEnds } from "./audioEngineEnds";
-import { LEVEL_FILTER, LEVEL_PROPERTY, parseLevel } from "./audioLevel";
+import { LEVEL_PROPERTY, parseLevel } from "./audioLevel";
 import { AudioMpv, END_REASON } from "./audioMpv";
-import { headerFields, outputOptions, startOptions, swapPoint, type Platform } from "./audioOptions";
+import { headerFields, startOptions, swapPoint, type Platform } from "./audioOptions";
+import { applyOutput, chainFor } from "./audioEngineOutput";
 import { parseOutputs } from "./audioOutputs";
 import { AudioQueue, offsetOf, type QueueResult } from "./audioQueue";
 import { StateThrottle } from "./audioEngineTimers";
 import { expiresSoon, servedSource } from "./audioSources";
 import { cachedToEnd } from "./partialSource";
 import { warmOutput } from "./outputWarmup";
+import { gainCommand, type DeckTimeline } from "./crossfadeFilter";
+import { deckTimeline } from "./crossfadeTiming";
 
 export interface EngineConfig {
   platform: Platform;
@@ -51,9 +54,7 @@ export class NativeAudioEngine {
   private readonly queue = new AudioQueue();
   private props: LiveProps = { ...NO_PROPS };
   private flags: EngineFlags = freshFlags(false);
-  private settings: Settings & { replayGain: AudioBridgeReplayGainMode } = {
-    volume: 1, muted: false, deviceId: null, exclusive: false, replayGain: "auto",
-  };
+  private settings: Settings & { replayGain: AudioBridgeReplayGainMode } = { volume: 1, muted: false, deviceId: null, exclusive: false, replayGain: "auto" };
   /** Sources basculées pour un titre ni courant ni suivant : servies à son tour. */
   private readonly overrides = new Map<string, AudioBridgeSource>();
   /** Vraie fin, fin provisoire, coupure en milieu de titre (`audioEngineEnds.ts`). */
@@ -112,10 +113,12 @@ export class NativeAudioEngine {
     return mpvCapabilities(codecsFromDecoderList(await this.mpv.get("decoder-list")));
   }
 
-  play(track: AudioBridgeTrack, source: AudioBridgeSource, startMs: number): void {
+  /** `paused` : chargé sans jouer (le titre qui arrive d'une transition douce, lancé par `resume`). */
+  play(track: AudioBridgeTrack, source: AudioBridgeSource, startMs: number, paused = false): void {
     this.ends.provisional.reset();
     this.ends.cuts.reset();
-    this.flags = freshFlags(true);
+    this.flags = { ...freshFlags(true), wantPaused: paused };
+    if (paused) void this.mpv.set("pause", "yes");
     this.props = { ...NO_PROPS };
     this.run(this.queue.play(track, servedSource(this.overrides, track.trackKey, source), startMs > 0 ? startMs / 1000 : null));
     this.checkExpiry(track.trackKey, source);
@@ -180,14 +183,18 @@ export class NativeAudioEngine {
   listOutputs = async (): Promise<AudioBridgeOutput[]> => parseOutputs(this.config.platform, await this.mpv.get("audio-device-list"));
 
   async setOutput(deviceId: string | null, exclusive: boolean): Promise<void> {
-    // Le filtre de mesure suit le mode exclusif (`audioLevel.ts`) — posé ou retiré avec la sortie, qui se rouvre de toute façon.
-    const filter = exclusive === this.settings.exclusive ? {} : { af: exclusive ? "" : LEVEL_FILTER };
-    Object.assign(this.settings, { deviceId, exclusive });
-    const options = { ...outputOptions(this.config.platform, deviceId, exclusive), ...filter };
-    const errors = (await Promise.all(Object.entries(options).map(([k, v]) => this.mpv.set(k, v)))).filter((e) => e !== null);
+    const errors = await applyOutput(this.mpv, this.config.platform, this.settings, deviceId, exclusive);
     this.emitState();
     if (errors.length > 0) throw new Error(errors.join(" ; "));
   }
+
+  /** La chaîne de filtres : avec le gain du fondu (`expr` à sa naissance), ou sans (`null`). Instance au repos seulement. */
+  setChain = (expr: string | null): void => void this.mpv.set("af", chainFor(this.settings.exclusive, expr));
+
+  /** Le gain du fondu, pendant la lecture (`af-command`, sans reconstruire la chaîne). */
+  setGain = (expr: string): void => void this.mpv.command(gainCommand(expr));
+  /** Ce que la transition douce lit de l'instance (`crossfadeTiming.ts`). */
+  timeline = (): DeckTimeline => deckTimeline(this.queue.current(), this.props, this.flags, this.positionS());
 
   /** Le relais local dit la source `url` coupée en pleine lecture : le titre est relu à la position (`audioEngineEnds.ts`). */
   sourceCut = (url: string): void => this.ends.sourceCut(url);
@@ -198,8 +205,7 @@ export class NativeAudioEngine {
     return parseLevel(await this.mpv.get(LEVEL_PROPERTY));
   }
 
-  /** Une propriété de mpv, en chaîne — banc et diagnostic seulement. */
-  readProperty = (name: string): Promise<string | null> => this.mpv.get(name);
+  readProperty = (name: string): Promise<string | null> => this.mpv.get(name); // une propriété en chaîne : banc et diagnostic
 
   /** Arrête l'instance et libère la sortie (le mode exclusif avec). */
   dispose(): Promise<void> {
