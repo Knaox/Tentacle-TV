@@ -139,6 +139,7 @@ export const COMMANDS = [
   "audio_control",
   "audio_list_outputs",
   "audio_set_output",
+  "audio_level",
 
   // Requêtes déléguées (capacité `plugins.clientFetch`) : une extension fait exécuter
   // une requête qu'elle décrit depuis la connexion de l'utilisateur — `ipc/clientFetch.ts`.

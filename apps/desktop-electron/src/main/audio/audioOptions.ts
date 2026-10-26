@@ -33,6 +33,7 @@
  */
 
 import type { AudioBridgeStart } from "./audioBridgeContract";
+import { levelFilterOption } from "./audioLevel";
 
 export type Platform = "darwin" | "win32" | "linux";
 
@@ -182,6 +183,8 @@ export function startOptions(
     "http-header-fields": headers,
     volume: String(Math.round(start.volume * 100)),
     mute: start.muted ? "yes" : "no",
+    // La mesure du niveau pour la houle d'Octave (`audioLevel.ts`), jamais en mode exclusif.
+    ...levelFilterOption(start.exclusive),
     ...extra,
   };
 }

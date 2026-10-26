@@ -15,9 +15,10 @@ import type {
 import { codecsFromDecoderList, mpvCapabilities } from "./audioFormat";
 import { opArgs, settingCommands } from "./audioEngineOps";
 import {
-  applyProperty, buildState, durationOf, freshFlags, NO_PROPS, OBSERVED_PROPERTIES, type EngineFlags, type LiveProps, type Settings,
+  applyProperty, buildState, deriveStatus, durationOf, freshFlags, NO_PROPS, OBSERVED_PROPERTIES, type EngineFlags, type LiveProps, type Settings,
 } from "./audioEngineState";
 import { FileEnds } from "./audioEngineEnds";
+import { LEVEL_FILTER, LEVEL_PROPERTY, parseLevel } from "./audioLevel";
 import { AudioMpv, END_REASON } from "./audioMpv";
 import { headerFields, outputOptions, startOptions, swapPoint, type Platform } from "./audioOptions";
 import { parseOutputs } from "./audioOutputs";
@@ -179,14 +180,23 @@ export class NativeAudioEngine {
   listOutputs = async (): Promise<AudioBridgeOutput[]> => parseOutputs(this.config.platform, await this.mpv.get("audio-device-list"));
 
   async setOutput(deviceId: string | null, exclusive: boolean): Promise<void> {
+    // Le filtre de mesure suit le mode exclusif (`audioLevel.ts`) — posé ou retiré avec la sortie, qui se rouvre de toute façon.
+    const filter = exclusive === this.settings.exclusive ? {} : { af: exclusive ? "" : LEVEL_FILTER };
     Object.assign(this.settings, { deviceId, exclusive });
-    const errors = (await Promise.all(Object.entries(outputOptions(this.config.platform, deviceId, exclusive)).map(([k, v]) => this.mpv.set(k, v)))).filter((e) => e !== null);
+    const options = { ...outputOptions(this.config.platform, deviceId, exclusive), ...filter };
+    const errors = (await Promise.all(Object.entries(options).map(([k, v]) => this.mpv.set(k, v)))).filter((e) => e !== null);
     this.emitState();
     if (errors.length > 0) throw new Error(errors.join(" ; "));
   }
 
   /** Le relais local dit la source `url` coupée en pleine lecture : le titre est relu à la position (`audioEngineEnds.ts`). */
   sourceCut = (url: string): void => this.ends.sourceCut(url);
+
+  /** Le niveau RMS (dBFS) du son qui JOUE, pour la houle d'Octave ; `null` hors lecture ou en mode exclusif. Lecture asynchrone. */
+  async level(): Promise<number | null> {
+    if (this.settings.exclusive || deriveStatus(this.queue.current(), this.props, this.flags) !== "playing") return null;
+    return parseLevel(await this.mpv.get(LEVEL_PROPERTY));
+  }
 
   /** Une propriété de mpv, en chaîne — banc et diagnostic seulement. */
   readProperty = (name: string): Promise<string | null> => this.mpv.get(name);
