@@ -66,6 +66,7 @@ export function SourcesTab() {
   return (
     <>
       <AdminSection
+        scope="server"
         title={t("sourcesTitle")}
         description={t("sourcesDescription")}
         actions={<ActionPill ref={addButton} tone="brand" icon={Plus} label={t("addSource")} onClick={() => setAdding(true)} />}

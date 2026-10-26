@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls, creds } from "../../pages/adminUtils";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
+import { ScopeBadge } from "../settings/ScopeBadge";
 import { copyShortcutLabel } from "../../lib/shortcutLabel";
 
 interface ProvisioningState {
@@ -130,6 +131,8 @@ export function ProvisioningCodeSection() {
     <div className={cls.card}>
       <div className="mb-1 flex items-center gap-2">
         <h2 className="text-lg font-semibold text-content-primary">{t("provisioningTitle")}</h2>
+        {/* Un code pour tout le serveur : n'importe quelle TV peut s'en servir. */}
+        <ScopeBadge scope="server" />
         <span
           className={`${cls.chip} ${state.enabled ? "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]" : "bg-fill-soft text-content-tertiary"}`}
         >

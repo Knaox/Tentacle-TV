@@ -82,7 +82,7 @@ export default {
 
   // Les réglages recommandés
   setupTitle: "Réglages recommandés pour Jellyfin",
-  setupDescription: "Ce qui rend Tentacle complet, vérifié sur votre serveur. En un clic quand Jellyfin le permet sans risque ; sinon, la bonne page de son tableau de bord.",
+  setupDescription: "Des réglages de Jellyfin qui rendent Tentacle complet, vérifiés sur votre serveur. En un clic quand Jellyfin le permet sans risque ; sinon, le lien vers la bonne page de son tableau de bord. Ils changent Jellyfin pour tout le monde.",
   setupProgress: "{{done}} sur {{total}} faits",
   setupProgressLabel: "Réglages faits",
   setupAllDone: "Tout est réglé.",

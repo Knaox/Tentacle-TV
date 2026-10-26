@@ -82,7 +82,7 @@ export default {
 
   // Recommended settings
   setupTitle: "Recommended Jellyfin settings",
-  setupDescription: "What makes Tentacle complete, checked on your server. One click when Jellyfin allows it safely; otherwise, the right page of its dashboard.",
+  setupDescription: "Jellyfin settings that make Tentacle complete, checked on your server. One click when Jellyfin allows it safely; otherwise, a link to the right page of its dashboard. They change Jellyfin for everyone.",
   setupProgress: "{{done}} of {{total}} done",
   setupProgressLabel: "Settings done",
   setupAllDone: "Everything is set.",

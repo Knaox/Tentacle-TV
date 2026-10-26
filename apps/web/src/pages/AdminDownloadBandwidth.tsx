@@ -74,6 +74,7 @@ export function AdminDownloadBandwidth() {
 
   return (
     <AdminSection
+      scope="server"
       title={t("bandwidthTitle")}
       description={
         <>

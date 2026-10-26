@@ -9,6 +9,7 @@ import { UserSheet } from "../components/admin/users/UserSheet";
 import { UsersGrid } from "../components/admin/users/UsersGrid";
 import { UsersSummary } from "../components/admin/users/UsersSummary";
 import { UsersToolbar } from "../components/admin/users/UsersToolbar";
+import { UsersTabs } from "../components/admin/users/UsersTabs";
 import { AdminRequestError, useAdminUsers, useUserSheetParam } from "../components/admin/users/useAdminUsers";
 import {
   countByFilter,
@@ -86,6 +87,7 @@ function AdminUsersView() {
 
   return (
     <AdminPage
+      nav={<UsersTabs active="users" />}
       title={t("usersTitle")}
       description={t("usersDescription")}
       summary={failed ? undefined : (

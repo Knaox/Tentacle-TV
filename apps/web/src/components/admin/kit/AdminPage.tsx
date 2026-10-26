@@ -53,6 +53,12 @@ export function AdminPageHeader({ title, description, badges, actions, children 
 export interface AdminPageProps extends Omit<AdminPageHeaderProps, "children"> {
   /** Sous l'en-tête, avant le contenu (résumé chiffré, onglets…). */
   summary?: ReactNode;
+  /**
+   * Au-dessus de l'en-tête : la navigation de second niveau d'une section du
+   * rail, quand elle réunit plusieurs pages (Utilisateurs : Comptes ·
+   * Invitations). Deux niveaux au plus : le rail, puis ces onglets.
+   */
+  nav?: ReactNode;
   children: ReactNode;
   className?: string;
 }
@@ -62,9 +68,10 @@ export interface AdminPageProps extends Omit<AdminPageHeaderProps, "children"> {
  * rythme unique. L'entrée (fondu + 12 px) est celle de toutes les pages de
  * l'app — une fois, en `transform` et `opacity` seulement.
  */
-export function AdminPage({ summary, children, className, ...header }: AdminPageProps) {
+export function AdminPage({ summary, nav, children, className, ...header }: AdminPageProps) {
   return (
     <PageTransition className={className}>
+      {nav ? <div className="mb-5">{nav}</div> : null}
       <AdminPageHeader {...header}>{summary}</AdminPageHeader>
       <div className="space-y-6">{children}</div>
     </PageTransition>

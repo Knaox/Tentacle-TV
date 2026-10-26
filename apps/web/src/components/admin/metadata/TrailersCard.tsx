@@ -51,7 +51,7 @@ export function TrailersCard() {
   const anyPaused = data ? data.sources.youtube.state === "paused" || data.sources.dailymotion.state === "paused" : false;
 
   return (
-    <AdminSection title={t("trailersTitle")} description={t("trailersDescription")}>
+    <AdminSection scope="server" title={t("trailersTitle")} description={t("trailersDescription")}>
       {data ? (
         <div className="space-y-5">
           <SettingToggleRow

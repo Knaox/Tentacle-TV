@@ -96,7 +96,7 @@ export function FamilySwitchesSection() {
   );
 
   return (
-    <AdminSection title={t("admin.title")} description={t("admin.description")}>
+    <AdminSection scope="server" title={t("admin.title")} description={t("admin.description")}>
       {body ? (
         <>
           {body}

@@ -11,6 +11,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../contexts/ToastContext";
 import { useAdminInvites, useClock, useDeleteInvite, useInviteLinkBase } from "../hooks/useAdminInvites";
 import { InviteCard } from "../components/admin/invites/InviteCard";
+import { UsersTabs } from "../components/admin/users/UsersTabs";
 import { InviteFilters } from "../components/admin/invites/InviteFilters";
 import { NewInviteDialog } from "../components/admin/invites/NewInviteDialog";
 import { countByStatus, sortInvites, type InviteFilter } from "../components/admin/invites/inviteFormat";
@@ -178,6 +179,7 @@ export function AdminInvites() {
 
   return (
     <AdminPage
+      nav={<UsersTabs active="invites" />}
       title={t("title")}
       description={t("description")}
       // Liste vide : le bouton est celui de l'état vide, pas deux fois le même.

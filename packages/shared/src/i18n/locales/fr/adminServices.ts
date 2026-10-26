@@ -7,9 +7,9 @@
  * toutes ses autres pages.
  */
 export default {
-  title: "Services",
+  title: "Jellyfin",
   description:
-    "Les connexions du serveur Tentacle TV et ses réglages : Jellyfin, base de données, adresse publique, lecture directe et détection des passages.",
+    "Tout ce qui relie Tentacle à Jellyfin : la connexion et sa clé, la compatibilité de sa version, les réglages conseillés et la détection des passages (intro, résumé, générique). Ce qui se règle ici vaut pour tous les utilisateurs.",
   recheck: "Revérifier",
   checking: "Vérification…",
   save: "Enregistrer",
@@ -45,6 +45,7 @@ export default {
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
+  jellyfinConnectionTitle: "Connexion à Jellyfin",
   jellyfinDescription:
     "Le serveur multimédia que Tentacle habille. Sa clé d'administration porte le travail sans personne derrière : notifications d'ajouts, invitations, création de comptes, écrans d'administration.",
   jellyfinServer: "{{name}} · Jellyfin {{version}}",
@@ -144,7 +145,7 @@ export default {
   // Détection des passages.
   segmentsTitle: "Détection des passages",
   segmentsDescription:
-    "Les greffons Jellyfin restent la source première des passages : en installer un enrichit tous les appareils d'un coup. L'analyse embarquée de Tentacle vient après eux — elle comble ce qu'ils ne disent pas, et corrige un générique de fin qui avale une scène.",
+    "Ce qui permet à tous les lecteurs de proposer « Passer l'intro », « Passer le résumé » et « Passer le générique ». Tentacle installe et règle pour vous des greffons dans Jellyfin, qui repèrent ces passages pour toute la bibliothèque ; ce qu'ils ne disent pas, Tentacle le complète en lisant les vignettes de fin d'épisode.",
   segmentsPlugins: "Greffons Jellyfin",
   opensNewTab: "(s'ouvre dans un nouvel onglet)",
   segmentsLearnMore: "Comment ça marche",
@@ -158,6 +159,8 @@ export default {
   // Zone de danger.
   dangerTitle: "Zone de danger",
   dangerDescription: "Ce qui s'y fait ne se défait pas.",
+  systemTitle: "Système",
+  systemDescription: "Le serveur Tentacle lui-même : sa version et sa mise à jour, sa base de données et, à part, sa réinitialisation.",
   resetTitle: "Réinitialiser le serveur",
   resetDescription:
     "Efface toute la configuration du serveur — connexion à Jellyfin, clés, adresse publique, réglages — et relance l'assistant d'installation. Les appareils jumelés, téléviseurs comme téléphones, perdront leur accès et devront être jumelés à nouveau.",

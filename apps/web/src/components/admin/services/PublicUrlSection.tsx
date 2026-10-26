@@ -26,6 +26,8 @@ import { SERVER_LINKS_KEY } from "../../serverLinks/useServerLinks";
 
 interface Frame {
   id: string;
+  /** Ce que la carte règle vaut pour tout le serveur. */
+  scope: "server";
   title: string;
   description: string;
 }
@@ -34,7 +36,7 @@ export function PublicUrlSection() {
   const { t } = useTranslation("adminServices");
   const query = usePublicUrlConfig();
   const config = query.data;
-  const frame: Frame = { id: "publicurl", title: t("publicUrlTitle"), description: t("publicUrlDescription") };
+  const frame: Frame = { id: "publicurl", scope: "server", title: t("publicUrlTitle"), description: t("publicUrlDescription") };
 
   if (!config) {
     return (

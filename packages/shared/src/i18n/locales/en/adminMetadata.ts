@@ -6,7 +6,7 @@
 export default {
   title: "Metadata",
   description:
-    "What enriches Tentacle beyond Jellyfin: TMDB for recommendations, and the country whose streaming platforms are shown.",
+    "What Tentacle adds to title pages and recommendations beyond Jellyfin: the TMDB key, the country of streaming services and where trailers come from. For every user.",
   loadError: "Couldn't read the metadata settings.",
   loadErrorHint: "The Tentacle server didn't answer. Check the connection, then try again.",
   retry: "Try again",

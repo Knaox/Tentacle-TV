@@ -34,7 +34,7 @@ export default {
 
   // ── Les adresses ──────────────────────────────────────────────────────
   addressesTitle: "Adresses",
-  addressesDescription: "Les seules choses à régler. Tout le reste de cette page en découle.",
+  addressesDescription: "Les adresses par lesquelles les applications joignent Tentacle et Jellyfin, chez vous et ailleurs. Ce sont les seules choses à régler\u00a0: tout le reste de cette page en découle.",
   publicLinkLabel: "Lien public de Tentacle",
   publicLinkHint: "L'adresse de Tentacle depuis Internet, par exemple https://tentacle.example.com. Vide\u00a0: Tentacle ne répond qu'à la maison.",
   publicLinkHintEnv: "Vide\u00a0: la variable TENTACLE_PUBLIC_URL s'applique ({{url}}).",

@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SettingsShell } from "@tentacle-tv/ui";
+import { useServerCapability } from "@tentacle-tv/api-client";
 
 import { getUserInfo } from "../userMenu/menuItems";
 import { OVERVIEW_ID, activeAdminSection, adminSectionPath, useAdminSections } from "./adminSections";
 import { useGlassSidebar } from "../nav/useGlassSidebar";
+import { movedAdminTarget } from "./adminRedirects";
 
 /**
  * Coquille maître-détail de l'administration.
@@ -28,6 +30,10 @@ import { useGlassSidebar } from "../nav/useGlassSidebar";
  * le reste de l'écran au contenu. Ce qui doit rester étroit (un formulaire, une
  * phrase) se borne lui-même.
  *
+ * Une adresse d'avant la réorganisation (`/admin/services#database`…) est
+ * réécrite ICI, pour toutes les pages, vers sa nouvelle place
+ * (`adminRedirects.ts`) : aucun lien ancien ne mène dans le vide.
+ *
  * Sous `md`, la vue d'ensemble EST l'écran d'atterrissage (tuiles + liste des
  * sections) : le rail n'y est pas montré, et le retour n'existe qu'à
  * l'intérieur d'une section — il ramène à la vue d'ensemble, sans boucle.
@@ -35,13 +41,16 @@ import { useGlassSidebar } from "../nav/useGlassSidebar";
 export function AdminLayout() {
   const { t } = useTranslation("admin");
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { isAdmin } = getUserInfo();
   const sections = useAdminSections();
   const activeId = useMemo(() => activeAdminSection(pathname), [pathname]);
   const sidebar = useGlassSidebar("admin");
+  const remoteAccess = useServerCapability("admin.remoteAccess");
+  const moved = movedAdminTarget({ pathname, hash }, { remoteAccess });
 
   if (!isAdmin) return <Navigate to="/" replace />;
+  if (moved) return <Navigate to={moved} replace />;
 
   return (
     <div className="pt-6">

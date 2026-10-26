@@ -30,6 +30,7 @@ export function SetupChecklist() {
   return (
     <AdminSection
       id={JELLYFIN_SETUP_ANCHOR}
+      scope="server"
       title={t("setupTitle")}
       description={t("setupDescription")}
       actions={progress && progress.total > 0 ? <Progress done={progress.done} total={progress.total} /> : undefined}

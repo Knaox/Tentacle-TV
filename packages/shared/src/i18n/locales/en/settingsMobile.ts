@@ -10,6 +10,8 @@ export default {
     serverA11y: "Server setting: it applies to every user",
     octave: "Octave only",
     octaveA11y: "Octave setting: it changes nothing in Tentacle",
+    user: "Per account",
+    userA11y: "Account-level setting: it only applies to the chosen account, on all its devices",
   },
   // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
   web: {

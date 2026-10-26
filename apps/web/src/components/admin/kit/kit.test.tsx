@@ -154,3 +154,21 @@ describe("« Voir plus »", () => {
     expect(out).toContain("showLess");
   });
 });
+
+describe("la portée d'une carte de réglage", () => {
+  it("pose la pastille commune à côté du titre, et rien sans portée", () => {
+    const withScope = html(<AdminSection title="Clé TMDB" scope="server" />);
+    expect(withScope).toContain('aria-label="scope.serverA11y"');
+    expect(withScope).toContain("scope.server");
+    expect(html(<AdminSection title="Compatibilité" />)).not.toContain("scope.");
+  });
+
+  it("dit « Par compte » pour un droit de la fiche d'un utilisateur", () => {
+    expect(html(<AdminSection title="Droits" scope="user" />)).toContain('aria-label="scope.userA11y"');
+  });
+
+  it("rend la navigation de second niveau AU-DESSUS de l'en-tête", () => {
+    const page = html(<AdminPage title="Utilisateurs" nav={<nav>onglets</nav>}><p>corps</p></AdminPage>);
+    expect(page.indexOf("onglets")).toBeLessThan(page.indexOf("Utilisateurs"));
+  });
+});

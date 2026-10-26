@@ -121,6 +121,7 @@ function SectionList() {
             key={section.id}
             icon={section.icon}
             label={section.label}
+            description={section.hint}
             onClick={() => navigate(adminSectionPath(section.id))}
             chevron
             last={index === sections.length - 1}

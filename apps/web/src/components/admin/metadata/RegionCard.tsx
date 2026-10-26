@@ -45,7 +45,7 @@ export function RegionCard({ saved, tmdbConfigured }: RegionCardProps) {
     );
 
   return (
-    <AdminSection title={t("regionTitle")} description={t("regionDescription")}>
+    <AdminSection scope="server" title={t("regionTitle")} description={t("regionDescription")}>
       <div className="space-y-4">
         <div>
           <span id={labelId} className={cls.lbl}>

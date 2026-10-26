@@ -89,7 +89,7 @@ export function AdminDownloads() {
       {/* Le réglage du serveur d'abord, puis les droits par compte : deux
           cartes, chacune avec son explication. */}
       <AdminDownloadBandwidth />
-      <AdminSection title={t("downloadsRightsTitle")} description={t("downloadsIntro")}>
+      <AdminSection scope="user" title={t("downloadsRightsTitle")} description={t("downloadsIntro")}>
         {/* Squelettes au balayage borné (`skeleton-shimmer`) : `animate-pulse`
             battait sans fin tant que Jellyfin ne répondait pas. */}
         {isLoading && (
