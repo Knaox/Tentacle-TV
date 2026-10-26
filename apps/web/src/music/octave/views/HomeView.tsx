@@ -18,6 +18,7 @@ import { EMPTY_ACTION_CLASS, EmptyState, ErrorState } from "../components/ViewSt
 import { useMusicHome } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 import { QuickPicks, QuickPicksSkeleton } from "./QuickPicks";
+import { HomeMoodsSlot } from "../home/ambianceSlots";
 
 function greetingKey(hour: number): "home.morning" | "home.afternoon" | "home.evening" {
   return hour < 12 ? "home.morning" : hour < 18 ? "home.afternoon" : "home.evening";
@@ -76,6 +77,7 @@ export function HomeView() {
         </EmptyState>
       )}
       {recent.length > 0 && <QuickPicks tracks={recent} />}
+      <HomeMoodsSlot />
       {added.length > 0 && (
         <Shelf title={t("home.recentlyAdded")} action={<SeeAll to={octavePaths.library} />}>
           <CardRow items={added} render={(album) => <AlbumCard key={album.key} album={album} />} />
