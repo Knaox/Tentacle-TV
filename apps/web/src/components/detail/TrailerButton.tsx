@@ -93,7 +93,7 @@ export function TrailerButton({ item }: { item: MediaItem }) {
         // Verre natif : une capsule de verre clair, glyphes adaptés au décor.
         // Ailleurs, posé sur la scène : `on-media`, sans flou (le voile dessous
         // est déjà sombre, un `backdrop-filter` n'y changerait rien de visible).
-        appearance={{ level: "clear", shape: "capsule" }}
+        appearance={{ material: "pane", tone: "dark", level: "clear", shape: "capsule" }}
         className="flex h-14 items-center gap-2.5 px-6 text-base font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
         fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] text-on-media-primary transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.6)]"
       >

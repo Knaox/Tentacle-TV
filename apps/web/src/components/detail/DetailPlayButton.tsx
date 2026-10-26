@@ -12,7 +12,7 @@ import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
 // peau d'AVANT (hors verre natif) ; en natif, la marque DANS le verre.
 const PRIMARY_LAYOUT = "flex h-14 items-center gap-3 overflow-hidden pr-7 text-left";
 const PRIMARY_GLASS = {
-  appearance: { level: "prominent", tint: "brand", shape: "capsule" },
+  appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
   fallbackClassName: "hero-cta-primary rounded-full",
   fallbackStyle: { boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)" },
 } as const;

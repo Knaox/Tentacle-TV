@@ -57,7 +57,7 @@ function PersonView({ personId }: { personId: string }) {
       <GlassButton
         onClick={() => navigate(-1)}
         aria-label={t("common:back")}
-        appearance={{ level: "clear", shape: "capsule" }}
+        appearance={{ material: "pane", level: "clear", shape: "capsule" }}
         className={`absolute left-4 top-4 z-20 flex items-center gap-2 px-4 text-sm md:left-12 md:top-6 ${native ? "h-11 font-medium" : "py-2"}`}
         fallbackClassName="rounded-full border border-line-subtle bg-[var(--glass-tint)] text-content-secondary backdrop-blur-md transition-colors hover:text-content-primary"
       >

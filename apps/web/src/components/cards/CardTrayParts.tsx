@@ -87,6 +87,10 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
   const skin = `rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 ${tone}`;
   const glassAllowed = useContext(TrayGlass);
   const glass = useLiquidGlassSurface({
+    material: "bead",
+    // Posée sur une image (affiche, bannière, fiche) : le verre SOMBRE, quel que
+    // soit le thème — la nacre du clair y perdait ses glyphes.
+    tone: "dark",
     level: "clear",
     shape: "circle",
     interactive: true,

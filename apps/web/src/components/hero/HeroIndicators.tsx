@@ -31,7 +31,7 @@ interface HeroIndicatorsProps {
  * mais le liseré et le halo suivent la marque.
  */
 /** Les flèches en Liquid Glass : le rond de verre clair des voisins de la bannière. */
-const ARROW_GLASS = { level: "clear", shape: "circle" } as const;
+const ARROW_GLASS = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
 
 export function HeroIndicators({
   count,

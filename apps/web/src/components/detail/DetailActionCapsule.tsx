@@ -141,6 +141,10 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
   // clair et le GLYPHE prend l'accent (`data-lg-toggle`, lot lg7, R5 : Apple
   // colore le symbole d'une bascule, pas son verre) — jamais un anneau.
   const glass = useLiquidGlassSurface({
+    material: "bead",
+    // Posée sur une image (affiche, bannière, fiche) : le verre SOMBRE, quel que
+    // soit le thème — la nacre du clair y perdait ses glyphes.
+    tone: "dark",
     level: "clear",
     shape: "circle",
     interactive: true,

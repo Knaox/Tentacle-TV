@@ -1,7 +1,7 @@
 import { PressableGlass } from "../ui/glass/PressableGlass";
 
 /** En mode natif : la lentille exacte du disque (monté au survol seulement). */
-const DISC_GLASS = { level: "clear", shape: "circle" } as const;
+const DISC_GLASS = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
 /** La peau d'avant du disque (hors verre natif). */
 const DISC_SKIN = "rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]";
 

@@ -154,7 +154,7 @@ function StageButton({ onClick, label, icon, showLabel = false }: {
       onClick={onClick}
       aria-label={label}
       title={label}
-      appearance={{ level: "clear", shape: showLabel ? "capsule" : "circle" }}
+      appearance={{ material: showLabel ? "pane" : "bead", tone: "dark", level: "clear", shape: showLabel ? "capsule" : "circle" }}
       className={`flex h-11 items-center gap-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
         showLabel ? "px-4" : "w-11 justify-center"
       }`}
