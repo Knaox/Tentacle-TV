@@ -60,6 +60,8 @@ export function buildPluginHtml({
     trailerCatalog,
     // Le cadre ne joint plus un serveur local : l'hôte lit la vidéo des aperçus (`pluginMediaBridge.ts`).
     mediaBridge: true,
+    // La query tenue dans l'adresse de l'hôte sans recharger (`setQuery`, pluginQuerySync.ts).
+    querySync: true,
   };
 
   // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est
