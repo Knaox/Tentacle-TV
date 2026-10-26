@@ -21,6 +21,8 @@ export const octavePaths = {
   playlist: (id: string) => `${OCTAVE_BASE_PATH}/playlist/${enc(id)}`,
   /** Une playlist HORS bibliothèque (celle d'une extension), par sa clé `ext:<pluginId>:<id>`. */
   externalPlaylist: (key: string) => `${OCTAVE_BASE_PATH}/mix/${enc(key)}`,
+  /** La playlist d'une AMBIANCE de l'extension (`moods/`), par sa clé stable. */
+  mood: (id: string) => `${OCTAVE_BASE_PATH}/mood/${enc(id)}`,
   album: (idOrKey: string) => `${OCTAVE_BASE_PATH}/album/${enc(idOrKey)}`,
   artist: (idOrKey: string) => `${OCTAVE_BASE_PATH}/artist/${enc(idOrKey)}`,
 };

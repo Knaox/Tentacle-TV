@@ -1,0 +1,13 @@
+/* Octave — les cartes d'ambiance : la houle du fond glisse d'un pas au survol (transform seul, une fois). */
+.octave-mood-wave {
+  transition: transform 320ms var(--oc-ease-out, ease-out);
+}
+.octave-card:hover .octave-mood-wave,
+.octave-card:focus-visible .octave-mood-wave {
+  transform: translateX(-12px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .octave-mood-wave { transition: none; }
+  .octave-card:hover .octave-mood-wave,
+  .octave-card:focus-visible .octave-mood-wave { transform: none; }
+}
