@@ -98,14 +98,16 @@ Tentacle est un poulpe : quand la musique joue, Octave a la mer (`apps/web/src/m
   mouvement réduit : la même composition, fixe. Mesuré au bureau pendant une lecture (build de
   production, 25/10) : 15 images dessinées par seconde de plus (contre 120 en continu sur un écran à
   120 Hz), aucune abandonnée, ~1 % de CPU au processus GPU (6 % en continu) ; en pause, rien.
-- **Elle suit l'énergie de la musique** (bureau) : le niveau RMS du son qui joue, mesuré par mpv (filtre
-  `astats` qui ne touche à aucun échantillon — jamais en mode exclusif — lu de façon asynchrone, quatre fois
-  par seconde et seulement quand une houle roule), mêle le niveau absolu et l'écart à la moyenne du morceau
-  (le refrain soulève la mer, le couplet la calme), lissé (~0,6 s à la montée, ~1,2 s à la descente) :
-  vitesse ET amplitude de 0,7× à 1,4× (`motion/oceanEnergy.ts`). Vitesse par `updatePlaybackRate` (rien ne
-  saute), amplitude par `--ocean-amp` (resserrée à 0,88-1,16 pour l'indicateur). Au web, le moteur `<audio>`
-  n'expose aucun graphe audio : la houle y garde son allure de toujours — jamais un second décodage du flux.
-  Mesuré au bureau pendant une lecture : ~1 % de CPU au processus GPU, comme avant ; ~15 % de dessins de plus.
+- **Elle suit l'énergie de la musique** (bureau) — on SENT l'accélération : le niveau RMS du son qui joue,
+  mesuré par mpv (filtre `astats` qui ne touche à aucun échantillon — jamais en mode exclusif — lu de façon
+  asynchrone cinq fois par seconde, seulement quand une houle roule), NORMALISÉ sur le titre en cours (écart à
+  sa moyenne glissante rapporté à sa dispersion, plancher 3,5 dB : un morceau doux comme un morceau fort a ses
+  creux et ses pics, un morceau qui ne fait que respirer reste une houle). Attaque ~0,2 s, relâchement ~1 s.
+  Vitesse de 0,5× à 2,5× (géométrique, ×1 au niveau habituel du titre), crêtes de 0,7× à 1,5× (0,76-1,40 pour
+  l'indicateur, sans déborder) — `motion/oceanEnergy.ts`. Vitesse par `updatePlaybackRate` (rien ne saute),
+  amplitude par `--ocean-amp`. Au web, le moteur `<audio>` n'expose aucun graphe audio : la houle y garde son
+  allure de toujours — jamais un second décodage du flux. Mesuré au bureau pendant une lecture : ~1,3 % de CPU
+  au processus GPU ; 1,7 % au pire (houle tenue à ×2,5) ; en pause, rien.
 
 ## Ce qu'on ne fait pas
 
