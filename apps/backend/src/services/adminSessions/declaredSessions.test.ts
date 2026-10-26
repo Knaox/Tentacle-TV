@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DeclaredSessionInput } from "./declaredSessions";
 import { toAdminSession } from "./mapSession";
+import { LISTENING_STALE_MS } from "./listening";
 import { buildSnapshot } from "./snapshot";
 
 /**
@@ -96,5 +97,44 @@ describe("l'écoute déclarée par Octave", () => {
   it("un invité de la Famille y reste étiqueté", () => {
     const snap = buildSnapshot({ ...base, raw: [], declared: [declared({ deviceId: undefined })], familyGuests: new Map([["u1", "Bob"]]) });
     expect(snap.sessions[0]?.familyGuestOf).toBe("Bob");
+  });
+});
+
+describe("une écoute sans nouvelles n'est plus « en lecture » (page partie sans pouvoir le dire)", () => {
+  const stale = NOW - LISTENING_STALE_MS - 1_000;
+
+  it("titre de la bibliothèque : la session passe au repos, l'appareil reste connecté", () => {
+    const snap = buildSnapshot({ ...base, raw: [audioSession({ LastPlaybackCheckIn: new Date(stale).toISOString() })] });
+    expect(snap.sessions).toHaveLength(1);
+    expect(snap.sessions[0]).toMatchObject({ id: "s1", nowPlaying: null, playMethod: null, source: null });
+  });
+
+  it("une écoute EN PAUSE reste montrée, même longtemps ; une écoute fraîche aussi", () => {
+    const paused = audioSession({ LastPlaybackCheckIn: new Date(stale).toISOString(), PlayState: { PositionTicks: 0, IsPaused: true, PlayMethod: "DirectPlay" } });
+    expect(buildSnapshot({ ...base, raw: [paused] }).sessions[0]?.nowPlaying?.itemId).toBe("track1");
+    expect(buildSnapshot({ ...base, raw: [audioSession()] }).sessions[0]?.nowPlaying?.itemId).toBe("track1");
+  });
+
+  it("une vidéo n'est pas concernée (son lecteur se redit plus rarement)", () => {
+    const movie = audioSession({ LastPlaybackCheckIn: new Date(stale).toISOString(), NowPlayingItem: { Id: "m1", Name: "Film", Type: "Movie" } });
+    expect(buildSnapshot({ ...base, raw: [movie] }).sessions[0]?.nowPlaying?.itemId).toBe("m1");
+  });
+
+  it("une déclaration récente la tient en vie ; une lecture d'extension sans nouvelles disparaît", () => {
+    const fresh = buildSnapshot({ ...base, raw: [audioSession({ LastPlaybackCheckIn: new Date(stale).toISOString() })], declared: [declared({ at: NOW - 5_000, state: { itemId: "track1" } })] });
+    expect(fresh.sessions[0]?.nowPlaying?.itemId).toBe("track1");
+    const gone = buildSnapshot({ ...base, raw: [], declared: [declared({ deviceId: undefined, at: stale })] });
+    expect(gone.sessions).toEqual([]);
+  });
+});
+
+describe("rechargement : la page d'avant garde un moment sa connexion et sa déclaration", () => {
+  it("la déclaration la plus RÉCENTE de l'appareil fait foi — la reprise en pause l'emporte", () => {
+    const before = declared({ id: "ext-a", at: NOW - 20_000, state: { itemId: "track1", isPaused: false, positionMs: 0 } });
+    const after = declared({ id: "ext-b", at: NOW - 2_000, state: { itemId: "track1", isPaused: true, positionMs: 4_650 } });
+    for (const order of [[before, after], [after, before]]) {
+      const snap = buildSnapshot({ ...base, raw: [audioSession()], declared: order });
+      expect(snap.sessions[0]).toMatchObject({ isPaused: true, positionTicks: 4_650 * 10_000 });
+    }
   });
 });
