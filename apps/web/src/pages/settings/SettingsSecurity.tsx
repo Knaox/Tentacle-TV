@@ -1,35 +1,83 @@
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { ChangePasswordSection } from "../../components/preferences/ChangePasswordSection";
 import { MyDevicesSection } from "../../components/settings/MyDevicesSection";
 import { ChangeServerSection } from "../../components/settings/ChangeServerSection";
-import { Navigate } from "react-router-dom";
-import { isDesktopApp } from "../../desktop/bridge";
-import { useActiveProfile } from "../../auth/profileSession";
-import { useSecurityAbilities } from "../../rights/useSecurityAbilities";
+import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
+import { SettingItem } from "../../components/settings/wide/SettingItem";
+import { WideGroup } from "../../components/settings/wide/WideGroup";
+import { SETTING_BUTTON, SETTING_DANGER_BUTTON } from "../../components/settings/wide/settingButtons";
+import { useWideSettingVisible } from "../../components/settings/wide/wideSettingsMeta";
+import { getUserInfo } from "../../components/userMenu/menuItems";
+import { ProfileConfirmDialog } from "../../mirror/screens/profile/ProfileConfirmDialog";
+import { useProfileActions } from "../../mirror/screens/profile/useProfileActions";
 
 /**
- * Sécurité — regroupe ce qui était dispersé sur quatre écrans.
+ * Réglages › Compte et sécurité — ce qui touche le COMPTE (mot de passe,
+ * appareils jumelés, comptes liés, suppression), puis ce qui ne touche que
+ * CET appareil (changer de serveur, vider le cache). Chaque ligne n'existe
+ * que si le serveur la permet à cette session (`account.abilities`) : une
+ * session de profil de la Famille n'a ni mot de passe, ni appareils, ni
+ * suppression, mais garde ses comptes liés et le cache.
  *
- * Avant : le mot de passe et les appareils jumelés étaient enterrés tout en bas
- * de `/settings`, sous une carte de préférences PAR bibliothèque — donc après
- * un défilement proportionnel au nombre de bibliothèques de l'utilisateur. Le
- * changement de serveur était au même endroit, l'appairage TV sur
- * `/pair-device`.
- *
- * Non couvert, et à ne pas laisser croire : sessions actives, 2FA/TOTP et
- * suppression de compte n'existent NULLE PART dans le monorepo, ni au front ni
- * au backend. Les ajouter est un chantier serveur distinct.
+ * « Vider le cache » et « Supprimer mon compte » n'existaient que sur le
+ * téléphone et le web étroit : les gestes (et leurs confirmations) sont ceux
+ * du profil de l'app (`useProfileActions`), jamais une copie.
  */
 export function SettingsSecurity() {
-  // Session d'un profil : rien de tout cela n'est à lui (le serveur le refuse).
-  const profile = useActiveProfile();
-  // Ce que le serveur dit des droits de la session (`account.abilities`).
-  const { password, devices, any, pending } = useSecurityAbilities();
-  if (profile || (!any && !pending)) return <Navigate to="/settings/appearance" replace />;
+  const { t } = useTranslation(["pairing", "profile"]);
+  const actions = useProfileActions(getUserInfo().isAdmin);
+  const passwordVisible = useWideSettingVisible("password");
+  const devicesVisible = useWideSettingVisible("pairedDevices");
+  const linkedVisible = useWideSettingVisible("linkedAccounts");
+
   return (
     <div className="max-w-2xl">
-      {password && <ChangePasswordSection />}
-      {devices && <MyDevicesSection />}
-      {isDesktopApp() && <ChangeServerSection />}
+      <WideGroup section="security" group="signIn">
+        {passwordVisible && (
+          <SettingItem setting="password">
+            <ChangePasswordSection embedded />
+          </SettingItem>
+        )}
+        {devicesVisible && (
+          <SettingItem
+            setting="pairedDevices"
+            trailing={<Link to="/pair-device" className={SETTING_BUTTON}>{t("pairing:pairDevice")}</Link>}
+          >
+            <MyDevicesSection embedded />
+          </SettingItem>
+        )}
+      </WideGroup>
+
+      <WideGroup section="security" group="linked">
+        {linkedVisible && <LinkedAccounts />}
+      </WideGroup>
+
+      <WideGroup section="security" group="thisDevice">
+        <ChangeServerSection />
+        <SettingItem
+          setting="clearCache"
+          trailing={(
+            <button type="button" onClick={actions.askClearCache} className={SETTING_BUTTON}>
+              {t("profile:clearCacheConfirm")}
+            </button>
+          )}
+        />
+      </WideGroup>
+
+      <WideGroup section="security" group="danger">
+        <SettingItem
+          setting="deleteAccount"
+          destructive
+          trailing={(
+            <button type="button" onClick={actions.askDeleteAccount} disabled={actions.busy} className={SETTING_DANGER_BUTTON}>
+              {t("profile:deleteAccountConfirm")}
+            </button>
+          )}
+        />
+      </WideGroup>
+
+      <ProfileConfirmDialog actions={actions} />
     </div>
   );
 }

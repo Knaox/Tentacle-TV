@@ -23,6 +23,7 @@ export default {
     emptyHint: "Essayez un mot plus court ou un autre mot : « sous-titres », « thème », « intro », « mot de passe »…",
     where: "{{section}} › {{group}}",
   },
+  detailToggle: "Régler en détail",
   scopeLegend: "« Compte » : enregistré avec votre compte, il vous suit sur tous vos appareils. « Cet appareil » : ne vaut que sur ce navigateur ou cet ordinateur.",
   sections: {
     playback: {
@@ -275,7 +276,7 @@ export default {
     },
     clearCache: {
       label: "Vider le cache",
-      description: "Efface ce que ce navigateur ou cet ordinateur garde en mémoire, sans vous déconnecter.",
+      description: "Remet les réglages de cet appareil à leurs valeurs par défaut et efface son cache, sans vous déconnecter.",
       keywords: "cache, réinitialiser, bug, problème, effacer, mémoire",
     },
     deleteAccount: {

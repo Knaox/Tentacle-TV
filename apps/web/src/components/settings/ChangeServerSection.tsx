@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Server } from "lucide-react";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
 import { useAuth } from "@tentacle-tv/api-client";
 
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { SettingItem } from "./wide/SettingItem";
+import { SETTING_BUTTON } from "./wide/settingButtons";
 
 /**
- * Changement de serveur — desktop uniquement.
+ * Changement de serveur — app de bureau uniquement (Réglages › Compte et
+ * sécurité › Cet appareil : la ligne vaut pour cette application seule).
  *
  * La confirmation passe par `ConfirmDialog` et non `window.confirm()` : les
  * WKWebView de Tauri (macOS) n'implémentent pas les dialogues natifs, où
@@ -28,17 +29,19 @@ export function ChangeServerSection() {
 
   return (
     <>
-      <SettingsSection title={t("profile:changeServerTitle")}>
-        <SettingsRow
-          icon={<Server size={17} />}
-          label={t("profile:changeServer")}
-          description={t("profile:changeServerMessage")}
-          onClick={() => setConfirming(true)}
-          disabled={changeServer.isPending}
-          chevron
-          last
-        />
-      </SettingsSection>
+      <SettingItem
+        setting="changeServer"
+        trailing={(
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            disabled={changeServer.isPending}
+            className={SETTING_BUTTON}
+          >
+            {t("profile:changeServer")}
+          </button>
+        )}
+      />
 
       <ConfirmDialog
         open={confirming}

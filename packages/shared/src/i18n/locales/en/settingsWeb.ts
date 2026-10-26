@@ -19,6 +19,7 @@ export default {
     emptyHint: "Try a shorter or different word: “subtitles”, “theme”, “intro”, “password”…",
     where: "{{section}} › {{group}}",
   },
+  detailToggle: "Fine-tune",
   scopeLegend: "“Account”: saved with your account, it follows you on all your devices. “This device”: only applies to this browser or computer.",
   sections: {
     playback: {
@@ -271,7 +272,7 @@ export default {
     },
     clearCache: {
       label: "Clear cache",
-      description: "Erases what this browser or computer keeps in memory, without signing you out.",
+      description: "Resets this device's settings to their defaults and clears its cache, without signing you out.",
       keywords: "cache, reset, bug, problem, erase, memory",
     },
     deleteAccount: {

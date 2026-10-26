@@ -27,7 +27,10 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
  * AFFICHER (wry #460) : le bouton « Révoquer » y serait mort. Même dialogue
  * partout, donc, comme pour le changement de serveur.
  */
-export function MyDevicesSection() {
+export function MyDevicesSection({ embedded = false }: {
+  /** Posé dans une ligne des réglages du web large (`SettingItem`) : la liste seule, dans un cadre. */
+  embedded?: boolean;
+} = {}) {
   const { t } = useTranslation(["pairing", "common"]);
   const { data: devices, isLoading, isError } = useMyPairedDevices();
   const revokeMut = useRevokeMyDevice();
@@ -42,37 +45,45 @@ export function MyDevicesSection() {
     setToRevoke(null);
   };
 
+  const list = (
+    <>
+      {isError ? (
+        <p className="px-4 py-3.5 text-sm text-status-error-fg">{t("pairing:devicesLoadError")}</p>
+      ) : !devices || devices.length === 0 ? (
+        <p className="px-4 py-3.5 text-sm text-content-tertiary">{t("pairing:noPairedDevices")}</p>
+      ) : (
+        devices.map((device, i) => (
+          <SettingsRow
+            key={device.id}
+            icon={<Tv size={17} />}
+            label={device.name}
+            description={t("pairing:lastActive", {
+              date: new Date(device.lastSeen).toLocaleDateString(),
+            })}
+            last={i === devices.length - 1}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setToRevoke(device.id)}
+                disabled={revokeMut.isPending}
+                className="rounded-lg bg-danger-surface px-3 py-1.5 text-xs font-medium text-status-error-fg transition-colors hover:bg-danger-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-40"
+              >
+                {t("pairing:revoke")}
+              </button>
+            }
+          />
+        ))
+      )}
+    </>
+  );
+
   return (
     <>
-      <SettingsSection title={t("pairing:pairedDevices")}>
-        {isError ? (
-          <p className="px-4 py-3.5 text-sm text-status-error-fg">{t("pairing:devicesLoadError")}</p>
-        ) : !devices || devices.length === 0 ? (
-          <p className="px-4 py-3.5 text-sm text-content-tertiary">{t("pairing:noPairedDevices")}</p>
-        ) : (
-          devices.map((device, i) => (
-            <SettingsRow
-              key={device.id}
-              icon={<Tv size={17} />}
-              label={device.name}
-              description={t("pairing:lastActive", {
-                date: new Date(device.lastSeen).toLocaleDateString(),
-              })}
-              last={i === devices.length - 1}
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setToRevoke(device.id)}
-                  disabled={revokeMut.isPending}
-                  className="rounded-lg bg-danger-surface px-3 py-1.5 text-xs font-medium text-status-error-fg transition-colors hover:bg-danger-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-40"
-                >
-                  {t("pairing:revoke")}
-                </button>
-              }
-            />
-          ))
-        )}
-      </SettingsSection>
+      {embedded ? (
+        <div className="overflow-hidden rounded-lg border border-line-subtle">{list}</div>
+      ) : (
+        <SettingsSection title={t("pairing:pairedDevices")}>{list}</SettingsSection>
+      )}
 
       <ConfirmDialog
         open={toRevoke !== null}

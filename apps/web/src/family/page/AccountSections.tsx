@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock, LockOpen } from "lucide-react";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
@@ -11,7 +11,7 @@ import { SECONDARY_BUTTON, SMALL_BUTTON } from "./familyUi";
 
 /** Mon code PIN : poser, changer, retirer — il protège mon profil sur les TV
  *  de mes familles (et « Gérer les profils » sur celles de la mienne). */
-export function MyPinSection({ hasPin }: { hasPin: boolean }) {
+export function MyPinSection({ hasPin, badge }: { hasPin: boolean; badge?: ReactNode }) {
   const { t } = useTranslation("familyWeb");
   // « Qui regarde ? » hors des TV : le code protège aussi son profil sur un
   // ordinateur ou dans un navigateur — à dire seulement si le serveur le sait faire.
@@ -19,7 +19,7 @@ export function MyPinSection({ hasPin }: { hasPin: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")}>
+      <SettingsSection title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")} badge={badge}>
         <SettingsRow
           icon={hasPin ? <Lock size={17} /> : <LockOpen size={17} />}
           label={hasPin ? t("myPin.on") : t("myPin.off")}

@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { SettingsSection } from "@tentacle-tv/ui";
 import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
 import { SegmentedChoice } from "./SegmentedChoice";
-import { SettingToggleRow } from "./SettingToggleRow";
+import { ToggleSwitch } from "./ToggleSwitch";
+import { SettingItem } from "./wide/SettingItem";
 import { StillWatchingTrialRow } from "./StillWatchingTrialRow";
 import { isWebDebugEnabled } from "../../lib/webDebug";
 import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "./stillWatchingChoices";
 
 /**
- * « Vous regardez encore ? » dans Réglages › Lecture — un réglage du COMPTE
+ * « Vous regardez encore ? » dans Réglages › Lecture › Pause automatique — un réglage du COMPTE
  * (réglé ici, il vaut sur le téléphone et les téléviseurs), écrit par le
  * crochet partagé, qui en garde une copie locale pour le hors ligne.
  *
@@ -27,44 +27,44 @@ export function StillWatchingSetting() {
   if (!available) return null;
 
   return (
-    <SettingsSection title={t("player:stillWatching.title")}>
-      <div className="p-5">
-        <SettingToggleRow
-          title={t("preferences:stillWatchingTitle")}
-          hint={t("preferences:stillWatchingHint")}
-          active={settings.enabled}
+    <SettingItem
+      setting="stillWatching"
+      trailing={(
+        <ToggleSwitch
+          checked={settings.enabled}
           onChange={(enabled) => {
             if (!enabled) trial.cancel();
             set({ enabled });
           }}
+          label={t("preferences:stillWatchingTitle")}
         />
-
-        {settings.enabled && (
-          <div className="mt-5 flex flex-col gap-5 border-t border-line-subtle pt-5">
-            <div>
-              <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingAfter")}</p>
-              <SegmentedChoice
-                label={t("preferences:stillWatchingAfter")}
-                value={String(settings.afterMs)}
-                options={stillWatchingAfterChoices(t)}
-                onChange={(value) => set({ afterMs: Number(value) })}
-                className="mt-3"
-              />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingCountdown")}</p>
-              <SegmentedChoice
-                label={t("preferences:stillWatchingCountdown")}
-                value={String(settings.countdownMs)}
-                options={stillWatchingCountdownChoices(t)}
-                onChange={(value) => set({ countdownMs: Number(value) })}
-                className="mt-3"
-              />
-            </div>
-            {isWebDebugEnabled() && <StillWatchingTrialRow trial={trial} />}
+      )}
+    >
+      {settings.enabled && (
+        <div className="flex flex-col gap-5 border-t border-line-subtle pt-4">
+          <div>
+            <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingAfter")}</p>
+            <SegmentedChoice
+              label={t("preferences:stillWatchingAfter")}
+              value={String(settings.afterMs)}
+              options={stillWatchingAfterChoices(t)}
+              onChange={(value) => set({ afterMs: Number(value) })}
+              className="mt-3"
+            />
           </div>
-        )}
-      </div>
-    </SettingsSection>
+          <div>
+            <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingCountdown")}</p>
+            <SegmentedChoice
+              label={t("preferences:stillWatchingCountdown")}
+              value={String(settings.countdownMs)}
+              options={stillWatchingCountdownChoices(t)}
+              onChange={(value) => set({ countdownMs: Number(value) })}
+              className="mt-3"
+            />
+          </div>
+          {isWebDebugEnabled() && <StillWatchingTrialRow trial={trial} />}
+        </div>
+      )}
+    </SettingItem>
   );
 }

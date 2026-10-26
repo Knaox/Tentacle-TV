@@ -15,13 +15,17 @@ import { LeaveSection } from "../../family/page/LeaveSection";
 import { FamilyPinCard } from "../../family/pinSuggest/FamilyPinCard";
 import { SECONDARY_BUTTON } from "../../family/page/familyUi";
 import { AskAtLaunchSection } from "../../profiles/settings/AskAtLaunchSection";
+import { SettingScope } from "../../components/settings/wide/SettingScope";
+import { settingAnchor, useWideSettings } from "../../components/settings/wide/wideSettingsMeta";
 
 /**
  * Réglages › Famille — le même écran au bureau (section de la coquille) et
- * dans le miroir (volet du profil). Dans l'ordre : ce qui attend une réponse
- * (invitations reçues, tant qu'on n'a pas de famille), LA famille — la même
- * pour son propriétaire et ses membres —, mon code PIN, puis, à part, la
- * dissolution (propriétaire) ou « Quitter la famille » (membre).
+ * dans le miroir (volet du profil). Dans l'ordre : ce qui attend un geste
+ * (poser son code, invitations reçues tant qu'on n'a pas de famille), LA
+ * famille — la même pour son propriétaire et ses membres —, mon code PIN
+ * (compte), « Qui regarde ? » à l'ouverture (cet appareil), puis, à part, la
+ * dissolution (propriétaire) ou « Quitter la famille » (membre). Chaque
+ * section porte sa pastille de portée (catalogue `familyProfiles`…).
  *
  * Tout vient de `GET /api/family`, relu en direct par `family:update` (monté
  * par l'hôte de l'affiche) : une réponse arrivée d'un autre appareil remplit
@@ -73,6 +77,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   const manages = sessionManages(account);
   // Ce que l'administration refuse n'existe pas ici : sans famille ni geste permis, pas d'appel à la créer.
   const growth = familyGrowth(overview);
+  const wide = useWideSettings() !== null;
   const notices = [
     !manages && t("notice.personalOnly"),
     account.managing === true && t("notice.profileManage"),
@@ -82,18 +87,36 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
 
   return (
     <>
-      <p className="mb-5 text-sm leading-relaxed text-content-tertiary">{t("description")}</p>
+      {/* Le web large dit ce que fait la rubrique sous son titre ; le miroir (volet du profil), ici. */}
+      {!wide && <p className="mb-5 text-sm leading-relaxed text-content-tertiary">{t("description")}</p>}
+      {/* Ce qui attend un geste d'abord : poser son code (action recommandée), les encarts, les invitations reçues. */}
       <FamilyPinCard />
       {notices.map((notice) => (
         <Notice key={notice} text={notice} />
       ))}
       {personal && !family && <IncomingInvitationsSection incoming={answerableInvitations(overview)} />}
-      {(family !== null || growth.invite || growth.addGuest) && <FamilySection overview={overview} />}
-      {/* Bureau : « Qui regarde ? » à l'ouverture, pour tous ses ordinateurs (famille de deux profils et plus). */}
-      {personal && family !== null && <AskAtLaunchSection />}
-      {personal && (account.canJoin || family !== null) && <MyPinSection hasPin={account.hasPin} />}
-      {personal && family?.role === "owner" && <DissolveSection />}
-      {personal && family?.role === "member" && <LeaveSection familyId={family.id} ownerName={family.owner.name} />}
+      {/* Puis, du compte à l'appareil : les profils, mon code, « Qui regarde ? » sur cet ordinateur ; le départ en dernier. */}
+      {(family !== null || growth.invite || growth.addGuest) && (
+        <div {...settingAnchor("familyProfiles")} className="scroll-mt-24">
+          <FamilySection overview={overview} badge={<SettingScope setting="familyProfiles" />} />
+        </div>
+      )}
+      {personal && (account.canJoin || family !== null) && (
+        <div {...settingAnchor("familyPin")} className="scroll-mt-24">
+          <MyPinSection hasPin={account.hasPin} badge={<SettingScope setting="familyPin" />} />
+        </div>
+      )}
+      {/* Bureau : « Qui regarde ? » à l'ouverture, réglé par appareil (famille de deux profils et plus). */}
+      {personal && family !== null && (
+        <div {...settingAnchor("askAtLaunch")} className="scroll-mt-24">
+          <AskAtLaunchSection badge={<SettingScope setting="askAtLaunch" />} />
+        </div>
+      )}
+      {personal && family !== null && (
+        <div {...settingAnchor("familyLeave")} className="scroll-mt-24">
+          {family.role === "owner" ? <DissolveSection /> : <LeaveSection familyId={family.id} ownerName={family.owner.name} />}
+        </div>
+      )}
     </>
   );
 }

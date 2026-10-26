@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MonitorPlay } from "lucide-react";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
@@ -16,12 +17,12 @@ import { useAskAtLaunch } from "./useAskAtLaunch";
  * sans famille d'au moins deux profils, et pendant la session d'un profil (la
  * page de la Famille n'y existe pas).
  */
-export function AskAtLaunchSection() {
+export function AskAtLaunchSection({ badge }: { badge?: ReactNode } = {}) {
   const { t } = useTranslation("profilePicker");
   const setting = useAskAtLaunch();
   if (!setting) return null;
   return (
-    <SettingsSection title={t("launchSetting.title")} caption={IN_BROWSER ? t("launchSetting.captionWeb") : t("launchSetting.caption")}>
+    <SettingsSection badge={badge} title={t("launchSetting.title")} caption={IN_BROWSER ? t("launchSetting.captionWeb") : t("launchSetting.caption")}>
       <SettingsRow
         icon={<MonitorPlay size={17} />}
         label={IN_BROWSER ? t("launchSetting.sectionWeb") : t("launchSetting.section")}

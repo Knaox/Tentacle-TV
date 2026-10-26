@@ -5,10 +5,11 @@ import {
   useResyncRatings,
   useUnlinkTmdbGuestSession,
 } from "@tentacle-tv/api-client";
-import { SettingsSection } from "@tentacle-tv/ui";
+import { SettingItem } from "../wide/SettingItem";
 
 /**
- * Section « Comptes liés » : guest session TMDB (les notes partent
+ * Réglages › Compte et sécurité › Comptes liés (elle vivait dans
+ * « Personnalisation », où on ne cherche pas un compte) : guest session TMDB (les notes partent
  * ANONYMEMENT — l'explication est affichée) et état de la file de sync avec
  * resynchronisation manuelle. Le bloc indisponible (clé TMDB absente du
  * serveur) le dit au lieu de proposer un bouton qui échouera.
@@ -23,8 +24,8 @@ export function LinkedAccounts() {
   if (!data) return null;
 
   return (
-    <SettingsSection title={t("persoAccountsTitle")} caption={t("persoAccountsCaption")}>
-      <div className="flex flex-col gap-5 p-5">
+    <SettingItem setting="linkedAccounts">
+      <div className="flex flex-col gap-5">
         {/* TMDB — guest session anonyme */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -71,6 +72,6 @@ export function LinkedAccounts() {
           </button>
         </div>
       </div>
-    </SettingsSection>
+    </SettingItem>
   );
 }

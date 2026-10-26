@@ -1,5 +1,5 @@
 /**
- * Réglages > Téléchargements (desktop uniquement, invisible sans droit ni
+ * Réglages › Téléchargements (desktop uniquement, invisible sans droit ni
  * contenu). Emplacement de stockage : affiché partout, MODIFIABLE hors macOS
  * (bac à sable Mac App Store, sans entitlement fichiers — décision v1) et
  * uniquement quand aucun téléchargement n'existe (pas de migration auto).
@@ -16,6 +16,9 @@ import { getDownloadsRoot, setDownloadsRoot } from "../../downloads/api";
 import { formatBytes } from "../../downloads/presets";
 import { useDiskInfo, useDownloadsVisibility, DISK_INFO_QUERY_KEY } from "../../downloads/useDownloadState";
 import { useToast } from "../../contexts/ToastContext";
+import { SettingItem } from "../../components/settings/wide/SettingItem";
+import { WideGroup } from "../../components/settings/wide/WideGroup";
+import { SETTING_BUTTON } from "../../components/settings/wide/settingButtons";
 
 export function SettingsDownloads() {
   const { t } = useTranslation("downloads");
@@ -78,40 +81,26 @@ export function SettingsDownloads() {
   };
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-line-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold text-content-primary">{t("storageLocation")}</h3>
-        <p className="mt-1 break-all text-xs text-content-tertiary">{root ?? "…"}</p>
-        {canPickFolder ? (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => void handleChange()}
-              disabled={busy}
-              className="rounded-md border border-line-strong bg-fill-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft disabled:opacity-50"
-            >
+    <div className="max-w-2xl">
+      <WideGroup section="downloads" group="storage">
+        <SettingItem
+          setting="downloadsLocation"
+          note={!canPickFolder && desktopPlatform() === "macos" ? t("locationFixedBySystem") : canPickFolder ? t("locationHint") : undefined}
+          trailing={canPickFolder ? (
+            <button type="button" onClick={() => void handleChange()} disabled={busy} className={SETTING_BUTTON}>
               {t("changeLocation")}
             </button>
-            <p className="mt-2 text-[11px] leading-relaxed text-content-quaternary">
-              {t("locationHint")}
-            </p>
+          ) : undefined}
+        >
+          <p className="break-all rounded-lg bg-fill-subtle px-3 py-2 font-mono text-xs text-content-secondary">{root ?? "…"}</p>
+        </SettingItem>
+        <SettingItem setting="downloadsSpace">
+          <div className="space-y-1 text-xs text-content-tertiary">
+            <p>{t("spaceUsed", { size: formatBytes(usedBytes) })}</p>
+            <p>{t("freeSpace", { size: formatBytes(freeBytes) })}</p>
           </div>
-        ) : (
-          desktopPlatform() === "macos" && (
-            <p className="mt-2 text-[11px] leading-relaxed text-content-quaternary">
-              {t("locationFixedBySystem")}
-            </p>
-          )
-        )}
-      </section>
-
-      <section className="rounded-xl border border-line-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold text-content-primary">{t("spaceTitle")}</h3>
-        <div className="mt-2 space-y-1 text-xs text-content-tertiary">
-          <p>{t("spaceUsed", { size: formatBytes(usedBytes) })}</p>
-          <p>{t("freeSpace", { size: formatBytes(freeBytes) })}</p>
-        </div>
-      </section>
+        </SettingItem>
+      </WideGroup>
     </div>
   );
 }
