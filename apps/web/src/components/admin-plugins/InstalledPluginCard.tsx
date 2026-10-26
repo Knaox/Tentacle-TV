@@ -52,8 +52,11 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
   const official = source?.official ?? plugin.sourceId === "official";
   const installedOn = formatDate(plugin.installedAt, i18n.language);
   const failed = plugin.serverModule?.state === "failed";
-  const refused = plugin.serverModule?.refusal === "sqliteUnsupported";
-  const pill = statePill(enabled, refused);
+  const refusal = plugin.serverModule?.refusal;
+  // Elle exige un Tentacle plus récent : arrêtée sur ce serveur, la version dite.
+  const requires = refusal === "requiresNewerServer" ? plugin.serverModule?.requires ?? "?" : null;
+  const refused = refusal === "sqliteUnsupported" || requires !== null;
+  const pill = statePill(enabled, refused, requires);
 
   return (
     <article
@@ -88,7 +91,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
             />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <StatusPill tone={pill.tone} size="sm">{t(pill.label)}</StatusPill>
+            <StatusPill tone={pill.tone} size="sm">{t(pill.label, pill.values)}</StatusPill>
             {update && <StatusPill tone="brand" size="sm">{t("updateAvailable", { version: update })}</StatusPill>}
             <ServerModulePill plugin={plugin} />
             {official ? (
@@ -107,7 +110,12 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
 
       {entry?.description && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-content-tertiary">{entry.description}</p>}
 
-      {refused ? (
+      {requires ? (
+        <div className="mt-3 rounded-lg bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
+          <p className="font-semibold">{t("versionRefusedTitle", { version: requires })}</p>
+          <p className="mt-0.5 text-content-secondary">{t("versionRefusedBody")}</p>
+        </div>
+      ) : refused ? (
         <div className="mt-3 rounded-lg bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
           <p className="font-semibold">{t("storageRefusedTitle")}</p>
           <p className="mt-0.5 text-content-secondary">{t("storageRefusedBody")}</p>

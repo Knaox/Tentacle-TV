@@ -5,7 +5,8 @@ import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
 import { readPluginManifest, serverModuleCandidates } from "./pluginServerModule";
 import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
-import { storageRefusal } from "./pluginStorage/gate";
+import { missingServerVersion, storageRefusal } from "./pluginStorage/gate";
+import { BACKEND_VERSION } from "./version";
 import { NOTIFICATION_EXTRA_FIELDS } from "../notifications/notificationTarget";
 
 /** Diagnostic info collected during loading (exposed via /api/health) */
@@ -80,6 +81,14 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
   console.log(`[PluginBackend] Found ${installed.length} enabled plugin(s): ${installed.map((p) => p.pluginId).join(", ") || "(none)"}`);
 
   for (const plugin of installed) {
+    // Une extension qui exige un Tentacle plus récent ne se charge pas, isolée ou non (pluginStorage/gate.ts).
+    const required = missingServerVersion(plugin.pluginId);
+    if (required) {
+      const detail = `Requires Tentacle ${required} (this server: ${BACKEND_VERSION}) — not loaded`;
+      console.error(`[PluginBackend] ${plugin.pluginId}: ${detail}`);
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "requires_newer_server", detail });
+      continue;
+    }
     // Une extension ISOLÉE n'est jamais importée ici : son processus est celui du runtime (plugins/runtime/).
     if (readRuntimeManifest(readPluginManifest(plugin.pluginId))) {
       pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "isolated" });
