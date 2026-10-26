@@ -155,7 +155,9 @@ export function registerAudioCommands(registry: CommandRegistry): void {
     .add("audio_set_output", {
       schema: z.object({ deviceId: z.string().max(512).nullable(), exclusive: z.boolean() }),
       run: ({ deviceId, exclusive }) => running().setOutput(deviceId, exclusive),
-    });
+    })
+    // Lu par la houle d'Octave quelques fois par seconde, seulement quand elle est à l'écran ; moteur arrêté : rien.
+    .add("audio_level", { schema: NO_ARGS, run: async () => (engine === null ? null : engine.level()) });
 }
 
 /**

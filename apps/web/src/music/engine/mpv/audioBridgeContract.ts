@@ -22,6 +22,8 @@ export const AUDIO_BRIDGE_COMMANDS = [
   "audio_control",
   "audio_list_outputs",
   "audio_set_output",
+  // Le niveau RMS du son qui joue (dBFS ou `null`), pour la houle d'Octave (`audio/audioLevel.ts`).
+  "audio_level",
 ] as const;
 
 /** L'unique évènement poussé vers la page. */
