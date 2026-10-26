@@ -1,14 +1,18 @@
 /**
  * Octave — une playlist Jellyfin : ses entrées, et à leur place les ajouts
  * hors bibliothèque « en attente » (entrées `pending:<id>`), lisibles tout de
- * suite. Une playlist modifiable permet de retirer une entrée.
+ * suite. Une playlist modifiable permet de retirer une entrée. Avec
+ * `music.listOrder` : chercher, filtrer, trier, et glisser un titre à sa place
+ * (l'ordre glissé devient celui de la playlist Jellyfin ; les attentes gardent
+ * la leur dans la préférence du compte).
  */
 
 import { useCallback, useMemo } from "react";
 import { ListMusic, Search } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMusicPlaylist } from "@tentacle-tv/api-client";
+import { useMusicPlaylist, useReorderMusicPlaylist } from "@tentacle-tv/api-client";
+import { parseListKey } from "@tentacle-tv/shared/music";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
 import { TrackList } from "../components/TrackList";
@@ -19,6 +23,10 @@ import { usePendingMusic } from "../pending/usePendingMusic";
 import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
 import { usePlaylistRemoval } from "../actions/usePlaylistRemoval";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { makeStatsOf } from "../listOrder/listStats";
+import { useListOrder } from "../listOrder/useListOrder";
+import { ListToolbar } from "../listOrder/ListToolbar";
+import { NoMatch } from "../listOrder/NoMatch";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
@@ -29,15 +37,26 @@ export function PlaylistView() {
   const removeRows = usePlaylistRemoval(target);
   const pending = usePendingMusic();
   // Jellyfin fait foi : une attente dont le titre est déjà dans la bibliothèque se montre comme lui.
-  const rows = useLibraryFirstRows(useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]));
+  const natural = useLibraryFirstRows(useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]));
+  const statsOf = useMemo(
+    () => makeStatsOf({ byEntry: new Map((playlist.data?.entries ?? []).flatMap((e) => (e.stats ? [[e.entryId, e.stats] as const] : []))), pending }),
+    [pending, playlist.data],
+  );
+  const editable = playlist.data?.editable === true;
+  const reorderPlaylist = useReorderMusicPlaylist();
+  const onJellyfinOrder = useCallback((entryIds: string[]) => reorderPlaylist(id, entryIds), [id, reorderPlaylist]);
+  const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, { complete: true, onJellyfinOrder: editable ? onJellyfinOrder : undefined });
+  const rows = order.rows;
+  // La lecture suit l'ordre AFFICHÉ (trié, cherché) : « Lire » joue ce qu'on voit.
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
-  const meta = useCountAndDuration(rows.length, rows.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
+  const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
+  const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
   const contextId = `playlist:${id}`;
   // Une entrée Jellyfin comme un titre hors bibliothèque en attente (sa demande s'annule), d'un geste : l'avis porte « Annuler ».
-  const editable = playlist.data?.editable === true;
-  const onRemoveRows = useCallback((keys: string[]) => void removeRows(rows, new Set(keys)), [removeRows, rows]);
+  const onRemoveRows = useCallback((keys: string[]) => void removeRows(natural, new Set(keys)), [removeRows, natural]);
 
-  if (playlist.isPending) {
+  // Le tri du compte avant la première rangée : jamais une liste qui se réordonne sous les yeux.
+  if (playlist.isPending || !order.ready) {
     return (
       <>
         <HeaderSkeleton />
@@ -60,10 +79,10 @@ export function PlaylistView() {
         onPress={() => tracks[0] && player.prefetch([tracks[0]], "press")}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
-        extra={<KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={tracks} />}
+        extra={<KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />}
       />
       <div className="px-2 md:px-6">
-        {rows.length === 0 ? (
+        {natural.length === 0 ? (
           <EmptyState
             icon={ListMusic}
             title={t("playlist.empty")}
@@ -77,7 +96,27 @@ export function PlaylistView() {
             {data.editable ? t("views.playlistEmptyHint") : null}
           </EmptyState>
         ) : (
-          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveRows={editable ? onRemoveRows : undefined} />
+          <>
+            {order.capable && (
+              <ListToolbar
+                query={order.query}
+                onQuery={order.setQuery}
+                filter={order.filter}
+                filters={order.filters}
+                onFilter={order.setFilter}
+                prefs={order.prefs}
+                sorts={order.sorts}
+                onSort={order.onSort}
+                shown={rows.length}
+                total={natural.length}
+              />
+            )}
+            {rows.length === 0 ? (
+              <NoMatch onReset={order.reset} />
+            ) : (
+              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveRows={editable ? onRemoveRows : undefined} virtual reorder={order.reorder} />
+            )}
+          </>
         )}
       </div>
     </div>

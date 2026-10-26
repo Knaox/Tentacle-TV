@@ -27,12 +27,19 @@ import { KeptMark } from "../offline/KeptMark";
 import { AlbumLink, ArtistLinks } from "./TrackLinks";
 import { OceanSwell } from "../motion/OceanSwell";
 import { useOctaveGlassStage } from "../glass/glassStage";
+import { DragHandle, type HandleSlot } from "../listOrder/DragHandle";
 
 /**
  * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
  * n'existe qu'à partir de `lg` — plus étroit, elle écrasait le titre (« Mo… »).
  */
-export function rowColumns(showAlbum: boolean): string {
+export function rowColumns(showAlbum: boolean, withHandle = false): string {
+  // Une liste réordonnable a, en tête, la colonne de sa poignée.
+  if (withHandle) {
+    return showAlbum
+      ? "grid-cols-[1.25rem_1.5rem_2rem_minmax(0,1fr)_auto] lg:grid-cols-[1.25rem_1.5rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]"
+      : "grid-cols-[1.25rem_1.5rem_2rem_minmax(0,1fr)_auto]";
+  }
   return showAlbum
     ? "grid-cols-[1.5rem_2rem_minmax(0,1fr)_auto] lg:grid-cols-[1.5rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]"
     : "grid-cols-[1.5rem_2rem_minmax(0,1fr)_auto]";
@@ -65,6 +72,8 @@ export interface TrackRowProps {
   selecting?: boolean;
   /** Choisir cette rangée (rappel STABLE, par rang). */
   onSelect?: (index: number, gesture: SelectGesture) => void;
+  /** La poignée du glisser (liste réordonnable) : une colonne de plus, en tête. */
+  handle?: HandleSlot | null;
 }
 
 /** La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse. */
@@ -84,7 +93,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect, handle = null }: TrackRowProps) {
   const { t } = useTranslation("music");
   const stage = useOctaveGlassStage();
   const onPlay = () => onPlayIndex(index);
@@ -120,8 +129,9 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       onDragEnd={endTrackDrag}
       className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
-      } ${rowColumns(showAlbum)}`}
+      } ${rowColumns(showAlbum, handle !== null)}`}
     >
+      {handle && <DragHandle slot={handle} />}
       {onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : <div role="gridcell" />}
       <NumberCell number={number} current={current} playing={playing} />
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
