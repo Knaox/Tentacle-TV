@@ -37,6 +37,7 @@ function requireTool(ctx: HostCallContext, tool: ToolName): void {
 export const HOST_HANDLERS: HostHandlers = {
   "jellyfin.musicLibrary": () => jellyfin().musicLibrary({}),
   "jellyfin.findByMbid": (_ctx, params) => jellyfin().findByMbid(params),
+  "jellyfin.matchTracks": (_ctx, params) => jellyfin().matchTracks(params),
   "jellyfin.setFavorite": (_ctx, params) => jellyfin().setFavorite(params),
   "jellyfin.playlistInsert": (_ctx, params) => jellyfin().playlistInsert(params),
   "jellyfin.playlistEntries": (_ctx, params) => jellyfin().playlistEntries(params),

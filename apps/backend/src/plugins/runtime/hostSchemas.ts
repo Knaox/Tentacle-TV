@@ -12,6 +12,17 @@ const jellyfinId = z.string().regex(/^[A-Za-z0-9-]{1,64}$/);
 const mbid = z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
 const tool = z.enum(["yt-dlp"]);
 const empty = z.object({}).strict();
+const text = (max: number) => z.string().max(max);
+const matchTrack = z
+  .object({
+    ref: z.string().min(1).max(200),
+    title: text(500).min(1),
+    artists: z.array(z.object({ name: text(500), mbid: mbid.nullable() }).strict()).max(20),
+    albumTitle: text(500).nullable(),
+    durationMs: z.number().int().min(0).max(86_400_000).nullable(),
+    recording: mbid.nullable(),
+  })
+  .strict();
 
 /** Un événement émis : objet JSON simple et borné ; son `type` est contrôlé à part (PLUGIN_EMITTABLE_MUSIC_EVENTS). */
 const eventPayload = z.record(z.string(), z.unknown()).refine((value) => JSON.stringify(value).length <= 64 * 1024, "événement trop gros");
@@ -21,6 +32,7 @@ type ParamSchemas = { [M in HostMethod]: z.ZodType<HostApi[M]["params"]> };
 export const HOST_PARAM_SCHEMAS: ParamSchemas = {
   "jellyfin.musicLibrary": empty as unknown as z.ZodType<Record<string, never>>,
   "jellyfin.findByMbid": z.object({ recordings: z.array(mbid).min(1).max(500) }).strict(),
+  "jellyfin.matchTracks": z.object({ userId: jellyfinId, tracks: z.array(matchTrack).min(1).max(200) }).strict(),
   "jellyfin.setFavorite": z.object({ userId: jellyfinId, itemId: jellyfinId, favorite: z.boolean() }).strict(),
   "jellyfin.playlistInsert": z
     .object({

@@ -22,6 +22,9 @@ import type { AudioItemRef } from "../events/audioItemsFeed";
 import { isAdminUser, listUserIds } from "./hostUsers";
 import { isLibraryPath, refreshContaining } from "./folderRefresh";
 import { indexArrivalsUnder, lookupRecentArrivals } from "../events/folderArrivals";
+import type { MusicMatchTrackQuery } from "../contract/musicCoreApi";
+import { matchTracks as matchTrackRows } from "../view/matchViews";
+import { userView } from "../view/viewContext";
 
 export class HostMusicFailure extends Error {
   constructor(
@@ -63,6 +66,20 @@ export async function findByMbid(params: { recordings: string[] }): Promise<Audi
   const listed = await jfAdmin<JfItemsPage>(`/Items?Ids=${rows.map((r) => q(r.id)).join(",")}&Fields=ProviderIds,Path&EnableImages=false&EnableUserData=false`);
   if (!listed.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
   return (listed.data.Items ?? []).map(audioRef);
+}
+
+/**
+ * Ce que la bibliothèque de CE compte a parmi ces titres : LA règle de `POST /api/music/match` (MBID, sinon titre +
+ * artiste + durée), sur l'index local et les droits du compte — jamais une requête Jellyfin par titre. Une
+ * extension y reconnaît un titre sans MBID, ou d'un autre enregistrement, que `findByMbid` ne voit pas (26/10).
+ */
+export async function matchTracks(params: { userId: string; tracks: MusicMatchTrackQuery[] }): Promise<{ ref: string; item: AudioItemRef }[]> {
+  const [userId] = ids([params.userId]);
+  if (!Array.isArray(params.tracks) || params.tracks.length === 0 || params.tracks.length > 200) throw new HostMusicFailure("invalid", "tracks");
+  const view = await userView(userId!);
+  if (view.access.mode === "none") return [];
+  const found = await matchTrackRows(view, params.tracks);
+  return [...found].map(([ref, row]) => ({ ref, item: { jellyfinId: row.id, recording: row.recordingMbid, release: row.releaseMbid, path: null } }));
 }
 
 export async function setFavorite(params: { userId: string; itemId: string; favorite: boolean }): Promise<{ ok: true }> {

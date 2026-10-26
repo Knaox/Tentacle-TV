@@ -27,6 +27,7 @@ class HostMusicFailure extends Error {
 const fakeJellyfin = (over: Partial<JellyfinMusicHost> = {}): JellyfinMusicHost => ({
   musicLibrary: async () => ({ libraryId: "lib", name: "Musique", paths: ["/music"] }),
   findByMbid: async ({ recordings }) => recordings.map((r) => ({ jellyfinId: `jf-${r.slice(0, 4)}`, recording: r, release: null, path: null })),
+  matchTracks: async ({ tracks }) => tracks.map((t) => ({ ref: t.ref, item: { jellyfinId: "jf-titre", recording: null, release: null, path: null } })),
   setFavorite: async () => ({ ok: true }),
   playlistInsert: async () => ({ ok: true }),
   playlistEntries: async () => [],
@@ -49,6 +50,15 @@ describe("jellyfin.* derrière la porte", () => {
     configureIsolatedRuntime({ jellyfin: fakeJellyfin() });
     expect(await call("jellyfin.findByMbid", { recordings: [R] })).toMatchObject({ ok: true, value: [{ jellyfinId: "jf-2308", recording: R }] });
     expect(await call("jellyfin.findByMbid", { recordings: ["pas-un-mbid"] })).toMatchObject({ ok: false, error: { code: "invalid" } });
+  });
+
+  it("matchTracks : un titre sans MBID (titre, artistes, durée) passe la porte ; bornes et formes tenues", async () => {
+    configureIsolatedRuntime({ jellyfin: fakeJellyfin() });
+    const track = { ref: "ytm:t:abc", title: "Next to Me", artists: [{ name: "Imagine Dragons", mbid: null }], albumTitle: "Evolve", durationMs: 230_000, recording: null };
+    expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: [track] })).toMatchObject({ ok: true, value: [{ ref: "ytm:t:abc", item: { jellyfinId: "jf-titre" } }] });
+    expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: [] })).toMatchObject({ ok: false, error: { code: "invalid" } });
+    expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: Array.from({ length: 201 }, (_, i) => ({ ...track, ref: `r${i}` })) })).toMatchObject({ ok: false, error: { code: "invalid" } });
+    expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: [{ ...track, recording: "pas-un-mbid" }] })).toMatchObject({ ok: false, error: { code: "invalid" } });
   });
 
   it("un refus du service passe avec son code du contrat", async () => {

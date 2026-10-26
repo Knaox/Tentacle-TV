@@ -19,6 +19,7 @@ import { useMusicLiked } from "@tentacle-tv/api-client";
 import { flattenPages } from "./LoadMore";
 import { mergeLiked, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
+import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { LoadMore } from "./LoadMore";
 
@@ -27,7 +28,8 @@ export function LikedView() {
   const player = useOctavePlayer();
   const liked = useMusicLiked();
   const pending = usePendingMusic();
-  const rows = useMemo(() => mergeLiked(flattenPages(liked.data?.pages), pending), [liked.data, pending]);
+  // Jellyfin fait foi : une attente dont le titre est déjà dans la bibliothèque se montre comme lui.
+  const rows = useLibraryFirstRows(useMemo(() => mergeLiked(flattenPages(liked.data?.pages), pending), [liked.data, pending]));
   const waiting = rows.filter((r) => r.pending).length;
   const total = (liked.data?.pages[0]?.total ?? rows.length - waiting) + waiting;
   const duration = rows.reduce((sum, r) => sum + (r.track.durationMs ?? 0), 0);

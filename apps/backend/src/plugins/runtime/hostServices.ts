@@ -14,7 +14,7 @@ import type { AudioItemRef, HostApi, HostMethod } from "./pluginServerRuntime";
 
 type JellyfinMethod = Extract<HostMethod, `jellyfin.${string}`>;
 
-/** Les 7 méthodes `jellyfin.*` du contrat, sous leur nom court, aux mêmes paramètres et résultats. */
+/** Les méthodes `jellyfin.*` du contrat, sous leur nom court, aux mêmes paramètres et résultats. */
 export type JellyfinMusicHost = {
   [M in JellyfinMethod as M extends `jellyfin.${infer Name}` ? Name : never]: (params: HostApi[M]["params"]) => Promise<HostApi[M]["result"]>;
 };
