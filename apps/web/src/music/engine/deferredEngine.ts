@@ -86,7 +86,7 @@ export function createDeferredEngine(start: Promise<AudioEnginePort>, prefs: Eng
   let failed = false;
   let disposed = false;
   let queue: Order[] = [];
-  const settings: { volume?: number; muted?: boolean; replayGain?: ReplayGainMode } = {};
+  const settings: { volume?: number; muted?: boolean; replayGain?: ReplayGainMode; crossfadeMs?: number } = {};
   const waiters: Array<() => void> = [];
   const listeners = new Set<(event: EngineEvent) => void>();
   let unsubscribeReal: (() => void) | null = null;
@@ -119,6 +119,7 @@ export function createDeferredEngine(start: Promise<AudioEnginePort>, prefs: Eng
       if (settings.volume !== undefined) engine.setVolume(settings.volume);
       if (settings.muted !== undefined) engine.setMuted(settings.muted);
       if (settings.replayGain !== undefined) engine.setReplayGain(settings.replayGain);
+      if (settings.crossfadeMs !== undefined) engine.setCrossfade?.(settings.crossfadeMs);
       const orders = queue;
       queue = [];
       real = engine;
@@ -196,6 +197,10 @@ export function createDeferredEngine(start: Promise<AudioEnginePort>, prefs: Eng
     setReplayGain(mode) {
       if (real) return real.setReplayGain(mode);
       settings.replayGain = mode;
+    },
+    setCrossfade(durationMs) {
+      if (real) return real.setCrossfade?.(durationMs);
+      settings.crossfadeMs = durationMs;
     },
     async listOutputs(): Promise<AudioOutputDevice[]> {
       await whenStarted();

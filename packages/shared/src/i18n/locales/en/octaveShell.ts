@@ -39,6 +39,15 @@ export default {
     glass: "Liquid Glass in Octave",
     tentacleGlass: "Liquid Glass in Tentacle",
   },
+  crossfade: {
+    section: "Playback",
+    caption: "How one track flows into the next, on this device.",
+    label: "Crossfade",
+    hint: "A smooth blend between tracks, like on the radio. Never inside an album played in order, nor when you skip ahead yourself.",
+    duration: "Fade length",
+    seconds_one: "{{count}} s",
+    seconds_other: "{{count}} s",
+  },
   settings: {
     kicker: "Octave",
     title: "Octave settings",

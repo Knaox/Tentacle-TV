@@ -42,6 +42,15 @@ export default {
     glass: "Liquid Glass dans Octave",
     tentacleGlass: "Liquid Glass dans Tentacle",
   },
+  crossfade: {
+    section: "Lecture",
+    caption: "Le passage d'un titre au suivant, sur cet appareil.",
+    label: "Transition douce",
+    hint: "Un fondu enchaîné entre deux titres, comme à la radio. Jamais à l'intérieur d'un album écouté dans l'ordre, ni quand vous passez vous-même au suivant.",
+    duration: "Durée du fondu",
+    seconds_one: "{{count}} s",
+    seconds_other: "{{count}} s",
+  },
   settings: {
     kicker: "Octave",
     title: "Réglages d'Octave",

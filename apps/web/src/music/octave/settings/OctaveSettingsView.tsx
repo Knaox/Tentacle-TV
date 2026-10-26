@@ -14,6 +14,7 @@ import { SettingsSection } from "@tentacle-tv/ui";
 import { OctaveStartupSetting } from "../mode/OctaveStartupSetting";
 import { OctaveAppearanceFields } from "./OctaveAppearanceFields";
 import { AutoSyncSetting } from "../offline/autosync/AutoSyncSetting";
+import { CrossfadeSetting } from "./CrossfadeSetting";
 
 export function OctaveSettingsView() {
   const { t } = useTranslation("octaveShell");
@@ -25,6 +26,7 @@ export function OctaveSettingsView() {
         <SettingsSection title={t("settings.appearance")} caption={t("appearance.caption")}>
           <OctaveAppearanceFields />
         </SettingsSection>
+        <CrossfadeSetting />
         <OctaveStartupSetting title={t("settings.startup")} />
         <AutoSyncSetting variant="section" />
       </div>

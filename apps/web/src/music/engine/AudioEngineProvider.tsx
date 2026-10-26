@@ -16,9 +16,10 @@
  * (`requestAnimationFrame`) : la position y est extrapolée.
  */
 
-import { createContext, useContext, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { AudioEnginePort, EngineState } from "@tentacle-tv/shared/music";
 import { createAudioEngine } from "./createAudioEngine";
+import { getCrossfadeMs, subscribeCrossfade } from "./crossfadeSetting";
 import { createDeferredEngine } from "./deferredEngine";
 import { useMusicEngineAuth } from "./engineAuth";
 import { adoptPrestartedEngine } from "./enginePrestart";
@@ -44,6 +45,14 @@ export function AudioEngineProvider({ children, prefs = DEFAULT_PREFS }: { child
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- les préférences ne redémarrent pas le moteur
   }, [auth]);
+
+  // La transition douce suit le réglage de l'appareil, même pendant l'écoute (le fondu suivant la prend).
+  useEffect(() => {
+    if (engine === null) return;
+    const apply = () => engine.setCrossfade?.(getCrossfadeMs());
+    apply();
+    return subscribeCrossfade(apply);
+  }, [engine]);
 
   return <EngineContext.Provider value={engine}>{children}</EngineContext.Provider>;
 }
