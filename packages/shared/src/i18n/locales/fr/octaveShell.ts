@@ -29,6 +29,10 @@ export default {
     choose: "Choisissez un profil. Vous restez dans Octave.",
     close: "Fermer",
   },
+  profiles: {
+    title: "Gérer les profils",
+    lead: "Les profils de la famille, les mêmes que dans Tentacle : ce que vous changez ici vaut partout.",
+  },
   pinSheet: {
     cancel: "Annuler",
   },

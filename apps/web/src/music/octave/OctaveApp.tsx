@@ -32,6 +32,7 @@ import { SearchView } from "./views/SearchView";
 import { SearchListenRecorder } from "./search/SearchListenRecorder";
 import { DeviceView } from "./offline/DeviceView";
 import { OctaveSettingsView } from "./settings/OctaveSettingsView";
+import { OctaveProfilesView } from "./profiles/OctaveProfilesView";
 import { MusicOfflineScope } from "./offline/MusicOfflineScope";
 import { OfflineOctaveRoutes, useKeptAwareAvailability } from "./offline/OfflineOctave";
 
@@ -77,6 +78,7 @@ export function OctaveApp() {
                 <Route path="artist/:id" element={<ArtistView />} />
                 <Route path="device" element={<DeviceView />} />
                 <Route path="settings" element={<OctaveSettingsView />} />
+                <Route path="profiles" element={<OctaveProfilesView />} />
                 <Route path="*" element={<Navigate to="." replace />} />
               </Routes>
             </OfflineOctaveRoutes>

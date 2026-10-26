@@ -18,6 +18,8 @@ export const octavePaths = {
   device: `${OCTAVE_BASE_PATH}/device`,
   /** Les réglages d'Octave, DANS Octave (apparence, démarrage). */
   settings: `${OCTAVE_BASE_PATH}/settings`,
+  /** « Gérer les profils », DANS Octave : la page Famille de Tentacle, en miroir (`profiles/OctaveProfilesView.tsx`). */
+  profiles: `${OCTAVE_BASE_PATH}/profiles`,
   playlist: (id: string) => `${OCTAVE_BASE_PATH}/playlist/${enc(id)}`,
   /** Une playlist HORS bibliothèque (celle d'une extension), par sa clé `ext:<pluginId>:<id>`. */
   externalPlaylist: (key: string) => `${OCTAVE_BASE_PATH}/mix/${enc(key)}`,

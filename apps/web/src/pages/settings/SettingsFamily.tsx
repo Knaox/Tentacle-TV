@@ -32,8 +32,12 @@ import { AskAtLaunchSection } from "../../profiles/settings/AskAtLaunchSection";
  * même page, avec les droits de ce profil et sans les gestes personnels ; la
  * gestion fermée demande SON code (`ManageUnlockCard`), un profil sans code
  * apprend qu'il lui en faut un.
+ *
+ * Octave rend CETTE page dans sa coquille (« Gérer les profils »,
+ * `/octave/profiles`) : `exitTo` est alors l'endroit où l'on retombe quand la
+ * page n'a rien à montrer — jamais une page de Tentacle depuis Octave.
  */
-export function SettingsFamily() {
+export function SettingsFamily({ exitTo = "/settings" }: { exitTo?: string } = {}) {
   const { t } = useTranslation("familyWeb");
   const { t: tf } = useTranslation("family");
   const { available, settled } = useFamilySettingsAvailability();
@@ -41,7 +45,7 @@ export function SettingsFamily() {
   const refusal = overview.isError ? familyErrorFromApi(overview.error)?.code : undefined;
 
   // Rien à y faire (pas de famille, aucune invitation, la fonder refusé par l'administration) : la page n'existe pas.
-  if ((settled && !available) || familyEntryShown(overview.data, Date.now()) === false) return <Navigate to="/settings" replace />;
+  if ((settled && !available) || familyEntryShown(overview.data, Date.now()) === false) return <Navigate to={exitTo} replace />;
 
   return (
     <PageTransition>
