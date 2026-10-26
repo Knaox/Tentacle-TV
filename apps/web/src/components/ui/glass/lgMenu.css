@@ -3,19 +3,18 @@
  * Un menu, un popover, la palette ⌘K sont UNE plaque de verre (régime
  * « surface » du lot lg2) : un seul ton, aucune bande, aucune couture. Ce qui
  * vit DEDANS n'est jamais un verre de plus — des remplissages, et l'idiome des
- * menus du Mac :
- *  - une marge intérieure de 5 à 6 px (`--lg-row-inset`) ;
+ * menus du Mac, SANS changer une dimension (Damien, 26/10 : le verre change le
+ * MATÉRIAU, jamais les DIMENSIONS — marges, rangées et intertitres d'avant) :
  *  - le survol et la sélection au clavier en PASTILLE arrondie INSÉRÉE, à la
  *    couleur d'accent UNIE, glyphes blancs (`--lg-row-highlight*`) — jamais
  *    une barre bord à bord, jamais le dégradé de marque ;
- *  - des rayons CONCENTRIQUES : rangée = menu − marge ;
+ *  - des rayons CONCENTRIQUES : rangée = menu − `--lg-row-inset` (un rayon) ;
  *  - des en-têtes de section discrets (`--lg-section-label`) ;
  *  - des séparateurs fins (`--lg-separator`) ;
  *  - le rouge de danger lisible sur le verre (le ton le règle :
  *    `lgLegibility.css`) et sa pastille rouge au survol.
  *
- * Marqueurs (aucun style hors de la porte) : `.lg-menu-list` (panneau-liste à
- * marge), `.lg-palette` (la palette ⌘K), `.lg-row` (une rangée sans rôle ARIA,
+ * Marqueurs (aucun style hors de la porte) : `.lg-menu-list` (panneau-liste), `.lg-palette` (la palette ⌘K), `.lg-row` (une rangée sans rôle ARIA,
  * un lien), `.lg-row-danger`, `.lg-row-soft` (rangée riche : survol neutre),
  * `.lg-menu-header`, `.lg-menu-label`,
  * `.lg-sep` (filet), `.lg-fill` (bloc rempli dans le verre), `.lg-menu-sticky` (en-tête collant d'une liste),
@@ -59,13 +58,10 @@
   --lgm-panel-radius: var(--lg-radius-lg);
 }
 
-/* Le menu « Plus » : un POPOVER à sections (tuiles, listes, pied) — une
- * marge de popover (12 px), et des tuiles concentriques au panneau. Les
- * tuiles restent des IMAGES : aucun verre dedans. */
-:root[data-liquid-glass="native"] .lg-menu.lg-more {
-  padding: 12px !important;
-}
-
+/* Le menu « Plus » : un POPOVER à sections (tuiles, listes, pied), ses marges
+ * d'avant (le verre change le MATÉRIAU, jamais les DIMENSIONS — Damien,
+ * 26/10), des tuiles aux coins concentriques au panneau. Les tuiles restent
+ * des IMAGES : aucun verre dedans. */
 :root[data-liquid-glass="native"] .lg-menu.lg-more .lg-tile {
   border-radius: calc(var(--lgm-panel-radius) - 12px);
 }
@@ -88,23 +84,12 @@
   border-radius: var(--lgm-radius);
 }
 
-/* ── La marge intérieure : les rangées ne touchent jamais le bord ── */
-:root[data-liquid-glass="native"] .lg-menu.lg-menu-list {
-  padding: var(--lgm-inset) !important;
-}
-
 /* ── Les rangées ── */
 :root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row) {
   border-radius: var(--lgm-radius);
   color: var(--text-primary);
   outline: none;
   box-shadow: none;
-}
-
-/* Le texte part à 10 px du bord de la pastille, comme l'icône d'un menu du Mac. */
-:root[data-liquid-glass="native"] .lg-menu.lg-menu-list :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row),
-:root[data-liquid-glass="native"] .lg-menu.lg-menu-list .lg-menu-header {
-  padding-inline: 10px;
 }
 
 /* La destruction garde son rouge, réglé par le ton du verre (`lgLegibility.css` :
@@ -230,13 +215,9 @@
   --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
 
-/* ── En-têtes de section : discrets, sans capitales criardes ── */
+/* ── En-têtes de section : discrets (leur corps et leur casse d'avant) ── */
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-label {
   color: var(--lgm-label);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 /* ── Séparateurs : un filet fin, inséré par la marge du panneau ── */
@@ -244,10 +225,6 @@
   border-color: var(--lgm-separator);
 }
 
-/* Un filet seul (élément vide) : rentré comme les rangées. */
-:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-sep:empty {
-  margin-inline: 10px;
-}
 
 /* La palette ⌘K : son PROPRE givre (le voile de la page floute peu : la
  * plaque s'y confondait), et un pied d'aide sans filet — pas de bande en bas,
