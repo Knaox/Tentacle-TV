@@ -93,7 +93,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
       <div className="octave-hero-main flex flex-col items-start gap-6 md:flex-row md:items-end">
         {/* En verre : la pochette posée dans un cadre de verre (rayon 30, 10 de marge). */}
         {native ? (
-          <div className="octave-art-frame lg-pane" data-round={round ? "true" : undefined}>
+          <div className="octave-art-frame lg-pane lg-pane-flat" data-round={round ? "true" : undefined}>
             {cover}
           </div>
         ) : (

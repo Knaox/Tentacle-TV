@@ -160,7 +160,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
 function GlassTable({ on, children }: { on: boolean; children: ReactNode }) {
   if (!on) return <>{children}</>;
   return (
-    <div role="presentation" className="octave-track-table lg-pane">
+    <div role="presentation" className="octave-track-table lg-pane lg-pane-flat">
       {children}
     </div>
   );

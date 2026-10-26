@@ -1,7 +1,7 @@
 /*
  * Octave en Liquid Glass — la TÊTE d'un album, d'une playlist, des titres
  * likés, d'un artiste (maquette « Octave · Playlist ») : la pochette de 240
- * dans un cadre de verre de 260 (`.lg-pane`, rayon 30, 10 de
+ * dans un cadre de verre de 260 (`.lg-pane.lg-pane-flat` : il défile, sans givre comme le tableau ; rayon 30, 10 de
  * marge, image au rayon 22) ; le surtitre en `.lg-bead` ; les capsules en
  * matériau `pane` (Lecture : `prominent`, la marque dans le verre) ;
  * le surtitre en pastille rose pâle ; le titre jusqu'à 76 px (selon sa

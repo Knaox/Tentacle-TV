@@ -1,8 +1,11 @@
 /*
  * Octave en Liquid Glass — le TABLEAU des titres (maquette « Octave ·
- * Playlist ») : un `.lg-pane` du socle au rayon 28, 10 de marge — givre
- * compris : sans lui le panneau tourne au gris (comparé à l'œil, 26/10) ; sa
- * passe se refait au défilement, mesurée (`reports/D13.md`) ; ses rangées des
+ * Playlist ») : un `.lg-pane.lg-pane-flat` du socle au rayon 28, 10 de marge.
+ * SANS givre (mesuré au bureau, build de production, 26/10) : avec lui, sa passe
+ * se refaisait à chaque image du défilement (24 et 81 images perdues sur 8 s,
+ * contre 3 à 7 avant) et à chaque pas de la houle en lecture (+0,3 point de
+ * GPU) ; sans lui, le niveau d'avant — pour un panneau à peine plus gris, le
+ * fond ambiant sous lui étant déjà flou ; ses rangées des
  * `.lg-pane-row` (survol, sélection du socle) ; l'en-tête en
  * capitales espacées (12, 0,14 em) sur un filet ; des rangées de 70 au rayon 18,
  * 4 px entre elles, 18 de marge, la pochette 50 au rayon 12, le titre 16, le
