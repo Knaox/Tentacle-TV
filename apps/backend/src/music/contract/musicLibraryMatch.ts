@@ -68,13 +68,22 @@ export function matchText(text: string): string {
     .trim();
 }
 
-// Ce qui ne change pas l'enregistrement : un invité, l'œuvre d'où il vient, une remasterisation.
-const NOISE_GROUP = /\s*[([][^)\]]*\b(?:feat|ft|featuring|with|from|remaster(?:ed)?|prod)\b[^)\]]*[)\]]/gi;
-const NOISE_TAIL = /\s+(?:-\s+)?(?:\(?\s*(?:feat|ft|featuring)\.?\s.*|-\s+(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+version)?)$/i;
+// Ce qui ne change pas l'enregistrement : un invité, l'œuvre d'où il vient, une remasterisation — aussi dans les
+// mots d'une boutique TRADUITE (« extrait de la série », « tiré du film », « avec », « remasterisé »…) : sans eux,
+// un titre importé d'une page française gardait sa mention et la bibliothèque ne le reconnaissait plus.
+// Jamais de « (?<!…) » : un Safari d'avant 16.4 refuserait le module entier ; la borne gauche se CONSOMME.
+const NOISE_WORDS = String.raw`feat|ft|featuring|with|avec|con|mit|from|extrait|tir[ée]e?s?|issue?s?|bande originale|de la s[ée]rie|du film|de la pel[íi]cula|aus de[rm]|dalla serie|dal film|da s[ée]rie|do filme|remaster\p{L}*|prod`;
+const NOISE_GROUP = new RegExp(String.raw`\s*[([](?:[^)\]]*[^\p{L}\p{N})\]])?(?:${NOISE_WORDS})(?![\p{L}\p{N}])[^)\]]*[)\]]`, "giu");
+// Une VERSION n'est jamais un bruit, même « (Live from Wembley) » : c'est un autre enregistrement.
+const VERSION_WORDS = /(?:^|[^\p{L}\p{N}])(?:live|remix|mix|acoustic|acoustique|ac[uú]stico|unplugged|instrumental|demo|edit|karaok[eé]|en vivo|en direct|dal vivo)(?![\p{L}\p{N}])/iu;
+const NOISE_TAIL = new RegExp(
+  String.raw`\s+(?:-\s+)?(?:\(?\s*(?:feat|ft|featuring)\.?\s.*|-\s+(?:\d{4}\s+)?remaster\p{L}*(?:\s+\d{4})?(?:\s+version)?|-\s+(?:from|extrait|tir[ée]e?|issue?)\s.*)$`,
+  "iu",
+);
 
 /** Le titre sans ce qui ne change pas l'enregistrement, tel quel (casse et accents gardés). */
 export function stripTitleNoise(title: string): string {
-  const stripped = title.replace(NOISE_GROUP, " ").replace(NOISE_TAIL, "").trim();
+  const stripped = title.replace(NOISE_GROUP, (group) => (VERSION_WORDS.test(group) ? group : " ")).replace(NOISE_TAIL, "").trim();
   return matchText(stripped).length > 0 ? stripped : title;
 }
 
@@ -193,18 +202,54 @@ export function isSameAlbumTrack(own: MatchableTrack, candidate: MatchableTrack)
   return placed && duration === true;
 }
 
-/** Le meilleur élément de la bibliothèque pour `candidate` : le plus proche en durée parmi ceux qui conviennent. */
+/** L'écart toléré au SECOND rang : ± 5 s, ou ± 3 % d'un long titre. */
+export const MATCH_LOOSE_GAP_MS = 5_000;
+const MATCH_LOOSE_RATIO = 0.03;
+
+/**
+ * Le SECOND rang : le même titre, un artiste commun, et la durée d'un AUTRE master du même enregistrement (± 5 s,
+ * ± 3 %). Une boutique et le fichier de la bibliothèque (une autre parution, un encodage, un silence de fin) ne
+ * tombent pas toujours à ± 2 s ; une autre VERSION (live, remix, avec d'autres invités) s'écarte bien davantage ou
+ * porte un autre titre. Les MBID, quand les deux côtés en ont, tranchent toujours.
+ */
+export function isLikelySameTrack(own: MatchableTrack, candidate: MatchableTrack): boolean {
+  if (isSameTrack(own, candidate)) return true;
+  if (mbidVerdict(own.recording, candidate.recording) !== null) return false;
+  if (!sameTitle(own.title, candidate.title) || own.durationMs === null || candidate.durationMs === null) return false;
+  const gap = Math.abs(own.durationMs - candidate.durationMs);
+  if (gap > Math.max(MATCH_LOOSE_GAP_MS, Math.max(own.durationMs, candidate.durationMs) * MATCH_LOOSE_RATIO)) return false;
+  return shareArtist(own.artists, candidate.artists);
+}
+
+/**
+ * Le rang d'un élément qui convient (le plus petit l'emporte) : l'ALBUM de la source d'abord (un titre présent sur
+ * plusieurs albums de la bibliothèque est rangé dans celui d'où il vient), puis la correspondance de premier rang,
+ * puis l'album de l'artiste plutôt qu'un recueil, puis la durée la plus proche.
+ */
+function rankOf(own: MatchableTrack, candidate: MatchableTrack): number[] {
+  const fromSource = own.albumTitle !== null && candidate.albumTitle !== null && sameAlbumTitle(own.albumTitle, candidate.albumTitle);
+  const gap = own.durationMs !== null && candidate.durationMs !== null ? Math.abs(own.durationMs - candidate.durationMs) : MATCH_DURATION_GAP_MS;
+  return [fromSource ? 0 : 1, closeDuration(own.durationMs, candidate.durationMs) === false ? 1 : 0, onCompilation(own) ? 1 : 0, gap];
+}
+
+const before = (a: readonly number[], b: readonly number[]) => {
+  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return (a[i] as number) < (b[i] as number);
+  return false;
+};
+
+/** Le meilleur élément de la bibliothèque pour `candidate` parmi ceux qui conviennent (`same`), au rang de `rankOf`. */
 export function bestMatch<T>(candidate: MatchableTrack, own: readonly T[], view: (item: T) => MatchableTrack, same = isSameTrack): T | null {
-  let best: T | null = null;
-  let gap = Infinity;
+  let best: { item: T; rank: number[] } | null = null;
   for (const item of own) {
     const track = view(item);
     if (!same(track, candidate)) continue;
-    const d = track.durationMs !== null && candidate.durationMs !== null ? Math.abs(track.durationMs - candidate.durationMs) : MATCH_DURATION_GAP_MS;
-    if (d < gap) {
-      best = item;
-      gap = d;
-    }
+    const rank = rankOf(track, candidate);
+    if (!best || before(rank, best.rank)) best = { item, rank };
   }
-  return best;
+  return best?.item ?? null;
+}
+
+/** Un titre seul face à toute la bibliothèque : le premier rang, sinon le second (`isLikelySameTrack`), même classement. */
+export function bestTrackMatch<T>(candidate: MatchableTrack, own: readonly T[], view: (item: T) => MatchableTrack): T | null {
+  return bestMatch(candidate, own, view, isLikelySameTrack);
 }

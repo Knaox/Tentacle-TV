@@ -12,7 +12,7 @@
  */
 
 import type { MusicMatchAlbumQuery, MusicMatchRequest, MusicMatchResponse, MusicMatchTrackQuery } from "../contract/musicCoreApi";
-import { bestMatch, isSameAlbum, isSameAlbumTrack, isVariousCredit, type MatchableAlbum, type MatchableTrack } from "../contract/musicLibraryMatch";
+import { bestMatch, bestTrackMatch, isSameAlbum, isSameAlbumTrack, isVariousCredit, sameAlbumTitle, type MatchableAlbum, type MatchableTrack } from "../contract/musicLibraryMatch";
 import type { MusicTrack } from "../contract/musicTypes";
 import { albumTracks, tracksByRecording } from "../index/indexQueries";
 import type { IndexRow } from "../index/indexTypes";
@@ -50,23 +50,40 @@ export function albumMatchable(row: IndexRow): MatchableAlbum {
 const queryTrack = (q: MusicMatchTrackQuery): MatchableTrack => q;
 
 /**
- * Les titres de la bibliothèque pour ces requêtes : MBID d'abord, puis le nom (une recherche par titre distinct).
+ * Les titres de la bibliothèque pour ces requêtes : MBID d'abord, puis le nom — resserré sur le crédit, puis seul
+ * (un recueil « Various Artists », un crédit écrit autrement). Un titre présent sur PLUSIEURS albums est pris dans
+ * celui de la requête (l'album de la source) quand la bibliothèque l'a, sinon dans l'album de l'artiste.
  * Aussi l'API d'hôte `jellyfin.matchTracks` (music/host) : une extension reconnaît par LA même règle.
  */
 export async function matchTracks(view: UserView, queries: readonly MusicMatchTrackQuery[]): Promise<Map<string, IndexRow>> {
   const found = new Map<string, IndexRow>();
   const recordings = [...new Set(queries.map((q) => q.recording).filter((r): r is string => r !== null))];
-  const byRecording = new Map(visibleRows(view, await tracksByRecording(recordings)).map((r) => [r.recordingMbid, r]));
-  const named = new Map<string, IndexRow[]>();
+  const byRecording = new Map<string, IndexRow[]>();
+  for (const row of visibleRows(view, await tracksByRecording(recordings))) {
+    if (row.recordingMbid) byRecording.set(row.recordingMbid, [...(byRecording.get(row.recordingMbid) ?? []), row]);
+  }
+  const loaded = new Map<string, IndexRow[]>();
+  const candidates = async (key: string, load: () => Promise<IndexRow[]>) => {
+    if (!loaded.has(key)) loaded.set(key, visibleRows(view, await load()));
+    return loaded.get(key) ?? [];
+  };
   for (const q of queries) {
     const exact = q.recording ? byRecording.get(q.recording) : undefined;
-    if (exact) {
-      found.set(q.ref, exact);
+    const pick = exact?.length ? bestMatch(q, exact, trackMatchable, () => true) : null;
+    if (pick) {
+      found.set(q.ref, pick);
       continue;
     }
-    const key = q.title.toLowerCase();
-    if (!named.has(key)) named.set(key, visibleRows(view, await rowsNamed("track", q.title, TRACK_CANDIDATES)));
-    const best = bestMatch(queryTrack(q), named.get(key) ?? [], trackMatchable);
+    const title = q.title.toLowerCase();
+    const credited = await candidates(`a:${title}\u0000${q.artists.map((a) => a.name.toLowerCase()).join("\u0000")}`, () =>
+      rowsNamed("track", q.title, TRACK_CANDIDATES, q.artists),
+    );
+    let best = bestTrackMatch(q, credited, trackMatchable);
+    // Le nom seul aussi quand le crédit n'a rien trouvé, ou pas dans l'album de la source (un recueil peut l'avoir).
+    if (!best || (q.albumTitle !== null && !(best.albumName && sameAlbumTitle(best.albumName, q.albumTitle)))) {
+      const named = await candidates(`n:${title}`, () => rowsNamed("track", q.title, TRACK_CANDIDATES));
+      best = bestTrackMatch(q, [...credited, ...named], trackMatchable);
+    }
     if (best) found.set(q.ref, best);
   }
   return found;

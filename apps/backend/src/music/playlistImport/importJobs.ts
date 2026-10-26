@@ -9,6 +9,7 @@
 import { randomUUID } from "crypto";
 import { absentPositions, type ImportAbsentTrack, type ImportedPlaylist, type MusicImportJob } from "../contract/musicImport";
 import type { UserView } from "../view/viewContext";
+import { explainAbsent } from "./importDiagnosis";
 import { matchImported, type MatchFn } from "./importMatching";
 import type { ImportRequestParsed } from "./importInput";
 import { ImportReadFailure } from "./readers/readerKit";
@@ -23,6 +24,8 @@ export interface ImportDeps {
   view: (userId: string) => Promise<UserView>;
   create: (userId: string, name: string, itemIds: string[]) => Promise<{ ok: true; value: string } | { ok: false }>;
   match?: MatchFn;
+  /** Le journal des absents qu'un titre du même nom a frôlés (`importDiagnosis.ts`) ; tests : à remplacer. */
+  explain?: (view: UserView, absent: readonly ImportAbsentTrack[]) => Promise<string[]>;
   now?: () => number;
 }
 
@@ -59,6 +62,8 @@ async function run(record: JobRecord, parsed: ImportRequestParsed, deps: ImportD
     const indexes = new Set(found.keys());
     const places = absentPositions(playlist.tracks.length, indexes);
     const absent: ImportAbsentTrack[] = playlist.tracks.filter((t) => !indexes.has(t.index)).map((t) => ({ ...t, position: places.get(t.index) ?? 0 }));
+    // En fond, jamais sur le chemin de l'import : ce qu'un titre du même nom a frôlé, dit au journal.
+    void (deps.explain ?? explainAbsent)(view, absent).then((lines) => lines.forEach((line) => console.info(line)), () => undefined);
     if (indexes.size === 0 && !parsed.keepEmpty) return void fail("noneInLibrary");
     job.stage = "creating";
     const name = playlistName(parsed.name, playlist, now());
