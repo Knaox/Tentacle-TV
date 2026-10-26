@@ -65,6 +65,29 @@ describe("moteur <audio> — transition douce", () => {
     expect(b.volume).toBe(1);
   });
 
+  it("un suivant d'après du MÊME album que le titre qui part, donné à mi-fondu, ne fait pas sauter son volume (recette M2, défaut 1)", () => {
+    const r = rig();
+    const gained = (path: string) => ({ ...testSource(path), replayGain: { trackGainDb: -2, trackPeak: null, albumGainDb: -6, albumPeak: null } });
+    r.engine.play({ ...testTrack("t1", "A"), trackNumber: 1 }, gained("/a"), 0);
+    r.engine.setNext(testTrack("t2", "B"), gained("/b"));
+    const [a, b] = r.elements as [FakeElement, FakeElement];
+    a.loaded(200);
+    a.currentTime = 193;
+    a.fire("timeupdate");
+    r.timers.tick(1_000);
+    b.currentTime = 3;
+    r.timers.tick(10);
+    const before = a.volume;
+    // Mi-fondu : le contrôleur donne le suivant d'après — le titre 3 de l'album de t1.
+    r.engine.setNext({ ...testTrack("t3", "A"), trackNumber: 3 }, gained("/c"));
+    b.currentTime = 3.05;
+    r.timers.tick(10);
+    const expected = 10 ** (-2 / 20) * Math.cos((Math.PI / 2) * (3.05 / 6));
+    expect(a.volume).toBeCloseTo(expected, 6);
+    expect(Math.abs(a.volume - before)).toBeLessThan(0.02);
+    expect(b.volume).toBeCloseTo(10 ** (-2 / 20) * Math.sin((Math.PI / 2) * (3.05 / 6)), 6);
+  });
+
   it("enchaîne SANS fondu à l'intérieur d'un album écouté dans l'ordre", () => {
     const r = rig();
     r.engine.play({ ...testTrack("t1", "A"), trackNumber: 1 }, testSource("/a"), 0);

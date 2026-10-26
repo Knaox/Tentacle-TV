@@ -63,10 +63,13 @@ export abstract class HtmlEngineBase {
   }
 
   protected volumeFor(slot: Slot | null): number {
-    if (slot === null) return 0;
+    return slot === null ? 0 : elementVolume(this.state.volume, slot.gainDb ?? this.gainDbOf(slot));
+  }
+
+  /** Le gain ReplayGain du titre, d'après le mode et ses voisins du moment (« auto » : album ou titre). */
+  protected gainDbOf(slot: Slot): number {
     const neighbours = [this.next?.track ?? null, this.current?.track ?? null].filter((t) => t !== null && t !== slot.track).map((t) => (t === null ? null : albumKeyOf(t)));
-    const mode = effectiveGainMode(this.gainMode, albumKeyOf(slot.track), neighbours);
-    return elementVolume(this.state.volume, sourceGainDb(mode, slot.source));
+    return sourceGainDb(effectiveGainMode(this.gainMode, albumKeyOf(slot.track), neighbours), slot.source);
   }
 
   protected applyVolumes(): void {
@@ -122,6 +125,8 @@ export abstract class HtmlEngineBase {
 
   setReplayGain(mode: ReplayGainMode): void {
     this.gainMode = mode;
+    // Un mode choisi s'applique à tous, gains figés d'un fondu compris.
+    for (const s of [this.current, this.next, ...this.fadeSlots()]) if (s !== null) delete s.gainDb;
     this.applyVolumes();
   }
 

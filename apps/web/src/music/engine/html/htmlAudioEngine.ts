@@ -99,6 +99,8 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
     if (from === null || to === null) return;
     this.next = null;
     to.el.muted = this.state.muted;
+    // Les gains se figent ici : le suivant d'après, donné à mi-fondu, ne change plus le volume d'aucun des deux.
+    [from.gainDb, to.gainDb] = [this.gainDbOf(from), this.gainDbOf(to)];
     const run = new CrossfadeRun(from, to, fadeMs / 1000, this.deps, {
       volumeOf: (slot) => this.volumeFor(slot),
       mid: () => {
