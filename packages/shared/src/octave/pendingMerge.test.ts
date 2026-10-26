@@ -100,3 +100,18 @@ describe("doublons de playlist (25/10)", () => {
   });
 });
 
+
+describe("une entrée IMPORTÉE (importTracks)", () => {
+  it("garde la disponibilité que l'extension lui donne, à sa place dans la playlist", () => {
+    const remote = { ...externalTrack("sillon", "imp-1"), availability: "remote" as const };
+    const item = pendingItem("imp-1", { kind: "playlistAdd", playlistId: "pl", position: 1, track: remote, imported: true });
+    const rows = mergePlaylist([{ entryId: "e-a", position: 0, track: libraryTrack("a") }, { entryId: "e-b", position: 1, track: libraryTrack("b") }], [item], "pl");
+    expect(rows.map((r) => r.rowKey)).toEqual(["e-a", "pending:op-imp-1", "e-b"]);
+    expect(rows[1]?.track.availability).toBe("remote");
+  });
+
+  it("une entrée d'avant (sans `imported`) reste « en attente »", () => {
+    const item = pendingItem("x", { kind: "playlistAdd", playlistId: "pl", position: 0 });
+    expect(mergePlaylist([], [item], "pl")[0]?.track.availability).toBe("pending");
+  });
+});
