@@ -8,8 +8,11 @@
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
  * active prend la pastille de Tentacle, rose en tête, son icône rose
- * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
- * rail devient un panneau qui flotte (surface de la primitive).
+ * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif aussi
+ * (Liquid Glass, D11 du 26/10) : rien ne passe sous le rail, un verre n'y
+ * réfracterait que l'encre — il devenait une dalle grise givrée, cerclée et
+ * ombrée, détachée de la page (« une grosse démarcation »). Le rail reste donc
+ * posé sur l'encre, sans dalle : le verre est pour ce qui FLOTTE (le dock).
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
@@ -20,7 +23,6 @@ import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
-import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
 import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
@@ -46,16 +48,8 @@ const playlistClass =
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation("music");
   const playlists = useMusicPlaylists();
-  const native = useLiquidGlassMode() === "native";
-  // Un GRAND verre en mode natif (ton tenu) ; ailleurs, le rail sur l'encre.
-  const glass = useLiquidGlassSurface({
-    radius: "lg",
-    scale: "surface",
-    className: `flex shrink-0 flex-col gap-5 pb-3 pt-4 w-[var(--oc-sidebar-width)] ${native ? "octave-glass octave-rail-glass my-2 ml-2 px-2" : "h-full px-3"}`,
-  });
   return (
-    <nav aria-label={t("nav.main")} {...glass.props}>
-      {glass.layers}
+    <nav aria-label={t("nav.main")} className="flex h-full w-[var(--oc-sidebar-width)] shrink-0 flex-col gap-5 px-3 pb-3 pt-4">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 pl-3">
           <OctaveWordmark />

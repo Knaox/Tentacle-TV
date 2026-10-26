@@ -47,7 +47,7 @@ export function titleSizeClass(title: string): string {
 
 const PLAY_PROPS = {
   appearance: { level: "prominent", tint: "brand", shape: "capsule" },
-  className: "flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-bold disabled:cursor-default disabled:opacity-40",
+  className: "octave-cta flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-bold disabled:cursor-default disabled:opacity-40",
   fallbackClassName: "hero-cta-primary rounded-full",
   fallbackStyle: { boxShadow: "var(--oc-shadow-play)" },
 } as const;
