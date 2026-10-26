@@ -76,6 +76,15 @@ export function recordVisit(visit: RecentVisit, owner: string | null = octaveOwn
   }
 }
 
+/** La déconnexion efface les pages consultées, toutes identités confondues (`forgetOctaveDevice`). */
+export function forgetRecentVisits(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* rien à oublier */
+  }
+}
+
 /** Note la page d'un album ou d'un artiste, une fois chargée (`null`, `undefined` : rien à noter encore). */
 export function useRecordVisit(kind: "album" | "artist", item: MusicAlbum | MusicArtist | null | undefined): void {
   // Une fois par page ouverte : la clé décide, l'objet (rafraîchi par le cache) est lu au moment de noter.
