@@ -38,6 +38,14 @@ describe("supprimer : les attentes de la playlist chez l'extension", () => {
     expect(waitingOf(pending, id).map((p) => p.operationId)).toEqual(["a", "b"]);
   });
 
+  it("un titre importé DÉJÀ ARRIVÉ (entrée Jellyfin, plus une attente) : aucun appel à l'extension, il reste dans la bibliothèque", async () => {
+    const calls: string[] = [];
+    // Plus d'attente pour cette playlist : ses titres importés sont tous arrivés.
+    const waiting = waitingOf([wait("x", "d".repeat(32))], id).map((p) => p.operationId);
+    expect(await removeWaiting(waiting, async (op) => (calls.push(op), true))).toBe(0);
+    expect(calls).toEqual([]);
+  });
+
   it("retirées quatre à la fois au plus ; un refus n'arrête pas les autres", async () => {
     let running = 0;
     let peak = 0;

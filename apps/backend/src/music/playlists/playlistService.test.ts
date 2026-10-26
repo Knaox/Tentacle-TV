@@ -201,3 +201,27 @@ describe("gérer une playlist : nom, description, suppression", () => {
     expect(jf.playlists.has(P)).toBe(false);
   });
 });
+
+describe("règle de Damien : jamais un titre supprimé du serveur", () => {
+  const audioDeletes = () => jf.calls.filter((c) => c.startsWith("DELETE /Items/") && c !== `DELETE /Items/${P}`);
+
+  it("retirer un titre d'une playlist : l'ENTRÉE sort (DELETE …/Items?entryIds), jamais l'élément audio", async () => {
+    expect((await removeFromPlaylist(OWNER, P, "b")).ok).toBe(true);
+    expect(jf.calls.filter((c) => c.startsWith("DELETE"))).toEqual([`DELETE /Playlists/${P}/Items`]);
+    expect(audioDeletes()).toEqual([]);
+  });
+
+  it("supprimer une playlist : l'OBJET playlist seul (DELETE /Items/<playlist>), aucun titre, aucun appel hors Jellyfin", async () => {
+    expect((await deletePlaylist(OWNER, P)).ok).toBe(true);
+    expect(jf.calls.filter((c) => c.startsWith("DELETE"))).toEqual([`DELETE /Items/${P}`]);
+    expect(audioDeletes()).toEqual([]);
+    // Le cœur ne parle qu'à Jellyfin : aucune route de Lidarr, aucune suppression de fichier.
+    expect(jf.calls.some((c) => /lidarr|\/Library\/|\/Videos\/|\/Audio\//i.test(c))).toBe(false);
+  });
+
+  it("réordonner ou retirer en masse ne touche jamais un élément audio", async () => {
+    expect((await reorderPlaylist(OWNER, P, ["d", "c", "b", "a"])).ok).toBe(true);
+    expect(audioDeletes()).toEqual([]);
+  });
+});
+

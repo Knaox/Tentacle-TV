@@ -2,7 +2,11 @@
  * Octave — les gestes qui GÈRENT une playlist (jamais décidés par le client : le serveur refuse une playlist
  * que le compte ne peut pas modifier, `editable` ne fait que cacher l'entrée) : modifier ses détails, la
  * dupliquer, la supprimer — et, à la suppression, retirer chez l'extension ses entrées en attente (leurs
- * demandes à Lidarr s'abandonnent), en fond, une seule relecture de la liste d'attente à la fin.
+ * demandes à Lidarr EN COURS s'abandonnent), en fond, une seule relecture de la liste d'attente à la fin.
+ *
+ * Règle de Damien : supprimer une playlist supprime l'OBJET playlist Jellyfin, rien d'autre — jamais un titre,
+ * un fichier, un élément Jellyfin, un album Lidarr. Un titre importé déjà arrivé reste dans la bibliothèque ;
+ * sur l'appareil, seule la copie gardée à cause de cette seule playlist part (`offlineRelease.ts`).
  */
 
 import { useCallback } from "react";
@@ -23,6 +27,9 @@ import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { octavePaths } from "../octavePaths";
 import { removeWaiting, waitingOf } from "./playlistCleanup";
+import { keptMusicState } from "../offline/keptMusicStore";
+import { removeKept } from "../offline/keepMusic";
+import { offlineReleaseOf } from "./offlineRelease";
 
 export function usePlaylistManagement() {
   const { t } = useTranslation("music");
@@ -67,6 +74,10 @@ export function usePlaylistManagement() {
       // La page de la playlist supprimée n'a plus rien à montrer : retour à « Playlists ».
       if (pathname === octavePaths.playlist(playlist.jellyfinId)) navigate(octavePaths.playlists, { replace: true });
       toast.show("success", t("playlistManage.deleted", { name: playlist.name }));
+      // L'appareil : seule part la copie gardée pour CETTE playlist et rien d'autre (jamais un titre du serveur).
+      const kept = keptMusicState();
+      const release = offlineReleaseOf(playlist.jellyfinId, kept.collections, kept.tracks);
+      if (release) void removeKept(kept.tracks.filter((t) => release.fileIds.includes(t.fileId)), release.collectionKey);
       if (provider && waiting.length > 0) {
         void removeWaiting(waiting, (id) => removePendingMusic(provider, id)).then(() =>
           qc.invalidateQueries({ queryKey: musicPendingKey(provider.pluginId) }),
