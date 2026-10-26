@@ -27,4 +27,7 @@ export interface PluginHostEnv {
   /** L'hôte lit les octets du relais des bandes-annonces (`fetchMedia`,
    *  `pluginMediaBridge.ts`) : le cadre ne joint plus un serveur local. ADDITIF. */
   mediaBridge?: boolean;
+  /** L'extension met sa query dans l'adresse de l'hôte sans être rechargée
+   *  (`__tentacle_bridge.setQuery`, évènement `tentacle:hostquery` — pluginQuerySync.ts). ADDITIF. */
+  querySync?: boolean;
 }

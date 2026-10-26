@@ -8,6 +8,7 @@ export type { PluginHostEnv } from "./pluginHostEnv";
 import { buildTrailerCatalogBridgeMethod } from "./pluginTrailerCatalog";
 import { buildMediaBridgeListener, buildMediaBridgeMethod, buildMediaBridgeState } from "./pluginMediaBridge";
 import { buildFormSubmitGuardScript } from "./formSubmitGuard";
+import { buildQuerySyncBridgeMethod, buildQuerySyncListener } from "./pluginQuerySync";
 
 /**
  * Script (sans balises) : shim localStorage, error handler, bridge postMessage
@@ -83,7 +84,7 @@ ${buildFormSubmitGuardScript()}
       // sandboxé.
       openTrailer: function(trailers, index) {
         parent.postMessage({ type: "OPEN_TRAILER", trailers: trailers, index: index || 0 }, "*");
-      },${buildTrailerPreviewBridgeMethod()},${buildTrailerCatalogBridgeMethod()},${buildMediaBridgeMethod()}
+      },${buildTrailerPreviewBridgeMethod()},${buildTrailerCatalogBridgeMethod()},${buildMediaBridgeMethod()},${buildQuerySyncBridgeMethod()}
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──
@@ -138,6 +139,7 @@ ${buildFormSubmitGuardScript()}
 
 ${buildTrailerPreviewEnvListener()}
 ${buildMediaBridgeListener()}
+${buildQuerySyncListener()}
 
       if (data.type === "INJECT_BUNDLE" && !window.__bundleInjected) {
         window.__bundleInjected = true;

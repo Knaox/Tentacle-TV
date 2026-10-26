@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
@@ -18,6 +18,8 @@ import {
 import { sanitizeTrailers, type PluginTrailer } from "./pluginIframe/pluginTrailerList";
 import { MEDIA_REQUEST_MESSAGE, answerPluginMediaRequest, parsePluginMediaRequest } from "./pluginIframe/pluginMediaBridge";
 import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
+import { parseSetQuery, SET_QUERY_MESSAGE } from "./pluginIframe/pluginQuerySync";
+import { usePluginQuerySync } from "./pluginIframe/usePluginQuerySync";
 import {
   TRAILER_PREVIEW_MUTED_MESSAGE, TRAILER_PREVIEW_VOLUME_MESSAGE, applyPluginTrailerPreviewMuted, applyPluginTrailerPreviewVolume,
   pluginTrailerPreviewEnv,
@@ -44,8 +46,12 @@ export function PluginIframe({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
   // Query de la route hôte, transmise à l'iframe (deep-link du plugin, ex.
-  // « ?media=movie:603 » posé par les cartes de recommandation).
-  const { search } = useLocation();
+  // « ?media=movie:603 » posé par les cartes de recommandation). Une extension qui tient sa
+  // query (`setQuery`) la reçoit redite, sans document refait (pluginQuerySync.ts).
+  const postToFrame = useCallback((message: { type: string; query: string }) => {
+    iframeRef.current?.contentWindow?.postMessage(message, "*");
+  }, []);
+  const { documentQuery: search, setQuery } = usePluginQuerySync(pluginPath, postToFrame);
   const bundleFetched = useRef(false);
   // Trailers demandés par le plugin — joués dans le TrailerModal du HOST
   // (l'embed YouTube ne fonctionne pas dans l'iframe sandboxée du plugin).
@@ -129,6 +135,12 @@ export function PluginIframe({
           }
           break;
 
+        case SET_QUERY_MESSAGE: {
+          const query = parseSetQuery(data);
+          if (query !== null) setQuery(query);
+          break;
+        }
+
         // Lien externe demandé par le plugin (sandbox sans allow-popups) —
         // ouvert via le host : plugin opener sous Tauri, window.open sur web.
         case "OPEN_EXTERNAL":
@@ -188,7 +200,7 @@ export function PluginIframe({
           break;
       }
     },
-    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang, onApiAnswered],
+    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang, onApiAnswered, setQuery],
   );
 
   useEffect(() => {
