@@ -8,13 +8,14 @@
  *  - le VERRE (`.lg-pane`, `.lg-bead`) : un dégradé blanc léger, un flou qui
  *    AVIVE (saturation 190 %), un liseré en dégradé, des reflets.
  *
- * Écarts assumés à la maquette, pour l'AA : ses taches allaient jusqu'à 0,55 et
- * ses reflets à 0,22 sans rien dessous — mesurée, elle tombait à 2,3:1 sous un
- * texte blanc là où deux taches vives se croisent. Ici : taches à 0,5 au plus,
- * une ENCRE légère dans le verre (0,26), un reflet de 0,14, des teintes d'image
- * bornées à la luminance de nos roses. Le corps du verre tient ≥ 4,5:1 sous un
- * texte blanc sur le PIRE croisement de deux taches ; le coin du reflet, ≥ 3:1
- * (grand texte, icônes).
+ * La maquette donne le MATÉRIAU, pas l'INTENSITÉ (consigne de Damien, 26/10 :
+ * « un effet de VERRE TRANSPARENT, pas trop violent, sinon on perd l'âme de
+ * l'app ») : taches à peine posées (0,18 au plus : l'encre reste la base
+ * visible), voile blanc bas (0,08 → 0,02), givre léger (16 px), saturation
+ * modérée (1,5), liseré et reflets fins — une lumière, pas un contour. La
+ * maquette brute (taches 0,55, voile 0,16, reflet 0,22) tombait à 2,3:1 sous un
+ * texte blanc ; ici le corps du verre tient ≥ 4,5:1 sur le PIRE croisement de
+ * deux taches et de teintes d'image bornées à la luminance de nos roses.
  *
  * Ces valeurs sont recopiées dans `paneTokens.css` ; un test tient les deux
  * identiques (`paneMaterial.test.ts`).
@@ -38,24 +39,24 @@ export interface AmbientBlob {
 
 /** Les taches du fond sombre : violet → rose, nos couleurs (jamais le cyan ni l'orange de la maquette). */
 export const AMBIENT_DARK: readonly AmbientBlob[] = [
-  { token: "--brand-accent", color: rgb(236, 72, 153), alpha: 0.5 },
-  { token: "--brand", color: rgb(139, 92, 246), alpha: 0.42 },
-  { token: "--brand-accent-dark", color: rgb(219, 39, 119), alpha: 0.36 },
-  { token: "--brand-dark", color: rgb(124, 58, 237), alpha: 0.5 },
-  { token: "--brand-mid", color: rgb(168, 85, 247), alpha: 0.36 },
+  { token: "--brand-accent", color: rgb(236, 72, 153), alpha: 0.18 },
+  { token: "--brand", color: rgb(139, 92, 246), alpha: 0.13 },
+  { token: "--brand-accent-dark", color: rgb(219, 39, 119), alpha: 0.1 },
+  { token: "--brand-dark", color: rgb(124, 58, 237), alpha: 0.16 },
+  { token: "--brand-mid", color: rgb(168, 85, 247), alpha: 0.1 },
 ];
 
 /** Les taches du fond clair : les mêmes, en pastel sur la nacre. */
 export const AMBIENT_LIGHT: readonly AmbientBlob[] = [
-  { token: "--brand-accent", color: rgb(219, 39, 119), alpha: 0.2 },
-  { token: "--brand", color: rgb(124, 58, 237), alpha: 0.16 },
-  { token: "--brand-accent-dark", color: rgb(219, 39, 119), alpha: 0.14 },
-  { token: "--brand-dark", color: rgb(124, 58, 237), alpha: 0.18 },
-  { token: "--brand-mid", color: rgb(168, 85, 247), alpha: 0.14 },
+  { token: "--brand-accent", color: rgb(219, 39, 119), alpha: 0.08 },
+  { token: "--brand", color: rgb(124, 58, 237), alpha: 0.06 },
+  { token: "--brand-accent-dark", color: rgb(219, 39, 119), alpha: 0.05 },
+  { token: "--brand-dark", color: rgb(124, 58, 237), alpha: 0.07 },
+  { token: "--brand-mid", color: rgb(168, 85, 247), alpha: 0.05 },
 ];
 
 /** Une teinte d'image (affiche, pochette) prend la place des taches 2 et 3, à cette opacité. */
-export const AMBIENT_TINT_ALPHA = { dark: 0.45, light: 0.18 } as const;
+export const AMBIENT_TINT_ALPHA = { dark: 0.16, light: 0.07 } as const;
 /** La luminance relative au plus d'une teinte d'image : celle de nos roses (le rose de marque : 0,25). */
 export const AMBIENT_TINT_MAX_LUMINANCE = 0.2;
 
@@ -76,31 +77,31 @@ export interface PaneToneMaterial {
   glyphSecondary: Rgba;
 }
 
-export const PANE_BLUR_PX = 28;
-export const BEAD_BLUR_PX = 12;
+export const PANE_BLUR_PX = 16;
+export const BEAD_BLUR_PX = 10;
 
 export const PANE_DARK: PaneToneMaterial = {
-  saturate: 1.9,
-  brightness: 1.08,
-  ink: rgb(7, 5, 12, 0.26),
-  fillPeak: 0.16,
-  fillBody: 0.05,
-  fillEnd: 0.09,
-  sheen: 0.14,
-  sheenFar: 0.08,
+  saturate: 1.5,
+  brightness: 1.04,
+  ink: rgb(7, 5, 12, 0.08),
+  fillPeak: 0.08,
+  fillBody: 0.02,
+  fillEnd: 0.04,
+  sheen: 0.07,
+  sheenFar: 0.04,
   glyph: rgb(255, 255, 255),
   glyphSecondary: rgb(255, 255, 255, 0.72),
 };
 
 export const PANE_LIGHT: PaneToneMaterial = {
-  saturate: 1.8,
-  brightness: 1.02,
+  saturate: 1.4,
+  brightness: 1.01,
   ink: rgb(255, 255, 255, 0),
-  fillPeak: 0.62,
-  fillBody: 0.32,
-  fillEnd: 0.45,
-  sheen: 0.42,
-  sheenFar: 0.22,
+  fillPeak: 0.42,
+  fillBody: 0.18,
+  fillEnd: 0.28,
+  sheen: 0.3,
+  sheenFar: 0.14,
   glyph: rgb(12, 12, 18, 0.9),
   glyphSecondary: rgb(12, 12, 18, 0.68),
 };
@@ -109,8 +110,8 @@ export const PANE_LIGHT: PaneToneMaterial = {
 export const PANE_PROMINENT = { from: rgb(190, 24, 93, 0.96), to: rgb(109, 40, 217, 0.9) } as const;
 
 /** La pastille (`.lg-bead`) : plus fine, même encre. */
-export const BEAD_DARK = { saturate: 1.8, fill: 0.08, ink: rgb(7, 5, 12, 0.26) } as const;
-export const BEAD_LIGHT = { saturate: 1.8, fill: 0.55, ink: rgb(255, 255, 255, 0) } as const;
+export const BEAD_DARK = { saturate: 1.5, fill: 0.05, ink: rgb(7, 5, 12, 0.08) } as const;
+export const BEAD_LIGHT = { saturate: 1.4, fill: 0.4, ink: rgb(255, 255, 255, 0) } as const;
 
 const WHITE_AT = (a: number): Rgba => rgb(255, 255, 255, a);
 
