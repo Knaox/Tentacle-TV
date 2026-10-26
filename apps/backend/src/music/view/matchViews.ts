@@ -48,8 +48,11 @@ export function albumMatchable(row: IndexRow): MatchableAlbum {
 
 const queryTrack = (q: MusicMatchTrackQuery): MatchableTrack => q;
 
-/** Les titres de la bibliothèque pour ces requêtes : MBID d'abord, puis le nom (une recherche par titre distinct). */
-async function matchTracks(view: UserView, queries: readonly MusicMatchTrackQuery[]): Promise<Map<string, IndexRow>> {
+/**
+ * Les titres de la bibliothèque pour ces requêtes : MBID d'abord, puis le nom (une recherche par titre distinct).
+ * Aussi l'API d'hôte `jellyfin.matchTracks` (music/host) : une extension reconnaît par LA même règle.
+ */
+export async function matchTracks(view: UserView, queries: readonly MusicMatchTrackQuery[]): Promise<Map<string, IndexRow>> {
   const found = new Map<string, IndexRow>();
   const recordings = [...new Set(queries.map((q) => q.recording).filter((r): r is string => r !== null))];
   const byRecording = new Map(visibleRows(view, await tracksByRecording(recordings)).map((r) => [r.recordingMbid, r]));

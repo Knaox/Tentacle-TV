@@ -108,6 +108,16 @@ export interface AudioItemRef {
   path: string | null;
 }
 
+/** Un titre à reconnaître dans la bibliothèque (`jellyfin.matchTracks`) ; `ref` revient tel quel. */
+export interface HostMatchTrack {
+  ref: string;
+  title: string;
+  artists: { name: string; mbid: string | null }[];
+  albumTitle: string | null;
+  durationMs: number | null;
+  recording: string | null;
+}
+
 export interface PlaylistUsage {
   playlistId: string;
   ownerUserId: string;
@@ -120,6 +130,12 @@ export interface HostApi {
   "jellyfin.musicLibrary": { params: Record<string, never>; result: { libraryId: string; name: string; paths: string[] } | null };
   /** Éléments audio par MBID d'enregistrement (clé d'administration, côté hôte). */
   "jellyfin.findByMbid": { params: { recordings: string[] }; result: AudioItemRef[] };
+  /**
+   * Ce que la bibliothèque de CE compte a parmi ces titres, par LA règle de `POST /api/music/match` (MBID, sinon titre
+   * + artiste + durée), lue dans l'index local : aucune requête Jellyfin par titre ; 200 au plus. Hôte d'avant :
+   * méthode inconnue (`invalid`) — l'extension garde `findByMbid`.
+   */
+  "jellyfin.matchTracks": { params: { userId: string; tracks: HostMatchTrack[] }; result: { ref: string; item: AudioItemRef }[] };
   "jellyfin.setFavorite": { params: { userId: string; itemId: string; favorite: boolean }; result: { ok: true } };
   /** Insère à `position` (0 = tête ; au-delà de la fin = à la fin). */
   "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number }; result: { ok: true } };
@@ -201,6 +217,7 @@ export type HostMethod = keyof HostApi;
 export const HOST_METHODS: readonly HostMethod[] = [
   "jellyfin.musicLibrary",
   "jellyfin.findByMbid",
+  "jellyfin.matchTracks",
   "jellyfin.setFavorite",
   "jellyfin.playlistInsert",
   "jellyfin.playlistEntries",
