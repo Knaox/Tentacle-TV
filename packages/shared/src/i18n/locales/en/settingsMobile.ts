@@ -6,6 +6,10 @@ export default {
     accountA11y: "Account setting: it follows you on all your devices",
     deviceA11y: "Device setting: it only applies here",
     intro: "Settings marked “Account” follow you on all your devices; those marked “This device” only apply here.",
+    server: "Whole server",
+    serverA11y: "Server setting: it applies to every user",
+    octave: "Octave only",
+    octaveA11y: "Octave setting: it changes nothing in Tentacle",
   },
   // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
   web: {

@@ -16,6 +16,11 @@ export default {
     accountA11y: "Réglage du compte : il vous suit sur tous vos appareils",
     deviceA11y: "Réglage de cet appareil : il ne vaut qu'ici",
     intro: "Les réglages marqués « Compte » vous suivent sur tous vos appareils ; ceux marqués « Cet appareil » ne valent qu'ici.",
+    // Web et bureau (pastille `ScopeBadge` du web) : deux portées de plus.
+    server: "Tout le serveur",
+    serverA11y: "Réglage du serveur : il vaut pour tous les utilisateurs",
+    octave: "Octave seulement",
+    octaveA11y: "Réglage d'Octave : il ne change rien à Tentacle",
   },
   // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
   web: {
