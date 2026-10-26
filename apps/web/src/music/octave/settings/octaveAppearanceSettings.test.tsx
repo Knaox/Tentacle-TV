@@ -15,6 +15,9 @@ vi.mock("react-router-dom", () => ({
   Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a>,
 }));
 vi.mock("../mode/OctaveStartupSetting", () => ({ OctaveStartupSetting: ({ title }: { title?: string }) => <section data-startup={title} /> }));
+// Les groupes partagés (langue, profils) ont leurs propres tests (`octaveSettingsScopes.test.tsx`).
+vi.mock("./LanguageSetting", () => ({ LanguageSetting: () => null }));
+vi.mock("../profiles", () => ({ OctaveProfilesSettings: () => null }));
 vi.mock("@tentacle-tv/ui", () => ({
   SettingsSection: ({ title, children }: { title?: string; children: React.ReactNode }) => <section data-title={title}>{children}</section>,
   SettingsRow: ({ label, trailing }: { label: string; trailing?: React.ReactNode }) => <div data-row={label}>{trailing}</div>,

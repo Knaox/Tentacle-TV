@@ -63,6 +63,13 @@ export default {
     nav: "Réglages",
     shortcut: "Réglages d'Octave…",
     open: "Ouvrir les réglages d'Octave",
+    language: "Langue",
+    languageLabel: "Langue de l'interface",
+    languageCaption: "Octave et Tentacle, sur tous vos appareils.",
+    profiles: "Profils",
+    profilesCaption: "La famille de votre compte : les mêmes profils que dans Tentacle.",
+    shared: "Aussi dans Tentacle",
+    sharedLead: "Ces réglages sont ceux de Tentacle : les changer ici les change aussi là-bas.",
   },
   artistMore: {
     elsewhere: "Pas encore dans votre bibliothèque",

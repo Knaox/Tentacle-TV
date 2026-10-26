@@ -60,6 +60,13 @@ export default {
     nav: "Settings",
     shortcut: "Octave settings…",
     open: "Open Octave settings",
+    language: "Language",
+    languageLabel: "Interface language",
+    languageCaption: "Octave and Tentacle, on all your devices.",
+    profiles: "Profiles",
+    profilesCaption: "Your account's family: the same profiles as in Tentacle.",
+    shared: "Also in Tentacle",
+    sharedLead: "These are Tentacle's settings: changing them here changes them there too.",
   },
   artistMore: {
     elsewhere: "Not in your library yet",
