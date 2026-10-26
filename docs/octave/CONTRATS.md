@@ -109,6 +109,14 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    les tient (refus `forbidden` / `quota`) ; Octave cache le bouton sans `acquire`,
    dit « Plus que N ajouts aujourd'hui » près de la limite (`octave/rights/`).
    Sans la route : comportement d'avant (`MUSIC_RIGHTS_BEFORE`).
+   **Ambiances (`music.moods` + `music.mood`, 26/10, additif)** : GET `<moods>?lang=` →
+   `ExternalMusicMoods` (clé stable, nom dans la langue de l'INTERFACE, couleur, mots de
+   recherche) ; GET `<mood>/<id>?lang=` → `ExternalMusicMoodMix` (une playlist hors
+   bibliothèque, titres de la bibliothèque du compte en tête, autres playlists de
+   l'ambiance) — `shared/music/musicMoods.ts`. Les DEUX ou rien (`hasMoods`), aucune
+   capacité serveur. Octave (`octave/moods/`) : rangée « Ambiances » de l'accueil,
+   puces de la recherche vide, ambiance NOMMÉE par une recherche (comparée localement
+   aux mots, `moodModel.ts`), page `/octave/mood/:id`.
 4. **En attente** — `music.pending` : les entrées du compte dans « Titres likés »
    et les playlists, résolues par `music:resolved` (et la synchro Jellyfin).
 5. **Navigation et réglages** — `navItems`/`routes` du bundle front ; masqués sans
