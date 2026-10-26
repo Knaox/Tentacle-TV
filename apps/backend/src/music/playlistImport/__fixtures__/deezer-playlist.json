@@ -1,0 +1,204 @@
+{
+ "id": 1109890291,
+ "title": "Top France",
+ "nb_tracks": 100,
+ "picture_xl": "https://cdn-images.dzcdn.net/images/playlist/cf960e69714cb764ad52147a2d01fd01/1000x1000-000000-80-0-0.jpg",
+ "type": "playlist",
+ "public": true,
+ "tracks": {
+  "data": [
+   {
+    "id": 4273247042,
+    "title": "Fille à Papa",
+    "title_short": "Fille à Papa",
+    "title_version": "",
+    "isrc": "FR9W12641013",
+    "duration": 169,
+    "artist": {
+     "id": 8673550,
+     "name": "Vacra"
+    },
+    "album": {
+     "id": 1073735862,
+     "title": "Fille à Papa"
+    }
+   },
+   {
+    "id": 4314450762,
+    "title": "J'assume",
+    "title_short": "J'assume",
+    "title_version": "",
+    "isrc": "FR9W26145089",
+    "duration": 178,
+    "artist": {
+     "id": 172662567,
+     "name": "RnBoi"
+    },
+    "album": {
+     "id": 1108263202,
+     "title": "J'assume"
+    }
+   },
+   {
+    "id": 4059400101,
+    "title": "Mélo Décalé",
+    "title_short": "Mélo Décalé",
+    "title_version": "",
+    "isrc": "FR9W12700093",
+    "duration": 156,
+    "artist": {
+     "id": 13918545,
+     "name": "Tiakola"
+    },
+    "album": {
+     "id": 996625601,
+     "title": "Mélo Décalé"
+    }
+   },
+   {
+    "id": 4304492972,
+    "title": "La Nocturne",
+    "title_short": "La Nocturne",
+    "title_version": "",
+    "isrc": "FR9W12630650",
+    "duration": 221,
+    "artist": {
+     "id": 13918545,
+     "name": "Tiakola"
+    },
+    "album": {
+     "id": 1103797432,
+     "title": "WpointM"
+    }
+   },
+   {
+    "id": 4034126871,
+    "title": "Été avec toi",
+    "title_short": "Été avec toi",
+    "title_version": "",
+    "isrc": "FRDWM2600300",
+    "duration": 187,
+    "artist": {
+     "id": 55936502,
+     "name": "Adèle Castillon"
+    },
+    "album": {
+     "id": 987392741,
+     "title": "Été avec toi"
+    }
+   },
+   {
+    "id": 3558373981,
+    "title": "melodrama",
+    "title_short": "melodrama",
+    "title_version": "",
+    "isrc": "FR9W12550711",
+    "duration": 176,
+    "artist": {
+     "id": 292,
+     "name": "disiz"
+    },
+    "album": {
+     "id": 822345001,
+     "title": "melodrama"
+    }
+   },
+   {
+    "id": 4015341011,
+    "title": "Dai Dai",
+    "title_short": "Dai Dai",
+    "title_version": "",
+    "isrc": "USQX92602558",
+    "duration": 223,
+    "artist": {
+     "id": 160,
+     "name": "Shakira"
+    },
+    "album": {
+     "id": 980745831,
+     "title": "Dai Dai"
+    }
+   },
+   {
+    "id": 4048381021,
+    "title": "Bodycount",
+    "title_short": "Bodycount",
+    "title_version": "",
+    "isrc": "FR8FB2610030",
+    "duration": 154,
+    "artist": {
+     "id": 80268952,
+     "name": "Le Crime"
+    },
+    "album": {
+     "id": 992468501,
+     "title": "Casus Belli"
+    }
+   },
+   {
+    "id": 1206643252,
+    "title": "Habiba",
+    "title_short": "Habiba",
+    "title_version": "",
+    "isrc": "QZFYY2132759",
+    "duration": 193,
+    "artist": {
+     "id": 13820325,
+     "name": "Theodora"
+    },
+    "album": {
+     "id": 199624892,
+     "title": "Neptune"
+    }
+   },
+   {
+    "id": 4362540421,
+    "title": "Professionnels",
+    "title_short": "Professionnels",
+    "title_version": "",
+    "isrc": "FR9W12634190",
+    "duration": 157,
+    "artist": {
+     "id": 162665,
+     "name": "SCH"
+    },
+    "album": {
+     "id": 1127282331,
+     "title": "Précipices & Professionnels"
+    }
+   },
+   {
+    "id": 4285685232,
+    "title": "Cuenta (feat. Meryl & Shay)",
+    "title_short": "Cuenta (feat. Meryl & Shay)",
+    "title_version": "",
+    "isrc": "FRZ082600372",
+    "duration": 183,
+    "artist": {
+     "id": 66228482,
+     "name": "Ronisia"
+    },
+    "album": {
+     "id": 1078575412,
+     "title": "Cuenta (feat. Meryl & Shay)"
+    }
+   },
+   {
+    "id": 4208859922,
+    "title": "BbY WOW",
+    "title_short": "BbY WOW",
+    "title_version": "",
+    "isrc": "USUG12607940",
+    "duration": 225,
+    "artist": {
+     "id": 5297021,
+     "name": "KAROL G"
+    },
+    "album": {
+     "id": 1048237582,
+     "title": "NO ME ARREPIENTO DE SENTIR TANTO"
+    }
+   }
+  ]
+ }
+}
