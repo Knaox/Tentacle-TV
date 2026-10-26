@@ -4,9 +4,9 @@
  * Par défaut, la barre montre TOUT ce qui compte d'un coup d'œil : l'accueil,
  * les recommandations, puis les bibliothèques elles-mêmes — plus de menu à
  * ouvrir pour atteindre « Films ». Ma liste et Mes favoris y entrent quand on
- * les épingle ; une page d'extension, là où son extension la place (`primary`,
- * dans la barre sans avis), puis là où on la met (`usePinnedNav`, que le mobile
- * lit aussi). Ce qui ne tient pas en largeur passe dans « Plus » (`NavTabs`).
+ * les épingle ; une page d'extension, si son extension l'y admet (`primary`,
+ * dans la barre sans avis ; `false` : jamais proposée — `pluginNavPins.ts`),
+ * puis là où on la met (`usePinnedNav`, que le mobile lit aussi). Ce qui ne tient pas en largeur passe dans « Plus » (`NavTabs`).
  *
  * Chacun la dispose ensuite à sa main (`useNavBarLayout`) : toute destination
  * se retire — bibliothèques comprises —, s'épingle, se réordonne. `editor`
@@ -26,6 +26,7 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
 import { pluginNavKey, usePinnedNav } from "../../hooks/usePinnedNav";
+import { pluginNavPinnable } from "../../hooks/pluginNavPins";
 import { useNavBarLayout } from "../../hooks/useNavBarLayout";
 import { appendPinned, applyOrder, nudge, reorderPinned, type NavEntryKind } from "./navLayout";
 
@@ -56,6 +57,8 @@ export interface NavLibrary extends NavDestination {
 export interface NavListEntry extends NavDestination {
   pinned: boolean;
   toggle: () => void;
+  /** Faux : la page ne va pas dans la barre (son extension l'en cache) — ni épingle, ni « Personnaliser ». */
+  pinnable?: boolean;
 }
 
 export interface NavBarEditor {
@@ -125,6 +128,8 @@ export function useNavDestinations() {
           icon: Puzzle,
           pinned: pinned.isPluginNavPinned(key, nav.primary),
           toggle: () => pinned.togglePluginNav(key, nav.primary),
+          // Cachée de la barre par son extension : on l'ouvre depuis « Plus », jamais épinglée ni proposée.
+          pinnable: pluginNavPinnable(nav.primary),
         });
       }
     }
@@ -138,7 +143,7 @@ export function useNavDestinations() {
         key: lib.key, label: lib.label, path: lib.path, icon: lib.icon, kind: "library" as const, pinned: lib.pinned,
         setPinned: (on: boolean) => bar.setHidden(lib.key, !on),
       })),
-      ...extensions.map((entry) => ({ ...entry, kind: "extension" as const, setPinned: (on: boolean) => { if (on !== entry.pinned) entry.toggle(); } })),
+      ...extensions.filter((entry) => entry.pinnable !== false).map((entry) => ({ ...entry, kind: "extension" as const, setPinned: (on: boolean) => { if (on !== entry.pinned) entry.toggle(); } })),
     ];
     const entries = applyOrder(defaults, layout.order);
     const allKeys = entries.map((e) => e.key);

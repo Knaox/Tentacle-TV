@@ -17,12 +17,12 @@ interface PinnedState {
    *
    * Clé d'une entrée : `${pluginId}:${path}`.
    *
-   * Depuis que l'extension peut dire sa place par défaut (`primary`,
-   * capacité `plugins.navigation`), ces deux listes ne gardent que les
-   * gestes de l'appareil qui s'en écartent (`pluginNavPins.ts`).
+   * Une page que son extension cache de la barre (`primary: false`, capacité
+   * `plugins.navigation`) n'y est jamais, quels que soient ces gestes, qui
+   * restent gardés pour le jour où elle y revient (`pluginNavPins.ts`).
    */
   pluginsUnpinned: string[];
-  /** Pages qu'on a mises dans la barre alors que l'extension les laissait dans « Plus ». */
+  /** Pages mises dans la barre quand `primary: false` n'était qu'un défaut (avant le 26/10) : lues sans effet. */
   pluginsPinned: string[];
 }
 
