@@ -83,6 +83,29 @@ describe("SyncRunner", () => {
     expect(reads).toHaveBeenCalledTimes(1);
   });
 
+  it("un signal arrivé PENDANT un passage, déjà pris par lui : les suivants tournent encore (course vue au banc)", async () => {
+    const reads = vi.fn(async () => new Map<string, MusicTrack[]>());
+    let release: () => void = () => undefined;
+    let slow = true;
+    const { runner } = bench({ tracks: [kept("jf:a")], collections: [playlist(["jf:a"])] }, {
+      readPlaylists: reads,
+      readWanted: async () => {
+        if (slow) await new Promise<void>((r) => (release = r));
+        return new Map();
+      },
+    });
+    runner.start();
+    runner.signal({ kind: "playlist", playlistId: "p1" });
+    await new Promise((r) => setTimeout(r, 1));
+    slow = false;
+    release();
+    await runner.idle();
+    const before = reads.mock.calls.length;
+    runner.signal({ kind: "playlist", playlistId: "p1" });
+    await runner.idle();
+    expect(reads.mock.calls.length).toBe(before + 1);
+  });
+
   it("arrêté (réglage éteint, profil, coupure) : plus rien ne s'applique", async () => {
     const { runner, applied } = bench({ tracks: [kept("jf:a")], collections: [playlist(["jf:a"])] }, { readPlaylists: async () => new Map([[PL, [track("jf:b")]]]) });
     runner.stop();

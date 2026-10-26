@@ -65,7 +65,10 @@ export class SyncRunner {
 
   /** Attendre que tout ce qui est demandé soit fait (tests). */
   async idle(): Promise<void> {
-    while (this.running || this.timer !== null) await (this.running ?? new Promise((r) => setTimeout(r, 5)));
+    while (this.running || this.timer !== null) {
+      await this.running;
+      await new Promise((r) => setTimeout(r, 2));
+    }
   }
 
   private later(pass: Pass): void {
@@ -82,16 +85,25 @@ export class SyncRunner {
     this.drain();
   }
 
+  /**
+   * Un passage à la fois. Le drapeau se lève dans un `finally` posé APRÈS
+   * l'affectation : une boucle qui n'avait rien à faire (le minuteur d'un signal
+   * dont la boucle en cours a déjà pris le passage) se finissait de façon
+   * synchrone, AVANT que sa promesse soit retenue — `running` restait alors levé
+   * pour toujours et plus rien ne tournait (vu au banc du bureau).
+   */
   private drain(): void {
-    if (this.running || this.stopped) return;
-    this.running = (async () => {
+    if (this.running || this.stopped || this.queued === null) return;
+    const loop = async (): Promise<void> => {
       while (this.queued && !this.stopped) {
         const pass = this.queued;
         this.queued = null;
         await this.run(pass).catch(() => undefined);
       }
+    };
+    this.running = loop().finally(() => {
       this.running = null;
-    })();
+    });
   }
 
   private async run(pass: Pass): Promise<void> {
