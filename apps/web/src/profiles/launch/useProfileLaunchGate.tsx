@@ -46,7 +46,7 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const [initial] = useState(() => octaveInitial(initialState(authed), initialListing));
   const [gate, setGate] = useState<GateState>(initial.gate);
   const [octavePin, setOctavePin] = useState<PickerProfileDto | null>(initial.pin);
-  // Le miroir ouvrait l'identité sans code : on attend la réponse fraîche (un code posé ailleurs depuis), bornée.
+  // Le miroir ouvrait l'identité : on attend la réponse fraîche (la sécurité du serveur), bornée.
   const [octaveAwaiting, setOctaveAwaiting] = useState(initial.awaiting);
   const gateRef = useRef(gate);
   gateRef.current = gate;
@@ -93,8 +93,8 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     if (step.logout) logout();
     if (step.endProfile && endProfileSession("ended")) return;
     setOctaveAwaiting(false);
-    const { heldProfileId, stay } = gateRef.current;
-    const octave = octaveGateStep(step.phase, answer.kind === "listing" ? answer.listing : null, heldProfileId, stay, Date.now(), isTentacleHeld());
+    const { heldProfileId, stay, requested } = gateRef.current;
+    const octave = octaveGateStep(step.phase, answer.kind === "listing" ? answer.listing : null, heldProfileId, stay, Date.now(), isTentacleHeld(), requested);
     setOctavePin(octave.pinProfile);
     setGate((current) => (octave.opened ? { ...current, phase: "app", mode: "verify" } : { ...current, phase: octave.phase }));
   }, [logout]);
@@ -147,13 +147,15 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
 }
 
 /**
- * Le lancement en Octave, d'après le miroir : le sélecteur devient la feuille
- * du code de l'identité gardée — ou, si le miroir la dit sans code, l'ATTENTE
- * de la réponse fraîche (`check`, fond d'Octave, bornée) : un code posé
- * ailleurs depuis est alors demandé avant que rien de l'identité ne paraisse.
+ * Le lancement en Octave, d'après le miroir : le sélecteur devient l'identité
+ * gardée, rouverte sans son code — la feuille du code seulement si la session
+ * d'un profil a pris fin (`requested` : on retombe sur une autre identité). En
+ * ouvrant, l'ATTENTE de la réponse fraîche (`check`, fond d'Octave, bornée) :
+ * la sécurité (le serveur dit un autre profil) est jugée avant que rien de
+ * l'identité ne paraisse.
  */
 function octaveInitial(gate: GateState, listing: PickerProfilesDto | null): { gate: GateState; pin: PickerProfileDto | null; awaiting: boolean } {
-  const step = octaveGateStep(gate.phase, listing, gate.heldProfileId, gate.stay, Date.now(), isTentacleHeld());
+  const step = octaveGateStep(gate.phase, listing, gate.heldProfileId, gate.stay, Date.now(), isTentacleHeld(), gate.requested);
   return { gate: step.opened ? { ...gate, phase: "check" } : gate, pin: step.pinProfile, awaiting: step.opened };
 }
 

@@ -12,11 +12,14 @@
  * - **la disponibilité au lancement** : la réponse du serveur dès qu'elle est
  *   là, sinon le miroir — Octave se peint sans attendre deux allers-retours ;
  * - **« Qui regarde ? »** : jamais sur un lancement en Octave. L'identité est
- *   celle que l'appareil garde (la dernière utilisée) ; si son profil a un
- *   code PIN et que la préférence aurait demandé le sélecteur, la petite
- *   feuille de PIN (D7). Seule la SÉCURITÉ ramène le sélecteur : le serveur
- *   dit l'appareil dans un profil dont l'application n'a pas le jeton —
- *   ouvrir le compte sans son code serait un contournement.
+ *   celle que l'appareil garde (la dernière utilisée), et elle se rouvre SANS
+ *   son code PIN : « c'est un lecteur de musique » (Damien, 26/10) — rouvrir
+ *   Octave avec le même profil n'est pas en changer, l'appareil en a déjà le
+ *   jeton. Le code ne se demande (petite feuille, D7) que si l'identité
+ *   CHANGE : la session d'un profil a pris fin (`requested`) et l'on retombe
+ *   sur le compte. Seule la SÉCURITÉ ramène le sélecteur : le serveur dit
+ *   l'appareil dans un profil dont l'application n'a pas le jeton — ouvrir le
+ *   compte sans son code serait un contournement.
  */
 
 import { pickerLaunch, sameUserId, type PickerProfilesDto, type PickerStay } from "@tentacle-tv/shared";
@@ -60,19 +63,26 @@ type GateListing = Pick<PickerProfilesDto, "profiles" | "currentProfileId" | "ac
 /**
  * À appeler quand la règle ordinaire (`launchDecision.ts`) dirait
  * « sélecteur » : sur un lancement en Octave, l'identité gardée
- * (`heldProfileId`, null : le compte lui-même) s'ouvre — derrière son code
- * s'il en a un. La préférence de l'appareil retenu (`stay`) a déjà été
- * appliquée par la règle ordinaire : un profil qu'elle dispensait n'arrive
- * jamais ici.
+ * (`heldProfileId`, null : le compte lui-même) se rouvre telle quelle, sans
+ * code. `requested` (la session d'un profil a pris fin : l'identité n'est plus
+ * celle d'avant) remet le code de celle sur qui l'on retombe, s'il en a un. La
+ * préférence de l'appareil retenu (`stay`) a déjà été appliquée par la règle
+ * ordinaire : un profil qu'elle dispensait n'arrive jamais ici.
  */
-export function octaveGateOutcome(listing: GateListing, heldProfileId: string | null, stay: PickerStay | null, now: number): OctaveGateOutcome {
+export function octaveGateOutcome(
+  listing: GateListing,
+  heldProfileId: string | null,
+  stay: PickerStay | null,
+  now: number,
+  requested = false,
+): OctaveGateOutcome {
   const held = heldProfileId === null ? null : { profileId: heldProfileId };
   // La règle SANS la préférence : ce qui reste est la sécurité.
   if (pickerLaunch({ ...listing, atLaunch: false }, held, stay, now) === "picker") return { kind: "picker" };
   const identity = heldProfileId ?? listing.account.userId;
   const profile = listing.profiles.find((candidate) => sameUserId(candidate.userId, identity));
   if (!profile) return { kind: "picker" };
-  return profile.hasPin ? { kind: "pin", profileId: profile.userId } : { kind: "open" };
+  return requested && profile.hasPin ? { kind: "pin", profileId: profile.userId } : { kind: "open" };
 }
 
 /** Ce que la porte de « Qui regarde ? » fait d'une phase, sur un lancement en Octave. */
@@ -95,10 +105,11 @@ export function octaveGateStep<P extends string>(
   stay: PickerStay | null,
   now: number,
   inOctave: boolean,
+  requested = false,
 ): OctaveGateStep<P> {
   const unchanged = { phase, pinProfile: null, opened: false };
   if (!inOctave || phase !== "picker" || !listing) return unchanged;
-  const outcome = octaveGateOutcome(listing, heldProfileId, stay, now);
+  const outcome = octaveGateOutcome(listing, heldProfileId, stay, now, requested);
   if (outcome.kind === "open") return { phase: "app", pinProfile: null, opened: true };
   if (outcome.kind === "picker") return unchanged;
   const profile = listing.profiles.find((candidate) => candidate.userId === outcome.profileId) ?? null;
