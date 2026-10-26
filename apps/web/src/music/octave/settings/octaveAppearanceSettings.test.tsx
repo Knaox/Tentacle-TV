@@ -15,8 +15,11 @@ vi.mock("react-router-dom", () => ({
   Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a>,
 }));
 vi.mock("../mode/OctaveStartupSetting", () => ({ OctaveStartupSetting: ({ title }: { title?: string }) => <section data-startup={title} /> }));
+// Les groupes partagés (langue, profils) ont leurs propres tests (`octaveSettingsScopes.test.tsx`).
+vi.mock("./LanguageSetting", () => ({ LanguageSetting: () => null }));
+vi.mock("../profiles", () => ({ OctaveProfilesSettings: () => null }));
 vi.mock("@tentacle-tv/ui", () => ({
-  SettingsSection: ({ title, children }: { title?: string; children: React.ReactNode }) => <section data-title={title}>{children}</section>,
+  SettingsSection: ({ title, badge, children }: { title?: string; badge?: React.ReactNode; children: React.ReactNode }) => <section data-title={title}>{badge}{children}</section>,
   SettingsRow: ({ label, trailing }: { label: string; trailing?: React.ReactNode }) => <div data-row={label}>{trailing}</div>,
 }));
 vi.mock("../../../components/settings/SegmentedChoice", () => ({
@@ -47,6 +50,10 @@ describe("Réglages › Apparence", () => {
     expect(html).not.toMatch(/liquidGlassTitle|appearance\.glass|appearance\.tentacleGlass/);
   });
 
+  it("le groupe Octave porte la pastille « Octave seulement » (r7 le pose tel quel dans Réglages de Tentacle)", () => {
+    expect(renderToStaticMarkup(<SettingsAppearance />)).toMatch(/data-title="appearance\.title">[^]*?scope\.octave/);
+  });
+
   it("le groupe Octave renvoie aux réglages DANS Octave", () => {
     expect(renderToStaticMarkup(<SettingsAppearance />)).toContain(`href="${octavePaths.settings}"`);
   });
@@ -54,7 +61,8 @@ describe("Réglages › Apparence", () => {
   it("macOS compatible : « Liquid Glass dans Tentacle » et « Liquid Glass dans Octave »", () => {
     h.native = true;
     const html = renderToStaticMarkup(<SettingsAppearance />);
-    expect(html).toContain('data-row="appearance.tentacleGlass"');
+    // La ligne de Tentacle est une `SettingItem` du catalogue (libellé précisé), celle d'Octave une ligne d'Octave.
+    expect(html).toContain("appearance.tentacleGlass");
     expect(html).toContain('data-row="appearance.glass"');
     expect(html).not.toContain("liquidGlassTitle");
   });
@@ -63,8 +71,10 @@ describe("Réglages › Apparence", () => {
     h.native = true;
     h.octave = false;
     const html = renderToStaticMarkup(<SettingsAppearance />);
-    expect(html).not.toContain("appearance.theme");
-    expect(html).toContain('data-row="liquidGlassTitle"');
+    // Le groupe d'Octave absent : ni son thème, ni son renvoi (les clés du catalogue `groups.appearance.theme` restent).
+    expect(html).not.toContain("appearance.themeSame");
+    expect(html).not.toContain(`href="${octavePaths.settings}"`);
+    expect(html).toContain("liquidGlassTitle");
   });
 });
 

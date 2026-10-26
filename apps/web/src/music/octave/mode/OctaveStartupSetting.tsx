@@ -7,16 +7,23 @@
  * réglage ni trace.
  */
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsSection } from "@tentacle-tv/ui";
+import { ScopeBadge } from "../../../components/settings/ScopeBadge";
 import { SegmentedChoice } from "../../../components/settings/SegmentedChoice";
 import type { OctaveStartupChoice } from "./octaveStartup";
 import { setOctaveStartup, useOctaveStartup } from "./octaveStartupStore";
 import { useOctaveAvailability } from "./useOctaveAvailability";
 
-/** `title` / `caption` : la page « Réglages d'Octave » la range sous son propre titre (« Démarrage »). */
-export function OctaveStartupSetting({ title, caption }: { title?: string; caption?: string } = {}) {
+const DEVICE_BADGE = <ScopeBadge scope="device" />;
+
+/**
+ * `title` / `caption` : la page « Réglages d'Octave » la range sous son propre titre (« Démarrage ») ; `badge` : la
+ * pastille de portée, « Cet appareil » par défaut — partout où le réglage paraît
+ * (Réglages d'Octave, Réglages de Tentacle) ; `null` la retire.
+ */
+export function OctaveStartupSetting({ title, caption, badge = DEVICE_BADGE }: { title?: string; caption?: string; badge?: ReactNode } = {}) {
   const { t } = useTranslation("music");
   const { available } = useOctaveAvailability();
   const choice = useOctaveStartup();
@@ -31,7 +38,7 @@ export function OctaveStartupSetting({ title, caption }: { title?: string; capti
   if (!available) return null;
 
   return (
-    <SettingsSection title={title ?? t("mode.startupTitle")} caption={caption ?? t("mode.startupCaption")}>
+    <SettingsSection title={title ?? t("mode.startupTitle")} caption={caption ?? t("mode.startupCaption")} badge={badge}>
       <div className="p-5">
         <p className="mb-2 text-sm font-medium text-content-primary">{t("mode.startupLabel")}</p>
         <SegmentedChoice label={t("mode.startupLabel")} value={choice} options={options} onChange={setOctaveStartup} />

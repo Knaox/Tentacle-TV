@@ -1,13 +1,9 @@
-import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
 import { Globe, Sun } from "lucide-react";
-import { useSetInterfaceLanguage } from "@tentacle-tv/api-client";
 import type { ThemeMode } from "@tentacle-tv/theme";
 import type { SettingScope } from "@tentacle-tv/shared";
 import { useThemeMode } from "../../../theme/useThemeMode";
-import { clearPendingInterfaceLanguage, markInterfaceLanguagePending } from "../../../offline/pendingPrefs";
-import { useOfflineMode } from "../../../offline/useOfflineMode";
+import { useInterfaceLanguage } from "../../../components/settings/useInterfaceLanguage";
 import { SettingsChoiceRow } from "../settings/ui/SettingsChoiceRow";
 
 const MODES: readonly ThemeMode[] = ["light", "dark", "auto"];
@@ -35,35 +31,20 @@ export function ThemeChoiceRow({ scope, last }: { scope?: SettingScope | null; l
 
 /**
  * `LanguageChoiceRow` de l'app : « Langue [Français | Anglais] ». Le geste est
- * celui de la page Lecture du web (`pages/Preferences.tsx`) : langue locale
- * aussitôt, envoi au serveur en ligne, file d'attente hors ligne.
+ * le seul `useInterfaceLanguage` : langue locale aussitôt, envoi au serveur en
+ * ligne, file d'attente hors ligne.
  */
 export function LanguageChoiceRow({ last, scope, label }: { last?: boolean; scope?: SettingScope | null; label?: string }) {
-  const { t, i18n } = useTranslation("profile");
-  const queryClient = useQueryClient();
-  const offline = useOfflineMode();
-  const setLang = useSetInterfaceLanguage();
-  const current = i18n.language?.startsWith("fr") ? "fr" : "en";
-
-  const change = useCallback((lng: string) => {
-    void i18n.changeLanguage(lng);
-    localStorage.setItem("tentacle_language", lng);
-    if (offline) {
-      markInterfaceLanguagePending(lng);
-    } else {
-      clearPendingInterfaceLanguage();
-      setLang.mutate(lng);
-    }
-    void queryClient.invalidateQueries();
-  }, [i18n, offline, setLang, queryClient]);
+  const { t } = useTranslation("profile");
+  const { language, setLanguage } = useInterfaceLanguage();
 
   return (
     <SettingsChoiceRow
       icon={Globe}
       label={label ?? t("language")}
       options={[{ value: "fr", label: t("french") }, { value: "en", label: t("english") }]}
-      value={current}
-      onChange={change}
+      value={language}
+      onChange={setLanguage}
       last={last}
       scope={scope}
     />

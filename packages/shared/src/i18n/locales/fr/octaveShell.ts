@@ -29,6 +29,10 @@ export default {
     choose: "Choisissez un profil. Vous restez dans Octave.",
     close: "Fermer",
   },
+  profiles: {
+    title: "Gérer les profils",
+    lead: "Les profils de la famille, les mêmes que dans Tentacle : ce que vous changez ici vaut partout.",
+  },
   pinSheet: {
     cancel: "Annuler",
   },
@@ -59,6 +63,13 @@ export default {
     nav: "Réglages",
     shortcut: "Réglages d'Octave…",
     open: "Ouvrir les réglages d'Octave",
+    language: "Langue",
+    languageLabel: "Langue de l'interface",
+    languageCaption: "Octave et Tentacle, sur tous vos appareils.",
+    profiles: "Profils",
+    profilesCaption: "La famille de votre compte : les mêmes profils que dans Tentacle.",
+    shared: "Aussi dans Tentacle",
+    sharedLead: "Ces réglages sont ceux de Tentacle : les changer ici les change aussi là-bas.",
   },
   artistMore: {
     elsewhere: "Pas encore dans votre bibliothèque",

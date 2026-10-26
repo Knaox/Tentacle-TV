@@ -48,3 +48,16 @@ export function octaveLanding(wantsOctave: boolean, availability: OctaveAvailabi
   if (availability.available) return "octave";
   return availability.settled ? "tentacle" : "pending";
 }
+
+/**
+ * Une page de TENTACLE (pas l'accueil, que le mode remplace) s'affiche, mode
+ * allumé — un lien sorti d'Octave : on n'est plus dans la musique, le mode
+ * s'éteint. L'interrupteur de la barre de Tentacle dit alors vrai (éteint), un
+ * clic y RAMÈNE (jamais un premier clic qui éteint sur place), l'accueil de
+ * Tentacle redevient l'accueil, et le prochain lancement « dernier mode » est
+ * Tentacle (Damien, 26/10 : au retour de « Gérer les profils », l'interrupteur
+ * restait allumé et recliquer ne ramenait pas dans la musique).
+ */
+export function tentaclePageEndsMode(on: boolean, atHome: boolean): boolean {
+  return on && !atHome;
+}

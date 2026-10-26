@@ -67,9 +67,12 @@ describe("bascule du mode", () => {
     expect(html).toContain('title="mode.enterHint"');
   });
 
-  it("barre de Tentacle, mode resté allumé : l'interrupteur le dit", () => {
+  // Damien, 26/10 : au retour de « Gérer les profils », l'interrupteur restait allumé et recliquer l'éteignait.
+  it("barre de Tentacle, mode encore allumé : éteint quand même (on est dans Tentacle), un clic y ramène", () => {
     h.mode = true;
-    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toContain('aria-checked="true"');
+    const html = renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />);
+    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain('title="mode.enterHint"');
   });
 
   it("dans Octave : allumé, et propose de revenir", () => {

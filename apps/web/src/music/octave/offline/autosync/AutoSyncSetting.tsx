@@ -6,6 +6,7 @@
  * sans `keepOffline`).
  */
 
+import type { ReactNode } from "react";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../../../../components/settings/ToggleSwitch";
@@ -26,13 +27,14 @@ function Row() {
   );
 }
 
-export function AutoSyncSetting({ variant }: { variant: "section" | "inline" }) {
+/** `badge` (section seulement) : la pastille de portée, à côté du titre du groupe. */
+export function AutoSyncSetting({ variant, badge }: { variant: "section" | "inline"; badge?: ReactNode }) {
   const { t } = useTranslation("musicOffline");
   const surface = useOfflineSurface();
   if (!surface.library) return null;
   if (variant === "section") {
     return (
-      <SettingsSection title={t("autosync.section")} caption={t("autosync.caption")}>
+      <SettingsSection title={t("autosync.section")} caption={t("autosync.caption")} badge={badge}>
         <Row />
       </SettingsSection>
     );

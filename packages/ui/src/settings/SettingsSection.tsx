@@ -16,6 +16,10 @@ export interface SettingsSectionProps {
   title?: string;
   /** Légende sous la carte, pour une explication qui n'a pas sa place en ligne. */
   caption?: ReactNode;
+  /** Posé à côté du titre : la pastille de portée d'un groupe. */
+  badge?: ReactNode;
+  /** L'ancre du groupe (un lien `#…` y mène). */
+  id?: string;
   children: ReactNode;
   className?: string;
 }
@@ -23,15 +27,20 @@ export interface SettingsSectionProps {
 export function SettingsSection({
   title,
   caption,
+  badge,
+  id,
   children,
   className = "",
 }: SettingsSectionProps) {
   return (
-    <section className={`mb-6 ${className}`}>
+    <section id={id} className={`mb-6 scroll-mt-6 ${className}`}>
       {title ? (
-        <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-          {title}
-        </h2>
+        <div className="mb-2 flex items-center gap-2 px-1">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+            {title}
+          </h2>
+          {badge ?? null}
+        </div>
       ) : null}
 
       <div className="lg-content overflow-hidden rounded-xl border border-line-subtle bg-surface-1">

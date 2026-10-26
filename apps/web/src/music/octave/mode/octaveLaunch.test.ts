@@ -4,8 +4,8 @@ import { launchAvailability, launchesInOctave, octaveGateOutcome, octaveGateStep
 
 /**
  * Octave — le lancement en Octave : décidé avant la première image (miroir de
- * la disponibilité), jamais « Qui regarde ? » sauf la sécurité, le code PIN de
- * l'identité gardée dans la petite feuille.
+ * la disponibilité), jamais « Qui regarde ? » sauf la sécurité ; l'identité
+ * gardée se rouvre sans son code PIN, demandé seulement quand l'identité change.
  */
 
 const OWNER = "http://srv|owner";
@@ -73,10 +73,17 @@ describe("« Qui regarde ? » sur un lancement en Octave", () => {
     expect(octaveGateOutcome(listing({ currentProfileId: "lea" }), "lea", null, NOW)).toEqual({ kind: "open" });
   });
 
-  it("l'identité gardée a un code PIN : la petite feuille, jamais le sélecteur", () => {
-    expect(octaveGateOutcome(listing({ currentProfileId: "zoe" }), "zoe", null, NOW)).toEqual({ kind: "pin", profileId: "zoe" });
+  // Damien, 26/10 : « c'est un lecteur de musique » — rouvrir Octave avec le même profil ne redemande pas son code.
+  it("l'identité gardée a un code PIN : elle se rouvre SANS le demander (même profil, jeton déjà là)", () => {
+    expect(octaveGateOutcome(listing({ currentProfileId: "zoe" }), "zoe", null, NOW)).toEqual({ kind: "open" });
     const ownPin = listing({ profiles: [profile("owner", { kind: "owner", personal: true, hasPin: true }), profile("lea")] });
-    expect(octaveGateOutcome(ownPin, null, null, NOW)).toEqual({ kind: "pin", profileId: "owner" });
+    expect(octaveGateOutcome(ownPin, null, null, NOW)).toEqual({ kind: "open" });
+  });
+
+  it("la session d'un profil a pris fin (l'identité CHANGE) : le code de celle où l'on retombe, dans la petite feuille", () => {
+    const ownPin = listing({ profiles: [profile("owner", { kind: "owner", personal: true, hasPin: true }), profile("lea")] });
+    expect(octaveGateOutcome(ownPin, null, null, NOW, true)).toEqual({ kind: "pin", profileId: "owner" });
+    expect(octaveGateOutcome(listing(), null, null, NOW, true)).toEqual({ kind: "open" });
   });
 
   it("la sécurité ramène le sélecteur : le serveur dit un profil dont l'appareil n'a pas le jeton", () => {
@@ -103,10 +110,15 @@ describe("la porte, phase par phase", () => {
     expect(octaveGateStep("picker", null, null, null, NOW, true)).toEqual({ phase: "picker", pinProfile: null, opened: false });
   });
 
-  it("le sélecteur devient l'application, ou la feuille du profil gardé", () => {
+  it("le sélecteur devient l'application, même pour un profil gardé qui a un code", () => {
     expect(octaveGateStep("picker", listing(), null, null, NOW, true)).toEqual({ phase: "app", pinProfile: null, opened: true });
-    const step = octaveGateStep("picker", zoe, "zoe", null, NOW, true);
-    expect(step.pinProfile?.userId).toBe("zoe");
+    expect(octaveGateStep("picker", zoe, "zoe", null, NOW, true)).toEqual({ phase: "app", pinProfile: null, opened: true });
+  });
+
+  it("après la fin d'un profil, le compte qui a un code passe par la feuille", () => {
+    const ownPin = listing({ profiles: [profile("owner", { kind: "owner", personal: true, hasPin: true }), profile("lea")] });
+    const step = octaveGateStep("picker", ownPin, null, null, NOW, true, true);
+    expect(step.pinProfile?.userId).toBe("owner");
     expect(step.opened).toBe(false);
   });
 

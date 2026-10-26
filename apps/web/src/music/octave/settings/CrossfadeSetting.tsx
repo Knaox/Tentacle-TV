@@ -4,6 +4,7 @@
  * même pendant l'écoute ; aucune capacité serveur.
  */
 
+import type { ReactNode } from "react";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../../../components/settings/ToggleSwitch";
@@ -11,13 +12,14 @@ import { rangeFill } from "../../../lib/rangeFill";
 import { CROSSFADE_DEFAULT_S, CROSSFADE_MAX_S, CROSSFADE_MIN_S } from "../../engine/crossfadeRules";
 import { setCrossfadeMs, useCrossfadeMs } from "../../engine/crossfadeSetting";
 
-export function CrossfadeSetting() {
+/** `badge` : la pastille de portée, à côté du titre du groupe. */
+export function CrossfadeSetting({ badge }: { badge?: ReactNode } = {}) {
   const { t } = useTranslation("octaveShell");
   const ms = useCrossfadeMs();
   const on = ms > 0;
   const seconds = ms / 1000;
   return (
-    <SettingsSection title={t("crossfade.section")} caption={t("crossfade.caption")}>
+    <SettingsSection title={t("crossfade.section")} caption={t("crossfade.caption")} badge={badge}>
       <div className="flex items-start justify-between gap-4 p-5">
         <div className="min-w-0">
           <p className="text-sm font-medium text-content-primary">{t("crossfade.label")}</p>

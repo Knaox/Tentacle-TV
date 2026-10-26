@@ -2,7 +2,7 @@
  * Octave — le menu de la coquille : QUI est là (le profil actuel de la famille,
  * sinon le compte — `shellIdentity.tsx`), et, au clic, « Changer de profil » (la
  * petite feuille « Qui écoute ? », code PIN compris) et « Gérer les profils »
- * (là où « Qui regarde ? » l'offre ; Réglages › Famille de Tentacle) — ces deux
+ * (là où « Qui regarde ? » l'offre ; sa page DANS Octave, `/octave/profiles`) — ces deux
  * seulement avec une famille de plusieurs profils, en ligne
  * (`octaveProfileMenu`) —, puis « Réglages d'Octave… » (`/octave/settings`,
  * dans Octave), toujours.
@@ -19,7 +19,6 @@ import { useTranslation } from "react-i18next";
 import { ChevronsUpDown, Settings2 } from "lucide-react";
 import { ManageProfilesIcon, SwitchProfileIcon } from "../../../components/userMenu/icons";
 import { useMenuKeyboard } from "../../../components/userMenu/useMenuKeyboard";
-import { FAMILY_SETTINGS_PATH } from "../../../profiles/launch/ProfileLaunchScreen";
 import { switchActiveId } from "../../../profiles/switcher/switchPlan";
 import { octavePaths } from "../octavePaths";
 import { OctaveProfileSheet } from "./OctaveProfileSheet";
@@ -111,7 +110,7 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
             </button>
           )}
           {family?.canManage && (
-            <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(FAMILY_SETTINGS_PATH); }}>
+            <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(octavePaths.profiles); }}>
               <ManageProfilesIcon />
               {t("profile.manage")}
             </button>
