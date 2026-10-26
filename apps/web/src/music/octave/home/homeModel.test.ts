@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MusicArtist, MusicTrack } from "@tentacle-tv/shared/music";
-import { mixContextId, mixMosaic, mixSubtitle, mixTitle, resumeOffer } from "./homeModel";
+import { mixContextId, mixMosaic, mixSubtitle, mixTitle, resumeOffer, resumeShown } from "./homeModel";
 
 const track = (key: string, artworkUrl: string | null) => ({ key, artworkUrl }) as MusicTrack;
 const artist = { name: "Air" } as MusicArtist;
@@ -25,5 +25,14 @@ describe("homeModel", () => {
     expect(resumeOffer(t, false)).toBe(t);
     expect(resumeOffer(t, true)).toBeNull();
     expect(resumeOffer(null, false)).toBeNull();
+  });
+
+  it("la carte de reprise apparaît à l'arrivée seulement, puis reste tant qu'il y a un titre", () => {
+    const t = track("1", null);
+    expect(resumeShown(false, true, t, false)).toBe(true);
+    expect(resumeShown(false, false, t, false)).toBe(false);
+    expect(resumeShown(true, false, t, true)).toBe(true);
+    expect(resumeShown(true, false, null, false)).toBe(false);
+    expect(resumeShown(false, true, t, true)).toBe(false);
   });
 });

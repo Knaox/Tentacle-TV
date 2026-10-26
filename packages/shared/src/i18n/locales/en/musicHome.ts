@@ -47,7 +47,6 @@ export default {
     artistWaiting_name: "{{artist}} is waiting for you, {{name}}.",
   },
   resume: "Pick up",
-  resumeFrom: "Right where you left off",
   resumePlay: "Resume “{{title}}”",
   mixes: "Your mixes",
   mixesHint: "Made from what you play and what you love, refreshed every day.",

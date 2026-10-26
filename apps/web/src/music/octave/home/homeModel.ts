@@ -38,3 +38,16 @@ export function mixSubtitle(mix: Pick<MusicHomeMix, "artistNames">, locale: stri
 export function resumeOffer(current: MusicTrack | null, wantsPlay: boolean): MusicTrack | null {
   return current && !wantsPlay ? current : null;
 }
+
+/** Le temps laissé au lecteur pour reprendre le titre gardé, après l'arrivée sur l'accueil. */
+export const RESUME_WINDOW_MS = 1500;
+
+/**
+ * La carte « Reprendre » ne fait pas bouger la page : elle n'APPARAÎT qu'à l'arrivée (le titre gardé, en
+ * pause, repris dans la fenêtre du démarrage) et RESTE ensuite tant qu'il y a un titre — lecture, pause —,
+ * jamais surgie au milieu de l'accueil parce qu'on a mis en pause.
+ */
+export function resumeShown(shown: boolean, inWindow: boolean, current: MusicTrack | null, wantsPlay: boolean): boolean {
+  if (!current) return false;
+  return shown || (inWindow && resumeOffer(current, wantsPlay) !== null);
+}

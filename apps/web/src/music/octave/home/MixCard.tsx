@@ -31,6 +31,7 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
   const contextId = mixContextId(mix);
   const current = usePlayerSelector((s) => s.current !== null && s.queue.contextId === contextId);
   const name = mixTitle(mix);
+  const subtitle = mixSubtitle(mix, i18n.language);
   const title = name.key === "octaveHome.mixArtist" ? t(name.key, { artist: name.artist }) : t(name.key);
   return (
     <button
@@ -50,7 +51,9 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
         <span className="block truncate text-sm font-semibold leading-5 text-content-primary" title={title}>
           {title}
         </span>
-        <span className="block truncate text-[13px] leading-5 text-content-tertiary">{mixSubtitle(mix, i18n.language)}</span>
+        <span className="block truncate text-[13px] leading-5 text-content-tertiary" title={subtitle}>
+          {subtitle}
+        </span>
       </span>
     </button>
   );

@@ -50,7 +50,6 @@ export default {
     artistWaiting_name: "{{artist}} n'attend que vous, {{name}}.",
   },
   resume: "Reprendre",
-  resumeFrom: "Là où vous vous étiez arrêté",
   resumePlay: "Reprendre « {{title}} »",
   mixes: "Vos mixes",
   mixesHint: "Composés d'après vos écoutes et vos coups de cœur, renouvelés chaque jour.",
