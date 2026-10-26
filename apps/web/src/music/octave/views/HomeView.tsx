@@ -1,6 +1,10 @@
 /**
- * Octave — l'accueil : salutation, écoutés récemment (raccourcis), ajoutés
- * récemment (albums), vos titres les plus écoutés, vos playlists.
+ * Octave — l'accueil : le mot d'accueil (`home/greeting.ts`), la reprise du
+ * titre gardé, écoutés récemment (raccourcis), les ambiances (emplacement),
+ * les mixes du jour et les albums du moment, les nouveautés de la
+ * bibliothèque, « parce que vous avez écouté », les artistes du moment, vos
+ * titres les plus écoutés, vos playlists. Tout vient de l'accueil du cœur
+ * (une requête, gardée en cache) et de l'état du lecteur.
  *
  * Chaque étagère de cartes tient en UNE rangée pleine (`CardRow`) : jamais une
  * carte orpheline ; « Tout afficher » mène au reste. L'attente a la forme
@@ -20,6 +24,8 @@ import { octavePaths } from "../octavePaths";
 import { QuickPicks, QuickPicksSkeleton } from "./QuickPicks";
 import { HomeMoodsSlot } from "../home/ambianceSlots";
 import { HomeGreeting } from "../home/HomeGreeting";
+import { ResumeCard } from "../home/ResumeCard";
+import { ForYouMore, ForYouTop, hasForYou } from "../home/ForYouShelves";
 
 function SeeAll({ to }: { to: string }) {
   const { t } = useTranslation("music");
@@ -52,11 +58,13 @@ export function HomeView() {
   const mostRows = useMemo(() => rowsOf((home.data?.mostPlayed ?? []).slice(0, 5)), [home.data]);
 
   if (home.isError) return <ErrorState onRetry={() => void home.refetch()} />;
-  const empty = home.data && !recent.length && !added.length && !mostRows.length && !playlists.length;
+  const forYou = home.data?.forYou;
+  const empty = home.data && !recent.length && !added.length && !mostRows.length && !playlists.length && !hasForYou(forYou);
 
   return (
     <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
       <HomeGreeting />
+      <ResumeCard />
       {home.isPending && <HomeSkeleton />}
       {empty && (
         <EmptyState
@@ -74,11 +82,13 @@ export function HomeView() {
       )}
       {recent.length > 0 && <QuickPicks tracks={recent} />}
       <HomeMoodsSlot />
+      {forYou && <ForYouTop forYou={forYou} />}
       {added.length > 0 && (
-        <Shelf title={t("home.recentlyAdded")} action={<SeeAll to={octavePaths.library} />}>
+        <Shelf title={t("octaveHome.newInLibrary")} action={<SeeAll to={octavePaths.library} />}>
           <CardRow items={added} render={(album) => <AlbumCard key={album.key} album={album} />} />
         </Shelf>
       )}
+      {forYou && <ForYouMore forYou={forYou} />}
       {mostRows.length > 0 && (
         <Shelf title={t("home.mostPlayed")}>
           <TrackList rows={mostRows} contextId="home:most" showArtwork showAlbum label={t("home.mostPlayed")} />
