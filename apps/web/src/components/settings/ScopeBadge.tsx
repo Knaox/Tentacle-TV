@@ -27,8 +27,10 @@ interface ScopeBadgeProps {
 export const ScopeBadge = memo(function ScopeBadge({ scope, className }: ScopeBadgeProps) {
   const { t } = useTranslation("settingsMobile");
   const Icon = ICONS[scope];
+  // La couleur de marque en clair (`rgba(var(--brand-rgb), …)`) : sur un jeton `var()`, le modificateur `/30` de
+  // Tailwind supprime la déclaration en silence (`theme/alphaModifier.test.ts`).
   const tone = scope === "account"
-    ? "border-tentacle-accent/30 bg-tentacle-accent/10 text-tentacle-accent-light"
+    ? "border-[rgba(var(--brand-rgb),0.3)] bg-[rgba(var(--brand-rgb),0.1)] text-tentacle-accent-light"
     : "border-line-subtle bg-white/5 text-content-tertiary";
   return (
     <span
