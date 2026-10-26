@@ -18,6 +18,8 @@ export const musicKeys = {
   liked: (limit: number) => ["music", "liked", limit] as const,
   playlists: () => ["music", "playlists"] as const,
   playlist: (id: string) => ["music", "playlist", id] as const,
+  /** Le tri et l'ordre personnalisé d'une liste (`liked`, `playlist:<id>`), par compte. */
+  listPrefs: (key: string) => ["music", "list-prefs", key] as const,
   source: (id: string) => ["music", "source", id] as const,
   byMbid: (recordings: readonly string[]) => ["music", "by-mbid", [...recordings].sort().join(",")] as const,
   /** Ce que la bibliothèque a parmi des titres et albums d'ailleurs (`signature` : leurs clés, triées). */
