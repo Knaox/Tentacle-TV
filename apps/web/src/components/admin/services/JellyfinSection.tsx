@@ -28,6 +28,8 @@ import { useUnsavedGuard } from "./useUnsavedGuard";
 
 interface Frame {
   id: string;
+  /** Ce que la carte règle vaut pour tout le serveur. */
+  scope: "server";
   title: string;
   description: string;
 }
@@ -38,7 +40,7 @@ export function JellyfinSection() {
   const keyHealth = useKeyHealth();
   const jellyfin = status.data?.jellyfin;
   const keyState = keyHealth.data?.state ?? null;
-  const frame: Frame = { id: "jellyfin", title: t("jellyfinTitle"), description: t("jellyfinDescription") };
+  const frame: Frame = { id: "jellyfin", scope: "server", title: t("jellyfinConnectionTitle"), description: t("jellyfinDescription") };
 
   if (!jellyfin) {
     return (

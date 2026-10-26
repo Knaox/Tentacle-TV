@@ -6,7 +6,7 @@
 export default {
   title: "Métadonnées",
   description:
-    "Ce qui enrichit Tentacle au-delà de Jellyfin : TMDB pour les recommandations, et le pays dont les plateformes de streaming s'affichent.",
+    "Ce que Tentacle ajoute aux fiches et aux recommandations, au-delà de Jellyfin : la clé TMDB, le pays des plateformes de streaming et la source des bandes-annonces. Pour tous les utilisateurs.",
   loadError: "Impossible de lire la configuration des métadonnées.",
   loadErrorHint: "Le serveur Tentacle n'a pas répondu. Vérifiez la connexion, puis réessayez.",
   retry: "Réessayer",

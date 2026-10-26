@@ -35,7 +35,7 @@ export function AddressesForm({ variant }: { variant: "admin" | "wizard" }) {
   const { t } = useTranslation("remoteAccess");
   const publicQuery = usePublicUrlConfig();
   const directQuery = useDirectStreamingConfig();
-  const frame = { id: FRAME_ID, title: t("addressesTitle"), description: t("addressesDescription") };
+  const frame = { id: FRAME_ID, scope: "server" as const, title: t("addressesTitle"), description: t("addressesDescription") };
 
   if (!publicQuery.data || !directQuery.data) {
     const failed = publicQuery.isError || directQuery.isError;

@@ -24,7 +24,7 @@ export function DangerZoneSection() {
   const [open, setOpen] = useState(false);
 
   return (
-    <AdminSection id="danger" tone="danger" title={t("dangerTitle")} description={t("dangerDescription")}>
+    <AdminSection id="danger" tone="danger" scope="server" title={t("dangerTitle")} description={t("dangerDescription")}>
       <div className="flex flex-col gap-4 rounded-xl bg-status-error-bg p-4 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-content-primary">{t("resetTitle")}</p>

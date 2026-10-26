@@ -31,7 +31,7 @@ export function FamilyLaunchSettingsSection() {
   const saved = policy.data ? launchSettingsOf(policy.data) : null;
 
   return (
-    <AdminSection title={t("launchSettings.title")} description={t("launchSettings.description")}>
+    <AdminSection scope="server" title={t("launchSettings.title")} description={t("launchSettings.description")}>
       {saved ? (
         // La clé : un enregistrement (ou une relecture) repart de la réponse du serveur.
         <LaunchSettingsForm key={JSON.stringify(saved)} saved={saved} />

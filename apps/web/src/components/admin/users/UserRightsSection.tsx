@@ -34,7 +34,7 @@ export function UserRightsSection({ userId }: { userId: string }) {
   };
 
   return (
-    <UserSheetSection title={t("downloadsTitle")}>
+    <UserSheetSection scope="user" title={t("downloadsTitle")}>
       {isLoading ? (
         <SheetSkeleton />
       ) : !rights ? (

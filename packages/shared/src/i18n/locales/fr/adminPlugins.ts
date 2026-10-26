@@ -1,6 +1,6 @@
 export default {
   pageTitle: "Plugins",
-  subtitle: "Gérez les plugins installés, explorez le marketplace et configurez vos sources.",
+  subtitle: "Les plugins ajoutent des fonctions à Tentacle, pour tous les utilisateurs : ceux qui sont installés, le marketplace, et les sources où Tentacle les cherche.",
   tabInstalled: "Installés",
   tabMarketplace: "Marketplace",
   tabSources: "Sources",

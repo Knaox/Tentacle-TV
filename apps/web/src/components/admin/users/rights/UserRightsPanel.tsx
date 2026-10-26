@@ -61,7 +61,7 @@ export function UserRightsPanel({ userId, name, isSelf }: UserRightsPanelProps) 
   const confirmField = writer.confirming && "isAdministrator" in writer.confirming ? "isAdministrator" : "isDisabled";
 
   return (
-    <UserSheetSection title={t("sectionTitle")}>
+    <UserSheetSection scope="user" title={t("sectionTitle")}>
       <p className="-mt-1 mb-3 text-xs leading-relaxed text-content-tertiary">{t("sectionHint")}</p>
       {rightsQuery.isPending ? (
         <SheetSkeleton />

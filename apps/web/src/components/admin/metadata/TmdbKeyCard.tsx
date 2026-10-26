@@ -72,6 +72,7 @@ export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
     // `id` : la cible de `/admin/metadata#tmdb` (tableau de bord, « Pour vous »).
     <AdminSection
       id="tmdb"
+      scope="server"
       title={t("tmdbTitle")}
       description={t("tmdbDescription")}
       badges={<StatusPill tone={pill.tone}>{t(pill.key)}</StatusPill>}

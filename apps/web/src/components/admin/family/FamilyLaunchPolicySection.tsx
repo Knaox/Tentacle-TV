@@ -28,7 +28,7 @@ export function FamilyLaunchPolicySection() {
   const heading = "text-xs font-semibold uppercase tracking-wide text-content-tertiary";
 
   return (
-    <AdminSection title={t("adminPolicy.title")} description={t("adminPolicy.description")}>
+    <AdminSection scope="server" title={t("adminPolicy.title")} description={t("adminPolicy.description")}>
       {current ? (
         <div className="space-y-6">
           <div className="space-y-4">

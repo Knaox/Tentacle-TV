@@ -29,6 +29,8 @@ import { SERVER_LINKS_KEY } from "../../serverLinks/useServerLinks";
 
 interface Frame {
   id: string;
+  /** Ce que la carte règle vaut pour tout le serveur. */
+  scope: "server";
   title: string;
   description: string;
 }
@@ -37,7 +39,7 @@ export function DirectStreamingSection() {
   const { t } = useTranslation("adminServices");
   const query = useDirectStreamingConfig();
   const config = query.data;
-  const frame: Frame = { id: "directstreaming", title: t("directTitle"), description: t("directDescription") };
+  const frame: Frame = { id: "directstreaming", scope: "server", title: t("directTitle"), description: t("directDescription") };
 
   if (!config) {
     return (

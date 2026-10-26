@@ -32,7 +32,7 @@ export default {
 
   // ── Addresses ─────────────────────────────────────────────────────────
   addressesTitle: "Addresses",
-  addressesDescription: "The only things to set. Everything else on this page follows from them.",
+  addressesDescription: "The addresses apps use to reach Tentacle and Jellyfin, at home and away. They are the only things to set: everything else on this page follows from them.",
   publicLinkLabel: "Tentacle public link",
   publicLinkHint: "Tentacle's address from the Internet, for example https://tentacle.example.com. Empty: Tentacle only answers at home.",
   publicLinkHintEnv: "Empty: the TENTACLE_PUBLIC_URL variable applies ({{url}}).",

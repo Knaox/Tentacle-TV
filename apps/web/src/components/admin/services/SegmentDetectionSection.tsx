@@ -52,7 +52,7 @@ export function SegmentDetectionSection() {
   const { t } = useTranslation(["adminServices", "adminJellyfin", "segmentPlugins"]);
   const states = usePluginStates();
   return (
-    <AdminSection id="segments" title={t("segmentsTitle")} description={t("segmentsDescription")}>
+    <AdminSection id="segments" scope="server" title={t("segmentsTitle")} description={t("segmentsDescription")}>
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">{t("segmentsPlugins")}</p>
         <ul className="grid gap-2 md:grid-cols-3">
