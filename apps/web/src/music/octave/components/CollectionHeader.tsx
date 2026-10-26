@@ -13,8 +13,8 @@
  * grand, un titre de vingt mots reste lisible sans écraser la page.
  *
  * Liquid Glass (mode natif) : la tête de la maquette « Octave · Playlist » — la
- * pochette dans un cadre de verre, le surtitre en pastille, le titre jusqu'à
- * 76 px, deux capsules de 56 (`glass/octaveHeader.css`). Ailleurs, rien ne change.
+ * pochette de 260, nette, le surtitre en pastille, le titre jusqu'à 76 px, deux
+ * capsules de 56 (`glass/octaveHeader.css`). Ailleurs, rien ne change.
  */
 
 import type { ReactNode } from "react";
@@ -91,14 +91,8 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
   return (
     <header className="octave-hero px-4 pb-6 pt-8 md:px-8">
       <div className="octave-hero-main flex flex-col items-start gap-6 md:flex-row md:items-end">
-        {/* En verre : la pochette posée dans un cadre de verre (rayon 30, 10 de marge). */}
-        {native ? (
-          <div className="octave-art-frame lg-pane lg-pane-flat" data-round={round ? "true" : undefined}>
-            {cover}
-          </div>
-        ) : (
-          cover
-        )}
+        {/* En verre : la pochette de la maquette (260, rayon 22), nette — aucun verre sur le contenu. */}
+        {native ? <div className="octave-art-frame">{cover}</div> : cover}
         <div className="min-w-0 flex-1">
           <p className={native ? "oc-eyebrow lg-bead" : "oc-eyebrow"}>{kicker}</p>
           <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`} data-title-length={native ? titleLength(title) : undefined}>{title}</h1>

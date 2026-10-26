@@ -5,10 +5,9 @@
  * Le rappel reste STABLE : un changement de titre ne redessine que les deux
  * rangées concernées.
  *
- * Liquid Glass (mode natif) : une liste complète (avec son en-tête) se pose dans
- * un panneau de verre, le tableau de la maquette « Octave · Playlist »
- * (`glass/octaveTable.css`) ; la barre de sélection reste HORS du verre (jamais
- * de verre sur du verre).
+ * Liquid Glass (mode natif) : une liste complète (avec son en-tête) prend les
+ * mesures du tableau de la maquette « Octave · Playlist » (`glass/octaveTable.css`)
+ * — SANS panneau de verre : le contenu reste net (consigne de Damien, 26/10).
  */
 
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
@@ -156,11 +155,11 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   );
 });
 
-/** Le panneau de verre du tableau (mode natif), ou rien : les rangées restent les enfants directs de la grille. */
+/** Le tableau de la scène de verre (ses mesures), ou rien : les rangées restent les enfants directs de la grille. */
 function GlassTable({ on, children }: { on: boolean; children: ReactNode }) {
   if (!on) return <>{children}</>;
   return (
-    <div role="presentation" className="octave-track-table lg-pane lg-pane-flat">
+    <div role="presentation" className="octave-track-table">
       {children}
     </div>
   );

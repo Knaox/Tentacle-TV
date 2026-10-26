@@ -78,7 +78,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
       </div>
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-6 py-6 md:flex-row md:items-center md:gap-14">
-        <div className="octave-now-art flex justify-center md:w-[46%] md:shrink-0">
+        <div className="flex justify-center md:w-[46%] md:shrink-0">
           <Artwork
             url={track.artworkUrl}
             alt={track.album?.title ?? track.title}

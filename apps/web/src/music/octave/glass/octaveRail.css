@@ -98,15 +98,7 @@
   color: var(--lg-pane-glyph-secondary);
 }
 
-/* Le mot « Octave » sur le verre du rail, là où le fond porte sa tache rose : le
- * dégradé de la marque pris un cran plus clair (violet clair → rose clair), sinon
- * rose sur rose. En clair, le dégradé d'Octave tel quel, sur la nacre. */
-:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-wordmark] .oc-gradient-text {
-  background-image: linear-gradient(90deg, #c4b5fd 0%, #f9a8d4 100%);
-}
-:root[data-liquid-glass="native"][data-theme="light"] .octave-stage-rail [data-octave-wordmark] .oc-gradient-text {
-  background-image: var(--oc-gradient);
-}
-:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-wordmark] .oc-gradient-text + span {
-  color: var(--lg-pane-glyph-secondary);
+/* La barre de défilement des playlists : un filet du verre, plus le rose plein. */
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-rail-playlists::-webkit-scrollbar-thumb {
+  background-color: var(--lg-pane-separator);
 }

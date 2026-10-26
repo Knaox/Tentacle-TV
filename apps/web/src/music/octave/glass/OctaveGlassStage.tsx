@@ -1,8 +1,10 @@
 /**
  * Octave en Liquid Glass (mode natif, bureau) — la DISPOSITION de la maquette
- * « Octave · Playlist » : sur le fond coloré d'Octave (`OctaveAmbient`, une
- * seule couche FIXE), le rail, la page et la file posés à 20 px des bords, et le
- * dock qui flotte au bas de TOUTE la fenêtre, centré. Le rail et la file
+ * « Octave · Playlist » : sur le fond d'Octave (`OctaveAmbient`, une seule couche
+ * FIXE, discrète), le rail, la page et la file posés à 20 px des bords, et le dock
+ * qui flotte au bas de TOUTE la fenêtre, centré. Le verre : le rail, le dock, les
+ * pastilles (et les menus du socle) ; la file reste l'îlot prune d'Octave, le
+ * contenu (pochettes, listes) reste net — consigne de Damien du 26/10. Le rail et la file
  * s'arrêtent au-dessus du dock ; la page, elle, défile dessous (le verre du dock
  * a quelque chose à voir passer).
  *
@@ -37,7 +39,7 @@ export function OctaveGlassStage({ mainRef, sidebar, dock, queue, overlays, chil
         <main ref={mainRef} id="octave-main" className="octave-stage-main">
           {children}
         </main>
-        {queue && <div className="octave-drawer octave-stage-queue lg-pane">{queue}</div>}
+        {queue && <div className="octave-drawer octave-island octave-stage-queue">{queue}</div>}
       </div>
       {dock}
       {overlays}
