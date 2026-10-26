@@ -1,9 +1,10 @@
 /**
  * Le FOND AMBIANT du verre (maquette du 26/10) : de grandes taches de nos
- * couleurs — violet → rose — sur l'encre de la page, ce qui donne au verre
- * quelque chose à réfracter. À monter UNE fois par écran (la coquille, la
- * fiche, les réglages), sous le contenu : `position: fixed` (défaut) ou
- * `absolute` dans un parent positionné (une scène à elle).
+ * couleurs — violet → rose — À PEINE posées sur l'encre de la page (0,18 au
+ * plus : l'encre reste la base visible), ce qui donne au verre quelque chose
+ * à réfracter sans que la page devienne un arc-en-ciel. À monter UNE fois par
+ * écran (la coquille, la fiche, les réglages), sous le contenu :
+ * `position: fixed` (défaut) ou `absolute` dans un parent positionné.
  *
  * `image` : l'adresse d'une affiche, d'une bannière, d'une pochette — ses deux
  * teintes (gauche, droite) prennent la place de deux taches, bornées pour que
