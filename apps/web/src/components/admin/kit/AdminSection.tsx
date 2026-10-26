@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { ScopeBadge, type WebSettingScope } from "../../settings/ScopeBadge";
 
 /**
  * La carte de section d'une page d'administration.
@@ -12,6 +13,12 @@ import { useId, type ReactNode } from "react";
  * carte, qui les rogne. `tone="danger"` : zone destructive (réinitialisation,
  * suppression), bordée de rouge.
  *
+ * `scope` dit À QUI s'applique ce que la carte règle : « Tout le serveur »
+ * (`server`, tous les utilisateurs), « Par compte » (`user`, le compte
+ * choisi), « Compte » (`account`, l'administrateur seulement) — la pastille
+ * commune des réglages (`ScopeBadge`), à côté du titre. Une carte qui ne fait
+ * que montrer un état (compatibilité, guide) n'en porte pas.
+ *
  * `id` pose une ancre (`/admin/services#publicurl`) ; `scroll-mt` la garde
  * sous la barre de navigation au lieu de la cacher derrière.
  */
@@ -23,6 +30,8 @@ export interface AdminSectionProps {
   actions?: ReactNode;
   /** Pastilles d'état à côté du titre. */
   badges?: ReactNode;
+  /** À qui s'applique ce que la carte règle (pastille de portée). */
+  scope?: WebSettingScope;
   /** Ancre de la carte. */
   id?: string;
   tone?: "default" | "danger";
@@ -37,6 +46,7 @@ export function AdminSection({
   description,
   actions,
   badges,
+  scope,
   id,
   tone = "default",
   flush = false,
@@ -44,7 +54,7 @@ export function AdminSection({
   className,
 }: AdminSectionProps) {
   const headingId = useId();
-  const hasHeader = Boolean(title || description || actions || badges);
+  const hasHeader = Boolean(title || description || actions || badges || scope);
 
   return (
     <section
@@ -63,7 +73,7 @@ export function AdminSection({
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5">
           {/* Base de 12 rem : une action courte tient à droite même à 390 px. */}
           <div className="min-w-0 grow basis-48">
-            {title || badges ? (
+            {title || badges || scope ? (
               <div className="flex flex-wrap items-center gap-2">
                 {title ? (
                   <h2
@@ -73,6 +83,7 @@ export function AdminSection({
                     {title}
                   </h2>
                 ) : null}
+                {scope ? <ScopeBadge scope={scope} /> : null}
                 {badges}
               </div>
             ) : null}

@@ -21,6 +21,8 @@ export default {
     serverA11y: "Réglage du serveur : il vaut pour tous les utilisateurs",
     octave: "Octave seulement",
     octaveA11y: "Réglage d'Octave : il ne change rien à Tentacle",
+    user: "Par compte",
+    userA11y: "Réglage d'un compte : il ne vaut que pour le compte choisi, sur tous ses appareils",
   },
   // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
   web: {

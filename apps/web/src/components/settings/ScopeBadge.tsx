@@ -1,16 +1,18 @@
 import { memo } from "react";
-import { Cloud, Monitor, Music2, Server } from "lucide-react";
+import { Cloud, Monitor, Music2, Server, UserCog } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { SettingScope } from "@tentacle-tv/shared";
 
 /**
  * La portée d'un réglage du web et du bureau : celles du catalogue partagé
  * (`account`, `device`), plus `server` (l'administration : tous les
- * utilisateurs) et `octave` (un réglage d'Octave qui ne touche pas Tentacle).
+ * utilisateurs), `user` (l'administration encore : le compte CHOISI seulement —
+ * un droit de la fiche d'un utilisateur) et `octave` (un réglage d'Octave qui
+ * ne touche pas Tentacle).
  */
-export type WebSettingScope = SettingScope | "server" | "octave";
+export type WebSettingScope = SettingScope | "server" | "user" | "octave";
 
-const ICONS = { account: Cloud, device: Monitor, server: Server, octave: Music2 } as const;
+const ICONS = { account: Cloud, device: Monitor, server: Server, user: UserCog, octave: Music2 } as const;
 
 interface ScopeBadgeProps {
   scope: WebSettingScope;
