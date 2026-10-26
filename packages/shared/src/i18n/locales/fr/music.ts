@@ -4,6 +4,7 @@
  * mot « téléchargement » ni ses dérivés.
  */
 import rights from "./musicRights";
+import moods from "./musicMoods";
 
 export default {
   mode: {
@@ -295,4 +296,5 @@ export default {
     quality: "Qualité : {{detail}}",
   },
   rights,
+  moods,
 };
