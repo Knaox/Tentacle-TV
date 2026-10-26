@@ -89,3 +89,30 @@ describe("albums", () => {
     expect(isSameAlbumTrack(own, track({ title: "Da mi jeszce jedna szanse", artists: [], durationMs: 254_537 }))).toBe(true);
   });
 });
+
+// Le cas exact de Damien (26/10, capture) : « Sucker for Pain » demandé par Sillon (les interprètes, l'album, 4:04, un
+// enregistrement) ; Lidarr l'a rangé en « Various Artists » sous un AUTRE enregistrement (4:03). Le dock le jouait
+// depuis la bibliothèque, la playlist le disait « en attente ».
+describe("« Various Artists » ne contredit jamais (Sucker for Pain)", () => {
+  const SUICIDE = "Suicide Squad: The Album";
+  const performers = ["Lil Wayne", "Wiz Khalifa", "Imagine Dragons", "Logic", "Ty Dolla $ign", "X Ambassadors"].map((name) => ({ name, mbid: null }));
+  const wanted: MatchableTrack = { title: "Sucker for Pain", artists: performers, albumTitle: SUICIDE, durationMs: 244_400, recording: "0b6a2ac9-6d6c-4c8f-9e1a-6c1a51f5b0aa" };
+  const shelved: MatchableTrack = { title: "Sucker for Pain", artists: [{ name: "Various Artists", mbid: VA }], albumTitle: SUICIDE, durationMs: 243_100, recording: "6f2e7a40-1d77-4a3b-9b0e-2c8d4e5f6a7b" };
+
+  it("rangé en « Various Artists », autre enregistrement : c'est lui (titre + album + durée)", () => {
+    expect(isSameTrack(shelved, wanted)).toBe(true);
+  });
+
+  it("interprètes chez Jellyfin mais album-artiste « Various Artists », édition du recueil dans le titre d'album", () => {
+    const own = { ...shelved, artists: [{ name: "Some Other Performer", mbid: null }], albumArtist: "VA", albumTitle: `${SUICIDE} (Collector's Edition)`, durationMs: 242_600 };
+    expect(isSameTrack(own, wanted)).toBe(true);
+  });
+
+  it("pas de faux jumeau : même titre sur un autre album, ou durée trop loin, ou autre artiste hors recueil", () => {
+    expect(isSameTrack({ ...shelved, albumTitle: "Sucker for Pain (Single)" }, wanted)).toBe(false);
+    expect(isSameTrack({ ...shelved, durationMs: 252_000 }, wanted)).toBe(false);
+    expect(isSameTrack({ ...wanted, artists: [{ name: "Quelqu'un d'autre", mbid: null }], recording: shelved.recording }, wanted)).toBe(false);
+    // Une B.O. « Score » n'est pas la « Soundtrack » : l'édition seule se met de côté.
+    expect(isSameTrack({ ...ownWorthIt, albumTitle: "Cyberpunk: Edgerunners 2 (Original Series Score)", recording: null }, track())).toBe(false);
+  });
+});

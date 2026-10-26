@@ -29,6 +29,7 @@ export function trackMatchable(row: IndexRow): MatchableTrack {
     albumTitle: row.albumName,
     durationMs: row.durationMs,
     recording: row.recordingMbid,
+    albumArtist: row.albumArtist,
     discNumber: row.discNumber,
     trackNumber: row.trackNumber,
   };
