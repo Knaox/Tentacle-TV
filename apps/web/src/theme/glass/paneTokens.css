@@ -1,0 +1,114 @@
+/* Liquid Glass — les jetons du verre de la MAQUETTE (26/10) : le panneau
+ * (`.lg-pane`), la pastille (`.lg-bead`), les rangées et le FOND AMBIANT
+ * (`GlassAmbient`). Règles et mode d'emploi : `pane.css`, `GlassAmbient.tsx`.
+ *
+ * Tout est déclaré SOUS la porte `:root[data-liquid-glass="native"]` : hors du
+ * mode natif, aucun de ces noms n'existe — rendu d'avant au pixel près ; le
+ * client LG retire ces règles (`liquidGlassPass`).
+ *
+ * Les valeurs qui portent la lisibilité (saturation, luminosité, encre,
+ * dégradé, reflet, taches) sont recopiées de `paneMaterial.ts`, qui PROUVE
+ * l'AA ; un test tient les deux identiques. Le TON (`data-lg-tone`, posé par
+ * la primitive ou à la main) l'emporte sur le thème : un verre forcé sombre
+ * dans le thème clair (le dock d'Octave) prend le bloc sombre.
+ *
+ * ── CATALOGUE ─────────────────────────────────────────────────────────────
+ *  - panneau      --lg-pane-{blur|saturate|brightness|ink|fill|sheen|border|
+ *                 shadow|rim|glyph|glyph-secondary|separator}
+ *  - action       --lg-pane-prominent-{fill|shadow} (la marque dans le verre)
+ *  - pastille     --lg-bead-{blur|saturate|ink|fill|border|shadow}
+ *  - rangées      --lg-pane-row-hover, --lg-pane-nav-hover, --lg-pane-selected,
+ *                 --lg-pane-selected-shadow
+ *  - fond         --lg-ambient-{1…5} (couleur « r, g, b »), --lg-ambient-{1…5}-a,
+ *                 --lg-ambient-tint-a (opacité d'une teinte d'image) */
+
+:root[data-liquid-glass="native"],
+:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-pane-blur: 28px;
+  --lg-pane-saturate: 1.9;
+  --lg-pane-brightness: 1.08;
+  --lg-pane-ink: rgba(7, 5, 12, 0.26);
+  --lg-pane-fill: linear-gradient(140deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09) 100%);
+  --lg-pane-sheen: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(80% 50% at 100% 100%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 60%);
+  --lg-pane-border: rgba(255, 255, 255, 0.16);
+  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 1px 0 0 rgba(255, 255, 255, 0.12), inset 0 0 24px rgba(255, 255, 255, 0.06), 0 24px 60px -12px rgba(0, 0, 0, 0.55);
+  --lg-pane-rim: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.35));
+  --lg-pane-glyph: rgba(255, 255, 255, 1);
+  --lg-pane-glyph-secondary: rgba(255, 255, 255, 0.72);
+  --lg-pane-separator: rgba(255, 255, 255, 0.1);
+
+  /* L'action principale : la marque DANS le verre (le « Lecture » de la maquette),
+   * le rose et le violet un cran profonds — blanc ≥ 4,5:1 (test). */
+  --lg-pane-prominent-fill: linear-gradient(140deg, rgba(190, 24, 93, 0.96) 0%, rgba(109, 40, 217, 0.9) 100%);
+  --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.2),
+    0 16px 40px -10px rgba(var(--brand-accent-rgb), 0.6);
+
+  --lg-bead-blur: 12px;
+  --lg-bead-saturate: 1.8;
+  --lg-bead-ink: rgba(7, 5, 12, 0.26);
+  --lg-bead-fill: rgba(255, 255, 255, 0.08);
+  --lg-bead-border: rgba(255, 255, 255, 0.14);
+  --lg-bead-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+  --lg-pane-row-hover: rgba(255, 255, 255, 0.07);
+  --lg-pane-nav-hover: rgba(255, 255, 255, 0.08);
+  --lg-pane-selected: linear-gradient(140deg, rgba(236, 72, 153, 0.28), rgba(124, 58, 237, 0.18));
+  --lg-pane-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+:root[data-liquid-glass="native"][data-theme="light"],
+:root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-pane-saturate: 1.8;
+  --lg-pane-brightness: 1.02;
+  --lg-pane-ink: rgba(255, 255, 255, 0);
+  --lg-pane-fill: linear-gradient(140deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.32) 45%, rgba(255, 255, 255, 0.45) 100%);
+  --lg-pane-sheen: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(80% 50% at 100% 100%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%);
+  --lg-pane-border: rgba(255, 255, 255, 0.7);
+  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(255, 255, 255, 0.4),
+    inset 1px 0 0 rgba(255, 255, 255, 0.5), inset 0 0 24px rgba(255, 255, 255, 0.35), 0 24px 60px -16px rgba(60, 20, 80, 0.22);
+  --lg-pane-rim: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.6));
+  --lg-pane-glyph: rgba(12, 12, 18, 0.9);
+  --lg-pane-glyph-secondary: rgba(12, 12, 18, 0.68);
+  --lg-pane-separator: rgba(0, 0, 0, 0.08);
+
+  --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
+    0 14px 32px -12px rgba(var(--brand-accent-rgb), 0.45);
+
+  --lg-bead-saturate: 1.8;
+  --lg-bead-ink: rgba(255, 255, 255, 0);
+  --lg-bead-fill: rgba(255, 255, 255, 0.55);
+  --lg-bead-border: rgba(255, 255, 255, 0.75);
+  --lg-bead-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --lg-pane-row-hover: rgba(0, 0, 0, 0.05);
+  --lg-pane-nav-hover: rgba(0, 0, 0, 0.06);
+  --lg-pane-selected: linear-gradient(140deg, rgba(219, 39, 119, 0.16), rgba(124, 58, 237, 0.1));
+  --lg-pane-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(219, 39, 119, 0.14);
+}
+
+/* ── Le fond ambiant : nos couleurs, par thème (jamais par ton : le fond est la page) ── */
+:root[data-liquid-glass="native"] {
+  --lg-ambient-1: var(--brand-accent-rgb);
+  --lg-ambient-1-a: 0.5;
+  --lg-ambient-2: var(--brand-rgb);
+  --lg-ambient-2-a: 0.42;
+  --lg-ambient-3: 219, 39, 119;
+  --lg-ambient-3-a: 0.36;
+  --lg-ambient-4: 124, 58, 237;
+  --lg-ambient-4-a: 0.5;
+  --lg-ambient-5: 168, 85, 247;
+  --lg-ambient-5-a: 0.36;
+  --lg-ambient-tint-a: 0.45;
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-ambient-1-a: 0.2;
+  --lg-ambient-2-a: 0.16;
+  --lg-ambient-3-a: 0.14;
+  --lg-ambient-4-a: 0.18;
+  --lg-ambient-5-a: 0.14;
+  --lg-ambient-tint-a: 0.18;
+}

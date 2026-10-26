@@ -1,0 +1,175 @@
+/* Liquid Glass — le verre de la MAQUETTE en classes-marqueurs (26/10).
+ *
+ * À poser sur N'IMPORTE quel élément, sans composant React ; en mode natif
+ * seulement (hors de la porte, aucune règle : rendu d'avant au pixel près).
+ * Jetons : `paneTokens.css` ; preuve de lisibilité : `paneMaterial.ts`.
+ *
+ *  .lg-pane            le panneau : dégradé blanc léger, givre 28 px qui AVIVE
+ *                      (saturation 190 %, luminosité 1,08), encre légère, bord,
+ *                      ombres intérieures et portée, reflets, liseré en dégradé
+ *                      (`::after`, un anneau de 1 px masqué).
+ *   + .lg-pane-flat    même peau SANS `backdrop-filter` : un grand panneau posé
+ *                      sur le fond ambiant seul (qui est déjà flou) — la passe
+ *                      de flou ne se voit pas, elle coûte à chaque défilement.
+ *   + .lg-pane-noring  sans le liseré : l'élément garde SON `::after`.
+ *   + .lg-pane-prominent (ou `data-lg-level="prominent"`) : l'action principale,
+ *                      la marque dans le verre.
+ *  .lg-bead            la pastille : boutons ronds, puces, piste d'une glissière.
+ *  .lg-pane-row        une rangée DANS un verre (survol 0,07) ;
+ *  .lg-pane-nav        une entrée de navigation (survol 0,08) ; l'une et l'autre
+ *                      sélectionnées par `aria-current="page"`, `aria-selected="true"`
+ *                      ou `data-selected="true"` — un remplissage, jamais un verre.
+ *  .lg-ambient         le fond (composant `GlassAmbient`, monté UNE fois).
+ *
+ * Mise en forme : le rayon et `position: relative` par défaut sont posés
+ * SANS spécificité (`:where`) — la classe de rayon ou de position de
+ * l'élément l'emporte. Le reste (fond, bord, ombres, givre) remplace la peau
+ * de l'élément : c'est le but.
+ *
+ * Coût (CLAUDE.md, « Coût GPU ») : un `backdrop-filter` par panneau, refait
+ * quand ce qui est dessous bouge — jamais monté caché (`opacity: 0`), jamais
+ * de verre sur du verre (dans un panneau, des rangées et des pastilles sans
+ * givre : `.lg-pane .lg-bead` perd son flou). Le fond est FIXE, peint une fois. */
+
+/* ── Mise en forme par défaut, sans spécificité ─────────────────────────── */
+:where(:root[data-liquid-glass="native"] .lg-pane:not(.lg-pane-noring)) {
+  position: relative;
+}
+:where(:root[data-liquid-glass="native"] .lg-pane) {
+  border-radius: var(--lg-radius-xl);
+}
+:where(:root[data-liquid-glass="native"] .lg-bead) {
+  border-radius: var(--lg-radius-capsule);
+}
+
+/* ── Le panneau ────────────────────────────────────────────────────────── */
+:root[data-liquid-glass="native"] .lg-pane {
+  color: var(--lg-pane-glyph);
+  border: 1px solid var(--lg-pane-border);
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+  box-shadow: var(--lg-pane-shadow);
+  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+}
+
+:root[data-liquid-glass="native"] .lg-pane:not(.lg-pane-noring)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: var(--lg-pane-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+:root[data-liquid-glass="native"] .lg-pane.lg-pane-flat {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-pane:is(.lg-pane-prominent, [data-lg-level="prominent"]) {
+  color: #ffffff;
+  background: var(--lg-pane-sheen), var(--lg-pane-prominent-fill);
+  box-shadow: var(--lg-pane-prominent-shadow);
+}
+
+/* Un TON posé (forcé, ou mesuré par la primitive) : les textes du thème le suivent. */
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-tone] {
+  --text-primary: var(--lg-pane-glyph);
+  --text-secondary: var(--lg-pane-glyph-secondary);
+  --text-tertiary: var(--lg-pane-glyph-secondary);
+  --text-quaternary: var(--lg-pane-glyph-secondary);
+}
+
+/* Les formes de la primitive (`material: "pane" | "bead"`). */
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead):is([data-lg-shape="capsule"], [data-lg-shape="circle"]) {
+  border-radius: var(--lg-radius-capsule);
+}
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-radius="xs"] { border-radius: var(--lg-radius-xs); }
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-radius="sm"] { border-radius: var(--lg-radius-sm); }
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-radius="md"] { border-radius: var(--lg-radius-md); }
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-radius="lg"] { border-radius: var(--lg-radius-lg); }
+:root[data-liquid-glass="native"] :is(.lg-pane, .lg-bead)[data-lg-radius="xl"] { border-radius: var(--lg-radius-xl); }
+
+/* ── La pastille ───────────────────────────────────────────────────────── */
+:root[data-liquid-glass="native"] .lg-bead {
+  color: var(--lg-pane-glyph);
+  border: 1px solid var(--lg-bead-border);
+  background: linear-gradient(var(--lg-bead-fill), var(--lg-bead-fill)), linear-gradient(var(--lg-bead-ink), var(--lg-bead-ink));
+  box-shadow: var(--lg-bead-shadow);
+  -webkit-backdrop-filter: blur(var(--lg-bead-blur)) saturate(var(--lg-bead-saturate));
+  backdrop-filter: blur(var(--lg-bead-blur)) saturate(var(--lg-bead-saturate));
+}
+
+/* Jamais de verre sur du verre : dans un panneau, la pastille garde sa peau, pas son givre. */
+:root[data-liquid-glass="native"] .lg-pane .lg-bead {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ── Survol d'un verre interactif : un voile clair, rien d'animé ─────────── */
+:root[data-liquid-glass="native"] :is(.lg-pane:not(.lg-pane-prominent):not([data-lg-level="prominent"]), .lg-bead):is([data-lg-interactive], button, a[href]):hover {
+  background-image: linear-gradient(var(--lg-pane-row-hover), var(--lg-pane-row-hover)), var(--lg-pane-sheen), var(--lg-pane-fill),
+    linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+}
+:root[data-liquid-glass="native"] .lg-bead:is([data-lg-interactive], button, a[href]):hover {
+  background-image: linear-gradient(var(--lg-pane-row-hover), var(--lg-pane-row-hover)), linear-gradient(var(--lg-bead-fill), var(--lg-bead-fill)),
+    linear-gradient(var(--lg-bead-ink), var(--lg-bead-ink));
+}
+
+/* ── Les rangées et la navigation, DANS un verre ─────────────────────────── */
+:root[data-liquid-glass="native"] .lg-pane-row:hover {
+  background: var(--lg-pane-row-hover);
+}
+:root[data-liquid-glass="native"] .lg-pane-nav:hover {
+  background: var(--lg-pane-nav-hover);
+}
+:root[data-liquid-glass="native"] :is(.lg-pane-row, .lg-pane-nav):is([aria-current="page"], [aria-selected="true"], [data-selected="true"]) {
+  background: var(--lg-pane-selected);
+  box-shadow: var(--lg-pane-selected-shadow);
+}
+
+/* ── « Réduire la transparence », « Contraste accru » : l'aplat, aucun givre ── */
+:root[data-liquid-glass="native"][data-lg-material] :is(.lg-pane, .lg-bead) {
+  background: var(--lg-a11y-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-liquid-glass="native"][data-lg-material] .lg-pane:is(.lg-pane-prominent, [data-lg-level="prominent"]) {
+  background: var(--lg-pane-prominent-fill), var(--lg-a11y-solid);
+}
+:root[data-liquid-glass="native"][data-lg-material] .lg-pane::after {
+  content: none;
+}
+:root[data-liquid-glass="native"][data-lg-material="solid"] :is(.lg-pane, .lg-bead) {
+  border-color: var(--lg-contrast-border);
+}
+
+/* ── Le fond ambiant : de grandes taches de nos couleurs, FIXES ─────────────
+ * Des dégradés radiaux, pas un `filter: blur` : peint une fois, aucune passe de
+ * flou à refaire. Placées comme dans la maquette (en % de la boîte). */
+:root[data-liquid-glass="native"] .lg-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(28% 41% at 13% 15%, rgba(var(--lg-ambient-1), var(--lg-ambient-1-a)) 0%, rgba(var(--lg-ambient-1), calc(var(--lg-ambient-1-a) * 0.92)) 40%, rgba(var(--lg-ambient-1), calc(var(--lg-ambient-1-a) * 0.5)) 70%, rgba(var(--lg-ambient-1), calc(var(--lg-ambient-1-a) * 0.15)) 88%, rgba(var(--lg-ambient-1), 0) 100%),
+    radial-gradient(24% 36% at 47% 31%, rgba(var(--lg-ambient-2), var(--lg-ambient-2-a)) 0%, rgba(var(--lg-ambient-2), calc(var(--lg-ambient-2-a) * 0.92)) 40%, rgba(var(--lg-ambient-2), calc(var(--lg-ambient-2-a) * 0.5)) 70%, rgba(var(--lg-ambient-2), calc(var(--lg-ambient-2-a) * 0.15)) 88%, rgba(var(--lg-ambient-2), 0) 100%),
+    radial-gradient(26% 38% at 90% 51%, rgba(var(--lg-ambient-3), var(--lg-ambient-3-a)) 0%, rgba(var(--lg-ambient-3), calc(var(--lg-ambient-3-a) * 0.92)) 40%, rgba(var(--lg-ambient-3), calc(var(--lg-ambient-3-a) * 0.5)) 70%, rgba(var(--lg-ambient-3), calc(var(--lg-ambient-3-a) * 0.15)) 88%, rgba(var(--lg-ambient-3), 0) 100%),
+    radial-gradient(31% 35% at 42% 101%, rgba(var(--lg-ambient-4), var(--lg-ambient-4-a)) 0%, rgba(var(--lg-ambient-4), calc(var(--lg-ambient-4-a) * 0.92)) 40%, rgba(var(--lg-ambient-4), calc(var(--lg-ambient-4-a) * 0.5)) 70%, rgba(var(--lg-ambient-4), calc(var(--lg-ambient-4-a) * 0.15)) 88%, rgba(var(--lg-ambient-4), 0) 100%),
+    radial-gradient(19% 29% at 67% 74%, rgba(var(--lg-ambient-5), var(--lg-ambient-5-a)) 0%, rgba(var(--lg-ambient-5), calc(var(--lg-ambient-5-a) * 0.92)) 40%, rgba(var(--lg-ambient-5), calc(var(--lg-ambient-5-a) * 0.5)) 70%, rgba(var(--lg-ambient-5), calc(var(--lg-ambient-5-a) * 0.15)) 88%, rgba(var(--lg-ambient-5), 0) 100%);
+}
+:root[data-liquid-glass="native"] .lg-ambient[data-lg-ambient="absolute"] {
+  position: absolute;
+}
+/* Une image (affiche, pochette) teinte les taches 2 et 3 (`--lg-ambient-tint-1|2`, posées par le composant). */
+:root[data-liquid-glass="native"] .lg-ambient[data-lg-ambient-tint] {
+  --lg-ambient-2: var(--lg-ambient-tint-1);
+  --lg-ambient-3: var(--lg-ambient-tint-2);
+  --lg-ambient-2-a: var(--lg-ambient-tint-a);
+  --lg-ambient-3-a: var(--lg-ambient-tint-a);
+}

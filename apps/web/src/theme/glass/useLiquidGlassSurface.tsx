@@ -33,7 +33,10 @@ import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import { useSurfaceTone } from "./useSurfaceTone";
 import {
+  isPaneMaterial,
   lensFilterId,
+  paneAttributes,
+  paneClassName,
   resolveSurfaceRender,
   surfaceAttributes,
   surfaceClassName,
@@ -87,6 +90,8 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
     group: options.group,
     spacing: options.spacing,
     transition: options.transition,
+    material: options.material,
+    tone: options.tone,
   };
   const render = resolveSurfaceRender(useLiquidGlassMode(), backdrop);
 
@@ -115,13 +120,16 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   // Le ton de ce qui est dessous : la polarité des glyphes et la lumière du
   // bord (lentille de page ; le verre natif s'adapte seul). Un CONTRÔLE suit
   // le dessous et bascule ; une SURFACE mesure à l'ouverture puis tient.
+  // Un verre de la maquette (`pane`, `bead`) ne mesure rien et n'a pas de lentille.
+  const pane = render === "lens" && isPaneMaterial(appearance.material);
+  const lensRender = render === "lens" && !pane;
   const surface = appearance.scale === "surface";
-  const controlTone = useBackdropTone(element, render === "lens" && !surface);
-  const surfaceTone = useSurfaceTone(element, render === "lens" && surface);
+  const controlTone = useBackdropTone(element, lensRender && !surface);
+  const surfaceTone = useSurfaceTone(element, lensRender && surface);
   const tone = surface ? surfaceTone : controlTone;
   // La lentille seulement si la portée la permet et que le budget de la page
   // l'accorde (lot lg5) ; sinon, le givre seul — la carte n'est même pas calculée.
-  const lensOn = useLensBudget(element, render === "lens", surface);
+  const lensOn = useLensBudget(element, lensRender, surface);
   const lens = useLensGeometry(element, lensOn, level, shape, appearance.radius ?? "md", tone);
   const filterId = lensFilterId(useId());
 
@@ -130,6 +138,14 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
     return {
       render,
       props: { ref, className: surfaceClassName(render, className, fallbackClassName) || undefined, style: merged },
+      layers: null,
+    };
+  }
+
+  if (pane && isPaneMaterial(appearance.material)) {
+    return {
+      render,
+      props: { ref, className: paneClassName(appearance.material, className), style, ...paneAttributes(appearance) },
       layers: null,
     };
   }
