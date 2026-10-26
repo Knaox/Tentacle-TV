@@ -34,6 +34,8 @@ export interface WorkerDeps {
   volume: Volume;
   driver: TransferDriver;
   fetchBytes: FetchBytes;
+  /** Sans jeton : la pochette https d'un titre hors bibliothèque (null : pas gardée). */
+  fetchPublic?: FetchBytes | null;
   onProgress: (fileId: number, bytes: number) => void;
   /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
   onExpected: (fileId: number, totalBytes: number) => void;
@@ -131,7 +133,7 @@ async function fetchSidecars(deps: WorkerDeps, creds: Creds, file: FileRow, nowM
   // Un titre de musique : sa pochette seulement (aucune fiche Jellyfin, aucun sous-titre).
   if (file.sourcePath !== null) {
     try {
-      await fetchMusicCover(deps.fetchBytes, deps.db, creds.serverUrl, deps.volume, file.itemId);
+      await fetchMusicCover(deps.fetchBytes, deps.db, creds.serverUrl, deps.volume, file.itemId, deps.fetchPublic ?? null);
     } catch {
       // Sans pochette, le titre reste lisible.
     }

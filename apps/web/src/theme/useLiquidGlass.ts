@@ -6,7 +6,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { resolveGlassLevel, supportsBackdropSvgFilter, type GlassLevel } from "@tentacle-tv/ui";
 
-import { desktopPlatform } from "../desktop/detect";
 import {
   getLiquidGlass,
   setLiquidGlass,
@@ -73,10 +72,7 @@ export function useLiquidGlass(): LiquidGlassValue {
     mode,
     nativeSupported,
     refractsVideo: nativeGlassRefractsVideo(),
-    toggleVisible: liquidGlassToggleVisible({
-      platform: desktopPlatform(),
-      nativeSupported,
-    }),
+    toggleVisible: liquidGlassToggleVisible({ nativeSupported }),
     setEnabled,
   };
 }

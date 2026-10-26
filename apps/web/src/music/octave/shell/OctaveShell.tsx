@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
+import { useDisplayedSurface } from "../../../theme/displayedSurface";
 import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
@@ -50,6 +51,8 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   const closeQueue = useCallback(() => setQueueOpen(false), []);
   const openSheet = useCallback(() => setSheetOpen(true), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
+  // Octave affiché : SON apparence (thème, Liquid Glass), réglée à part de celle de Tentacle.
+  useDisplayedSurface("octave");
   useOctaveEvents();
   // La file : un titre d'ailleurs que la bibliothèque a devient le sien, à sa place.
   useQueueLibraryTwins();

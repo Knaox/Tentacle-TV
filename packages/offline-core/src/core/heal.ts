@@ -64,6 +64,7 @@ export async function heal(
   serverUrl: string,
   volume: Volume,
   nowMs: number,
+  fetchPublic: FetchBytes | null = null,
 ): Promise<number> {
   let healed = 0;
 
@@ -147,7 +148,7 @@ export async function heal(
   }
 
   for (const itemId of musicMissingCovers(db)) {
-    if (await fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId).catch(() => false)) healed += 1;
+    if (await fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId, fetchPublic).catch(() => false)) healed += 1;
   }
   return healed;
 }

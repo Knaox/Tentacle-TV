@@ -9,7 +9,7 @@
 import { app, powerMonitor, powerSaveBlocker } from "electron";
 import { DownloadEngine } from "./downloads/core/engine";
 import { heal } from "./downloads/core/heal";
-import { makeFetcher } from "./downloads/netFetch";
+import { makeFetcher, makePublicFetcher } from "./downloads/netFetch";
 import type { Volume } from "./downloads/core/adapters";
 import { nodeFiles } from "./downloads/node/nodeFiles";
 import { nodePartWriter } from "./downloads/node/nodePartWriter";
@@ -62,6 +62,7 @@ export function downloadsEngine(): DownloadEngine {
     volume: downloadsVolume,
     driver: createStreamDriver(electronTransferNet, nodePartWriter, nodeFiles),
     makeFetcher,
+    makePublicFetcher,
     emit: sendToPage,
     now: () => Date.now(),
     // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
@@ -141,7 +142,7 @@ function startPeriodicPurge(): void {
 
 /** Réparation en tâche de fond, jamais attendue. */
 function runHeal(creds: Creds): void {
-  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsVolume(), Date.now())
+  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsVolume(), Date.now(), makePublicFetcher())
     .then((healed) => {
       if (healed > 0) sendToPage("downloads://changed", undefined);
     })

@@ -9,26 +9,31 @@
  * (les images en retard arrivent en fondu, sans rien déplacer). Une image qui
  * n'existe pas (404, illisible) est retenue aussi, une minute : sa rangée naît
  * avec son repli dessiné, sans case vide un instant à l'écran.
+ *
+ * « Décodée » = « déjà montrée » : la MÊME mémoire que le reste de
+ * l'application (`lib/seenImages.ts`, règle de D5), jamais une seconde.
  */
 
-const decoded = new Set<string>();
+import { isImageReady, markImageSeen, resetSeenImagesForTests, wasImageSeen } from "../../../lib/seenImages";
+
 const loading = new Map<string, Promise<void>>();
 const failedAt = new Map<string, number>();
 /** Un échec retenu une minute : assez pour la révélation qui l'attendait, sans condamner une panne passagère. */
 const FAILED_FOR_MS = 60_000;
-/** Assez pour plusieurs pages de résultats ; au-delà, les plus anciennes sont oubliées (le cache HTTP reste). */
+/** Les échecs retenus au plus (les plus anciens sont oubliés). */
 const MAX_REMEMBERED = 600;
 
 export function isArtworkDecoded(src: string): boolean {
-  return decoded.has(src);
+  return wasImageSeen(src);
+}
+
+/** Déjà montrée, ou déjà dans le cache mémoire du navigateur (sonde synchrone de D5). */
+export function isArtworkReady(src: string): boolean {
+  return isImageReady(src);
 }
 
 export function markArtworkDecoded(src: string): void {
-  decoded.add(src);
-  if (decoded.size > MAX_REMEMBERED) {
-    const oldest = decoded.values().next().value;
-    if (oldest !== undefined) decoded.delete(oldest);
-  }
+  markImageSeen(src);
 }
 
 /** Ce décodage vient-il d'échouer (image absente ou illisible) ? `Artwork` dessine alors son repli d'emblée. */
@@ -47,7 +52,7 @@ function markArtworkFailed(src: string): void {
 }
 
 function decodeOne(src: string): Promise<void> {
-  if (decoded.has(src)) return Promise.resolve();
+  if (wasImageSeen(src)) return Promise.resolve();
   const running = loading.get(src);
   if (running) return running;
   const img = new Image();
@@ -64,7 +69,7 @@ function decodeOne(src: string): Promise<void> {
 
 /** Charge et décode `srcs` ; résout quand toutes sont prêtes ou que `budgetMs` est écoulé. */
 export function preloadArtwork(srcs: readonly string[], budgetMs: number): Promise<void> {
-  const wanted = [...new Set(srcs)].filter((s) => !decoded.has(s) && !isArtworkFailed(s));
+  const wanted = [...new Set(srcs)].filter((s) => !wasImageSeen(s) && !isArtworkFailed(s));
   if (wanted.length === 0) return Promise.resolve();
   const all = Promise.all(wanted.map(decodeOne)).then(() => undefined);
   return Promise.race([all, new Promise<void>((resolve) => setTimeout(resolve, budgetMs))]);
@@ -72,7 +77,7 @@ export function preloadArtwork(srcs: readonly string[], budgetMs: number): Promi
 
 /** Pour les tests. */
 export function resetArtworkPreloadForTests(): void {
-  decoded.clear();
+  resetSeenImagesForTests();
   loading.clear();
   failedAt.clear();
 }

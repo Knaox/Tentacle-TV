@@ -43,6 +43,14 @@ function serverArtwork(url: string | null): string | null {
   return url !== null && url.startsWith("/api/") && !url.includes("//") ? url : null;
 }
 
+/**
+ * La pochette https d'un titre HORS bibliothèque (un autre hôte) : gardée aussi,
+ * demandée par le moteur SANS aucun jeton (`makePublicFetcher`, bureau).
+ */
+function publicArtwork(url: string | null): string | null {
+  return url !== null && url.startsWith("https://") && url.length <= 600 && !/[?&](api_key|apikey|token)=/i.test(url) ? url : null;
+}
+
 function baseItem(track: MusicTrack): Omit<MusicKeepItem, "origin" | "sourcePath" | "variant" | "preset" | "containerExt" | "expectedSize" | "estimatedSize"> {
   return {
     trackKey: track.key,
@@ -80,6 +88,7 @@ function externalItem(track: MusicTrack, provider: MusicProvider): MusicKeepItem
   if (!track.external || !provider.music.offline || track.external.pluginId !== provider.pluginId) return null;
   return {
     ...baseItem(track),
+    artworkPath: serverArtwork(track.artworkUrl) ?? publicArtwork(track.artworkUrl),
     origin: "external",
     sourcePath: musicRouteUrl(provider, `${provider.music.offline}/${encodeURIComponent(track.external.id)}`),
     variant: "original",

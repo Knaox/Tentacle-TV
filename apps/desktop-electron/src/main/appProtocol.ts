@@ -17,12 +17,15 @@ import { resolveRoot } from "./downloads/core/paths";
 import { localDb } from "./localDb";
 import { LOCAL_HOST, serveLocalAsset } from "./localAssets";
 import { getPluginDocument, PLUGIN_HOST } from "./pluginDocuments";
+import { ART_HOST, serveOctaveArt } from "./octaveArt/serveArt";
 
 export const APP_SCHEME = "tentacle";
 export const APP_HOST = "app";
 export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 /** Origine des ressources locales. À nommer dans la CSP — `'self'` ne la couvre pas. */
 export const LOCAL_ORIGIN = `${APP_SCHEME}://${LOCAL_HOST}`;
+/** Origine du cache des pochettes d'Octave (`octaveArt/serveArt.ts`). À nommer dans la CSP. */
+export const ART_ORIGIN = `${APP_SCHEME}://${ART_HOST}`;
 
 /**
  * À appeler AVANT `app.whenReady()` — Electron l'exige pour les schémas
@@ -157,6 +160,7 @@ export function serveApp(): void {
     // greffon serait cherché dans le build web et l'origine perdrait tout son
     // sens. Chacune a sa politique de sécurité et son confinement.
     if (url.host === PLUGIN_HOST) return servePluginDocument(url.pathname);
+    if (url.host === ART_HOST) return await serveOctaveArt(request, APP_ORIGIN);
     if (url.host === LOCAL_HOST) {
       const response = await serveLocalAssetFrom(request, url.pathname);
       trace(`//${LOCAL_HOST}${url.pathname}`, url.pathname, response.status);

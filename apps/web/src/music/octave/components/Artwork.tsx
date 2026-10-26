@@ -8,9 +8,11 @@
  * `/api/music/artwork` (A3). Une URL https tierce reste telle quelle — et
  * SANS le jeton : il ne quitte jamais le serveur Tentacle.
  *
- * Une image déjà décodée (`artworkPreload.ts` : préparée avant la révélation
- * des résultats) s'affiche d'emblée ; une autre arrive en fondu d'opacité,
- * sur sa place réservée — jamais un « pop » sous les yeux.
+ * Une image déjà montrée (cette session : `lib/seenImages.ts` de D5 ; une
+ * session d'avant : `artworkKnown.ts`) ou déjà décodée (`artworkPreload.ts`)
+ * s'affiche d'emblée, sans fondu ni squelette ; une image NEUVE arrive en
+ * fondu d'opacité, sur sa place réservée. Au bureau, toute pochette passe par
+ * le cache disque de la coquille (`artworkSrc.ts`) : chargée une seule fois.
  *
  * Sans image (ou image illisible) : le repli teinté du titre (`artworkTone.ts`),
  * l'initiale pour un artiste. Une vignette de liste (`thumb`) demande 128 px —
@@ -19,13 +21,15 @@
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { isArtworkDecoded, isArtworkFailed, markArtworkDecoded } from "./artworkPreload";
+import { isArtworkDecoded, isArtworkFailed, isArtworkReady, markArtworkDecoded } from "./artworkPreload";
+import { isArtworkKnown, markArtworkKnown } from "./artworkKnown";
 import { THUMB_ARTWORK_SIZE, fallbackTone, initialOf, sizedArtworkUrl } from "./artworkTone";
 import "./octaveViews.css";
 import { Music, User } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
-import { artworkSrcOf } from "./artworkSrc";
+import { octaveOwner } from "../cache/octaveOwner";
+import { artworkSrcOf, type ArtCacheTarget } from "./artworkSrc";
 
 interface ArtworkProps {
   url: string | null;
@@ -55,13 +59,19 @@ export const ARTWORK_RADIUS: Record<ArtworkRadius, string> = {
 };
 
 
+/** La coquille de bureau sert ses pochettes depuis son cache disque (`tentacle://art`) ; le web, depuis le cache HTTP. */
+function artCacheTarget(): ArtCacheTarget | undefined {
+  return typeof location !== "undefined" && location.protocol === "tentacle:" ? { owner: octaveOwner() } : undefined;
+}
+
 /** De quoi calculer l'adresse affichable de n'importe quelle image (préchargement des résultats). */
 export function useArtworkResolver(): (url: string | null) => string | null {
   const client = useJellyfinClient();
   const baseUrl = getBackendBase();
   const token = client.getToken();
   const useCredentials = client.useCredentials;
-  return useCallback((url: string | null) => artworkSrcOf(url, { baseUrl, token, useCredentials }), [baseUrl, token, useCredentials]);
+  const artCache = useMemo(artCacheTarget, []);
+  return useCallback((url: string | null) => artworkSrcOf(url, { baseUrl, token, useCredentials }, artCache), [baseUrl, token, useCredentials, artCache]);
 }
 
 /** Ce qu'affiche une case sans image : la teinte du titre, et l'initiale d'un artiste. */
@@ -86,7 +96,10 @@ export const Artwork = memo(function Artwork({ url, alt = "", className = "", ro
   }, [resolve, thumb, url]);
   // Une image dont le préchargement a déjà échoué : le repli d'emblée, jamais une case vide un instant.
   const src = resolved !== null && failed !== resolved && !isArtworkFailed(resolved) ? resolved : null;
-  const ready = src !== null && (loaded === src || isArtworkDecoded(src));
+  // Déjà montrée (cette session : règle de D5 ; une session d'avant : `artworkKnown`), ou déjà en mémoire :
+  // d'emblée, sans fondu — une pochette connue n'« apparaît » plus. Sinon, son apparition douce.
+  const instant = useMemo(() => src !== null && (isArtworkReady(src) || isArtworkKnown(src)), [src]);
+  const ready = src !== null && (loaded === src || instant);
   return (
     <div
       className={`relative shrink-0 overflow-hidden bg-fill-soft ${className}`}
@@ -102,6 +115,7 @@ export const Artwork = memo(function Artwork({ url, alt = "", className = "", ro
           draggable={false}
           onLoad={() => {
             markArtworkDecoded(src);
+            markArtworkKnown(src);
             setLoaded(src);
           }}
           onError={() => setFailed(src)}

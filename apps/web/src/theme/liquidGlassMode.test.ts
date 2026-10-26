@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { liquidGlassToggleVisible, resolveLiquidGlassMode } from "./liquidGlassMode";
+import { liquidGlassEnabledFor, liquidGlassToggleVisible, resolveLiquidGlassMode, resolveSurfaceLiquidGlassMode } from "./liquidGlassMode";
 
 /**
  * Le mode Liquid Glass : `native` sur macOS 26 réglage allumé, `refraction`
@@ -21,15 +21,32 @@ describe("resolveLiquidGlassMode", () => {
 });
 
 describe("liquidGlassToggleVisible", () => {
-  it("sur le bureau macOS, seulement avec le verre natif", () => {
-    expect(liquidGlassToggleVisible({ platform: "macos", nativeSupported: true })).toBe(true);
-    expect(liquidGlassToggleVisible({ platform: "macos", nativeSupported: false })).toBe(false);
+  it("seulement là où le verre natif existe (bureau, macOS 26)", () => {
+    expect(liquidGlassToggleVisible({ nativeSupported: true })).toBe(true);
   });
 
-  it("ailleurs, le comportement d'avant : toujours là", () => {
-    for (const platform of ["web", "windows", "linux"] as const) {
-      expect(liquidGlassToggleVisible({ platform, nativeSupported: false })).toBe(true);
-    }
+  // Damien, 26/10 : « l'option Liquid Glass apparaît sur le web — pas logique ».
+  it("web, Windows, Linux, macOS d'avant : aucune ligne Liquid Glass", () => {
+    expect(liquidGlassToggleVisible({ nativeSupported: false })).toBe(false);
+  });
+});
+
+describe("la porte suit la surface affichée (deux réglages indépendants)", () => {
+  const native = { nativeSupported: true };
+
+  it("Octave sans verre, Tentacle avec", () => {
+    expect(resolveSurfaceLiquidGlassMode({ ...native, surface: "octave", tentacle: true, octave: false })).toBe("off");
+    expect(resolveSurfaceLiquidGlassMode({ ...native, surface: "tentacle", tentacle: true, octave: false })).toBe("native");
+  });
+
+  it("l'inverse : Tentacle sans verre, Octave avec", () => {
+    expect(resolveSurfaceLiquidGlassMode({ ...native, surface: "tentacle", tentacle: false, octave: true })).toBe("off");
+    expect(resolveSurfaceLiquidGlassMode({ ...native, surface: "octave", tentacle: false, octave: true })).toBe("native");
+  });
+
+  it("sans verre natif, le réglage de la surface donne `refraction` ou `off`, comme avant", () => {
+    expect(resolveSurfaceLiquidGlassMode({ nativeSupported: false, surface: "octave", tentacle: false, octave: true })).toBe("refraction");
+    expect(liquidGlassEnabledFor({ surface: "tentacle", tentacle: false, octave: true })).toBe(false);
   });
 });
 

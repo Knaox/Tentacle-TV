@@ -12,7 +12,7 @@ import { nodeVolume } from "../node/nodeFiles";
 import { enqueueBatch } from "./enqueue";
 import { heal } from "./heal";
 import { listForUser } from "./listing";
-import { enqueueMusicBatch, isServerPath, musicItemId, musicRelPath, type MusicKeepItem } from "./musicKeep";
+import { enqueueMusicBatch, isPublicArtUrl, isServerPath, musicItemId, musicRelPath, type MusicKeepItem } from "./musicKeep";
 import { isMusicItem, listMusicCollections, listMusicForUser, musicItemOfKey, saveMusicCollection } from "./musicLibrary";
 import { getFile } from "./queue";
 import { deleteClaim } from "./store";
@@ -75,6 +75,14 @@ describe("identifiants et chemins", () => {
     expect(isServerPath("/autre/chose")).toBe(false);
   });
 
+  it("une pochette d'ailleurs : https publique seulement, jamais un jeton dedans", () => {
+    expect(isPublicArtUrl("https://lh3.googleusercontent.com/abc=w544-h544")).toBe(true);
+    expect(isPublicArtUrl("http://ailleurs.exemple/a.jpg")).toBe(false);
+    expect(isPublicArtUrl("https://u:p@ailleurs.exemple/a.jpg")).toBe(false);
+    expect(isPublicArtUrl("https://ailleurs.exemple/a.jpg?token=x")).toBe(false);
+    expect(isPublicArtUrl(`https://ailleurs.exemple/${"a".repeat(600)}`)).toBe(false);
+  });
+
   it("nomme le média d'après la variante", () => {
     expect(musicRelPath(JF, track())).toBe(`media/${JF}/audio-original.flac`);
     expect(musicRelPath(JF, track({ variant: "light", preset: "a256" }))).toBe(`media/${JF}/audio-a256.m4a`);
@@ -85,7 +93,9 @@ describe("mise en file", () => {
   it("refuse un lot dont une source n'est pas sur le serveur", () => {
     const db = openInMemory();
     expect(() => enqueueMusicBatch(db, "u", [track({ sourcePath: "https://ailleurs.exemple/a.flac" })], 100 * GIB, 1)).toThrow("invalid-item");
+    // Une pochette d'un autre hôte : jamais pour un titre de la bibliothèque (la sienne est au serveur).
     expect(() => enqueueMusicBatch(db, "u", [track({ artworkPath: "https://ailleurs.exemple/a.jpg" })], 100 * GIB, 1)).toThrow("invalid-item");
+    expect(() => enqueueMusicBatch(db, "u", [{ ...EXTERNAL, artworkPath: "https://ailleurs.exemple/a.jpg?api_key=x" }], 100 * GIB, 1)).toThrow("invalid-item");
     expect(() => enqueueMusicBatch(db, "u", [track({ origin: "external" })], 100 * GIB, 1)).toThrow("invalid-item");
     expect(() => enqueueMusicBatch(db, "u", [], 100 * GIB, 1)).toThrow("empty-batch");
   });
@@ -184,5 +194,43 @@ describe("transfert", () => {
     fetched.length = 0;
     await heal(async (url) => (fetched.push(url), null), db, CREDS.serverUrl, nodeVolume(root), 10);
     expect(fetched).toEqual([]);
+  });
+
+  it("un titre hors bibliothèque garde SA pochette d'un autre hôte, demandée SANS jeton", async () => {
+    const db = openInMemory();
+    const root = preparedRoot("tentacle-music-");
+    const net: TransferNet = {
+      async open() {
+        return { status: 200, header: () => null, chunks: (async function* () { yield new Uint8Array([1, 2, 3]); })() };
+      },
+      async killTranscode() {
+        /* rien */
+      },
+    };
+    const withToken: string[] = [];
+    const withoutToken: string[] = [];
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2]);
+    const art = "https://lh3.googleusercontent.com/abc=w544-h544";
+    const { engine } = makeEngine(db, root, net, {
+      makeFetcher: () => async (url) => (withToken.push(url), jpeg),
+      makePublicFetcher: () => async (url) => (withoutToken.push(url), jpeg),
+    });
+    const fileId = enqueueMusicBatch(db, "u", [{ ...EXTERNAL, artworkPath: art }], 100 * GIB, 1).fileIds[0]!;
+    engine.start(CREDS);
+    await vi.waitFor(() => expect(getFile(db, fileId)!.status).toBe("complete"));
+    await vi.waitFor(() => expect(listMusicForUser(db, "u")[0]?.coverRel).toMatch(/cover\.jpg$/));
+    expect(withoutToken).toEqual([art]);
+    expect(withToken).toEqual([]);
+  });
+
+  it("sans récupérateur sans jeton, la pochette d'ailleurs n'est pas gardée — jamais demandée avec le jeton", async () => {
+    const db = openInMemory();
+    const root = preparedRoot("tentacle-music-");
+    enqueueMusicBatch(db, "u", [{ ...EXTERNAL, artworkPath: "https://lh3.googleusercontent.com/x" }], 100 * GIB, 1);
+    const withToken: string[] = [];
+    // La réparation d'un titre complet sans pochette, sans `fetchPublic` : rien ne part.
+    db.prepare("UPDATE files SET status = 'complete'").run();
+    await heal(async (url) => (withToken.push(url), null), db, CREDS.serverUrl, nodeVolume(root), 10);
+    expect(withToken).toEqual([]);
   });
 });
