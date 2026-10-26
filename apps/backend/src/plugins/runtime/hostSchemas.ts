@@ -43,6 +43,7 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
     })
     .strict(),
   "jellyfin.playlistEntries": z.object({ userId: jellyfinId, playlistId: jellyfinId }).strict(),
+  "jellyfin.playlistEditable": z.object({ userId: jellyfinId, playlistId: jellyfinId }).strict(),
   "jellyfin.usageOf": z.object({ itemIds: z.array(jellyfinId).min(1).max(100) }).strict(),
   "jellyfin.notifyPath": z
     .object({ path: z.string().min(1).max(1024), change: z.enum(["created", "modified", "deleted"]) })

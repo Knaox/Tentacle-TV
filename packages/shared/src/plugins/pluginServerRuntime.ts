@@ -140,6 +140,11 @@ export interface HostApi {
   /** Insère à `position` (0 = tête ; au-delà de la fin = à la fin). */
   "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number }; result: { ok: true } };
   "jellyfin.playlistEntries": { params: { userId: string; playlistId: string }; result: { entryId: string; itemId: string; position: number }[] };
+  /**
+   * Ce compte peut-il MODIFIER cette playlist (Jellyfin : `CanDelete`, vu par lui) ? `false` aussi pour une playlist
+   * qu'il ne voit pas. Serveur 1.40.0 (import de playlists) ; un hôte d'avant : méthode inconnue (`invalid`).
+   */
+  "jellyfin.playlistEditable": { params: { userId: string; playlistId: string }; result: { editable: boolean } };
   /** Qui a un élément en favori, et où il est dans quelles playlists — pour la re-liaison après remplacement. */
   "jellyfin.usageOf": { params: { itemIds: string[] }; result: { itemId: string; favoriteUserIds: string[]; playlists: PlaylistUsage[] }[] };
   /** Prévient Jellyfin qu'un chemin de SA bibliothèque musique a changé (scan ciblé). */
@@ -221,6 +226,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "jellyfin.setFavorite",
   "jellyfin.playlistInsert",
   "jellyfin.playlistEntries",
+  "jellyfin.playlistEditable",
   "jellyfin.usageOf",
   "jellyfin.notifyPath",
   "jellyfin.refreshPath",
