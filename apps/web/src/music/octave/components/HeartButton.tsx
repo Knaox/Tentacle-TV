@@ -16,9 +16,11 @@ interface HeartButtonProps {
   size?: "sm" | "md";
   /** Visible seulement au survol de la rangée, sauf si aimé. */
   quiet?: boolean;
+  /** Une classe de plus (le rond clair du dock en verre). */
+  className?: string;
 }
 
-export const HeartButton = memo(function HeartButton({ track, actions, size = "sm", quiet = false }: HeartButtonProps) {
+export const HeartButton = memo(function HeartButton({ track, actions, size = "sm", quiet = false, className }: HeartButtonProps) {
   const { t } = useTranslation("music");
   const liked = useLiked(track.key, track.favorite);
   if (!actions.canLike(track)) return <span aria-hidden className={size === "sm" ? "h-8 w-8" : "h-10 w-10"} />;
@@ -36,7 +38,7 @@ export const HeartButton = memo(function HeartButton({ track, actions, size = "s
       }}
       className={`flex ${box} shrink-0 cursor-pointer items-center justify-center rounded-full transition-[opacity,transform] duration-150 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         liked ? "text-octave-accent-text" : `text-content-tertiary hover:text-content-primary ${quiet ? "octave-hover-reveal opacity-0 group-hover:opacity-100 focus-visible:opacity-100" : ""}`
-      }`}
+      }${className ? ` ${className}` : ""}`}
     >
       <Heart className={icon} fill={liked ? "currentColor" : "none"} strokeWidth={liked ? 0 : 2} />
     </button>

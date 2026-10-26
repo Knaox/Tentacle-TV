@@ -23,7 +23,7 @@ export const HistoryButtons = memo(function HistoryButtons({ compact = false }: 
     );
   }
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" data-octave-history>
       <button type="button" onClick={back} disabled={!canBack} aria-label={t("shell.back")} title={t("shell.back")} className={chip}>
         <ChevronLeft className="h-5 w-5" aria-hidden />
       </button>

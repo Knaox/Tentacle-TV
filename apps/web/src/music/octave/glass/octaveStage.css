@@ -1,0 +1,80 @@
+/*
+ * Octave en Liquid Glass — la DISPOSITION (maquette « Octave · Playlist ») :
+ * le fond coloré, le rail, la page et la file à 20 px des bords, le dock sur
+ * toute la largeur. `OctaveGlassStage.tsx` ne se monte qu'en mode natif ; ces
+ * règles sont en plus portées par la porte : hors verre, rien ne s'applique.
+ *
+ * Mesures relevées sur la maquette (fenêtre 1440) : rail 260 × (hauteur − dock),
+ * rayon 28, 22 × 16 de marge intérieure ; dock 1240 au plus, 111 de haut,
+ * rayon 32, à 20 px du bas ; 10 px entre le rail et le dock.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage {
+  --oc-stage-gap: 20px;
+  --oc-sidebar-width: 260px;
+  --oc-dock-height: 111px;
+  --oc-dock-inset: 20px;
+  --oc-dock-max: 1240px;
+  /* Ce qu'il faut laisser au bas d'un panneau pour finir au-dessus du dock. */
+  --oc-stage-dock-clear: calc(var(--oc-dock-height) + 10px);
+  /* L'encre de la maquette : un noir à peine prune, sous les taches. */
+  --oc-stage-ink: #07050c;
+  background-color: var(--oc-stage-ink);
+  color: #ffffff;
+}
+/* Le dock porte la nuit d'Octave, qui redéclare ses mesures : on les lui rend. */
+:root[data-liquid-glass="native"] .octave-stage .octave-night {
+  --oc-dock-height: 111px;
+  --oc-dock-inset: 20px;
+  --oc-dock-max: 1240px;
+}
+
+/* ── Le fond : l'encre et cinq taches douces, en UNE couche fixe ─────────────
+ * Des dégradés radiaux à la place des disques floutés de la maquette (blur 90) :
+ * le même halo, peint une fois, sans filtre. La teinte de la pochette en cours
+ * (`--oc-ambient-tint`) remplace les deux taches froides ; sans titre, le violet
+ * clair de Tentacle et le rose clair d'Octave les tiennent. */
+:root[data-liquid-glass="native"] .octave-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 380px at 190px 150px, rgba(var(--brand-accent-rgb), 0.55), rgba(var(--brand-accent-rgb), 0) 100%),
+    radial-gradient(circle 340px at 680px 300px, rgba(var(--oc-ambient-tint), 0.34), rgba(var(--oc-ambient-tint), 0) 100%),
+    radial-gradient(circle 360px at calc(100% - 140px) 500px, rgba(var(--oc-ambient-tint), 0.3), rgba(var(--oc-ambient-tint), 0) 100%),
+    radial-gradient(ellipse 470px 340px at 610px 100%, rgba(var(--brand-rgb), 0.55), rgba(var(--brand-rgb), 0) 100%),
+    radial-gradient(circle 260px at calc(100% - 470px) calc(100% - 250px), rgba(var(--brand-accent-rgb), 0.35), rgba(var(--brand-accent-rgb), 0) 100%);
+}
+:root[data-liquid-glass="native"] .octave-ambient:not([data-tinted]) {
+  --oc-ambient-tint: 167, 139, 250;
+}
+
+/* ── La rangée : rail · page · file, au-dessus du dock ──────────────────── */
+:root[data-liquid-glass="native"] .octave-stage-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  gap: var(--oc-stage-gap);
+  padding: var(--oc-stage-gap) var(--oc-stage-gap) 0;
+  box-sizing: border-box;
+}
+/* La page défile jusqu'au bas de la fenêtre, SOUS le dock ; son dernier contenu
+ * s'arrête au-dessus de lui. */
+:root[data-liquid-glass="native"] .octave-stage-main {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(var(--oc-dock-height) + var(--oc-dock-inset) + 24px);
+  box-sizing: border-box;
+}
+:root[data-liquid-glass="native"] .octave-stage-queue {
+  width: var(--oc-queue-width);
+  flex-shrink: 0;
+  height: calc(100% - var(--oc-dock-inset) - var(--oc-stage-dock-clear));
+  overflow: hidden;
+}

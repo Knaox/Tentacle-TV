@@ -25,7 +25,7 @@ export const SeekBar = memo(function SeekBar({ compact = false }: { compact?: bo
   };
 
   return (
-    <div className="oc-meta flex w-full items-center gap-2.5 text-[11px] text-content-tertiary">
+    <div className="octave-seek oc-meta flex w-full items-center gap-2.5 text-[11px] text-content-tertiary">
       {!compact && <span className="w-10 shrink-0 text-right">{durationLabel(shown)}</span>}
       <RangeSlider
         className="flex-1"

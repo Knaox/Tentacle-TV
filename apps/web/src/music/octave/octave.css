@@ -2,6 +2,12 @@
 @import "./octaveNight.css";
 @import "./shell/shell.css";
 @import "./shell/shellGlass.css";
+@import "./glass/octaveStage.css";
+@import "./glass/octaveRail.css";
+@import "./glass/octaveDock.css";
+@import "./glass/octaveHeader.css";
+@import "./glass/octaveTable.css";
+@import "./glass/octaveMaterial.css";
 
 /*
  * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css

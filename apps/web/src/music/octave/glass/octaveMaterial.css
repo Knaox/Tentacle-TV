@@ -1,0 +1,16 @@
+/*
+ * Octave en Liquid Glass — le MATÉRIAU des panneaux posés dans la page
+ * (tableau des titres, cadre de la pochette, file) : PROVISOIRE, les valeurs de
+ * la maquette « Octave · Playlist » (`.glass`), en attendant le socle commun de
+ * D11 (`maquette-lg/SOCLE.md`) qui le remplacera.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage :is(.octave-track-table, .octave-art-frame, .octave-stage-queue) {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09) 100%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.08);
+  backdrop-filter: blur(28px) saturate(190%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.08), inset 1px 0 0 rgba(255, 255, 255, 0.12), inset 0 0 24px rgba(255, 255, 255, 0.06), 0 24px 60px -12px rgba(0, 0, 0, 0.55);
+}

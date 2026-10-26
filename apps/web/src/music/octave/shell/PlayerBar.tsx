@@ -47,7 +47,7 @@ function QueueButton({ open, onToggle }: { open: boolean; onToggle: () => void }
       aria-label={t("player.queue")}
       title={t("player.queue")}
       onClick={onToggle}
-      className={`relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
+      className={`octave-dock-chip relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
     >
       <ListMusic className="h-[18px] w-[18px]" aria-hidden />
       {open && <span aria-hidden className="absolute bottom-0.5 h-1 w-1 rounded-full bg-octave-accent" />}
