@@ -16,6 +16,7 @@ import { applyResolution, queueActions } from "@tentacle-tv/shared/octave";
 import { clearLikeOverride } from "../actions/likeOverrides";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { useDesktopClientFetch } from "../clientFetch/useDesktopClientFetch";
+import { signalMusicEvent } from "../offline/autosync/syncSignals";
 
 export function useOctaveEvents(): void {
   const queryClient = useQueryClient();
@@ -28,6 +29,8 @@ export function useOctaveEvents(): void {
   const onEvent = useCallback(
     (event: MusicEvent) => {
       applyMusicEvent(queryClient, event);
+      // La tenue à jour des playlists gardées hors ligne (bureau) : ce qui la réveille.
+      signalMusicEvent(event);
       if (event.type === "music:userdata") {
         for (const change of event.changes) {
           const key = libraryTrackKey(change.jellyfinId);

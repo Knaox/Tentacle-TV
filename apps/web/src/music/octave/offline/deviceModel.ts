@@ -62,6 +62,8 @@ export function deviceModel(
   const byKey = new Map(shown.map((k) => [k.trackKey, keptToTrack(k, localUrl)]));
   const out: DeviceCollection[] = [];
   for (const c of collections) {
+    // Un titre gardé seul n'est pas une collection à montrer : il ne fait que le retenir.
+    if (c.kind === "track") continue;
     const tracks = c.trackKeys.map((key) => byKey.get(key)).filter((t): t is MusicTrack => !!t);
     if (tracks.length === 0) continue;
     out.push({ key: c.key, kind: c.kind, title: c.title, subtitle: c.subtitle, artworkUrl: tracks.find((t) => t.artworkUrl)?.artworkUrl ?? null, tracks });

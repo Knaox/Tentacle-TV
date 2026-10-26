@@ -27,6 +27,7 @@ import { deviceModel, type DeviceCollection } from "./deviceModel";
 import { keptBytes } from "./keptProgress";
 import { KeepCollectionButton } from "./KeepCollectionButton";
 import { useKeptMusic } from "./useKeptMusic";
+import { AutoSyncSetting } from "./autosync/AutoSyncSetting";
 
 const DEVICE_CONTEXT = "device";
 
@@ -100,6 +101,7 @@ export function DeviceView() {
             {t("view.offlineHint")}
           </p>
         )}
+        {!open && !offline && <AutoSyncSetting variant="inline" />}
         {kept.loaded && model.tracks.length === 0 && (
           <EmptyState icon={WifiOff} title={t("view.empty")}>
             {t("view.emptyHint")}

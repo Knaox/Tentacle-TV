@@ -2,7 +2,8 @@
  * Octave — les commandes de la musique gardée hors ligne (capacité
  * `offline.music`), sur le MÊME moteur que les films (`downloadsEngine.ts`) :
  * mettre un lot en file (un titre, un album, une playlist), lister ce que CE
- * compte a gardé, le retirer. Pause, reprise et annulation d'un transfert sont
+ * compte a gardé, le retirer, et réécrire ce qui le retient (collections : la
+ * tenue à jour des playlists gardées). Pause, reprise et annulation d'un transfert sont
  * celles des films (`downloads_pause`…), par identifiant de fichier.
  *
  * Les identifiants de connexion restent en mémoire du moteur, comme pour les
@@ -46,7 +47,7 @@ const ITEM = z.object({
 
 const COLLECTION = z.object({
   key: z.string().min(1).max(500),
-  kind: z.enum(["album", "playlist"]),
+  kind: z.enum(["album", "playlist", "track"]),
   title: z.string().min(1).max(1000),
   subtitle: TEXT.nullable(),
   coverItemId: z.string().max(64).nullable(),
@@ -59,6 +60,13 @@ const ENQUEUE = z.object({
   token: z.string().min(1),
   items: z.array(ITEM).max(5000),
   collection: COLLECTION.nullish(),
+});
+
+/** La tenue à jour réécrit des collections (titres ajoutés, retirés, remplacés) et en efface (une retenue levée). */
+const COLLECTIONS = z.object({
+  userId: USER_ID,
+  save: z.array(COLLECTION).max(500),
+  remove: z.array(z.string().max(500)).max(500),
 });
 
 const REMOVE = z.object({
@@ -101,6 +109,16 @@ export function registerDownloadsMusicCommands(registry: CommandRegistry): void 
         if (collectionKey) deleteMusicCollection(db, userId, collectionKey);
         engine.notifyChanged();
         return { removed };
+      },
+    })
+    .add("downloads_music_collections", {
+      schema: COLLECTIONS,
+      run: ({ userId, save, remove }) => {
+        const db = localDb();
+        const now = Date.now();
+        for (const collection of save) saveMusicCollection(db, userId, collection, now);
+        for (const key of remove) deleteMusicCollection(db, userId, key);
+        downloadsEngine().notifyChanged();
       },
     })
     .add("downloads_music_list", {

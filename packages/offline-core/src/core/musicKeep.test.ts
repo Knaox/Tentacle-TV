@@ -194,6 +194,10 @@ describe("transfert", () => {
     fetched.length = 0;
     await heal(async (url) => (fetched.push(url), null), db, CREDS.serverUrl, nodeVolume(root), 10);
     expect(fetched).toEqual([]);
+    // Retiré (une playlist tenue à jour l'a perdu) : ni média, ni pochette, ni dossier ne restent sur le disque.
+    deleteClaim(db, nodeVolume(root), "u", fileId);
+    expect(fs.existsSync(path.join(root, "media", JF))).toBe(false);
+    expect(listMusicForUser(db, "u")).toEqual([]);
   });
 
   it("un titre hors bibliothèque garde SA pochette d'un autre hôte, demandée SANS jeton", async () => {

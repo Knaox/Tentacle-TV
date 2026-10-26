@@ -43,6 +43,7 @@ export const COMMANDS = [
   // La musique gardée (Octave, capacité serveur `offline.music`), sur le même moteur.
   "downloads_music_enqueue",
   "downloads_music_remove",
+  "downloads_music_collections",
   "downloads_music_list",
 
   // Lecture locale

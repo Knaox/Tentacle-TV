@@ -34,6 +34,12 @@ export default {
     subtitle_one: "{{count}} titre · écouter dans Octave",
     subtitle_other: "{{count}} titres · écouter dans Octave",
   },
+  autosync: {
+    section: "Hors ligne",
+    caption: "Ce qui est gardé sur cet appareil.",
+    label: "Tenir à jour les playlists gardées sur cet appareil",
+    hint: "Un titre ajouté à une playlist gardée part de lui-même sur l’appareil, un titre retiré le quitte ; la version de la bibliothèque remplace une copie d’ailleurs dès qu’elle existe. Sans réseau, tout se rattrape au retour.",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",

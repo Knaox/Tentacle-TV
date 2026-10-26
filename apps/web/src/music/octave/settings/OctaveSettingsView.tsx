@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { OctaveStartupSetting } from "../mode/OctaveStartupSetting";
 import { OctaveAppearanceFields } from "./OctaveAppearanceFields";
+import { AutoSyncSetting } from "../offline/autosync/AutoSyncSetting";
 
 export function OctaveSettingsView() {
   const { t } = useTranslation("octaveShell");
@@ -25,6 +26,7 @@ export function OctaveSettingsView() {
           <OctaveAppearanceFields />
         </SettingsSection>
         <OctaveStartupSetting title={t("settings.startup")} />
+        <AutoSyncSetting variant="section" />
       </div>
     </div>
   );

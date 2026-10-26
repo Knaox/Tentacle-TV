@@ -23,6 +23,8 @@ export interface KeptMusicTrack {
   trackKey: string;
   origin: "library" | "external";
   variant: DownloadVariant;
+  /** Le palier de l'Allégé audio (`a256`), `null` pour l'original : la tenue à jour le compare au plan du serveur. */
+  preset: string | null;
   status: DownloadStatus;
   errorCode: string | null;
   pausedByUser: boolean;
@@ -43,15 +45,25 @@ export interface KeptMusicTrack {
   createdAt: number;
 }
 
-/** Un album ou une playlist gardés en entier, dans leur ordre. */
+/**
+ * Ce qui RETIENT des titres sur l'appareil : un album ou une playlist gardés en
+ * entier (dans leur ordre), ou `track` — un titre gardé seul (menu « … »), qui le
+ * retient quand sa playlist le perd (tenue à jour : `apps/web/…/offline/autosync`).
+ */
+export type KeptCollectionKind = "album" | "playlist" | "track";
+
 export interface KeptMusicCollection {
   key: string;
-  kind: "album" | "playlist";
+  kind: KeptCollectionKind;
   title: string;
   subtitle: string | null;
   coverItemId: string | null;
   trackKeys: string[];
   updatedAt: number;
+}
+
+function kindOf(raw: string): KeptCollectionKind {
+  return raw === "playlist" || raw === "track" ? raw : "album";
 }
 
 function originOf(row: Row): "library" | "external" {
@@ -66,6 +78,7 @@ function mapKept(row: Row): KeptMusicTrack {
     trackKey: text(row, "track_key"),
     origin: originOf(row),
     variant: file.variant,
+    preset: file.preset,
     status: file.status,
     errorCode: file.errorCode,
     pausedByUser: flag(row, "paused_by_user"),
@@ -156,7 +169,7 @@ export function listMusicCollections(db: DatabaseHandle, userId: string): KeptMu
     .all(userId)
     .map((row) => ({
       key: text(row, "collection_key"),
-      kind: text(row, "kind") === "playlist" ? ("playlist" as const) : ("album" as const),
+      kind: kindOf(text(row, "kind")),
       title: text(row, "title"),
       subtitle: textOrNull(row, "subtitle"),
       coverItemId: textOrNull(row, "cover_item_id"),
