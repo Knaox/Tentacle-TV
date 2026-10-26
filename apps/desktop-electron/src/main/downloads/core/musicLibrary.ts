@@ -11,6 +11,7 @@ import type { DatabaseHandle, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { MAX_TILE_BYTES } from "./fetcher";
 import { saveBytes } from "./meta";
+import { isPublicArtUrl, isServerPath } from "./musicKeep";
 import { mediaFileExists } from "./paths";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
 import { FILE_COLS, mapFileRow, type DownloadStatus, type DownloadVariant } from "./store";
@@ -175,16 +176,27 @@ function imageExt(bytes: Uint8Array): string | null {
 
 /**
  * La pochette d'un titre, posée à côté de son média (`media/<id>/cover.<ext>`)
- * si elle manque. Best-effort : une pochette absente n'empêche rien.
+ * si elle manque. Best-effort : une pochette absente n'empêche rien. Un chemin
+ * du serveur part avec le jeton (`fetchBytes`) ; une adresse https d'un autre
+ * hôte (titre hors bibliothèque) part SANS (`fetchPublic`), ou pas du tout.
  */
-export async function fetchMusicCover(fetchBytes: FetchBytes, db: DatabaseHandle, serverUrl: string, volume: Volume, itemId: string): Promise<boolean> {
+export async function fetchMusicCover(
+  fetchBytes: FetchBytes,
+  db: DatabaseHandle,
+  serverUrl: string,
+  volume: Volume,
+  itemId: string,
+  fetchPublic: FetchBytes | null = null,
+): Promise<boolean> {
   const row = db.prepare("SELECT artwork_path, cover_rel FROM music_meta WHERE item_id = ?").get(itemId);
   if (row === undefined) return false;
   const current = textOrNull(row, "cover_rel");
   if (current !== null && mediaFileExists(volume, current)) return false;
   const artwork = textOrNull(row, "artwork_path");
   if (artwork === null) return false;
-  const bytes = await fetchBytes(`${serverUrl}${artwork}`, MAX_TILE_BYTES);
+  const elsewhere = isPublicArtUrl(artwork);
+  if (elsewhere && fetchPublic === null) return false;
+  const bytes = elsewhere ? await fetchPublic!(artwork, MAX_TILE_BYTES) : isServerPath(artwork) ? await fetchBytes(`${serverUrl}${artwork}`, MAX_TILE_BYTES) : null;
   const ext = bytes === null ? null : imageExt(bytes);
   if (bytes === null || ext === null) return false;
   const rel = `media/${itemId}/cover.${ext}`;

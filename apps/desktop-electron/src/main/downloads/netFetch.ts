@@ -46,3 +46,26 @@ export function makeFetcher(token: string): FetchBytes {
     }
   };
 }
+
+/**
+ * Un récupérateur SANS AUCUN jeton ni en-tête d'authentification : la
+ * pochette https d'un titre hors bibliothèque, chez un autre hôte — le jeton
+ * ne quitte jamais le serveur Tentacle. Mêmes délai et borne.
+ */
+export function makePublicFetcher(): FetchBytes {
+  return async (url: string, maxBytes: number): Promise<Uint8Array | null> => {
+    if (!url.startsWith("https://")) return null;
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+    try {
+      const response = await net.fetch(url, { signal: abort.signal, credentials: "omit" });
+      if (!response.ok) return null;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      return bytes.byteLength > maxBytes ? null : bytes;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}

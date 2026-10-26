@@ -206,6 +206,7 @@ export class DownloadEngine {
             volume: this.deps.volume(),
             driver: this.deps.driver,
             fetchBytes: this.deps.makeFetcher(creds.token),
+            fetchPublic: this.deps.makePublicFetcher?.() ?? null,
             onProgress: (id, bytes) => {
               moved = true;
               this.progress(id, bytes, expected);

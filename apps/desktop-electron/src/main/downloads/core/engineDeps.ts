@@ -20,6 +20,8 @@ export interface EngineDeps {
   volume: () => Volume;
   driver: TransferDriver;
   makeFetcher: (token: string) => FetchBytes;
+  /** Un récupérateur SANS aucun jeton (pochette https d'un autre hôte) ; absent : ces pochettes ne sont pas gardées. */
+  makePublicFetcher?: () => FetchBytes;
   emit: (event: EngineEvent, payload: unknown) => void;
   now: () => number;
   /**

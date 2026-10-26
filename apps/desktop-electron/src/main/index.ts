@@ -12,6 +12,7 @@ import {
   APP_ORIGIN,
   APP_SCHEME,
   LOCAL_ORIGIN,
+  ART_ORIGIN,
   registerAppScheme,
   serveApp,
   webRoot,
@@ -205,7 +206,8 @@ function main(): void {
       // `unsafe-inline` à tout le reste.
       const hashes = hashesFromFile(path.join(webRoot(), "index.html"));
       const pluginOrigin = `${APP_SCHEME}://${PLUGIN_HOST}`;
-      const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, LOCAL_ORIGIN, hashes);
+      // Les ressources locales ET le cache des pochettes d'Octave : deux origines voisines, nommées.
+      const appCsp = buildCsp(APP_ORIGIN, pluginOrigin, `${LOCAL_ORIGIN} ${ART_ORIGIN}`, hashes);
       const pluginCsp = buildPluginCsp(APP_ORIGIN);
 
       // Une politique par origine. Le serveur Jellyfin de l'utilisateur n'est pas

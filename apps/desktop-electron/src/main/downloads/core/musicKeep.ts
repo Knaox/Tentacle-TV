@@ -94,6 +94,21 @@ export function musicItemId(trackKey: string): string | null {
   return null;
 }
 
+/**
+ * Une pochette d'un AUTRE hôte (titre hors bibliothèque) : une adresse https
+ * publique, demandée SANS aucun jeton ni en-tête d'authentification
+ * (`EngineDeps.makePublicFetcher`) — le jeton ne quitte jamais le serveur Tentacle.
+ */
+export function isPublicArtUrl(url: string): boolean {
+  if (url.length > 600 || !url.startsWith("https://")) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.username === "" && parsed.password === "" && !/[?&](api_key|apikey|token)=/i.test(parsed.search);
+  } catch {
+    return false;
+  }
+}
+
 /** Le chemin est-il bien un chemin du serveur Tentacle (le jeton y part) ? */
 export function isServerPath(path: string): boolean {
   return path.length <= 600 && SERVER_PATH.test(path) && !path.includes("..") && !path.includes("//");
@@ -111,7 +126,7 @@ export function validateMusicBatch(items: readonly MusicKeepItem[]): void {
       musicItemId(item.trackKey) !== null &&
       (item.origin === "library") === item.trackKey.startsWith("jf:") &&
       isServerPath(item.sourcePath) &&
-      (item.artworkPath === null || isServerPath(item.artworkPath)) &&
+      (item.artworkPath === null || isServerPath(item.artworkPath) || (item.origin === "external" && isPublicArtUrl(item.artworkPath))) &&
       (item.variant === "original" || item.variant === "light") &&
       (item.preset === null || validExt(item.preset)) &&
       validExt(item.containerExt) &&
