@@ -42,7 +42,6 @@
 @import "./components/ui/glass/lgPageButtons.css";
 @import "./components/ui/glass/lgSurfaceButtons.css";
 @import "./components/ui/glass/lgSurfaceAdhoc.css";
-@import "./components/ui/glass/lgFloatingBar.css";
 @import "./components/detail/lgDetailStage.css";
 @import "./theme/glass/pane.css";
 /* Les pages de Tentacle au verre de la maquette (APRÈS le socle et les recettes lg*). */

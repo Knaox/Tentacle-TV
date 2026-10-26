@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import type { ShareListKind } from "@tentacle-tv/api-client";
-import { FloatingBar } from "../ui/glass/FloatingBar";
 
 interface Props {
   kind: ShareListKind;
@@ -16,8 +15,8 @@ interface Props {
  * enfin où partent les titres (il annonçait « ma liste » dans les deux cas).
  *
  * Montée seulement quand elle sert : son verre ne coûte rien le reste du temps.
- * Verre natif : UNE capsule qui flotte (lot lg7, R16, `FloatingBar`), le
- * compte et l'ajout en `glassProminent` peint ; ailleurs, la pilule d'avant.
+ * Verre natif : la même pilule, à la même place (le verre change le MATÉRIAU,
+ * jamais les DIMENSIONS — Damien, 26/10).
  */
 export function SharedListAddBar({ kind, count, isAdding, added, onAdd }: Props) {
   const { t } = useTranslation("share");
@@ -45,22 +44,15 @@ export function SharedListAddBar({ kind, count, isAdding, added, onAdd }: Props)
   );
 
   return (
-    <FloatingBar
-      role="status"
-      live="polite"
-      groups={[<>{status}{add}</>]}
-      legacy={
-        <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex items-center gap-4 rounded-full border border-line-strong bg-surface-toolbar py-2 pl-5 pr-2 shadow-2xl backdrop-blur-lg animate-fade-slide-up"
-          >
-            {status}
-            {add}
-          </div>
-        </div>
-      }
-    />
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex items-center gap-4 rounded-full border border-line-strong bg-surface-toolbar py-2 pl-5 pr-2 shadow-2xl backdrop-blur-lg animate-fade-slide-up"
+      >
+        {status}
+        {add}
+      </div>
+    </div>
   );
 }

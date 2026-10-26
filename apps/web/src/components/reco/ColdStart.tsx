@@ -13,8 +13,6 @@ import {
 } from "@tentacle-tv/api-client";
 import type { ColdStartTitle, RatingIdentity } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
-import { useLiquidGlassMode } from "../../theme/glass";
-import { FloatingBar } from "../ui/glass/FloatingBar";
 
 /** Un « j'aime » de la grille vaut 8/10 : signal franc, qui laisse le 9 et le
  *  10 aux coups de cœur notés finement sur les fiches. */
@@ -41,7 +39,6 @@ export function ColdStart({ signalCount, onDone }: { signalCount: number; onDone
   const remove = useDeleteRating();
   const warmup = useRecoWarmup();
   const [visible, setVisible] = useState(PAGE_SIZE);
-  const native = useLiquidGlassMode() === "native";
 
   const items = data?.items ?? [];
   const ratedKeys = new Set((ratings ?? []).map((r) => ratingKey(r)));
@@ -133,36 +130,22 @@ export function ColdStart({ signalCount, onDone }: { signalCount: number; onDone
       )}
 
       {/* Bascule volontaire : la pilule suit le défilement dès que le compte y
-          est — la grille ne se dérobe jamais toute seule. Verre natif : une
-          capsule qui flotte au bas de la fenêtre (lot lg7, R16), la place
-          gardée sous la grille pour qu'aucune carte n'y reste cachée. */}
+          est — la grille ne se dérobe jamais toute seule. Verre natif : la
+          même pilule, à la même place (le verre change le MATÉRIAU). */}
       {ready && (
-        <FloatingBar
-          groups={[
-            <>
-              <span className="lg-fb-status hidden text-sm text-content-secondary sm:inline">{t("coldReadyHint")}</span>
-              <button type="button" onClick={finish} className="lg-fb-btn lg-fb-primary text-sm font-semibold">
-                {t("coldCta")}
-              </button>
-            </>,
-          ]}
-          legacy={
-            <div className="sticky bottom-20 z-20 mt-10 flex justify-center md:bottom-6">
-              <div className="flex items-center gap-4 rounded-full border border-line-subtle bg-surface-modal py-2.5 pl-5 pr-2.5 shadow-2xl">
-                <span className="hidden text-sm text-content-secondary sm:inline">{t("coldReadyHint")}</span>
-                <button
-                  type="button"
-                  onClick={finish}
-                  className="rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2 text-sm font-semibold text-cta-brand-fg transition-transform hover:scale-[1.03] motion-reduce:!transform-none"
-                >
-                  {t("coldCta")}
-                </button>
-              </div>
-            </div>
-          }
-        />
+        <div className="sticky bottom-20 z-20 mt-10 flex justify-center md:bottom-6">
+          <div className="flex items-center gap-4 rounded-full border border-line-subtle bg-surface-modal py-2.5 pl-5 pr-2.5 shadow-2xl">
+            <span className="hidden text-sm text-content-secondary sm:inline">{t("coldReadyHint")}</span>
+            <button
+              type="button"
+              onClick={finish}
+              className="rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2 text-sm font-semibold text-cta-brand-fg transition-transform hover:scale-[1.03] motion-reduce:!transform-none"
+            >
+              {t("coldCta")}
+            </button>
+          </div>
+        </div>
       )}
-      {ready && native && <div aria-hidden className="h-24" />}
     </div>
   );
 }
