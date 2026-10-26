@@ -24,6 +24,13 @@ const state = vi.hoisted(() => ({
   forgotten: 0,
 }));
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../middleware/auth", () => ({
   requirePersonalAdmin: async (request: { user?: unknown }, reply: { status: (code: number) => { send: (body: unknown) => unknown } }) => {
     if (!state.personal) return reply.status(403).send({ message: "Forbidden" });
