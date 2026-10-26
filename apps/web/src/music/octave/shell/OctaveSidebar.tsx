@@ -9,11 +9,9 @@
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
  * active prend la pastille de Tentacle, rose en tête, son icône rose
  * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
- * rail devient un panneau de verre posé sur le fond coloré d'Octave, comme dans
- * la maquette « Octave · Playlist » : le verre `pane` du socle, avec son givre
- * qui AVIVE les taches (sans lui, un panneau gris) — gratuit ici : ni le rail ni
- * le fond ne bougent, la passe ne se refait pas. Ses entrées en `lg-pane-nav`.
- * Mesures : `glass/octaveRail.css`.
+ * même rail, aux mêmes tailles, posé sur le fond ambiant d'Octave, sans dalle
+ * (« sans la démarcation, c'est ultra smooth ») : seule la peau de ses entrées
+ * change (`lg-pane-nav` du socle), ‹ › et la bascule en pastilles (`glass/octaveRail.css`).
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
@@ -24,7 +22,6 @@ import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
-import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
 import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
@@ -53,16 +50,8 @@ const playlistClass =
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation(["music", "octaveShell"]);
   const playlists = useMusicPlaylists();
-  const native = useLiquidGlassMode() === "native";
-  // Le verre de la maquette en mode natif ; ailleurs, le rail sur l'encre.
-  const glass = useLiquidGlassSurface({
-    material: "pane",
-    radius: "xl",
-    className: `flex shrink-0 flex-col w-[var(--oc-sidebar-width)] ${native ? "octave-stage-rail" : "h-full gap-5 px-3 pb-3 pt-4"}`,
-  });
   return (
-    <nav aria-label={t("nav.main")} {...glass.props}>
-      {glass.layers}
+    <nav aria-label={t("nav.main")} className="flex h-full w-[var(--oc-sidebar-width)] shrink-0 flex-col gap-5 px-3 pb-3 pt-4">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 pl-3">
           <OctaveWordmark />

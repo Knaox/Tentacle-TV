@@ -15,9 +15,9 @@ import { CARD_GRID_CLASS } from "./cardGrid";
 /** Des rangées de titres en attente — la hauteur d'une `TrackRow` (56 px). */
 export function RowsSkeleton({ rows = 8, showArtwork = true }: { rows?: number; showArtwork?: boolean }) {
   return (
-    <div aria-hidden className="octave-skeleton-rows flex flex-col">
+    <div aria-hidden className="flex flex-col">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="octave-skeleton-row flex h-14 items-center gap-3 px-2">
+        <div key={i} className="flex h-14 items-center gap-3 px-2">
           {/* La place de la case de sélection (TrackRow) : la liste arrive sans rien décaler. */}
           <div className="w-6 shrink-0" />
           <div className="flex w-8 justify-center">
@@ -49,9 +49,9 @@ export function CardsSkeleton({ count = 6, round = false }: { count?: number; ro
 /** La tête d'une collection en attente : image, surtitre, titre, ligne de détails ET la rangée d'actions. */
 export function HeaderSkeleton({ round = false }: { round?: boolean }) {
   return (
-    <div aria-hidden className="octave-skeleton-head px-4 pb-6 pt-8 md:px-8">
+    <div aria-hidden className="px-4 pb-6 pt-8 md:px-8">
       <div className="flex flex-col items-start gap-6 md:flex-row md:items-end">
-        <div className="octave-skeleton-art h-44 w-44 shrink-0 bg-fill-soft md:h-56 md:w-56" style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS.lg }} />
+        <div className="h-44 w-44 shrink-0 bg-fill-soft md:h-56 md:w-56" style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS.lg }} />
         <div className="flex w-full flex-1 flex-col gap-3">
           <div className="h-3 w-20 rounded bg-fill-subtle" />
           <div className="h-10 w-2/3 rounded bg-fill-soft md:h-12" />

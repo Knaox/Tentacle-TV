@@ -76,7 +76,7 @@ export function SearchView() {
   );
 
   return (
-    <div className="octave-view-pad flex flex-col gap-8 px-2 pb-10 pt-6 md:px-6">
+    <div className="flex flex-col gap-8 px-2 pb-10 pt-6 md:px-6">
       <div className="octave-search-band sticky top-0 z-10 -mx-2 bg-surface-0 px-2 pb-2 pt-1 md:-mx-6 md:px-6">
         <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} onClear={clear} />
         {/* Place réservée : la barre d'attente n'ajoute ni ne retire de hauteur. */}

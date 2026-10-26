@@ -1,8 +1,8 @@
 /**
- * Octave en Liquid Glass — « suis-je dans la scène de verre ? » : vrai seulement
- * sous `OctaveGlassStage` (bureau, mode natif). Les composants partagés avec la
- * coquille étroite (tête, tableau, rangées, pastilles) n'y prennent leur forme de
- * verre que là : ailleurs, leur DOM d'avant, à l'identique.
+ * Octave en Liquid Glass — « suis-je dans la coquille de bureau en verre ? » :
+ * vrai seulement sous `OctaveShell` de bureau en mode natif. Les composants
+ * partagés avec la coquille étroite (rangées, pastilles) n'y prennent leur PEAU
+ * de verre que là — jamais d'autres tailles : ailleurs, leur DOM d'avant.
  */
 
 import { createContext, useContext } from "react";
