@@ -61,6 +61,9 @@ export const musicApi = {
   playlist: (id: string, signal?: AbortSignal) => tentacleApiFetch<MusicPlaylistDetail>(at(MUSIC_ROUTES.playlist, { id }), { signal }),
   renamePlaylist: (id: string, name: string) =>
     tentacleApiFetch<MusicPlaylistDetail>(at(MUSIC_ROUTES.playlist, { id }), json("PATCH", { name })),
+  /** Nom et/ou description (la description : capacité `music.playlistManage`). */
+  updatePlaylistDetails: (id: string, change: { name?: string; description?: string }) =>
+    tentacleApiFetch<MusicPlaylistDetail>(at(MUSIC_ROUTES.playlist, { id }), json("PATCH", change)),
   deletePlaylist: (id: string) => tentacleApiFetch<{ ok: true }>(at(MUSIC_ROUTES.playlist, { id }), { method: "DELETE" }),
   insertEntries: (id: string, itemIds: string[], position?: number) =>
     tentacleApiFetch<MusicPlaylistDetail>(at(MUSIC_ROUTES.playlistEntries, { id }), json("POST", { itemIds, position })),

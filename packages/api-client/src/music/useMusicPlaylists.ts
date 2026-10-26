@@ -108,6 +108,51 @@ export function useRenameMusicPlaylist() {
   });
 }
 
+/** Le nom et/ou la description d'une playlist : la réponse (la playlist telle que Jellyfin la tient) fait foi. */
+export function useUpdateMusicPlaylistDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { playlistId: string; name?: string; description?: string }) =>
+      musicApi.updatePlaylistDetails(v.playlistId, { ...(v.name !== undefined && { name: v.name }), ...(v.description !== undefined && { description: v.description }) }),
+    onSuccess: (detail, v) => {
+      qc.setQueryData(musicKeys.playlist(v.playlistId), detail);
+      void qc.invalidateQueries({ queryKey: musicKeys.playlists() });
+      void qc.invalidateQueries({ queryKey: musicKeys.home() });
+    },
+  });
+}
+
+/** Un lot d'identifiants par requête : la création et l'ajout en acceptent 500 au plus. */
+const DUPLICATE_BATCH = 500;
+
+/**
+ * Dupliquer une playlist : une playlist NEUVE du compte, avec les titres de la bibliothèque dans le même ordre
+ * (création puis ajouts à la fin, par lots). Les entrées en attente d'une extension ne se copient pas.
+ */
+export async function duplicateInBatches(
+  api: Pick<typeof musicApi, "createPlaylist" | "insertEntries">,
+  name: string,
+  itemIds: readonly string[],
+): Promise<MusicPlaylistDetail> {
+  const ids = [...new Set(itemIds)];
+  let detail = await api.createPlaylist(name, ids.slice(0, DUPLICATE_BATCH));
+  for (let at = DUPLICATE_BATCH; at < ids.length; at += DUPLICATE_BATCH) {
+    detail = await api.insertEntries(detail.jellyfinId, ids.slice(at, at + DUPLICATE_BATCH));
+  }
+  return detail;
+}
+
+export function useDuplicateMusicPlaylist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { name: string; itemIds: readonly string[] }) => duplicateInBatches(musicApi, v.name, v.itemIds),
+    onSuccess: (detail) => {
+      qc.setQueryData(musicKeys.playlist(detail.jellyfinId), detail);
+      void qc.invalidateQueries({ queryKey: musicKeys.playlists() });
+    },
+  });
+}
+
 export function useCreateMusicPlaylist() {
   const qc = useQueryClient();
   return useMutation({
