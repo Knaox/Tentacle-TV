@@ -17,6 +17,7 @@ import { closeSqlitePrisma, connectSqlitePrisma } from "../../services/database/
 import type { IndexRow } from "../index/indexTypes";
 import { upsertRows } from "../index/indexStore";
 import type { UserView } from "../view/viewContext";
+import { explainAbsent } from "./importDiagnosis";
 import { getImport, resetImportsForTests, startImport, type ImportDeps } from "./importJobs";
 
 const db = vi.hoisted(() => ({ client: null as unknown as PrismaClient }));
@@ -129,5 +130,21 @@ describe("import Apple Music (page FR) contre la bibliothèque", () => {
     if (!started.ok) throw new Error("import refusé");
     await started.done;
     expect([LOVELY_SINGLE.id, LOVELY_ALBUM.id]).toContain(d.created[0]?.[2]);
+  });
+});
+
+describe("le journal dit pourquoi un absent n'a pas été reconnu", () => {
+  it("« Ma Meilleure Ennemie » avec Coldplay (3:22) face à l'original (2:28) : autre durée, donc une autre version", async () => {
+    const coldplay = { index: 5, position: 4, title: "Ma Meilleure Ennemie (feat. Elyanna, Arcane & League of Legends Music)", artists: ["Stromae", "Pomme", "Coldplay"], album: null, durationMs: 201_933, isrc: null, sourceId: null };
+    const line = (await explainAbsent(everyone, [coldplay]))[0];
+    expect(line).toBe(
+      "[music-import] « Ma Meilleure Ennemie (feat. Elyanna, Arcane & League of Legends Music) » (Stromae, Pomme, Coldplay · 3:22) : la bibliothèque a « Ma meilleure ennemie » (Stromae & Pomme · 2:28 · Arcane League of Legends: Season 2) — autre durée, donc une autre version, laissé hors bibliothèque",
+    );
+  });
+
+  it("un homonyme d'un autre artiste : dit « autre artiste » ; un titre que la bibliothèque n'a pas du tout : rien", async () => {
+    const line = await explainAbsent(everyone, [{ index: 2, position: 2, title: "The Line", artists: ["Twenty One Pilots"], album: null, durationMs: 215_000, isrc: null, sourceId: null }]);
+    expect(line[0]).toContain("— autre artiste, laissé hors bibliothèque");
+    expect(await explainAbsent(everyone, [{ index: 0, position: 0, title: "Jamais Vu", artists: ["Personne"], album: null, durationMs: 1_000, isrc: null, sourceId: null }])).toEqual([]);
   });
 });
