@@ -10,6 +10,7 @@ import { AMBIENT_DARK, AMBIENT_INK } from "./glass/paneMaterial";
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 const SHELL = strip(readFileSync(join(__dirname, "paneShell.css"), "utf8"));
 const CONTENT = strip(readFileSync(join(__dirname, "paneContent.css"), "utf8"));
+const TOKENS = strip(readFileSync(join(__dirname, "liquidGlassContent.css"), "utf8"));
 
 /** Les sélecteurs d'une liste (virgules hors parenthèses). */
 function splitTop(list: string): string[] {
@@ -59,35 +60,33 @@ describe("les pages au verre de la maquette", () => {
     expect(rules(SHELL).find(([s]) => s.includes(".lg-ambient.lgc-ambient"))![1]).toMatch(/z-index:\s*-1/);
   });
 
-  it("le texte tertiaire tient 4,5:1 sur le pire croisement de deux taches", () => {
+  it("le texte secondaire et tertiaire tiennent 4,5:1 sur le voile, au pire croisement de deux taches", () => {
     const body = rules(CONTENT).find(([s]) => s.includes(":is(.lg-page, .lg-detail)"))![1];
-    const alpha = Number(/--text-tertiary:\s*rgba\(255, 255, 255, ([\d.]+)\)/.exec(body)![1]);
+    const tertiary = Number(/--text-tertiary:\s*rgba\(255, 255, 255, ([\d.]+)\)/.exec(body)![1]);
+    const tokens = rules(TOKENS).find(([s]) => s === ':root[data-liquid-glass="native"]')![1];
+    const veil = Number(/--lgd-fill:\s*rgba\(255, 255, 255, ([\d.]+)\)/.exec(tokens)![1]);
     const ink: Rgb = [AMBIENT_INK.r, AMBIENT_INK.g, AMBIENT_INK.b];
     for (const a of AMBIENT_DARK) {
       for (const b of AMBIENT_DARK) {
         if (a === b) continue;
-        const under = over([b.color.r, b.color.g, b.color.b], b.alpha, over([a.color.r, a.color.g, a.color.b], a.alpha, ink));
-        expect(contrast(over([255, 255, 255], alpha, under), under), `${a.token} × ${b.token}`).toBeGreaterThanOrEqual(4.5);
+        const ambient = over([b.color.r, b.color.g, b.color.b], b.alpha, over([a.color.r, a.color.g, a.color.b], a.alpha, ink));
+        // Sur le fond nu et sur le voile d'un conteneur (blanc `--lgd-fill`).
+        for (const under of [ambient, over([255, 255, 255], veil, ambient)]) {
+          for (const alpha of [tertiary, 0.78]) {
+            expect(contrast(over([255, 255, 255], alpha, under), under), `${alpha} : ${a.token} × ${b.token}`).toBeGreaterThanOrEqual(4.5);
+          }
+        }
       }
     }
   });
 
-  it("le contenu prend le panneau du socle, SANS givre — sauf posé sur une image", () => {
+  it("le contenu est un VOILE (ni givre, ni ombre portée, ni liseré) ; seul ce qui se pose sur une image est du verre", () => {
     const panel = rules(CONTENT).find(([s]) => s === ':root[data-liquid-glass="native"] .lg-content')![1];
-    expect(panel).toMatch(/var\(--lg-pane-sheen\), var\(--lg-pane-fill\)/);
-    expect(panel).toMatch(/box-shadow:\s*var\(--lg-pane-shadow\)/);
+    expect(panel).toMatch(/var\(--lgd-fill\)/);
+    expect(panel).toMatch(/box-shadow:\s*var\(--lgd-light\)/);
     expect(panel).toMatch(/backdrop-filter:\s*none/);
     for (const [selector, body] of rules(CONTENT)) {
-      if (!/backdrop-filter:\s*blur/.test(body)) continue;
-      expect(selector).toContain(".lg-content-frosted");
+      if (/backdrop-filter:\s*blur|--lg-pane-rim|--lg-pane-shadow/.test(body)) expect(selector).toContain(".lg-content-frosted");
     }
-  });
-
-  it("une carte dans un panneau est un remplissage, sans liseré", () => {
-    const rim = rules(CONTENT).find(([, b]) => b.includes("var(--lg-pane-rim)"))![0];
-    expect(rim).toContain(":not(.lg-content .lg-content)::after");
-    // … et pas sur une carte ad hoc posée dans un conteneur : `:not(:is(.lg-content, …) *)`.
-    expect(rim).toContain(":not(:is(.lg-content, ");
-    expect(rim).toContain(") *)::after");
   });
 });

@@ -28,6 +28,15 @@
   background: transparent;
 }
 
+/* Les sections de page qui peignaient l'encre en plein (le cadre des bannières
+ * de l'accueil, de « Pour vous » et du hors ligne, la page d'une personne, les
+ * vues hors ligne) découpaient un rectangle opaque dans le fond ambiant — une
+ * démarcation. Elles laissent passer le fond ; les aplats `absolute` (sous une
+ * image qui charge) gardent le leur. */
+:root[data-liquid-glass="native"] .lg-page :is(.w-full, .min-h-screen).bg-surface-0:not(.absolute) {
+  background: transparent;
+}
+
 /* Le fond passe SOUS le contenu, qui n'est pas positionné : à `z-index: 0`, une
  * couche fixe se peindrait PAR-DESSUS lui (ordre de peinture des éléments
  * positionnés) et voilerait les affiches. À −1, entre le document et le flux. */
