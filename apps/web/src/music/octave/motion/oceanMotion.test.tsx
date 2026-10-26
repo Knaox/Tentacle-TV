@@ -75,9 +75,18 @@ describe("la feuille du mouvement océan", () => {
     expect(CSS).toMatch(/\.oc-ocean\[data-ocean="still"\] \*,\s*\.oc-ocean\[data-ocean="rest"\] \* \{ animation-play-state: paused; \}/);
   });
 
+  it("l'amplitude (énergie de la musique) passe par une transition de transform PAR PAS, jamais continue", () => {
+    const transitions = Array.from(CSS.matchAll(/transition:([^;]+);/g), (m) => m[1] as string).filter((t) => /transform/.test(t));
+    expect(transitions.length).toBeGreaterThanOrEqual(2);
+    for (const t of transitions) expect(t, t).toMatch(/transform \d+ms steps\(\d+, end\)/);
+    expect(CSS).toMatch(/\.oc-swell-sea \{[^}]*scaleY\(calc\(0\.6 \+ 0\.4 \* var\(--ocean-amp, 1\)\)\)/);
+    expect(CSS).toMatch(/\.oc-ocean-swell \{[^}]*scaleY\(var\(--ocean-amp, 1\)\)/);
+  });
+
   it("le mouvement réduit fige tout ce qui bouge", () => {
     const reduced = CSS.slice(CSS.indexOf("@media (prefers-reduced-motion: reduce)"));
     for (const cls of [".oc-swell-wave", ".oc-ocean-glow", ".oc-ocean-light", ".oc-ocean-band", ".oc-ocean-drift"]) expect(reduced).toContain(cls);
+    expect(reduced).toMatch(/\.oc-ocean-swell \{ transition: none; \}/);
     expect(reduced).toMatch(/animation: none;/);
   });
 

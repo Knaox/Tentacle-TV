@@ -8,13 +8,15 @@
  * `oceanMotion.css`) — son SVG est dessiné une fois, jamais repeint. Hors
  * écran, fenêtre cachée ou sous le lecteur plein écran : suspendue. En pause,
  * la mer se calme (deux rides immobiles, en fondu d'opacité). Mouvement
- * réduit : la houle fixe.
+ * réduit : la houle fixe. Au bureau, elle suit l'énergie de la musique
+ * (`useOceanEnergy` : vitesse et amplitude, 0,7× → 1,4×).
  */
 
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
 import { useInViewport } from "../../../hooks/useInViewport";
 import { usePagesCovered } from "./oceanCover";
 import { swellState } from "./swellState";
+import { useOceanEnergy } from "./useOceanEnergy";
 import { wavePath } from "./wavePath";
 import "./oceanMotion.css";
 
@@ -45,10 +47,17 @@ export interface OceanSwellProps {
 
 export const OceanSwell = memo(function OceanSwell({ playing, className = "h-4 w-4" }: OceanSwellProps) {
   const { ref, visible } = useInViewport<HTMLSpanElement>();
+  const [element, setElement] = useState<HTMLSpanElement | null>(null);
+  const attach = useCallback((node: HTMLSpanElement | null) => {
+    ref(node);
+    setElement(node);
+  }, [ref]);
   // Sous le lecteur plein écran (opaque), la houle d'une rangée n'est vue de personne.
   const covered = usePagesCovered();
+  const state = swellState(playing, visible && !covered);
+  useOceanEnergy(element, state === "run");
   return (
-    <span ref={ref} aria-hidden className={`oc-swell ${className}`} data-swell={swellState(playing, visible && !covered)}>
+    <span ref={attach} aria-hidden className={`oc-swell ${className}`} data-swell={state}>
       <span className="oc-swell-sea">
         <Wave d={BACK} width={1.5} className="oc-swell-back" />
         <Wave d={FRONT} width={1.8} className="oc-swell-front" />

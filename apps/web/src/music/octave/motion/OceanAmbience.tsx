@@ -12,15 +12,17 @@
  * Posée sous le contenu, jamais devant (aucun pointeur), opaque à rien :
  * aucun verre, aucun flou, aucun mélange. Elle ne bouge que si la musique
  * joue ET que la fenêtre est visible ; en pause, la mer se fige. Montée, elle
- * suspend les houles des pages qu'elle couvre (`oceanCover.ts`).
+ * suspend les houles des pages qu'elle couvre (`oceanCover.ts`). Au bureau,
+ * elle suit l'énergie de la musique (`useOceanEnergy`).
  */
 
-import { memo, useId, type CSSProperties } from "react";
+import { memo, useCallback, useId, useState, type CSSProperties } from "react";
 import { useInViewport } from "../../../hooks/useInViewport";
 import { usePlayerSelector } from "../player/OctavePlayerProvider";
 import { useCoverPages } from "./oceanCover";
 import { swellState } from "./swellState";
 import { useArtworkTint } from "./useArtworkTint";
+import { useOceanEnergy } from "./useOceanEnergy";
 import { waveBodyPath, wavePath, type WaveSpec } from "./wavePath";
 import "./oceanMotion.css";
 
@@ -40,17 +42,19 @@ const BANDS = [
 function Band({ name, body, crest, gradientId }: { name: string; body: string; crest: string | null; gradientId: string }) {
   return (
     <span className={`oc-ocean-band oc-ocean-band-${name}`}>
-      <span className="oc-ocean-drift">
-        <svg viewBox={`0 0 1800 ${BOTTOM}`} preserveAspectRatio="none" focusable="false">
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0.15" className={`oc-ocean-stop-${name} oc-ocean-stop-top`} />
-              <stop offset="1" className={`oc-ocean-stop-${name} oc-ocean-stop-bottom`} />
-            </linearGradient>
-          </defs>
-          <path d={body} fill={`url(#${gradientId})`} />
-          {crest && <path d={crest} fill="none" className="oc-ocean-crest" strokeWidth={1.25} vectorEffect="non-scaling-stroke" />}
-        </svg>
+      <span className="oc-ocean-swell">
+        <span className="oc-ocean-drift">
+          <svg viewBox={`0 0 1800 ${BOTTOM}`} preserveAspectRatio="none" focusable="false">
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0.15" className={`oc-ocean-stop-${name} oc-ocean-stop-top`} />
+                <stop offset="1" className={`oc-ocean-stop-${name} oc-ocean-stop-bottom`} />
+              </linearGradient>
+            </defs>
+            <path d={body} fill={`url(#${gradientId})`} />
+            {crest && <path d={crest} fill="none" className="oc-ocean-crest" strokeWidth={1.25} vectorEffect="non-scaling-stroke" />}
+          </svg>
+        </span>
       </span>
     </span>
   );
@@ -59,13 +63,20 @@ function Band({ name, body, crest, gradientId }: { name: string; body: string; c
 export const OceanAmbience = memo(function OceanAmbience({ artworkUrl }: { artworkUrl: string | null }) {
   const playing = usePlayerSelector((s) => s.wantsPlay);
   const { ref, visible } = useInViewport<HTMLDivElement>();
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const attach = useCallback((node: HTMLDivElement | null) => {
+    ref(node);
+    setElement(node);
+  }, [ref]);
   const tint = useArtworkTint(artworkUrl);
   // Un identifiant de dégradé sans « : » (ceux de React gêneraient `url(#…)`).
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   useCoverPages();
   const style = tint ? ({ "--ocean-tint-rgb": tint } as CSSProperties) : undefined;
+  const state = swellState(playing, visible);
+  useOceanEnergy(element, state === "run");
   return (
-    <div ref={ref} aria-hidden className="oc-ocean" data-ocean={swellState(playing, visible)} style={style}>
+    <div ref={attach} aria-hidden className="oc-ocean" data-ocean={state} style={style}>
       <span key={tint ?? "accent"} className="oc-ocean-glow" />
       <span className="oc-ocean-light oc-ocean-light-1" />
       <span className="oc-ocean-light oc-ocean-light-2" />

@@ -53,6 +53,11 @@ export function supportsNativeAudio(): boolean {
   return hasNativeCommand("audio_play");
 }
 
+/** Le niveau du son qui joue, pour la houle d'Octave (`audio/audioLevel.ts`). */
+export function supportsAudioLevel(): boolean {
+  return hasNativeCommand("audio_level");
+}
+
 /** Les requêtes déléguées d'une extension, exécutées depuis cet appareil (`ipc/clientFetch.ts`). */
 export function supportsClientFetch(): boolean {
   return hasNativeCommand("client_fetch_run");
