@@ -4,6 +4,7 @@ import type { Room } from "../watchTogether/roomTypes";
 import type { AdminSessionDto, AdminSessionsSnapshotDto, AdminWatchGroupDto } from "./dto";
 import { toAdminSession, type RawSession } from "./mapSession";
 import { addExtensionSessions, overlayDeclared, type DeclaredSessionInput } from "./declaredSessions";
+import { settleStaleListening } from "./listening";
 import type { TranscodeMemory } from "./transcodeMemory";
 
 /**
@@ -68,7 +69,7 @@ function compare(a: AdminSessionDto, b: AdminSessionDto): number {
 }
 
 export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
-  const sessions: AdminSessionDto[] = [];
+  const collected: AdminSessionDto[] = [];
   input.transcodes?.observe(input.raw);
   for (const raw of input.raw) {
     if (raw === null || typeof raw !== "object") continue;
@@ -78,9 +79,11 @@ export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
     if (session.nowPlaying === null && input.now - Date.parse(session.lastActivity) > IDLE_WINDOW_MS) continue;
     overlayTentacle(session, input.connections, input.now);
     overlayDeclared(session, input.declared ?? []);
-    sessions.push(session);
+    collected.push(session);
   }
-  addExtensionSessions(sessions, input.declared ?? [], input.now);
+  addExtensionSessions(collected, input.declared ?? [], input.now);
+  // Une écoute sans nouvelles (page partie sans pouvoir le dire) n'est plus « en lecture ».
+  const sessions = settleStaleListening(collected, input.now);
   for (const session of sessions) {
     session.familyGuestOf = input.familyGuests?.get(session.userId.replace(/-/g, "").toLowerCase()) ?? null;
   }

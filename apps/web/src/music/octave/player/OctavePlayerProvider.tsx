@@ -13,7 +13,7 @@
  * seule suit la position ; une liste ne se redessine qu'au changement de titre.
  */
 
-import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   fetchMusicSource,
@@ -32,7 +32,7 @@ import { octaveOwner } from "../cache/octaveOwner";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { followSearchWithRadio } from "./searchRadio";
 import { withKeptSources } from "../offline/keptSources";
-import { attachSessionRemote } from "./octaveSessionRemote";
+import { attachSessionRemote, type SessionRemote } from "./octaveSessionRemote";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
@@ -90,8 +90,12 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
   const providerRef = useRef(provider);
   providerRef.current = provider;
   const declaresRef = useRef(false);
-  declaresRef.current = useServerCapability("sessions.musicControl");
+  const declares = useServerCapability("sessions.musicControl");
+  declaresRef.current = declares;
+  const remoteRef = useRef<SessionRemote | null>(null);
   const [player, setPlayer] = useState<OctavePlayer | null>(null);
+  // La capacité connue après la reprise (configuration en route) : l'écoute se dit aussitôt.
+  useEffect(() => remoteRef.current?.resync(), [declares]);
 
   useLayoutEffect(() => {
     if (!engine) return;
@@ -111,14 +115,16 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
     // S3 : après le premier son d'un titre de recherche, sa radio devient la suite.
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
     // Les sessions en cours de l'administration : ce qui joue s'y dit, et s'y commande.
-    const offRemote = attachSessionRemote(p, () => declaresRef.current);
+    const remote = attachSessionRemote(p, () => declaresRef.current);
+    remoteRef.current = remote;
     // La session quittée revient en pause (dernier titre, file, position) ; gardée AVANT l'arrêt du lecteur.
     const offResume = attachPlayerResume(p, octaveOwner());
     setPlayer(p);
     return () => {
       off();
       offRadio();
-      offRemote();
+      remote.detach();
+      remoteRef.current = null;
       offResume();
       p.dispose();
       setPlayer(null);

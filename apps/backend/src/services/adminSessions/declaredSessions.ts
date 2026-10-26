@@ -35,7 +35,11 @@ function sameDevice(session: AdminSessionDto, view: DeclaredSessionInput): boole
 export function overlayDeclared(session: AdminSessionDto, declared: readonly DeclaredSessionInput[]): boolean {
   const item = session.nowPlaying;
   if (item === null) return false;
-  const view = declared.find((d) => d.state.itemId === item.itemId && sameDevice(session, d));
+  // La plus RÉCENTE fait foi : la page d'avant d'un rechargement peut garder sa connexion (cache de
+  // navigation) et sa déclaration « en lecture » un moment.
+  const view = declared
+    .filter((d) => d.state.itemId === item.itemId && sameDevice(session, d))
+    .reduce<DeclaredSessionInput | undefined>((latest, d) => (latest === undefined || d.at > latest.at ? d : latest), undefined);
   if (!view) return false;
   session.viaTentacle = true;
   session.positionTicks = view.state.positionMs * TICKS_PER_MS;
