@@ -13,7 +13,7 @@ import type { ExternalMusicPlaylist, PluginMusicManifest } from "./pluginMusicCo
 /** Une ambiance. `id` est une clé STABLE (elle traverse le réseau et les adresses) : elle ne se renomme jamais. */
 export interface ExternalMusicMood {
   id: string;
-  /** Son nom dans la langue du COMPTE (en-tête de langue du relais). */
+  /** Son nom dans la langue de l'INTERFACE (`?lang=` de la requête, sinon l'en-tête de langue du relais). */
   name: string;
   /** Sa couleur, `#RRGGBB` : la carte et la tête de sa page en tirent leur teinte. */
   color: string;

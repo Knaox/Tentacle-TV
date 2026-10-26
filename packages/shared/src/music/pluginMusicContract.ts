@@ -77,11 +77,12 @@ export interface PluginMusicManifest {
    */
   offline?: string;
   /**
-   * Ambiances (musicMoods.ts) — GET → `ExternalMusicMoods` : la liste des ambiances (clé stable, nom dans la langue
-   * du compte, couleur, mots de recherche). Va avec `mood` ; l'un sans l'autre : aucune ambiance.
+   * Ambiances (musicMoods.ts) — GET ?lang= → `ExternalMusicMoods` : la liste des ambiances (clé stable, nom dans la
+   * langue `lang` de l'interface, sinon celle du relais ; couleur, mots de recherche). Va avec `mood` ; l'un sans
+   * l'autre : aucune ambiance.
    */
   moods?: string;
-  /** La playlist d'une ambiance — GET <mood>/<moodId> → `ExternalMusicMoodMix` (titres de la bibliothèque en tête). */
+  /** La playlist d'une ambiance — GET <mood>/<moodId>?lang= → `ExternalMusicMoodMix` (titres de la bibliothèque en tête). */
   mood?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
