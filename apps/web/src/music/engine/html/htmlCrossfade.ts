@@ -5,7 +5,8 @@
  * Une seule HORLOGE mène le fondu : la position du titre qui ARRIVE (son `currentTime`, l'horloge audio du
  * navigateur). Une pause, un temps de chargement du suivant gèlent donc les deux courbes ensemble — jamais un
  * titre qui s'éteint pendant que l'autre ne s'est pas encore allumé. Le volume est reposé toutes les
- * `TICK_MS` : ~0,5 % d'amplitude d'un pas à l'autre au plus sur 6 s (−46 dB), sous tout seuil audible.
+ * `TICK_MS` : 0,4 % d'amplitude d'un pas à l'autre au plus sur 6 s, 1,3 % sur 2 s — mesuré au banc, l'énergie
+ * au-dessus de 4 kHz reste à −70 dB sous la musique (6 s) et −53 dB (2 s) : rien d'audible.
  *
  * À mi-fondu, le titre qui arrive devient le COURANT (`mid`) : la barre, la file, les rapports d'écoute
  * basculent au moment où les deux titres s'entendent autant l'un que l'autre.
@@ -15,7 +16,7 @@ import { fadeInGain, fadeOutGain } from "../crossfadeRules";
 import type { Slot } from "./htmlSlot";
 import type { SwapTimers } from "./htmlSwap";
 
-export const TICK_MS = 20;
+export const TICK_MS = 10;
 
 export interface FadeHooks {
   /** Le volume de l'élément hors fondu (volume voulu, ReplayGain, sourdine). */
@@ -108,24 +109,4 @@ export class CrossfadeRun {
     if (this.timer !== null) this.timers.clearTimeout(this.timer);
     this.timer = null;
   }
-}
-
-/** Le pas de la sortie courte d'un geste : 15 pas sur 150 ms. */
-const CUT_STEP_MS = 10;
-
-/**
- * La sortie d'un titre quitté par un GESTE : une demi-cosinusoïde en S de `ms` (le dernier pas, ~1 % du
- * volume, ne s'entend pas) au lieu d'une coupure franche, qui claque. Rend l'arrêt immédiat (`release`).
- */
-export function cutOut(slot: Slot, ms: number, timers: SwapTimers, release: (slot: Slot) => void): void {
-  const start = timers.now();
-  const from = slot.el.volume;
-  slot.off();
-  const step = (): void => {
-    const x = Math.min(1, (timers.now() - start) / ms);
-    if (x >= 1 || slot.el.paused) return release(slot);
-    slot.el.volume = from * (0.5 + 0.5 * Math.cos(Math.PI * x));
-    timers.setTimeout(step, CUT_STEP_MS);
-  };
-  step();
 }

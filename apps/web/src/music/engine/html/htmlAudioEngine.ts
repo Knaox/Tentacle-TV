@@ -11,8 +11,9 @@
  *
  * Transition douce (`setCrossfade`) : entre deux titres enchaînés que la règle
  * autorise (`crossfadeRules.ts`), le suivant démarre AVANT la fin du courant et
- * les deux sonnent ensemble le temps du fondu (`htmlCrossfade.ts`) ; un geste
- * coupe le titre quitté en 150 ms.
+ * les deux sonnent ensemble le temps du fondu (`htmlCrossfade.ts`). Un geste
+ * lâche le titre quitté comme avant : Chrome adoucit lui-même l'arrêt d'un
+ * élément (~40 ms, aucun clic mesuré — mieux qu'une rampe de volume).
  */
 
 import type { AudioEnginePort, MusicTrack, PlaybackSource } from "@tentacle-tv/shared/music";
@@ -20,8 +21,8 @@ import { albumKeyOf, durationOfSource } from "../engineShared";
 import { nextLatencyEstimate, nextStartDelayMs } from "./htmlRules";
 import { releaseSlot, remainingS, whenReady, type Slot } from "./htmlSlot";
 import { crossfadeSwap, type SwapRun } from "./htmlSwap";
-import { MANUAL_CUT_MS, plannedCrossfadeMs, sanitizeCrossfadeMs } from "../crossfadeRules";
-import { CrossfadeRun, cutOut } from "./htmlCrossfade";
+import { plannedCrossfadeMs, sanitizeCrossfadeMs } from "../crossfadeRules";
+import { CrossfadeRun } from "./htmlCrossfade";
 import { HtmlEngineBase, positionOf } from "./htmlEngineBase";
 
 export type { HtmlEngineDeps } from "./htmlEngineBase";
@@ -130,13 +131,12 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
     if (run === null) return;
     this.fade = null;
     run.cancel();
-    const leaving = run.passedMid ? run.from : run.to;
     if (!run.passedMid && keepNext) {
       run.to.el.pause();
       run.to.el.currentTime = 0;
       releaseSlot(this.next);
       this.next = run.to;
-    } else cutOut(leaving, MANUAL_CUT_MS, this.deps, releaseSlot);
+    } else releaseSlot(run.passedMid ? run.from : run.to);
     this.applyVolumes();
   }
 
@@ -147,28 +147,21 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
     return o.origin === "library" || source.origin !== "library" ? o : source;
   }
 
-  private clearAll(cut = false): void {
+  private clearAll(): void {
     this.swap?.cancel();
     this.swap = null;
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
-    const fading = this.fade;
+    this.fade?.cancel();
+    const fading = this.fadeSlots().filter((s) => s !== this.current);
     this.fade = null;
-    fading?.cancel();
-    // Un GESTE pendant la transition douce : ce qui sonne sort en 150 ms au lieu de claquer.
-    const audible = [this.current, fading?.from ?? null, fading?.to ?? null].filter((s, i, all): s is Slot => s !== null && all.indexOf(s) === i);
-    for (const s of audible) {
-      if (cut && !s.el.paused) cutOut(s, MANUAL_CUT_MS, this.deps, releaseSlot);
-      else releaseSlot(s);
-    }
-    releaseSlot(this.next);
-    releaseSlot(this.draining);
+    for (const s of [this.current, this.next, this.draining, ...fading]) releaseSlot(s);
     this.current = this.next = this.draining = null;
     this.nextFadeMs = 0;
   }
 
   play(track: MusicTrack, source: PlaybackSource, startMs = 0): void {
-    this.clearAll(this.crossfadeMs > 0);
+    this.clearAll();
     const slot = this.slot(track, this.served(track, source));
     this.adopt(slot);
     this.patch({ status: "loading", trackKey: track.key, positionMs: startMs, durationMs: durationOfSource(track, source), format: source.format ?? track.format, error: null });

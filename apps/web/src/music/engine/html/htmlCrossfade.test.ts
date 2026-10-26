@@ -48,19 +48,19 @@ describe("moteur <audio> — transition douce", () => {
     expect(a.volume).toBe(1);
     for (const t of [0.6, 1.5, 2.4, 2.9]) {
       b.currentTime = t;
-      r.timers.tick(20);
+      r.timers.tick(10);
       expect(a.volume ** 2 + b.volume ** 2).toBeCloseTo(1, 9);
     }
     expect(b.volume).toBeCloseTo(Math.sin((Math.PI / 2) * (2.9 / 6)), 9);
     // Avant la mi-fondu, le courant est toujours t1.
     expect(advanced(r.events)).toEqual([]);
     b.currentTime = 3;
-    r.timers.tick(20);
+    r.timers.tick(10);
     expect(advanced(r.events)).toEqual([{ type: "advanced", fromKey: "t1", toKey: "t2" }]);
     expect(r.engine.getState().trackKey).toBe("t2");
     expect(a.volume).toBeCloseTo(Math.SQRT1_2, 9);
     b.currentTime = 6;
-    r.timers.tick(20);
+    r.timers.tick(10);
     expect(a.src).toBe("");
     expect(b.volume).toBe(1);
   });
@@ -82,26 +82,13 @@ describe("moteur <audio> — transition douce", () => {
     expect(b.volume).toBe(1);
   });
 
-  it("coupe court (150 ms, sans claquer) le titre quitté par un geste", () => {
+  it("un geste lâche le titre quitté aussitôt (le navigateur adoucit l'arrêt lui-même)", () => {
     const r = rig();
     r.engine.play(testTrack("t1"), testSource("/a"), 0);
     const a = r.elements[0] as FakeElement;
     r.engine.play(testTrack("t3"), testSource("/c"), 0);
-    expect(a.src).toBe("/a");
-    r.timers.tick(70);
-    expect(a.volume).toBeGreaterThan(0.3);
-    expect(a.volume).toBeLessThan(0.8);
-    r.timers.tick(90);
     expect(a.src).toBe("");
     expect(r.engine.getState().trackKey).toBe("t3");
-  });
-
-  it("coupée, un geste lâche le titre aussitôt (comme avant)", () => {
-    const r = rig(0);
-    r.engine.play(testTrack("t1"), testSource("/a"), 0);
-    const a = r.elements[0] as FakeElement;
-    r.engine.play(testTrack("t3"), testSource("/c"), 0);
-    expect(a.src).toBe("");
   });
 
   it("un saut avant la mi-fondu rend au suivant sa place, muet, et le courant à plein volume", () => {
@@ -109,7 +96,7 @@ describe("moteur <audio> — transition douce", () => {
     const { a, b } = nearEnd(r);
     r.timers.tick(1_000);
     b.currentTime = 1;
-    r.timers.tick(20);
+    r.timers.tick(10);
     r.engine.seek(30_000);
     expect(b.paused).toBe(true);
     expect(b.currentTime).toBe(0);
@@ -137,7 +124,7 @@ describe("moteur <audio> — transition douce", () => {
     const { a, b } = nearEnd(r);
     r.timers.tick(1_000);
     b.currentTime = 1;
-    r.timers.tick(20);
+    r.timers.tick(10);
     r.engine.setNext(testTrack("t9", "C"), testSource("/z"));
     r.timers.tick(200);
     expect(b.src).toBe("");

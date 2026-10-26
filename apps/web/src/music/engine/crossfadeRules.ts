@@ -7,7 +7,7 @@
  *   puissance constante (courbes « equal-power » : cos² + sin² = 1, jamais un creux ni une bosse à mi-fondu
  *   comme avec deux droites).
  * - Seulement entre deux titres ENCHAÎNÉS par la file. Un geste (Suivant, un titre choisi) coupe net, en une
- *   sortie courte (`MANUAL_CUT_MS`), comme Spotify ; une file finie s'arrête sur la fin du titre.
+ *   sortie courte et sans clic, comme Spotify ; une file finie s'arrête sur la fin du titre.
  * - Jamais à l'intérieur d'un album écouté dans l'ordre (le titre suivant du même disque, ou le premier du
  *   disque suivant) : un album s'enchaîne SANS BLANC, comme il a été mixé — un live, un concept, une
  *   symphonie ne se coupent pas en fondus.
@@ -21,8 +21,6 @@ export const CROSSFADE_MIN_S = 2;
 export const CROSSFADE_MAX_S = 12;
 /** La durée proposée quand on allume la transition. */
 export const CROSSFADE_DEFAULT_S = 6;
-/** La sortie d'un titre quitté par un geste : courte, sans clic (une coupure franche en ferait un). */
-export const MANUAL_CUT_MS = 150;
 /** En deçà, un fondu ne s'entend plus comme tel : enchaînement ordinaire. */
 const MIN_PLANNED_MS = 1_000;
 /** Part du plus court des deux titres que le fondu peut couvrir. */
