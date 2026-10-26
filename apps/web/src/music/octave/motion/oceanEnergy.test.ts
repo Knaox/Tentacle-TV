@@ -167,3 +167,26 @@ describe("appliquer à une houle", () => {
     expect(new Set(names)).toEqual(OCEAN_ANIMATIONS);
   });
 });
+
+describe("entre deux titres", () => {
+  it("la houle qui change de rangée garde son énergie ; partie longtemps, elle repart de l'allure de toujours", async () => {
+    const { ENERGY_GRACE_MS } = await import("./oceanEnergyStore");
+    const f = fakeClock();
+    const store = createEnergyStore(() => async () => -10, f.clock);
+    const first = vi.fn();
+    const off = store.subscribe(first);
+    await f.advance(10_000);
+    const lifted = first.mock.calls.at(-1)?.[0];
+    expect(lifted.rate).toBeGreaterThan(1.1);
+    off();
+    const next = vi.fn();
+    const offNext = store.subscribe(next);
+    expect(next).toHaveBeenCalledWith(lifted);
+    offNext();
+    await f.advance(ENERGY_GRACE_MS + 500);
+    const late = vi.fn();
+    const offLate = store.subscribe(late);
+    expect(late).toHaveBeenCalledWith(NEUTRAL_DRIVE);
+    offLate();
+  });
+});

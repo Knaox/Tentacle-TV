@@ -17,6 +17,12 @@ import { ENERGY_START, NEUTRAL_DRIVE, driveChanged, driveOf, stepEnergy, type En
 
 export const LEVEL_POLL_MS = 250;
 
+/**
+ * Le titre change : la houle quitte la rangée d'avant pour celle d'après (un abonné part, un autre arrive
+ * dans le même rendu). Dans ce délai, l'énergie est GARDÉE — la mer ne retombe pas à chaque titre.
+ */
+export const ENERGY_GRACE_MS = 3_000;
+
 export type LevelSource = () => Promise<number | null>;
 
 function platformSource(): LevelSource | null {
@@ -44,6 +50,8 @@ export function createEnergyStore(source: () => LevelSource | null, clock: Energ
   let stop: (() => void) | null = null;
   let inFlight = false;
   let last = 0;
+  /** L'instant où le dernier abonné est parti (`null` : quelqu'un écoute, ou jamais parti). */
+  let leftAt: number | null = null;
 
   async function tick(read: LevelSource): Promise<void> {
     if (inFlight) return;
@@ -65,7 +73,14 @@ export function createEnergyStore(source: () => LevelSource | null, clock: Energ
   function start(): void {
     const read = source();
     if (read === null) return;
-    last = clock.now();
+    const now = clock.now();
+    // Parti depuis trop longtemps : on repart de l'allure de toujours (la moyenne du morceau, elle, est gardée).
+    if (leftAt !== null && now - leftAt > ENERGY_GRACE_MS) {
+      state = { ...state, energy: ENERGY_START.energy };
+      drive = NEUTRAL_DRIVE;
+    }
+    leftAt = null;
+    last = now;
     stop = clock.every(() => void tick(read), LEVEL_POLL_MS);
   }
 
@@ -79,9 +94,7 @@ export function createEnergyStore(source: () => LevelSource | null, clock: Energ
         if (!listeners.delete(listener) || listeners.size > 0) return;
         stop?.();
         stop = null;
-        // Plus personne : on repartira de l'allure de toujours (la moyenne du morceau, elle, est gardée).
-        state = { ...state, energy: ENERGY_START.energy };
-        drive = NEUTRAL_DRIVE;
+        leftAt = clock.now();
       };
     },
     /** Pour les tests : le relevé tourne-t-il ? */
