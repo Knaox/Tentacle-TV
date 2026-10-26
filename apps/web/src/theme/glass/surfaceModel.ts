@@ -161,9 +161,10 @@ export function isPaneMaterial(material: LiquidGlassMaterial | undefined): mater
   return material === "pane" || material === "bead";
 }
 
-/** La classe d'un verre de la maquette, puis la mise en page de l'appelant. */
-export function paneClassName(material: "pane" | "bead", className: string | undefined): string {
-  return join(material === "pane" ? "lg-pane" : "lg-bead", className);
+/** La classe d'un verre de la maquette (ÉPAIS au régime `surface`), puis la mise en page de l'appelant. */
+export function paneClassName(material: "pane" | "bead", className: string | undefined, scale?: LiquidGlassScale): string {
+  if (material === "bead") return join("lg-bead", className);
+  return join(scale === "surface" ? "lg-pane lg-pane-thick" : "lg-pane", className);
 }
 
 /**
