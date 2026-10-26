@@ -16,6 +16,7 @@ import { AlbumCard, ArtistCard, CardGrid, PlaylistCard } from "../components/Car
 import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
 import { LoadMore, flattenPages } from "./LoadMore";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 const TABS = ["albums", "artists", "playlists"] as const;
 type Tab = (typeof TABS)[number];
@@ -55,6 +56,7 @@ function LibraryEmpty() {
 function Albums() {
   const { t } = useTranslation("music");
   const [sort, setSort] = useState(readSort);
+  const bead = useOctaveGlassStage() ? "lg-bead " : "";
   const albums = useMusicAlbums({ sort });
   const list = flattenPages(albums.data?.pages);
   return (
@@ -74,7 +76,7 @@ function Albums() {
               /* stockage refusé */
             }
           }}
-          className="octave-pill lg-bead h-9 cursor-pointer rounded-full border border-octave-line bg-octave-hover px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none"
+          className={`octave-pill ${bead}h-9 cursor-pointer rounded-full border border-octave-line bg-octave-hover px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none`}
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -132,6 +134,7 @@ export function LibraryView() {
   const { t } = useTranslation("music");
   const [params, setParams] = useSearchParams();
   const tab = parseLibraryTab(params.get("tab"));
+  const chipClass = useOctaveGlassStage() ? "octave-chip lg-bead" : "octave-chip";
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ albums: null, artists: null, playlists: null });
   const select = (next: Tab, focus = false) => {
     setParams(next === "albums" ? {} : { tab: next }, { replace: true });
@@ -161,7 +164,7 @@ export function LibraryView() {
             aria-controls="octave-library-panel"
             tabIndex={tab === id ? 0 : -1}
             onClick={() => select(id)}
-            className="octave-chip lg-bead"
+            className={chipClass}
           >
             {t(`library.${id}`)}
           </button>

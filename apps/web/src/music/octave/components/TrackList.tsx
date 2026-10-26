@@ -22,7 +22,7 @@ import { TrackRow, rowColumns } from "./TrackRow";
 import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
-import { useLiquidGlassMode } from "../../../theme/glass";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 interface TrackListProps {
   rows: readonly ListRow[];
@@ -61,7 +61,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
 
 export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
-  const glassTable = useLiquidGlassMode() === "native" && showHeader;
+  const glassTable = useOctaveGlassStage() && showHeader;
   const player = useOctavePlayer();
   const actions = useTrackActions();
   const currentKey = useCurrentKey();

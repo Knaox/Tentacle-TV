@@ -26,6 +26,7 @@ import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
 import { AlbumLink, ArtistLinks } from "./TrackLinks";
 import { OceanSwell } from "../motion/OceanSwell";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 /**
  * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
@@ -85,6 +86,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
 
 export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect }: TrackRowProps) {
   const { t } = useTranslation("music");
+  const stage = useOctaveGlassStage();
   const onPlay = () => onPlayIndex(index);
   const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
@@ -116,7 +118,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row lg-pane-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
       } ${rowColumns(showAlbum)}`}
     >

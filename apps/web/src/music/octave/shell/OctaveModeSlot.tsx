@@ -14,6 +14,7 @@ import { Clapperboard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
 import { OctaveFirstVisitHint } from "./OctaveFirstVisitHint";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 interface OctaveModeSlotProps {
   onExit: () => void;
@@ -24,6 +25,7 @@ interface OctaveModeSlotProps {
 export function OctaveModeSlot({ onExit, compact = false }: OctaveModeSlotProps) {
   const { t } = useTranslation("octaveShell");
   const anchor = useRef<HTMLDivElement>(null);
+  const stage = useOctaveGlassStage();
   if (compact) {
     return (
       <div ref={anchor}>
@@ -33,7 +35,7 @@ export function OctaveModeSlot({ onExit, compact = false }: OctaveModeSlotProps)
     );
   }
   return (
-    <div ref={anchor} className="lg-bead flex flex-col gap-0.5 rounded-xl bg-octave-hover p-1" data-octave-mode-slot>
+    <div ref={anchor} className={`${stage ? "lg-bead " : ""}flex flex-col gap-0.5 rounded-xl bg-octave-hover p-1`} data-octave-mode-slot>
       <OctaveModeSwitch
         placement="octave"
         onExit={onExit}

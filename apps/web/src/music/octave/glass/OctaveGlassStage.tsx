@@ -15,6 +15,7 @@
 
 import type { ReactNode, RefObject } from "react";
 import { OctaveAmbient } from "./OctaveAmbient";
+import { OctaveGlassStageContext } from "./glassStage";
 
 interface OctaveGlassStageProps {
   mainRef: RefObject<HTMLElement | null>;
@@ -28,6 +29,7 @@ interface OctaveGlassStageProps {
 
 export function OctaveGlassStage({ mainRef, sidebar, dock, queue, overlays, children }: OctaveGlassStageProps) {
   return (
+    <OctaveGlassStageContext.Provider value>
     <div className="octave-stage fixed inset-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop" data-octave-stage>
       <OctaveAmbient />
       <div className="octave-stage-row">
@@ -40,5 +42,6 @@ export function OctaveGlassStage({ mainRef, sidebar, dock, queue, overlays, chil
       {dock}
       {overlays}
     </div>
+    </OctaveGlassStageContext.Provider>
   );
 }

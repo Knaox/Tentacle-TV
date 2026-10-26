@@ -22,7 +22,7 @@ import { Play, Shuffle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { totalDurationParts } from "@tentacle-tv/shared/octave";
 import { PressableGlass } from "../../../components/ui/glass/PressableGlass";
-import { useLiquidGlassMode } from "../../../theme/glass";
+import { useOctaveGlassStage } from "../glass/glassStage";
 import { Artwork } from "./Artwork";
 
 interface CollectionHeaderProps {
@@ -75,7 +75,7 @@ const SHUFFLE_PROPS = {
 
 export function CollectionHeader({ kicker, title, artworkUrl = null, art, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra }: CollectionHeaderProps) {
   const { t } = useTranslation("music");
-  const native = useLiquidGlassMode() === "native";
+  const native = useOctaveGlassStage();
   const cover = art ?? (
     <Artwork
       url={artworkUrl}
