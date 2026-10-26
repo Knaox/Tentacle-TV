@@ -11,7 +11,7 @@ import { useKeptAutoSync } from "./autosync/useKeptAutoSync";
 
 export function MusicOfflineScope({ children }: { children: ReactNode }) {
   const surface = useMusicOfflineSurface();
-  // La tenue à jour des playlists gardées (réglage d'appareil, éteint par défaut).
+  // La tenue à jour des playlists gardées (réglage d'appareil, allumé par défaut).
   useKeptAutoSync(surface);
   return <OfflineSurfaceContext.Provider value={surface}>{children}</OfflineSurfaceContext.Provider>;
 }

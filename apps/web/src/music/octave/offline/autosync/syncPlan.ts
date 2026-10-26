@@ -1,6 +1,6 @@
 /**
  * Octave — la TENUE À JOUR de la musique gardée (réglage d'appareil « Tenir à
- * jour les playlists gardées », éteint par défaut), règle PURE
+ * jour les playlists gardées », allumé par défaut), règle PURE
  * (`syncPlan.test.ts`). Elle reçoit ce que l'appareil garde, ce que le serveur
  * dit maintenant, et rend les gestes à faire — jamais un effet.
  *

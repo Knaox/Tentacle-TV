@@ -1,7 +1,8 @@
 /**
  * « Tenir à jour les playlists gardées sur cet appareil » — un réglage de
- * l'APPAREIL (jamais du compte), éteint par défaut. Clé neuve, qui ne se renomme
- * pas : `tentacle_octave_offline_autosync` (« 1 » allumé, absente éteint).
+ * l'APPAREIL (jamais du compte), ALLUMÉ par défaut (Damien, 26/10) : il n'agit que
+ * sur les playlists déjà gardées hors ligne, et se coupe. Clé neuve, qui ne se
+ * renomme pas : `tentacle_octave_offline_autosync` (« 0 » coupé ; absente ou « 1 » allumé).
  */
 
 import { useSyncExternalStore } from "react";
@@ -12,9 +13,10 @@ const listeners = new Set<() => void>();
 
 function read(): boolean {
   try {
-    return localStorage.getItem(AUTOSYNC_STORAGE_KEY) === "1";
+    return localStorage.getItem(AUTOSYNC_STORAGE_KEY) !== "0";
   } catch {
-    return false;
+    // Stockage illisible : le défaut, allumé.
+    return true;
   }
 }
 
@@ -24,8 +26,7 @@ export function isAutoSyncOn(): boolean {
 
 export function setAutoSync(on: boolean): void {
   try {
-    if (on) localStorage.setItem(AUTOSYNC_STORAGE_KEY, "1");
-    else localStorage.removeItem(AUTOSYNC_STORAGE_KEY);
+    localStorage.setItem(AUTOSYNC_STORAGE_KEY, on ? "1" : "0");
   } catch {
     /* stockage refusé : le réglage ne survivra pas à la fermeture */
   }
@@ -40,5 +41,5 @@ function subscribe(listener: () => void): () => void {
 }
 
 export function useAutoSync(): boolean {
-  return useSyncExternalStore(subscribe, read, () => false);
+  return useSyncExternalStore(subscribe, read, () => true);
 }

@@ -1,6 +1,6 @@
 /**
- * Le réglage « Tenir à jour les playlists gardées » : éteint par défaut, de
- * l'appareil ; la tenue à jour ne tourne qu'allumée, avec le droit de garder et
+ * Le réglage « Tenir à jour les playlists gardées » : ALLUMÉ par défaut, de
+ * l'appareil, et se coupe ; la tenue à jour ne tourne qu'allumée, avec le droit de garder et
  * en ligne — jamais pour une session de profil ni au web (le réglage n'y paraît pas).
  */
 
@@ -33,13 +33,18 @@ beforeEach(() => {
 });
 
 describe("tenue à jour des playlists gardées", () => {
-  it("éteinte par défaut ; allumée, c'est l'appareil qui le retient", () => {
-    expect(isAutoSyncOn()).toBe(false);
-    setAutoSync(true);
-    expect(h.store.get(AUTOSYNC_STORAGE_KEY)).toBe("1");
+  it("allumée par défaut (rien d'enregistré) ; coupée, c'est l'appareil qui le retient", () => {
     expect(isAutoSyncOn()).toBe(true);
     setAutoSync(false);
-    expect(h.store.has(AUTOSYNC_STORAGE_KEY)).toBe(false);
+    expect(h.store.get(AUTOSYNC_STORAGE_KEY)).toBe("0");
+    expect(isAutoSyncOn()).toBe(false);
+    setAutoSync(true);
+    expect(isAutoSyncOn()).toBe(true);
+  });
+
+  it("coupée : la tenue à jour ne tourne pas — rien ne change sur l'appareil", () => {
+    setAutoSync(false);
+    expect(autoSyncActive(isAutoSyncOn(), CAN_KEEP, "online")).toBe(false);
   });
 
   it("ne tourne qu'allumée, avec le droit, en ligne", () => {

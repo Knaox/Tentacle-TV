@@ -211,7 +211,7 @@ jeton ne sort jamais). Albums et playlists gardés en entier : `music_collection
 | Coquille | `downloads_music_enqueue` · `downloads_music_list` · `downloads_music_remove` | Pause/reprise/annulation : celles des films. `supportsMusicOffline()` = la coquille sait garder la musique. |
 | Interface | `apps/web/src/music/octave/offline/*` | Une porte (`keepRules.ts`, calculée une fois : `MusicOfflineScope`) ; « Sur cet appareil » `/octave/device` ; sans réseau, Octave n'offre qu'elle. |
 
-**Tenir à jour les playlists gardées** (réglage d'APPAREIL `tentacle_octave_offline_autosync`, éteint par défaut ;
+**Tenir à jour les playlists gardées** (réglage d'APPAREIL `tentacle_octave_offline_autosync`, ALLUMÉ par défaut, « 0 » le coupe ;
 `offline/autosync/*`) : allumé, un titre ajouté à une playlist gardée est gardé, un titre retiré quitte l'appareil
 s'il n'est RETENU nulle part ailleurs (album, autre playlist, titre gardé seul = collection `track`) ; une copie
 d'ailleurs est remplacée par sa version Jellyfin (`music:resolved`, `POST /api/music/match`) et une forme changée par

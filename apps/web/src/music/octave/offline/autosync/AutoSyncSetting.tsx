@@ -1,7 +1,7 @@
 /**
  * « Tenir à jour les playlists gardées sur cet appareil » — l'interrupteur, à
  * deux endroits : Réglages d'Octave (`section`) et « Sur cet appareil »
- * (`inline`). Un réglage de l'APPAREIL, éteint par défaut ; absent sans le droit
+ * (`inline`). Un réglage de l'APPAREIL, allumé par défaut ; absent sans le droit
  * de garder (`keepRules.ts` : ni le web, ni une session de profil, ni un compte
  * sans `keepOffline`).
  */

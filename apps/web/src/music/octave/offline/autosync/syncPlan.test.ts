@@ -72,6 +72,24 @@ describe("planSync — les playlists gardées", () => {
     expect(out.removeFileIds).toEqual([a.fileId]);
   });
 
+  it("Damien, 26/10 : retiré de la playlist tenue à jour, le titre est EFFACÉ de l'appareil — sauf si un album ou une autre playlist le garde", () => {
+    const alone = kept("jf:seul");
+    const other = kept("jf:autre");
+    const albumed = kept("jf:album");
+    const out = planSync(inputs({
+      kept: [alone, other, albumed],
+      collections: [
+        collection(PL, "playlist", ["jf:seul", "jf:autre", "jf:album"]),
+        collection("playlist:jf:p2", "playlist", ["jf:autre"]),
+        collection("album:jf:x", "album", ["jf:album"]),
+      ],
+      playlists: new Map([[PL, []]]),
+    }));
+    expect(out.removeFileIds).toEqual([alone.fileId]);
+    expect(out.keep).toEqual([]);
+    expect(out.saveCollections).toEqual([expect.objectContaining({ key: PL, trackKeys: [] })]);
+  });
+
   it("le titre ajouté qu'on ne peut pas garder (droit de l'extension) ne part pas", () => {
     const out = planSync(inputs({
       collections: [collection(PL, "playlist", [])],
