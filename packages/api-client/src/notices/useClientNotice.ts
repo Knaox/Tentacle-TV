@@ -7,6 +7,7 @@ import { useAdminMetadataStatus } from "../hooks/useAdminMetadata";
 import { useDismissedHints, type DismissedHintsState } from "../hooks/useDismissedHints";
 import { useServerCapabilities } from "../hooks/useServerCapabilities";
 import { useClosedNotices } from "./noticeSession";
+import { useLatestPublishedServer } from "./useLatestPublishedServer";
 
 /** Ce que la plateforme apporte : le compte, la version du serveur, son exigence, la page. */
 export interface ClientNoticeInput {
@@ -46,6 +47,8 @@ export interface ClientNoticeData {
   closedThisSession: ReadonlySet<NoticeId>;
   /** Les capacités déclarées par le serveur ; `undefined` tant qu'elles ne sont pas lues. */
   capabilities: ReadonlySet<ServerCapability> | undefined;
+  /** La dernière version publiée du serveur (`undefined` : pas encore lue ; `null` : inconnue → aucune nouveauté). */
+  latestPublished: string | null | undefined;
 }
 
 /** La décision, pure : testée sans React. */
@@ -55,6 +58,7 @@ export function clientNoticeOf(input: ClientNoticeInput, data: ClientNoticeData)
   const news = serverNewsNotice({
     serverVersion: input.serverVersion, minServer: input.minServer, isAdmin,
     capabilities: data.capabilities, dismissal: dismissalOf(data.hints, "serverUpdate"),
+    latestPublished: data.latestPublished,
   });
   const candidates: NoticeCandidate[] = [
     { id: "adminKey", active: isAdminKeyBroken(data.adminKeyState) },
@@ -89,8 +93,9 @@ export function useClientNotice(input: ClientNoticeInput): ClientNotice | null {
   const { data: metadata } = useAdminMetadataStatus({ enabled: input.isAdmin });
   const { data: adminKey } = useAdminKeyHealth({ enabled: input.isAdmin });
   const { capabilities, known } = useServerCapabilities();
+  const latestPublished = useLatestPublishedServer({ enabled: input.isAdmin });
   return clientNoticeOf(input, {
     hints, tmdbConfigured: metadata?.tmdb.configured, adminKeyState: adminKey?.state, closedThisSession,
-    capabilities: known ? capabilities : undefined,
+    capabilities: known ? capabilities : undefined, latestPublished,
   });
 }

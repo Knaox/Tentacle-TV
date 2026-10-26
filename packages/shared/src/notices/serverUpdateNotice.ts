@@ -1,4 +1,4 @@
-import { newestMissingSince, type ServerCapability } from "../serverCapabilities/serverCapabilities";
+import { SERVER_CAPABILITIES, missingServerCapabilities, type ServerCapability } from "../serverCapabilities/serverCapabilities";
 
 /**
  * « Serveur à mettre à jour » — la règle, pure, commune au web, au bureau, au
@@ -11,7 +11,11 @@ import { newestMissingSince, type ServerCapability } from "../serverCapabilities
  * - **Invitation** (`serverNews`) : le serveur atteint l'exigence mais ne
  *   déclare pas une capacité que ce client connaît (`serverCapabilities.ts`).
  *   Rien n'y casse — le client cache ce que le serveur ne sait pas faire —,
- *   on invite seulement à mettre à jour pour en profiter. « Ne plus afficher
+ *   on invite seulement à mettre à jour pour en profiter — et seulement vers
+ *   une version PUBLIÉE : une capacité dont la version d'arrivée n'est pas
+ *   encore sortie (code livré en avance, Octave en 1.40.0) ne compte pas, et
+ *   sans la dernière version publiée on n'annonce rien plutôt qu'une fausse
+ *   nouveauté (décision du 26/10). « Ne plus afficher
  *   jusqu'aux prochaines nouveautés » : le masquage (rappel du compte
  *   `serverUpdate`) retient la version qu'apportait la nouveauté manquante la
  *   plus récente ; il cède dès qu'un client en connaît une plus récente.
@@ -70,6 +74,21 @@ export function serverUpdateNotice(input: ServerUpdateNoticeInput): ServerUpdate
   return { outdated, show: input.isAdmin && outdated };
 }
 
+/**
+ * La version de la nouveauté manquante la plus récente QUI EXISTE : les clés
+ * que ce client connaît, que le serveur ne déclare pas, et dont `since` ne
+ * dépasse pas `ceiling` (la dernière version publiée) ; `null` si aucune.
+ */
+export function newestPublishedMissingSince(capabilities: ReadonlySet<ServerCapability>, ceiling: string): string | null {
+  let newest: string | null = null;
+  for (const key of missingServerCapabilities(capabilities)) {
+    const since = SERVER_CAPABILITIES[key];
+    if (compareAppVersions(since, ceiling) > 0) continue;
+    if (newest === null || compareAppVersions(since, newest) > 0) newest = since;
+  }
+  return newest;
+}
+
 export interface ServerNewsNoticeInput extends ServerUpdateNoticeInput {
   /** Les capacités déclarées ; `undefined` tant que la configuration n'a pas répondu. */
   capabilities: ReadonlySet<ServerCapability> | undefined;
@@ -78,6 +97,12 @@ export interface ServerNewsNoticeInput extends ServerUpdateNoticeInput {
    * tant qu'il n'est pas lu, `null` s'il n'y en a pas, sinon sa marque.
    */
   dismissal: string | null | undefined;
+  /**
+   * La dernière version du serveur PUBLIÉE (`/api/admin/server-update` → `latest`) :
+   * `undefined` tant qu'elle n'est pas lue, `null` si on ne la sait pas — le plafond
+   * est alors la version du serveur lui-même, donc rien n'est annoncé.
+   */
+  latestPublished: string | null | undefined;
 }
 
 export interface ServerNewsNotice {
@@ -92,13 +117,14 @@ export interface ServerNewsNotice {
 }
 
 /**
- * L'invitation, décidée. Rien tant que la version, les capacités et le
- * masquage ne sont pas lus (une invitation qui paraît puis disparaît serait
+ * L'invitation, décidée. Rien tant que la version, les capacités, la dernière
+ * version publiée et le masquage ne sont pas lus (une invitation qui paraît puis disparaît serait
  * pire que rien), rien sous l'exigence (l'obligatoire parle alors).
  */
 export function serverNewsNotice(input: ServerNewsNoticeInput): ServerNewsNotice {
-  const known = !!input.serverVersion && input.capabilities !== undefined;
-  const mark = known && input.capabilities ? newestMissingSince(input.capabilities) : null;
+  const known = !!input.serverVersion && input.capabilities !== undefined && input.latestPublished !== undefined;
+  const ceiling = input.latestPublished ?? input.serverVersion ?? "0.0.0";
+  const mark = known && input.capabilities ? newestPublishedMissingSince(input.capabilities, ceiling) : null;
   const available = mark !== null && !isServerOutdated(input.serverVersion, input.minServer);
   const masked = mark !== null && isServerUpdateMasked(input.dismissal, mark);
   return { available, masked, mark, show: input.isAdmin && available && input.dismissal !== undefined && !masked };

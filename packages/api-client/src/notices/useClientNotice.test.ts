@@ -19,6 +19,7 @@ const base: ClientNoticeData = {
   adminKeyState: "ok",
   closedThisSession: new Set(),
   capabilities: new Set(SERVER_CAPABILITY_KEYS),
+  latestPublished: NEWEST,
 };
 const admin = { isAdmin: true, serverVersion: "1.22.0", minServer: "1.23.0" };
 
@@ -56,6 +57,10 @@ describe("l'avertissement surgissant des clients", () => {
     expect(clientNoticeOf(current, { ...older, capabilities: undefined })).toBeNull();
     // Un serveur à jour : rien à proposer.
     expect(clientNoticeOf(current, { ...older, capabilities: new Set(SERVER_CAPABILITY_KEYS) })).toBeNull();
+    // Une nouveauté qui n'est pas encore PUBLIÉE ne s'annonce pas ; la dernière publiée pas encore lue : rien.
+    expect(clientNoticeOf(current, { ...older, latestPublished: "1.22.0" })).toBeNull();
+    expect(clientNoticeOf(current, { ...older, latestPublished: null })).toBeNull();
+    expect(clientNoticeOf(current, { ...older, latestPublished: undefined })).toBeNull();
   });
 
   it("TMDB masqué pour de bon ; fermé dans la session ; tu sur la page qui le règle", () => {

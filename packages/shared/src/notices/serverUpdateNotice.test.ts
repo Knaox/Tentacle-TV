@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { SERVER_CAPABILITY_KEYS, newestMissingSince } from "../serverCapabilities/serverCapabilities";
+import { SERVER_CAPABILITIES, SERVER_CAPABILITY_KEYS, newestMissingSince } from "../serverCapabilities/serverCapabilities";
 import {
-  compareAppVersions, isServerOutdated, isServerUpdateMasked, serverNewsNotice, serverUpdateNotice,
+  compareAppVersions, isServerOutdated, isServerUpdateMasked, newestPublishedMissingSince, serverNewsNotice, serverUpdateNotice,
 } from "./serverUpdateNotice";
 
 /**
@@ -51,7 +51,7 @@ describe("serveur à mettre à jour", () => {
 
   it("l'invitation : une nouveauté du client attend un serveur plus récent", () => {
     const none = new Set<never>();
-    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: none, dismissal: null };
+    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: none, dismissal: null, latestPublished: NEWEST };
     expect(serverNewsNotice(base)).toEqual({ available: true, masked: false, show: true, mark: NEWEST });
     expect(serverNewsNotice({ ...base, isAdmin: false }).show).toBe(false);
     // Un serveur qui déclare tout : rien à proposer.
@@ -62,10 +62,23 @@ describe("serveur à mettre à jour", () => {
     expect(serverNewsNotice({ ...base, serverVersion: null }).show).toBe(false);
     expect(serverNewsNotice({ ...base, capabilities: undefined }).show).toBe(false);
     expect(serverNewsNotice({ ...base, dismissal: undefined }).show).toBe(false);
+    expect(serverNewsNotice({ ...base, latestPublished: undefined }).show).toBe(false);
+  });
+
+  it("seulement vers une version PUBLIÉE : du code livré en avance (1.40.0) n'annonce rien tant qu'elle n'est pas sortie", () => {
+    // Le serveur 1.31.4 tait les clés de 1.40.0 ; le client de `dev` les connaît.
+    const declared = new Set(SERVER_CAPABILITY_KEYS.filter((key) => compareAppVersions(SERVER_CAPABILITIES[key], "1.31.4") <= 0));
+    const base = { serverVersion: "1.31.4", minServer: "1.23.0", isAdmin: true, capabilities: declared, dismissal: null };
+    expect(serverNewsNotice({ ...base, latestPublished: "1.31.4" })).toMatchObject({ available: false, show: false, mark: null });
+    expect(serverNewsNotice({ ...base, latestPublished: "1.40.0" })).toMatchObject({ available: true, show: true, mark: "1.40.0" });
+    // Dernière publiée inconnue : le plafond est la version du serveur lui-même — rien plutôt qu'une fausse nouveauté.
+    expect(serverNewsNotice({ ...base, latestPublished: null })).toMatchObject({ available: false, show: false });
+    // Une nouveauté publiée plus ancienne que la plus récente du client : c'est elle qu'on annonce (et qu'on retient).
+    expect(newestPublishedMissingSince(new Set(), "1.31.1")).toBe("1.31.1");
   });
 
   it("l'invitation masquée jusqu'aux prochaines nouveautés", () => {
-    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: new Set<never>() };
+    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: new Set<never>(), latestPublished: NEWEST };
     expect(serverNewsNotice({ ...base, dismissal: NEWEST })).toMatchObject({ masked: true, show: false });
     // Une marque d'avant (l'exigence 1.23.0 retenue par l'ancien avertissement) ne couvre pas les nouveautés d'après.
     expect(serverNewsNotice({ ...base, dismissal: "1.23.0" })).toMatchObject({ masked: false, show: true });
