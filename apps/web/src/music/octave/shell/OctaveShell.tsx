@@ -14,6 +14,7 @@
  * rien ne change.
  */
 
+import { PlaylistManageHost } from "../playlists/PlaylistManageHost";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
@@ -125,6 +126,7 @@ function ShellHosts() {
       <PlaylistChooserHost />
       <BulkDuplicateHost />
       <ImportPlaylistHost />
+      <PlaylistManageHost />
     </>
   );
 }

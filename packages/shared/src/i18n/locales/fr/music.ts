@@ -7,6 +7,7 @@ import rights from "./musicRights";
 import octaveHome from "./musicHome";
 import moods from "./musicMoods";
 import listOrder from "./musicListOrder";
+import playlistManage from "./musicPlaylistManage";
 
 export default {
   mode: {
@@ -301,4 +302,5 @@ export default {
   octaveHome,
   moods,
   listOrder,
+  playlistManage,
 };

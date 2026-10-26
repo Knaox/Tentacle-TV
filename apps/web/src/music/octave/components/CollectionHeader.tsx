@@ -38,6 +38,8 @@ interface CollectionHeaderProps {
   onShuffle: () => void;
   onPress?: () => void;
   extra?: ReactNode;
+  /** Une description (playlist) : deux lignes au plus, le texte entier au survol. */
+  description?: string | null;
 }
 
 /** La taille du titre selon sa longueur (caractères). */
@@ -63,7 +65,7 @@ const SHUFFLE_PROPS = {
     "rounded-full border border-octave-line bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
 } as const;
 
-export function CollectionHeader({ kicker, title, artworkUrl = null, art, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra }: CollectionHeaderProps) {
+export function CollectionHeader({ kicker, title, artworkUrl = null, art, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra, description = null }: CollectionHeaderProps) {
   const { t } = useTranslation("music");
   return (
     <header className="octave-hero px-4 pb-6 pt-8 md:px-8">
@@ -83,6 +85,11 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
         <div className="min-w-0 flex-1">
           <p className="oc-eyebrow">{kicker}</p>
           <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
+          {description && (
+            <p title={description} className="mt-2 line-clamp-2 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-content-tertiary">
+              {description}
+            </p>
+          )}
           <div className="mt-3 flex min-h-5 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-content-secondary">{meta}</div>
         </div>
       </div>

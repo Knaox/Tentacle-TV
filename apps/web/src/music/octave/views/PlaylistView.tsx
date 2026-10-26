@@ -7,7 +7,7 @@
  * la leur dans la préférence du compte).
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ListMusic, Search } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import { makeStatsOf } from "../listOrder/listStats";
 import { useListOrder } from "../listOrder/useListOrder";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
+import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
@@ -52,6 +53,7 @@ export function PlaylistView() {
   const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
   const contextId = `playlist:${id}`;
+  const [menuOpen, setMenuOpen] = useState(false);
   // Une entrée Jellyfin comme un titre hors bibliothèque en attente (sa demande s'annule), d'un geste : l'avis porte « Annuler ».
   const onRemoveRows = useCallback((keys: string[]) => void removeRows(natural, new Set(keys)), [removeRows, natural]);
 
@@ -79,7 +81,14 @@ export function PlaylistView() {
         onPress={() => tracks[0] && player.prefetch([tracks[0]], "press")}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
-        extra={<KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />}
+        description={data.description ?? null}
+        extra={
+          <>
+            <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
+            {/* Gérer la playlist : seulement si le serveur dit que ce compte peut la modifier. */}
+            <PlaylistMenuButton playlist={data} open={menuOpen} onOpenChange={setMenuOpen} className="h-12 w-12" />
+          </>
+        }
       />
       <div className="px-2 md:px-6">
         {natural.length === 0 ? (
