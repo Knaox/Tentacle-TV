@@ -6,6 +6,8 @@
  * - « Apparence d'Octave » : Comme Tentacle (défaut) · Clair · Sombre — appliquée quand Octave est affiché ;
  * - « Liquid Glass dans Octave » : seulement là où le verre natif existe (bureau, macOS 26) — jamais au web.
  *
+ * La pastille « Octave seulement » le dit : rien de ce groupe ne change Tentacle.
+ *
  * N'existe qu'avec Octave (`useOctaveAvailability` : musique, « Accès à Octave ») ; ouvert à `#octave`, il se
  * place sous les yeux.
  */
@@ -15,6 +17,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { SettingsSection } from "@tentacle-tv/ui";
+import { ScopeBadge } from "../../../components/settings/ScopeBadge";
 import { octavePaths } from "../octavePaths";
 import { useOctaveAvailability } from "../mode/useOctaveAvailability";
 import { OctaveAppearanceFields } from "./OctaveAppearanceFields";
@@ -42,7 +45,7 @@ export function OctaveAppearanceSettings() {
   if (!available) return null;
   return (
     <div ref={anchor} id={OCTAVE_APPEARANCE_ANCHOR} className="scroll-mt-6" data-octave-appearance>
-      <SettingsSection title={t("appearance.title")} caption={t("appearance.caption")}>
+      <SettingsSection title={t("appearance.title")} caption={t("appearance.caption")} badge={<ScopeBadge scope="octave" />}>
         <OctaveAppearanceFields last={false} />
         {/* Les mêmes réglages, DANS Octave : on y voit l'effet en direct. */}
         <Link

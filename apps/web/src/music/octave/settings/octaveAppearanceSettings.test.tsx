@@ -19,7 +19,7 @@ vi.mock("../mode/OctaveStartupSetting", () => ({ OctaveStartupSetting: ({ title 
 vi.mock("./LanguageSetting", () => ({ LanguageSetting: () => null }));
 vi.mock("../profiles", () => ({ OctaveProfilesSettings: () => null }));
 vi.mock("@tentacle-tv/ui", () => ({
-  SettingsSection: ({ title, children }: { title?: string; children: React.ReactNode }) => <section data-title={title}>{children}</section>,
+  SettingsSection: ({ title, badge, children }: { title?: string; badge?: React.ReactNode; children: React.ReactNode }) => <section data-title={title}>{badge}{children}</section>,
   SettingsRow: ({ label, trailing }: { label: string; trailing?: React.ReactNode }) => <div data-row={label}>{trailing}</div>,
 }));
 vi.mock("../../../components/settings/SegmentedChoice", () => ({
@@ -48,6 +48,10 @@ describe("Réglages › Apparence", () => {
     const html = renderToStaticMarkup(<SettingsAppearance />);
     expect(html).toContain("appearance.themeSame");
     expect(html).not.toMatch(/liquidGlassTitle|appearance\.glass|appearance\.tentacleGlass/);
+  });
+
+  it("le groupe Octave porte la pastille « Octave seulement » (r7 le pose tel quel dans Réglages de Tentacle)", () => {
+    expect(renderToStaticMarkup(<SettingsAppearance />)).toMatch(/data-title="appearance\.title">[^]*?scope\.octave/);
   });
 
   it("le groupe Octave renvoie aux réglages DANS Octave", () => {

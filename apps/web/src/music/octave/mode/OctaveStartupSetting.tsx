@@ -10,16 +10,20 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsSection } from "@tentacle-tv/ui";
+import { ScopeBadge } from "../../../components/settings/ScopeBadge";
 import { SegmentedChoice } from "../../../components/settings/SegmentedChoice";
 import type { OctaveStartupChoice } from "./octaveStartup";
 import { setOctaveStartup, useOctaveStartup } from "./octaveStartupStore";
 import { useOctaveAvailability } from "./useOctaveAvailability";
 
+const DEVICE_BADGE = <ScopeBadge scope="device" />;
+
 /**
  * `title` / `caption` : la page « Réglages d'Octave » la range sous son propre titre (« Démarrage ») ; `badge` : la
- * pastille de portée (« Cet appareil »), à côté du titre.
+ * pastille de portée, « Cet appareil » par défaut — partout où le réglage paraît
+ * (Réglages d'Octave, Réglages de Tentacle) ; `null` la retire.
  */
-export function OctaveStartupSetting({ title, caption, badge }: { title?: string; caption?: string; badge?: ReactNode } = {}) {
+export function OctaveStartupSetting({ title, caption, badge = DEVICE_BADGE }: { title?: string; caption?: string; badge?: ReactNode } = {}) {
   const { t } = useTranslation("music");
   const { available } = useOctaveAvailability();
   const choice = useOctaveStartup();
