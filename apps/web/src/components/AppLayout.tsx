@@ -11,6 +11,7 @@ import { FamilyInvitationHost } from "../family/FamilyInvitationHost";
 import { WhoIsWatchingHost } from "../profiles/switcher/WhoIsWatchingHost";
 import { useSwitchScreenPhase } from "../profiles/switcher/switchScreenStore";
 import { AnimatedOutlet } from "./routeTransition/AnimatedOutlet";
+import { GlassAmbient } from "../theme/glass";
 
 /** Chargée à la demande : le bureau ne télécharge rien du miroir. */
 const MirrorLayout = lazy(() => import("../mirror/shell/MirrorLayout").then((m) => ({ default: m.MirrorLayout })));
@@ -65,9 +66,12 @@ function DesktopLayout() {
   const covered = useSwitchScreenPhase() === "shown";
 
   return (
-    <div className="min-h-screen bg-surface-0" style={covered ? { visibility: "hidden" } : undefined}>
+    <div className="lgc-shell min-h-screen bg-surface-0" style={covered ? { visibility: "hidden" } : undefined}>
       {/* Subtle brand ambient glow behind everything */}
       <div className="brand-ambient" aria-hidden />
+      {/* Liquid Glass (natif) : les taches de la maquette, sous le contenu
+          (`theme/paneShell.css`) ; ailleurs, rien n'est rendu. */}
+      <GlassAmbient className="lgc-ambient" />
 
       {isMobile ? (
         <TopNavMobile showSearch={showSearch} />

@@ -6,11 +6,11 @@ import { useWindowGlass } from "../../desktop/windowGlass";
 import { glassMorphProps, useLiquidGlassSurface } from "../../theme/glass";
 
 /**
- * Rayon de la sélection, en px : CONCENTRIQUE au rail — `--lg-radius-lg` (22)
- * moins sa marge (`--lg-chrome-sidebar-pad`, 8). En nombre et en `style`,
+ * Rayon de la sélection, en px : CONCENTRIQUE au rail — `--lg-radius-xl` (28)
+ * moins sa marge (`--lg-chrome-sidebar-pad`, 12). En nombre et en `style`,
  * sinon framer ne le corrige pas pendant l'étirement.
  */
-const SELECTION_RADIUS = 14;
+const SELECTION_RADIUS = 16;
 
 export interface GlassSidebar {
   /** Posé dans l'entrée active (`SettingsShell` : `selectionIndicator`). */
@@ -34,9 +34,10 @@ export interface GlassSidebar {
 export function useGlassSidebar(id: string): GlassSidebar {
   const glass = useWindowGlass();
   const reduced = useReducedMotion() ?? false;
-  // Un GRAND verre : régime `surface` (ton mesuré à l'ouverture puis tenu,
-  // matériau épais, jamais de bandes).
-  const material = useLiquidGlassSurface({ radius: "lg", scale: "surface" });
+  // Le panneau de la maquette (`material: "pane"`, 26/10) : posé sur le fond
+  // ambiant, sans givre (`lg-pane-flat`) — le fond est déjà flou, la passe ne
+  // se verrait pas et coûterait à chaque défilement du rail.
+  const material = useLiquidGlassSurface({ material: "pane", radius: "xl", className: "lg-pane-flat" });
 
   const selection = useMemo(() => {
     if (!glass) return undefined;

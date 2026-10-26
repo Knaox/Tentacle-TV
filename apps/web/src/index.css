@@ -45,6 +45,8 @@
 @import "./components/ui/glass/lgFloatingBar.css";
 @import "./components/detail/lgDetailStage.css";
 @import "./theme/glass/pane.css";
+/* Les pages de Tentacle au verre de la maquette (APRÈS le socle et les recettes lg*). */
+@import "./theme/paneShell.css";
 
 @tailwind base;
 @tailwind components;

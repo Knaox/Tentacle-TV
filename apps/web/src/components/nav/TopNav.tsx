@@ -81,9 +81,11 @@ export function TopNav() {
 
   // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
   // la mise en page.
-  // Des PETITS verres : régime `control`, qui bascule avec le ton du dessous.
-  const tabsGroup = useLiquidGlassSurface({ shape: "capsule", scale: "control", className: "lgc-group", fallbackClassName: "contents", ref: setHugEl });
-  const actionsGroup = useLiquidGlassSurface({ shape: "capsule", scale: "control", className: "lgc-actions-group", fallbackClassName: "contents" });
+  // Le verre de la maquette (`material: "pane"`, 26/10) : dégradé, givre qui
+  // avive, liseré en dégradé — la frange du bord de défilement assure l'AA
+  // des libellés quand une affiche passe dessous.
+  const tabsGroup = useLiquidGlassSurface({ material: "pane", shape: "capsule", className: "lgc-group", fallbackClassName: "contents", ref: setHugEl });
+  const actionsGroup = useLiquidGlassSurface({ material: "pane", shape: "capsule", className: "lgc-actions-group", fallbackClassName: "contents" });
 
   // L'assise d'avant : nulle en haut de page (le verre seul, par-dessus la
   // bannière), puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la
