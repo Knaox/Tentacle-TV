@@ -59,11 +59,23 @@ export function searchTokens(query: string): string[] {
   return folded ? folded.split(" ") : [];
 }
 
+// Le texte replié d'un titre, calculé une fois par objet (une frappe ne replie pas 1 000 titres de nouveau).
+const folded = new WeakMap<object, string>();
+
+function haystackOf(row: ListRow): string {
+  const t = row.track;
+  let text = folded.get(t);
+  if (text === undefined) {
+    text = foldText([t.title, ...t.artists.map((a) => a.name), t.album?.title ?? ""].join(" "));
+    folded.set(t, text);
+  }
+  return text;
+}
+
 /** Chaque mot tapé est dans le titre, un artiste ou l'album. */
 export function rowMatches(row: ListRow, tokens: readonly string[]): boolean {
   if (tokens.length === 0) return true;
-  const t = row.track;
-  const haystack = foldText([t.title, ...t.artists.map((a) => a.name), t.album?.title ?? ""].join(" "));
+  const haystack = haystackOf(row);
   return tokens.every((token) => haystack.includes(token));
 }
 

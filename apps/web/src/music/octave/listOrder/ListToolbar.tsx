@@ -3,9 +3,11 @@
  * liste, filtrer (seulement les puces qui ont un sens pour elle), trier. Une
  * ligne qui garde sa hauteur ; sur une fenêtre étroite, les puces passent
  * dessous. Pendant une recherche ou un filtre, le compte dit ce qui reste.
+ * La frappe ne redessine que la barre : la liste suit en transition (jamais
+ * une touche qui attend 1 000 titres).
  */
 
-import { memo, useRef } from "react";
+import { memo, startTransition, useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicListDirection, MusicListPrefs, MusicListSortKey } from "@tentacle-tv/shared/music";
@@ -29,6 +31,15 @@ interface ListToolbarProps {
 export const ListToolbar = memo(function ListToolbar({ query, onQuery, filter, filters, onFilter, prefs, sorts, onSort, shown, total }: ListToolbarProps) {
   const { t } = useTranslation("music");
   const input = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(query);
+  // « Tout afficher » (ou la page) remet la recherche à zéro : le champ suit.
+  useEffect(() => {
+    if (query === "") setText("");
+  }, [query]);
+  const type = (value: string) => {
+    setText(value);
+    startTransition(() => onQuery(value));
+  };
   return (
     <div role="toolbar" aria-label={t("listOrder.toolbar")} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 pb-3">
       <label className="relative flex h-9 w-full min-w-0 items-center sm:w-72">
@@ -37,12 +48,12 @@ export const ListToolbar = memo(function ListToolbar({ query, onQuery, filter, f
         <input
           ref={input}
           type="search"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
+          value={text}
+          onChange={(e) => type(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Escape" && query) {
+            if (e.key === "Escape" && text) {
               e.stopPropagation();
-              onQuery("");
+              type("");
             }
           }}
           placeholder={t("listOrder.searchPlaceholder")}
@@ -50,11 +61,11 @@ export const ListToolbar = memo(function ListToolbar({ query, onQuery, filter, f
           spellCheck={false}
           className="h-9 w-full rounded-full border border-transparent bg-fill-subtle pl-9 pr-9 text-sm text-content-primary placeholder:text-content-tertiary transition-colors duration-150 hover:bg-fill-medium focus:border-line-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
-        {query && (
+        {text && (
           <button
             type="button"
             onClick={() => {
-              onQuery("");
+              type("");
               input.current?.focus();
             }}
             aria-label={t("listOrder.clearSearch")}

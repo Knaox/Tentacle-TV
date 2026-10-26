@@ -4,7 +4,7 @@
  * Sans la capacité `music.listOrder` : la liste telle quelle, aucune barre.
  */
 
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMusicListPrefs, useSaveMusicListPrefs } from "@tentacle-tv/api-client";
 import { MUSIC_LIST_SORT_KEYS, type MusicListDirection, type MusicListKey, type MusicListSortKey } from "@tentacle-tv/shared/music";
 import type { ListRow } from "@tentacle-tv/shared/octave";
@@ -24,11 +24,10 @@ export function useListOrder(key: MusicListKey | null, natural: readonly ListRow
   const save = useSaveMusicListPrefs(key);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ListFilter>("all");
-  // La frappe reste fluide sur 1 000 titres : la liste suit à la première image libre.
-  const deferredQuery = useDeferredValue(query);
   const filters = useMemo(() => (capable ? usefulFilters(natural, statsOf) : []), [capable, natural, statsOf]);
   const activeFilter = filters.includes(filter) ? filter : "all";
-  const state = useMemo(() => ({ prefs, query: deferredQuery, filter: activeFilter }), [activeFilter, deferredQuery, prefs]);
+  // La barre envoie la frappe en transition : ce rendu-ci ne retient jamais une touche.
+  const state = useMemo(() => ({ prefs, query, filter: activeFilter }), [activeFilter, query, prefs]);
   const rows = useMemo(() => (capable ? visibleListRows(natural, statsOf, state) : [...natural]), [capable, natural, statsOf, state]);
   // Sans écoutes connues (aucune statistique), les tris d'écoute ne montreraient rien.
   const sorts = useMemo<MusicListSortKey[]>(
@@ -49,6 +48,8 @@ export function useListOrder(key: MusicListKey | null, natural: readonly ListRow
     [block, onJellyfinOrder, prefs, rows, save],
   );
 
+  // Stable : la liste (mémoïsée) ne se redessine pas à chaque frappe.
+  const reorder = useMemo(() => (capable ? { block, onMove } : null), [block, capable, onMove]);
   const reset = useCallback(() => {
     setQuery("");
     setFilter("all");
@@ -67,6 +68,6 @@ export function useListOrder(key: MusicListKey | null, natural: readonly ListRow
     filters,
     sorts,
     onSort,
-    reorder: capable ? { block, onMove } : null,
+    reorder,
   };
 }
