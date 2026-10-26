@@ -1,7 +1,7 @@
 /**
  * Octave — la DÉCONNEXION efface tout ce que l'appareil gardait de la musique,
  * toutes identités confondues : les pages gardées (IndexedDB), la page en
- * cours, le dernier titre et la file, le miroir de la disponibilité, les
+ * cours, le dernier titre et la file, les albums et artistes consultés, le miroir de la disponibilité, les
  * pochettes connues et — au bureau — le cache disque des pochettes. Appelée
  * par la sortie de session (`launchState.ts` › `noteLoggedOut`), par où
  * qu'elle passe.
@@ -13,10 +13,12 @@ import { forgetOctaveLaunchMirror } from "../mode/octaveLaunchStore";
 import { octaveCacheBackend } from "./octaveCacheBoot";
 import { forgetSavedOctavePage } from "./pageResume";
 import { forgetOctavePlayer } from "./playerResume";
+import { forgetRecentVisits } from "../search/recentVisits";
 
 export function forgetOctaveDevice(): void {
   forgetSavedOctavePage();
   forgetOctavePlayer();
+  forgetRecentVisits();
   forgetOctaveLaunchMirror();
   forgetArtworkKnown();
   if (typeof location !== "undefined" && location.protocol === "tentacle:") {

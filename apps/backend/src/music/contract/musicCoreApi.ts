@@ -108,6 +108,41 @@ export interface MusicHomeResponse {
   recentlyAdded: MusicAlbum[];
   mostPlayed: MusicTrack[];
   playlists: MusicPlaylist[];
+  /** Les suggestions tirées de l'écoute du compte (ajout du 26/10, lot « ambiances »). Absent : serveur
+   *  d'avant — l'accueil n'en montre rien, sans erreur. */
+  forYou?: MusicHomeForYou;
+}
+
+/**
+ * Un MIX de l'accueil, composé par le serveur d'après l'écoute du compte, renouvelé chaque jour :
+ * un artiste qu'on écoute beaucoup mêlé aux titres aimés ou écoutés d'artistes voisins dans ses
+ * habitudes (`artist`), ou ses coups de cœur mélangés (`favorites`). Les titres sont DANS la réponse :
+ * le lancer n'attend aucune requête.
+ */
+export interface MusicHomeMix {
+  /** Stable pour la journée : `artist:<id>` ou `favorites`. */
+  id: string;
+  kind: "artist" | "favorites";
+  /** L'artiste qui donne son nom au mix (`artist`), sinon `null`. */
+  artist: MusicArtist | null;
+  /** Les artistes du mix, les plus présents d'abord (trois au plus) : le sous-titre. */
+  artistNames: string[];
+  tracks: MusicTrack[];
+}
+
+/** « Parce que vous avez écouté X » : d'autres albums de X dans la bibliothèque, pas écoutés récemment. */
+export interface MusicHomeBecause {
+  artist: MusicArtist;
+  albums: MusicAlbum[];
+}
+
+export interface MusicHomeForYou {
+  /** Les albums des écoutes récentes, le plus récent d'abord (une fois chacun). */
+  recentAlbums: MusicAlbum[];
+  /** Les artistes des écoutes récentes, le plus récent d'abord. */
+  recentArtists: MusicArtist[];
+  mixes: MusicHomeMix[];
+  because: MusicHomeBecause[];
 }
 
 export interface MusicArtistResponse extends MusicArtist {

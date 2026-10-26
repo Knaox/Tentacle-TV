@@ -10,15 +10,18 @@ import { normalizeMbid } from "../contract/musicKeys";
 import { orderedIds, rowsByIds, tracksByRecording } from "../index/indexQueries";
 import type { IndexRow } from "../index/indexTypes";
 import { jfAdmin, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
+import { forYouView } from "./homeForYou";
 import { playlistsView } from "./playlistViews";
 import { albumsOf, nextCursor, tracksOf, visibleIds, visibleInOrder, visibleRows, type UserView } from "./viewContext";
 
 const HOME_ROW = 20;
+/** Les suggestions lisent une histoire plus longue que la rangée « Écoutés récemment ». */
+const HISTORY_ROWS = 100;
 
-async function playedIds(view: UserView, sortBy: string): Promise<string[]> {
+async function playedIds(view: UserView, sortBy: string, limit = HOME_ROW): Promise<string[]> {
   if (view.access.mode === "none") return [];
   const result = await jfAdmin<JfItemsPage>(
-    `/Items?userId=${q(view.userId)}&ParentId=${q(view.access.libraryId)}&Recursive=true&IncludeItemTypes=Audio&Filters=IsPlayed&SortBy=${sortBy}&SortOrder=Descending&Limit=${HOME_ROW}&Fields=&EnableImages=false`,
+    `/Items?userId=${q(view.userId)}&ParentId=${q(view.access.libraryId)}&Recursive=true&IncludeItemTypes=Audio&Filters=IsPlayed&SortBy=${sortBy}&SortOrder=Descending&Limit=${limit}&Fields=&EnableImages=false`,
   );
   return result.ok ? (result.data.Items ?? []).map((i) => normalizeId(i.Id)) : [];
 }
@@ -26,22 +29,24 @@ async function playedIds(view: UserView, sortBy: string): Promise<string[]> {
 export async function homeView(view: UserView): Promise<MusicHomeResponse> {
   if (view.access.mode === "none") return { recentlyPlayed: [], recentlyAdded: [], mostPlayed: [], playlists: [] };
   const [recentIds, mostIds, albumIds, playlists] = await Promise.all([
-    playedIds(view, "DatePlayed"),
+    playedIds(view, "DatePlayed", HISTORY_ROWS),
     playedIds(view, "PlayCount,DatePlayed"),
     orderedIds("album", "recent"),
     playlistsView(view),
   ]);
   const visibleAlbums = visibleIds(view, albumIds);
-  const [recent, most, added] = await Promise.all([
+  const [history, most, added] = await Promise.all([
     visibleInOrder(view, recentIds),
     visibleInOrder(view, mostIds),
     visibleInOrder(view, visibleAlbums.slice(0, HOME_ROW)),
   ]);
+  const recent = history.slice(0, HOME_ROW);
   return {
     recentlyPlayed: await tracksOf(view, recent),
     recentlyAdded: await albumsOf(view, added),
     mostPlayed: await tracksOf(view, most),
     playlists,
+    forYou: await forYouView(view, { recent: history, most, day: new Date().toISOString().slice(0, 10) }),
   };
 }
 

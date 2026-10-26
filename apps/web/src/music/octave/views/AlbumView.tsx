@@ -26,6 +26,7 @@ import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { FormatBadge } from "../shell/FormatBadge";
+import { useRecordVisit } from "../search/recentVisits";
 
 /** La meilleure qualité de l'album (sans perte d'abord, puis profondeur et fréquence). */
 export function bestFormat(tracks: readonly MusicTrack[]): MusicAudioFormat | null {
@@ -48,6 +49,7 @@ export function AlbumView() {
   const album = useAlbumEntity(id);
   const { ordered, discs } = useMemo(() => inDiscOrder(album.data?.tracks ?? []), [album.data]);
   const ownership = useAlbumOwnership(album.data, ordered, album.isPlaceholder);
+  useRecordVisit("album", album.isPlaceholder || !ownership.settled || ownership.libraryAlbumId ? undefined : album.data);
   const tracks = ownership.tracks;
   const rows = useMemo(() => rowsOf(tracks), [tracks]);
   const meta = useCountAndDuration(album.data?.trackCount ?? tracks.length, album.data?.durationMs ?? tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));

@@ -18,6 +18,7 @@ import { useTypingPause } from "../data/typingPause";
 import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
 import { SearchHome } from "../search/SearchHome";
+import { SearchMoodResultsSlot } from "../home/ambianceSlots";
 
 /** La barre d'attente ne se montre que si l'attente se voit (une recherche en cache n'en a pas). */
 const PREPARING_VISIBLE_MS = 150;
@@ -93,6 +94,7 @@ export function SearchView() {
       {/* Avant la frappe : le « déjà écouté » et les recherches récentes, dans la page. */}
       {!query.trim() && <SearchHome recents={recents} onSearch={submit} onForget={forget} />}
 
+      {query.trim() && <SearchMoodResultsSlot query={query} onSearch={submit} />}
       {query.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
     </div>
   );

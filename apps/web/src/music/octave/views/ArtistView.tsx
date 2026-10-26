@@ -22,6 +22,7 @@ import { useOwnedTracks } from "../library/useOwnedTracks";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { ArtistMore } from "./artist/ArtistMore";
+import { useRecordVisit } from "../search/recentVisits";
 
 type Group = "albums" | "singles" | "compilations" | "live" | "other";
 
@@ -59,6 +60,7 @@ export function ArtistView() {
   const { id = "" } = useParams();
   const player = useOctavePlayer();
   const artist = useArtistEntity(id);
+  useRecordVisit("artist", artist.isPlaceholder ? undefined : artist.data);
   const [expanded, setExpanded] = useState(false);
   const shownTop = useMemo(() => (artist.data?.topTracks ?? []).slice(0, TOP_MAX), [artist.data]);
   const { tracks: top } = useOwnedTracks(shownTop);
