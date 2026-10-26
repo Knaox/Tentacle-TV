@@ -18,6 +18,6 @@ import { usePlayerSelector } from "../player/OctavePlayerProvider";
 export const OctaveAmbient = memo(function OctaveAmbient() {
   const artworkUrl = usePlayerSelector((s) => s.current?.artworkUrl ?? null);
   const tint = useArtworkTint(artworkUrl);
-  const style = tint === null ? undefined : ({ "--oc-ambient-tint": tint } as CSSProperties);
+  const style = tint === null ? undefined : ({ "--ocs-tint": tint } as CSSProperties);
   return <div aria-hidden className="octave-ambient" data-tinted={tint === null ? undefined : "true"} style={style} />;
 });

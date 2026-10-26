@@ -5,7 +5,9 @@
  * D11 (`maquette-lg/SOCLE.md`) qui le remplacera.
  */
 
-:root[data-liquid-glass="native"] .octave-stage :is(.octave-track-table, .octave-art-frame, .octave-stage-queue) {
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table,
+:root[data-liquid-glass="native"] .octave-stage .octave-art-frame,
+:root[data-liquid-glass="native"] .octave-stage .octave-stage-queue {
   position: relative;
   isolation: isolate;
   background: linear-gradient(140deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09) 100%);

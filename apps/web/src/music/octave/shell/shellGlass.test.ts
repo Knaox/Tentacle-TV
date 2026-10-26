@@ -1,7 +1,8 @@
 /**
- * Octave en verre natif (`shellGlass.css`, D11 du 26/10) : le verre est pour
- * ce qui FLOTTE. Le dock garde un verre clair dont le texte se lit sur TOUT
- * dessous ; le rail reste posé sur l'encre, sans surface de verre.
+ * Octave en verre natif (`shellGlass.css`, D11 du 26/10) : le dock garde un
+ * verre dont le texte se lit sur TOUT dessous. Le rail est un panneau de verre
+ * posé sur le fond coloré d'Octave (maquette « Octave · Playlist », D13 du
+ * 26/10) — plus sur l'encre nue, où il n'avait rien à réfracter.
  */
 
 import { readFileSync } from "node:fs";
@@ -43,8 +44,8 @@ describe("le dock d'Octave en verre natif", () => {
 });
 
 describe("le rail d'Octave", () => {
-  it("n'est jamais une surface de verre : posé sur l'encre, sans démarcation", () => {
-    expect(SIDEBAR).not.toMatch(/useLiquidGlassSurface|octave-glass/);
-    expect(CSS).not.toMatch(/octave-rail/);
+  it("est un panneau de verre en mode natif, la peau d'avant ailleurs (la maquette)", () => {
+    expect(SIDEBAR).toMatch(/useLiquidGlassSurface/);
+    expect(SIDEBAR).toMatch(/native \? "[^"]*octave-stage-rail/);
   });
 });

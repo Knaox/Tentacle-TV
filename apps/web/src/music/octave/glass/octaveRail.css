@@ -10,7 +10,7 @@
  */
 
 :root[data-liquid-glass="native"] .octave-stage .octave-stage-rail {
-  height: calc(100% - var(--oc-dock-inset) - var(--oc-stage-dock-clear));
+  height: calc(100% - var(--oc-dock-inset) - var(--ocs-dock-clear));
   gap: 22px;
   padding: 22px 16px;
   box-sizing: border-box;
