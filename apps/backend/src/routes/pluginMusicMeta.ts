@@ -28,6 +28,8 @@ export interface PluginMusicManifest {
   typingPause?: string;
   rights?: string;
   offline?: string;
+  moods?: string;
+  mood?: string;
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
   labels?: Record<string, string>;
 }
@@ -48,7 +50,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

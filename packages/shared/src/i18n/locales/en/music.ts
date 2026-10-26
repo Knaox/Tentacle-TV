@@ -5,6 +5,7 @@
  */
 import rights from "./musicRights";
 import octaveHome from "./musicHome";
+import moods from "./musicMoods";
 
 export default {
   mode: {
@@ -297,4 +298,5 @@ export default {
   },
   rights,
   octaveHome,
+  moods,
 };

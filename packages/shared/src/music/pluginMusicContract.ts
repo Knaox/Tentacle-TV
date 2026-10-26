@@ -76,6 +76,14 @@ export interface PluginMusicManifest {
    * tenus par l'extension : session personnelle, `users.rights` → `keepOffline`, et les siens.
    */
   offline?: string;
+  /**
+   * Ambiances (musicMoods.ts) — GET ?lang= → `ExternalMusicMoods` : la liste des ambiances (clé stable, nom dans la
+   * langue `lang` de l'interface, sinon celle du relais ; couleur, mots de recherche). Va avec `mood` ; l'un sans
+   * l'autre : aucune ambiance.
+   */
+  moods?: string;
+  /** La playlist d'une ambiance — GET <mood>/<moodId>?lang= → `ExternalMusicMoodMix` (titres de la bibliothèque en tête). */
+  mood?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -266,7 +274,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
