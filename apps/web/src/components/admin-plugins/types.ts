@@ -34,7 +34,7 @@ export interface InstalledPlugin {
   restartsOn?: { update: boolean; uninstall: boolean };
   /** Le formulaire que le plugin déclare pour se brancher — absent d'un serveur plus ancien. */
   setup?: PluginSetupMeta;
-  /** Extension ISOLÉE (serveur 1.32.0) : les outils qu'elle demande et l'accord de l'administrateur. */
+  /** Extension ISOLÉE (serveur 1.40.0) : les outils qu'elle demande et l'accord de l'administrateur. */
   runtimeTools?: Array<{ tool: string; granted: boolean }>;
 }
 

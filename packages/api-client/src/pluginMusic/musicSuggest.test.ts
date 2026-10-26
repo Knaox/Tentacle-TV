@@ -58,7 +58,7 @@ describe("suggestions de l'extension (music.suggest)", () => {
   it("serveur sans la capacité : aucune requête, aucune suggestion", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const type = await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    const type = await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime"] });
     await type("imag");
     await act(async () => { await new Promise((r) => setTimeout(r, 80)); });
     expect(seen).toEqual([]);
@@ -69,7 +69,7 @@ describe("suggestions de l'extension (music.suggest)", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     plugins = [{ ...SILLON, music: { search: "/music/search", resolve: "/music/resolve" } }];
-    const type = await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime", "music.suggest"] });
+    const type = await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime", "music.suggest"] });
     await type("imag");
     await act(async () => { await new Promise((r) => setTimeout(r, 80)); });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -78,7 +78,7 @@ describe("suggestions de l'extension (music.suggest)", () => {
   it("une rafale de lettres : une seule requête, pour la dernière frappe", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ query: "imag", suggestions: [{ kind: "artist", title: "Imagine Dragons", subtitle: null, text: "Imagine Dragons" }] })));
     vi.stubGlobal("fetch", fetchMock);
-    const type = await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime", "music.suggest"] });
+    const type = await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime", "music.suggest"] });
     for (const next of ["i", "im", "ima", "imag"]) await type(next);
     await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
     expect(fetchMock).toHaveBeenCalledTimes(1);

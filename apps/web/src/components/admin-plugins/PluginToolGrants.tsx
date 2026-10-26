@@ -9,7 +9,7 @@ import type { InstalledPlugin } from "./types";
 /**
  * Les OUTILS du serveur qu'une extension isolée demande (yt-dlp…), un
  * interrupteur chacun : fermé tant que l'administrateur ne l'a pas permis
- * (liste blanche du runtime, serveur 1.32.0). Un serveur d'avant n'envoie pas
+ * (liste blanche du runtime, serveur 1.40.0). Un serveur d'avant n'envoie pas
  * `runtimeTools` : rien ne s'affiche.
  */
 export const PluginToolGrants = memo(function PluginToolGrants({ plugin }: { plugin: InstalledPlugin }) {

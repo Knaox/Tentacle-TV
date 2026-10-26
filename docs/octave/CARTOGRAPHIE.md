@@ -271,7 +271,7 @@ Sillon `types/tentacle/pluginClientFetch.ts`).
 ### 4.6 Les capacités serveur de la musique
 
 [`packages/shared/src/serverCapabilities/serverCapabilities.ts`](../../packages/shared/src/serverCapabilities/serverCapabilities.ts)
-— toutes `1.32.0` (version pas encore livrée ; `versions.json` intact) :
+— toutes `1.40.0` (version pas encore livrée ; `versions.json` intact) :
 
 | Clé | Ce qu'elle garde côté clients |
 |---|---|

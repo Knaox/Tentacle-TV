@@ -1406,7 +1406,7 @@ le vois pas. »
 
 ## 9.11 La musique (Octave) — lot « Octave droits », D1 (2026-10-25)
 
-Capacité `octave.rights` (1.32.0). Contrat : `packages/shared/src/octaveRights/octaveRightsContract.ts`
+Capacité `octave.rights` (1.40.0). Contrat : `packages/shared/src/octaveRights/octaveRightsContract.ts`
 (miroir backend, test miroir). Serveur d'avant : la fiche d'avant, Octave comme avant.
 
 - **« Accès à Octave »** — un droit TENTACLE, pas un champ de la politique Jellyfin : table

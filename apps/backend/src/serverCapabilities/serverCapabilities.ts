@@ -261,46 +261,46 @@ export const SERVER_CAPABILITIES = {
   /** La musique de la bibliothèque Jellyfin servie par le cœur (`/api/music/*` : index et
    *  recherche, favoris, playlists, flux direct, événements `music:*`). Sans elle : aucun mode
    *  Octave, aucune entrée musique. */
-  "music.library": "1.32.0",
+  "music.library": "1.40.0",
   /** Le runtime ISOLÉ des modules serveur d'extension (processus à part, API d'hôte fermée) et le
    *  contrat `music` du manifeste relayé par `/api/plugins/active`. Sans elle : aucun résultat,
    *  aucune lecture ni geste hors bibliothèque. */
-  "plugins.isolatedRuntime": "1.32.0",
+  "plugins.isolatedRuntime": "1.40.0",
   /** Le point d'extension `music.suggest` relayé par `/api/plugins/active` : pendant la frappe, la
    *  barre d'Octave demande des SUGGESTIONS LOCALES à l'extension (ses index, aucune requête
    *  réseau de sa part), la recherche complète ne part qu'à la validation. Sans elle : suggestions
    *  de la bibliothèque et recherches récentes seulement. */
-  "music.suggest": "1.32.0",
+  "music.suggest": "1.40.0",
   /** `POST /api/music/match` : ce que la bibliothèque a parmi des titres et albums montrés hors
    *  bibliothèque (vue album, artiste, playlist, recherche, file), sur l'index local. Sans elle :
    *  seule la recherche remplace un titre par celui de la bibliothèque, d'après ses propres résultats. */
-  "music.libraryMatch": "1.32.0",
+  "music.libraryMatch": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */
-  "plugins.clientFetch": "1.32.0",
+  "plugins.clientFetch": "1.40.0",
   /** La NAVIGATION réglée par l'extension (`navigation` du manifeste, `pluginNavigation.ts`) : le
    *  nom de ses pages et leur place par défaut (barre principale ou « Plus »), fusionnés dans les
    *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
    *  nom du manifeste, et l'extension n'offre pas ce réglage. */
-  "plugins.navigation": "1.32.0",
+  "plugins.navigation": "1.40.0",
   /** « Accès à Octave » : un droit TENTACLE par compte (allumé par défaut), réglé dans la fiche des
    *  droits d'un utilisateur (`/api/admin/users/:userId/octave`), avec la rubrique « Musique · Octave »
    *  (les droits Jellyfin qui touchent la musique). Le serveur le tient (routes musique,
    *  extension de musique). Sans elle : la fiche d'avant, Octave comme avant. */
-  "octave.rights": "1.32.0",
+  "octave.rights": "1.40.0",
   /** Les ÉCOUTES dans le tableau de bord des sessions : le lecteur d'Octave déclare ce qu'il joue
    *  (`playback:declare`, canal de session) et applique pause, reprise, arrêt venus de
    *  l'administration ; une lecture d'extension (hors bibliothèque) y paraît et s'y commande ; les
    *  sessions de musique portent artistes, album et pochette. Sans elle : rien n'est déclaré, la
    *  musique de la bibliothèque paraît par Jellyfin seul, comme avant. */
-  "sessions.musicControl": "1.32.0",
+  "sessions.musicControl": "1.40.0",
   /** Garder hors ligne la MUSIQUE (Octave, bureau) : `POST /api/music/offline/plan` dit, pour des
    *  titres de la bibliothèque, d'où les tirer et sous quelle forme (l'original, ou l'Allégé audio
    *  `a256` de `/api/downloads/light` quand l'administration le permet), et
    *  `users.rights` dit `keepOffline` à une extension (titre hors bibliothèque, route `offline` du
    *  contrat `music`). Sans elle : aucun bouton « Garder hors ligne » dans Octave. */
-  "offline.music": "1.32.0",
+  "offline.music": "1.40.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

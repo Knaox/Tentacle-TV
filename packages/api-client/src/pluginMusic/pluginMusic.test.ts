@@ -248,7 +248,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     const pages = [page([track("a", R1)], false, "c1"), page([track("b", null)], true, null)];
     const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes("cursor=c1") ? pages[1] : pages[0])));
     vi.stubGlobal("fetch", fetchMock);
-    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime"] });
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(seen?.provider?.pluginId).toBe("sillon");
     expect(seen?.search.tracks.map((t) => t.key)).toEqual(["a", "b"]);
@@ -266,7 +266,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
       return new Response(JSON.stringify(page([track("b", null)], true, null)));
     });
     vi.stubGlobal("fetch", fetchMock);
-    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime"] });
     await act(async () => { await new Promise((r) => setTimeout(r, 120)); });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("cursor=c1"))).toHaveLength(1);
     expect(signals.some((sig) => sig.aborted)).toBe(false);
@@ -276,7 +276,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
   it("une page suivante en échec : la recherche dit `failed` (plus rien ne viendra), sans erreur levée", async () => {
     const fetchMock = vi.fn(async (url: string) => (url.includes("cursor=c1") ? new Response("panne", { status: 502 }) : new Response(JSON.stringify({ ...page([track("a", R1)], false, "c1"), provisional: true, replace: true }))));
     vi.stubGlobal("fetch", fetchMock);
-    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await mount({ version: "1.40.0", capabilities: ["plugins.isolatedRuntime"] });
     await act(async () => { await new Promise((r) => setTimeout(r, 60)); });
     expect(seen?.search.failed).toBe(true);
     expect(seen?.search.pending).toBe(false);

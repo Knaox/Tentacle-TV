@@ -29,7 +29,7 @@ function Note({ tone, children }: { tone: "info" | "warning"; children: string }
 }
 
 /**
- * La rubrique « Musique · Octave » de la fiche des droits (serveur 1.32.0,
+ * La rubrique « Musique · Octave » de la fiche des droits (serveur 1.40.0,
  * `octave.rights`), montée après la Famille : « Accès à Octave » (droit
  * Tentacle), puis, dits à la façon d'Octave, les droits JELLYFIN qui touchent
  * la musique — ses bibliothèques, le hors ligne, la conversion du son —, écrits

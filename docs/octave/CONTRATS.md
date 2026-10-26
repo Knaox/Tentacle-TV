@@ -26,7 +26,7 @@ compte ; une playlist EST une playlist Jellyfin. Aucun stockage propre au cœur.
 | `packages/shared/src/music/musicEvents.ts` | événements `music:*` du canal de session |
 | `packages/shared/src/music/pluginMusicContract.ts` | contrat `music` du manifeste d'extension (points 1 à 5) |
 | `packages/shared/src/plugins/pluginServerRuntime.ts` | runtime ISOLÉ : manifeste `runtime`, IPC, relais HTTP, API d'hôte fermée |
-| `serverCapabilities.ts` | `music.library`, `plugins.isolatedRuntime` (serveur 1.32.0) |
+| `serverCapabilities.ts` | `music.library`, `plugins.isolatedRuntime` (serveur 1.40.0) |
 | Sillon `types/tentacle/*` | MIROIR des fichiers ci-dessus (on modifie ici, puis on recopie) |
 | Sillon `server/contracts/*` | catalogue, cache audio, réglages, contexte des routes |
 | Sillon `server/storage/migrations/*` | schéma SQLite propre (`plugin.db`) : `core` 1-99, `playback` 100-199, `library` 200-299 |
@@ -86,7 +86,7 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    unique `musicLibraryMatch.ts` (MBID, sinon titre de base + artiste commun +
    durée à ± 2 s ; « Various Artists » vaut l'artiste si l'album est le même),
    appliquée par le cœur sur son index (`POST /api/music/match`, capacité
-   `music.libraryMatch` 1.32.0 : `{ tracks?, albums? }` → titres par `ref`,
+   `music.libraryMatch` 1.40.0 : `{ tracks?, albums? }` → titres par `ref`,
    albums `full`/`partial` et leurs titres). L'extension n'a rien à faire.
    **Radio d'un titre (`music.radio`, 25/10, additif)** : GET
    `<radio>/<externalId>` → `ExternalMusicRadio` (`tracks` : ce que la source

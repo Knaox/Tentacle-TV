@@ -1,6 +1,6 @@
 /**
  * « Accès à Octave » — le droit TENTACLE d'un compte au mode musique
- * (capacité `octave.rights`, serveur 1.32.0). Ce n'est pas un champ de la
+ * (capacité `octave.rights`, serveur 1.40.0). Ce n'est pas un champ de la
  * politique Jellyfin : Tentacle le garde (`octave_account_rights`, sans ligne =
  * permis). Allumé par défaut : rien ne change pour personne tant que
  * l'administration ne le coupe pas.

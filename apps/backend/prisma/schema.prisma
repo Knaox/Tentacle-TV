@@ -442,7 +442,7 @@ model FamilyAccountRights {
   @@map("family_account_rights")
 }
 
-/// 1.32.0 (`octave.rights`) : les droits TENTACLE d'un compte pour la musique — « Accès à
+/// 1.40.0 (`octave.rights`) : les droits TENTACLE d'un compte pour la musique — « Accès à
 /// Octave ». Sans ligne : permis (allumé par défaut). Un invité de la Famille vaut son créateur.
 model OctaveAccountRights {
   userId    String   @id
