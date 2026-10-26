@@ -129,6 +129,8 @@ async function gesture() {
   const refDb = parseLevel(await decks.readProperty(LEVEL_PROPERTY)) ?? -16.5;
   const t0 = performance.now();
   decks.play(track("b", "B"), source("tone-xb.flac"), 0);
+  // Comme le contrôleur : le suivant d'après, à fondre, aussitôt (il se charge sur la réserve… qui sort encore).
+  decks.setNext(track("c", "C"), source("tone-xa.flac"), 6000);
   const curve: Array<{ t: number; g: number }> = [];
   while (performance.now() - t0 < 900) {
     const db = parseLevel(await deckA!.readProperty(LEVEL_PROPERTY));

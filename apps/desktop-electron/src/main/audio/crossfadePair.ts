@@ -26,6 +26,8 @@ export class DeckPair {
   /** Volume, sourdine, ReplayGain : redits à la seconde instance à sa naissance. */
   private readonly settings = new Map<string, AudioBridgeControl>();
   private readonly cuts = new Map<Deck, Array<ReturnType<typeof setTimeout>>>();
+  /** Une sortie courte s'achève : la réserve est libre (la transition y prépare le suivant qui attendait). */
+  onCutDone: () => void = () => undefined;
 
   constructor(private readonly config: EngineConfig, private readonly onEvent: (deck: Deck, event: AudioBridgeEvent) => void) {
     this.front = this.make();
@@ -124,9 +126,13 @@ export class DeckPair {
     timers.push(setTimeout(() => {
       this.cuts.delete(deck);
       if (deck !== this.front) deck.control({ action: "stop" });
+      this.onCutDone();
     }, MANUAL_CUT_MS + TAIL_MS));
     this.cuts.set(deck, timers);
   }
+
+  /** `deck` sort encore (sortie courte d'un geste) : rien ne s'y charge, sinon sa sortie serait coupée net. */
+  isCutting = (deck: Deck): boolean => this.cuts.has(deck);
 
   /** `deck` reprend du service : sa sortie courte en cours n'a plus rien à faire. */
   cancelCut(deck: Deck): void {

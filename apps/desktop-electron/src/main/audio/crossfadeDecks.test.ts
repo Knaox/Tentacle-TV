@@ -165,6 +165,23 @@ describe("transition douce du bureau — deux instances", () => {
     expect(r.a.named("control").at(-1)).toEqual(["control", { action: "stop" }]);
   });
 
+  it("après un geste, le suivant d'après attend la fin de la sortie courte pour se charger sur la réserve (recette M6, défaut 2)", async () => {
+    const r = await rig();
+    r.decks.play(track("t1"), source("t1"), 0);
+    r.a.tl = { ...r.a.tl, playing: true, loaded: true };
+    r.decks.play(track("t3"), source("t3"), 0);
+    // Le nouveau titre sonne : le contrôleur donne aussitôt son suivant, à fondre.
+    r.decks.setNext(track("t4"), source("t4"), 6000);
+    expect(r.a.named("play")).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(160);
+    expect(r.a.named("setGain").map((c) => Number(c[1])).at(-1)).toBe(0);
+    expect(r.a.named("play")).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(r.a.named("control").at(-1)).toEqual(["control", { action: "stop" }]);
+    const [, t, s, , paused] = r.a.named("play").at(-1) as [string, AudioBridgeTrack, FadedSource, number, boolean];
+    expect([t.trackKey, s.fadeInS, paused]).toEqual(["t4", 6, true]);
+  });
+
   it("un saut dans la courbe d'entrée d'un titre entré en fondu le relit à la cible, sans elle", async () => {
     const r = await nearEnd();
     await vi.advanceTimersByTimeAsync(1470 + 3000 + 3500);

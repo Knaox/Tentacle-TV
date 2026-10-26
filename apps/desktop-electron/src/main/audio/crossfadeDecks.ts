@@ -42,6 +42,7 @@ export class CrossfadeDecks {
 
   constructor(config: EngineConfig, private readonly emit: (event: AudioBridgeEvent) => void) {
     this.pair = new DeckPair(config, (deck, event) => this.onDeck(deck, event));
+    this.pair.onCutDone = () => this.preparePending(); // la réserve sortait (un geste) : le suivant s'y charge maintenant
   }
 
   private get front(): Deck {
@@ -135,8 +136,7 @@ export class CrossfadeDecks {
 
   private preparePending(): void {
     const [p, back] = [this.pending, this.pair.back];
-    if (p === null || back === null || !this.pair.backReady || this.fade !== null || this.prepared) return;
-    this.pair.cancelCut(back);
+    if (p === null || back === null || !this.pair.backReady || this.fade !== null || this.prepared || this.pair.isCutting(back)) return;
     this.pair.chain(back);
     const faded: FadedSource = { ...p.source, fadeInS: p.fadeS };
     back.play(p.track, faded, 0, true);
