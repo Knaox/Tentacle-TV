@@ -29,6 +29,7 @@ import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
 import { DeviceNavItem } from "../offline/DeviceNavItem";
 import { OctaveProfileButton } from "../profiles";
+import { ImportEntryButton } from "../import/ImportEntryButton";
 
 export const OCTAVE_DESTINATIONS = [
   { to: octavePaths.home, key: "nav.home", Icon: Home, end: true },
@@ -71,7 +72,10 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         <DeviceNavItem className={linkClass} />
       </ul>
       <div className="octave-rail-playlists min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <h2 className="octave-rail-heading px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
+        <div className="flex items-center justify-between pb-1 pl-3 pr-1">
+          <h2 className="octave-rail-heading py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
+          <ImportEntryButton variant="rail" />
+        </div>
         <ul className="flex flex-col gap-0.5">
           {(playlists.data ?? []).map((p) => (
             <PlaylistDropTarget key={p.jellyfinId} playlist={p}>

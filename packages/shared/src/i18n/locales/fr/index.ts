@@ -62,6 +62,7 @@ import libraryDelete from "./libraryDelete";
 import accountAccess from "./accountAccess";
 import music from "./music";
 import musicOffline from "./musicOffline";
+import musicImport from "./musicImport";
 import octaveShell from "./octaveShell";
 
 export default {
@@ -101,5 +102,6 @@ export default {
   accountAccess,
   music,
   musicOffline,
+  musicImport,
   octaveShell,
 };
