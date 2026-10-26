@@ -56,7 +56,8 @@ describe("keepTracks", () => {
     const items = call.args.items as { sourcePath: string; artworkPath: string | null; variant: string }[];
     expect(items[0]).toMatchObject({ sourcePath: "/api/downloads/light/aa?preset=a256", variant: "light", artworkPath: "/api/music/artwork/aa" });
     // Une pochette d'un autre hôte ne se garde pas avec le jeton.
-    expect(items[1]).toMatchObject({ sourcePath: "/api/plugins/musique/music/offline/ytm%3At%3Ax", variant: "original", artworkPath: null });
+    // Sa pochette d'un autre hôte est gardée aussi, telle quelle : le moteur la demande SANS jeton.
+    expect(items[1]).toMatchObject({ sourcePath: "/api/plugins/musique/music/offline/ytm%3At%3Ax", variant: "original", artworkPath: "https://ailleurs.test/a.jpg" });
   });
 
   it("une collection garde TOUS ses titres, même quand le lot n'en garde qu'un (les titres qui manquent)", async () => {
