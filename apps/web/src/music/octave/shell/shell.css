@@ -88,11 +88,6 @@
   background-color: var(--oc-ink-raised);
 }
 
-/* Le rail de navigation en verre natif : un panneau qui flotte, inséré. */
-.octave-rail-glass {
-  border-radius: var(--oc-radius-panel);
-}
-
 /* ── Un îlot d'encre prune (la file d'attente) ─────────────────────────── */
 .octave-island {
   border-radius: var(--oc-radius-panel);

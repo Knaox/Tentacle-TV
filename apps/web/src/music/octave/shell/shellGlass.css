@@ -1,13 +1,17 @@
 /*
- * Octave — le dock et le rail en VERRE NATIF (macOS 26, `data-liquid-glass="native"`).
+ * Octave en VERRE NATIF (macOS 26, `data-liquid-glass="native"`).
  *
- * Ce sont des surfaces de la primitive au régime `surface` (`.lg-surface`) :
- * un ton mesuré puis TENU, un matériau épais dont le contraste est prouvé
- * (`surfaceMaterial.ts`). Le socle remappe les textes du thème pour les
- * peaux CSS, pas pour les surfaces de la primitive : les descendants
- * d'Octave (`text-content-*`, survols, rail, rose) suivaient donc le THÈME,
- * illisibles quand le ton du verre ne lui ressemble pas (le dock tenu sombre
- * au-dessus de pochettes sombres, en thème clair). Ici, tout suit le TON.
+ * La règle d'Apple (HIG « Materials ») : le verre est pour ce qui FLOTTE
+ * au-dessus du contenu, et il s'y fait oublier — presque transparent, aucun
+ * trait, la forme dite par la lumière du biseau. Dans Octave, une seule chose
+ * flotte : le dock (et le mini-lecteur). Le rail reste posé sur l'encre, sans
+ * dalle (`OctaveSidebar.tsx`) : rien ne passe dessous, un verre n'y
+ * réfractait que l'encre et se lisait comme une boîte grise détachée de la
+ * page (D11, 26/10 : « une grosse démarcation »).
+ *
+ * Le dock est une surface de la primitive au régime `surface`, son ton FORCÉ
+ * à sombre (la nuit d'Octave). Le socle remappe les textes du thème pour les
+ * peaux CSS, pas pour les surfaces de la primitive : ici, tout suit le TON.
  *
  * Hors du mode natif aucune de ces règles ne s'applique (rendu d'avant).
  */
@@ -23,35 +27,45 @@
   --oc-selected: rgba(255, 255, 255, 0.12);
   --oc-rail: rgba(255, 255, 255, 0.2);
   --oc-accent-text: var(--brand-accent-light);
-  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.3) 0%, rgba(var(--brand-rgb), 0.16) 100%);
-  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.42);
 }
 
-:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="light"] {
-  --border-subtle: rgba(0, 0, 0, 0.12);
-  --oc-hover: rgba(0, 0, 0, 0.06);
-  --oc-selected: rgba(0, 0, 0, 0.1);
-  --oc-rail: rgba(0, 0, 0, 0.14);
-  --oc-accent-text: var(--brand-accent-dark);
-  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.1) 100%);
-  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.34);
+/* Le MATÉRIAU du dock : le verre clair d'Apple, pas une dalle givrée.
+ * - Givre moyen (20 px, celui du dock hors verre) et une saturation qui AVIVE
+ *   (1,5) : les pochettes qui passent dessous y gardent leur couleur — à 0,75
+ *   (le matériau épais du socle), elles s'y éteignaient en gris.
+ * - Aucun liseré (`--lg-edge`) : la forme se lit par la lumière du biseau de la
+ *   lentille et une ombre douce, jamais par un trait.
+ * - L'encre prune à 0,62 : le texte blanc tient 4,9:1 au-dessus d'un BLANC pur
+ *   (0,38 × 255 + 0,62 × 18 = 104 → luminance 0,14), le pire dessous possible ;
+ *   le fondu de la page sous le dock (`.octave-dock-edge`) l'assombrit encore. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-night.octave-glass.lg-surface[data-lg-scale="surface"] {
+  --lg-blur: var(--oc-dock-blur);
+  --lg-saturate: 1.5;
+  --lg-edge: transparent;
+  --lg-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.3), 0 18px 40px -18px rgba(0, 0, 0, 0.6);
 }
-
-/* Le matériau, teinté d'Octave : prune dans le ton sombre, nacre rosée dans
- * le ton clair — jamais un blanc pur. Mêmes densités que le socle
- * (`surfaceTokens.css`, contraste prouvé par `surfaceMaterial.ts`). */
 :root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="dark"] {
   --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
-    linear-gradient(rgba(24, 18, 30, 0.8), rgba(24, 18, 30, 0.8));
-}
-:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="light"] {
-  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-light) 0%, transparent 70%),
-    linear-gradient(rgba(249, 242, 248, 0.8), rgba(249, 242, 248, 0.8));
+    linear-gradient(rgba(18, 14, 24, 0.62), rgba(18, 14, 24, 0.62));
 }
 
-/* La nuit (le dock, le mini-lecteur) au-dessus d'une page CLAIRE : son verre
- * s'épaissit pour rester encre, comme hors verre natif (octaveNight.css). */
+/* La nuit au-dessus d'une page CLAIRE : son verre s'épaissit pour rester encre,
+ * comme hors verre natif (`octaveNight.css`, 0,88). */
 :root[data-theme="light"][data-liquid-glass="native"]:not([data-lg-material]) .octave-night.octave-glass[data-lg-scale="surface"] {
   --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
-    linear-gradient(rgba(24, 18, 30, 0.88), rgba(24, 18, 30, 0.88));
+    linear-gradient(rgba(18, 14, 24, 0.86), rgba(18, 14, 24, 0.86));
+  --lg-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.18), 0 18px 40px -18px rgba(40, 10, 40, 0.4);
+}
+
+/* ── L'en-tête d'un album, d'une playlist : les boutons ─────────────────────
+ * « Lecture » garde le dégradé PROFOND d'Octave et son ombre rose (le verre
+ * `prominent` du socle, translucide, le délavait en pastel sur l'encre) ; un
+ * reflet en haut à gauche et la lumière du biseau en font du verre. Les autres
+ * boutons du héros perdent leur liseré : leur forme est dite par leur verre. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-hero .lg-surface {
+  --lg-edge: transparent;
+}
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-hero .octave-cta.lg-surface[data-lg-level="prominent"] {
+  --lg-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.16) 0%, transparent 62%), var(--oc-gradient-deep);
+  --lg-shadow: var(--oc-shadow-play);
 }

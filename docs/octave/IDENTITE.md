@@ -63,15 +63,24 @@ rien d'autre ; une variable qui en DÉRIVE se redéclare sur la nuit (elle se ca
   `-play` (teintée rose) sous le bouton Lecture seul.
 - **Mouvement** : `transform` et `opacity` seulement ; 120 ms (survol, appui), 200 ms (apparition),
   320 ms (panneau) ; une sortie dure deux tiers de son entrée ; `prefers-reduced-motion` coupe tout.
-- **Liquid Glass** : la porte `data-liquid-glass` ne change pas. En mode `native`, la barre de lecture
-  et la barre latérale sont des surfaces de la primitive (`theme/glass`, régime `surface` : un ton tenu),
-  les boutons dedans de simples glyphes ; partout ailleurs, le verre sombre ou l'encre ci-dessus.
-  **Dans un verre, tout suit le TON du verre, jamais le thème** : textes, survols, rail des glissières,
-  rose — la classe `octave-glass` sur la surface s'en charge (`shell/shellGlass.css`), et le matériau est
-  teinté d'Octave (prune dans le ton sombre, nacre rosée dans le ton clair). La barre de lecture FORCE son
-  ton à sombre (`data-lg-tone="dark"` posé par le composant) : le verre de nuit, quel que soit le dessous.
-  Un texte au dégradé (`.oc-gradient-text`) n'a jamais d'ombre de texte : celle du verre ternirait le
-  dégradé.
+- **Liquid Glass** : la porte `data-liquid-glass` ne change pas. En mode `native`, le verre est pour ce
+  qui FLOTTE au-dessus du contenu, à la façon d'Apple : presque transparent, aucun trait, la forme dite
+  par la lumière du biseau (`shell/shellGlass.css`, tenu par `shellGlass.test.ts`).
+  - **Le rail reste sur l'encre, comme hors verre** : rien ne passe dessous, un verre n'y réfractait que
+    l'encre — une dalle grise givrée, cerclée et ombrée, détachée de la page (D11, 26/10 : « une grosse
+    démarcation ; sans, c'est ultra smooth »).
+  - **Le dock** (et le mini-lecteur) est une surface de la primitive (`theme/glass`, régime `surface`),
+    son ton FORCÉ à sombre (`data-lg-tone="dark"`) : la nuit d'Octave, quel que soit le dessous. Son
+    matériau est le verre CLAIR, pas le matériau épais du socle : givre 20 px, saturation 1,5 (les
+    pochettes qui passent dessous gardent leur couleur ; à 0,75 elles s'éteignaient en gris), encre
+    prune à 0,62 (0,86 au-dessus d'une page claire), aucun liseré, une ombre douce. Le texte blanc tient
+    l'AA sur un dessous BLANC pur. **Dans ce verre, tout suit le TON du verre, jamais le thème** :
+    textes, survols, rail des glissières, rose — la classe `octave-glass` s'en charge.
+  - **Les boutons de l'en-tête** (album, playlist) sont du verre de la primitive, sans liseré ;
+    « Lecture » (`octave-cta`) garde le dégradé PROFOND d'Octave et son ombre rose — le verre
+    `prominent` du socle, translucide, le délavait en pastel sur l'encre.
+  - Un texte au dégradé (`.oc-gradient-text`) n'a jamais d'ombre de texte : celle du verre ternirait le
+    dégradé.
 - **La place** : une information qui ne tient pas entière s'efface, elle n'est jamais coupée au milieu
   d'un mot. Dans le dock, la colonne de droite est un conteneur (requêtes de conteneur, `shell.css`) :
   la glissière du volume cède d'abord, puis la qualité passe en ICÔNE seule — nom accessible et infobulle
