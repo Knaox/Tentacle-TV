@@ -26,14 +26,26 @@ const emittable = z.discriminatedUnion("type", [
   z.object({ type: z.literal("music:pending") }),
 ]);
 
-export function emitPluginMusicEvent(pluginId: string, userIds: string[], event: Record<string, unknown>): { delivered: number } {
+/**
+ * `music:resolved` : le titre RELAYÉ est celui de la bibliothèque (index du cœur, compte par compte) — pochette,
+ * titre, artistes, album, durée de l'élément Jellyfin, jamais la fiche que l'extension avait à l'ajout (Damien,
+ * 26/10 : « l'image ne s'actualise pas »). Pas encore indexé : le titre de l'extension, comme avant.
+ */
+export async function emitPluginMusicEvent(pluginId: string, userIds: string[], event: Record<string, unknown>): Promise<{ delivered: number }> {
   if (typeof event.type !== "string" || !(PLUGIN_EMITTABLE_MUSIC_EVENTS as readonly string[]).includes(event.type)) {
     throw new HostCallFailure("forbidden", "type d'événement non permis à une extension");
   }
   const parsed = emittable.safeParse(event);
   if (!parsed.success) throw new HostCallFailure("invalid", "événement mal formé");
   const message: RuntimeMusicEvent = { ...parsed.data, pluginId };
-  return { delivered: runtimeServices().sendMusicEvent(userIds, message) };
+  const { libraryTrack, sendMusicEvent } = runtimeServices();
+  if (message.type !== "music:resolved" || !libraryTrack) return { delivered: sendMusicEvent(userIds, message) };
+  let delivered = 0;
+  for (const userId of new Set(userIds)) {
+    const track = await libraryTrack(userId, message.jellyfinId).catch(() => null);
+    delivered += sendMusicEvent([userId], track ? { ...message, track } : message);
+  }
+  return { delivered };
 }
 
 /** Une extension musique est apparue, a été coupée ou a changé : chaque client relit `/api/plugins/active`. */

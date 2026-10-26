@@ -41,7 +41,20 @@ async function contextFor(view: UserView, rows: readonly IndexRow[]): Promise<Vi
 
 export async function tracksOf(view: UserView, rows: readonly IndexRow[]): Promise<MusicTrack[]> {
   const ctx = await contextFor(view, rows);
-  return rows.filter((r) => r.kind === "track").map((r) => toTrack(r, ctx));
+  const tracks = rows.filter((r) => r.kind === "track");
+  const covers = await albumCovers(tracks);
+  return tracks.map((r) => toTrack(r.imageTag || !r.albumId ? r : { ...r, imageTag: covers.get(r.albumId) ?? null }, ctx));
+}
+
+/**
+ * La pochette d'ALBUM des titres qui n'en ont pas (Damien, 26/10 : « ils sont dans la bibliothèque, l'image ne
+ * s'actualise pas »). Un titre indexé avant que Jellyfin ait la pochette de son album (récupérée souvent APRÈS
+ * l'import) garde une rangée sans image : seule celle de l'album change. Lue ici, à chaque vue, jamais figée.
+ */
+async function albumCovers(tracks: readonly IndexRow[]): Promise<Map<string, string>> {
+  const ids = [...new Set(tracks.flatMap((r) => (!r.imageTag && r.albumId ? [r.albumId] : [])))];
+  if (ids.length === 0) return new Map();
+  return new Map([...(await rowsByIds(ids))].flatMap(([id, row]) => (row.imageTag ? [[id, row.imageTag] as const] : [])));
 }
 
 export async function albumsOf(view: UserView, rows: readonly IndexRow[]): Promise<MusicAlbum[]> {

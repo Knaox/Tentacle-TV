@@ -39,7 +39,7 @@ import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { clientFetchBroker, configureClientFetch, registerIsolatedRuntime, stopIsolatedRuntime } from "./plugins/runtime";
 import { isDeviceOnline, onDevicePresenceChange, sendToDevices } from "./services/wsManager";
 import { configureIsolatedRuntime } from "./plugins/runtime/hostServices";
-import { musicLibrary, findByMbid, matchTracks, setFavorite, playlistInsert, playlistEntries, usageOf, notifyPath, refreshPath } from "./music/host/jellyfinMusicHost";
+import { musicLibrary, findByMbid, matchTracks, libraryTrackFor, setFavorite, playlistInsert, playlistEntries, usageOf, notifyPath, refreshPath } from "./music/host/jellyfinMusicHost";
 import { sendMusicEvent, broadcastMusicEvent } from "./music/events/musicSend";
 import { onAudioItems } from "./music/events/audioItemsFeed";
 import type { MusicEvent } from "./music/contract/musicEvents";
@@ -263,6 +263,7 @@ async function main() {
       sendMusicEvent: (ids, event) => sendMusicEvent(ids, event as MusicEvent),
       broadcastMusicEvent: (event) => broadcastMusicEvent(event as MusicEvent),
       onAudioItems,
+      libraryTrack: libraryTrackFor,
     });
     // Les requêtes déléguées : poussées sur la socket de l'appareil visé ; ses poignées tombent avec lui.
     configureClientFetch({ send: (key, job) => (isDeviceOnline(key) ? (sendToDevices([key], job), true) : false), online: isDeviceOnline });

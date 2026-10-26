@@ -11,7 +11,7 @@
 import { writeFavorite } from "../access/userFavorites";
 import { sendToUser } from "../../services/wsManager";
 import { musicMessage } from "../events/musicSend";
-import { tracksByRecording } from "../index/indexQueries";
+import { rowsByIds, tracksByRecording } from "../index/indexQueries";
 import { normalizeMbid } from "../contract/musicKeys";
 import { audioRef } from "../index/indexSync";
 import { isJellyfinId, jfAdmin, jfWrite, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
@@ -24,7 +24,8 @@ import { isLibraryPath, refreshContaining } from "./folderRefresh";
 import { indexArrivalsUnder, lookupRecentArrivals } from "../events/folderArrivals";
 import type { MusicMatchTrackQuery } from "../contract/musicCoreApi";
 import { matchTracks as matchTrackRows } from "../view/matchViews";
-import { userView } from "../view/viewContext";
+import { tracksOf, userView, visibleRows } from "../view/viewContext";
+import type { MusicTrack } from "../contract/musicTypes";
 
 export class HostMusicFailure extends Error {
   constructor(
@@ -80,6 +81,15 @@ export async function matchTracks(params: { userId: string; tracks: MusicMatchTr
   if (view.access.mode === "none") return [];
   const found = await matchTrackRows(view, params.tracks);
   return [...found].map(([ref, row]) => ({ ref, item: { jellyfinId: row.id, recording: row.recordingMbid, release: row.releaseMbid, path: null } }));
+}
+
+/** Le titre de la bibliothèque tel que CE compte le voit (`music:resolved` relayé par le cœur) ; `null` sinon. */
+export async function libraryTrackFor(userId: string, jellyfinId: string): Promise<MusicTrack | null> {
+  if (!isJellyfinId(userId) || !isJellyfinId(jellyfinId)) return null;
+  const view = await userView(normalizeId(userId));
+  const row = (await rowsByIds([normalizeId(jellyfinId)])).get(normalizeId(jellyfinId));
+  const [track] = row ? await tracksOf(view, visibleRows(view, [row])) : [];
+  return track ?? null;
 }
 
 export async function setFavorite(params: { userId: string; itemId: string; favorite: boolean }): Promise<{ ok: true }> {
