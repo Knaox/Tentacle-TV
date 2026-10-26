@@ -4,10 +4,12 @@
  * seulement (hors de la porte, aucune règle : rendu d'avant au pixel près).
  * Jetons : `paneTokens.css` ; preuve de lisibilité : `paneMaterial.ts`.
  *
- *  .lg-pane            le panneau : dégradé blanc léger, givre 28 px qui AVIVE
- *                      (saturation 190 %, luminosité 1,08), encre légère, bord,
- *                      ombres intérieures et portée, reflets, liseré en dégradé
- *                      (`::after`, un anneau de 1 px masqué).
+ *  .lg-pane            le panneau : un VERRE TRANSPARENT (consigne de Damien,
+ *                      26/10 : « pas trop violent, sinon on perd l'âme de
+ *                      l'app ») — voile blanc bas, givre léger (16 px) qui avive
+ *                      un peu (saturation 1,5), un fil d'encre, reflets fins, et
+ *                      la forme dite par la LUMIÈRE : liseré en dégradé (`::after`,
+ *                      anneau de 1 px masqué), bord presque nul, ombre douce.
  *   + .lg-pane-flat    même peau SANS `backdrop-filter` : un grand panneau posé
  *                      sur le fond ambiant seul (qui est déjà flou) — la passe
  *                      de flou ne se voit pas, elle coûte à chaque défilement.
