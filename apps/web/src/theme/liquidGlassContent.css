@@ -44,12 +44,12 @@
    * `paneContent.css`) : depuis le 26/10, un VOILE translucide sur le fond
    * ambiant — blanc très bas, bord fin, lumière de l'arête haute —, plus un
    * aplat zinc (consigne de Damien : verre transparent, jamais violent). */
-  --lgd-fill: rgba(255, 255, 255, 0.045);
-  --lgd-fill-hover: rgba(255, 255, 255, 0.075);
-  --lgd-stroke: rgba(255, 255, 255, 0.08);
-  --lgd-light: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --lgd-fill: rgba(255, 255, 255, 0.03);
+  --lgd-fill-hover: rgba(255, 255, 255, 0.055);
+  --lgd-stroke: rgba(255, 255, 255, 0.07);
+  --lgd-light: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   /* Un élément posé DANS un groupe (carte de choix, encadré) : un cran plus clair. */
-  --lgd-raised: rgba(255, 255, 255, 0.04);
+  --lgd-raised: rgba(255, 255, 255, 0.03);
   /* Un contrôle posé dans un groupe : un cran au-dessus du groupe. */
   --lgd-control: rgba(255, 255, 255, 0.08);
   --lgd-control-hover: rgba(255, 255, 255, 0.13);

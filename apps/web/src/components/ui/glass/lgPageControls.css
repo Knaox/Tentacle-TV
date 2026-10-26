@@ -29,29 +29,28 @@
  * `lgPageControls.test.ts` (contraste des libellés, AA). */
 
 :root[data-liquid-glass="native"] {
-  /* La PASTILLE de la maquette (`.chip`, 26/10 — Damien : « ce rendu Liquid
-   * Glass, en gardant notre thème couleur ») : un voile blanc 0,08 sur
-   * l'encre légère du socle (`--lg-bead-*`), un LISERÉ fin et translucide
-   * (1 px, 0,14) et le reflet du haut (0,3). Plus de lumière de bord floue :
-   * c'est le liseré de la maquette qui dessine la forme. Valeurs recopiées du
-   * socle (`theme/glass/paneTokens.css`) en clair : le test les calcule. */
-  --lgp-fill-on-dark: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
-    linear-gradient(rgba(7, 5, 12, 0.26), rgba(7, 5, 12, 0.26));
-  /* Le survol s'éclaire (0,12) sur une encre un cran plus dense (0,32) : le
+  /* La PASTILLE de la maquette (`.chip`, 26/10), aux valeurs ADOUCIES du socle
+   * (consigne de Damien : verre transparent, jamais violent) : un voile blanc
+   * 0,05 sur une encre légère (`--lg-bead-*`), un liseré presque nul (1 px,
+   * 0,07) et la lumière de l'arête haute (0,16). Valeurs recopiées du socle
+   * (`theme/glass/paneTokens.css`) en clair : le test les calcule. */
+  --lgp-fill-on-dark: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)),
+    linear-gradient(rgba(7, 5, 12, 0.08), rgba(7, 5, 12, 0.08));
+  /* Le survol s'éclaire (0,09) sur une encre un cran plus dense (0,14) : le
    * danger et la marque d'un libellé y tiennent 4,5:1 sur le pire fond (test). */
-  --lgp-fill-hover-on-dark: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)),
-    linear-gradient(rgba(7, 5, 12, 0.32), rgba(7, 5, 12, 0.32));
-  --lgp-edge-on-dark: inset 0 0 0 1px rgba(255, 255, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  --lgp-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.2), 0 6px 16px -10px rgba(0, 0, 0, 0.45);
+  --lgp-fill-hover-on-dark: linear-gradient(rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.09)),
+    linear-gradient(rgba(7, 5, 12, 0.14), rgba(7, 5, 12, 0.14));
+  --lgp-edge-on-dark: inset 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --lgp-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.16), 0 6px 16px -12px rgba(0, 0, 0, 0.35);
   --lgp-glyph-on-dark: rgba(255, 255, 255, 0.94);
   --lgp-glyph-secondary-on-dark: rgba(255, 255, 255, 0.76);
   /* Le danger au ton du verre (corail) : le rouge du thème y tombait à 3,9:1. */
   --lgp-danger-on-dark: var(--lg-surface-danger-on-dark, #ffc4bc);
   /* Le segment CHOISI : la sélection de la maquette (`--lg-pane-selected`),
    * le dégradé rose → violet avec son reflet — un remplissage, jamais un verre. */
-  --lgp-lens-fill-on-dark: linear-gradient(140deg, rgba(236, 72, 153, 0.28), rgba(124, 58, 237, 0.18));
-  --lgp-lens-edge-on-dark: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  --lgp-lens-depth-on-dark: 0 6px 16px -10px rgba(236, 72, 153, 0.5);
+  --lgp-lens-fill-on-dark: linear-gradient(140deg, rgba(236, 72, 153, 0.18), rgba(124, 58, 237, 0.1));
+  --lgp-lens-edge-on-dark: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --lgp-lens-depth-on-dark: 0 6px 16px -12px rgba(236, 72, 153, 0.35);
   /* La piste d'un segmenté, d'un interrupteur : un remplissage, à peine en creux. */
   --lgp-track-on-dark: rgba(255, 255, 255, 0.06);
   --lgp-track-edge-on-dark: inset 0 1px 1.5px -0.5px rgba(0, 0, 0, 0.3);
@@ -85,11 +84,11 @@
    * le « Lecture » de la maquette avec nos couleurs un cran profondes (celles du
    * socle, `--lg-pane-prominent-fill`) : blanc ≥ 4,5:1 aux deux bouts (test). */
   --lgp-prominent-gradient: linear-gradient(140deg, rgba(190, 24, 93, 0.96) 0%, rgba(109, 40, 217, 0.9) 100%);
-  --lgp-prominent-fill: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.14) 0%, transparent 55%),
+  --lgp-prominent-fill: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 55%),
     var(--lgp-prominent-gradient);
   /* Le « Lecture » de la maquette : arête haute, creux en bas, halo rose. */
-  --lgp-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.2),
-    0 10px 26px -12px rgba(var(--brand-accent-rgb), 0.6);
+  --lgp-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
+    0 12px 30px -14px rgba(var(--brand-accent-rgb), 0.45);
 
   /* L'appui fait GONFLER le verre (petit : une pastille côtoie ses voisines). */
   --lgp-press-scale: 1.04;

@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { AMBIENT_DARK, AMBIENT_INK, PANE_DARK, paneBody } from "../../../theme/glass/paneMaterial";
 
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 const TOKENS = strip(readFileSync(join(__dirname, "lgPageControls.css"), "utf8"));
@@ -102,15 +103,29 @@ function stackAll(fill: string, base: Rgba): Rgba {
 
 const ROOT = rules(TOKENS).find(([s]) => s === ':root[data-liquid-glass="native"]')![1];
 /**
- * Le dessous le plus CLAIR d'un contrôle de page en sombre : le CORPS du panneau
- * de la maquette (sans givre, encre 0,26, voile blanc 0,09 + reflet lointain
- * 0,08 → 0,163 — la mesure du socle, `paneBody` de `theme/glass/paneMaterial.ts`)
- * posé sur le pire croisement de deux taches du fond ambiant (rose 0,5 sur
- * violet 0,42), sur l'encre #07050C. Le coin du reflet, comme pour le socle, ne
- * tient que 3:1 (icônes, grand texte) : un contrôle ne s'y pose pas.
+ * Le dessous le plus CLAIR d'un contrôle de page en sombre, calculé sur le
+ * socle (`theme/glass/paneMaterial.ts`, qui suit ses jetons) : le pire
+ * croisement de deux taches du fond ambiant sur l'encre, puis, au plus clair,
+ * le CORPS d'un panneau de la maquette (encre + voile blanc, sans givre) ou le
+ * voile d'un conteneur au survol (`--lgd-fill-hover`). Le coin du reflet d'un
+ * panneau, comme pour le socle, ne tient que 3:1 : un contrôle ne s'y pose pas.
  */
-const DARK_PANEL = over(parse("rgba(255,255,255,0.163)"), over(parse("rgba(7,5,12,0.26)"),
-  over(parse("rgba(236,72,153,0.5)"), over(parse("rgba(139,92,246,0.42)"), parse("#07050c")))));
+function worstDarkBase(): Rgba {
+  const ink: Rgba = [AMBIENT_INK.r, AMBIENT_INK.g, AMBIENT_INK.b, 1];
+  const veil = Number(/--lgd-fill-hover:\s*rgba\(255, 255, 255, ([\d.]+)\)/.exec(CONTENT)![1]);
+  const white = (a: number): Rgba => [255, 255, 255, a];
+  let worst: Rgba = ink;
+  for (const a of AMBIENT_DARK) {
+    for (const b of AMBIENT_DARK) {
+      if (a === b) continue;
+      const cross = over([b.color.r, b.color.g, b.color.b, b.alpha], over([a.color.r, a.color.g, a.color.b, a.alpha], ink));
+      const body = over(white(paneBody(PANE_DARK)), over([PANE_DARK.ink.r, PANE_DARK.ink.g, PANE_DARK.ink.b, PANE_DARK.ink.a], cross));
+      for (const candidate of [body, over(white(veil), cross)]) if (luminance(candidate) > luminance(worst)) worst = candidate;
+    }
+  }
+  return worst;
+}
+const DARK_PANEL = worstDarkBase();
 const LIGHT_PANEL = parse("#ffffff");
 
 describe("les contrôles des pages en verre", () => {
@@ -229,7 +244,7 @@ describe("les contrôles des pages en verre", () => {
     const gradient = token(ROOT, "--lgp-prominent-gradient");
     expect(gradient).toContain("rgba(190, 24, 93, 0.96)");
     expect(gradient).toContain("rgba(109, 40, 217, 0.9)");
-    const sheen = parse("rgba(255,255,255,0.14)");
+    const sheen = parse("rgba(255,255,255,0.07)");
     // Sous le dégradé : l'encre, et le plus clair des fonds (le pire croisement des taches).
     for (const end of [parse("rgba(190, 24, 93, 0.96)"), parse("rgba(109, 40, 217, 0.9)")]) {
       for (const base of [parse("#07050c"), DARK_PANEL]) {
