@@ -1,7 +1,7 @@
 /**
  * Octave — UN relevé du niveau pour toutes les houles à l'écran. Tant qu'au
  * moins une houle roule (`run` : musique en lecture, à l'écran, fenêtre
- * visible, mouvement non réduit), le niveau est demandé quatre fois par
+ * visible, mouvement non réduit), le niveau est demandé cinq fois par
  * seconde à la source (au bureau : `audio_level`, mpv) ; personne : plus une
  * seule demande. Chaque mesure passe par la règle pure (`oceanEnergy.ts`), et
  * les houles ne reçoivent qu'un changement qui compte (un centième de facteur).
@@ -13,9 +13,9 @@
 
 import { invoke } from "../../../desktop/bridge";
 import { supportsAudioLevel } from "../../../desktop/capabilities";
-import { ENERGY_START, NEUTRAL_DRIVE, driveChanged, driveOf, stepEnergy, type EnergyState, type SwellDrive } from "./oceanEnergy";
+import { ENERGY_START, NEUTRAL_DRIVE, driveChanged, driveOf, newTrack, stepEnergy, type EnergyState, type SwellDrive } from "./oceanEnergy";
 
-export const LEVEL_POLL_MS = 250;
+export const LEVEL_POLL_MS = 200;
 
 /**
  * Le titre change : la houle quitte la rangée d'avant pour celle d'après (un abonné part, un autre arrive
@@ -52,6 +52,7 @@ export function createEnergyStore(source: () => LevelSource | null, clock: Energ
   let last = 0;
   /** L'instant où le dernier abonné est parti (`null` : quelqu'un écoute, ou jamais parti). */
   let leftAt: number | null = null;
+  let trackKey: string | null = null;
 
   async function tick(read: LevelSource): Promise<void> {
     if (inFlight) return;
@@ -96,6 +97,12 @@ export function createEnergyStore(source: () => LevelSource | null, clock: Energ
         stop = null;
         leftAt = clock.now();
       };
+    },
+    /** Le titre qui joue : un nouveau titre a sa propre moyenne (le niveau est normalisé sur LUI). */
+    noteTrack(key: string | null): void {
+      if (key === trackKey) return;
+      trackKey = key;
+      state = newTrack(state);
     },
     /** Pour les tests : le relevé tourne-t-il ? */
     polling: (): boolean => stop !== null,

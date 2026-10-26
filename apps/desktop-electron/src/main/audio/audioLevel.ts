@@ -13,8 +13,8 @@
 
 export const LEVEL_LABEL = "octave-level";
 
-/** `reset=4` : une mesure sur quatre trames (~0,1 à 0,4 s de son), relue par la page. */
-export const LEVEL_FILTER = `@${LEVEL_LABEL}:lavfi=[astats=metadata=1:reset=4:measure_perchannel=none:measure_overall=RMS_level]`;
+/** `reset=2` : une mesure sur deux trames (~50 à 200 ms de son) — l'attaque de la houle se voit aussitôt. */
+export const LEVEL_FILTER = `@${LEVEL_LABEL}:lavfi=[astats=metadata=1:reset=2:measure_perchannel=none:measure_overall=RMS_level]`;
 
 export const LEVEL_PROPERTY = `af-metadata/${LEVEL_LABEL}/lavfi.astats.Overall.RMS_level`;
 

@@ -8,73 +8,90 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../../desktop/bridge", () => ({ invoke: vi.fn() }));
 vi.mock("../../../desktop/capabilities", () => ({ supportsAudioLevel: () => false }));
 
-const { ENERGY_START, ENERGY_TUNING, NEUTRAL_DRIVE, NEUTRAL_ENERGY, driveChanged, driveOf, stepEnergy, swellFactor } = await import("./oceanEnergy");
+const { ENERGY_START, ENERGY_TUNING, NEUTRAL_DRIVE, NEUTRAL_ENERGY, driveChanged, driveOf, newTrack, stepEnergy, swellAmplitude, swellRate } = await import("./oceanEnergy");
 const { LEVEL_POLL_MS, createEnergyStore, oceanEnergy } = await import("./oceanEnergyStore");
 const { OCEAN_ANIMATIONS, applyDrive } = await import("./useOceanEnergy");
 
-/** Rejoue un niveau constant pendant `ms`, par pas de 250 ms. */
-function hold(levelDb: number | null, ms: number, from = ENERGY_START) {
+type State = typeof ENERGY_START;
+const STEP = 200;
+
+/** Rejoue des niveaux (une valeur, ou une fonction du temps en ms) pendant `ms`, par pas de 200 ms. */
+function play(level: number | null | ((t: number) => number), ms: number, from: State = ENERGY_START): State {
   let s = from;
-  for (let t = 0; t < ms; t += 250) s = stepEnergy(s, levelDb, 250);
+  for (let t = 0; t < ms; t += STEP) s = stepEnergy(s, typeof level === "function" ? level(t) : level, STEP);
   return s;
 }
+/** Un titre qui ondule doucement autour de `base` (± 2 dB, période 4 s). */
+const wobble = (base: number) => (t: number) => base + 2 * Math.sin((2 * Math.PI * t) / 4_000);
 
 describe("la règle de l'énergie", () => {
   it("l'énergie neutre donne exactement l'allure de toujours", () => {
-    expect(swellFactor(NEUTRAL_ENERGY)).toBe(1);
-    expect(driveOf(NEUTRAL_ENERGY)).toEqual(NEUTRAL_DRIVE);
+    expect(swellRate(NEUTRAL_ENERGY)).toBe(1);
+    expect(driveOf(NEUTRAL_ENERGY).rate).toBe(1);
   });
 
-  it("bornée de 0,7× à 1,4×, quoi qu'il arrive", () => {
-    expect(swellFactor(-3)).toBe(ENERGY_TUNING.minFactor);
-    expect(swellFactor(0)).toBe(0.7);
-    expect(swellFactor(1)).toBe(1.4);
-    expect(swellFactor(9)).toBe(ENERGY_TUNING.maxFactor);
-    const loud = hold(0, 60_000);
-    const silent = hold(-120, 60_000);
-    for (const s of [loud, silent]) {
-      expect(swellFactor(s.energy)).toBeGreaterThanOrEqual(0.7);
-      expect(swellFactor(s.energy)).toBeLessThanOrEqual(1.4);
-    }
+  it("vitesse de 0,5× à 2,5×, amplitude de 0,7× à 1,5×, bornées quoi qu'il arrive", () => {
+    expect([swellRate(-1), swellRate(0), swellRate(1), swellRate(4)]).toEqual([0.5, 0.5, 2.5, 2.5]);
+    expect([swellAmplitude(-1), swellAmplitude(0), swellAmplitude(1), swellAmplitude(4)]).toEqual([0.7, 0.7, 1.5, 1.5]);
+    expect(ENERGY_TUNING.minRate).toBe(0.5);
+    expect(ENERGY_TUNING.maxRate).toBe(2.5);
   });
 
-  it("un morceau fort roule plus vite qu'un morceau doux, une fois installé", () => {
-    expect(swellFactor(hold(-9, 30_000).energy)).toBeGreaterThan(swellFactor(hold(-30, 30_000).energy) + 0.2);
+  it("normalisée sur le titre : un morceau doux et un morceau fort ont les mêmes pics pour le même élan", () => {
+    const quiet = play(-34, 12_000);
+    const loud = play(-12, 12_000, newTrack(quiet));
+    const quietPeak = swellRate(play(-26, 600, quiet).energy);
+    const loudPeak = swellRate(play(-4, 600, loud).energy);
+    expect(quietPeak).toBeGreaterThan(2);
+    expect(loudPeak).toBeGreaterThan(2);
+    expect(Math.abs(quietPeak - loudPeak)).toBeLessThan(0.45);
   });
 
-  it("dans un même morceau, le refrain soulève la mer et le couplet la calme", () => {
-    const verse = hold(-24, 30_000);
-    const chorus = hold(-14, 2_000, verse);
-    const backToVerse = hold(-24, 4_000, chorus);
-    expect(chorus.energy).toBeGreaterThan(verse.energy + 0.2);
-    expect(backToVerse.energy).toBeLessThan(chorus.energy - 0.15);
+  it("un titre installé roule à son allure habituelle, et ses creux et ses pics se SENTENT", () => {
+    const settled = play(wobble(-20), 20_000);
+    expect(swellRate(settled.energy)).toBeGreaterThan(0.75);
+    expect(swellRate(settled.energy)).toBeLessThan(1.45);
+    const drop = play(-11, 400, settled);
+    expect(swellRate(drop.energy)).toBeGreaterThan(2);
+    const breakdown = play(-30, 3_000, settled);
+    expect(swellRate(breakdown.energy)).toBeLessThan(0.7);
   });
 
-  it("lissé : un coup isolé ne fait pas sauter la mer, et la descente est plus lente que la montée", () => {
-    const calm = hold(-30, 30_000);
-    const hit = stepEnergy(calm, -6, 250);
-    expect(swellFactor(hit.energy) - swellFactor(calm.energy)).toBeLessThan(0.15);
-    const up = hold(-10, 1_000, calm).energy - calm.energy;
-    const high = hold(-10, 30_000, calm);
-    const down = high.energy - hold(-30, 1_000, high).energy;
-    expect(up).toBeGreaterThan(down);
+  it("attaque rapide (~0,2 s), relâchement plus lent (~1 s)", () => {
+    const settled = play(-20, 20_000);
+    const base = settled.energy;
+    const hit = play(-10, 200, settled);
+    expect((hit.energy - base) / (1 - base)).toBeGreaterThan(0.5);
+    const top = play(-10, 1_000, settled);
+    const released = play(-20, 200, top);
+    expect((top.energy - released.energy) / (top.energy - base)).toBeLessThan(0.3);
+    expect(play(-20, 3_000, top).energy - base).toBeLessThan(0.1);
   });
 
-  it("sans mesure (null, NaN), l'état ne bouge pas ; un silence ne tire pas la moyenne du morceau", () => {
-    const s = hold(-20, 10_000);
-    expect(stepEnergy(s, null, 250)).toBe(s);
-    expect(stepEnergy(s, Number.NaN, 250)).toBe(s);
-    expect(hold(-120, 5_000, s).meanDb).toBe(s.meanDb);
+  it("un nouveau titre a sa propre moyenne, sans retombée de l'énergie au raccord", () => {
+    const s = play(-12, 12_000);
+    const next = newTrack(s);
+    expect(next.meanDb).toBeNull();
+    expect(next.energy).toBe(s.energy);
+  });
+
+  it("sans mesure (null, NaN), l'état ne bouge pas ; un silence ne tire pas la moyenne du titre", () => {
+    const s = play(-20, 10_000);
+    expect(stepEnergy(s, null, STEP)).toBe(s);
+    expect(stepEnergy(s, Number.NaN, STEP)).toBe(s);
+    expect(play(-120, 5_000, s).meanDb).toBe(s.meanDb);
+    expect(swellRate(play(-120, 3_000, s).energy)).toBeLessThan(0.6);
   });
 
   it("un écart de temps aberrant compte pour deux secondes au plus", () => {
-    const calm = hold(-30, 30_000);
+    const calm = play(-30, 20_000);
     expect(stepEnergy(calm, -8, 600_000)).toEqual(stepEnergy(calm, -8, 2_000));
   });
 
   it("on ne pousse qu'un changement qui compte", () => {
-    expect(driveChanged({ rate: 1, amplitude: 1 }, { rate: 1.01, amplitude: 1.01 })).toBe(false);
-    expect(driveChanged({ rate: 1, amplitude: 1 }, { rate: 1.03, amplitude: 1 })).toBe(true);
+    expect(driveChanged({ rate: 1, amplitude: 1 }, { rate: 1.02, amplitude: 1.01 })).toBe(false);
+    expect(driveChanged({ rate: 1, amplitude: 1 }, { rate: 1.04, amplitude: 1 })).toBe(true);
+    expect(driveChanged({ rate: 2, amplitude: 1 }, { rate: 2.05, amplitude: 1 })).toBe(false);
   });
 });
 
@@ -114,7 +131,7 @@ describe("le relevé partagé", () => {
     const offB = store.subscribe(b);
     expect(f.running()).toBe(1);
     await f.advance(10_000);
-    expect(read.mock.calls.length).toBe(40);
+    expect(read.mock.calls.length).toBe(50);
     const last = a.mock.calls.at(-1)?.[0];
     expect(last.rate).toBeGreaterThan(1);
     expect(b.mock.calls.at(-1)?.[0]).toEqual(last);
@@ -123,7 +140,7 @@ describe("le relevé partagé", () => {
     offB();
     expect(f.running()).toBe(0);
     await f.advance(2_000);
-    expect(read.mock.calls.length).toBe(40);
+    expect(read.mock.calls.length).toBe(50);
   });
 
   it("une source qui échoue ou ne mesure rien (pause, mode exclusif) laisse la houle telle quelle", async () => {
@@ -177,7 +194,7 @@ describe("entre deux titres", () => {
     const off = store.subscribe(first);
     await f.advance(10_000);
     const lifted = first.mock.calls.at(-1)?.[0];
-    expect(lifted.rate).toBeGreaterThan(1.1);
+    expect(lifted.rate).toBeGreaterThan(1);
     off();
     const next = vi.fn();
     const offNext = store.subscribe(next);

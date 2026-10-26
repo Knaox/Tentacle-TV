@@ -42,12 +42,13 @@
 .oc-swell-calm { opacity: 0; }
 
 /*
- * L'amplitude suit l'énergie de la musique (`--ocean-amp`, 0,7 → 1,4, posée par `useOceanEnergy`) : resserrée
- * pour l'indicateur (0,88 → 1,16), dont les traits s'amincissent à l'écrasement. La transition va PAR PAS.
+ * L'amplitude suit l'énergie de la musique (`--ocean-amp`, 0,7 → 1,5, posée par `useOceanEnergy`). Pour
+ * l'indicateur, 0,76 → 1,40 : à 1,40, la vague avant culmine à 15,6 sur 16 et celle d'arrière à 1,8 — rien ne
+ * déborde ; plus bas, ses traits s'amincissent trop. La transition va PAR PAS, à la vitesse de l'attaque.
  */
 .oc-swell-sea {
-  transform: scaleY(calc(0.6 + 0.4 * var(--ocean-amp, 1)));
-  transition: opacity var(--oc-duration-slow) var(--oc-ease-out), transform 260ms steps(4, end);
+  transform: scaleY(calc(0.2 + 0.8 * var(--ocean-amp, 1)));
+  transition: opacity var(--oc-duration-slow) var(--oc-ease-out), transform 200ms steps(3, end);
 }
 
 .oc-swell-wave {
@@ -177,7 +178,7 @@
   inset: 0;
   transform-origin: 50% 100%;
   transform: scaleY(var(--ocean-amp, 1));
-  transition: transform 260ms steps(4, end);
+  transition: transform 200ms steps(3, end);
 }
 
 .oc-ocean-drift {

@@ -79,7 +79,7 @@ describe("la feuille du mouvement océan", () => {
     const transitions = Array.from(CSS.matchAll(/transition:([^;]+);/g), (m) => m[1] as string).filter((t) => /transform/.test(t));
     expect(transitions.length).toBeGreaterThanOrEqual(2);
     for (const t of transitions) expect(t, t).toMatch(/transform \d+ms steps\(\d+, end\)/);
-    expect(CSS).toMatch(/\.oc-swell-sea \{[^}]*scaleY\(calc\(0\.6 \+ 0\.4 \* var\(--ocean-amp, 1\)\)\)/);
+    expect(CSS).toMatch(/\.oc-swell-sea \{[^}]*scaleY\(calc\(0\.2 \+ 0\.8 \* var\(--ocean-amp, 1\)\)\)/);
     expect(CSS).toMatch(/\.oc-ocean-swell \{[^}]*scaleY\(var\(--ocean-amp, 1\)\)/);
   });
 

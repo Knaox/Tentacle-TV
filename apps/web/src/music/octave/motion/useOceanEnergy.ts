@@ -12,6 +12,7 @@
  */
 
 import { useEffect } from "react";
+import { usePlayerSelector } from "../player/OctavePlayerProvider";
 import { NEUTRAL_DRIVE, type SwellDrive } from "./oceanEnergy";
 import { oceanEnergy } from "./oceanEnergyStore";
 
@@ -41,6 +42,10 @@ export function applyDrive(element: HTMLElement, drive: SwellDrive): void {
 }
 
 export function useOceanEnergy(element: HTMLElement | null, running: boolean): void {
+  const trackKey = usePlayerSelector((s) => s.current?.key ?? null);
+  useEffect(() => {
+    if (running) oceanEnergy.noteTrack(trackKey);
+  }, [running, trackKey]);
   useEffect(() => {
     if (element === null || !running || prefersReducedMotion()) return;
     const off = oceanEnergy.subscribe((drive) => applyDrive(element, drive));
