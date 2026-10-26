@@ -4,7 +4,7 @@ import { deviceModel, keptToTrack } from "./deviceModel";
 
 function kept(key: string, partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {
   return {
-    fileId: 1, itemId: key.replace("jf:", ""), trackKey: key, origin: "library", variant: "original", status: "complete", errorCode: null,
+    fileId: 1, itemId: key.replace("jf:", ""), trackKey: key, origin: "library", variant: "original", preset: null, status: "complete", errorCode: null,
     pausedByUser: false, bytesDone: 1, expectedSize: 1, title: `Titre ${key}`, artist: "Artiste", album: "Album", albumKey: null,
     discNumber: 1, trackNumber: 1, durationMs: 1000, coverRel: null, sourcePath: null, trackJson: "{}", createdAt: 0, ...partial,
   };

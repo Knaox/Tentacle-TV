@@ -4,7 +4,7 @@ import { collectionSummary, keptBytes, trackPhase } from "./keptProgress";
 
 function kept(key: string, partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {
   return {
-    fileId: 1, itemId: key, trackKey: key, origin: "library", variant: "original", status: "complete", errorCode: null,
+    fileId: 1, itemId: key, trackKey: key, origin: "library", variant: "original", preset: null, status: "complete", errorCode: null,
     pausedByUser: false, bytesDone: 100, expectedSize: 100, title: key, artist: null, album: null, albumKey: null,
     discNumber: null, trackNumber: null, durationMs: null, coverRel: null, sourcePath: null, trackJson: "{}", createdAt: 0,
     ...partial,

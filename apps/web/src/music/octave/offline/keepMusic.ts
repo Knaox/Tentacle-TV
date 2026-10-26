@@ -13,7 +13,7 @@
  * Toujours au nom du COMPTE DE L'APPAREIL (son jeton), jamais d'un profil.
  */
 
-import type { KeptMusicTrack, MusicKeepItem } from "@tentacle-tv/offline-core";
+import type { KeptCollectionKind, KeptMusicCollection, KeptMusicTrack, MusicKeepItem } from "@tentacle-tv/offline-core";
 import { musicRouteUrl, tentacleApiFetch, type MusicProvider } from "@tentacle-tv/api-client";
 import { MUSIC_ROUTES, type MusicOfflinePlanResponse, type MusicOfflineTrackPlan, type MusicTrack } from "@tentacle-tv/shared/music";
 import { invoke } from "../../../desktop/bridge";
@@ -21,10 +21,13 @@ import { getBackendBase } from "../../../lib/backendBase";
 import { readOfflineOwner } from "../../../offline/offlineOwner";
 import { refreshKeptMusic } from "./keptMusicStore";
 
-/** Un album ou une playlist gardés en entier : pour les retrouver sans réseau, dans leur ordre. */
+/**
+ * Un album ou une playlist gardés en entier, pour les retrouver sans réseau dans leur ordre — ou `track`, un titre
+ * gardé seul (menu « … ») : ce qui le RETIENT quand sa playlist le perd (`autosync/syncPlan.ts`).
+ */
 export interface KeepCollection {
   key: string;
-  kind: "album" | "playlist";
+  kind: KeptCollectionKind;
   title: string;
   subtitle: string | null;
   /** TOUS ses titres, dans leur ordre — même quand le lot n'en garde qu'une partie (« les titres qui manquent »). */
@@ -99,7 +102,7 @@ function externalItem(track: MusicTrack, provider: MusicProvider): MusicKeepItem
   };
 }
 
-async function planLibrary(ids: string[]): Promise<Map<string, MusicOfflineTrackPlan>> {
+export async function planLibrary(ids: string[]): Promise<Map<string, MusicOfflineTrackPlan>> {
   const plans = new Map<string, MusicOfflineTrackPlan>();
   for (let i = 0; i < ids.length; i += PLAN_BATCH) {
     const body = { ids: ids.slice(i, i + PLAN_BATCH) };
@@ -145,6 +148,30 @@ export async function removeKept(kept: readonly KeptMusicTrack[], collectionKey:
   try {
     await invoke("downloads_music_remove", { userId: owner.userId, fileIds: kept.map((k) => k.fileId), collectionKey });
     await refreshKeptMusic();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Retire ces fichiers de l'appareil (la tenue à jour : un titre qu'une playlist a perdu, une copie remplacée). */
+export async function removeKeptFiles(fileIds: readonly number[]): Promise<boolean> {
+  const owner = readOfflineOwner();
+  if (!owner || fileIds.length === 0) return false;
+  try {
+    await invoke("downloads_music_remove", { userId: owner.userId, fileIds: [...fileIds], collectionKey: null });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Réécrit ce qui retient des titres (collections) : la tenue à jour. */
+export async function saveKeptCollections(save: readonly KeptMusicCollection[], remove: readonly string[]): Promise<boolean> {
+  const owner = readOfflineOwner();
+  if (!owner || (save.length === 0 && remove.length === 0)) return false;
+  try {
+    await invoke("downloads_music_collections", { userId: owner.userId, save: save.map(({ updatedAt: _u, ...c }) => c), remove: [...remove] });
     return true;
   } catch {
     return false;

@@ -23,6 +23,7 @@ import { useOfflineSurface } from "./offlineSurfaceContext";
 import { ProgressRing } from "./ProgressRing";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptMusic } from "./useKeptMusic";
+import { isHeld } from "./autosync/syncPlan";
 
 interface KeepCollectionButtonProps {
   kind: "album" | "playlist";
@@ -59,7 +60,8 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   const missing = tracks.filter((track) => canKeepTrack(track, surface) && !kept.byKey.has(track.key));
   const keepLabel = t(kind === "album" ? "keepAlbum" : "keepPlaylist");
   const collection = { key: wholeKey, kind, title, subtitle, trackKeys: keys };
-  const ownKept = () => keys.map((key) => kept.byKey.get(key)).filter((k): k is NonNullable<typeof k> => !!k);
+  // Retirer la collection n'emporte pas ce qu'un autre album, une autre playlist ou un geste retient encore.
+  const ownKept = () => keys.filter((key) => !isHeld(key, kept.collections, wholeKey)).map((key) => kept.byKey.get(key)).filter((k): k is NonNullable<typeof k> => !!k);
 
   if (summary.phase === "none") {
     if (!keepable) return null;

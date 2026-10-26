@@ -2,6 +2,8 @@
  * Octave — « Garder hors ligne » / « Retirer de cet appareil » dans le menu
  * « Plus » d'un titre (`TrackMenu`). Le menu est déjà le geste réfléchi : le
  * retrait s'y fait d'un clic, comme le reste. Rien sans le droit (`keepRules.ts`).
+ * Gardé d'ici, le titre est RETENU pour lui-même (collection `track`) : la tenue à
+ * jour ne le retire pas quand une playlist le perd.
  */
 
 import { AlertCircle } from "lucide-react";
@@ -13,6 +15,7 @@ import { trackPhase } from "./keptProgress";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptTrack } from "./useKeptMusic";
+import { holdKey } from "./autosync/syncPlan";
 
 interface KeepMenuItemProps {
   track: MusicTrack;
@@ -34,7 +37,7 @@ function KeepMenuItemFor({ track, className, onDone, canKeep }: KeepMenuItemProp
   const phase = trackPhase(kept);
   if (phase !== "none" && kept) {
     return (
-      <button type="button" role="menuitem" className={className} onClick={() => (onDone(), void gestures.remove([kept]))}>
+      <button type="button" role="menuitem" className={className} onClick={() => (onDone(), void gestures.remove([kept], holdKey(track.key)))}>
         {phase === "failed" ? <AlertCircle className="h-4 w-4 text-status-error-fg" aria-hidden /> : <DownloadGlyph done className="h-4 w-4 text-status-success-fg" />}
         {t("remove")}
       </button>
@@ -42,7 +45,7 @@ function KeepMenuItemFor({ track, className, onDone, canKeep }: KeepMenuItemProp
   }
   if (!canKeep) return null;
   return (
-    <button type="button" role="menuitem" className={className} onClick={() => (onDone(), void gestures.keep([track]))}>
+    <button type="button" role="menuitem" className={className} onClick={() => (onDone(), void gestures.keep([track], { key: holdKey(track.key), kind: "track", title: track.title, subtitle: null, trackKeys: [track.key] }))}>
       <DownloadGlyph done={false} className="h-4 w-4 text-content-tertiary" />
       {t("keep")}
     </button>
