@@ -19,10 +19,7 @@ import { useMusicHome } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 import { QuickPicks, QuickPicksSkeleton } from "./QuickPicks";
 import { HomeMoodsSlot } from "../home/ambianceSlots";
-
-function greetingKey(hour: number): "home.morning" | "home.afternoon" | "home.evening" {
-  return hour < 12 ? "home.morning" : hour < 18 ? "home.afternoon" : "home.evening";
-}
+import { HomeGreeting } from "../home/HomeGreeting";
 
 function SeeAll({ to }: { to: string }) {
   const { t } = useTranslation("music");
@@ -49,7 +46,6 @@ function HomeSkeleton() {
 export function HomeView() {
   const { t } = useTranslation("music");
   const home = useMusicHome();
-  const greeting = t(greetingKey(new Date().getHours()));
   const recent = home.data?.recentlyPlayed ?? [];
   const added = home.data?.recentlyAdded ?? [];
   const playlists = home.data?.playlists ?? [];
@@ -60,7 +56,7 @@ export function HomeView() {
 
   return (
     <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
-      <h1 className="px-2 oc-display text-3xl text-content-primary">{greeting}</h1>
+      <HomeGreeting />
       {home.isPending && <HomeSkeleton />}
       {empty && (
         <EmptyState

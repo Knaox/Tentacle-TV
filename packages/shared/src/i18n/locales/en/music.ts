@@ -4,6 +4,7 @@
  * word "download" or its forms.
  */
 import rights from "./musicRights";
+import octaveHome from "./musicHome";
 
 export default {
   mode: {
@@ -295,4 +296,5 @@ export default {
     quality: "Quality: {{detail}}",
   },
   rights,
+  octaveHome,
 };

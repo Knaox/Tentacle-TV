@@ -4,6 +4,7 @@
  * mot « téléchargement » ni ses dérivés.
  */
 import rights from "./musicRights";
+import octaveHome from "./musicHome";
 
 export default {
   mode: {
@@ -295,4 +296,5 @@ export default {
     quality: "Qualité : {{detail}}",
   },
   rights,
+  octaveHome,
 };
