@@ -251,6 +251,8 @@ export function App() {
                   <AdminServicesPage section="remote-access" />
                 </ServerCapabilityGate>
               )} />
+              {/* « Système » : module de la page Services, aucune entrée de plus dans `lazyPages.ts`. */}
+              <Route path="system" element={<AdminServicesPage section="system" />} />
               <Route path="metadata" element={<AdminMetadata />} />
               <Route path="plugins" element={<AdminPlugins />} />
 

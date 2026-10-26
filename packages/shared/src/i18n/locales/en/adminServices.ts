@@ -6,9 +6,9 @@
  * rest of the administration, and `admin` is shared by all its other pages.
  */
 export default {
-  title: "Services",
+  title: "Jellyfin",
   description:
-    "The Tentacle TV server's connections and settings: Jellyfin, database, public address, direct play and skip segment detection.",
+    "Everything that links Tentacle to Jellyfin: the connection and its key, how well its version is supported, the recommended settings and skip segment detection (intro, recap, credits). What you set here applies to every user.",
   recheck: "Check again",
   checking: "Checking…",
   save: "Save",
@@ -44,6 +44,7 @@ export default {
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
+  jellyfinConnectionTitle: "Jellyfin connection",
   jellyfinDescription:
     "The media server Tentacle dresses up. Its admin key carries the work nobody sits behind: new-arrival notifications, invitations, account creation, admin screens.",
   jellyfinServer: "{{name}} · Jellyfin {{version}}",
@@ -143,7 +144,7 @@ export default {
   // Skip segment detection.
   segmentsTitle: "Skip segment detection",
   segmentsDescription:
-    "Jellyfin plugins remain the primary source for skip segments: installing one enriches every device at once. Tentacle's built-in analysis comes after them — it fills in what they don't say, and corrects end credits that swallow a scene.",
+    "What lets every player offer “Skip intro”, “Skip recap” and “Skip credits”. Tentacle installs and sets up Jellyfin plugins for you, which find these segments for the whole library; what they miss, Tentacle fills in by reading the end-of-episode thumbnails.",
   segmentsPlugins: "Jellyfin plugins",
   opensNewTab: "(opens in a new tab)",
   segmentsLearnMore: "How it works",
@@ -157,6 +158,8 @@ export default {
   // Danger zone.
   dangerTitle: "Danger zone",
   dangerDescription: "What happens here cannot be undone.",
+  systemTitle: "System",
+  systemDescription: "The Tentacle server itself: its version and updates, its database and, set apart, its reset.",
   resetTitle: "Reset the server",
   resetDescription:
     "Erases the whole server configuration — Jellyfin connection, keys, public address, settings — and restarts the setup wizard. Paired devices, TVs and phones alike, will lose access and must be paired again.",
