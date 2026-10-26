@@ -2,57 +2,74 @@
  *
  * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`.
  *
- * La barre FLOTTANTE de macOS 26 (Réglages Système, Finder) : une surface de
- * la primitive au matériau de la maquette (`useGlassSidebar` → `.lg-pane.lg-pane-flat`), en retrait des bords, d'UN
- * seul ton pour tout le rail — plus de reflet en dégradé vertical, plus de
- * marque. Le matériau (remplissage, lentille, ombre, glyphes au ton) est
- * celui de la primitive ; ici, le gabarit, la sélection et les glyphes. */
+ * Le verre change le MATÉRIAU, jamais les DIMENSIONS (Damien, 26/10) : le rail
+ * garde sa boîte d'avant — largeur, place, collage, entrées et intertitres à
+ * leur taille. Sa PLAQUE de verre (le panneau de la maquette, sans givre : rien
+ * ne bouge dessous au repos, et il défile avec la page) est peinte par deux
+ * pseudo-éléments qui DÉBORDENT de `--lg-chrome-sidebar-pad` : la plaque fait
+ * une marge autour des entrées sans qu'aucune boîte ne bouge
+ * (`getBoundingClientRect` ignore les pseudo-éléments). `useGlassSidebar` pose
+ * `.lgc-sidebar-plate` en natif seulement. */
 
-@media (min-width: 768px) {
-  :root[data-liquid-glass="native"] .lgc-sidebar {
-    --lgc-sidebar-top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
-    padding: var(--lg-chrome-sidebar-pad);
-    border-radius: var(--lg-chrome-sidebar-radius);
-    /* Collée SOUS la barre et sa frange de bord, jamais dessous. */
-    top: var(--lgc-sidebar-top);
-    /* La COLONNE flottante de Réglages Système (lot lg7, R10) : du dessous de
-     * la barre au bas de la fenêtre, en retrait de 8, ses entrées en haut —
-     * plus une carte courte posée dans la page. Une longue liste
-     * (Administration) défile dans le rail ; une lentille coûte pareil
-     * quelle que soit sa taille. */
-    height: calc(100dvh - var(--lgc-sidebar-top) - var(--lg-chrome-sidebar-pad));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
+/* La plaque se place sur le rail — `sticky` sur ordinateur (`md:sticky`),
+ * `relative` en dessous — et reste DERRIÈRE ses entrées. */
+@media (max-width: 767px) {
+  :root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate {
+    position: relative;
   }
 }
 
-/* Les remplissages des entrées : survol < sélection (jetons du verre de la maquette). */
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane {
-  /* Le `.nav` de la maquette : survol 0,08 ; sélection en dégradé rose →
-   * violet avec son reflet (`--lg-pane-selected`), un REMPLISSAGE dans le
-   * verre, jamais un verre de plus ; texte et icône actifs en blanc. */
+:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate {
+  isolation: isolate;
+  /* Le `.nav` de la maquette : survol, puis sélection en dégradé rose → violet
+   * avec son reflet — un REMPLISSAGE dans le verre, jamais un verre de plus. */
   --lg-chrome-item-hover: var(--lg-pane-nav-hover);
   --lg-chrome-sidebar-selection-bg: var(--lg-pane-selected);
   --lg-chrome-sidebar-selection-shadow: var(--lg-pane-selected-shadow);
   --lg-chrome-sidebar-selection-icon: var(--lg-pane-glyph);
 }
 
-:root[data-liquid-glass="native"][data-window-inactive] .lgc-sidebar.lg-pane {
+:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate::before,
+:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--lg-chrome-sidebar-pad));
+  border-radius: var(--lg-chrome-sidebar-radius);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Le panneau de la maquette (socle, `--lg-pane-*`), sans givre. */
+:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate::before {
+  border: 1px solid var(--lg-pane-border);
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+  box-shadow: var(--lg-pane-shadow);
+}
+
+/* Son liseré en dégradé : un anneau de 1 px masqué. */
+:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate::after {
+  padding: 1px;
+  background: var(--lg-pane-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-sidebar.lgc-sidebar-plate {
   --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
 }
 
-/* Rayon CONCENTRIQUE au rail : le sien moins sa marge. */
-:root[data-liquid-glass="native"] .lgc-sidebar-item {
+/* Rayon CONCENTRIQUE à la plaque : le sien moins son débord (un rayon, jamais une taille). */
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .lgc-sidebar-item {
   border-radius: calc(var(--lg-chrome-sidebar-radius) - var(--lg-chrome-sidebar-pad));
 }
 
-:root[data-liquid-glass="native"] .lgc-sidebar-item:hover:not([aria-current]) {
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .lgc-sidebar-item:hover:not([aria-current]) {
   background: var(--lg-chrome-item-hover);
 }
 
 /* La sélection glisse (`useGlassSidebar`) : l'entrée elle-même ne peint rien. */
-:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .lgc-sidebar-item[aria-current] {
   background: transparent;
 }
 
@@ -64,37 +81,31 @@
 
 /* ── Les glyphes du verre (`--lg-pane-glyph*`, au thème) ───────────────── */
 
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane .text-content-primary,
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane .lgc-sidebar-item:is(:hover, [aria-current]) {
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .text-content-primary,
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .lgc-sidebar-item:is(:hover, [aria-current]) {
   color: var(--lg-pane-glyph);
 }
 
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane :is(.text-content-secondary, .text-content-tertiary) {
+:root[data-liquid-glass="native"] .lgc-sidebar-plate :is(.text-content-secondary, .text-content-tertiary, .lgc-sidebar-label) {
   color: var(--lg-pane-glyph-secondary);
 }
 
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
+:root[data-liquid-glass="native"] .lgc-sidebar-plate .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
   color: var(--lg-chrome-sidebar-selection-icon);
 }
 
-/* Les intertitres : la casse de macOS, au jeton du socle. */
-:root[data-liquid-glass="native"] .lgc-sidebar-label {
-  letter-spacing: 0.02em;
-  text-transform: none;
-  font-size: 12px;
-}
-
-:root[data-liquid-glass="native"] .lgc-sidebar.lg-pane .lgc-sidebar-label {
-  color: var(--lg-pane-glyph-secondary);
-}
-
 /* ── Accessibilité de macOS (`data-lg-material`, theme/glass/accessibility.ts)
- * Réduire la transparence (« frosted ») ou Contraste accru (« solid ») : un
- * aplat ; en contraste accru, un bord qui se voit. */
-:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar {
+ * Réduire la transparence (« frosted ») ou Contraste accru (« solid ») : la
+ * plaque devient un aplat ; en contraste accru, un bord qui se voit. */
+:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar.lgc-sidebar-plate::before {
   background: var(--surface-1);
+  box-shadow: none;
 }
 
-:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-sidebar {
-  box-shadow: 0 0 0 1px var(--lg-contrast-border);
+:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar.lgc-sidebar-plate::after {
+  content: none;
+}
+
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-sidebar.lgc-sidebar-plate::before {
+  border-color: var(--lg-contrast-border);
 }
