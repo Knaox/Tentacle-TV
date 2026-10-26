@@ -153,6 +153,12 @@ describe("les sections du rail", () => {
     expect(activeAdminSection("/admin/plugins/seer")).toBe("plugins");
   });
 
+  it("les invitations sont un onglet d'« Utilisateurs », qui reste allumé ; « Système » a son entrée", () => {
+    expect(activeAdminSection("/admin/invites")).toBe("users");
+    expect(activeAdminSection("/admin/system")).toBe("system");
+    expect(adminSectionPath("system")).toBe("/admin/system");
+  });
+
   it("la vue d'ensemble mène à l'index, les autres à leur route", () => {
     expect(adminSectionPath("overview")).toBe("/admin");
     expect(adminSectionPath("tickets")).toBe("/admin/tickets");
