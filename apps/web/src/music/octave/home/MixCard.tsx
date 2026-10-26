@@ -17,9 +17,10 @@ import { mixContextId, mixMosaic, mixSubtitle, mixTitle } from "./homeModel";
 function Mosaic({ urls, label }: { urls: readonly string[]; label: string }) {
   if (urls.length < 4) return <Artwork url={urls[0] ?? null} label={label} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />;
   return (
-    <div className="grid h-full w-full grid-cols-2 grid-rows-2 overflow-hidden rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]">
+    // Des carreaux en flex, pas une grille à rangées : le client des téléviseurs LG (Chrome 53) compile ce fichier.
+    <div className="flex h-full w-full flex-wrap overflow-hidden rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]">
       {urls.map((url) => (
-        <Artwork key={url} url={url} label={label} radius="xs" className="h-full w-full rounded-none" />
+        <Artwork key={url} url={url} label={label} radius="xs" className="h-1/2 w-1/2 rounded-none" />
       ))}
     </div>
   );
