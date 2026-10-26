@@ -4,8 +4,8 @@
  * petite feuille « Qui écoute ? », code PIN compris) et « Gérer les profils »
  * (là où « Qui regarde ? » l'offre ; Réglages › Famille de Tentacle) — ces deux
  * seulement avec une famille de plusieurs profils, en ligne
- * (`octaveProfileMenu`) —, puis « Apparence d'Octave… » (Réglages › Apparence,
- * groupe Octave), toujours.
+ * (`octaveProfileMenu`) —, puis « Réglages d'Octave… » (`/octave/settings`,
+ * dans Octave), toujours.
  *
  * Bureau : une rangée en pied de la barre latérale, le menu s'ouvre au-dessus.
  * Fenêtre étroite (`compact`) : le rond seul dans l'en-tête, le menu dessous.
@@ -16,12 +16,12 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronsUpDown, Palette } from "lucide-react";
+import { ChevronsUpDown, Settings2 } from "lucide-react";
 import { ManageProfilesIcon, SwitchProfileIcon } from "../../../components/userMenu/icons";
 import { useMenuKeyboard } from "../../../components/userMenu/useMenuKeyboard";
 import { FAMILY_SETTINGS_PATH } from "../../../profiles/launch/ProfileLaunchScreen";
 import { switchActiveId } from "../../../profiles/switcher/switchPlan";
-import { OCTAVE_APPEARANCE_PATH } from "../settings/OctaveAppearanceSettings";
+import { octavePaths } from "../octavePaths";
 import { OctaveProfileSheet } from "./OctaveProfileSheet";
 import { shellIdentityOf } from "./shellIdentity";
 import { useOctaveProfileMenu } from "./useOctaveProfileMenu";
@@ -116,9 +116,9 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
               {t("profile.manage")}
             </button>
           )}
-          <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(OCTAVE_APPEARANCE_PATH); }}>
-            <Palette aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
-            {t("appearance.shortcut")}
+          <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(octavePaths.settings); }}>
+            <Settings2 aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            {t("settings.shortcut")}
           </button>
         </div>
       )}
