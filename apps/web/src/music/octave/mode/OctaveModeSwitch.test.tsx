@@ -25,6 +25,7 @@ vi.mock("./octaveMode", () => ({
 
 const { OctaveModeSwitch } = await import("./OctaveModeSwitch");
 const { OctaveStartupSetting } = await import("./OctaveStartupSetting");
+const { OCTAVE_GLYPH_PATHS } = await import("../../../components/ui/octaveLogo.generated");
 
 beforeEach(() => {
   h.available = true;
@@ -33,6 +34,19 @@ beforeEach(() => {
 });
 
 describe("bascule du mode", () => {
+  // Damien, 26/10 : « la note de musique sur le slide toggle plutôt que le poulpe ».
+  it("le pouce porte la NOTE d'Octave (le glyphe généré, à `currentColor`), jamais la mascotte", () => {
+    for (const html of [
+      renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />),
+      renderToStaticMarkup(<OctaveModeSwitch placement="octave" onExit={() => undefined} showLabel />),
+    ]) {
+      const thumb = /<span class="octave-switch-thumb">([\s\S]*?)<\/span>/.exec(html)?.[1] ?? "";
+      expect(thumb).toContain('fill="currentColor"');
+      for (const d of OCTAVE_GLYPH_PATHS) expect(thumb).toContain(`d="${d}"`);
+      expect(thumb).not.toMatch(/<img|data:image/);
+    }
+  });
+
   it("barre de Tentacle, sans musique : aucune trace", () => {
     h.available = false;
     expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toBe("");
