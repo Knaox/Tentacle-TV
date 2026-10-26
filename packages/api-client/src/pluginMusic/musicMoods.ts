@@ -12,15 +12,16 @@ import { musicRouteUrl, type MusicProvider } from "./musicProvider";
 export const musicMoodsKey = (pluginId: string, lang: string) => ["music", "moods", pluginId, lang] as const;
 export const musicMoodKey = (pluginId: string, id: string, lang: string) => ["music", "mood", pluginId, id, lang] as const;
 
-export async function fetchMusicMoods(provider: MusicProvider, signal?: AbortSignal): Promise<ExternalMusicMood[]> {
+/** `lang` : la langue de l'INTERFACE (les noms la suivent ; l'en-tête du navigateur peut en dire une autre). */
+export async function fetchMusicMoods(provider: MusicProvider, lang: string, signal?: AbortSignal): Promise<ExternalMusicMood[]> {
   if (!hasMoods(provider.music)) return [];
-  return readMusicMoods(await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.moods), { signal }));
+  return readMusicMoods(await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.moods, { lang }), { signal }));
 }
 
 /** La playlist d'une ambiance ; `null` : l'extension n'en sert pas, ou la réponse n'a pas la forme. */
-export async function fetchMusicMood(provider: MusicProvider, moodId: string, signal?: AbortSignal): Promise<ExternalMusicMoodMix | null> {
+export async function fetchMusicMood(provider: MusicProvider, moodId: string, lang: string, signal?: AbortSignal): Promise<ExternalMusicMoodMix | null> {
   if (!hasMoods(provider.music)) return null;
-  const raw = await tentacleApiFetch<unknown>(`${musicRouteUrl(provider, provider.music.mood)}/${encodeURIComponent(moodId)}`, { signal });
+  const raw = await tentacleApiFetch<unknown>(`${musicRouteUrl(provider, provider.music.mood)}/${encodeURIComponent(moodId)}?lang=${encodeURIComponent(lang)}`, { signal });
   const mix = raw as Partial<ExternalMusicMoodMix> | null;
   const mood = readMusicMood(mix?.mood);
   if (!mix || !mood || !Array.isArray(mix.tracks) || typeof mix.key !== "string" || typeof mix.title !== "string") return null;

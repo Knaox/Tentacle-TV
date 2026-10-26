@@ -22,9 +22,10 @@ export function useMoods(): { moods: ExternalMusicMood[]; pending: boolean } {
   const provider = useOctaveProvider();
   const { i18n } = useTranslation();
   const usable = hasMoods(provider?.music);
+  const lang = langOf(i18n.language);
   const query = useQuery<ExternalMusicMood[]>({
-    queryKey: musicMoodsKey(provider?.pluginId ?? "-", langOf(i18n.language)),
-    queryFn: ({ signal }) => (provider ? fetchMusicMoods(provider, signal) : Promise.resolve([])),
+    queryKey: musicMoodsKey(provider?.pluginId ?? "-", lang),
+    queryFn: ({ signal }) => (provider ? fetchMusicMoods(provider, lang, signal) : Promise.resolve([])),
     enabled: usable,
     staleTime: LIST_STALE_MS,
     retry: 1,
@@ -37,9 +38,10 @@ export function useMoodMix(moodId: string) {
   const provider = useOctaveProvider();
   const { i18n } = useTranslation();
   const usable = hasMoods(provider?.music);
+  const lang = langOf(i18n.language);
   return useQuery<ExternalMusicMoodMix | null>({
-    queryKey: musicMoodKey(provider?.pluginId ?? "-", moodId, langOf(i18n.language)),
-    queryFn: ({ signal }) => (provider ? fetchMusicMood(provider, moodId, signal) : Promise.resolve(null)),
+    queryKey: musicMoodKey(provider?.pluginId ?? "-", moodId, lang),
+    queryFn: ({ signal }) => (provider ? fetchMusicMood(provider, moodId, lang, signal) : Promise.resolve(null)),
     enabled: usable && moodId.length > 0,
     staleTime: MIX_STALE_MS,
     retry: false,
@@ -54,9 +56,10 @@ export function useMoodTracks() {
   return useCallback(
     async (moodId: string): Promise<ExternalMusicMoodMix | null> => {
       if (!provider || !hasMoods(provider.music)) return null;
+      const lang = langOf(i18n.language);
       return queryClient.fetchQuery({
-        queryKey: musicMoodKey(provider.pluginId, moodId, langOf(i18n.language)),
-        queryFn: ({ signal }) => fetchMusicMood(provider, moodId, signal),
+        queryKey: musicMoodKey(provider.pluginId, moodId, lang),
+        queryFn: ({ signal }) => fetchMusicMood(provider, moodId, lang, signal),
         staleTime: MIX_STALE_MS,
       });
     },
