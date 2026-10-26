@@ -22,7 +22,7 @@ export function MoodChips() {
         {moods.map((mood) => (
           <li key={mood.id}>
             <Link to={octavePaths.mood(mood.id)} className="octave-chip inline-flex items-center gap-2 text-content-primary">
-              <span aria-hidden className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: mood.color }} />
+              <span aria-hidden className="h-3 w-3 shrink-0 rounded-full ring-1 ring-white/40" style={{ backgroundColor: mood.color }} />
               {mood.name}
             </Link>
           </li>
