@@ -1,9 +1,11 @@
 /**
- * Octave — le menu du profil dans la coquille : le profil ACTUEL (sa photo ou
- * son initiale sur sa couleur), et, au clic, « Changer de profil » (la petite
- * feuille « Qui écoute ? », code PIN compris) et « Gérer les profils » (là où
- * « Qui regarde ? » l'offre ; Réglages › Famille de Tentacle). Rien sans
- * famille de plusieurs profils, ni hors ligne (`octaveProfileMenu`).
+ * Octave — le menu de la coquille : QUI est là (le profil actuel de la famille,
+ * sinon le compte — `shellIdentity.tsx`), et, au clic, « Changer de profil » (la
+ * petite feuille « Qui écoute ? », code PIN compris) et « Gérer les profils »
+ * (là où « Qui regarde ? » l'offre ; Réglages › Famille de Tentacle) — ces deux
+ * seulement avec une famille de plusieurs profils, en ligne
+ * (`octaveProfileMenu`) —, puis « Apparence d'Octave… » (Réglages › Apparence,
+ * groupe Octave), toujours.
  *
  * Bureau : une rangée en pied de la barre latérale, le menu s'ouvre au-dessus.
  * Fenêtre étroite (`compact`) : le rond seul dans l'en-tête, le menu dessous.
@@ -14,13 +16,14 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronsUpDown } from "lucide-react";
-import { FamilyAvatar } from "../../../family/FamilyAvatar";
+import { ChevronsUpDown, Palette } from "lucide-react";
 import { ManageProfilesIcon, SwitchProfileIcon } from "../../../components/userMenu/icons";
 import { useMenuKeyboard } from "../../../components/userMenu/useMenuKeyboard";
 import { FAMILY_SETTINGS_PATH } from "../../../profiles/launch/ProfileLaunchScreen";
 import { switchActiveId } from "../../../profiles/switcher/switchPlan";
+import { OCTAVE_APPEARANCE_PATH } from "../settings/OctaveAppearanceSettings";
 import { OctaveProfileSheet } from "./OctaveProfileSheet";
+import { shellIdentityOf } from "./shellIdentity";
 import { useOctaveProfileMenu } from "./useOctaveProfileMenu";
 
 const itemClass =
@@ -57,8 +60,9 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
   }, [open, close]);
 
   const closeSheet = useCallback(() => setSheet(false), []);
-  if (!menu?.current) return null;
-  const { current } = menu;
+  const identity = shellIdentityOf(menu);
+  if (!identity) return null;
+  const family = menu?.current ? menu : null;
 
   return (
     <div ref={root} className={`relative ${compact ? "" : "w-full"}`} data-octave-profile>
@@ -67,18 +71,18 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={t("profile.button", { name: current.name })}
+        aria-label={t("profile.button", { name: identity.name })}
         onClick={() => setOpen((value) => !value)}
         className={compact
           ? "flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           : "flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"}
       >
-        <FamilyAvatar userId={current.userId} name={current.name} color={current.color} imageTag={current.imageTag} size={compact ? 30 : 32} />
+        {identity.avatar(compact ? 30 : 32)}
         {!compact && (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-content-primary">{current.name}</span>
-              <span className="block truncate text-[11px] text-content-tertiary">{t("profile.current")}</span>
+              <span className="block truncate text-sm font-semibold text-content-primary">{identity.name}</span>
+              {family && <span className="block truncate text-[11px] text-content-tertiary">{t("profile.current")}</span>}
             </span>
             <ChevronsUpDown aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" />
           </>
@@ -93,29 +97,35 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
           className={`octave-island octave-enter absolute z-50 w-64 p-1.5 ${compact ? "right-0 top-full mt-2" : "bottom-full left-0 mb-2"}`}
         >
           <div className="flex items-center gap-3 px-3 pb-2 pt-2.5">
-            <FamilyAvatar userId={current.userId} name={current.name} color={current.color} imageTag={current.imageTag} size={40} />
+            {identity.avatar(40)}
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold text-content-primary">{current.name}</span>
-              <span className="block truncate text-xs text-octave-accent-text">{t("profile.current")}</span>
+              <span className="block truncate text-sm font-bold text-content-primary">{identity.name}</span>
+              {family && <span className="block truncate text-xs text-octave-accent-text">{t("profile.current")}</span>}
             </span>
           </div>
           <div aria-hidden className="mx-2 my-1 h-px bg-octave-line" />
-          <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); setSheet(true); }}>
-            <SwitchProfileIcon />
-            {t("profile.switch")}
-          </button>
-          {menu.canManage && (
+          {family && (
+            <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); setSheet(true); }}>
+              <SwitchProfileIcon />
+              {t("profile.switch")}
+            </button>
+          )}
+          {family?.canManage && (
             <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(FAMILY_SETTINGS_PATH); }}>
               <ManageProfilesIcon />
               {t("profile.manage")}
             </button>
           )}
+          <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(OCTAVE_APPEARANCE_PATH); }}>
+            <Palette aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            {t("appearance.shortcut")}
+          </button>
         </div>
       )}
-      {sheet && (
+      {sheet && family && (
         <OctaveProfileSheet
-          profiles={menu.profiles}
-          currentId={switchActiveId(menu.profiles, activeProfileId)}
+          profiles={family.profiles}
+          currentId={switchActiveId(family.profiles, activeProfileId)}
           onClose={closeSheet}
           onStale={refetch}
         />

@@ -29,6 +29,17 @@ export default {
   pinSheet: {
     cancel: "Cancel",
   },
+  appearance: {
+    title: "Octave",
+    caption: "Music mode has its own appearance on this device.",
+    theme: "Octave appearance",
+    themeSame: "Same as Tentacle",
+    themeLight: "Light",
+    themeDark: "Dark",
+    glass: "Liquid Glass in Octave",
+    tentacleGlass: "Liquid Glass in Tentacle",
+    shortcut: "Octave appearance…",
+  },
   artistMore: {
     elsewhere: "Not in your library yet",
     library: "Also in your library",
