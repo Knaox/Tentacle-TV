@@ -1,0 +1,224 @@
+{
+ "id": 302127,
+ "title": "Discovery",
+ "nb_tracks": 14,
+ "cover_xl": "https://cdn-images.dzcdn.net/images/cover/5718f7c81c27e0b2417e2a4c45224f8a/1000x1000-000000-80-0-0.jpg",
+ "type": "album",
+ "artist": {
+  "name": "Daft Punk"
+ },
+ "tracks": {
+  "data": [
+   {
+    "id": 3135553,
+    "title": "One More Time",
+    "title_short": "One More Time",
+    "title_version": "",
+    "duration": 320,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135554,
+    "title": "Aerodynamic",
+    "title_short": "Aerodynamic",
+    "title_version": "",
+    "duration": 212,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135555,
+    "title": "Digital Love",
+    "title_short": "Digital Love",
+    "title_version": "",
+    "duration": 301,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135556,
+    "title": "Harder, Better, Faster, Stronger",
+    "title_short": "Harder, Better, Faster, Stronger",
+    "title_version": "",
+    "duration": 226,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135557,
+    "title": "Crescendolls",
+    "title_short": "Crescendolls",
+    "title_version": "",
+    "duration": 211,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135558,
+    "title": "Nightvision",
+    "title_short": "Nightvision",
+    "title_version": "",
+    "duration": 104,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135559,
+    "title": "Superheroes",
+    "title_short": "Superheroes",
+    "title_version": "",
+    "duration": 237,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135560,
+    "title": "High Life",
+    "title_short": "High Life",
+    "title_version": "",
+    "duration": 201,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135561,
+    "title": "Something About Us",
+    "title_short": "Something About Us",
+    "title_version": "",
+    "duration": 232,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135562,
+    "title": "Voyager",
+    "title_short": "Voyager",
+    "title_version": "",
+    "duration": 227,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135563,
+    "title": "Veridis Quo",
+    "title_short": "Veridis Quo",
+    "title_version": "",
+    "duration": 345,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135564,
+    "title": "Short Circuit",
+    "title_short": "Short Circuit",
+    "title_version": "",
+    "duration": 206,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135565,
+    "title": "Face to Face",
+    "title_short": "Face to Face",
+    "title_version": "",
+    "duration": 240,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   },
+   {
+    "id": 3135566,
+    "title": "Too Long",
+    "title_short": "Too Long",
+    "title_version": "",
+    "duration": 600,
+    "artist": {
+     "id": 27,
+     "name": "Daft Punk"
+    },
+    "album": {
+     "id": 302127,
+     "title": "Discovery"
+    }
+   }
+  ]
+ }
+}

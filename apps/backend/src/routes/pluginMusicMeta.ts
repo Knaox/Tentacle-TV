@@ -12,6 +12,8 @@
  * besoin, sans les types des titres.
  */
 
+import type { MusicImportSource } from "../music/contract/musicImport";
+
 export interface PluginMusicManifest {
   search: string;
   resolve: string;
@@ -30,6 +32,9 @@ export interface PluginMusicManifest {
   offline?: string;
   moods?: string;
   mood?: string;
+  importRead?: string;
+  importSources?: MusicImportSource[];
+  importTracks?: string;
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
   labels?: Record<string, string>;
 }
@@ -50,13 +55,17 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
+  }
+  if (Array.isArray(m.importSources)) {
+    const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
+    if (sources.length > 0) out.importSources = sources as MusicImportSource[];
   }
   if (m.labels && typeof m.labels === "object") {
     const labels: Record<string, string> = {};

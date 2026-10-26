@@ -18,3 +18,6 @@ export {
 } from "../music/useMusicPlaylists";
 export { useMusicLive, applyMusicEvent, type UseMusicLiveOptions } from "../music/useMusicLive";
 export { reportMusicPlayback, isListenCompleted, MUSIC_COMPLETED_RATIO } from "../music/musicPlaybackReport";
+// Octave — l'import d'une playlist d'un autre service (capacité `music.playlistImport`).
+export { useMusicImport, importPortFor, extensionImportSources, type MusicImportHandle } from "../music/import/useMusicImport";
+export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, type ImportPhase, type ImportSummary, type ImportUserInput, type ImportPort } from "../music/import/importFlow";

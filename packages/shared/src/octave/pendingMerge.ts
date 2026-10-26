@@ -22,7 +22,8 @@ export interface ListRow {
 }
 
 function asPendingTrack(item: PendingMusicItem): MusicTrack {
-  return { ...item.track, availability: "pending", favorite: item.kind === "like" ? true : item.track.favorite };
+  // Une entrée IMPORTÉE n'attend rien (musicImport.ts) : elle garde la disponibilité que l'extension lui donne.
+  return { ...item.track, availability: item.imported === true ? item.track.availability : "pending", favorite: item.kind === "like" ? true : item.track.favorite };
 }
 
 function knownRecordings(tracks: readonly MusicTrack[]): Set<string> {

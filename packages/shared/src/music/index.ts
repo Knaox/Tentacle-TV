@@ -8,3 +8,4 @@ export * from "./pluginMusicContract";
 export * from "./musicLibraryMatch";
 export * from "./musicRights";
 export * from "./musicMoods";
+export * from "./musicImport";

@@ -12,6 +12,7 @@ import { useToast } from "../../../contexts/ToastContext";
 import { CardGrid, PlaylistCard } from "../components/Cards";
 import { CardsSkeleton, EMPTY_ACTION_CLASS, EmptyState, ErrorState } from "../components/ViewStates";
 import { octavePaths } from "../octavePaths";
+import { ImportEntryButton } from "../import/ImportEntryButton";
 
 function NewPlaylist({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const { t } = useTranslation("music");
@@ -83,7 +84,10 @@ export function PlaylistsView() {
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
         <h1 className="oc-display text-3xl text-content-primary">{t("nav.playlists")}</h1>
-        <NewPlaylist open={creating} setOpen={setCreating} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportEntryButton />
+          <NewPlaylist open={creating} setOpen={setCreating} />
+        </div>
       </div>
       {playlists.isPending && <CardsSkeleton />}
       {playlists.isError && <ErrorState onRetry={() => void playlists.refetch()} />}
