@@ -96,7 +96,10 @@ COPY LICENSE LICENSE-EXCEPTIONS ./
 COPY compat/jellyfin.json compat/jellyfin.json
 
 WORKDIR /app/apps/web
-RUN pnpm build
+# La version que le web AFFICHE (« À propos ») suit celle fixée au build, comme le serveur :
+# vide → versions.json (cf. vite.config.ts). Même argument que l'étape « production ».
+ARG TENTACLE_SERVER_VERSION=""
+RUN TENTACLE_SERVER_VERSION="$TENTACLE_SERVER_VERSION" pnpm build
 
 # La clé Klipy (GIFs du chat WT) est GRAVÉE dans le code compilé avant tsc
 # (secret GitHub KLIPY_API_KEY → build-arg) : elle ne passe ni par l'ENV de

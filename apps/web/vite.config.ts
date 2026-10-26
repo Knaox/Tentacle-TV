@@ -11,8 +11,10 @@ const versionsPath = resolve(__dirname, "../../versions.json");
 const versions = existsSync(versionsPath)
   ? JSON.parse(readFileSync(versionsPath, "utf-8"))
   : {};
-const webVersion = versions.server
-  ?? JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
+// La version fixée au build (`TENTACLE_SERVER_VERSION`, image preview) l'emporte, comme côté serveur.
+const buildVersion = process.env.TENTACLE_SERVER_VERSION?.trim();
+const webVersion = buildVersion || (versions.server
+  ?? JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version);
 const desktopVersion = versions.desktop ?? webVersion;
 
 // Le dossier qui porte les polices embarquées, quel que soit l'endroit où le
