@@ -61,7 +61,8 @@ describe("Réglages › Apparence", () => {
   it("macOS compatible : « Liquid Glass dans Tentacle » et « Liquid Glass dans Octave »", () => {
     h.native = true;
     const html = renderToStaticMarkup(<SettingsAppearance />);
-    expect(html).toContain('data-row="appearance.tentacleGlass"');
+    // La ligne de Tentacle est une `SettingItem` du catalogue (libellé précisé), celle d'Octave une ligne d'Octave.
+    expect(html).toContain("appearance.tentacleGlass");
     expect(html).toContain('data-row="appearance.glass"');
     expect(html).not.toContain("liquidGlassTitle");
   });
@@ -70,8 +71,10 @@ describe("Réglages › Apparence", () => {
     h.native = true;
     h.octave = false;
     const html = renderToStaticMarkup(<SettingsAppearance />);
-    expect(html).not.toContain("appearance.theme");
-    expect(html).toContain('data-row="liquidGlassTitle"');
+    // Le groupe d'Octave absent : ni son thème, ni son renvoi (les clés du catalogue `groups.appearance.theme` restent).
+    expect(html).not.toContain("appearance.themeSame");
+    expect(html).not.toContain(`href="${octavePaths.settings}"`);
+    expect(html).toContain("liquidGlassTitle");
   });
 });
 
