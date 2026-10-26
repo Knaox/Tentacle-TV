@@ -45,6 +45,8 @@ export default {
   sceneFamilyGuest: "Lea",
 
   // 1.40.0
+  v1_40_0_octave_title: "Octave, the new music mode",
+  v1_40_0_octave_body: "A music player built into Tentacle to listen to the albums, artists and playlists of your personal library. The \"Music mode\" switch in the bar opens it at once; it has its own look, its queue, a full-screen \"now playing\" and an animated swell that follows the music.",
   v1_40_0_glassNavigation_title: "Tentacle in Liquid Glass",
   v1_40_0_glassNavigation_body: "On macOS Tahoe, the app takes on Apple's glass: the navigation bar floats in small groups of nearly clear glass, the page scrolls underneath and bends at their edge, and labels switch between light and dark to match what passes beneath. Buttons, menus and windows follow, offline pages included. On by default; Settings › Appearance turns it off.",
   v1_40_0_glassPlayer_title: "The player, all glass",

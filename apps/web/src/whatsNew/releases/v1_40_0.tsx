@@ -1,8 +1,15 @@
 import type { WhatsNewRelease } from "../types";
-import { GlassNavigationScene, GlassPlayerScene } from "../scenes/v1_40_0";
+import { GlassNavigationScene, GlassPlayerScene, OctaveScene } from "../scenes/v1_40_0";
 
 /**
- * 1.40.0 — le Liquid Glass de macOS 26 (Tahoe) : la navigation et le lecteur
+ * 1.40.0 — LA nouveauté : Octave, le mode musique, EN TÊTE. Il n'existe que face
+ * à un serveur qui déclare `music.library` (1.40) : face à un autre, la
+ * nouveauté n'existe pas (`forServer`) — l'app n'en montre rien. Sa scène : la
+ * bascule « Mode musique », Octave, une houle, l'« en cours » (pochettes et noms
+ * inventés). Textes alignés sur `changelogs/desktop.md` : un lecteur pour la
+ * bibliothèque PERSONNELLE, rien d'autre (revue Apple).
+ *
+ * Puis le Liquid Glass de macOS 26 (Tahoe) : la navigation et le lecteur
  * en verre, aux couleurs de Tentacle, activé d'office et réglable dans
  * Réglages › Apparence.
  *
@@ -22,6 +29,15 @@ import { GlassNavigationScene, GlassPlayerScene } from "../scenes/v1_40_0";
 export const RELEASE_1_40_0: WhatsNewRelease = {
   version: "1.40.0",
   features: [
+    {
+      id: "octave",
+      kind: "new",
+      titleKey: "v1_40_0_octave_title",
+      bodyKey: "v1_40_0_octave_body",
+      Scene: OctaveScene,
+      route: "/octave",
+      capability: "music.library",
+    },
     {
       id: "glassNavigation",
       kind: "new",

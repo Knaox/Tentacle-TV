@@ -49,6 +49,8 @@ export default {
   sceneFamilyGuest: "Léa",
 
   // 1.40.0 — les autres nouveautés de la version suivent le verre.
+  v1_40_0_octave_title: "Octave, le nouveau mode musique",
+  v1_40_0_octave_body: "Un lecteur de musique intégré à Tentacle pour écouter les albums, les artistes et les playlists de votre bibliothèque personnelle. La bascule « Mode musique » de la barre l'ouvre aussitôt ; il a son apparence, sa file d'attente, un « en cours » en plein écran et une houle animée qui suit la musique.",
   v1_40_0_glassNavigation_title: "Tentacle en Liquid Glass",
   v1_40_0_glassNavigation_body: "Sur macOS Tahoe, l'application adopte le verre d'Apple : la barre de navigation flotte en petits groupes de verre presque transparent, la page défile dessous et se courbe à leur bord, et les textes passent du clair au sombre selon ce qui passe dessous. Boutons, menus et fenêtres suivent, jusqu'aux pages hors ligne. Activé d'office ; Réglages › Apparence le coupe.",
   v1_40_0_glassPlayer_title: "Le lecteur, tout en verre",

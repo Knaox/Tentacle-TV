@@ -84,18 +84,51 @@ describe("registre de l'écran de nouveautés", () => {
     expect(partial.map((f) => f.id)).not.toContain("heroSource");
   });
 
-  it("1.40.0 : le Liquid Glass n'existe qu'avec ses traits — ailleurs, la release est vide et rien ne s'ouvre", () => {
+  it("1.40.0 : Octave EN TÊTE, seulement face à un serveur qui déclare music.library — sinon la nouveauté n'existe pas", () => {
     const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.40.0");
-    expect(release?.features.map((f) => [f.id, f.requires])).toEqual([
+    const octave = release?.features[0];
+    expect(octave?.id).toBe("octave");
+    expect(octave?.capability).toBe("music.library");
+    expect(octave?.route).toBe("/octave");
+    expect(octave?.requires).toBeUndefined();
+    const glass = new Set(["liquidGlass", "liquidGlassPlayer"] as const);
+    // Un serveur d'avant (1.31) : pas d'Octave, le verre seul.
+    const before = resolveServerCapabilities({ capabilities: ["trailers.preview"] });
+    const old = selectWhatsNewFeatures("1.40.0", "1.31.2", forClient(forServer(WHATS_NEW_RELEASES, before), glass)).features;
+    expect(old.map((f) => f.id)).toEqual(["glassNavigation", "glassPlayer"]);
+    // Un serveur muet (≤ 1.23) non plus.
+    const mute = selectWhatsNewFeatures("1.40.0", "1.31.2", forServer(WHATS_NEW_RELEASES, resolveServerCapabilities({ version: "1.23.0" }))).features;
+    expect(mute.map((f) => f.id)).not.toContain("octave");
+    // Un serveur 1.40 : Octave d'abord, avant le verre.
+    const v140 = resolveServerCapabilities({ capabilities: ["music.library"] });
+    const shown = selectWhatsNewFeatures("1.40.0", "1.31.2", forClient(forServer(WHATS_NEW_RELEASES, v140), glass)).features;
+    expect(shown.map((f) => f.id)).toEqual(["octave", "glassNavigation", "glassPlayer"]);
+    // Sans le verre (Windows, Linux, un Mac d'avant Tahoe) : Octave seul.
+    const windows = selectWhatsNewFeatures("1.40.0", "1.31.2", forClient(forServer(WHATS_NEW_RELEASES, v140), new Set())).features;
+    expect(windows.map((f) => f.id)).toEqual(["octave"]);
+  });
+
+  it("1.40.0 : les mots d'Octave parlent d'un lecteur pour la bibliothèque personnelle, jamais d'une source ni d'un transfert", () => {
+    for (const lng of ["fr", "en"] as const) {
+      const texts = `${bundle(lng)["v1_40_0_octave_title"]} ${bundle(lng)["v1_40_0_octave_body"]}`;
+      expect(texts).not.toMatch(/t[ée]l[ée]charg|download|extension|plugin|youtube|lidarr|sillon|source/i);
+      expect(texts).toMatch(lng === "fr" ? /bibliothèque personnelle/ : /personal library/);
+    }
+  });
+
+  it("1.40.0 : le Liquid Glass n'existe qu'avec ses traits — ailleurs, et sans Octave, la release est vide et rien ne s'ouvre", () => {
+    const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.40.0");
+    expect(release?.features.filter((f) => f.requires !== undefined).map((f) => [f.id, f.requires])).toEqual([
       ["glassNavigation", "liquidGlass"], ["glassPlayer", "liquidGlassPlayer"],
     ]);
-    const elsewhere = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set())).features;
+    const noOctave = forServer(WHATS_NEW_RELEASES, new Set());
+    const elsewhere = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(noOctave, new Set())).features;
     expect(elsewhere.map((f) => f.id)).not.toContain("glassNavigation");
     expect(elsewhere.map((f) => f.id)).not.toContain("glassPlayer");
-    const intel = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass"] as const))).features;
+    const intel = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(noOctave, new Set(["liquidGlass"] as const))).features;
     expect(intel.map((f) => f.id)).toEqual(["glassNavigation"]);
     const appleSilicon = selectWhatsNewFeatures(
-      "1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass", "liquidGlassPlayer"] as const)),
+      "1.40.0", "1.31.1", forClient(noOctave, new Set(["liquidGlass", "liquidGlassPlayer"] as const)),
     ).features;
     expect(appleSilicon.map((f) => f.id)).toEqual(["glassNavigation", "glassPlayer"]);
   });
