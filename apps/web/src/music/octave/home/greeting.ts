@@ -62,6 +62,14 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
+/**
+ * Ce qui fixe la phrase : le compte, le jour, le moment. Tant que cette clé ne change pas, la phrase déjà
+ * dite est REDITE (un remontage de l'accueil ne la change pas, même si l'artiste est arrivé entre-temps).
+ */
+export function greetingSlot(now: Date, seed: string): string {
+  return `${seed}|${dayStamp(now)}|${greetingMoment(now.getHours())}`;
+}
+
 function dayStamp(now: Date): string {
   return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 }

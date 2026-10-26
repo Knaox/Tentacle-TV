@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initI18n } from "@tentacle-tv/shared";
-import { greetingMoment, greetingName, pickGreeting } from "./greeting";
+import { greetingMoment, greetingName, greetingSlot, pickGreeting } from "./greeting";
 
 /** 26 octobre 2026 = un lundi. */
 const at = (day: number, hour: number) => new Date(2026, 9, 26 + day, hour, 30);
@@ -78,5 +78,14 @@ describe("greetingName", () => {
     expect(greetingName("x")).toBeNull();
     expect(greetingName("")).toBeNull();
     expect(greetingName(null)).toBeNull();
+  });
+});
+
+describe("greetingSlot", () => {
+  it("change avec le moment, le jour et le compte, pas dans un même moment", () => {
+    expect(greetingSlot(new Date(2026, 9, 27, 14, 1), "u")).toBe(greetingSlot(new Date(2026, 9, 27, 17, 59), "u"));
+    expect(greetingSlot(new Date(2026, 9, 27, 14, 1), "u")).not.toBe(greetingSlot(new Date(2026, 9, 27, 18, 1), "u"));
+    expect(greetingSlot(new Date(2026, 9, 27, 14, 1), "u")).not.toBe(greetingSlot(new Date(2026, 9, 28, 14, 1), "u"));
+    expect(greetingSlot(new Date(2026, 9, 27, 14, 1), "u")).not.toBe(greetingSlot(new Date(2026, 9, 27, 14, 1), "v"));
   });
 });

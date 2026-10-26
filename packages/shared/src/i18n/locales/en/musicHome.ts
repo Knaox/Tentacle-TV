@@ -60,6 +60,6 @@ export default {
   recentAlbums: "Your albums lately",
   recentArtists: "Your artists lately",
   newInLibrary: "New in your library",
-  viewedAlbums: "Recently viewed albums",
+  viewedAlbums: "Recent albums",
   viewedArtists: "Recent artists",
 };
