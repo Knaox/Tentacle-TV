@@ -20,9 +20,11 @@
  * figé au démarrage (le système ne change pas de version en cours de session).
  */
 
-import { desktopKind, type DesktopPlatform } from "../desktop/detect";
+import { desktopKind } from "../desktop/detect";
 import type { LiquidGlassBridge } from "../desktop/types";
+import { getDisplayedSurface, subscribeDisplayedSurface, type DisplayedSurface } from "./displayedSurface";
 import { getLiquidGlass, subscribeLiquidGlass } from "./liquidGlass";
+import { getOctaveLiquidGlass, subscribeOctaveAppearance } from "./octaveAppearance";
 
 export type LiquidGlassMode = "native" | "refraction" | "off";
 
@@ -39,17 +41,30 @@ export function resolveLiquidGlassMode(input: {
 }
 
 /**
- * L'interrupteur « Liquid Glass » de Réglages › Apparence se montre-t-il ?
- *
- * Sur le bureau macOS, seulement là où le verre natif existe : sur un macOS
- * d'avant 26, l'option n'existe pas, et rien ne la remplace. Ailleurs (web,
- * Windows, Linux), le comportement d'avant : toujours là.
+ * Le réglage qui vaut pour la SURFACE affichée (Damien, 26/10) : dans Octave, « Liquid Glass dans Octave » ; dans
+ * Tentacle, le sien — deux réglages indépendants de l'appareil (`octaveAppearance.ts`).
  */
-export function liquidGlassToggleVisible(input: {
-  platform: DesktopPlatform;
+export function liquidGlassEnabledFor(input: { surface: DisplayedSurface; tentacle: boolean; octave: boolean }): boolean {
+  return input.surface === "octave" ? input.octave : input.tentacle;
+}
+
+/** La porte : la surface affichée, ses deux réglages et ce que le système sait faire. */
+export function resolveSurfaceLiquidGlassMode(input: {
+  surface: DisplayedSurface;
+  tentacle: boolean;
+  octave: boolean;
   nativeSupported: boolean;
-}): boolean {
-  return input.platform !== "macos" || input.nativeSupported;
+}): LiquidGlassMode {
+  return resolveLiquidGlassMode({ enabled: liquidGlassEnabledFor(input), nativeSupported: input.nativeSupported });
+}
+
+/**
+ * Les interrupteurs « Liquid Glass » de Réglages › Apparence se montrent-ils ? Seulement là où le verre NATIF
+ * existe (bureau, macOS 26) : ailleurs — web, Windows, Linux, macOS d'avant — aucune règle ne lit le réglage, il
+ * n'y a rien à régler (Damien, 26/10 : « l'option apparaît sur le web, pas logique »).
+ */
+export function liquidGlassToggleVisible(input: { nativeSupported: boolean }): boolean {
+  return input.nativeSupported;
 }
 
 /** Le pont du verre natif, s'il est là ET s'annonce supporté. */
@@ -61,8 +76,13 @@ export function readNativeGlassBridge(): LiquidGlassBridge | null {
 }
 
 const bridge = readNativeGlassBridge();
+
+/** Le réglage de la surface affichée, lu dans les trois magasins. */
+const effectiveEnabled = (): boolean =>
+  liquidGlassEnabledFor({ surface: getDisplayedSurface(), tentacle: getLiquidGlass(), octave: getOctaveLiquidGlass() });
+
 let mode: LiquidGlassMode = resolveLiquidGlassMode({
-  enabled: getLiquidGlass(),
+  enabled: effectiveEnabled(),
   nativeSupported: bridge !== null,
 });
 const listeners = new Set<() => void>();
@@ -76,7 +96,7 @@ function applyToDocument(next: LiquidGlassMode): void {
 function syncBridge(): void {
   if (bridge === null) return;
   try {
-    bridge.setEnabled(getLiquidGlass());
+    bridge.setEnabled(effectiveEnabled());
   } catch {
     /* Le pont a disparu (rechargement de la coquille) : le mode reste celui de la page. */
   }
@@ -85,17 +105,22 @@ function syncBridge(): void {
 applyToDocument(mode);
 syncBridge();
 
-subscribeLiquidGlass(() => {
+// Un réglage changé, ou l'autre surface affichée (la bascule de mode) : la porte suit, sans recharger.
+function refresh(): void {
   syncBridge();
   const next = resolveLiquidGlassMode({
-    enabled: getLiquidGlass(),
+    enabled: effectiveEnabled(),
     nativeSupported: bridge !== null,
   });
   if (next === mode) return;
   mode = next;
   applyToDocument(next);
   for (const listener of listeners) listener();
-});
+}
+
+subscribeLiquidGlass(refresh);
+subscribeOctaveAppearance(refresh);
+subscribeDisplayedSurface(refresh);
 
 /** Le mode courant. */
 export const getLiquidGlassMode = (): LiquidGlassMode => mode;
