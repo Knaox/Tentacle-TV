@@ -16,6 +16,8 @@ import type { ReactNode } from "react";
 export interface SettingsRowProps {
   icon?: ReactNode;
   label: string;
+  /** Posé à côté du libellé : la pastille de portée d'un réglage (« Compte », « Cet appareil »). */
+  badge?: ReactNode;
   /** Sous-libellé sous le label. */
   description?: string;
   /**
@@ -38,6 +40,7 @@ export interface SettingsRowProps {
 export function SettingsRow({
   icon,
   label,
+  badge,
   description,
   value,
   trailing,
@@ -63,12 +66,15 @@ export function SettingsRow({
       ) : null}
 
       <span className="flex min-w-0 flex-1 flex-col justify-center text-left">
-        <span
-          className={`truncate text-sm font-medium ${
-            destructive ? "text-status-error" : "text-content-primary"
-          }`}
-        >
-          {label}
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={`truncate text-sm font-medium ${
+              destructive ? "text-status-error" : "text-content-primary"
+            }`}
+          >
+            {label}
+          </span>
+          {badge ?? null}
         </span>
         {description ? (
           <span className="mt-0.5 text-xs leading-4 text-content-tertiary">
