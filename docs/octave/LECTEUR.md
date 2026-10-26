@@ -218,6 +218,41 @@ traduit vers les commandes `audio_*` et tient l'état visible. Dans le principal
 | [`coreAudioScan.ts`](../../apps/desktop-electron/src/main/audio/coreAudioScan.ts), [`outputWarmup.ts`](../../apps/desktop-electron/src/main/audio/outputWarmup.ts) | Le palier de ~2 s du premier son payé AVANT le premier clic : recensement CoreAudio au lancement du bureau, puis 50 ms de silence numérique à la naissance de l'instance. |
 | [`../clientFetch/directSources.ts`](../../apps/desktop-electron/src/main/clientFetch/directSources.ts), [`directRelay.ts`](../../apps/desktop-electron/src/main/clientFetch/directRelay.ts) | Le flux direct d'une extension (§ 13). |
 
+### 6.4 La transition douce (fondu enchaîné)
+
+Réglage de l'APPAREIL, dans les Réglages d'Octave (« Lecture › Transition douce ») :
+`tentacle_octave_crossfade` (ms ; 0 = coupée, le défaut ; 2 à 12 s, 6 s quand on l'allume —
+[`crossfadeSetting.ts`](../../apps/web/src/music/engine/crossfadeSetting.ts)). Le fournisseur du moteur le passe au port
+(`setCrossfade`, OPTIONNEL : un moteur qui ne le connaît pas enchaîne comme avant). Aucune capacité serveur.
+
+**La règle** ([`crossfadeRules.ts`](../../apps/web/src/music/engine/crossfadeRules.ts), décidée par la PAGE pour les
+deux moteurs) :
+- seulement entre deux titres ENCHAÎNÉS par la file : un geste (Suivant, un titre choisi, « Précédent ») coupe ;
+  une file finie s'arrête sur la fin du titre ;
+- jamais à l'intérieur d'un album écouté dans l'ordre (le titre suivant du même disque, ou le premier du disque
+  suivant ; numéros inconnus dans un même album : tenu pour enchaîné) — il s'enchaîne sans blanc, comme mixé ;
+- la durée se plie aux titres : un tiers du plus court au plus, rien sous une seconde ;
+- courbes à PUISSANCE CONSTANTE (cos / sin : cos² + sin² = 1) ; le suivant démarre AVANT la fin du courant ;
+- le titre COURANT bascule à MI-FONDU (`advanced`) : la barre, la file, la déclaration aux sessions et les rapports
+  d'écoute passent au suivant quand les deux s'entendent autant. Le titre qui part est rapporté « écouté au bout »
+  (`onAdvanced` rapporte sa durée) : `played` et la fin Jellyfin restent justes.
+
+| | Web (`<audio>`) | Bureau (mpv) |
+|---|---|---|
+| Comment | Deux éléments ; leurs volumes menés toutes les 10 ms, sur l'horloge du titre qui ARRIVE ([`htmlCrossfade.ts`](../../apps/web/src/music/engine/html/htmlCrossfade.ts)). | Deux instances mpv derrière UN moteur ([`crossfadeDecks.ts`](../../apps/desktop-electron/src/main/audio/crossfadeDecks.ts)) : le suivant chargé EN PAUSE sur la réserve, sa courbe d'entrée dans les options de SON fichier ; la courbe de sortie posée par `af-command` ; gains = filtre lavfi `volume` sur le TEMPS DU FLUX ([`crossfadeFilter.ts`](../../apps/desktop-electron/src/main/audio/crossfadeFilter.ts)). |
+| Pause pendant un fondu | Les deux s'arrêtent ; l'horloge du suivant mène : les courbes reprennent où elles étaient. | Idem (courbes sur le flux, minuteries en temps de lecture, [`crossfadeRun.ts`](../../apps/desktop-electron/src/main/audio/crossfadeRun.ts)). |
+| Saut pendant un fondu | Avant la mi-fondu : le suivant redevient préchargé (muet, à 0), le courant reprend son volume. Après : le titre parti se tait. | Idem ; un saut dans la courbe d'entrée d'un titre entré en fondu le RELIT à la cible sans elle (un saut reconstruit la chaîne depuis son texte, mesuré). |
+| Geste | Le titre quitté est lâché : Chrome adoucit lui-même l'arrêt (~40 ms, aucun clic mesuré). | Le titre quitté sort en 150 ms (gains pas à pas) pendant que le nouveau part sur l'autre instance. |
+| Bascule de source pendant un fondu | Attend la fin du fondu. | Idem. |
+| Jamais | — | En mode exclusif (une sortie exclusive n'a qu'un flux) : la réserve n'existe pas, enchaînement d'avant. |
+
+**Mesures** (26/10, lot « Octave ambiances », M2) — bancs `apps/web/bench/audio-engine/crossfade.mjs` (Chrome sans
+tête, le mélange enregistré par AudioWorklet) et `apps/desktop-electron/bench/audio/crossfadeScenarios.mts` (vraie
+libmpv, sortie `null` cadencée) : fondus de 2, 6 et 12 s à ±0,09 s de la durée voulue ; puissance totale constante
+à ±0,02 dB (web, 6-12 s) et ±0,02 à ±0,24 dB (bureau) ; aucun blanc ; énergie au-dessus de 4 kHz au niveau de la
+lecture stable (web) et à −86 dB sous le ton (filtre mpv, sortie PCM) : aucun clic. Bureau : suivant calé à 7-18 ms
+de la courbe de sortie.
+
 ---
 
 ## 7. Position et compteur
@@ -379,6 +414,8 @@ Sur le bureau, la bascule cache → bibliothèque du même fichier est sans blan
 8. Le suivant n'est jamais donné à mpv tant que le courant est un fichier incomplet ; une coupure n'est jamais
    lue comme une fin de titre.
 9. Rien de bloquant sur le fil principal d'Electron.
+10. Transition douce : jamais sur un geste, jamais dans un album écouté dans l'ordre, jamais en mode exclusif ; le
+    courant bascule à mi-fondu ; puissance constante (§ 6.4).
 
 ---
 
