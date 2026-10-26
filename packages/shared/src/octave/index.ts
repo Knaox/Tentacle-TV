@@ -10,6 +10,7 @@
 export * from "./queueModel";
 export * from "./audioFormat";
 export * from "./pendingMerge";
+export * from "./libraryFirst";
 export * from "./trackTwins";
 export * from "./playerState";
 export * from "./sourceCache";

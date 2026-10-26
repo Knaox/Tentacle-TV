@@ -16,6 +16,7 @@ import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleto
 import { octavePaths } from "../octavePaths";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
+import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
 import { usePlaylistRemoval } from "../actions/usePlaylistRemoval";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 
@@ -27,7 +28,8 @@ export function PlaylistView() {
   const target = useMemo(() => (playlist.data ? { jellyfinId: id, name: playlist.data.name } : null), [id, playlist.data]);
   const removeRows = usePlaylistRemoval(target);
   const pending = usePendingMusic();
-  const rows = useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]);
+  // Jellyfin fait foi : une attente dont le titre est déjà dans la bibliothèque se montre comme lui.
+  const rows = useLibraryFirstRows(useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]));
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
   const meta = useCountAndDuration(rows.length, rows.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
   const contextId = `playlist:${id}`;
