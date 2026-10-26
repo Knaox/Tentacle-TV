@@ -94,6 +94,8 @@ export {
   type LiquidGlassAppearance,
   type LiquidGlassBackdrop,
   type LiquidGlassLevel,
+  type LiquidGlassMaterial,
+  type LiquidGlassTone,
   type LiquidGlassRadius,
   type LiquidGlassScale,
   type LiquidGlassShape,
@@ -101,6 +103,13 @@ export {
   type SurfaceRender,
 } from "./surfaceModel";
 export { useLiquidGlassMode } from "../useLiquidGlass";
+// ── Le verre de la MAQUETTE (26/10) : `.lg-pane`, `.lg-bead`, `.lg-pane-row`,
+// `.lg-pane-nav` (classes-marqueurs, `pane.css`), le fond ambiant et la teinte
+// d'une image ; mode d'emploi en tête de `pane.css` et de `GlassAmbient.tsx`.
+export { GlassAmbient, type GlassAmbientProps } from "./GlassAmbient";
+export { useImageTint } from "./useImageTint";
+export { ambientTintsFromPixels } from "./ambientTint";
+export * from "./paneMaterial";
 export {
   getLiquidGlassMode,
   nativeGlassBridge,

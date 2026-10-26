@@ -41,6 +41,18 @@ export type LiquidGlassBackdrop = "page" | "window";
  */
 export type SurfaceRender = "native" | "lens" | "fallback";
 
+/**
+ * Le MATÉRIAU d'une surface de page (mode natif, `backdrop="page"`) :
+ * `lens` (défaut) — la lentille de Chromium d'avant (réfraction au biseau,
+ * ton mesuré) ; `pane` — le verre de la maquette du 26/10 (`.lg-pane`,
+ * `theme/glass/pane.css`) ; `bead` — sa pastille (`.lg-bead`). Les deux
+ * derniers ne mesurent rien et ne comptent pas au budget de lentilles.
+ */
+export type LiquidGlassMaterial = "lens" | "pane" | "bead";
+
+/** Le TON d'un verre `pane` / `bead`, forcé (sinon celui du thème). */
+export type LiquidGlassTone = "dark" | "light";
+
 export interface LiquidGlassAppearance {
   /** Variante du matériau. Défaut `regular`. */
   level?: LiquidGlassLevel;
@@ -64,6 +76,10 @@ export interface LiquidGlassAppearance {
   group?: string;
   spacing?: number;
   transition?: number;
+  /** Le matériau d'une surface de page (voir `LiquidGlassMaterial`). Défaut `lens`. */
+  material?: LiquidGlassMaterial;
+  /** Matériau `pane` / `bead` : le ton forcé (le dock sombre d'Octave dans le thème clair). */
+  tone?: LiquidGlassTone;
 }
 
 /** Hors du mode natif : toujours le rendu d'avant (CLAUDE.md, lot Liquid Glass). */
@@ -139,3 +155,28 @@ export function lensFilterId(reactId: string): string {
 
 /** Une taille qui bouge encore ne recalcule pas sa carte à chaque image. */
 export const LENS_RESIZE_SETTLE_MS = 120;
+
+/** Un verre de la maquette (`pane`, `bead`) : rendu par sa classe, sans lentille. */
+export function isPaneMaterial(material: LiquidGlassMaterial | undefined): material is "pane" | "bead" {
+  return material === "pane" || material === "bead";
+}
+
+/** La classe d'un verre de la maquette, puis la mise en page de l'appelant. */
+export function paneClassName(material: "pane" | "bead", className: string | undefined): string {
+  return join(material === "pane" ? "lg-pane" : "lg-bead", className);
+}
+
+/**
+ * Les attributs d'un verre de la maquette, lus par `pane.css` : forme, rayon,
+ * action principale, interactivité, ton forcé. Jamais `data-lg-scale` (le régime
+ * `surface` remappe les textes) ni `data-lg-render` (les règles de la lentille).
+ */
+export function paneAttributes(appearance: LiquidGlassAppearance): Record<string, string> {
+  const shape = appearance.shape ?? "rounded";
+  const attributes: Record<string, string> = { "data-lg-shape": shape };
+  if (shape === "rounded" && appearance.radius !== undefined) attributes["data-lg-radius"] = appearance.radius;
+  if (appearance.level === "prominent") attributes["data-lg-level"] = "prominent";
+  if (appearance.interactive === true) attributes["data-lg-interactive"] = "";
+  if (appearance.tone !== undefined) attributes["data-lg-tone"] = appearance.tone;
+  return attributes;
+}

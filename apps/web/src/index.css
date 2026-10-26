@@ -15,6 +15,7 @@
 @import "./theme/surfaces.css";
 @import "./theme/liquidGlassTokens.css";
 @import "./theme/glass/surfaceTokens.css";
+@import "./theme/glass/paneTokens.css";
 @import "./theme/liquidGlassSurface.css";
 @import "./theme/liquidGlassContent.css";
 @import "./theme/cards.css";
@@ -43,6 +44,7 @@
 @import "./components/ui/glass/lgSurfaceAdhoc.css";
 @import "./components/ui/glass/lgFloatingBar.css";
 @import "./components/detail/lgDetailStage.css";
+@import "./theme/glass/pane.css";
 
 @tailwind base;
 @tailwind components;
