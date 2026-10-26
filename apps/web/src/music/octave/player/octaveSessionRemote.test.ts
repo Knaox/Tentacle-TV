@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionCommand } from "@tentacle-tv/api-client";
 import type { DeclaredPlaybackDto } from "@tentacle-tv/shared";
-import type { PlaybackSource } from "@tentacle-tv/shared/music";
-import { OctavePlayer, PlaybackReporter, SourceCache } from "@tentacle-tv/shared/octave";
+import type { MusicPlaybackReport, PlaybackSource } from "@tentacle-tv/shared/music";
+import { OctavePlayer, PlaybackReporter, SourceCache, restorePlayback, savePlayback } from "@tentacle-tv/shared/octave";
 import { createFakeEngine, externalTrack, libraryTrack } from "@tentacle-tv/shared/octave/testing";
 
 /**
@@ -38,16 +38,27 @@ const command = (c: SessionCommand) => commandListeners.forEach((l) => l(c));
 function rig(declares = true) {
   const engine = createFakeEngine();
   const sources = new SourceCache({ library: async (id) => sourceOf(`jf:${id}`), external: async (t) => sourceOf(t.key), now: () => 0 });
-  const reporter = new PlaybackReporter({ library: () => {}, externalPlayed: () => {}, now: () => 0 });
+  const reports: MusicPlaybackReport[] = [];
+  const reporter = new PlaybackReporter({ library: (r) => reports.push(r), externalPlayed: () => {}, now: () => 0 });
   const player = new OctavePlayer({ engine, sources, reporter, prefetchExternal: () => {} });
-  const off = attachSessionRemote(player, () => declares, () => 1_000);
-  return { engine, player, off };
+  const gate = { declares };
+  const remote = attachSessionRemote(player, () => gate.declares, () => 1_000);
+  return { engine, player, reports, gate, remote, off: remote.detach };
 }
 
+// Un `window` réduit à ce qu'emploie le module : les évènements de page.
+beforeEach(() => {
+  vi.stubGlobal("window", new EventTarget());
+});
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   commandListeners.clear();
   declarations.length = 0;
 });
+
+/** `pagehide` / `pageshow` : Node n'a pas `PageTransitionEvent`. */
+const pageEvent = (type: "pagehide" | "pageshow", persisted: boolean) => Object.assign(new Event(type), { persisted });
 
 describe("la télécommande de l'administration agit sur Octave", () => {
   it("pause, reprise, arrêt", async () => {
@@ -95,6 +106,59 @@ describe("ce qui joue est déclaré au serveur", () => {
     expect(declarations).toEqual([]);
     command({ command: "Pause" });
     expect(player.snapshot.get().wantsPlay).toBe(false);
+    off();
+  });
+});
+
+describe("la page qui part, et celle qui revient", () => {
+  it("au départ de la page, l'arrêt part chez Jellyfin et la déclaration est retirée — le lecteur n'est pas touché", async () => {
+    const { engine, player, reports, off } = rig();
+    player.playList([libraryTrack("a1")], 0);
+    await flush();
+    engine.sound(0);
+    window.dispatchEvent(pageEvent("pagehide", false));
+    expect(reports.map((r) => r.event)).toEqual(["start", "stop"]);
+    expect(declarations.at(-1)).toBeNull();
+    // La reprise de la page suivante (D6) garde le titre : rien n'est arrêté ici.
+    expect(player.snapshot.get().current?.key).toBe(libraryTrack("a1").key);
+    off();
+  });
+
+  it("une page restaurée du cache de navigation se redéclare", async () => {
+    const { engine, player, off } = rig();
+    player.playList([libraryTrack("a1")], 0);
+    await flush();
+    engine.sound(0);
+    window.dispatchEvent(pageEvent("pagehide", true));
+    window.dispatchEvent(pageEvent("pageshow", true));
+    expect(declarations.at(-1)).toMatchObject({ itemId: "a1", isPaused: false });
+    off();
+  });
+
+  it("la reprise EN PAUSE (D6) ne se déclare jamais « en lecture », et ne rapporte rien à Jellyfin", async () => {
+    const before = rig(false);
+    before.player.playList([libraryTrack("a1"), libraryTrack("a2")], 0);
+    await flush();
+    before.engine.sound(0);
+    const saved = savePlayback(before.player.snapshot.get(), 4_650);
+    before.off();
+    const { player, reports, off } = rig();
+    expect(restorePlayback(player, saved)).toBe(true);
+    expect(declarations.at(-1)).toMatchObject({ itemId: "a1", isPaused: true, positionMs: 4_650 });
+    expect(declarations.every((d) => d === null || d.isPaused)).toBe(true);
+    expect(reports).toEqual([]);
+    off();
+  });
+
+  it("la capacité connue après coup : la déclaration part dès la resynchronisation", async () => {
+    const { engine, player, gate, remote, off } = rig(false);
+    player.playList([libraryTrack("a1")], 0);
+    await flush();
+    engine.sound(0);
+    expect(declarations).toEqual([]);
+    gate.declares = true;
+    remote.resync();
+    expect(declarations.at(-1)).toMatchObject({ itemId: "a1" });
     off();
   });
 });
