@@ -22,3 +22,5 @@ export { useClientNotice, type ClientNotice, type ClientNoticeInput } from "../n
 export { closeNoticeForSession, useClosedNotices, resetNoticeSession } from "../notices/noticeSession";
 export { noticeContent, type NoticeContent } from "../notices/noticeContent";
 export { clientNoticeOf, type ClientNoticeData } from "../notices/useClientNotice";
+// La dernière version serveur publiée : plafond de l'invitation aux nouveautés (et de sa décision au démarrage).
+export { useLatestPublishedServer, LATEST_PUBLISHED_SERVER_KEY } from "../notices/useLatestPublishedServer";
