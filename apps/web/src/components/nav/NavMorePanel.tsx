@@ -125,7 +125,8 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
         <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" strokeWidth={1.9} />
         <span className="truncate">{entry.label}</span>
       </Link>
-      <button
+      {/* Une page que son extension cache de la barre s'ouvre d'ici, sans épingle. */}
+      {entry.pinnable !== false && <button
         type="button"
         onClick={() => onTogglePin(entry)}
         aria-pressed={entry.pinned}
@@ -134,7 +135,7 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
         className={`${PIN_BUTTON} ${entry.pinned ? "text-[var(--brand-light)]" : "text-content-quaternary hover:text-content-secondary"}`}
       >
         <Pin aria-hidden className="h-4 w-4" strokeWidth={2} fill={entry.pinned ? "currentColor" : "none"} />
-      </button>
+      </button>}
     </div>
   );
 });

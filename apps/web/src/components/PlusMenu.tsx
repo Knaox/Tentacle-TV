@@ -7,6 +7,7 @@ import { useVisiblePlugins } from "../rights/useVisiblePlugins";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { placeFloating } from "./floating/floatingPlacement";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
+import { pluginNavPinnable } from "../hooks/pluginNavPins";
 
 interface Props {
   onClose: () => void;
@@ -226,7 +227,9 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
 
       {/* ── Pages apportées par les plugins ──
           Épinglées par défaut, contrairement aux bibliothèques : une page
-          installée volontairement doit être visible sans avoir à la chercher. */}
+          installée volontairement doit être visible sans avoir à la chercher.
+          Une page que son extension cache de la barre (`primary: false`)
+          s'ouvre d'ici, sans épingle (`pluginNavPins.ts`). */}
       {pluginPages.length > 0 && (
         <>
           <p className="mb-2 mt-4 px-1 text-[11px] font-semibold uppercase tracking-wider text-content-quaternary">
@@ -239,7 +242,8 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
                 icon={page.icon}
                 label={page.label}
                 isPinned={pinned.isPluginNavPinned(page.key, page.primary)}
-                onTogglePin={() => pinned.togglePluginNav(page.key, page.primary)}
+                // Cachée de la barre par son extension : on l'ouvre d'ici, on ne l'épingle pas.
+                onTogglePin={pluginNavPinnable(page.primary) ? () => pinned.togglePluginNav(page.key, page.primary) : undefined}
                 onNavigate={() => onNavigate(page.path)}
               />
             ))}
@@ -303,7 +307,8 @@ function PinnableRow({
   icon: React.ReactNode;
   label: string;
   isPinned: boolean;
-  onTogglePin: () => void;
+  /** Absent : la page ne s'épingle pas (cachée de la barre par son extension). */
+  onTogglePin?: () => void;
   onNavigate: () => void;
 }) {
   const { t } = useTranslation("nav");
@@ -317,7 +322,7 @@ function PinnableRow({
         <span className="flex-shrink-0 text-content-quaternary">{icon}</span>
         <span className="truncate">{label}</span>
       </button>
-      <button
+      {onTogglePin && <button
         onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
         className={`mr-2 flex-shrink-0 rounded-lg p-2 transition-all ${
           isPinned
@@ -327,7 +332,7 @@ function PinnableRow({
         title={isPinned ? t("nav:unpin") : t("nav:pin")}
       >
         <PinIcon filled={isPinned} />
-      </button>
+      </button>}
     </div>
   );
 }

@@ -1,14 +1,21 @@
 /**
  * Une page d'extension est-elle dans la barre ? Module pur (aucun stockage).
  *
- * Le DÉFAUT vient de l'extension (`primary` de ses `navItems`, capacité
- * `plugins.navigation`) ; absent — serveur ou extension d'avant —, il vaut
- * « dans la barre », comme toujours. Le GESTE de l'utilisateur sur cet appareil
- * l'emporte, et lui seul est gardé : `pluginsUnpinned` (retirée alors que le
- * défaut l'y mettait — la liste d'avant, reprise telle quelle) et
- * `pluginsPinned` (ajoutée alors que le défaut la laissait dans « Plus »).
- * Un geste qui revient au défaut s'efface : si l'administrateur change d'avis
- * plus tard, l'appareil qui n'avait rien choisi le suit.
+ * L'extension dit si la page a sa place dans la barre principale (`primary` de
+ * ses `navItems`, capacité `plugins.navigation`, réglé par son administration :
+ * « Afficher dans la barre de navigation principale ») :
+ *
+ * - `primary: false` — la page n'est PAS une destination de la barre : elle ne
+ *   s'y montre pas et ne s'y épingle pas, nulle part (barre, « Personnaliser la
+ *   barre », « Plus », barre du téléphone) ; elle reste ouverte depuis « Plus ».
+ *   Une épingle d'avant de l'appareil n'est pas effacée : si l'administration
+ *   la réaffiche, elle revient d'elle-même (Damien, 26/10).
+ * - sinon (`true`, ou absent — serveur ou extension d'avant) : dans la barre,
+ *   comme toujours, sauf si l'appareil l'en a retirée (`pluginsUnpinned`, la
+ *   liste d'avant, reprise telle quelle).
+ *
+ * `pluginsPinned` (une page de « Plus » épinglée quand `primary: false` n'était
+ * qu'un défaut, avant le 26/10) est lue sans effet et gardée telle quelle.
  */
 
 export interface PluginNavPins {
@@ -16,21 +23,22 @@ export interface PluginNavPins {
   pluginsPinned: string[];
 }
 
-/** Le défaut de l'extension : sans avis, la page est dans la barre. */
-const defaultPinned = (primary: boolean | undefined): boolean => primary ?? true;
-
-export function isPluginNavPinnedBy(pins: PluginNavPins, key: string, primary?: boolean): boolean {
-  if (pins.pluginsPinned.includes(key)) return true;
-  if (pins.pluginsUnpinned.includes(key)) return false;
-  return defaultPinned(primary);
+/** La page peut-elle être dans la barre ? Non seulement si l'extension la cache (`primary: false`). */
+export function pluginNavPinnable(primary?: boolean): boolean {
+  return primary !== false;
 }
 
-/** Les listes après le geste « dans la barre : `on` » sur `key`. */
+export function isPluginNavPinnedBy(pins: PluginNavPins, key: string, primary?: boolean): boolean {
+  if (!pluginNavPinnable(primary)) return false;
+  return !pins.pluginsUnpinned.includes(key);
+}
+
+/** Les listes après le geste « dans la barre : `on` » sur `key` ; une page cachée par l'extension ne bouge pas. */
 export function withPluginNavPinned(pins: PluginNavPins, key: string, on: boolean, primary?: boolean): PluginNavPins {
-  const pluginsPinned = pins.pluginsPinned.filter((k) => k !== key);
+  if (!pluginNavPinnable(primary)) return pins;
   const pluginsUnpinned = pins.pluginsUnpinned.filter((k) => k !== key);
-  if (on !== defaultPinned(primary)) (on ? pluginsPinned : pluginsUnpinned).push(key);
-  return { pluginsPinned, pluginsUnpinned };
+  if (!on) pluginsUnpinned.push(key);
+  return { pluginsPinned: pins.pluginsPinned.filter((k) => k !== key), pluginsUnpinned };
 }
 
 /** Une liste de clés lue du stockage : tout ce qui n'est pas une chaîne s'ignore. */
