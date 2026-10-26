@@ -9,6 +9,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const rights = vi.hoisted(() => ({ audio: true }));
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../middleware/auth", () => ({
   requireAuth: async (request: { user?: unknown }) => {
     request.user = { userId: "u1", username: "banc", isAdmin: false };
@@ -65,6 +72,16 @@ describe("Allégé audio", () => {
     rights.audio = false;
     expect((await get(`/light/${ITEM}?preset=a256`)).statusCode).toBe(404);
     expect(asked).toEqual([]);
+  });
+
+  it("serveur 1.31.4 (sans `offline.music`) : 404, rien demandé à Jellyfin", async () => {
+    serverVersion.value = "1.31.4";
+    const { resetDeclaredCapabilitiesForTests } = await import("../serverCapabilities/declaredCapabilities");
+    resetDeclaredCapabilitiesForTests();
+    expect((await get(`/light/${ITEM}?mediaSourceId=${ITEM}&preset=a256`)).statusCode).toBe(404);
+    expect(asked).toEqual([]);
+    serverVersion.value = "1.40.0";
+    resetDeclaredCapabilitiesForTests();
   });
 
   it("un palier vidéo reste la vidéo", async () => {

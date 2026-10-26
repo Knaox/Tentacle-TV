@@ -12,6 +12,13 @@ import { join } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FastifyRequest } from "fastify";
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../services/dataDir", async () => {
   const { tmpdir } = await import("os");
   const path = await import("path");
@@ -36,6 +43,7 @@ vi.mock("../plugins/runtime/host/userRights", () => ({
 import { DATA_DIR, saveInstalled } from "../services/pluginManager";
 import { forgetIsolatedRights } from "../plugins/runtime/accountRights";
 import { pluginRoutes } from "./plugins";
+import { resetDeclaredCapabilitiesForTests } from "../serverCapabilities/declaredCapabilities";
 
 const SILLON = {
   id: "sillon", entry: "dist/plugin-sillon.iife.js", storage: { sqlite: true },
@@ -67,7 +75,11 @@ beforeEach(() => {
   }]);
   forgetIsolatedRights();
 });
-afterEach(() => rmSync(DATA_DIR, { recursive: true, force: true }));
+afterEach(() => {
+  rmSync(DATA_DIR, { recursive: true, force: true });
+  serverVersion.value = "1.40.0";
+  resetDeclaredCapabilitiesForTests();
+});
 
 describe("extension isolée et droit du compte", () => {
   it("un compte sans droit : /active sans Sillon, et son bundle n'existe pas", async () => {
@@ -98,5 +110,19 @@ describe("extension isolée et droit du compte", () => {
     expect(admin.navItems.map((n) => n.path)).toEqual(["/admin/plugins/sillon"]);
     const [permis] = (await call("/api/plugins/active", "permis")).json() as Array<{ navItems: unknown[] }>;
     expect(permis.navItems).toEqual([]);
+  });
+
+  it("serveur 1.31.4 (sous la version du runtime isolé) : elle n'est servie à personne, administrateur compris", async () => {
+    serverVersion.value = "1.31.4";
+    resetDeclaredCapabilitiesForTests();
+    for (const user of ["permis", "admin"]) {
+      expect((await call("/api/plugins/active", user)).json(), user).toEqual([]);
+      expect((await call("/api/plugins/sillon/bundle", user)).statusCode, user).toBe(404);
+    }
+  });
+
+  it("minTentacleVersion plus récente que le serveur : refusée, même sur 1.40.0", async () => {
+    writeFileSync(join(DATA_DIR, "sillon", "plugin.json"), JSON.stringify({ ...SILLON, minTentacleVersion: "1.41.0" }));
+    expect((await call("/api/plugins/active", "admin")).json()).toEqual([]);
   });
 });

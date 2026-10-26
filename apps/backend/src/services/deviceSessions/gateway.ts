@@ -9,6 +9,7 @@ import { resolveDeviceAuth } from "./tokenResolver";
 import { DeclaredPlaybacks, type DeclaredEntry } from "./declaredPlayback";
 import type { DeclaredPlaybackDto, SessionPlaystateCommandDto } from "./protocolMessages";
 import { relayLibraryChanged, relayUserDataChanged } from "../jellyfinUserEvents";
+import { isCapabilityDeclared } from "../../serverCapabilities/declaredCapabilities";
 
 /**
  * Le canal de session, branché : le registre et ses vraies dépendances, et ce
@@ -72,7 +73,8 @@ export function handleSessionMessage(conn: ChannelConnection, authToken: string,
       void registry.stop(conn, msg.state, msg.requestId);
       break;
     case "playback:declare":
-      declared.declare(conn, msg.state);
+      // Écoute déclarée (`sessions.musicControl`) : ignorée par un serveur qui ne la déclare pas.
+      if (isCapabilityDeclared("sessions.musicControl")) declared.declare(conn, msg.state);
       break;
   }
 }

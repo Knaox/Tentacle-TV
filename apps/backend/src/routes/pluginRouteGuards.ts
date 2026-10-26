@@ -1,7 +1,7 @@
 import { isValidPluginId, type InstalledPlugin } from "../services/pluginManager";
 import { pluginHasServerModule } from "../services/pluginServerModule";
 import { pluginBackendDiag } from "../services/pluginBackendLoader";
-import { storageRefusal, type StorageRefusalReason } from "../services/pluginStorage/gate";
+import { missingServerVersion, storageRefusal, type StorageRefusalReason } from "../services/pluginStorage/gate";
 import { isIsolatedPlugin, isolatedState } from "../plugins/runtime/runtimeRegistry";
 
 /**
@@ -25,7 +25,8 @@ export { pluginHasServerModule } from "../services/pluginServerModule";
  * Ce que fait le module serveur d'un plugin DANS CE PROCESSUS :
  * - `running` : chargé au démarrage, ses routes répondent ;
  * - `failed` : le chargement a échoué (`detail` dit pourquoi), ou ce serveur
- *   le refuse (`refusal` : extension pas déclarée compatible SQLite) ;
+ *   le refuse (`refusal` : extension pas déclarée compatible SQLite, ou qui exige
+ *   un Tentacle plus récent — `requires` dit lequel) ;
  * - `idle` : des fichiers serveur, mais rien de chargé — plugin désactivé au
  *   démarrage, ou activé depuis ;
  * - `none` : pas de module serveur.
@@ -34,7 +35,10 @@ export type ServerModuleState = "none" | "running" | "failed" | "idle";
 
 export function serverModuleState(
   pluginId: string,
-): { state: ServerModuleState; detail?: string; refusal?: StorageRefusalReason } {
+): { state: ServerModuleState; detail?: string; refusal?: StorageRefusalReason; requires?: string } {
+  // Elle exige un Tentacle plus récent (isolée ou non) : jamais chargée ici ; l'administration dit lequel.
+  const requires = missingServerVersion(pluginId);
+  if (requires) return { state: "failed", detail: `Requires Tentacle ${requires}`, refusal: "requiresNewerServer", requires };
   // Un module ISOLÉ : son état est celui de son processus (démarré, relancé, arrêté à chaud).
   if (isIsolatedPlugin(pluginId)) {
     const guest = isolatedState(pluginId);

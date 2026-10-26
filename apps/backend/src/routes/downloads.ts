@@ -36,6 +36,7 @@ import {
 } from "../services/offlinePrepare/lightStream";
 import { parseAudioLightRequest } from "../services/offlinePrepare/audioLight";
 import { serveAudioLight } from "./downloadsAudio";
+import { isCapabilityDeclared } from "../serverCapabilities/declaredCapabilities";
 
 
 /** Identifiant d'appareil qu'un client peut choisir pour sa session de transcodage. */
@@ -157,8 +158,10 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     const query = request.query as Record<string, string | undefined>;
-    // Un titre de musique gardé (capacité `offline.music`) : l'Allégé AUDIO.
+    // Un titre de musique gardé (capacité `offline.music`) : l'Allégé AUDIO — seulement sur un serveur
+    // qui la déclare ; sinon, la demande audio n'existe pas (404, comme toute demande inconnue).
     const audio = token ? parseAudioLightRequest(itemId, query) : null;
+    if (audio && !isCapabilityDeclared("offline.music")) return notFound(reply);
     if (token && audio) return serveAudioLight(request, reply, token, audio);
     const light = token ? parseLightRequest(itemId, query) : null;
     if (!token || !light) return notFound(reply);

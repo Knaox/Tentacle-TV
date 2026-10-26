@@ -18,6 +18,7 @@ import { startSegmentPluginsWatch } from "./segmentPlugins/segmentPluginsWatch";
 import { startJellyfinCorsSync } from "./jellyfinCorsSync";
 import { whenCachesReady } from "../dbMigration/cache/cacheCopyGate";
 import { startMusicIndex } from "../music/musicService";
+import { isCapabilityDeclared } from "../serverCapabilities/declaredCapabilities";
 
 /**
  * Les tâches de fond d'un serveur INSTALLÉ, lancées une seule fois par
@@ -59,8 +60,9 @@ export function startBackgroundServices(): void {
   void whenCachesReady().then(() => startRecoJobs());
   // Le moteur de recherche : son index se construit peu après le démarrage.
   startSearchJobs();
-  // Octave : l'index local de la musique (passage complet, puis évènements des comptes).
-  startMusicIndex();
+  // Octave : l'index local de la musique (passage complet, puis évènements des comptes) — seulement
+  // sur un serveur qui déclare `music.library` (sa version l'atteint) : sinon, rien n'est relevé.
+  if (isCapabilityDeclared("music.library")) startMusicIndex();
 }
 
 export function backgroundServicesStarted(): boolean {

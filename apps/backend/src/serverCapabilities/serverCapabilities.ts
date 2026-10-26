@@ -334,6 +334,16 @@ function reaches(version: string, since: string): boolean {
 }
 
 /**
+ * Ce qu'un serveur de CETTE version déclare (côté serveur, `declaredCapabilities.ts`) :
+ * les clés dont `since` est atteint par sa version — une fonction livrée dans le code
+ * mais promise à une version plus récente reste cachée tant que le serveur ne l'est
+ * pas. « 1.40.0+preview.<sha> » (version fixée au build) vaut 1.40.0.
+ */
+export function serverCapabilitiesAt(version: string): ServerCapability[] {
+  return SERVER_CAPABILITY_KEYS.filter((key) => reaches(version, SERVER_CAPABILITIES[key]));
+}
+
+/**
  * Les capacités d'un serveur, décidées UNE fois :
  * - il déclare `capabilities` → sa liste, réduite aux clés que CE client connaît ;
  * - il ne déclare rien (serveur d'avant) → les clés dont `since` est atteint
@@ -346,7 +356,7 @@ export function resolveServerCapabilities(source: ServerCapabilitiesSource | nul
   if (Array.isArray(source.capabilities)) return new Set(source.capabilities.filter(isServerCapability));
   if (typeof source.version !== "string" || !source.version) return new Set();
   const version = source.version;
-  return new Set(SERVER_CAPABILITY_KEYS.filter((key) => reaches(version, SERVER_CAPABILITIES[key])));
+  return new Set(serverCapabilitiesAt(version));
 }
 
 /** Les clés que CE client connaît et que son serveur ne déclare pas. */

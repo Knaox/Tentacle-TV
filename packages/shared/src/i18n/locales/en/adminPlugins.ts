@@ -41,6 +41,9 @@ export default {
   serverModuleFailedTitle: "The server module didn't start",
   storageRefusedTitle: "Stopped: not yet compatible with this server's database",
   storageRefusedBody: "This version doesn't declare SQLite support. It stays stopped and its data is intact: update it.",
+  // Elle exige un Tentacle plus récent (`minTentacleVersion`, runtime isolé) : arrêtée, la version dite.
+  versionRefusedTitle: "Stopped: requires Tentacle {{version}}",
+  versionRefusedBody: "This server doesn't reach that version. The extension stays stopped and its data is intact: it will start on its own with an up-to-date server.",
   updateTo: "Update to v{{version}}",
   updating: "Updating…",
   updated: "Up to date",

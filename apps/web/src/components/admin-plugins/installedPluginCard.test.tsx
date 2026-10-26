@@ -55,6 +55,16 @@ describe("l'état en tête de carte", () => {
     expect(html).toMatch(/aria-checked="true"/);
   });
 
+  it("une extension qui exige un Tentacle plus récent : « Exige Tentacle X », l'encadré qui le dit, rien d'« Actif »", () => {
+    expect(statePill(true, true, "1.40.0")).toEqual({ tone: "warning", label: "requiresServer", values: { version: "1.40.0" } });
+    const html = render(plugin({ serverModule: { state: "failed", refusal: "requiresNewerServer", requires: "1.40.0" } }));
+    expect(html).toContain("requiresServer");
+    expect(html).toContain("versionRefusedTitle");
+    expect(html).not.toContain("storageRefusedTitle");
+    expect(html).not.toContain("stateEnabled");
+    expect(html).not.toContain("serverModuleFailed");
+  });
+
   it("une extension qui tourne reste « Actif »", () => {
     const html = render(plugin({ serverModule: { state: "running" } }));
     expect(html).toContain("stateEnabled");

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { onJellyfinHealth } from "../../services/jellyfinHealth";
+import { isCapabilityDeclared } from "../../serverCapabilities/declaredCapabilities";
 import { registerPluginRelay } from "./relay/relayRoute";
 import { mayUseIsolatedPlugin } from "./accountRights";
 import { configureIsolatedRuntime, type IsolatedRuntimeServices } from "./hostServices";
@@ -21,6 +22,12 @@ import { configureNavigationLookup, navigationWritten } from "./navigation/navig
  * branché AVANT le premier invité (il s'abonne au flux des éléments audio).
  */
 export async function registerIsolatedRuntime(app: FastifyInstance, services: Partial<IsolatedRuntimeServices> = {}): Promise<void> {
+  // Un serveur sous la version de `plugins.isolatedRuntime` n'a ni relais, ni requêtes déléguées, ni invité :
+  // ces routes n'existent pas (404), et une extension isolée y est refusée (pluginStorage/gate.ts).
+  if (!isCapabilityDeclared("plugins.isolatedRuntime")) {
+    console.log("[runtime] extensions isolées indisponibles sur cette version du serveur");
+    return;
+  }
   configureIsolatedRuntime(services);
   configureNavigationLookup({ socketOf: async (pluginId) => (await relayLookup(pluginId)?.ready()) ?? null, locale: serverLocale });
   await registerPluginRelay(app, {

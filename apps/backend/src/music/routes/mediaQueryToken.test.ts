@@ -15,6 +15,13 @@ const GOOD = "jeton-du-banc-0123456789";
 const ITEM = "c".repeat(32);
 const ROW = { id: ITEM, kind: "track", imageTag: null };
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "cle",

@@ -15,6 +15,13 @@ const ROW = { id: ITEM, kind: "track", imageTag: null };
 
 const state = vi.hoisted(() => ({ octave: true, playback: true as boolean | null }));
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "cle",
@@ -127,6 +134,25 @@ describe("« Accès à Octave » sur les routes musique", () => {
     const app = await makeApp();
     expect((await app.inject({ method: "GET", url: "/api/music/status" })).statusCode).toBe(401);
     await app.close();
+  });
+});
+
+describe("serveur sous la version de `music.library`", () => {
+  it("1.31.4 : chaque route musique répond 404 not_available, avant toute garde", async () => {
+    serverVersion.value = "1.31.4";
+    const { resetDeclaredCapabilitiesForTests } = await import("../../serverCapabilities/declaredCapabilities");
+    resetDeclaredCapabilitiesForTests();
+    const app = await makeApp();
+    for (const url of ["/api/music/status", "/api/music/albums", `/api/music/stream/${ITEM}`]) {
+      for (const headers of [auth, {}]) {
+        const response = await app.inject({ method: "GET", url, headers });
+        expect(response.statusCode, url).toBe(404);
+        expect(response.json()).toEqual({ error: "not_available" });
+      }
+    }
+    await app.close();
+    serverVersion.value = "1.40.0";
+    resetDeclaredCapabilitiesForTests();
   });
 });
 

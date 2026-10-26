@@ -77,9 +77,12 @@ export interface ServerUpdateReport {
 
 // ── Versions ──────────────────────────────────────────────────────────────
 
-const SERVER_VERSION_RE = /^v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})$/;
+const SERVER_VERSION_RE = /^v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})(?:\+[0-9A-Za-z][0-9A-Za-z.-]{0,63})?$/;
 
-/** « 1.22.3 » ou « v1.22.3 » → [1, 22, 3] ; `null` pour tout le reste (pré-versions comprises). */
+/**
+ * « 1.22.3 » ou « v1.22.3 » → [1, 22, 3] ; `null` pour tout le reste (pré-versions comprises).
+ * Une métadonnée de build (« 1.40.0+preview.abc », version fixée au build) ne compte pas : 1.40.0.
+ */
 export function parseServerVersion(raw: unknown): [number, number, number] | null {
   if (typeof raw !== "string") return null;
   const match = SERVER_VERSION_RE.exec(raw.trim());

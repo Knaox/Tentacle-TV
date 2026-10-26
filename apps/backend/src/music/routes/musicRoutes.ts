@@ -18,6 +18,7 @@ import { musicUserRoutes } from "./musicUserRoutes";
 import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { applyQueryToken } from "./mediaQueryToken";
 import { octaveAccessGate } from "./octaveAccessGate";
+import { capabilityGate } from "../../serverCapabilities/declaredCapabilities";
 import { viewOf } from "./requestView";
 
 const ORDERS: readonly ListOrder[] = ["name", "recent", "year"];
@@ -60,6 +61,8 @@ function libraryRoutes(app: FastifyInstance): void {
 }
 
 export const musicRoutes: FastifyPluginAsync = async (app) => {
+  // Serveur sous la version de `music.library` : ces routes n'existent pas (404 `not_available`), aucun index ne part.
+  app.addHook("onRequest", capabilityGate("music.library"));
   app.addHook("preHandler", requireAuth);
   // « Accès à Octave » et « Lecture des médias » du compte (octaveAccessGate.ts).
   app.addHook("preHandler", octaveAccessGate);

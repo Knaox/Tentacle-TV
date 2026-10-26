@@ -26,8 +26,9 @@ export interface InstalledPlugin {
   }>;
   // Serveur 1.19.3 et plus — absents d'un serveur plus ancien, et l'interface
   // se tait alors sur le redémarrage plutôt que de le deviner.
-  /** `refusal` : ce serveur refuse de charger le module (SQLite non déclaré, serveur 1.25.0 et après). */
-  serverModule?: { state: ServerModuleState; detail?: string; refusal?: "sqliteUnsupported" };
+  /** `refusal` : ce serveur refuse de charger le module (SQLite non déclaré, serveur 1.25.0 et après ;
+   *  `requiresNewerServer` : l'extension exige le Tentacle `requires`, que ce serveur n'atteint pas). */
+  serverModule?: { state: ServerModuleState; detail?: string; refusal?: "sqliteUnsupported" | "requiresNewerServer"; requires?: string };
   /** L'activation attend un redémarrage : module à démarrer, ou à arrêter. */
   restartRequired?: boolean;
   /** Les gestes qui redémarreront le serveur. */

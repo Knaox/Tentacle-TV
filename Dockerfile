@@ -252,6 +252,16 @@ CMD ["serve"]
 # est celui du backend.
 FROM server AS production
 
+# La version du serveur FIXÉE AU BUILD (`apps/backend/src/services/version.ts`) : avec
+#   --build-arg TENTACLE_SERVER_VERSION=1.40.0+preview.<sha>
+# elle l'emporte sur versions.json partout où le serveur dit sa version (/api/config,
+# capacités déclarées, compatibilité des extensions, carte « Serveur Tentacle »).
+# Forme X.Y.Z ou X.Y.Z+<build> (la métadonnée de build compte égale) ; toute autre est
+# ignorée. VIDE par défaut : versions.json, comme avant. Une image « server » reprise
+# (webos.yml) garde la sienne : son ENV hérité l'emporte sur l'argument vide.
+ARG TENTACLE_SERVER_VERSION=""
+ENV TENTACLE_SERVER_VERSION=${TENTACLE_SERVER_VERSION}
+
 # Quand « server » est une image déjà publiée (webos.yml), elle porte le client
 # d'avant : on l'efface avant de poser le nouveau. Sans cela ses fichiers
 # resteraient à côté — et un téléviseur resté allumé continuerait de charger

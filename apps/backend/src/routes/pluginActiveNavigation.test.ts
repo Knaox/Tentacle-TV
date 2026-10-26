@@ -14,6 +14,13 @@ import { join } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FastifyRequest } from "fastify";
 
+// Un serveur 1.40.0 : les fonctions d'Octave et des extensions isolées y sont déclarées (declaredCapabilities.ts).
+const serverVersion = vi.hoisted(() => ({ value: "1.40.0" }));
+vi.mock("../services/version", () => ({
+  get BACKEND_VERSION() {
+    return serverVersion.value;
+  },
+}));
 vi.mock("../services/dataDir", async () => {
   const { tmpdir: tmp } = await import("os");
   const path = await import("path");

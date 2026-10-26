@@ -12,6 +12,7 @@ import { getJellyfinUsers, invalidateJellyfinUsers } from "../services/watchToge
 import { fold } from "../services/family/familyStore";
 import { forgetIsolatedRights } from "../plugins/runtime/accountRights";
 import { sendMusicEvent } from "../music/events/musicSend";
+import { capabilityGate } from "../serverCapabilities/declaredCapabilities";
 
 /**
  * « Accès à Octave » d'un compte (`OCTAVE_RIGHTS_ROUTES`, capacité
@@ -46,6 +47,8 @@ async function knownUser(userId: string, retry = true): Promise<string | OctaveR
 }
 
 export const adminOctaveRightsRoutes: FastifyPluginAsync = async (app) => {
+  // Serveur sous la version d'`octave.rights` : ces routes n'existent pas.
+  app.addHook("onRequest", capabilityGate("octave.rights"));
   app.get(local(OCTAVE_RIGHTS_ROUTES.read.path), { preHandler: requirePersonalAdmin }, async (request, reply) => {
     const userId = userIdOf(request.params);
     if (!userId) return refuse(reply, "unknown_user");
