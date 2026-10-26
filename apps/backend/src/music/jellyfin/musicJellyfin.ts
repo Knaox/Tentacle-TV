@@ -64,6 +64,7 @@ export interface JfItem {
   CanDelete?: boolean;
   MediaType?: string;
   PlaylistItemId?: string;
+  Overview?: string;
   UserData?: { IsFavorite?: boolean; PlayCount?: number; LastPlayedDate?: string };
 }
 

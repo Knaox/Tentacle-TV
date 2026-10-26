@@ -34,7 +34,7 @@ export const MUSIC_ROUTES = {
   favorite: "/api/music/favorite/:id",
   /** GET — les playlists Jellyfin du compte ; POST { name, itemIds? } — en crée une. */
   playlists: "/api/music/playlists",
-  /** GET /:id ; PATCH /:id { name } ; DELETE /:id */
+  /** GET /:id ; PATCH /:id { name?, description? } (la description : `music.playlistManage`) ; DELETE /:id */
   playlist: "/api/music/playlists/:id",
   /** POST /:id/entries { itemIds, position? } — insère à une position (fin si absente). */
   playlistEntries: "/api/music/playlists/:id/entries",
