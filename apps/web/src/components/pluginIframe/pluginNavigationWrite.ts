@@ -28,6 +28,15 @@ export function isNavigationWrite(request: BridgeRequest, status: unknown, plugi
   return pathname === `/api/plugins/${pluginId}${route}`;
 }
 
+/**
+ * Une écriture réussie de l'extension vers SA configuration (`PUT /api/plugins/<id>/config`, route
+ * d'administration du cœur) : l'intégration a pu être activée ou coupée (`enabled`), ses pages et ses
+ * contrats (`/api/plugins/active`) changent — la barre et Octave se relisent aussitôt.
+ */
+export function isConfigWrite(request: BridgeRequest, status: unknown, pluginId: string): boolean {
+  return isNavigationWrite(request, status, pluginId, "/config");
+}
+
 /** Ce que l'hôte appelle à chaque réponse `API_RESPONSE` rendue à l'iframe de `pluginId`. */
 export function useNavigationWriteWatcher(pluginId: string): (request: BridgeRequest, reply: Record<string, unknown>) => void {
   const plugins = useActivePluginsMeta();
@@ -38,7 +47,7 @@ export function useNavigationWriteWatcher(pluginId: string): (request: BridgeReq
   }, [plugins, pluginId]);
   return useCallback(
     (request, reply) => {
-      if (isNavigationWrite(request, reply.status, pluginId, route.current)) refreshPlugins();
+      if (isNavigationWrite(request, reply.status, pluginId, route.current) || isConfigWrite(request, reply.status, pluginId)) refreshPlugins();
     },
     [pluginId, refreshPlugins],
   );

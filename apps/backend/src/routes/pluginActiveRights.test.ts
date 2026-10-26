@@ -40,7 +40,8 @@ vi.mock("../plugins/runtime/host/userRights", () => ({
   userRights: vi.fn(async (_pluginId: string, userId: string) => ({ exists: true, isAdmin: false, canUse: userId === "u-ok", canRequest: userId === "u-ok" })),
 }));
 
-import { DATA_DIR, saveInstalled } from "../services/pluginManager";
+import { DATA_DIR, getInstalled, saveInstalled } from "../services/pluginManager";
+import { repairInstalledConfigDefaults } from "../services/pluginConfigDefaults";
 import { forgetIsolatedRights } from "../plugins/runtime/accountRights";
 import { pluginRoutes } from "./plugins";
 import { resetDeclaredCapabilitiesForTests } from "../serverCapabilities/declaredCapabilities";
@@ -124,5 +125,18 @@ describe("extension isolée et droit du compte", () => {
   it("minTentacleVersion plus récente que le serveur : refusée, même sur 1.40.0", async () => {
     writeFileSync(join(DATA_DIR, "sillon", "plugin.json"), JSON.stringify({ ...SILLON, minTentacleVersion: "1.41.0" }));
     expect((await call("/api/plugins/active", "admin")).json()).toEqual([]);
+  });
+});
+
+describe("installée depuis une source (config vide) : la configuration d'office la rend active", () => {
+  it("sans configDefaults, rien n'est publié comme avant ; avec, configEnabled et le contrat musique", async () => {
+    saveInstalled(getInstalled().map((p) => ({ ...p, sourceId: "private", config: {} })));
+    const [before] = (await call("/api/plugins/active", "admin")).json() as Array<{ configEnabled: boolean }>;
+    expect(before?.configEnabled).toBe(false);
+    writeFileSync(join(DATA_DIR, "sillon", "plugin.json"), JSON.stringify({ ...SILLON, configDefaults: { enabled: true } }));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    expect(repairInstalledConfigDefaults()).toEqual(["sillon"]);
+    const [after] = (await call("/api/plugins/active", "permis")).json() as Array<{ configEnabled: boolean; music: unknown }>;
+    expect(after).toMatchObject({ configEnabled: true, music: { search: "/music/search" } });
   });
 });

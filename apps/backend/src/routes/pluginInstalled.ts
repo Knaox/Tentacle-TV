@@ -16,6 +16,7 @@ import {
 // est écrit sur le disque du serveur. Séparé pour être lu d'un seul tenant.
 import { downloadPlugin, extractPlugin, removePluginFiles } from "../services/pluginInstall";
 import { requiresNewerServer } from "../services/pluginVersionPick";
+import { applyConfigDefaults } from "../services/pluginConfigDefaults";
 import {
   BOOT_ID,
   beginPluginOperation,
@@ -128,6 +129,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
         name: reg.name || body.pluginId, version: body.version, enabled: true, config: {},
         installedAt: new Date().toISOString(),
       };
+      // Ce que le manifeste pose d'office (`configDefaults`) : l'extension marche sans un geste.
+      applyConfigDefaults(plugin);
       // Relu APRÈS le téléchargement : une autre écriture a pu passer pendant.
       const installed = getInstalled();
       installed.push(plugin);
@@ -220,6 +223,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
       plugin.version = latest.version;
       plugin.name = latest.name || plugin.name;
+      // Une clé d'office nouvelle dans cette version : posée si elle manque, jamais par-dessus un réglage.
+      applyConfigDefaults(plugin);
       saveInstalled(installed);
       await syncIsolatedPlugins();
       const restart = restartPolicy(plugin).restartsOn.update;
