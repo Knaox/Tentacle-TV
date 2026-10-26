@@ -106,7 +106,19 @@ export type AudioBridgeControl =
   | { action: "seek"; value: number }
   | { action: "volume"; value: number }
   | { action: "muted"; value: boolean }
-  | { action: "replayGain"; mode: AudioBridgeReplayGainMode };
+  | { action: "replayGain"; mode: AudioBridgeReplayGainMode }
+  /** La transition douce : durée réglée (ms, 0 = coupée) — la coquille prépare sa seconde instance. */
+  | { action: "crossfade"; value: number };
+
+/**
+ * `audio_set_next` : le suivant, et la durée du fondu enchaîné vers lui que la PAGE a décidée
+ * (`crossfadeRules.ts` : jamais dans un album écouté dans l'ordre…) — absente ou 0 : enchaînement sans blanc.
+ */
+export interface AudioBridgeSetNext {
+  track: AudioBridgeTrack | null;
+  source: AudioBridgeSource | null;
+  crossfadeMs?: number;
+}
 
 export type AudioBridgeStatus = "idle" | "loading" | "playing" | "paused" | "buffering" | "ended" | "error";
 

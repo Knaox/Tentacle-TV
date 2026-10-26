@@ -115,6 +115,11 @@ export interface AudioEnginePort {
   setVolume(volume: number): void;
   setMuted(muted: boolean): void;
   setReplayGain(mode: ReplayGainMode): void;
+  /**
+   * La « transition douce » (réglage de l'appareil) : durée du fondu enchaîné entre deux titres ENCHAÎNÉS, en ms
+   * (0 = coupée). Optionnelle : un moteur qui ne la connaît pas enchaîne comme avant.
+   */
+  setCrossfade?(durationMs: number): void;
   listOutputs(): Promise<AudioOutputDevice[]>;
   setOutput(deviceId: string | null, exclusive: boolean): Promise<void>;
   /**

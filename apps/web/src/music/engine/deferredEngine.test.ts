@@ -74,6 +74,20 @@ describe("moteur différé", () => {
     expect(real.getState().volume).toBe(0.2);
   });
 
+  it("la transition douce réglée avant le moteur lui est passée ; ensuite, directement", async () => {
+    const c = controlled();
+    const port = createDeferredEngine(c.start, PREFS);
+    port.setCrossfade?.(6_000);
+    const real = createFakeEngine();
+    const setCrossfade = vi.fn();
+    real.setCrossfade = setCrossfade;
+    c.resolve(real);
+    await flush();
+    expect(setCrossfade).toHaveBeenCalledWith(6_000);
+    port.setCrossfade?.(0);
+    expect(setCrossfade).toHaveBeenLastCalledWith(0);
+  });
+
   it("(2) Lecture avant le moteur : « loading », position immobile — jamais « playing »", () => {
     const port = createDeferredEngine(controlled().start, PREFS);
     const events: string[] = [];

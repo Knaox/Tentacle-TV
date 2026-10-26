@@ -30,6 +30,11 @@ export interface Slot {
   el: MediaElementLike;
   track: MusicTrack;
   source: PlaybackSource;
+  /**
+   * Le gain ReplayGain FIGÉ (dB) d'un titre pris dans une transition douce : en « auto », son gain suit les voisins
+   * (album ou titre), qui changent au milieu du fondu — son volume sauterait (défaut 1 de la recette M2).
+   */
+  gainDb?: number;
   /** Retire les écouteurs posés par `on`. */
   off: () => void;
   on: (type: string, listener: () => void) => void;

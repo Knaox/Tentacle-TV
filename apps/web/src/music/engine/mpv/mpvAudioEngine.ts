@@ -8,6 +8,9 @@
  * (titre, position de départ, durée, format annoncé), puis envoie la commande.
  * Entre deux états du principal (quatre par seconde), `getState` extrapole la
  * position depuis l'instant de la mesure (`at`).
+ *
+ * Transition douce : la PAGE décide, titre par titre, s'il y a fondu vers le
+ * suivant et combien (`crossfadeRules.ts`) ; la coquille l'exécute.
  */
 
 import type {
@@ -31,6 +34,7 @@ import {
   idleState,
   type MusicEngineAuth,
 } from "../engineShared";
+import { plannedCrossfadeMs, sanitizeCrossfadeMs } from "../crossfadeRules";
 
 /** Le pont de la coquille (`desktop/bridge.ts`), injecté pour les tests. */
 export interface NativeBridge {
@@ -72,6 +76,10 @@ class MpvAudioEngine implements AudioEnginePort {
   private readonly emitter = new EngineEmitter();
   private unlisten: (() => void) | null = null;
   private disposed = false;
+  private crossfadeMs = 0;
+  /** Le titre en cours et le suivant donné, pour décider du fondu entre eux. */
+  private playingNow: { track: MusicTrack; source: PlaybackSource } | null = null;
+  private nextUp: { track: MusicTrack; source: PlaybackSource } | null = null;
 
   constructor(
     readonly capabilities: AudioEngineCapabilities,
@@ -91,6 +99,7 @@ class MpvAudioEngine implements AudioEnginePort {
 
   handle(event: AudioBridgeEvent): void {
     if (this.disposed) return;
+    if (event.type === "advanced" && this.nextUp?.track.key === event.toKey) [this.playingNow, this.nextUp] = [this.nextUp, null];
     if (event.type === "state") {
       this.state = event.state;
       this.measuredAt = event.at;
@@ -113,6 +122,7 @@ class MpvAudioEngine implements AudioEnginePort {
   }
 
   play(track: MusicTrack, source: PlaybackSource, startMs = 0): void {
+    [this.playingNow, this.nextUp] = [{ track, source }, null];
     this.setState({
       status: "loading",
       trackKey: track.key,
@@ -126,10 +136,21 @@ class MpvAudioEngine implements AudioEnginePort {
 
   setNext(track: MusicTrack | null, source: PlaybackSource | null): void {
     const both = track !== null && source !== null;
+    this.nextUp = both ? { track, source } : null;
+    const now = this.playingNow;
+    const crossfadeMs = both && now !== null
+      ? plannedCrossfadeMs(this.crossfadeMs, { current: now.track, next: track, currentMs: durationOfSource(now.track, now.source), nextMs: durationOfSource(track, source) }, albumKeyOf)
+      : 0;
     this.call("audio_set_next", {
       track: both ? bridgeTrack(track, source) : null,
       source: both ? bridgeSource(source, this.auth.baseUrl) : null,
+      ...(crossfadeMs > 0 ? { crossfadeMs } : {}),
     });
+  }
+
+  setCrossfade(durationMs: number): void {
+    this.crossfadeMs = sanitizeCrossfadeMs(durationMs);
+    this.call("audio_control", { action: "crossfade", value: this.crossfadeMs });
   }
 
   pause(): void {
@@ -175,6 +196,7 @@ class MpvAudioEngine implements AudioEnginePort {
   }
 
   swapSource(trackKey: string, source: PlaybackSource): void {
+    if (this.playingNow?.track.key === trackKey) this.playingNow = { ...this.playingNow, source };
     this.call("audio_swap_source", { trackKey, source: bridgeSource(source, this.auth.baseUrl) });
   }
 

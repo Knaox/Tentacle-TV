@@ -13,7 +13,7 @@
 
 import { app } from "electron";
 import { z } from "zod";
-import { NativeAudioEngine } from "../audio/audioEngine";
+import { CrossfadeDecks } from "../audio/crossfadeDecks";
 import { refuseSource } from "../audio/audioSources";
 import { keptAudioPath } from "./audioKept";
 import { adoptDirect, directRelay, pluginManifests } from "../clientFetch/directSources";
@@ -64,10 +64,12 @@ const CONTROL = z.discriminatedUnion("action", [
   z.object({ action: z.literal("volume"), value: z.number().min(0).max(1) }),
   z.object({ action: z.literal("muted"), value: z.boolean() }),
   z.object({ action: z.literal("replayGain"), mode: RG_MODE }),
+  z.object({ action: z.literal("crossfade"), value: z.number().finite().min(0).max(12_000) }),
 ]);
 const NO_ARGS = z.object({}).passthrough();
 
-let engine: NativeAudioEngine | null = null;
+// La transition douce : deux instances mpv derrière UN moteur (`crossfadeDecks.ts`) ; coupée, une seule, comme avant.
+let engine: CrossfadeDecks | null = null;
 let serverOrigin: string | null = null;
 /** Les en-têtes d'authentification du démarrage : le repli d'un flux direct (serveur) les reprend. */
 let serverHeaders: Record<string, string> = {};
@@ -85,7 +87,7 @@ function devLogOptions(): Record<string, string> {
   return !app.isPackaged && file ? { "log-file": file, "msg-level": "all=v" } : {};
 }
 
-function running(): NativeAudioEngine {
+function running(): CrossfadeDecks {
   if (engine === null) throw new Error("moteur audio non démarré");
   return engine;
 }
@@ -119,7 +121,7 @@ export function registerAudioCommands(registry: CommandRegistry): void {
     .add("audio_engine_start", {
       schema: START,
       run: async (args) => {
-        engine ??= new NativeAudioEngine({ platform: platform(), extraOptions: devLogOptions() }, (event) => sendToPage("audio://event", event));
+        engine ??= new CrossfadeDecks({ platform: platform(), extraOptions: devLogOptions() }, (event) => sendToPage("audio://event", event));
         // Un flux direct coupé en pleine lecture : le moteur relit le titre à la position (S5).
         directRelay.onCut = (url) => engine?.sourceCut(url);
         serverOrigin = args.serverOrigin;
@@ -143,8 +145,9 @@ export function registerAudioCommands(registry: CommandRegistry): void {
       run: async ({ track, source, startMs }) => running().play(track, await checked(source, track.trackKey), startMs),
     })
     .add("audio_set_next", {
-      schema: z.object({ track: TRACK.nullable(), source: SOURCE.nullable() }),
-      run: async ({ track, source }) => running().setNext(track, source === null || track === null ? null : await checked(source, track.trackKey)),
+      schema: z.object({ track: TRACK.nullable(), source: SOURCE.nullable(), crossfadeMs: z.number().finite().min(0).max(12_000).optional() }),
+      run: async ({ track, source, crossfadeMs }) =>
+        running().setNext(track, source === null || track === null ? null : await checked(source, track.trackKey), crossfadeMs),
     })
     .add("audio_swap_source", {
       schema: z.object({ trackKey: KEY, source: SOURCE }),

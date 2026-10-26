@@ -8,118 +8,52 @@
  * de bascule. Le suivant démarre un peu AVANT la fin du courant, de la latence
  * de démarrage mesurée (`htmlRules.ts`) ; l'ancien finit seul ses derniers
  * millisecondes puis est libéré.
+ *
+ * Transition douce (`setCrossfade`) : entre deux titres enchaînés que la règle
+ * autorise (`crossfadeRules.ts`), le suivant démarre AVANT la fin du courant et
+ * les deux sonnent ensemble le temps du fondu (`htmlCrossfade.ts`). Un geste
+ * lâche le titre quitté comme avant : Chrome adoucit lui-même l'arrêt d'un
+ * élément (~40 ms, aucun clic mesuré — mieux qu'une rampe de volume).
  */
 
-import type {
-  AudioEngineCapabilities, AudioEnginePort, AudioOutputDevice, EngineEvent, EngineState, MusicTrack, PlaybackSource, ReplayGainMode,
-} from "@tentacle-tv/shared/music";
-import { albumKeyOf, durationOfSource, EngineEmitter, idleState } from "../engineShared";
-import { codecsFrom, effectiveGainMode, elementVolume, nextLatencyEstimate, nextStartDelayMs, sourceGainDb } from "./htmlRules";
-import { makeSlot, releaseSlot, remainingS, whenReady, type MediaElementLike, type Slot } from "./htmlSlot";
-import { crossfadeSwap, type SwapRun, type SwapTimers } from "./htmlSwap";
+import type { AudioEnginePort, MusicTrack, PlaybackSource } from "@tentacle-tv/shared/music";
+import { albumKeyOf, durationOfSource } from "../engineShared";
+import { nextLatencyEstimate, nextStartDelayMs } from "./htmlRules";
+import { releaseSlot, remainingS, whenReady, type Slot } from "./htmlSlot";
+import { crossfadeSwap, type SwapRun } from "./htmlSwap";
+import { plannedCrossfadeMs, sanitizeCrossfadeMs } from "../crossfadeRules";
+import { CrossfadeRun } from "./htmlCrossfade";
+import { HtmlEngineBase, positionOf } from "./htmlEngineBase";
 
-export interface HtmlEngineDeps extends SwapTimers {
-  createElement: () => MediaElementLike;
-  /** Chemin du serveur → adresse lisible par l'élément (`elementSourceUrl`). */
-  resolveUrl: (url: string) => string;
-  /** `use-credentials` quand la session est un cookie d'une autre origine. */
-  credentials: string | null;
-  canPlayType: (mime: string) => string;
-  listOutputs?: () => Promise<AudioOutputDevice[]>;
-}
-
-/** Une position plus proche que cela de la dernière publiée ne se republie pas. */
-const POSITION_STEP_MS = 100;
-
-const positionOf = (slot: Slot): number => Math.round(slot.el.currentTime * 1000);
+export type { HtmlEngineDeps } from "./htmlEngineBase";
 
 /** À moins de cela de la fin, le départ du suivant est programmé. */
 const ARM_BEFORE_END_S = 1.5;
 
-export class HtmlAudioEngine implements AudioEnginePort {
-  readonly capabilities: AudioEngineCapabilities;
-  private state: EngineState = idleState(1, false);
-  private readonly emitter = new EngineEmitter();
-  private current: Slot | null = null;
-  private next: Slot | null = null;
-  private draining: Slot | null = null;
+export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
   private swap: SwapRun | null = null;
   private advanceTimer: unknown = null;
   /** `play()` → rendu d'un élément PRÉCHARGÉ : ~10 ms (banc web) ; affinée à chaque départ. */
   private startLatencyMs = 10;
   /** Le même pour un élément tout juste PLACÉ (bascule) : plus lent, ~30 ms au départ. */
   private swapLatencyMs = 30;
-  private gainMode: ReplayGainMode = "auto";
-  private sinkId: string | null = null;
   private readonly overrides = new Map<string, PlaybackSource>();
+  private crossfadeMs = 0;
+  /** Le fondu prévu vers le suivant préchargé (ms), 0 : enchaînement ordinaire. */
+  private nextFadeMs = 0;
 
-  constructor(private readonly deps: HtmlEngineDeps) {
-    this.capabilities = { engine: "html", gapless: false, exclusiveOutput: false, replayGain: true, codecs: codecsFrom(deps.canPlayType), hotSwap: true };
-  }
-
-  private patch(p: Partial<EngineState>): void {
-    this.state = { ...this.state, ...p };
-    this.emitter.emit({ type: "state", state: this.state });
-  }
-
-  private slot(track: MusicTrack, source: PlaybackSource): Slot {
-    const el = this.deps.createElement();
-    if (this.sinkId !== null) void el.setSinkId?.(this.sinkId).catch(() => undefined);
-    return makeSlot(el, track, source, this.deps.resolveUrl(source.url), this.deps.credentials);
-  }
-
-  private volumeFor(slot: Slot | null): number {
-    if (slot === null) return 0;
-    const neighbours = [this.next?.track ?? null, this.current?.track ?? null].filter((t) => t !== null && t !== slot.track).map((t) => (t === null ? null : albumKeyOf(t)));
-    const mode = effectiveGainMode(this.gainMode, albumKeyOf(slot.track), neighbours);
-    return elementVolume(this.state.volume, sourceGainDb(mode, slot.source));
-  }
-
-  private applyVolumes(): void {
-    for (const s of [this.current, this.next]) if (s !== null) {
-      s.el.volume = this.volumeFor(s);
-      s.el.muted = this.state.muted;
-    }
-  }
-
-  /** Le courant : ses évènements pilotent l'état. */
-  private adopt(slot: Slot): void {
-    this.current = slot;
-    slot.on("playing", () => this.current === slot && this.patch({ status: "playing", error: null, positionMs: positionOf(slot) }));
-    slot.on("waiting", () => this.current === slot && this.patch({ status: "buffering" }));
-    // Une pause qui ne vient pas de nous (le système, un casque débranché).
-    slot.on("pause", () => this.current === slot && this.state.status === "playing" && this.patch({ status: "paused" }));
-    slot.on("error", () => this.current === slot && this.fail(slot));
-    slot.on("ended", () => this.current === slot && this.onEnded());
-    slot.on("loadedmetadata", () => this.current === slot && Number.isFinite(slot.el.duration) && this.patch({ durationMs: Math.round(slot.el.duration * 1000) }));
-    // La POSITION se publie au rythme de l'élément (~4 fois par seconde, comme le moteur du bureau) : sans elle,
-    // le lecteur restait à « 0:00 » pendant que le son jouait (défaut R2-01 du 25/10).
-    slot.on("timeupdate", () => {
-      if (this.current !== slot) return;
-      this.onTime(slot);
-      this.publishPosition(slot);
-    });
-    slot.el.volume = this.volumeFor(slot);
-    slot.el.muted = this.state.muted;
-  }
-
-  private publishPosition(slot: Slot): void {
-    const positionMs = positionOf(slot);
-    if (Math.abs(positionMs - this.state.positionMs) >= POSITION_STEP_MS) this.patch({ positionMs });
-  }
-
-  private fail(slot: Slot): void {
-    this.patch({ status: "error", error: "media-error" });
-    if (slot.source.origin === "plugin") this.emitter.emit({ type: "needSource", trackKey: slot.track.key });
-  }
-
-  private onTime(slot: Slot): void {
+  protected onTime(slot: Slot): void {
     const left = remainingS(slot);
-    if (left === null || this.next === null || this.advanceTimer !== null || left > ARM_BEFORE_END_S || slot.el.paused) return;
-    this.advanceTimer = this.deps.setTimeout(() => this.advance(), nextStartDelayMs(left, this.startLatencyMs));
+    const fadeS = this.nextFadeMs / 1000;
+    if (left === null || this.next === null || this.advanceTimer !== null || this.fade !== null || left > fadeS + ARM_BEFORE_END_S || slot.el.paused) return;
+    // Plus assez de place pour le fondu prévu (un saut près de la fin) : ce qui reste, s'il s'entend encore.
+    const fadeMs = Math.min(this.nextFadeMs, left * 1000);
+    if (fadeMs >= 1000) this.advanceTimer = this.deps.setTimeout(() => this.crossfade(fadeMs), Math.max(0, (left - fadeMs / 1000) * 1000));
+    else this.advanceTimer = this.deps.setTimeout(() => this.advance(), nextStartDelayMs(left, this.startLatencyMs));
   }
 
-  private onEnded(): void {
+  protected onEnded(): void {
+    if (this.fade !== null) return this.fade.fromStopped();
     if (this.next !== null) return this.advance();
     this.patch({ status: "ended", positionMs: this.state.durationMs ?? this.state.positionMs });
   }
@@ -146,9 +80,66 @@ export class HtmlAudioEngine implements AudioEnginePort {
         this.draining = null;
       });
     }
-    this.adopt(to);
-    this.patch({ trackKey: to.track.key, positionMs: 0, durationMs: durationOfSource(to.track, to.source), format: to.source.format ?? to.track.format });
+    this.becomeCurrent(from, to);
+  }
+
+  /** `to` est désormais le titre courant : état, puis `advanced`. */
+  private becomeCurrent(from: Slot | null, to: Slot, setVolume = true): void {
+    this.adopt(to, setVolume);
+    this.nextFadeMs = 0;
+    this.patch({ trackKey: to.track.key, positionMs: positionOf(to), durationMs: durationOfSource(to.track, to.source), format: to.source.format ?? to.track.format });
     this.emitter.emit({ type: "advanced", fromKey: from?.track.key ?? null, toKey: to.track.key });
+  }
+
+  /** Le fondu enchaîné vers le suivant préchargé : les deux sonnent ensemble `fadeMs`. */
+  private crossfade(fadeMs: number): void {
+    this.advanceTimer = null;
+    const from = this.current;
+    const to = this.next;
+    if (from === null || to === null) return;
+    this.next = null;
+    to.el.muted = this.state.muted;
+    // Les gains se figent ici : le suivant d'après, donné à mi-fondu, ne change plus le volume d'aucun des deux.
+    [from.gainDb, to.gainDb] = [this.gainDbOf(from), this.gainDbOf(to)];
+    const run = new CrossfadeRun(from, to, fadeMs / 1000, this.deps, {
+      volumeOf: (slot) => this.volumeFor(slot),
+      mid: () => {
+        from.off();
+        from.on("ended", () => this.fade === run && run.finish());
+        this.becomeCurrent(from, to, false);
+      },
+      done: () => {
+        if (this.fade !== run) return;
+        this.fade = null;
+        releaseSlot(from);
+        const later = this.overrides.get(to.track.key);
+        this.overrides.delete(to.track.key);
+        if (later !== undefined && this.current === to) this.swapSource(to.track.key, later);
+      },
+    });
+    // Le suivant qui échoue avant la mi-fondu : le courant finit seul, le contrôleur enchaînera.
+    to.on("error", () => this.fade === run && !run.passedMid && this.dropFade(true));
+    this.fade = run;
+    run.start();
+  }
+
+  /**
+   * Le fondu interrompu (saut, autre suivant, échec). Avant la mi-fondu, le titre qui arrivait redevient le
+   * suivant préchargé (`keepNext`) ou se tait ; après, c'est le titre parti qui se tait. Le courant reprend
+   * son volume plein.
+   */
+  private dropFade(keepNext: boolean): void {
+    const run = this.fade;
+    if (run === null) return;
+    this.fade = null;
+    run.cancel();
+    if (!run.passedMid && keepNext) {
+      run.to.el.pause();
+      run.to.el.currentTime = 0;
+      releaseSlot(this.next);
+      this.next = run.to;
+    } else releaseSlot(run.passedMid ? run.from : run.to);
+    this.applyVolumes();
   }
 
   private served(track: MusicTrack, source: PlaybackSource): PlaybackSource {
@@ -163,8 +154,12 @@ export class HtmlAudioEngine implements AudioEnginePort {
     this.swap = null;
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
-    for (const s of [this.current, this.next, this.draining]) releaseSlot(s);
+    this.fade?.cancel();
+    const fading = this.fadeSlots().filter((s) => s !== this.current);
+    this.fade = null;
+    for (const s of [this.current, this.next, this.draining, ...fading]) releaseSlot(s);
     this.current = this.next = this.draining = null;
+    this.nextFadeMs = 0;
   }
 
   play(track: MusicTrack, source: PlaybackSource, startMs = 0): void {
@@ -182,17 +177,36 @@ export class HtmlAudioEngine implements AudioEnginePort {
   }
 
   setNext(track: MusicTrack | null, source: PlaybackSource | null): void {
+    const run = this.fade;
+    // Le titre qui arrive déjà dans le fondu, redit : rien ne change.
+    if (run !== null && !run.passedMid && track?.key === run.to.track.key && source?.url === run.to.source.url) return;
+    if (run !== null && !run.passedMid) this.dropFade(false);
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
     releaseSlot(this.next);
     this.next = track !== null && source !== null ? this.slot(track, this.served(track, source)) : null;
     if (this.next !== null) this.next.el.load();
+    this.nextFadeMs = this.planFade();
     this.applyVolumes();
+  }
+
+  /** Le fondu vers le suivant préchargé, d'après la règle (`crossfadeRules.ts`). */
+  private planFade(): number {
+    const [cur, next] = [this.current, this.next];
+    if (cur === null || next === null || this.crossfadeMs === 0) return 0;
+    const pair = { current: cur.track, next: next.track, currentMs: durationOfSource(cur.track, cur.source), nextMs: durationOfSource(next.track, next.source) };
+    return plannedCrossfadeMs(this.crossfadeMs, pair, albumKeyOf);
+  }
+
+  setCrossfade(durationMs: number): void {
+    this.crossfadeMs = sanitizeCrossfadeMs(durationMs);
+    if (this.fade === null) this.nextFadeMs = this.planFade();
   }
 
   pause(): void {
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
+    this.fade?.pause();
     this.current?.el.pause();
     if (this.current !== null) this.patch({ status: "paused", positionMs: this.current.el.currentTime * 1000 });
   }
@@ -200,6 +214,7 @@ export class HtmlAudioEngine implements AudioEnginePort {
   resume(): void {
     const slot = this.current;
     if (slot === null) return;
+    if (this.fade !== null) return this.fade.resume();
     if (this.state.status === "ended") slot.el.currentTime = 0;
     void slot.el.play().catch(() => this.fail(slot));
   }
@@ -213,41 +228,19 @@ export class HtmlAudioEngine implements AudioEnginePort {
     if (this.current === null) return;
     this.swap?.cancel();
     this.swap = null;
+    this.dropFade(true);
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
     this.current.el.currentTime = Math.max(0, positionMs) / 1000;
     this.patch({ positionMs: Math.max(0, positionMs) });
   }
 
-  setVolume(volume: number): void {
-    this.state = { ...this.state, volume: Math.min(1, Math.max(0, volume)) };
-    this.applyVolumes();
-    this.patch({});
-  }
-
-  setMuted(muted: boolean): void {
-    this.state = { ...this.state, muted };
-    this.applyVolumes();
-    this.patch({});
-  }
-
-  setReplayGain(mode: ReplayGainMode): void {
-    this.gainMode = mode;
-    this.applyVolumes();
-  }
-
-  async listOutputs(): Promise<AudioOutputDevice[]> {
-    return (await this.deps.listOutputs?.()) ?? [{ id: "default", name: "", exclusiveCapable: false }];
-  }
-
-  async setOutput(deviceId: string | null, exclusive: boolean): Promise<void> {
-    if (exclusive) throw new Error("exclusive-unsupported");
-    this.sinkId = deviceId;
-    await Promise.all([this.current, this.next].map((s) => s?.el.setSinkId?.(deviceId ?? "") ?? Promise.resolve()));
-    this.patch({ output: { deviceId, exclusive: false } });
-  }
-
   swapSource(trackKey: string, source: PlaybackSource): void {
+    // Pendant un fondu, la bascule attend sa fin (`done`) : deux éléments suffisent à la fois.
+    if (this.fade !== null && (trackKey === this.fade.from.track.key || trackKey === this.fade.to.track.key)) {
+      this.overrides.set(trackKey, source);
+      return;
+    }
     if (this.next !== null && this.next.track.key === trackKey) return this.setNext(this.next.track, source);
     const from = this.current;
     if (from === null || from.track.key !== trackKey) {
@@ -263,16 +256,6 @@ export class HtmlAudioEngine implements AudioEnginePort {
       this.adopt(ready);
       this.emitter.emit({ type: "swapped", trackKey, origin: source.origin });
     });
-  }
-
-  getState(): EngineState {
-    const slot = this.current;
-    if (slot === null || this.state.status === "ended") return this.state;
-    return { ...this.state, positionMs: Math.round(slot.el.currentTime * 1000) };
-  }
-
-  subscribe(listener: (event: EngineEvent) => void): () => void {
-    return this.emitter.subscribe(listener);
   }
 
   dispose(): void {
