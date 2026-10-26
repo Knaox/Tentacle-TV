@@ -31,6 +31,7 @@ const fakeJellyfin = (over: Partial<JellyfinMusicHost> = {}): JellyfinMusicHost 
   setFavorite: async () => ({ ok: true }),
   playlistInsert: async () => ({ ok: true }),
   playlistEntries: async () => [],
+  playlistEditable: async () => ({ editable: true }),
   usageOf: async () => [],
   notifyPath: async () => ({ ok: true }),
   refreshPath: async () => ({ ok: true, scope: "folder", itemId: "album" }),
@@ -59,6 +60,13 @@ describe("jellyfin.* derrière la porte", () => {
     expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: [] })).toMatchObject({ ok: false, error: { code: "invalid" } });
     expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: Array.from({ length: 201 }, (_, i) => ({ ...track, ref: `r${i}` })) })).toMatchObject({ ok: false, error: { code: "invalid" } });
     expect(await call("jellyfin.matchTracks", { userId: "u1", tracks: [{ ...track, recording: "pas-un-mbid" }] })).toMatchObject({ ok: false, error: { code: "invalid" } });
+  });
+
+  it("playlistEditable : la réponse du cœur pour CE compte ; identifiants hors forme refusés", async () => {
+    configureIsolatedRuntime({ jellyfin: fakeJellyfin({ playlistEditable: async ({ userId }) => ({ editable: userId === "u1" }) }) });
+    expect(await call("jellyfin.playlistEditable", { userId: "u1", playlistId: "p1" })).toMatchObject({ ok: true, value: { editable: true } });
+    expect(await call("jellyfin.playlistEditable", { userId: "u2", playlistId: "p1" })).toMatchObject({ ok: true, value: { editable: false } });
+    expect(await call("jellyfin.playlistEditable", { userId: "u1", playlistId: "../x" })).toMatchObject({ ok: false, error: { code: "invalid" } });
   });
 
   it("un refus du service passe avec son code du contrat", async () => {
