@@ -195,7 +195,8 @@ export class CrossfadeDecks {
     this.clearArm();
     const fadeS = Math.min(MAX_FADE_S, crossfadeMs / 1000);
     const p = this.pending;
-    if (track !== null && source !== null && fadeS > 0 && this.available() && this.pair.back !== null) {
+    // Le titre qui joue sans gain de fondu (transition allumée en pleine écoute) : l'enchaînement d'avant, jamais un blanc.
+    if (track !== null && source !== null && fadeS > 0 && this.available() && this.pair.back !== null && this.pair.isChained(this.front)) {
       if (p !== null && p.track.trackKey === track.trackKey && p.source.url === source.url && p.fadeS === fadeS) return;
       this.dropPrepared();
       this.pending = { track, source, fadeS };

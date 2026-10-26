@@ -127,6 +127,19 @@ describe("transition douce du bureau — deux instances", () => {
     expect(r.b!.named("play")).toEqual([]);
   });
 
+  it("allumée en pleine écoute : le titre qui joue n'a pas le gain du fondu, son suivant s'enchaîne comme avant", async () => {
+    const r = await rig(0);
+    r.decks.play(track("t1"), source("t1"), 0);
+    r.decks.control({ action: "crossfade", value: 6000 });
+    await vi.advanceTimersByTimeAsync(0);
+    r.decks.setNext(track("t2"), source("t2"), 6000);
+    expect(r.a.named("setNext").at(-1)).toEqual(["setNext", track("t2"), source("t2")]);
+    // Le titre suivant (lancé sur une instance qui porte le gain), lui, fondra.
+    r.decks.play(track("t3"), source("t3"), 0);
+    r.decks.setNext(track("t4"), source("t4"), 6000);
+    expect(fakes.made[1]?.named("play").at(-1)?.[1]).toEqual(track("t4"));
+  });
+
   it("trop tard pour fondre (un saut tout près de la fin) : le suivant rend à l'enchaînement d'avant", async () => {
     const r = await rig();
     r.decks.play(track("t1"), source("t1"), 0);
