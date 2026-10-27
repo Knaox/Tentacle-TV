@@ -21,6 +21,7 @@ import { forgetUserPlaylists, listUserPlaylists } from "../playlists/playlistJel
 import type { MusicLibraryEvent } from "../contract/musicEvents";
 import { rowsByIds } from "../index/indexQueries";
 import { applyLibraryChange, syncState, type IncrementalResult } from "../index/indexSync";
+import { scheduleOrphanReread } from "../index/orphanReread";
 import { normalizeId } from "../jellyfin/musicJellyfin";
 
 const DUPLICATE_MS = 2_000;
@@ -90,7 +91,10 @@ export function onJellyfinLibraryChanged(data: unknown, now = Date.now()): Promi
     // Avant le premier passage complet, il le verra de toute façon.
     if (!syncState().ready) return;
     const result = await applyLibraryChange(added, updated, removed);
-    if (result) await tellLibrary(result);
+    if (!result) return;
+    // Un titre entré sans album (lu avant ses tags) : Jellyfin le relira, une fois Lidarr fini.
+    if ([...result.added, ...result.updated].some((r) => r.kind === "track" && r.albumId === null)) scheduleOrphanReread();
+    await tellLibrary(result);
   });
 }
 

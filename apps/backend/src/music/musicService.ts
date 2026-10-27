@@ -8,6 +8,7 @@
 
 import { countsByKind } from "./index/indexQueries";
 import { fullSync, markIndexUsable, syncState } from "./index/indexSync";
+import { scheduleOrphanReread } from "./index/orphanReread";
 import { onJellyfinLibraryChanged, tellLibrary } from "./events/musicLiveEvents";
 import { onLibraryChanged } from "../services/jellyfinLibraryListeners";
 
@@ -24,6 +25,8 @@ async function kickOff(): Promise<void> {
   // Un index déjà rempli répond tout de suite ; le passage complet le remet à jour derrière.
   if (counts && counts.track + counts.album + counts.artist > 0) markIndexUsable();
   const changes = await fullSync();
+  // Les titres rangés sans album (lus avant leurs tags) : Jellyfin les relit, peu à la fois.
+  if (syncState().lastFullAt !== null) scheduleOrphanReread();
   // Ce qui a changé serveur éteint (ou avant ce passage) se dit aussi aux comptes connectés.
   if (changes && changes.added.length + changes.removed.length > 0) await tellLibrary(changes).catch(() => undefined);
 }
