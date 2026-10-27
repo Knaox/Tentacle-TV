@@ -16,9 +16,8 @@
 #
 # ET UN CRAN DE DÉVELOPPEMENT, « dev » : `:dev` et `:dev-<sha>`, jamais
 # `:latest` ni `:vX.Y.Z`, ni Release, ni bump — l'image de la branche `dev`,
-# pour qui veut l'éprouver avant une livraison. C'est la SEULE exception au
-# « rien ne part d'un push » : une poussée sur `dev` qui touche le serveur le
-# lance d'elle-même (et rend sans objet la précédente, encore en cours).
+# pour qui veut l'éprouver avant une livraison. Lui aussi se lance À LA MAIN
+# seulement (décision du 2026-10-27) : plus aucune poussée ne publie d'image.
 #
 # L'image Docker EST le serveur : une seule cible, `docker`.
 #
@@ -63,36 +62,16 @@ on:
         default: ""
       # Livrer AUSSI Tentacle Server pour Windows dans ce run (server-windows.yml
       # appelé après l'image), au même cran, à la même version, avec les mêmes
-      # notes. Crans test et store seulement ; jamais par une poussée sur dev.
+      # notes. Crans test et store seulement.
       windows:
         description: "Livrer aussi Tentacle Server pour Windows (même cran, même version — test et store seulement)"
         type: boolean
         default: false
-  # Le cran dev, et lui seul : ce qui change l'image du serveur, sur `dev`.
-  push:
-    branches: [dev]
-    paths:
-      - "apps/backend/**"
-      - "apps/web/**"
-      - "packages/**"
-      - "Dockerfile"
-      - ".dockerignore"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "patches/**"
-      - "versions.json"
-      - "compat/jellyfin.json"
-      - ".github/workflows/server.yml"
-      - ".github/workflows/server-image.yml"
-      - ".github/scripts/lib/server-image.mjs"
-      - ".github/scripts/server-image-plan.mjs"
 
-# Les livraisons s'attendent (rien ne s'y perd). Une poussée sur dev rend la
-# précédente sans objet : elle l'annule.
+# Les livraisons s'attendent (rien ne s'y perd) ; une image dev a sa propre file.
 concurrency:
-  group: ${{ github.event_name == 'push' && 'server-dev' || 'release-server' }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: ${{ inputs.channel == 'dev' && 'server-dev' || 'release-server' }}
+  cancel-in-progress: false
 
 # Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
 # image) le déclare lui-même, au plus juste.
