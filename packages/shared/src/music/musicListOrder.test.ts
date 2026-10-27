@@ -57,6 +57,17 @@ describe("tri d'une liste de titres", () => {
     const list = [s("a", { artist: "X" }), s("b", { artist: "X" }), s("c", { artist: "X" })];
     expect(keys(sortListItems(list, id, prefs("artist")))).toEqual(["a", "b", "c"]);
   });
+
+  it("dernier ajout à date égale : plus bas dans la liste = ajouté après (un import, une arrivée posée à sa place)", () => {
+    const at = (addedAt: number | null) => ({ stats: { addedAt, plays: 0, lastPlayedAt: null } });
+    // La playlist importée de Damien : a, b, c d'un même import ; x arrivé de Lidarr à la place de son attente (date de a).
+    const list = [s("a", at(10)), s("x", at(10)), s("b", at(11)), s("c", at(11)), s("n", at(50))];
+    expect(keys(sortListItems(list, id, prefs("added")))).toEqual(["n", "c", "b", "x", "a"]);
+    expect(keys(sortListItems(list, id, prefs("added", "asc")))).toEqual(["a", "x", "b", "c", "n"]);
+    // Aucune date du tout : l'ordre naturel inversé, jamais l'ordre naturel.
+    const undated = [s("a"), s("b"), s("c")];
+    expect(keys(sortListItems(undated, id, prefs("added")))).toEqual(["c", "b", "a"]);
+  });
 });
 
 describe("ordre personnalisé", () => {

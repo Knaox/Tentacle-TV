@@ -33,4 +33,40 @@ describe("dates d'entrée dans une liste", () => {
   it("une liste lue vide (Jellyfin muet) n'efface rien", () => {
     expect(planAddedDates(new Map([["a", 1]]), [], NOW, () => null).remove).toEqual([]);
   });
+
+  describe("une playlist : un titre posé à la place d'une attente n'est pas un ajout", () => {
+    // La playlist importée de Damien (27/10) : a, b, c relus au départ, puis Lidarr livre x entre a et b.
+    const known = new Map([["a", 10], ["b", 11], ["c", 12]]);
+
+    it("arrivée au milieu : la date de l'entrée qui la précède (avant : maintenant, en tête de « Derniers ajouts »)", () => {
+      const plan = planAddedDates(known, ["a", "x", "b", "c"], NOW, () => null, { ordered: true });
+      expect(plan.dates.get("x")).toBe(10);
+      expect(plan.insert).toEqual([{ itemId: "x", addedAt: 10 }]);
+    });
+
+    it("arrivée en tête : la date de l'entrée qui la suit", () => {
+      expect(planAddedDates(known, ["x", "a", "b", "c"], NOW, () => null, { ordered: true }).dates.get("x")).toBe(10);
+    });
+
+    it("deux arrivées consécutives au milieu : la même date, l'ordre de la playlist départage", () => {
+      const plan = planAddedDates(known, ["a", "b", "x", "y", "c"], NOW, () => null, { ordered: true });
+      expect([plan.dates.get("x"), plan.dates.get("y")]).toEqual([11, 11]);
+    });
+
+    it("un vrai ajout (en fin de playlist) reste daté maintenant, même après une arrivée posée au milieu", () => {
+      const plan = planAddedDates(known, ["a", "x", "b", "c", "n"], NOW, () => null, { ordered: true });
+      expect(plan.dates.get("x")).toBe(10);
+      expect(plan.dates.get("n")).toBe(NOW);
+    });
+
+    it("un titre remplacé à sa place (même rang, autre élément) garde la date de la place", () => {
+      const plan = planAddedDates(known, ["a", "b2", "c"], NOW, () => null, { ordered: true });
+      expect(plan.dates.get("b2")).toBe(10);
+      expect(plan.remove).toEqual(["b"]);
+    });
+
+    it("les likés n'ont pas d'ordre d'ajout : un nouveau like est daté maintenant où qu'il soit", () => {
+      expect(planAddedDates(known, ["a", "x", "b", "c"], NOW, () => null).dates.get("x")).toBe(NOW);
+    });
+  });
 });
