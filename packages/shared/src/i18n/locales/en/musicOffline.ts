@@ -48,10 +48,15 @@ export default {
     retry: "Try connecting again",
     manualHint: "Offline, by choice: only the music kept on this device is available.",
   },
+  size: {
+    onDevice: "{{size}} on this device",
+    frees: "frees {{size}}",
+  },
   view: {
     title: "On this device",
     kicker: "Offline",
-    summary: "{{tracks}} · {{size}}",
+    used: "{{size}} used",
+    free: "{{size}} free",
     collections: "Albums and playlists",
     albums: "Albums",
     playlists: "Playlists",

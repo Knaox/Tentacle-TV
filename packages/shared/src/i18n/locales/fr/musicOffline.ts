@@ -51,10 +51,15 @@ export default {
     retry: "Réessayer la connexion",
     manualHint: "Hors ligne, par choix : seule la musique gardée sur cet appareil est disponible.",
   },
+  size: {
+    onDevice: "{{size}} sur cet appareil",
+    frees: "libère {{size}}",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",
-    summary: "{{tracks}} · {{size}}",
+    used: "{{size}} occupés",
+    free: "{{size}} libres",
     collections: "Albums et playlists",
     albums: "Albums",
     playlists: "Playlists",

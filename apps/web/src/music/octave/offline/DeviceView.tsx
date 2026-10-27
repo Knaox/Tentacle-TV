@@ -5,6 +5,9 @@
  * demande le serveur), puis les titres. Hors ligne, c'est la seule vue d'Octave
  * (`OfflineOctave.tsx`) et elle ne montre que ce qui est complet.
  *
+ * La place prise : en tête (tout, et l'espace libre du disque quand la coquille
+ * le dit), sur chaque album et playlist, et sur celui qu'on ouvre.
+ *
  * En ligne, « Passer hors ligne » dans l'en-tête ; hors ligne, l'avis porte la
  * sortie (`OfflineSwitch.tsx`).
  *
@@ -19,6 +22,7 @@ import { queueActions } from "@tentacle-tv/shared/octave";
 import { localResourceUrl, useDownloadsRootReady } from "../../../downloads/localFiles";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
 import { formatBytes } from "../../../downloads/presets";
+import { useDiskInfo } from "../../../downloads/useDownloadState";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
 import { Artwork, ARTWORK_RADIUS } from "../components/Artwork";
 import { CardGrid, Shelf } from "../components/Cards";
@@ -27,7 +31,7 @@ import { rowsOf, TrackList } from "../components/TrackList";
 import { EmptyState } from "../components/ViewStates";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { deviceModel, type DeviceCollection } from "./deviceModel";
-import { keptBytes } from "./keptProgress";
+import { bytesOnDisk, collectionBytes } from "./keptStorage";
 import { KeepCollectionButton } from "./KeepCollectionButton";
 import { OfflineNotice, OfflineSwitchButton } from "./OfflineSwitch";
 import { useKeptMusic } from "./useKeptMusic";
@@ -38,14 +42,15 @@ const DEVICE_CONTEXT = "device";
 const cardClass =
   "octave-card group flex min-w-0 cursor-pointer flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-function CollectionCard({ collection, onOpen }: { collection: DeviceCollection; onOpen: () => void }) {
+function CollectionCard({ collection, bytes, onOpen }: { collection: DeviceCollection; bytes: number; onOpen: () => void }) {
   const { t } = useTranslation("music");
+  const detail = `${collection.subtitle ?? t("count.tracks", { count: collection.tracks.length })} · ${formatBytes(bytes)}`;
   return (
     <button type="button" className={cardClass} onClick={onOpen}>
       <Artwork url={collection.artworkUrl} label={collection.title} radius="art" className="aspect-square w-full shadow-[var(--oc-shadow-art)]" />
       <span className="min-w-0 px-0.5">
         <span className="block truncate text-sm font-semibold leading-5 text-content-primary" title={collection.title}>{collection.title}</span>
-        <span className="block truncate text-[13px] leading-5 text-content-tertiary">{collection.subtitle ?? t("count.tracks", { count: collection.tracks.length })}</span>
+        <span className="block truncate text-[13px] leading-5 tabular-nums text-content-tertiary" title={detail}>{detail}</span>
       </span>
     </button>
   );
@@ -66,6 +71,7 @@ export function DeviceView() {
   const offline = useOfflineMode();
   const kept = useKeptMusic();
   const rootReady = useDownloadsRootReady();
+  const { freeBytes } = useDiskInfo();
   const [params, setParams] = useSearchParams();
   // La pochette locale arrive avec la racine des transferts (`rootReady`).
   const model = useMemo(
@@ -76,8 +82,15 @@ export function DeviceView() {
   const tracks = open?.tracks ?? model.tracks;
   const rows = useMemo(() => rowsOf(tracks), [tracks]);
   const contextId = open ? `${DEVICE_CONTEXT}:${open.key}` : DEVICE_CONTEXT;
-  const size = formatBytes(keptBytes(kept.tracks));
-  const meta = t("view.summary", { tracks: tm("count.tracks", { count: tracks.length }), size });
+  const bytesOf = (c: DeviceCollection) => collectionBytes(c.tracks.map((track) => track.key), kept.byKey);
+  // La place : celle de la collection ouverte ; en tête, tout ce qui est gardé, et ce que le disque a encore de libre.
+  const meta = [
+    tm("count.tracks", { count: tracks.length }),
+    open ? formatBytes(bytesOf(open)) : t("view.used", { size: formatBytes(bytesOnDisk(kept.tracks)) }),
+    !open && freeBytes !== null ? t("view.free", { size: formatBytes(freeBytes) }) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="pb-10">
@@ -92,7 +105,7 @@ export function DeviceView() {
         title={open?.title ?? t("view.title")}
         artworkUrl={open?.artworkUrl ?? null}
         art={open ? undefined : <DeviceArt />}
-        meta={kept.loaded ? <span>{open ? tm("count.tracks", { count: tracks.length }) : meta}</span> : null}
+        meta={kept.loaded ? <span className="tabular-nums">{meta}</span> : null}
         canPlay={tracks.length > 0}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
@@ -115,7 +128,7 @@ export function DeviceView() {
           <Shelf title={t("view.collections")}>
             <CardGrid>
               {model.collections.map((c) => (
-                <CollectionCard key={c.key} collection={c} onOpen={() => setParams({ c: c.key })} />
+                <CollectionCard key={c.key} collection={c} bytes={bytesOf(c)} onOpen={() => setParams({ c: c.key })} />
               ))}
             </CardGrid>
           </Shelf>
