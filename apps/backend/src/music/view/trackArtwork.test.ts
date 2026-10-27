@@ -65,4 +65,34 @@ describe("tracksOf — la pochette suit l'album", () => {
     const [track] = await tracksOf(view, [row(TRACK, "track", "Next to Me", { albumId: ALBUM, imageTag: `${TRACK}/own` })]);
     expect(track?.artworkUrl).toContain("tag=own");
   });
+
+  const ARTIST = "c".repeat(32);
+  const credit = [{ id: ARTIST, name: "Tears for Fears", mbid: null }];
+
+  it("album sans image : l'image de l'artiste (avant : la case neutre)", async () => {
+    await upsertRows([row(ALBUM, "album", "Songs From the Big Chair"), row(ARTIST, "artist", "Tears for Fears", { imageTag: `${ARTIST}/face` })], 1);
+    const [track] = await tracksOf(view, [row(TRACK, "track", "Shout", { albumId: ALBUM, albumName: "Songs From the Big Chair", artists: credit })]);
+    expect(track?.artworkUrl).toContain(ARTIST);
+    expect(track?.album?.jellyfinId).toBe(ALBUM);
+  });
+
+  it("titre sans album (lu avant ses tags) : l'image de l'artiste, et pas d'album inventé", async () => {
+    await upsertRows([row(ARTIST, "artist", "Tears for Fears", { imageTag: `${ARTIST}/face` })], 1);
+    const [track] = await tracksOf(view, [row(TRACK, "track", "01 - Shout", { artists: credit })]);
+    expect(track?.artworkUrl).toContain("tag=face");
+    expect(track?.album).toBeNull();
+  });
+
+  it("un AlbumId sans nom d'album : le nom de l'album indexé, et son lien", async () => {
+    await upsertRows([row(ALBUM, "album", "Songs From the Big Chair", { imageTag: `${ALBUM}/tag1` })], 1);
+    const [track] = await tracksOf(view, [row(TRACK, "track", "Shout", { albumId: ALBUM })]);
+    expect(track?.album).toEqual({ title: "Songs From the Big Chair", mbid: null, jellyfinId: ALBUM });
+    expect(track?.artworkUrl).toContain("tag=tag1");
+  });
+
+  it("ni titre, ni album, ni artiste avec une image : rien (le client dessine son repli neutre)", async () => {
+    await upsertRows([row(ALBUM, "album", "X"), row(ARTIST, "artist", "Y")], 1);
+    const [track] = await tracksOf(view, [row(TRACK, "track", "Z", { albumId: ALBUM, albumName: "X", artists: [{ id: ARTIST, name: "Y", mbid: null }] })]);
+    expect(track?.artworkUrl).toBeNull();
+  });
 });
