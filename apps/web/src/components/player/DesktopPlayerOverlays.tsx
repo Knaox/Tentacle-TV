@@ -70,9 +70,10 @@ export function DesktopPlayerOverlays({
   return (
     <>
       {/* Réserve mpv, paquet instrumenté seulement — le seul chiffre qui dise
-          si l'image est partie avec de quoi tenir. */}
+          si l'image est partie avec de quoi tenir. En haut AU CENTRE : à gauche,
+          il recouvrait le titre (capture du 27/10), à droite les avatars Watch Together. */}
       {(import.meta.env.DEV || __PLAYER_DEBUG__) && (
-        <div className="pointer-events-none absolute left-4 top-4 z-30 rounded bg-black/70 px-2 py-1 font-mono text-[11px] text-white/90">
+        <div className="pointer-events-none absolute left-1/2 top-1 z-30 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-mono text-[11px] text-white/90">
           cache {buffered.toFixed(1)} s{buffering ? " · attente" : ""}
         </div>
       )}
