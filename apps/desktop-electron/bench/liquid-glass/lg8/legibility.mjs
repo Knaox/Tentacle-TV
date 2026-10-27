@@ -5,6 +5,7 @@
 // premier plan), puis le contraste de chaque texte, glyphe et de la barre.
 //   BANC_STATE=… node lg8/legibility.mjs [Knaoxtest]
 //   LG8_CLIPS=blanc,pastel  LG8_STATES=controles,vitesse,pistes  LG8_OUT=<dossier>
+//   LG8_BUILD=<commit du build de l'app tenue> (écrit dans le rapport : le banc ne le devine pas)
 // Rend `rapport.md` (tableaux) et `mesures.json` dans le dossier des preuves.
 // Jamais une fenêtre activée sous les doigts de Damien : 120 s d'inactivité
 // avant CHAQUE activation, abandon du clip s'il revient pendant la mesure.
@@ -41,6 +42,25 @@ async function connectPage() {
   return page;
 }
 
+/** Remet la fenêtre au milieu du plus grand écran (1280 × 760), sans la réactiver. */
+async function placeOnScreen() {
+  const list = await (await fetch(`http://127.0.0.1:${PORTS.main}/json/list`)).json();
+  const main = await Cdp.connect(list[0].webSocketDebuggerUrl);
+  try {
+    const expression = `(() => { const { BrowserWindow, screen } = process.mainModule.require("electron");
+      const w = BrowserWindow.getAllWindows().find((x) => x.isVisible()) ?? BrowserWindow.getAllWindows()[0];
+      const a = screen.getAllDisplays().sort((u, v) => v.size.width - u.size.width)[0].workArea;
+      w.setBounds({ x: a.x + Math.round((a.width - 1280) / 2), y: a.y + 40, width: 1280, height: 760 });
+      return { bounds: w.getBounds(), focused: w.isFocused() }; })()`;
+    await sleep(400);
+    const r = await main.send("Runtime.evaluate", { expression, returnByValue: true });
+    await sleep(500);
+    return r.result?.value ?? {};
+  } finally {
+    main.close();
+  }
+}
+
 function shoot(name) {
   const win = mainWindow(STATE, electronPid);
   if (!win) throw new Error("fenêtre hors écran (show refusé ?)");
@@ -49,6 +69,10 @@ function shoot(name) {
 
 /** Un état du lecteur : panneau ouvert si demandé, relevé, deux captures. */
 async function captureState(page, clip, state) {
+  // Profil neuf sans photo : l'invitation de la galerie d'avatars s'ouvre PAR-DESSUS le
+  // lecteur (une fois par sujet et par appareil) — on la referme par son bouton.
+  await page.evaluate(`[...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Pas maintenant")?.click(); return true;`);
+  await sleep(400);
   await showControls(page);
   let opened = null;
   if (state !== "controles") {
@@ -87,7 +111,7 @@ function analyse(clip, shot) {
 }
 
 const rows = [];
-const meta = { date: new Date().toISOString(), branch: execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" }).trim(), commit: execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim(), skipped: [] };
+const meta = { date: new Date().toISOString(), branch: execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" }).trim(), commit: execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim(), build: process.env.LG8_BUILD ?? "?", skipped: [] };
 for (const clip of clips) {
   const title = `Lisibilité ${CLIPS[clip]}`;
   console.log(`— ${title}`);
@@ -100,6 +124,15 @@ for (const clip of clips) {
   console.log(probe("pause"));
   console.log(probe("show"));
   const before = /avant (\d+)/.exec(probe("activate"))?.[1] ?? "";
+  // L'activation émet `show`, et l'écouteur du mode coin (lib/electron.mjs) y renvoie la
+  // fenêtre : on la replace, puis on vérifie qu'elle est ACTIVE et entière à l'écran.
+  const placed = await placeOnScreen();
+  console.log("placée", JSON.stringify(placed));
+  if (!placed.focused) {
+    meta.skipped.push(`${clip} : fenêtre non active`);
+    console.log(probe("unfront", before));
+    continue;
+  }
   const page = await connectPage();
   const shots = [];
   try {

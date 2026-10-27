@@ -14,7 +14,7 @@ export function report(meta, rows) {
   const lines = [
     `# Banc lg8 — lisibilité du lecteur (fenêtre active)`,
     "",
-    `- ${meta.date} · branche \`${meta.branch}\` @ ${meta.commit} · verre : \`${meta.mode ?? "?"}\``,
+    `- ${meta.date} · branche \`${meta.branch}\` @ ${meta.commit} · app jugée : ${meta.build} · verre : \`${meta.mode ?? "?"}\``,
     `- Seuils : texte ≥ ${THRESHOLD.texte}:1 ; glyphes et barre ≥ ${THRESHOLD.glyphe}:1. Contraste = premier plan (médiane du cœur des traits) contre le fond le PLUS défavorable sous l'élément (90e centile s'il est clair, 10e s'il est sombre) ; « médian » = contre le fond médian.`,
     ...(meta.skipped.length ? [`- Non mesuré : ${meta.skipped.join(" ; ")}`] : []),
     "",

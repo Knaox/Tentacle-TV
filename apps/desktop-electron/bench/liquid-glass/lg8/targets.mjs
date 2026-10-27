@@ -34,18 +34,20 @@ export const COLLECT = `
   const inView = (r) => r.width > 1 && r.height > 1 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
   const box = (r) => ({ x: r.x, y: r.y, w: r.width, h: r.height });
   const nameOf = (el) => (el.closest("[aria-label]")?.getAttribute("aria-label") ?? el.closest("[title]")?.getAttribute("title") ?? "").slice(0, 40);
-  const debug = (el, text) => /^cache \\d/.test(text) || el.closest("[data-lg8-debug]") || /^DEBUG$/.test(text);
+  // Le compteur est écrit en plusieurs nœuds (« cache », « 56.8 », « s ») : on lit l'élément entier.
+  for (const e of document.querySelectorAll("div, button")) {
+    const t = e.textContent.replace(/\\s+/g, " ").trim();
+    if (/^cache \\d[\\d.]* s/.test(t) && e.childElementCount === 0) e.setAttribute("data-lg8-debug", "");
+    if (t === "DEBUG" && e.tagName === "BUTTON") e.setAttribute("data-lg8-debug", "");
+  }
+  const debug = (el) => el.closest("[data-lg8-debug]");
   const out = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const text = n.textContent.replace(/\\s+/g, " ").trim();
     const el = n.parentElement;
     if (!text || !el || el.closest("script,style,noscript,title")) continue;
-    if (debug(el, text)) {
-      // Le bouton DEBUG est un <button> : on masque le bouton entier, le compteur aussi.
-      (el.closest("button") ?? el).setAttribute("data-lg8-debug", "");
-      continue;
-    }
+    if (debug(el)) continue;
     const range = document.createRange();
     range.selectNodeContents(n);
     const r = range.getBoundingClientRect();
