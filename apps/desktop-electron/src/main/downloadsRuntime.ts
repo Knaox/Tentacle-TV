@@ -26,6 +26,16 @@ import { combine, createLogindBackup, systemLauncher } from "./linux/logindInhib
 /** Tour de purge, comme côté Rust. */
 const PURGE_TICK_MS = 60_000;
 
+/**
+ * Titres d'Octave tirés ensemble (`musicLane.ts`) : leurs préparations par le
+ * serveur se recouvrent. Banc du 28/10 (20 titres d'une extension, extraction
+ * 1,3 s) : 29,6 s un à un, 16,6 s à deux, 11,9 s à trois, 9,8 s à quatre — la
+ * cadence de la garde YouTube de l'extension (400 ms) borne le reste. Trois :
+ * presque tout le gain, sans plus de transcodages Allégé simultanés chez
+ * Jellyfin ni de file devant les clics.
+ */
+const MUSIC_PARALLEL = 3;
+
 let engine: DownloadEngine | null = null;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
 let wakeConnected = false;
@@ -63,6 +73,7 @@ export function downloadsEngine(): DownloadEngine {
     driver: createStreamDriver(electronTransferNet, nodePartWriter, nodeFiles),
     makeFetcher,
     makePublicFetcher,
+    musicParallelLimit: () => MUSIC_PARALLEL,
     emit: sendToPage,
     now: () => Date.now(),
     // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
