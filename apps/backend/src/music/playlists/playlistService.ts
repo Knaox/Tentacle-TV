@@ -125,21 +125,38 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
 }
 
 export function insertIntoPlaylist(userId: string, playlistId: string, itemIds: string[], position?: number): Promise<PlaylistResult<true>> {
+  return insertAt(userId, playlistId, itemIds, () => position).then((result) => (result.ok ? { ok: true, value: true } : result));
+}
+
+/**
+ * Insère `itemIds` à la place que `place` choisit d'après la playlist TELLE QU'ELLE EST (absente : la fin), sous le
+ * verrou de la playlist — deux insertions ne se croisent jamais ; `settled` aussi, une fois l'insertion écrite
+ * (l'ordre de la source d'une playlist importée y garde sa liaison). Rend la place prise.
+ */
+export function insertAt(
+  userId: string,
+  playlistId: string,
+  itemIds: string[],
+  place: (before: readonly PlaylistEntryRef[]) => Promise<number | undefined> | number | undefined,
+  settled?: (position: number) => Promise<void>,
+): Promise<PlaylistResult<number>> {
   return locked(playlistId, async () => {
     const refusal = await editable(userId, playlistId);
     if (refusal) return { ok: false, failure: refusal };
     const before = await playlistEntries(userId, playlistId);
     if (!before) return { ok: false, failure: "unavailable" };
     const ids = itemIds.map(normalizeId);
-    const desired = insertedOrder(before, ids, position);
+    const desired = insertedOrder(before, ids, await place(before));
     // L'AJOUT d'abord : Jellyfin dit si ce compte peut écrire ; refusé, rien n'a été retiré.
     const fresh = ids.filter((id) => !before.some((e) => e.itemId === id));
     const refused = await append(userId, playlistId, fresh);
     if (refused) return { ok: false, failure: refused };
     const after = await playlistEntries(userId, playlistId);
     if (!after || !(await rewriteTo(userId, playlistId, after, desired))) return { ok: false, failure: "unavailable" };
+    const at = Math.max(0, desired.indexOf(ids[0]!));
+    await settled?.(at);
     done(userId, playlistId);
-    return { ok: true, value: true };
+    return { ok: true, value: at };
   });
 }
 
