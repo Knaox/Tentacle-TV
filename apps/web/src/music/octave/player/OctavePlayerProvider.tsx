@@ -31,7 +31,7 @@ import { attachPlayerResume } from "../cache/playerResume";
 import { octaveOwner } from "../cache/octaveOwner";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { followSearchWithRadio } from "./searchRadio";
-import { withKeptSources } from "../offline/keptSources";
+import { keptFor, withKeptSources } from "../offline/keptSources";
 import { attachSessionRemote, type SessionRemote } from "./octaveSessionRemote";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
@@ -76,7 +76,8 @@ export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, prov
     prefetchExternal: (tracks, intent) => {
       const p = provider();
       if (!p) return;
-      const ids = tracks.filter((t) => t.availability !== "library" && t.external && isFromProvider(p, t.external.pluginId)).map((t) => t.external!.id);
+      // Un titre gardé sur l'appareil se lit depuis le disque : rien à préparer chez l'extension.
+      const ids = tracks.filter((t) => t.availability !== "library" && t.external && isFromProvider(p, t.external.pluginId) && !keptFor(t.key)).map((t) => t.external!.id);
       prefetchMusic(p, ids, intent);
     },
   });

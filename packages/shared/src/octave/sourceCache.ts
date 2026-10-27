@@ -9,6 +9,11 @@
  * Le PRÉCHARGEMENT du titre suivant se dit (`"next"`) : l'extension le fait
  * passer après les gestes. Un clic sur un titre qu'on préchargeait encore le
  * redemande comme un geste — l'extension promeut la résolution en cours.
+ *
+ * La copie GARDÉE sur l'appareil (`kept`, bureau) passe AVANT tout, le cache
+ * compris : un titre joué en flux puis gardé se lit depuis le disque dès que sa
+ * copie est complète, sans attendre que la source en flux expire (vu le 27/10 :
+ * un titre gardé se lisait encore en Opus, depuis YouTube).
  */
 
 import type { MusicTrack, PlaybackSource } from "../music";
@@ -30,6 +35,8 @@ export interface SourceResolvers {
   /** Un titre d'extension (`music.resolve`) ; `null` : pas de source ; `{ retryAfterMs }` : réessayer plus tard. */
   external: (track: MusicTrack, intent: SourceIntent) => Promise<PlaybackSource | ExternalRetry | null>;
   now: () => number;
+  /** La copie complète gardée sur cet appareil, consultée à CHAQUE lecture avant le cache ; absente : aucune. */
+  kept?: (trackKey: string) => PlaybackSource | null;
 }
 
 /** Une source qui expire dans moins de 10 s est déjà trop vieille pour démarrer. */
@@ -43,8 +50,10 @@ export class SourceCache {
 
   constructor(private readonly resolvers: SourceResolvers) {}
 
-  /** La source prête, tout de suite — ou `null` (il faudra attendre `get`). */
+  /** La source prête, tout de suite — ou `null` (il faudra attendre `get`). La copie gardée d'abord. */
   peek(trackKey: string): PlaybackSource | null {
+    const kept = this.resolvers.kept?.(trackKey) ?? null;
+    if (kept) return kept;
     const source = this.sources.get(trackKey);
     if (!source) return null;
     if (source.expiresAt !== null && source.expiresAt - EXPIRY_MARGIN_MS <= this.resolvers.now()) {
