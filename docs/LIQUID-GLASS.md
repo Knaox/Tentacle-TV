@@ -727,7 +727,8 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   lot lg2 — formes repliées vers un pivot, fondues puis séparées — était « vraiment moche »
   pour Damien) : le geste du lecteur de tvOS 26. Chaque forme (`GlassSurface materialize={ordre}`)
   monte de 6 px depuis 96 % pendant que son verre s'allume, en 340 ms (Bézier
-  `0.2, 0.9, 0.3, 1`), 30 ms après la précédente (transport, temps, côtés, puis le haut) ;
+  `0.2, 0.9, 0.3, 1`), 30 ms après la précédente (les ronds du transport, puis ceux du son et des réglages, puis la
+  sortie : `GlassOrb order`) ;
   toutes partent ensemble en 180 ms (`0.4, 0, 1, 1`). Mouvement réduit : un fondu simple
   (200 / 150 ms), sans montée ni décalage. UNE source (`playerGlassMaterialize.ts`) : les
   nombres vont à la coquille (`materialize` de la région, § 2.5) ET en variables `--lgp-mat-*`
@@ -739,6 +740,9 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   présent) pour partir avec le verre ; toutes les formes partent après un départ commun de
   20 ms (`MATERIALIZE_SETTLE_MS`), le temps qu'AppKit affiche le cadre de départ. Masquée, la
   région est retirée AU MASQUAGE ; le natif joue la sortie puis retire la vue.
+  Ce qui est NU (titre, barre, curseur du volume : `.lgp-nude`) et le voile suivent le MÊME
+  geste — durées, courbes, départ commun et retard d'acheminement (`--lg-player-mat-*`) — ;
+  le cœur des ronds garde son ressort au survol (`scale` dans la liste des transitions).
   **Mesuré** (lot lg8, `bench/liquid-glass/lg8/appear.mjs`, fenêtre ACTIVE, clip pastel, M4,
   sept cycles) : verre et contenu partent à ±6 ms l'un de l'autre, forme par forme ; écart
   d'opacité ≤ 0,13 à décalage nul (≤ 0,06 à une image près : la page est relevée à son
