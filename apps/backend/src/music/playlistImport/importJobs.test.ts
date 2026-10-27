@@ -12,6 +12,7 @@ import { trackMatchable } from "../view/matchViews";
 import type { UserView } from "../view/viewContext";
 import { getImport, resetImportsForTests, startImport, type ImportDeps } from "./importJobs";
 import type { ImportRequestParsed } from "./importInput";
+import type { PlaylistSourceRecord } from "../playlistSource/sourceRecord";
 
 vi.mock("../index/matchQueries", () => ({ rowsNamed: async () => [], albumsByMbids: async () => [] }));
 vi.mock("../index/indexQueries", () => ({ albumTracks: async () => [], tracksByRecording: async () => [] }));
@@ -68,6 +69,21 @@ describe("import — parcours", () => {
       [0, 0],
       [2, 1],
       [4, 2],
+    ]);
+  });
+
+  it("l'ordre de la SOURCE est gardé avec la playlist : chaque rang, sa fiche, et l'élément des titres déjà là", async () => {
+    const kept: PlaylistSourceRecord[] = [];
+    const d = deps({ remember: async (r) => void kept.push(r), now: () => 5_000 });
+    const started = startImport("u1", text("Absent One - Nope\nDaft Punk - Get Lucky\nQueen - Bohemian Rhapsody"), d);
+    if (!started.ok) throw new Error("refusé");
+    await started.done;
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).toMatchObject({ playlistId: "pl-new", userId: "u1", source: "text", url: null, origin: "import", importedAt: 5_000 });
+    expect(kept[0]!.slots.map((s) => [s.rank, s.title, s.itemIds])).toEqual([
+      [0, "Nope", []],
+      [1, "Get Lucky", ["a3"]],
+      [2, "Bohemian Rhapsody", ["a2"]],
     ]);
   });
 

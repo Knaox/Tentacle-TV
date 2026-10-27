@@ -14,10 +14,11 @@ import { userView } from "../view/viewContext";
 import { networkFetcher } from "./importFetch";
 import { getImport, startImport, type ImportDeps } from "./importJobs";
 import { parseImportRequest } from "./importInput";
+import { savePlaylistSource } from "../playlistSource/sourceStore";
 
 const gate = capabilityGate("music.playlistImport");
 
-const deps: ImportDeps = { fetcher: networkFetcher, view: userView, create: createPlaylist };
+const deps: ImportDeps = { fetcher: networkFetcher, view: userView, create: createPlaylist, remember: savePlaylistSource };
 
 export function musicImportRoutes(app: FastifyInstance, overrides: Partial<ImportDeps> = {}): void {
   const used = { ...deps, ...overrides };
