@@ -1,11 +1,33 @@
 /**
  * Octave — un anneau de progression (préparation sur l'appareil). Sans
  * animation infinie (`CLAUDE.md`, coût GPU) : il avance avec la progression,
- * une transition courte sur le trait, rien d'autre.
+ * une transition courte sur le trait, rien d'autre. Deux attentes, dans la même
+ * famille de formes : `preparing` (le serveur prépare, aucun octet) — un anneau
+ * en POINTILLÉS, immobile ; `waiting` (en file) — l'anneau vide, pâle.
  */
 
-export function ProgressRing({ fraction, size = 16, stroke = 2 }: { fraction: number; size?: number; stroke?: number }) {
+export type RingMode = "progress" | "preparing" | "waiting";
+
+export function ProgressRing({ fraction, size = 16, stroke = 2, mode = "progress" }: { fraction: number; size?: number; stroke?: number; mode?: RingMode }) {
   const radius = (size - stroke) / 2;
+  if (mode !== "progress") {
+    const dash = (2 * Math.PI * radius) / 8;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden data-ring={mode}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeOpacity={mode === "waiting" ? 0.3 : 1}
+          strokeLinecap="round"
+          strokeDasharray={mode === "preparing" ? `${dash * 0.45} ${dash * 0.55}` : undefined}
+        />
+      </svg>
+    );
+  }
   const length = 2 * Math.PI * radius;
   const clamped = Math.min(1, Math.max(0, fraction));
   // Un départ qui se voit : un anneau vide ne dit pas « en cours ».

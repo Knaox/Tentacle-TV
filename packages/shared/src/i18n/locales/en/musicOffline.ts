@@ -12,6 +12,8 @@ export default {
   removePlaylist: "Remove playlist from this device",
   onDevice: "On this device",
   inProgress: "Getting ready on this device",
+  preparing: "Preparing…",
+  transferring: "Coming to this device — {{percent}}%",
   progress: "Getting ready — {{done}} of {{total}}",
   waiting: "Waiting",
   failed: "Couldn't be kept",
