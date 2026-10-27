@@ -29,7 +29,7 @@ import type { BrowserWindow } from "electron";
 import { NSWindowBelow, cls, fromHandle, msg, sel, signature } from "../video/objc";
 import type { GlassBackend, GlassInspection, GlassProps, GroupHandle, ViewHandle } from "./backend";
 import type { AppKitRect, Rgba } from "./geometry";
-import type { GlassAppearance } from "./protocol";
+import type { GlassAppearance, GlassEase } from "./protocol";
 import type { NativeMotion } from "./springCurve";
 
 /** `[[Classe alloc] initWithFrame: cadre]`. */
@@ -42,6 +42,8 @@ const srgb = signature("void*", ["void*", "void*", "double", "double", "double",
 const setNullable = signature("void", ["void*", "void*", "void*"]);
 /** `[CAMediaTimingFunction functionWithControlPoints::::]` — des `float`, pas des CGFloat. */
 const controlPoints = signature("void*", ["void*", "void*", "float", "float", "float", "float"]);
+/** `[couche opacity]` — un `float`, pas un CGFloat. */
+const floatOf = signature("float", ["void*", "void*"]);
 /** `[NSString stringWithUTF8String:]`. */
 const utf8 = signature("void*", ["void*", "void*", "const char*"]);
 /** `[cible sélecteur: objet]` — retour objet (`appearanceNamed:`). */
@@ -112,6 +114,18 @@ function appearanceObject(appearance: GlassAppearance): unknown {
   const kept = found ? msg.get(found, "retain") : null;
   appearances.set(appearance, kept);
   return kept;
+}
+
+/**
+ * La couche de PRÉSENTATION du verre et de son conteneur (verre → vue de contenu
+ * → conteneur) : ce qu'AppKit affiche à l'instant, animation comprise.
+ */
+function live(glass: unknown): GlassInspection["live"] {
+  const shown = msg.get(msg.get(glass, "layer"), "presentationLayer");
+  const container = msg.get(msg.get(glass, "superview"), "superview");
+  const containerShown = msg.get(msg.get(container, "layer"), "presentationLayer");
+  if (!shown || !containerShown) return undefined;
+  return { frame: msg.rect(shown, "frame"), containerAlpha: floatOf(containerShown, sel("opacity")) as number };
 }
 
 export class AppKitGlassBackend implements GlassBackend {
@@ -223,9 +237,9 @@ export class AppKitGlassBackend implements GlassBackend {
     setNullable(view.native, sel("setAppearance:"), appearance === null ? null : appearanceObject(appearance));
   }
 
-  setAlpha(view: ViewHandle, alpha: number, durationMs: number): void {
+  setAlpha(view: ViewHandle, alpha: number, durationMs: number, ease?: GlassEase): void {
     if (durationMs <= 0) return msg.setDouble(view.native, "setAlphaValue:", alpha);
-    animate(view.native, durationMs, FADE, (animator) => msg.setDouble(animator, "setAlphaValue:", alpha));
+    animate(view.native, durationMs, ease ?? FADE, (animator) => msg.setDouble(animator, "setAlphaValue:", alpha));
   }
 
   placeBelow(parent: ViewHandle, view: ViewHandle, anchor: ViewHandle | null): void {
@@ -250,6 +264,7 @@ export class AppKitGlassBackend implements GlassBackend {
       style: msg.int(v, "style"),
       alpha: msg.double(v, "alphaValue"),
       hidden: msg.bool(v, "isHiddenOrHasHiddenAncestor"),
+      live: live(v),
     };
   }
 

@@ -1,7 +1,11 @@
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode, Ref } from "react";
-import { glassMorphProps } from "../../../theme/glass";
+import { motion } from "framer-motion";
+import { useCallback, useRef, type ReactNode, type Ref } from "react";
 import { GlassSurface } from "./GlassSurface";
+import { MATERIALIZE_POPOVER } from "./playerGlassMaterialize";
+
+/** Le panneau reste monté le temps de sa sortie : la sortie, l'acheminement au verre, une marge. */
+const MATERIALIZE_EXIT_HOLD_S = (MATERIALIZE_POPOVER.exitMs + 40) / 1000;
+import { usePopoverOrigin } from "./popoverOrigin";
 import type { PlayerMorphId } from "./playerGlassFusion";
 import "./playerGlassPanels.css";
 
@@ -10,7 +14,7 @@ interface GlassPanelProps {
   className?: string;
   /** Classes du corps (remplissage, colonne…). */
   bodyClassName?: string;
-  /** Le bouton dont le panneau NAÎT (sa graine, `GlassMorphSeed`, porte le même identifiant). */
+  /** Le bouton dont le panneau NAÎT (il porte `popoverAnchorProps` du même identifiant). */
   morphId: PlayerMorphId;
   surfaceRef?: Ref<HTMLDivElement>;
   role?: string;
@@ -24,13 +28,11 @@ interface GlassPanelProps {
  *
  * # Il naît de son bouton
  *
- * La SURFACE porte le `layoutId` de la graine du bouton (`glassMorphProps`,
- * décision du lot) : framer la fait partir du rectangle du bouton et la pose
- * à sa place sur le ressort `morph`. La région native suit ce rectangle image
- * par image : le verre sort de la capsule — même groupe, il s'y fond le temps
- * de la traverser (`playerGlassFusion.ts`) — puis s'en détache. À la sortie,
- * il y rentre. Le CONTENU, lui, ne s'étire pas : il n'apparaît qu'une fois la
- * forme presque posée, et s'efface d'abord à la sortie.
+ * Il se MATÉRIALISE (lot lg8, à la place de la métamorphose de framer) : le
+ * verre part d'un peu plus bas, à 88 %, depuis le CENTRE de son bouton
+ * (`usePopoverOrigin`), et s'y pose pendant que son conteneur s'allume — son
+ * contenu fait le même geste. À la fermeture, il y retourne, plus vite. Son
+ * propre conteneur natif : il ne traverse plus la capsule.
  *
  * # Île sombre
  *
@@ -40,27 +42,36 @@ interface GlassPanelProps {
  * opaques ou en noir à alpha — le contenu, inchangé, s'y peint juste.
  */
 export function GlassPanel({ className = "", bodyClassName = "", morphId, surfaceRef, role, children, ...aria }: GlassPanelProps) {
-  const reduced = useReducedMotion();
+  const own = useRef<HTMLDivElement | null>(null);
+  const setRef = useCallback((node: HTMLDivElement | null) => {
+    own.current = node;
+    if (typeof surfaceRef === "function") surfaceRef(node);
+    else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
+  }, [surfaceRef]);
+  const { origin, originCss } = usePopoverOrigin(morphId, own);
   return (
     <GlassSurface
       className={`lgp-panel lgp-popover ${className}`}
-      morph={glassMorphProps(morphId, reduced)}
+      materialize={0}
+      motion={MATERIALIZE_POPOVER}
+      origin={origin}
+      originCss={originCss}
       variant="regular"
-      transition={0}
-      surfaceRef={surfaceRef}
+      surfaceRef={setRef}
       role={role}
       aria-label={aria["aria-label"]}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* L'enveloppe qui s'efface avec les contrôles : framer pose l'opacité EN
-          LIGNE sur la surface (métamorphose) et sur le corps (apparition) — une
-          règle CSS posée sur eux ne gagnerait jamais. */}
+      {/* L'enveloppe : l'enfant direct qui porte le geste (`playerGlassMaterialize.css`)
+          et s'efface avec les contrôles. Le corps ne fait que TENIR le panneau monté
+          le temps de sa sortie (`AnimatePresence` attend une animation de framer). */}
       <div className="lgp-panel__fade">
         <motion.div
           className={`lgp-panel__body ${bodyClassName}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: reduced ? { duration: 0.15 } : { duration: 0.16, delay: 0.12, ease: "easeOut" } }}
-          exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeIn" } }}
+          initial={false}
+          // Une valeur que framer ANIME vraiment (mesuré : une variable CSS se soldait d'un coup,
+          // le contenu disparaissait 200 ms avant le verre) ; 0,999 ne se voit pas.
+          exit={{ opacity: 0.999, transition: { duration: MATERIALIZE_EXIT_HOLD_S, ease: "linear" } }}
         >
           {children}
         </motion.div>

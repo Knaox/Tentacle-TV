@@ -148,14 +148,6 @@
   mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
 }
 
-/* La graine d'une métamorphose : le rectangle du bouton, rien de visible. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph-seed {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
 /* Les flèches de bord de la bande des saisons : le chevron seul (R18) — sur le verre natif,
    un disque de lentille ne réfracterait rien. Le survol fait répondre le symbole. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-edge-arrow > svg {

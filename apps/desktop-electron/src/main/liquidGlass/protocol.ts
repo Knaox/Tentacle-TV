@@ -67,6 +67,35 @@ export interface NativeGlassRegion {
   readonly spring?: GlassSpringSpec;
   /** En plus : l'apparence du verre, quelle que soit celle de la fenêtre. Absent : héritée. */
   readonly appearance?: GlassAppearance;
+  /**
+   * En plus : la MATÉRIALISATION (lot lg8). À l'entrée, le verre part d'un cadre
+   * un peu plus bas et un peu plus petit, et s'y pose pendant que son conteneur
+   * s'allume — sur `transition` ms et la courbe `enterEase` ; à la sortie, il y
+   * retourne en `exit` ms, courbe `exitEase`. Exige `transition` > 0 et une
+   * région SEULE (sans `group`) : le fondu est celui de son conteneur.
+   */
+  readonly materialize?: GlassMaterialize;
+}
+
+/** Une Bézier `x1, y1, x2, y2`, tous dans [0, 1] — celle que la page joue en CSS. */
+export type GlassEase = readonly [number, number, number, number];
+
+/** Le départ et l'arrivée d'un verre qui se matérialise — les mêmes nombres que la page. */
+export interface GlassMaterialize {
+  /** Px CSS : le verre part d'autant plus BAS (négatif : plus haut). */
+  readonly rise: number;
+  /** Échelle de départ, autour de l'origine. */
+  readonly scale: number;
+  /** Origine de l'échelle dans la forme, 0..1 depuis la gauche. */
+  readonly originX: number;
+  /** Origine de l'échelle dans la forme, 0..1 depuis le HAUT. */
+  readonly originY: number;
+  /** Décalage de l'entrée, en ms (l'ordre des formes). */
+  readonly delay: number;
+  /** Durée de la sortie, en ms. */
+  readonly exit: number;
+  readonly enterEase: GlassEase;
+  readonly exitEase: GlassEase;
 }
 
 /** Un ressort au paramétrage d'Apple — celui de `theme/glass/springs.ts`. */

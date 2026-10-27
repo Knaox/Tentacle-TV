@@ -15,7 +15,7 @@
   opacity: 1;
   visibility: visible;
   transition:
-    opacity var(--lg-player-scrim-in-ms) var(--lg-player-ease-enter),
+    opacity var(--lg-player-scrim-in-ms) var(--lg-player-mat-enter-ease) var(--lg-player-mat-start),
     visibility 0s;
 }
 
@@ -23,8 +23,8 @@
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit),
-    visibility 0s linear var(--lg-player-exit-ms);
+    opacity var(--lg-player-mat-exit-ms) var(--lg-player-mat-exit-ease) var(--lg-player-native-lag),
+    visibility 0s linear calc(var(--lg-player-mat-exit-ms) + var(--lg-player-native-lag));
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim--bottom {

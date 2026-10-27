@@ -15,6 +15,7 @@
 
 import type { GlassBackend, GroupHandle, ViewHandle } from "./backend";
 import { stackAnchor } from "./geometry";
+import type { GlassEase } from "./protocol";
 
 interface GroupEntry {
   readonly handle: GroupHandle;
@@ -63,21 +64,21 @@ export class GlassStage {
     return handle.content;
   }
 
-  /** Fondu d'entrée d'un conteneur né transparent. */
-  reveal(key: string, durationMs: number): void {
+  /** Fondu d'entrée d'un conteneur né transparent ; `ease` : la Bézier d'une matérialisation. */
+  reveal(key: string, durationMs: number, ease?: GlassEase): void {
     const group = this.groups.get(key);
-    if (group !== undefined) this.backend.setAlpha(group.handle.container, 1, durationMs);
+    if (group !== undefined) this.backend.setAlpha(group.handle.container, 1, durationMs, ease);
   }
 
   /**
    * Fondu de sortie d'un conteneur ENTIER, puis retrait de ses verres et de lui.
    * Les poignées `views` sont rendues au bout du fondu — jamais avant.
    */
-  retire(key: string, durationMs: number, views: readonly ViewHandle[]): void {
+  retire(key: string, durationMs: number, views: readonly ViewHandle[], ease?: GlassEase): void {
     const group = this.groups.get(key);
     if (group === undefined) return;
     this.groups.delete(key);
-    this.backend.setAlpha(group.handle.container, 0, durationMs);
+    this.backend.setAlpha(group.handle.container, 0, durationMs, ease);
     const entry: Retiring = {
       handle: group.handle,
       views,
@@ -152,6 +153,11 @@ export class GlassStage {
     this.groups.clear();
     if (this.root !== null) this.backend.release(this.root);
     this.root = null;
+  }
+
+  /** Les verres qui s'estompent avec leur conteneur — pour l'instantané du banc. */
+  retiringViews(): ViewHandle[] {
+    return [...this.retiring].flatMap((entry) => [...entry.views]);
   }
 
   hasRoot(): boolean {

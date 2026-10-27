@@ -80,9 +80,14 @@ describe("l'habillage du lecteur de bureau", () => {
     // Les boutons : un rond de verre chacun — sortie ; son ; −10, lecture, +30 ; vitesse, plein écran.
     expect(html.match(/lgp-surface lgp-orb/g)?.length).toBe(7);
     expect(html.match(/lgp-orb--primary/g)?.length).toBe(1);
-    // Ils se métamorphosent (repli vers un pivot) : un pivot en haut (sortie), un en bas (lecture).
-    expect(html.match(/data-lgp-collapse=""/g)?.length).toBe(7);
-    expect(html.match(/data-lgp-pivot=""/g)?.length).toBe(2);
+    // Ils se MATÉRIALISENT (lot lg8) : chacun à son rang — le transport, puis le son et
+    // les réglages, puis la sortie —, plus aucune goutte.
+    expect(html.match(/data-lgp-materialize=""/g)?.length).toBe(7);
+    expect(html).not.toContain("data-lgp-collapse");
+    expect(html).not.toContain("data-lgp-pivot");
+    expect(html.match(/--lgp-mat-delay:(\d+)ms/g)?.sort()).toEqual(
+      ["--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:80ms"],
+    );
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");

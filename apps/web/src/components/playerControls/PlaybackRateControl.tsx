@@ -34,7 +34,7 @@ import { usePlayerGlassMode } from "../player/glass/PlayerGlassContext";
 import { isGlassLayout } from "../player/glass/playerGlassMode";
 import { GlassPanel } from "../player/glass/GlassPanel";
 import { GlassOption } from "../player/glass/GlassOption";
-import { GlassMorphSeed } from "../player/glass/GlassMorphSeed";
+import { popoverAnchorProps } from "../player/glass/popoverOrigin";
 import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
 import { useGlassDock } from "../player/glass/glassDock";
@@ -114,8 +114,7 @@ export function PlaybackRateControl({
   if (isInGroup) return null;
 
   // La présence vit DANS le portail : un portail n'est pas un élément pour
-  // `AnimatePresence`, qui l'ignorerait — et le panneau ne rentrerait plus dans
-  // son bouton à la fermeture.
+  // `AnimatePresence`, qui l'ignorerait — et le panneau n'aurait plus de sortie.
   const glassMenu = (
     <AnimatePresence>
       {open && (
@@ -137,7 +136,7 @@ export function PlaybackRateControl({
   return (
     <div ref={containerRef} className={glass ? "" : "relative"}>
       <button
-        {...(glass ? GLASS_LENS_PROPS : {})}
+        {...(glass ? { ...GLASS_LENS_PROPS, ...popoverAnchorProps(PLAYER_MORPH.speed) } : {})}
         onClick={toggle}
         className={glass ? "lgp-btn relative" : `relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
         title={t("player:speed")}
@@ -145,7 +144,6 @@ export function PlaybackRateControl({
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        {glass && <GlassMorphSeed id={PLAYER_MORPH.speed} />}
         <SpeedIcon />
         {/* Pastille du taux courant : seulement hors vitesse normale, sinon
             elle serait un « 1x » permanent qui n'apprend rien. */}

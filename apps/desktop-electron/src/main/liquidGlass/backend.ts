@@ -14,7 +14,7 @@
  */
 
 import type { AppKitRect, Rgba } from "./geometry";
-import type { GlassAppearance } from "./protocol";
+import type { GlassAppearance, GlassEase } from "./protocol";
 import type { NativeMotion } from "./springCurve";
 
 /** Une vue native, opaque pour le gestionnaire. */
@@ -51,6 +51,12 @@ export interface GlassInspection {
   readonly style: number;
   readonly alpha: number;
   readonly hidden: boolean;
+  /**
+   * Ce qui est À L'ÉCRAN pendant une animation (la couche de présentation) : le
+   * cadre en vol du verre et l'opacité en vol de son conteneur. Pour le banc
+   * seulement (`frame` est déjà la destination). Absent : rien d'animé à lire.
+   */
+  readonly live?: { readonly frame: AppKitRect; readonly containerAlpha: number } | undefined;
 }
 
 export interface GlassBackend {
@@ -72,8 +78,11 @@ export interface GlassBackend {
   setTint(view: ViewHandle, tint: Rgba | null): void;
   /** `null` : l'apparence de la fenêtre. */
   setAppearance(view: ViewHandle, appearance: GlassAppearance | null): void;
-  /** L'alpha d'un CONTENEUR (sur un verre, sans effet) ; `durationMs` > 0 : en fondu. */
-  setAlpha(view: ViewHandle, alpha: number, durationMs: number): void;
+  /**
+   * L'alpha d'un CONTENEUR (sur un verre, sans effet) ; `durationMs` > 0 : en fondu,
+   * sur la Bézier `ease` (l'accélération-décélération d'AppKit sinon).
+   */
+  setAlpha(view: ViewHandle, alpha: number, durationMs: number, ease?: GlassEase): void;
   /** Pose `view` dans `parent`, juste sous `anchor` — tout en haut si `anchor` est `null`. */
   placeBelow(parent: ViewHandle, view: ViewHandle, anchor: ViewHandle | null): void;
   /** Retire de l'écran puis rend la référence. */

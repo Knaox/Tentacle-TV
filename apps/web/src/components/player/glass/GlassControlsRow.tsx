@@ -8,9 +8,9 @@ import { ReduceIcon } from "../../../pictureInPicture/pipIcons";
 import { rangeFill } from "../../../lib/rangeFill";
 import { SkipBackGlyph, SkipForwardGlyph } from "./glassIcons";
 import { GLASS_LENS_PROPS } from "../../../theme/glass";
-import { GlassMorphSeed } from "./GlassMorphSeed";
 import { PLAYER_MORPH } from "./playerGlassFusion";
 import { GlassOrb } from "./GlassOrb";
+import { popoverAnchorProps } from "./popoverOrigin";
 import type { CSSProperties } from "react";
 import { useWatchTogether } from "../../../watchTogether/WatchTogetherProvider";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
@@ -24,8 +24,8 @@ type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
 /**
  * La rangée de boutons, façon tvOS 26 (lot lg8) : des RONDS de verre, chacun sa
  * forme native — le son à gauche (son rond, puis le curseur NU sur le voile), le
- * transport au centre (le rond de lecture, plus grand, est le pivot du bas : les
- * autres s'y replient), les réglages à droite. L'ordre de droite est celui de
+ * transport au centre (le rond de lecture, plus grand, se matérialise le
+ * premier, les autres à sa suite), les réglages à droite. L'ordre de droite est celui de
  * l'habillage d'avant : vitesse, épisodes, pistes, PiP, plein écran.
  *
  * Aucun fond au survol : c'est le verre qui répond (son cœur atténué se resserre,
@@ -71,7 +71,7 @@ export function GlassControlsRow({
             <SkipBackGlyph seconds={10} />
           </button>
         </GlassOrb>
-        <GlassOrb visible={visible} primary pivot>
+        <GlassOrb visible={visible} primary>
           <button type="button" onClick={() => togglePause()} {...GLASS_LENS_PROPS} className="lgp-btn lgp-btn--primary" aria-label={state.paused ? t("player:play") : t("player:pause")}>
             {state.paused ? <PlayIcon /> : <PauseIcon />}
           </button>
@@ -101,8 +101,7 @@ export function GlassControlsRow({
         {isEpisode && (
           <GlassOrb visible={visible} order={1}>
             <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
-              {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
-              <GlassMorphSeed id={PLAYER_MORPH.episodes} />
+              {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.episodes)} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
               <EpisodesIcon />
             </button>
           </GlassOrb>
@@ -110,8 +109,7 @@ export function GlassControlsRow({
         {hasSettings && (
           <GlassOrb visible={visible} order={1}>
             <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
-              {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
-              <GlassMorphSeed id={PLAYER_MORPH.tracks} />
+              {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.tracks)} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
               <GearIcon />
             </button>
           </GlassOrb>

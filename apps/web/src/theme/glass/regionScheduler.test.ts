@@ -20,6 +20,7 @@ const spec: RegionSpec = {
   group: null,
   spacing: null,
   transition: null,
+  materialize: null,
 };
 
 function harness() {

@@ -29,8 +29,8 @@
   /* Géométrie, façon tvOS 26 (lot lg8) : du TEXTE sur un voile (titre, temps, barre
      nue) et des BOUTONS RONDS en verre, chacun sa forme. Les écarts entre deux ronds
      (12) dépassent la distance de fusion du groupe natif (8) : au repos, AppKit les
-     garde distinctes ; elles ne se fondent que pendant leur métamorphose
-     (`[data-lgp-collapse]`), quand elles se resserrent. */
+     garde distinctes ; chacune a son conteneur natif et se matérialise seule
+     (`playerGlassMaterialize.css`). */
   /* Les marges de l'habillage d'avant, à l'identique : 20 px en haut et en bas
      (`pt-5` / `pb-5`), 24 px sur les côtés (`px-6`, le `right-6` des encarts).
      L'overlay suit la fenêtre et l'écran comme lui (retour de Damien, lg3) :
@@ -54,7 +54,7 @@
   --lg-player-scrim-0: 0.78;
   --lg-player-scrim-1: 0.72;
   --lg-player-scrim-2: 0.3;
-  --lg-player-scrim-in-ms: var(--lg-spring-morph-duration);
+  --lg-player-scrim-in-ms: var(--lg-player-mat-enter-ms);
   --lg-player-radius-capsule: var(--lg-radius-capsule);
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: var(--lg-radius-sm);
@@ -128,13 +128,8 @@
   --lg-player-nude-shift: 6px;
   --lg-player-stagger-ms: 30ms;
   --lg-player-hide-scale: 0.965;
-  /* La métamorphose : les capsules se REPLIENT vers le pivot de leur ensemble (le
-     transport en bas, le retour en haut), s'y fondent et s'y résorbent ; elles en
-     naissent au retour, sur le ressort `morph`. Le contenu part avant la forme et
-     revient après elle. */
-  --lg-player-collapse-ms: 220ms;
+  /* Le contenu d'une forme qui n'est pas matérialisée (panneaux) : fondu d'entrée, de sortie. */
   --lg-player-content-in-ms: var(--lg-duration-hover);
-  --lg-player-content-in-delay: 90ms;
   --lg-player-content-out-ms: var(--lg-duration-press);
 
   /* AUCUNE teinte native sur le verre des contrôles : la variante CLAIRE d'Apple, sur la

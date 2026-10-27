@@ -230,19 +230,20 @@
    les contrôles en montant de quelques points, et partent plus vite. Opacité et
    transformée seulement. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude {
+  /* Le geste des ronds (`playerGlassMaterialize.css`) : décalé à l'entrée seulement,
+     d'un cran par ordre (`--lgp-order`), après le même départ commun. */
   transition:
-    opacity var(--lg-player-enter-ms) var(--lg-player-ease-enter),
-    transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
-  /* Décalés à l'entrée seulement, d'un cran par ordre (`--lgp-order`). */
-  transition-delay: calc(var(--lgp-order, 0) * var(--lg-player-stagger-ms));
+    opacity var(--lg-player-mat-enter-ms) var(--lg-player-mat-enter-ease),
+    transform var(--lg-player-mat-enter-ms) var(--lg-player-mat-enter-ease);
+  transition-delay: calc(var(--lg-player-mat-start) + var(--lgp-order, 0) * var(--lg-player-stagger-ms));
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude[data-lgp-present="false"] {
   opacity: 0;
   transform: translateY(var(--lg-player-nude-shift));
-  transition-duration: var(--lg-player-exit-ms);
-  transition-timing-function: var(--lg-player-ease-exit);
-  transition-delay: 0s;
+  transition-duration: var(--lg-player-mat-exit-ms);
+  transition-timing-function: var(--lg-player-mat-exit-ease);
+  transition-delay: var(--lg-player-native-lag);
 }
 
 @media (prefers-reduced-motion: reduce) {

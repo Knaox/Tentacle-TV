@@ -32,6 +32,9 @@ const finite = z.number().finite();
 const coord = finite.min(-COORD_LIMIT).max(COORD_LIMIT);
 const size = finite.min(0).max(COORD_LIMIT);
 const id = z.string().min(1).max(MAX_ID_LENGTH);
+const unit = finite.min(0).max(1);
+/** Une Bézier rabotée à [0, 1] — l'animateur d'AppKit n'en prend pas d'autre. */
+const ease = z.tuple([unit, unit, unit, unit]);
 
 /** `#RRGGBB` ou `#RRGGBBAA` — la forme que `nativeGlass.ts` sait convertir. */
 export const TINT_PATTERN = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
@@ -52,6 +55,18 @@ const regionSchema = z.object({
   transition: finite.min(0).max(MAX_TRANSITION_MS).optional(),
   spring: z.object({ response: finite.min(0.05).max(5), dampingFraction: finite.min(0.1).max(4) }).optional(),
   appearance: z.enum(GLASS_APPEARANCES).optional(),
+  materialize: z
+    .object({
+      rise: finite.min(-200).max(200),
+      scale: finite.min(0.5).max(1.5),
+      originX: unit,
+      originY: unit,
+      delay: finite.min(0).max(MAX_TRANSITION_MS),
+      exit: finite.min(0).max(MAX_TRANSITION_MS),
+      enterEase: ease,
+      exitEase: ease,
+    })
+    .optional(),
 });
 
 const batchSchema = z.object({
@@ -62,7 +77,7 @@ const batchSchema = z.object({
 
 /** Une région validée, aux seuls champs du protocole. */
 function toRegion(parsed: z.infer<typeof regionSchema>): NativeGlassRegion {
-  const { group, spacing, transition, spring, appearance, ...base } = parsed;
+  const { group, spacing, transition, spring, appearance, materialize, ...base } = parsed;
   return {
     ...base,
     ...(group === undefined ? {} : { group }),
@@ -70,6 +85,7 @@ function toRegion(parsed: z.infer<typeof regionSchema>): NativeGlassRegion {
     ...(transition === undefined ? {} : { transition }),
     ...(spring === undefined ? {} : { spring }),
     ...(appearance === undefined ? {} : { appearance }),
+    ...(materialize === undefined ? {} : { materialize }),
   };
 }
 

@@ -9,17 +9,19 @@ import type { ReactNode } from "react";
  * demande, au rendu.
  */
 
-const calls = vi.hoisted(() => [] as Array<{ active: boolean; group: string }>);
+const calls = vi.hoisted(() => [] as Array<{ active: boolean; group: string | undefined }>);
 const transitions = vi.hoisted(() => [] as number[]);
+const materializes = vi.hoisted(() => [] as unknown[]);
 const native = vi.hoisted(() => ({ available: true }));
 const viewport = vi.hoisted(() => ({ resizing: false }));
 const backdrop = vi.hoisted(() => ({ tone: "dark" as "dark" | "light", asked: [] as boolean[] }));
 vi.mock("./nativeGlassPort", () => ({
   useNativeGlassAvailable: () => native.available,
   videoUnderWindow: () => true,
-  useNativeGlassRegion: (_ref: unknown, options: { active: boolean; group: string; transition: number }) => {
+  useNativeGlassRegion: (_ref: unknown, options: { active: boolean; group: string; transition: number; materialize?: unknown }) => {
     calls.push({ active: options.active, group: options.group });
     transitions.push(options.transition);
+    materializes.push(options.materialize);
   },
   useVideoBackdropTone: (_element: unknown, active: boolean) => {
     backdrop.asked.push(active);
@@ -28,10 +30,12 @@ vi.mock("./nativeGlassPort", () => ({
 }));
 vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
 const presence = vi.hoisted(() => ({ present: true, reduced: false }));
-vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present, useReducedMotion: () => presence.reduced }));
+vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present }));
+vi.mock("./useLiveReducedMotion", () => ({ useLiveReducedMotion: () => presence.reduced }));
 
 const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import("./GlassSurface");
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");
+const { MATERIALIZE, MATERIALIZE_REDUCED } = await import("./playerGlassMaterialize");
 const { PictureInPictureContext } = await import("../../../pictureInPicture/pictureInPictureContext");
 
 const pip = (active: boolean) => ({ supported: true, active }) as never;
@@ -89,22 +93,41 @@ describe("les régions natives du lecteur", () => {
     expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).toContain('data-lgp-exiting="true"');
   });
 
-  it("contrôle qui se REPLIE : masqué, sa région reste demandée (la fin du repli, `visibility`, la retire), suivie image par image", () => {
+  it("contrôle qui se MATÉRIALISE : son propre conteneur (aucun groupe), la durée de son entrée, son geste à la coquille ET à la page", () => {
+    const { html, calls: asked } = render(<GlassSurface className="lgp-group" materialize={2}>x</GlassSurface>);
+    expect(asked).toEqual([{ active: true, group: undefined }]);
+    expect(transitions).toEqual([MATERIALIZE.enterMs]);
+    expect(materializes.at(-1)).toMatchObject({ rise: 6, scale: 0.96, delay: 80, exit: MATERIALIZE.exitMs });
+    expect(html).toContain('data-lgp-materialize=""');
+    // Les mêmes nombres, en variables pour la page.
+    expect(html).toContain("--lgp-mat-delay:80ms");
+    expect(html).toContain("--lgp-mat-rise:6px");
+    expect(html).toContain("--lgp-mat-enter-ease:cubic-bezier(0.2, 0.9, 0.3, 1)");
+  });
+
+  it("masqué : sa région est retirée AU MASQUAGE — la coquille joue la sortie, puis la vue part", () => {
     const { html, calls: asked } = render(
       <GlassChromeVisibleContext.Provider value={false}>
-        <GlassSurface className="lgp-group" collapse>x</GlassSurface>
+        <GlassSurface className="lgp-group" materialize={0}>x</GlassSurface>
       </GlassChromeVisibleContext.Provider>,
     );
     expect(html).toContain('data-lgp-present="false"');
-    expect(html).toContain('data-lgp-collapse=""');
-    expect(asked).toEqual([{ active: true, group: "player" }]);
-    expect(transitions).toEqual([0]);
+    expect(asked).toEqual([{ active: false, group: undefined }]);
   });
 
-  it("mouvement réduit : pas de repli suivi — la région part et revient en fondu natif", () => {
+  it("mouvement réduit : un fondu simple — ni montée, ni échelle, ni décalage", () => {
     presence.reduced = true;
-    render(<GlassSurface className="lgp-group" collapse>x</GlassSurface>);
-    expect(transitions).toEqual([NATIVE_FADE_MS]);
+    const { html } = render(<GlassSurface className="lgp-group" materialize={3}>x</GlassSurface>);
+    expect(materializes.at(-1)).toMatchObject({ rise: 0, scale: 1, delay: 20 });
+    expect(transitions).toEqual([MATERIALIZE_REDUCED.enterMs]);
+    expect(html).toContain("--lgp-mat-rise:0px");
+  });
+
+  it("une surface sans `materialize` ne change pas : groupe, fondu fixe, aucune variable", () => {
+    const { html } = render(<GlassSurface className="lgp-bar">x</GlassSurface>);
+    expect(materializes.at(-1)).toBeUndefined();
+    expect(html).not.toContain("data-lgp-materialize");
+    expect(html).not.toContain("--lgp-mat");
   });
 
   it("ton du dessous : le verre clair le porte par défaut (son atténuation le suit), et le mesure tant qu'il est à l'écran", () => {

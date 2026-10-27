@@ -9,7 +9,6 @@ import { GlassTopBar } from "./GlassTopBar";
 import { GlassSeekbar } from "./GlassSeekbar";
 import { GlassControlsRow } from "./GlassControlsRow";
 import { GlassDockContext } from "./glassDock";
-import { useCollapsePivots } from "./useCollapsePivots";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 import "./playerGlassBar.css";
 import "./playerGlassTrickplay.css";
@@ -26,8 +25,10 @@ import "./playerGlassCapsules.css";
  *    puis des RONDS de verre clair : le son à gauche, le transport au centre,
  *    les réglages à droite (`GlassControlsRow`).
  *
- * Les ronds paraissent et s'effacent en se repliant vers leur pivot (la lecture,
- * la sortie : `collapse`, `useCollapsePivots`) ; ce qui est nu, en fondu.
+ * Les ronds paraissent en se MATÉRIALISANT (lot lg8) : chaque forme monte de quelques
+ * points pendant que son verre s'allume, le transport d'abord, le haut en dernier ;
+ * elles partent ensemble, plus vite (`materialize`, `playerGlassMaterialize.ts`).
+ * Ce qui est nu (titre, barre, voile) suit le même rythme, en fondu.
  *
  * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS des ronds,
  * calés sur le bord droit — des popovers de verre, pas des cartes opaques.
@@ -54,7 +55,6 @@ export function GlassPlayerChrome({
   onNextEpisode, onPreviousEpisode, speed,
 }: DesktopPlayerControlsProps) {
   const [dock, setDock] = useState<HTMLDivElement | null>(null);
-  useCollapsePivots(dock);
   return (
     <GlassChromeVisibleContext.Provider value={visible}>
       <GlassDockContext.Provider value={dock}>

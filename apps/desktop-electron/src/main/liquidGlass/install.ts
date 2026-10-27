@@ -60,6 +60,7 @@ function exposeSnapshot(regions: GlassRegions | null): void {
       groups: 0,
       nativeViews: 0,
       regions: [],
+      leaving: [],
     }),
   });
   (globalThis as { __tentacleGlass?: unknown }).__tentacleGlass = { snapshot };
