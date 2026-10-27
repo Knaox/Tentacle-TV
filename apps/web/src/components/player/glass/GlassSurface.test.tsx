@@ -96,10 +96,10 @@ describe("les régions natives du lecteur", () => {
     const { html, calls: asked } = render(<GlassSurface className="lgp-group" materialize={2}>x</GlassSurface>);
     expect(asked).toEqual([{ active: true, group: undefined }]);
     expect(transitions).toEqual([MATERIALIZE.enterMs]);
-    expect(materializes.at(-1)).toMatchObject({ rise: 6, scale: 0.96, delay: 60, exit: MATERIALIZE.exitMs });
+    expect(materializes.at(-1)).toMatchObject({ rise: 6, scale: 0.96, delay: 80, exit: MATERIALIZE.exitMs });
     expect(html).toContain('data-lgp-materialize=""');
     // Les mêmes nombres, en variables pour la page.
-    expect(html).toContain("--lgp-mat-delay:60ms");
+    expect(html).toContain("--lgp-mat-delay:80ms");
     expect(html).toContain("--lgp-mat-rise:6px");
     expect(html).toContain("--lgp-mat-enter-ease:cubic-bezier(0.2, 0.9, 0.3, 1)");
   });
@@ -117,7 +117,7 @@ describe("les régions natives du lecteur", () => {
   it("mouvement réduit : un fondu simple — ni montée, ni échelle, ni décalage", () => {
     presence.reduced = true;
     const { html } = render(<GlassSurface className="lgp-group" materialize={3}>x</GlassSurface>);
-    expect(materializes.at(-1)).toMatchObject({ rise: 0, scale: 1, delay: 0 });
+    expect(materializes.at(-1)).toMatchObject({ rise: 0, scale: 1, delay: 20 });
     expect(transitions).toEqual([MATERIALIZE_REDUCED.enterMs]);
     expect(html).toContain("--lgp-mat-rise:0px");
   });

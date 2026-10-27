@@ -80,7 +80,7 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(html).not.toContain("data-lgp-collapse");
     expect(html).not.toContain("data-lgp-pivot");
     expect(html.match(/--lgp-mat-delay:(\d+)ms/g)?.sort()).toEqual(
-      ["--lgp-mat-delay:0ms", "--lgp-mat-delay:30ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:90ms"],
+      ["--lgp-mat-delay:110ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:80ms", "--lgp-mat-delay:80ms", "--lgp-mat-delay:80ms"],
     );
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.

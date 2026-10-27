@@ -37,6 +37,14 @@ export const MATERIALIZE: MaterializeMotion = { enterMs: 340, exitMs: 180, stagg
 /** Un popover naît de son bouton : il part de plus près (88 %), de plus bas. */
 export const MATERIALIZE_POPOVER: MaterializeMotion = { ...MATERIALIZE, rise: 10, scale: 0.88 };
 
+/**
+ * Le départ COMMUN de toutes les formes, en ms, avant leur décalage : le verre naît
+ * à son cadre de départ, Core Animation doit l'avoir affiché avant qu'il monte.
+ * Mesuré (lg8) : sans attente, le verre de la première forme sautait à destination
+ * une fois sur deux, sans monter.
+ */
+export const MATERIALIZE_SETTLE_MS = 20;
+
 /** Mouvement réduit : un fondu, rien d'autre. */
 export const MATERIALIZE_REDUCED: MaterializeMotion = { enterMs: 200, exitMs: 150, staggerMs: 0, rise: 0, scale: 1 };
 
@@ -59,7 +67,7 @@ export function nativeMaterialize(motion: MaterializeMotion, order: number, orig
     scale: motion.scale,
     originX: clamp01(origin.x),
     originY: clamp01(origin.y),
-    delay: Math.max(0, order) * motion.staggerMs,
+    delay: MATERIALIZE_SETTLE_MS + Math.max(0, order) * motion.staggerMs,
     exit: motion.exitMs,
     enterEase: MATERIALIZE_ENTER_EASE,
     exitEase: MATERIALIZE_EXIT_EASE,

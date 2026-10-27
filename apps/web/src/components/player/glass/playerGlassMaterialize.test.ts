@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  CENTER_ORIGIN, MATERIALIZE, MATERIALIZE_ENTER_EASE, MATERIALIZE_EXIT_EASE, MATERIALIZE_POPOVER, MATERIALIZE_REDUCED,
+  CENTER_ORIGIN, MATERIALIZE, MATERIALIZE_SETTLE_MS, MATERIALIZE_ENTER_EASE, MATERIALIZE_EXIT_EASE, MATERIALIZE_POPOVER, MATERIALIZE_REDUCED,
   materializeStyle, nativeMaterialize,
 } from "./playerGlassMaterialize";
 import { popoverOriginOf } from "./popoverOrigin";
@@ -13,7 +13,7 @@ import { popoverOriginOf } from "./popoverOrigin";
 describe("le geste d'apparition", () => {
   it("la sortie est plus rapide que l'entrée, et sans décalage", () => {
     for (const motion of [MATERIALIZE, MATERIALIZE_POPOVER, MATERIALIZE_REDUCED]) expect(motion.exitMs).toBeLessThan(motion.enterMs);
-    expect(nativeMaterialize(MATERIALIZE, 3, CENTER_ORIGIN).delay).toBe(90);
+    expect(nativeMaterialize(MATERIALIZE, 3, CENTER_ORIGIN).delay).toBe(MATERIALIZE_SETTLE_MS + 90);
   });
 
   it("quelques points seulement : une forme se condense, elle ne pousse pas d'une goutte", () => {
@@ -30,9 +30,9 @@ describe("le geste d'apparition", () => {
     expect(MATERIALIZE_EXIT_EASE[1]).toBe(0);
   });
 
-  it("mouvement réduit : un fondu simple — ni montée, ni échelle, ni décalage", () => {
+  it("mouvement réduit : un fondu simple — ni montée, ni échelle, ni décalage (le départ commun seul)", () => {
     const reduced = nativeMaterialize(MATERIALIZE_REDUCED, 5, CENTER_ORIGIN);
-    expect(reduced).toMatchObject({ rise: 0, scale: 1, delay: 0 });
+    expect(reduced).toMatchObject({ rise: 0, scale: 1, delay: MATERIALIZE_SETTLE_MS });
   });
 
   it("la page reçoit EXACTEMENT les nombres de la coquille", () => {
@@ -41,7 +41,7 @@ describe("le geste d'apparition", () => {
       "--lgp-mat-rise": "6px",
       "--lgp-mat-scale": "0.96",
       "--lgp-mat-origin": "25% 100%",
-      "--lgp-mat-delay": "60ms",
+      "--lgp-mat-delay": "80ms",
       "--lgp-mat-enter-ms": "340ms",
       "--lgp-mat-exit-ms": "180ms",
       "--lgp-mat-enter-ease": "cubic-bezier(0.2, 0.9, 0.3, 1)",
@@ -51,7 +51,7 @@ describe("le geste d'apparition", () => {
 
   it("une origine folle ou hors de la forme est ramenée dans [0, 1] (la coquille la refuserait)", () => {
     expect(nativeMaterialize(MATERIALIZE, 0, { x: -2, y: Number.NaN })).toMatchObject({ originX: 0, originY: 0.5 });
-    expect(nativeMaterialize(MATERIALIZE, -1, { x: 9, y: 1 })).toMatchObject({ originX: 1, delay: 0 });
+    expect(nativeMaterialize(MATERIALIZE, -1, { x: 9, y: 1 })).toMatchObject({ originX: 1, delay: MATERIALIZE_SETTLE_MS });
   });
 });
 

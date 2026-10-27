@@ -2,6 +2,9 @@ import { motion } from "framer-motion";
 import { useCallback, useRef, type ReactNode, type Ref } from "react";
 import { GlassSurface } from "./GlassSurface";
 import { MATERIALIZE_POPOVER } from "./playerGlassMaterialize";
+
+/** Le panneau reste monté le temps de sa sortie : la sortie, l'acheminement au verre, une marge. */
+const MATERIALIZE_EXIT_HOLD_S = (MATERIALIZE_POPOVER.exitMs + 40) / 1000;
 import { usePopoverOrigin } from "./popoverOrigin";
 import type { PlayerMorphId } from "./playerGlassFusion";
 import "./playerGlassPanels.css";
@@ -66,7 +69,9 @@ export function GlassPanel({ className = "", bodyClassName = "", morphId, surfac
         <motion.div
           className={`lgp-panel__body ${bodyClassName}`}
           initial={false}
-          exit={{ "--lgp-leaving": 1, transition: { duration: MATERIALIZE_POPOVER.exitMs / 1000 + 0.04 } } as never}
+          // Une valeur que framer ANIME vraiment (mesuré : une variable CSS se soldait d'un coup,
+          // le contenu disparaissait 200 ms avant le verre) ; 0,999 ne se voit pas.
+          exit={{ opacity: 0.999, transition: { duration: MATERIALIZE_EXIT_HOLD_S, ease: "linear" } }}
         >
           {children}
         </motion.div>
