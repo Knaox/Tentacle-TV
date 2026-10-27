@@ -40,6 +40,10 @@ export default {
     label: "Tenir à jour les playlists gardées sur cet appareil",
     hint: "Un titre ajouté à une playlist gardée part de lui-même sur l’appareil, un titre retiré le quitte ; la version de la bibliothèque remplace une copie d’ailleurs dès qu’elle existe. Sans réseau, tout se rattrape au retour.",
   },
+  player: {
+    fromDevice: "Sur cet appareil",
+    fromDeviceHint: "Lu depuis la copie gardée sur cet appareil",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",

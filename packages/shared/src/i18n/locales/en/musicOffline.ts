@@ -37,6 +37,10 @@ export default {
     label: "Keep kept playlists up to date on this device",
     hint: "A track added to a kept playlist comes to the device by itself, a removed track leaves it; the library version replaces a copy from elsewhere as soon as it exists. Without a network, everything catches up when it comes back.",
   },
+  player: {
+    fromDevice: "On this device",
+    fromDeviceHint: "Playing the copy kept on this device",
+  },
   view: {
     title: "On this device",
     kicker: "Offline",
