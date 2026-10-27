@@ -32,6 +32,7 @@ function bench(state: { tracks: KeptMusicTrack[]; collections: KeptMusicCollecti
   const deps: RunnerDeps = {
     refresh: async () => undefined,
     state: () => state,
+    readPending: async () => null,
     readPlaylists: async () => new Map(),
     readTwins: async () => new Map(),
     readWanted: async () => new Map(),

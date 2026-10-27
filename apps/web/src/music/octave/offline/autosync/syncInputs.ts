@@ -5,11 +5,19 @@
  * voulue pour les titres de la bibliothèque gardés (le plan, `offline.music`).
  * Une lecture qui échoue (hors ligne, refus, playlist supprimée) ne donne RIEN :
  * la règle laisse alors ce qui est gardé tel quel.
+ *
+ * Une playlist de la bibliothèque se lit COMME ELLE SE MONTRE (`PlaylistView`) :
+ * ses entrées Jellyfin ET ses titres hors bibliothèque en attente (une playlist
+ * importée, `mergePlaylist`). Lue sans eux, elle semblait les avoir perdus et la
+ * passe complète les effaçait de l'appareil (relevé du 27/10, « New » : 36 titres
+ * hors bibliothèque gardés). Attentes illisibles (extension coupée, pas encore
+ * connue, refus) : une playlist qui garde des titres d'ailleurs reste intacte.
  */
 
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
-import { fetchExternalPlaylist, libraryMatchRequest, musicApi, type MusicProvider } from "@tentacle-tv/api-client";
-import { parseTrackKey, type MusicTrack } from "@tentacle-tv/shared/music";
+import { fetchExternalPlaylist, fetchPendingMusic, libraryMatchRequest, musicApi, type MusicProvider } from "@tentacle-tv/api-client";
+import { parseTrackKey, type MusicTrack, type PendingMusicItem } from "@tentacle-tv/shared/music";
+import { mergePlaylist } from "@tentacle-tv/shared/octave";
 import { keptToTrack } from "../deviceModel";
 import { planLibrary } from "../keepMusic";
 import type { WantedForm } from "./syncPlan";
@@ -26,15 +34,42 @@ export function playlistTarget(collectionKey: string): { kind: "library"; id: st
   return parsed?.kind === "external" ? { kind: "external", pluginId: parsed.ref.pluginId, id: parsed.ref.id } : null;
 }
 
-/** Le contenu d'aujourd'hui des playlists gardées (celles de `only` s'il est donné). */
-export async function readPlaylists(collections: readonly KeptMusicCollection[], provider: MusicProvider | null, only: ReadonlySet<string> | null = null): Promise<Map<string, MusicTrack[]>> {
+/** Les attentes du compte chez l'extension (`music.pending`) ; `null` : illisibles (sans extension, sans route, refus). */
+export async function readPending(provider: MusicProvider | null): Promise<PendingMusicItem[] | null> {
+  if (!provider?.music.pending) return null;
+  try {
+    return (await fetchPendingMusic(provider)).items;
+  } catch {
+    return null;
+  }
+}
+
+/** Les titres d'extension que garde cette collection viennent-ils tous de celle qu'on sait lire ? */
+function externalsReadable(c: KeptMusicCollection, provider: MusicProvider | null, pending: readonly PendingMusicItem[] | null): boolean {
+  const externals = c.trackKeys.filter((k) => k.startsWith("ext:"));
+  if (externals.length === 0) return true;
+  return pending !== null && provider !== null && externals.every((k) => k.startsWith(`ext:${provider.pluginId}:`));
+}
+
+/**
+ * Le contenu d'aujourd'hui des playlists gardées (celles de `only` s'il est donné), une playlist de la bibliothèque
+ * avec ses attentes (`pending`, lues une fois pour le passage par `readPending`).
+ */
+export async function readPlaylists(
+  collections: readonly KeptMusicCollection[],
+  provider: MusicProvider | null,
+  only: ReadonlySet<string> | null = null,
+  pending: readonly PendingMusicItem[] | null = null,
+): Promise<Map<string, MusicTrack[]>> {
   const out = new Map<string, MusicTrack[]>();
   for (const c of collections) {
     const target = c.kind === "playlist" ? playlistTarget(c.key) : null;
     if (!target || (only && !only.has(target.id))) continue;
     try {
       if (target.kind === "library") {
-        out.set(c.key, (await musicApi.playlist(target.id)).entries.map((e) => e.track));
+        if (!externalsReadable(c, provider, pending)) continue;
+        const entries = (await musicApi.playlist(target.id)).entries;
+        out.set(c.key, mergePlaylist(entries, pending ?? [], target.id).map((row) => row.track));
       } else if (provider && provider.pluginId === target.pluginId && provider.music.playlist) {
         const playlist = await fetchExternalPlaylist(provider, target.id);
         if (playlist?.tracks) out.set(c.key, playlist.tracks);

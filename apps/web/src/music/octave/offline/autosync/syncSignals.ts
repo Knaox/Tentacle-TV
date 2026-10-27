@@ -2,7 +2,9 @@
  * Octave — ce qui RÉVEILLE la tenue à jour, sans relevé en boucle : les évènements
  * `music:*` que le mode reçoit déjà (`useOctaveEvents` les passe ici, une ligne).
  * Une playlist a changé, la bibliothèque a grandi, un titre d'ailleurs a sa version
- * Jellyfin (`music:resolved` la porte : elle sert de jumeau sans requête).
+ * Jellyfin (`music:resolved` la porte : elle sert de jumeau sans requête), les
+ * attentes de l'extension ont changé (`music:pending` : un titre ajouté à une
+ * playlist importée, une entrée retirée, une entrée qui change d'identité).
  */
 
 import { externalTrackKey, type MusicEvent, type MusicTrack } from "@tentacle-tv/shared/music";
@@ -10,7 +12,8 @@ import { externalTrackKey, type MusicEvent, type MusicTrack } from "@tentacle-tv
 export type SyncSignal =
   | { kind: "playlist"; playlistId: string }
   | { kind: "library" }
-  | { kind: "twin"; externalKey: string; track: MusicTrack | null };
+  | { kind: "twin"; externalKey: string; track: MusicTrack | null }
+  | { kind: "pending" };
 
 const listeners = new Set<(signal: SyncSignal) => void>();
 
@@ -21,6 +24,7 @@ export function signalMusicEvent(event: MusicEvent): void {
   // Un ajout, ou une MISE À JOUR : Jellyfin pose souvent un titre avant d'en lire les étiquettes (artiste, durée) —
   // c'est la mise à jour qui le rend reconnaissable comme la version d'une copie d'ailleurs (vu au banc).
   else if (event.type === "music:library" && event.added.length + event.updated.length > 0) signal = { kind: "library" };
+  else if (event.type === "music:pending") signal = { kind: "pending" };
   else if (event.type === "music:resolved") {
     signal = { kind: "twin", externalKey: externalTrackKey({ pluginId: event.pluginId, id: event.externalId }), track: event.track };
   }
