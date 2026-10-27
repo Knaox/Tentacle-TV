@@ -10,7 +10,7 @@
 // Jamais une fenêtre activée sous les doigts de Damien : 120 s d'inactivité
 // avant CHAQUE activation, abandon du clip s'il revient pendant la mesure.
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { sleep } from "../lib/app.mjs";
@@ -28,7 +28,7 @@ const who = process.argv[2] ?? "Knaoxtest";
 const CLIPS = { blanc: "Blanc", noir: "Noir", gris: "Gris", jaune: "Jaune", rouge: "Rouge", bleu: "Bleu", pastel: "Pastel", bruit: "Bruit", degrade: "Dégradé" };
 const clips = (process.env.LG8_CLIPS ?? Object.keys(CLIPS).join(",")).split(",");
 // Un panneau s'ouvre par son bouton (libellé FR, i18n `player`) ; absent = consigné.
-const PANELS = { vitesse: "^Vitesse de lecture$", pistes: "^Pistes$" };
+const PANELS = { vitesse: "^Vitesse de lecture$", pistes: "^(Pistes|Paramètres)$" };
 const states = (process.env.LG8_STATES ?? "controles,vitesse,pistes").split(",");
 const OUT = process.env.LG8_OUT ?? outDir("lg8-lisibilite");
 const [, electronPid] = readFileSync(path.join(STATE, `hold-${who}.pid`), "utf8").trim().split(" ").map(Number);
@@ -109,6 +109,21 @@ function analyse(clip, shot) {
     return { clip, state: shot.state, kind: t.kind, name: t.name, where: t.where ?? "", ...r, verdict: verdict(t.kind, r) };
   });
 }
+
+// Une seule passe « fenêtre active » à la fois sur la machine : deux bancs qui
+// s'activent tour à tour jugeraient chacun la fenêtre de l'autre inactive.
+const ACTIVE_LOCK = "/Users/damienrouge/Desktop/Projet - local/.claude/locks/lg/active-pass";
+for (const end = Date.now() + 60 * 60_000; ;) {
+  try {
+    mkdirSync(ACTIVE_LOCK);
+    writeFileSync(path.join(ACTIVE_LOCK, "qui"), `lg8 lisibilité, pid ${process.pid}\n`);
+    break;
+  } catch {
+    if (Date.now() > end) throw new Error("passe active d'une autre session depuis une heure");
+    await sleep(10_000);
+  }
+}
+process.on("exit", () => rmSync(ACTIVE_LOCK, { recursive: true, force: true }));
 
 const rows = [];
 const meta = { date: new Date().toISOString(), branch: execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" }).trim(), commit: execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim(), build: process.env.LG8_BUILD ?? "?", skipped: [] };

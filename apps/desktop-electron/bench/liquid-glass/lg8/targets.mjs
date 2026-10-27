@@ -53,7 +53,9 @@ export const COLLECT = `
     const r = range.getBoundingClientRect();
     if (!inView(r) || shown(el) < 0.5) continue;
     el.setAttribute("data-lg8-text", "");
-    out.push({ kind: "texte", name: text.slice(0, 40), where: nameOf(el), box: box(r) });
+    // Les chiffres DANS une icône (« 10 », « 30 » des sauts) font partie du glyphe : seuil 3:1.
+    const inIcon = /^\\d{1,2}$/.test(text) && el.closest("button")?.querySelector("svg");
+    out.push({ kind: inIcon ? "glyphe" : "texte", name: text.slice(0, 40), where: nameOf(el), box: box(r) });
   }
   for (const svg of document.querySelectorAll("svg")) {
     if (svg.parentElement?.closest("svg") || svg.closest("[data-lg8-debug]")) continue;
