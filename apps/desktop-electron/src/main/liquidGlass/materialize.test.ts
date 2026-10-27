@@ -52,11 +52,13 @@ describe("GlassRegions — une région qui se matérialise", () => {
     expect(glass?.frame).toEqual({ x: 100, y: 52, width: 200, height: 48 });
   });
 
-  it("sans décalage, l'entrée part dans le même lot", () => {
+  it("sans décalage, l'entrée attend quand même un tour (le cadre de départ validé d'abord — mesuré)", () => {
     const t = setup();
     t.upsert(region("transport", { materialize: { ...M, delay: 0 } }));
+    expect(t.backend.ops).not.toContain("setAlpha container 1 340 [0.2,0.9,0.3,1]");
+    expect(t.timers.size()).toBe(1);
+    t.timers.runAll();
     expect(t.backend.ops).toContain("setAlpha container 1 340 [0.2,0.9,0.3,1]");
-    expect(t.timers.size()).toBe(0);
   });
 
   it("chaque forme a SON conteneur : leurs fondus sont décalés, pas partagés", () => {

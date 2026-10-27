@@ -17,7 +17,7 @@
 
 :root[data-liquid-glass="native"],
 :root[data-lgp-preview="on"] {
-  --lg-player-native-lag: 16ms;
+  --lg-player-native-lag: 8ms;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize] {

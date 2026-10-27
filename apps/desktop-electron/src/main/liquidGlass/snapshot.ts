@@ -41,6 +41,8 @@ export interface RegionsSnapshot {
   /** `NSGlassEffectView` réellement présentes, comptées dans AppKit. */
   nativeViews: number;
   regions: RegionSnapshot[];
+  /** Les verres en SORTIE (déjà retirés par la page, leur conteneur s'éteint) : ce qu'AppKit affiche. */
+  leaving: Array<RegionSnapshot["live"]>;
 }
 
 /** Ce que rend `__tentacleGlass.snapshot()`. */

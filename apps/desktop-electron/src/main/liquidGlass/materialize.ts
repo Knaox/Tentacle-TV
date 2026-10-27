@@ -58,14 +58,17 @@ export class DelayedEntries {
 
   constructor(private readonly timers: Timers) {}
 
-  /** Joue `start` après `delayMs` (tout de suite à 0). */
+  /**
+   * Joue `start` après `delayMs` — TOUJOURS par un minuteur, même à 0 : le cadre de
+   * départ doit avoir été validé par Core Animation avant l'animation (mesuré : posé
+   * puis animé dans la même passe, le verre saute à destination, sans monter).
+   */
   schedule(id: string, delayMs: number, start: () => void): void {
     this.cancel(id);
-    if (delayMs <= 0) return start();
     this.pending.set(id, this.timers.set(() => {
       this.pending.delete(id);
       start();
-    }, delayMs));
+    }, Math.max(0, delayMs)));
   }
 
   /** L'entrée n'a plus lieu d'être (la région part, la page s'en va). */

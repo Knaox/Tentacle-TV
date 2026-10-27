@@ -155,6 +155,11 @@ export class GlassStage {
     this.root = null;
   }
 
+  /** Les verres qui s'estompent avec leur conteneur — pour l'instantané du banc. */
+  retiringViews(): ViewHandle[] {
+    return [...this.retiring].flatMap((entry) => [...entry.views]);
+  }
+
   hasRoot(): boolean {
     return this.root !== null;
   }

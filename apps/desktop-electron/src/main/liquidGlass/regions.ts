@@ -7,8 +7,7 @@
  *
  *  1. **Rien de posé qui ne sert.** Sans région, ni racine, ni conteneur.
  *     Réglage coupé : tout est retiré, seules les DESCRIPTIONS restent.
- *  2. **N'écrire que ce qui change.**
- *  3. **Une poignée rendue n'est plus jamais touchée** — c'est un pointeur.
+ *  2. **N'écrire que ce qui change.**  3. **Une poignée rendue n'est plus jamais touchée.**
  *  4. **Les mouvements de la page, rejoués par AppKit** (`transition` non nul) :
  *     déplacement au ressort de la page (`springCurve.ts`) ; une région seule,
  *     ou un groupe entier, entre et sort par le fondu de son conteneur (un verre
@@ -120,6 +119,7 @@ export class GlassRegions {
       groups: this.stage.groupCount(),
       nativeViews: this.stage.nativeViews(),
       regions,
+      leaving: this.stage.retiringViews().map((view) => this.backend.inspect(view).live ?? null),
     };
   }
 
@@ -222,9 +222,9 @@ export class GlassRegions {
     this.restack(entry);
     if (grow) this.backend.setFrame(entry.view, frame, motionOf(entry.region));
     if (materialize) {
-      const view = entry.view; // né transparent et décalé : au bout du décalage, il monte et s'allume
+      const view = entry.view; // né transparent et décalé : après son décalage, il monte et s'allume
       this.entries.schedule(entry.region.id, m.delay, () => {
-        if (entry.view !== view) return;
+        if (entry.view !== view) return; // partie entre-temps : rien à animer
         this.backend.setFrame(view, toAppKitFrame(entry.rect, this.backend.contentHeight()), enterMotion(m, ms));
         this.stage.reveal(entry.groupKey, ms, m.enterEase);
       });
