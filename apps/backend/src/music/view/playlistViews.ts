@@ -11,7 +11,7 @@ import { normalizeId } from "../jellyfin/musicJellyfin";
 import { artworkUrl } from "../model/toMusic";
 import { listUserPlaylists, playlistEntries, playlistFor, type JfPlaylist } from "../playlists/playlistJellyfin";
 import { searchTokens } from "../index/searchQuery";
-import { addedDatesFor, playlistScope } from "../listOrder/addedDates";
+import { addedDatesFor, legacyPlaylistScope, playlistScope } from "../listOrder/addedDates";
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
@@ -50,10 +50,12 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   const playlist = await playlistFor(view.userId, playlistId);
   if (!playlist) return null;
   const entries = (await playlistEntries(view.userId, playlistId)) ?? [];
-  const rows = await visibleInOrder(view, entries.map((e) => e.itemId));
+  const ids = entries.map((e) => e.itemId);
+  const rows = await visibleInOrder(view, ids);
   const tracks = new Map((await tracksOf(view, rows)).map((t) => [t.jellyfinId!, t]));
-  // Jellyfin ne date pas une entrée : Tentacle relève quand elle est apparue (l'ordre de la playlist à la première lecture).
-  const added = await addedDatesFor(playlistScope(playlistId), entries.map((e) => e.itemId));
+  // Jellyfin ne date pas une entrée : Tentacle relève quand elle est apparue (l'ordre de la playlist à la première
+  // lecture) ; une arrivée posée à la place de son attente garde la date de sa place.
+  const added = await addedDatesFor(playlistScope(playlistId), ids, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
   const out: MusicPlaylistEntry[] = [];
   entries.forEach((entry, position) => {
     const track = tracks.get(entry.itemId);

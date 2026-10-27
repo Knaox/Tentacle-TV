@@ -178,7 +178,10 @@ export function sortListItems<T>(natural: readonly T[], subjectOf: (item: T) => 
   if (prefs.sort === "custom") return applyCustomOrder(natural, subjectOf, prefs.custom);
   const sign = prefs.direction === "desc" ? -1 : 1;
   const decorated = natural.map((item, index) => ({ item, index, subject: subjectOf(item) }));
-  decorated.sort((a, b) => compare(a.subject, b.subject, prefs.sort, sign) || a.index - b.index);
+  // « Dernier ajout » : à date égale (un import entier, une arrivée posée à sa place), plus bas dans la liste =
+  // ajouté après — l'ordre naturel suit le sens. Ailleurs, il départage toujours dans son ordre.
+  const tieSign = prefs.sort === "added" ? sign : 1;
+  decorated.sort((a, b) => compare(a.subject, b.subject, prefs.sort, sign) || (a.index - b.index) * tieSign);
   return decorated.map((d) => d.item);
 }
 

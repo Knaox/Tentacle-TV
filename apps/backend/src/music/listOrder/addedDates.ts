@@ -1,17 +1,33 @@
 /**
  * Octave — les dates d'entrée d'une liste, gardées dans `music_list_added`
- * (règle : `addedPlan.ts`). `liked:<userId>` ou `playlist:<playlistId>`.
+ * (règle : `addedPlan.ts`). `liked:<userId>` ou `playlist2:<playlistId>`.
+ *
+ * `playlist:<id>` (avant le 27/10) datait « maintenant » chaque arrivée posée
+ * par l'extension à la place de son attente : ces dates ne se distinguent
+ * plus d'un vrai ajout. La portée `playlist2:` repart donc d'une estimation
+ * (l'ordre de la playlist, celui des ajouts) et efface l'ancienne à sa
+ * première lecture.
  */
 
 import { getPrisma } from "../../services/db";
-import { planAddedDates } from "./addedPlan";
+import { planAddedDates, type AddedPlanOptions } from "./addedPlan";
 
 export function likedScope(userId: string): string {
   return `liked:${userId.replace(/-/g, "").toLowerCase()}`;
 }
 
 export function playlistScope(playlistId: string): string {
+  return `playlist2:${playlistId.replace(/-/g, "").toLowerCase()}`;
+}
+
+/** La portée d'avant le 27/10, effacée à la première lecture de la nouvelle. */
+export function legacyPlaylistScope(playlistId: string): string {
   return `playlist:${playlistId.replace(/-/g, "").toLowerCase()}`;
+}
+
+export interface AddedDatesOptions extends AddedPlanOptions {
+  /** Une portée d'avant, à effacer quand celle-ci est lue pour la première fois. */
+  legacyScope?: string;
 }
 
 /** Les dates d'entrée des titres de `ids` (relevées, estimées à la première lecture), la table tenue à jour. */
@@ -19,14 +35,17 @@ export async function addedDatesFor(
   scope: string,
   ids: readonly string[],
   estimate: (itemId: string, index: number) => number | null = () => null,
+  options: AddedDatesOptions = {},
 ): Promise<Map<string, number>> {
   const prisma = getPrisma();
   const rows = await prisma.musicListAdded.findMany({ where: { scope }, select: { itemId: true, addedAt: true } });
   const known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
-  const plan = planAddedDates(known, ids, Date.now(), estimate);
+  const plan = planAddedDates(known, ids, Date.now(), estimate, options);
+  const legacy = rows.length === 0 && plan.insert.length > 0 ? options.legacyScope : undefined;
   if (plan.insert.length > 0 || plan.remove.length > 0) {
     try {
       await prisma.$transaction([
+        ...(legacy ? [prisma.musicListAdded.deleteMany({ where: { scope: legacy } })] : []),
         ...(plan.remove.length > 0 ? [prisma.musicListAdded.deleteMany({ where: { scope, itemId: { in: plan.remove } } })] : []),
         ...plan.insert.map((r) =>
           prisma.musicListAdded.upsert({

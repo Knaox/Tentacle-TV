@@ -40,8 +40,8 @@ export function PlaylistView() {
   // Jellyfin fait foi : une attente dont le titre est déjà dans la bibliothèque se montre comme lui.
   const natural = useLibraryFirstRows(useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]));
   const statsOf = useMemo(
-    () => makeStatsOf({ byEntry: new Map((playlist.data?.entries ?? []).flatMap((e) => (e.stats ? [[e.entryId, e.stats] as const] : []))), pending }),
-    [pending, playlist.data],
+    () => makeStatsOf({ byEntry: new Map((playlist.data?.entries ?? []).flatMap((e) => (e.stats ? [[e.entryId, e.stats] as const] : []))), pending, natural }),
+    [natural, pending, playlist.data],
   );
   const editable = playlist.data?.editable === true;
   const reorderPlaylist = useReorderMusicPlaylist();
