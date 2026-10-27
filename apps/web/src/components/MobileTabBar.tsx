@@ -6,6 +6,7 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { PlusMenu } from "./PlusMenu";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
+import { webPluginNavPages } from "../hooks/pluginNavPages";
 import { avatarBackgroundFor, getUserInfo } from "./userMenu/menuItems";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 
@@ -72,9 +73,8 @@ export function MobileTabBar() {
 
     // Plugin nav items — à la place que leur extension leur donne (épinglés sans avis), réglables depuis le menu « + ».
     for (const plugin of activePluginsMeta) {
-      if (plugin.configEnabled !== true) continue;
-      for (const nav of plugin.navItems || []) {
-        if (nav.admin || !nav.platforms?.includes("web")) continue;
+      // Une page MASQUÉE par son extension n'y est jamais, quelle que soit son épingle (pluginNavPages.ts).
+      for (const nav of webPluginNavPages(plugin)) {
         if (!pinned.isPluginNavPinned(pluginNavKey(plugin.pluginId, nav.path), nav.primary)) continue;
         list.push({
           path: nav.path,

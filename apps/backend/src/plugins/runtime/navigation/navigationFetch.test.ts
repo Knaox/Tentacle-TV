@@ -55,10 +55,17 @@ describe("validation de la réponse", () => {
     expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: "<img src=x>", primary: true }] }))).toBeNull();
     expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: "a".repeat(41), primary: true }] }))).toBeNull();
     expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", primary: "oui" }] }))).toBeNull();
+    expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: null, primary: false, hidden: "oui" }] }))).toBeNull();
     expect(parseNavigationBody("pas du json")).toBeNull();
   });
   it("garde un nom nul (libellés du manifeste)", () => {
     expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: null, primary: true }] })))
       .toEqual({ items: [{ path: "/p", label: null, primary: true }] });
+  });
+  it("garde une page masquée (`hidden`), que la validation ne retire pas", () => {
+    expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: null, primary: false, hidden: true }] })))
+      .toStrictEqual({ items: [{ path: "/p", label: null, primary: false, hidden: true }] });
+    expect(parseNavigationBody(JSON.stringify({ items: [{ path: "/p", label: null, primary: false, hidden: false }] })))
+      .toStrictEqual({ items: [{ path: "/p", label: null, primary: false }] });
   });
 });

@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useServerCapability, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
+import { mobilePluginRoutes } from "@/hooks/extensionNavPages";
 import { useActivePlugins } from "../hooks/useActivePlugins";
 import { ExtensionProblem } from "@/components/problems/ExtensionProblem";
 import { shortPluginName } from "../hooks/useExtensionSections";
@@ -51,9 +52,9 @@ export function PluginWebViewScreen() {
   // `openTrailerFor` ouvre l'écran des bandes-annonces de l'app : le serveur sert le catalogue.
   const trailerCatalog = useServerCapability("trailers.catalog");
 
-  // Le chemin demandé s'il est une route mobile du plugin, sinon la première.
+  // Le chemin demandé s'il est une route mobile du plugin (masquée comprise : un lien l'ouvre), sinon la première.
   const pluginPath = useMemo(() => {
-    const mobileItems = (plugin?.navItems ?? []).filter((n) => n.platforms.includes("mobile"));
+    const mobileItems = mobilePluginRoutes(plugin?.navItems);
     const requested = typeof path === "string" ? mobileItems.find((n) => n.path === path) : undefined;
     return requested?.path ?? mobileItems[0]?.path ?? "/";
   }, [plugin, path]);

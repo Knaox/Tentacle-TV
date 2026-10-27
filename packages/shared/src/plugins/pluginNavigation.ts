@@ -1,13 +1,14 @@
 /**
  * La NAVIGATION d'une extension, réglée à l'exécution (capacité serveur
  * `plugins.navigation`) : le nom de chacune de ses pages et sa place, dans la
- * barre principale ou dans « Plus ». L'extension le déclare dans son manifeste,
+ * barre principale, dans « Plus », ou nulle part. L'extension le déclare dans
+ * son manifeste,
  *
  *   "navigation": "/navigation"
  *
  * une route GET de SON serveur (runtime isolé) qui rend
  *
- *   { "items": [{ "path": "/ma/page", "label": "Mon nom" | null, "primary": true }] }
+ *   { "items": [{ "path": "/ma/page", "label": "Mon nom" | null, "primary": true, "hidden"?: true }] }
  *
  * et qu'elle écrit elle-même (son administration, PUT sur la même route). Le
  * cœur la lit sur la socket de l'invité, la valide, et la FUSIONNE dans les
@@ -15,6 +16,13 @@
  * manifeste (un seul nom, toutes langues), `primary` dit le DÉFAUT de la barre
  * — le geste de l'utilisateur sur son appareil l'emporte toujours. Sans ce
  * champ, rien ne change : la page est épinglée d'office, comme avant.
+ *
+ * `hidden: true` MASQUE la page de toute la navigation, sur tous les clients
+ * (barre, « Plus », barre d'onglets, miroir, « Personnaliser la barre ») — et
+ * aucune épingle d'appareil ne l'y ramène ; sa ROUTE reste, et un lien direct
+ * l'ouvre toujours (`isPluginNavHidden`). Absent : faux. Une page masquée
+ * part avec `primary: false` : un client d'avant, qui ignore `hidden`, la
+ * range dans « Plus », jamais dans la barre.
  *
  * MIROIR : recopié octet pour octet dans
  * `apps/backend/src/plugins/runtime/navigation/` (le backend ne dépend pas de
@@ -34,6 +42,8 @@ export interface PluginNavigationItem {
   label: string | null;
   /** Dans la barre principale par défaut (`true`), ou dans « Plus » seulement. */
   primary: boolean;
+  /** Masquée de toute la navigation (sa route reste) ; posé seulement quand c'est vrai. */
+  hidden?: boolean;
 }
 
 export interface PluginNavigationDoc {
@@ -79,13 +89,23 @@ export function readNavigationDoc(raw: unknown): PluginNavigationDoc | null {
   const out: PluginNavigationItem[] = [];
   for (const item of items) {
     if (!item || typeof item !== "object") return null;
-    const { path, label, primary } = item as Record<string, unknown>;
+    const { path, label, primary, hidden } = item as Record<string, unknown>;
     const safe = safeNavigationPath(path);
     if (!safe || typeof primary !== "boolean") return null;
+    if (hidden !== undefined && typeof hidden !== "boolean") return null;
     if (label !== null && label !== undefined && normalizeNavLabel(label) === null) return null;
-    out.push({ path: safe, label: label == null ? null : normalizeNavLabel(label), primary });
+    const read: PluginNavigationItem = { path: safe, label: label == null ? null : normalizeNavLabel(label), primary };
+    out.push(hidden ? { ...read, hidden: true } : read);
   }
   return { items: out };
+}
+
+/**
+ * Une page des `navItems` est-elle MASQUÉE de la navigation ? Seul `true` le
+ * dit (rien d'autre ne se croit) ; sa route, elle, reste enregistrée.
+ */
+export function isPluginNavHidden(nav: { hidden?: unknown }): boolean {
+  return nav.hidden === true;
 }
 
 interface MergeableNavItem {
@@ -96,19 +116,27 @@ interface MergeableNavItem {
 }
 
 /**
- * Les `navItems` du manifeste, avec ce que l'extension a réglé : `primary` sur
- * chaque page qu'elle décrit, et son nom choisi à la place des libellés. Une
- * entrée d'administration ne bouge jamais ; une page que le document ne décrit
- * pas reste telle quelle (épinglée d'office, comme avant).
+ * Les `navItems` du manifeste, avec ce que l'extension a réglé : `primary` (et
+ * `hidden`) sur chaque page qu'elle décrit, et son nom choisi à la place des
+ * libellés. Une entrée d'administration ne bouge jamais ; une page que le
+ * document ne décrit pas reste telle quelle (épinglée d'office, comme avant).
+ * Une page décrite a la place que dit le document, et elle seule : masquée
+ * (`hidden: true`, et alors `primary: false`), sinon plus jamais masquée.
  */
-export function mergeNavigation<T extends MergeableNavItem>(navItems: readonly T[], doc: PluginNavigationDoc | null): Array<T & { primary?: boolean }> {
+export function mergeNavigation<T extends MergeableNavItem>(
+  navItems: readonly T[],
+  doc: PluginNavigationDoc | null,
+): Array<T & { primary?: boolean; hidden?: boolean }> {
   if (!doc) return [...navItems];
   const byPath = new Map(doc.items.map((item) => [item.path, item]));
   return navItems.map((nav) => {
     const set = nav.admin ? undefined : byPath.get(nav.path);
     if (!set) return nav;
-    if (set.label === null) return { ...nav, primary: set.primary };
-    const { labels: _labels, ...rest } = nav;
-    return { ...rest, label: set.label, primary: set.primary } as T & { primary: boolean };
+    // Un `hidden` du manifeste ne survit pas au document : la page décrite a SA place, et elle seule.
+    const { hidden: _hidden, ...visible } = nav as T & { hidden?: unknown };
+    const place = set.hidden ? { primary: false, hidden: true } : { primary: set.primary };
+    if (set.label === null) return { ...visible, ...place } as T & { primary: boolean };
+    const { labels: _labels, ...rest } = visible;
+    return { ...rest, label: set.label, ...place } as T & { primary: boolean };
   });
 }

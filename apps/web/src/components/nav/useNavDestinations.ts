@@ -5,7 +5,8 @@
  * les recommandations, puis les bibliothèques elles-mêmes — plus de menu à
  * ouvrir pour atteindre « Films ». Ma liste et Mes favoris y entrent quand on
  * les épingle ; une page d'extension, si son extension l'y admet (`primary`,
- * dans la barre sans avis ; `false` : jamais proposée — `pluginNavPins.ts`),
+ * dans la barre sans avis ; `false` : jamais proposée — `pluginNavPins.ts` ;
+ * masquée, `hidden` : nulle part — `pluginNavPages.ts`),
  * puis là où on la met (`usePinnedNav`, que le mobile lit aussi). Ce qui ne tient pas en largeur passe dans « Plus » (`NavTabs`).
  *
  * Chacun la dispose ensuite à sa main (`useNavBarLayout`) : toute destination
@@ -27,6 +28,7 @@ import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
 import { pluginNavKey, usePinnedNav } from "../../hooks/usePinnedNav";
 import { pluginNavPinnable } from "../../hooks/pluginNavPins";
+import { webPluginNavPages } from "../../hooks/pluginNavPages";
 import { useNavBarLayout } from "../../hooks/useNavBarLayout";
 import { appendPinned, applyOrder, nudge, reorderPinned, type NavEntryKind } from "./navLayout";
 
@@ -117,9 +119,8 @@ export function useNavDestinations() {
 
     const extensions: NavListEntry[] = [];
     for (const plugin of plugins) {
-      if (plugin.configEnabled !== true) continue;
-      for (const nav of plugin.navItems ?? []) {
-        if (nav.admin || !nav.platforms?.includes("web")) continue;
+      // Une page MASQUÉE par son extension : ni barre, ni « Plus », ni « Personnaliser la barre » (pluginNavPages.ts).
+      for (const nav of webPluginNavPages(plugin)) {
         const key = pluginNavKey(plugin.pluginId, nav.path);
         extensions.push({
           key: `plugin-${key}`,

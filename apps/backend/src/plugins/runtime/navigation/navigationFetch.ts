@@ -30,6 +30,8 @@ const NAVIGATION_SCHEMA = z.object({
         path: z.string().refine((value) => safeNavigationPath(value) !== null),
         label: z.string().max(PLUGIN_NAV_LABEL_MAX * 4).refine((value) => normalizeNavLabel(value) !== null).nullable(),
         primary: z.boolean(),
+        // Masquée de toute la navigation : sans cette ligne, Zod la RETIRAIT en silence.
+        hidden: z.boolean().optional(),
       }),
     )
     .max(PLUGIN_NAV_ITEMS_MAX),

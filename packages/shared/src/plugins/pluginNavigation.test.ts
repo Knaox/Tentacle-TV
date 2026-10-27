@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PLUGIN_NAV_LABEL_MAX,
+  isPluginNavHidden,
   mergeNavigation,
   normalizeNavLabel,
   readNavigationDoc,
@@ -46,7 +47,15 @@ describe("document de navigation", () => {
     expect(readNavigationDoc({ items: [{ path: "/x/page", label: null, primary: true }] }))
       .toEqual({ items: [{ path: "/x/page", label: null, primary: true }] });
   });
+  it("masquée : `hidden: true` se lit, `false` ou absent ne se pose pas", () => {
+    expect(readNavigationDoc({ items: [{ path: "/x/page", label: null, primary: false, hidden: true }] }))
+      .toEqual({ items: [{ path: "/x/page", label: null, primary: false, hidden: true }] });
+    const [shown] = readNavigationDoc({ items: [{ path: "/x/page", label: null, primary: false, hidden: false }] })!.items;
+    expect(shown).toStrictEqual({ path: "/x/page", label: null, primary: false });
+  });
   it("refuse tout le document au moindre écart", () => {
+    expect(readNavigationDoc({ items: [{ path: "/x/page", label: null, primary: false, hidden: "yes" }] })).toBeNull();
+    expect(readNavigationDoc({ items: [{ path: "/x/page", label: null, primary: false, hidden: 1 }] })).toBeNull();
     expect(readNavigationDoc({ items: [{ path: "/x/page", label: "<i>", primary: true }] })).toBeNull();
     expect(readNavigationDoc({ items: [{ path: "/x/page", label: null }] })).toBeNull();
     expect(readNavigationDoc({ items: [{ path: "x", label: null, primary: true }] })).toBeNull();
@@ -71,5 +80,29 @@ describe("fusion dans les navItems", () => {
   it("une page d'administration ne se règle jamais", () => {
     const [, admin] = mergeNavigation(NAV, { items: [{ path: "/admin/plugins/x", label: "Pirate", primary: true }] });
     expect(admin).toEqual(NAV[1]);
+    const [, still] = mergeNavigation(NAV, { items: [{ path: "/admin/plugins/x", label: null, primary: false, hidden: true }] });
+    expect(still).toStrictEqual(NAV[1]);
+  });
+  it("masquée : `hidden: true` et jamais dans la barre, même si le document dit `primary`", () => {
+    const [page] = mergeNavigation(NAV, { items: [{ path: "/x/page", label: null, primary: true, hidden: true }] });
+    expect(page).toStrictEqual({ ...NAV[0], primary: false, hidden: true });
+    const [named] = mergeNavigation(NAV, { items: [{ path: "/x/page", label: "Mes sons", primary: false, hidden: true }] });
+    expect(named).toStrictEqual({ path: "/x/page", icon: "clock", platforms: ["web"], label: "Mes sons", primary: false, hidden: true });
+  });
+  it("une page décrite visible n'est plus masquée, même si le manifeste le disait", () => {
+    const manifest = [{ ...NAV[0], hidden: true }];
+    const [page] = mergeNavigation(manifest, { items: [{ path: "/x/page", label: null, primary: false }] });
+    expect(page).toStrictEqual({ ...NAV[0], primary: false });
+    // Sans document : le manifeste tel quel.
+    expect(mergeNavigation(manifest, null)).toStrictEqual(manifest);
+  });
+});
+
+describe("page masquée, côté clients", () => {
+  it("seul `true` masque", () => {
+    expect(isPluginNavHidden({ hidden: true })).toBe(true);
+    expect(isPluginNavHidden({ hidden: false })).toBe(false);
+    expect(isPluginNavHidden({ hidden: "true" })).toBe(false);
+    expect(isPluginNavHidden({})).toBe(false);
   });
 });

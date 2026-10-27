@@ -5,6 +5,7 @@ import { useVisiblePlugins } from "../../rights/useVisiblePlugins";
 import { Film, House, Puzzle, Smartphone, Sparkles, User, type LucideIcon } from "lucide-react";
 import { lucideIconFor, resolvePluginLabel } from "../../components/lucideIcon";
 import { useOfflineMode } from "../../offline/useOfflineMode";
+import { webPluginNavPages } from "../../hooks/pluginNavPages";
 
 /**
  * Les onglets de l'app (`app/(tabs)/_layout.tsx`) : Accueil · Pour vous ·
@@ -43,8 +44,8 @@ export function useExtensionPlugins(): ExtensionPlugin[] {
   return useMemo(() => {
     const out: ExtensionPlugin[] = [];
     for (const plugin of plugins) {
-      if (plugin.configEnabled !== true) continue;
-      const navs = (plugin.navItems ?? []).filter((n) => !n.admin && n.platforms?.includes("web"));
+      // Une page MASQUÉE par son extension n'a ni section ni onglet ; sa route reste (pluginNavPages.ts).
+      const navs = webPluginNavPages(plugin);
       if (navs.length === 0) continue;
       const first = navs[0];
       out.push({

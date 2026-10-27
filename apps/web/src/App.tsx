@@ -38,6 +38,7 @@ import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
 import { RECO_REFINE_PATH } from "./lib/recoSections";
 import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
+import { webPluginRoutes } from "./hooks/pluginNavPages";
 import { DevGlassLab } from "./dev/glassLab/devRoute";
 import {
   MirrorAbout,
@@ -278,12 +279,11 @@ export function App() {
             <Route path="about" element={<ByFormFactor desktop={<About />} mirror={<MirrorAbout />} />} />
             <Route path="credits" element={<ByFormFactor desktop={<Credits />} mirror={<MirrorCredits />} />} />
 
-            {/* Dynamic plugin routes (sandboxed iframes) */}
-            {activePluginsMeta
-              .filter((plugin) => plugin.configEnabled === true)
-              .flatMap((plugin) =>
-              (plugin.navItems || [])
-                .filter((nav) => !nav.admin && nav.platforms?.includes("web"))
+            {/* Dynamic plugin routes (sandboxed iframes) — TOUTES, masquées comprises : une page
+                que son extension retire de la navigation (`hidden`) s'ouvre encore par un lien
+                (Octave, administration). Cf. hooks/pluginNavPages.ts. */}
+            {activePluginsMeta.flatMap((plugin) =>
+              webPluginRoutes(plugin)
                 .map((nav) => (
                   <Route
                     key={`${plugin.pluginId}-${nav.path}`}
