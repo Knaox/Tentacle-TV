@@ -247,6 +247,19 @@ la courbe ajustée finit exactement au but, sans le saut d'un ressort coupé. La
 `transition` que la page envoie (584) règle la durée des fondus. Mesuré dans l'app : fondu d'entrée à 62 % à 130 ms, de sortie à 24 % à
 160 ms puis 0 vue.
 
+**La matérialisation** (`materialize`, lot lg8, `materialize.ts`) : une région SEULE peut
+naître d'un cadre un peu plus bas et plus petit (`rise` px CSS, `scale` autour de
+`originX/Y`), après un décalage (`delay`), et s'y poser en `transition` ms sur la Bézier
+`enterEase` pendant que son conteneur s'allume sur la MÊME courbe ; retirée, elle y
+retourne en `exit` ms, courbe `exitEase`, pendant qu'il s'éteint, puis la vue part. La
+page envoie ces nombres et joue le même geste sur son contenu : le natif ne décide rien.
+Une entrée pas encore partie est annulée si la région s'en va (jamais un geste sur une
+poignée rendue). L'entrée passe TOUJOURS par un minuteur, même sans décalage : posé à son
+cadre de départ puis animé dans la même passe, le verre sautait à destination (mesuré).
+Le relevé du banc lit l'écran : `live` (cadre et opacité du conteneur en vol) et `leaving`
+(les verres en sortie). ⚠️ Mesuré : pendant une animation de l'animateur d'AppKit, le
+`frame` d'un verre AVANCE avec elle — ce n'est pas la destination.
+
 ### 2.6 Cycle de vie
 
 - Rien de posé sans région : ni racine, ni groupe — la fenêtre d'avant, vue
@@ -488,7 +501,7 @@ briques React) et la feuille `physics.css`, **portée par
 | Lentille au survol et à l'appui | `data-lg-lens` (`GLASS_LENS_PROPS`) | CSS pur : propriété `scale` (se compose avec un transform), `:hover` 1,04, `:active` 1,10, rebond au relâcher. Aucun écouteur. |
 | Reflet qui suit le pointeur | `useSpecularHighlight()` + `<GlassSpecular/>` | variables `--lg-spec-u/v` écrites hors React, boucle d'image seulement pendant le mouvement, 60 écritures/s au plus. La lumière est un dégradé FIXE qu'on DÉPLACE (`translate`) : halo sur la face, et la même lumière dans une bague masquée de 1 px pour le liseré. Option `{ sheen: true }` : fait suivre aussi `--lg-light-x/y` (le `--lgc-sheen` des recettes), un dégradé repeint. |
 | Fusion de verres voisins | `<GlassFusion spacing>` + `data-lg-fuse="id"` | `GlassEffectContainer` : sous `spacing` px, un seul verre pour le groupe ; chaque membre garde sa couche (clé stable), un seul porteur visible — deux verres superposés doubleraient la teinte. Animation `layout` de framer (transform) + opacité. |
-| Métamorphose (une barre qui naît d'un bouton) | `glassMorphProps(id, useReducedMotion())` | `layoutId` partagé, ressort `morph`, rayon corrigé par framer si `borderRadius` est en `style`. Mouvement réduit : fondu de 150 ms. |
+| Métamorphose (une barre qui naît d'un bouton) | `glassMorphProps(id, useReducedMotion())` | `layoutId` partagé, ressort `morph`, rayon corrigé par framer si `borderRadius` est en `style`. Mouvement réduit : fondu de 150 ms. Verre de la PAGE seulement : le lecteur (verre natif) se MATÉRIALISE (§ 7). |
 
 **Verre natif et mouvement.** Une région de verre NATIF suit la page par une
 animation de sa frame ; elle ne peut pas suivre une échelle image par image.
@@ -686,13 +699,40 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   chaque pas de 16 ms (`bench/liquid-glass/lg3/geometry.mjs`). Seul écart voulu : le bloc
   du bas monte de 32 px de plus (le temps a sa capsule, les boutons des cibles de 48 px).
   `playerGlassGeometry.test.ts` lie les jetons aux classes d'avant.
-- **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
-  pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y
-  fond avec les autres en une goutte, et s'en sépare au retour ; la région suit
-  la surface image par image, c'est la fin du repli (`visibility`) qui la
-  retire. Mesuré : formes nées du pivot (4 × 4 pt à 55 ms), séparées à leur
-  place en ~320 ms ; repli en ~200 ms puis 0 vue. Mouvement réduit : fondu
-  natif, sans repli.
+- **Une MATÉRIALISATION, plus de goutte** (lot lg8, 27/10 ; la métamorphose en goutte du
+  lot lg2 — formes repliées vers un pivot, fondues puis séparées — était « vraiment moche »
+  pour Damien) : le geste du lecteur de tvOS 26. Chaque forme (`GlassSurface materialize={ordre}`)
+  monte de 6 px depuis 96 % pendant que son verre s'allume, en 340 ms (Bézier
+  `0.2, 0.9, 0.3, 1`), 30 ms après la précédente (transport, temps, côtés, puis le haut) ;
+  toutes partent ensemble en 180 ms (`0.4, 0, 1, 1`). Mouvement réduit : un fondu simple
+  (200 / 150 ms), sans montée ni décalage. UNE source (`playerGlassMaterialize.ts`) : les
+  nombres vont à la coquille (`materialize` de la région, § 2.5) ET en variables `--lgp-mat-*`
+  sur la surface, que `playerGlassMaterialize.css` applique à ses enfants directs, `::before`
+  et `::after` (l'ombre qui soulève). La surface elle-même ne peint rien et ne bouge jamais :
+  son rectangle EST sa région. Chaque forme a son PROPRE conteneur natif (plus de groupe
+  `player` pour les contrôles : le fondu est par forme). La page attend
+  `--lg-player-native-lag` (l'acheminement jusqu'à AppKit : 8 ms, 16 pour un popover né
+  présent) pour partir avec le verre ; toutes les formes partent après un départ commun de
+  20 ms (`MATERIALIZE_SETTLE_MS`), le temps qu'AppKit affiche le cadre de départ. Masquée, la
+  région est retirée AU MASQUAGE ; le natif joue la sortie puis retire la vue.
+  **Mesuré** (lot lg8, `bench/liquid-glass/lg8/appear.mjs`, fenêtre ACTIVE, clip pastel, M4,
+  sept cycles) : verre et contenu partent à ±6 ms l'un de l'autre, forme par forme ; écart
+  d'opacité ≤ 0,13 à décalage nul (≤ 0,06 à une image près : la page est relevée à son
+  image, le verre à l'écran), de position ≤ 0,92 px, d'échelle ≤ 0,016 ; jamais de contenu
+  ni d'atténuation devant leur verre au-delà de 0,13 / 0,06 ; aucun recul d'opacité (pas de
+  clignotement) ; sortie page / verre à 2-6 ms ; `nativeViews` à 0 222-226 ms après le
+  masquage, 30-39 ms après la fin visible. Popover : départ à ±12 ms, position ≤ 1,9 px.
+  Mouvement réduit : fondu seul, à ±2 ms, aucune montée. Pièges payés : le preload
+  recopiait les régions champ par champ et PERDAIT `materialize` (un test l'exige désormais
+  pour tout champ) ; `useReducedMotion` de framer ne lit la préférence qu'au montage
+  (`useLiveReducedMotion`) ; la politique globale `motion-reduce.css` rendait le contenu
+  instantané sous un verre qui fondait (les formes matérialisées gardent leur fondu) ; un
+  popover tenu par une variable CSS animée par framer se démontait d'un coup (tenu par une
+  opacité de 0,999).
+- **Popovers** (pistes, épisodes, vitesse) : même geste, depuis le CENTRE de leur bouton
+  (`popoverAnchorProps` sur le bouton, `usePopoverOrigin` : origine en px depuis le bord droit
+  pour la page, en fractions pour la coquille), de 88 % et 10 px plus bas ; `@starting-style`
+  pour une forme montée présente. Leur propre conteneur : ils ne traversent plus la capsule.
 - **Mouvement** : surfaces FIXES (badges, attente) — fondu natif par
   conteneur (180 ms), et transition nulle PENDANT un redimensionnement
   (`windowResizing.ts` ; sans elle, le verre traînait jusqu'à 160 pt) ;
