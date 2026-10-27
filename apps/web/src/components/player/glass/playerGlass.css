@@ -117,6 +117,7 @@
   --lg-player-hide-shift: 10px;
   /* Ce qui est nu (titre, barre) monte de quelques points en paraissant. */
   --lg-player-nude-shift: 6px;
+  --lg-player-stagger-ms: 30ms;
   --lg-player-hide-scale: 0.965;
   /* La métamorphose : les capsules se REPLIENT vers le pivot de leur ensemble (le
      transport en bas, le retour en haut), s'y fondent et s'y résorbent ; elles en

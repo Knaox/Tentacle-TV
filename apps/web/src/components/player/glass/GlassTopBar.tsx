@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { BackIcon } from "../../PlayerIcons";
 import { GlassOrb } from "./GlassOrb";
@@ -26,12 +26,12 @@ export function GlassTopBar({ visible, title, subtitle, isDirectPlay, goBack }: 
   return (
     <div className="lgp-top" onClick={(e) => e.stopPropagation()}>
       <div ref={setLead} className="lgp-top__lead">
-        <GlassOrb visible={visible} pivot>
+        <GlassOrb visible={visible} pivot order={2}>
           <button type="button" onClick={() => goBack()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
             <BackIcon />
           </button>
         </GlassOrb>
-        <div className="lgp-heading lgp-nude" data-lgp-present={visible}>
+        <div className="lgp-heading lgp-nude" data-lgp-present={visible} style={{ "--lgp-order": 2 } as CSSProperties}>
           <h2 className="lgp-title truncate">{title}</h2>
           {subtitle && <p className="lgp-subtitle truncate">{subtitle}</p>}
         </div>

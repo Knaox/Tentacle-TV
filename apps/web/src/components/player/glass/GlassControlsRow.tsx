@@ -11,6 +11,7 @@ import { GLASS_LENS_PROPS } from "../../../theme/glass";
 import { GlassMorphSeed } from "./GlassMorphSeed";
 import { PLAYER_MORPH } from "./playerGlassFusion";
 import { GlassOrb } from "./GlassOrb";
+import type { CSSProperties } from "react";
 import { useWatchTogether } from "../../../watchTogether/WatchTogetherProvider";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 
@@ -45,7 +46,7 @@ export function GlassControlsRow({
   return (
     <div className="lgp-groups">
       <div className="lgp-volume">
-        <GlassOrb visible={visible}>
+        <GlassOrb visible={visible} order={1}>
           <button type="button" onClick={() => toggleMute()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
             {/* Quatre états, comme l'habillage d'avant : coupé, bas, moyen, fort. */}
             {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
@@ -54,8 +55,8 @@ export function GlassControlsRow({
         <input type="range" min={0} max={100} step={1} value={state.volume}
           aria-label={t("player:volume")}
           onChange={(e) => setVolume(Number(e.target.value))}
-          style={rangeFill(state.volume, 0, 100)}
           data-lgp-present={visible}
+          style={{ ...rangeFill(state.volume, 0, 100), "--lgp-order": 1 } as CSSProperties}
           className="lgp-range lgp-nude" />
       </div>
 
@@ -89,7 +90,7 @@ export function GlassControlsRow({
 
       <div className="lgp-cluster lgp-cluster--end">
         {!isInGroup && (
-          <GlassOrb visible={visible}>
+          <GlassOrb visible={visible} order={1}>
             <PlaybackRateControl
               apply={setSpeed} resetKey={itemId} state={speed}
               otherPanelOpen={showSettings || showEpisodes}
@@ -98,7 +99,7 @@ export function GlassControlsRow({
           </GlassOrb>
         )}
         {isEpisode && (
-          <GlassOrb visible={visible}>
+          <GlassOrb visible={visible} order={1}>
             <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
               {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
               <GlassMorphSeed id={PLAYER_MORPH.episodes} />
@@ -107,7 +108,7 @@ export function GlassControlsRow({
           </GlassOrb>
         )}
         {hasSettings && (
-          <GlassOrb visible={visible}>
+          <GlassOrb visible={visible} order={1}>
             <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
               {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
               <GlassMorphSeed id={PLAYER_MORPH.tracks} />
@@ -116,13 +117,13 @@ export function GlassControlsRow({
           </GlassOrb>
         )}
         {onReduce && (
-          <GlassOrb visible={visible}>
+          <GlassOrb visible={visible} order={1}>
             <button type="button" onClick={() => onReduce()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:pip.reduce")} title={`${t("player:pip.reduce")} (I)`}>
               <ReduceIcon />
             </button>
           </GlassOrb>
         )}
-        <GlassOrb visible={visible}>
+        <GlassOrb visible={visible} order={1}>
           <button type="button" onClick={() => toggleFullscreen()} {...GLASS_LENS_PROPS} className="lgp-btn"
             aria-label={state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} title={`${state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} (F)`}>
             {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "../../TrackSelector";
 import { EpisodeSelectorPanel } from "../EpisodeSelectorPanel";
@@ -68,7 +68,7 @@ export function GlassPlayerChrome({
             {/* La barre NUE sur le voile, puis les ronds de verre : même groupe natif,
                 SÉPARÉS au repos (12 px, au-delà de la fusion), fondus en se repliant
                 vers le rond de lecture. */}
-            <div className="lgp-timeline lgp-nude" data-lgp-present={visible}>
+            <div className="lgp-timeline lgp-nude" data-lgp-present={visible} style={{ "--lgp-order": 1 } as CSSProperties}>
               <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
             </div>
             <GlassControlsRow
