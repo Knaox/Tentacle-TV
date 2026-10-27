@@ -21,6 +21,10 @@ describe("signalMusicEvent", () => {
     ]);
   });
 
+  it("des attentes changées (une playlist importée a gagné, perdu ou renommé un titre) réveillent la tenue à jour", () => {
+    expect(heard({ type: "music:pending", pluginId: "sillon" })).toEqual([{ kind: "pending" }]);
+  });
+
   it("le reste ne réveille rien", () => {
     expect(heard({ type: "music:library", added: [], updated: [], removed: ["a"] })).toEqual([]);
     expect(heard({ type: "music:userdata", changes: [] })).toEqual([]);
