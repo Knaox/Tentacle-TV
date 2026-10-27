@@ -57,6 +57,7 @@ import { useNativeGlassRegion, useVideoBackdropTone, type GlassRegionOptions } f
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
+import "./playerGlassButtons.css";
 import "./playerGlassCollapse.css";
 import "./playerGlassDim.css";
 

@@ -77,6 +77,12 @@
   height: 26px;
 }
 
+/* Les sauts relatifs portent un nombre : un peu plus grands que les autres symboles. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-orb .lgp-btn > svg.lgp-skip-glyph {
+  width: 28px;
+  height: 28px;
+}
+
 /* Le volume : un rond pour le son, puis le curseur NU, sur le voile. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-volume {
   display: flex;
