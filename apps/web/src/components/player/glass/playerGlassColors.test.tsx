@@ -48,7 +48,13 @@ describe("les couleurs du lecteur en verre", () => {
     expect(SHEETS).toMatch(/--lg-player-track-fill:\s*rgb\(255 255 255 \/ 0\.9\)/);
     // Un dégradé de MASQUE (l'image de « à suivre ») n'est pas une couleur de marque.
     const colours = SHEETS.replace(/mask-image:[^;]*;/g, "");
-    expect(colours).not.toMatch(/linear-gradient|radial-gradient|--progress-fill|--ctl-gradient/);
+    expect(colours).not.toMatch(/--progress-fill|--ctl-gradient/);
+    // Seul dégradé admis : du NOIR à alpha (le cœur atténué des ronds, lg8) — jamais une couleur.
+    const gradients = [...colours.matchAll(/(?:linear|radial)-gradient\(([^;]*)\);/g)].map((m) => m[1]!);
+    for (const gradient of gradients) {
+      const tints = gradient.match(/#[0-9a-f]{3,8}|rgba?\([^)]*\)|var\(--[a-z0-9-]+\)/gi) ?? [];
+      expect(tints.every((tint) => /^rgba?\(0 0 0\b/.test(tint) || tint.startsWith("var(--lg-player-dim"))).toBe(true);
+    }
     // La saison affichée : le jeton du dégradé y reçoit l'accent uni.
     expect(SHEETS).toMatch(/--season-tab-gradient:\s*var\(--lg-player-accent\)/);
   });

@@ -1,20 +1,17 @@
-/* Le lecteur en verre — le bas : la capsule du temps, puis trois capsules de
-   boutons (son, transport, réglages), SÉPARÉES. Importée par `GlassPlayerChrome`
-   après `playerGlassBar.css` et la bulle de la vignette. */
+/* Le lecteur en verre — le bas, façon tvOS 26 (lot lg8) : la barre nue sur le
+   voile, puis une rangée de RONDS de verre (le son à gauche, le transport au
+   centre, les réglages à droite), chacun sa forme. Importée par
+   `GlassPlayerChrome` après `playerGlassBar.css` et la bulle de la vignette. */
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-timecap {
-  border-radius: var(--lg-player-radius-capsule);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner {
+/* La ligne de temps : du texte et un trait, sans forme autour. Elle naît et
+   part avec les contrôles (opacité, quelques points de montée). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timeline {
   display: flex;
-  height: var(--lg-player-timecap-height);
-  box-sizing: border-box;
+  height: var(--lg-player-timeline-height);
   align-items: center;
-  padding: 0 12px;
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner > .lgp-scrub {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timeline > .lgp-scrub {
   flex: 1 1 auto;
 }
 
@@ -22,6 +19,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  height: var(--lg-player-orb-primary);
   margin-top: var(--lg-player-gap);
 }
 
@@ -33,19 +31,55 @@
   justify-self: end;
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
+/* Un ensemble de ronds : séparés de `--lg-player-gap`, au-delà de la fusion. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-cluster {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--lg-player-gap);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-cluster--end {
+  justify-content: flex-end;
+}
+
+/* ── Un rond de verre : UNE forme native, un bouton qui la remplit ───── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-orb {
+  flex-shrink: 0;
+  width: var(--lg-player-orb);
+  height: var(--lg-player-orb);
   border-radius: var(--lg-player-radius-capsule);
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-group__inner {
-  display: flex;
-  height: var(--lg-player-group-height);
-  box-sizing: border-box;
-  align-items: center;
-  gap: 2px;
-  padding: 0 7px;
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-orb--primary {
+  width: var(--lg-player-orb-primary);
+  height: var(--lg-player-orb-primary);
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__center > .lgp-group__inner {
-  gap: 6px;
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-orb > .lgp-content,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-orb > .lgp-content > * {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Le bouton remplit son rond : toute la forme est la cible. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-orb .lgp-btn {
+  width: 100%;
+  height: 100%;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-orb--primary .lgp-btn > svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* Le volume : un rond pour le son, puis le curseur NU, sur le voile. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-volume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }

@@ -3,7 +3,8 @@ import { AnimatePresence } from "framer-motion";
 import { TrackSelector } from "../../TrackSelector";
 import { EpisodeSelectorPanel } from "../EpisodeSelectorPanel";
 import { LocalEpisodeSelectorPanel } from "../LocalEpisodeSelectorPanel";
-import { GlassChromeVisibleContext, GlassSurface } from "./GlassSurface";
+import { GlassChromeVisibleContext } from "./GlassSurface";
+import { GlassScrim } from "./GlassScrim";
 import { GlassTopBar } from "./GlassTopBar";
 import { GlassSeekbar } from "./GlassSeekbar";
 import { GlassControlsRow } from "./GlassControlsRow";
@@ -16,28 +17,29 @@ import "./playerGlassCapsules.css";
 
 /**
  * L'habillage du lecteur en VERRE — même contrat que l'habillage d'avant
- * (`DesktopPlayerControls`), autre dessin : de PETITES formes de verre clair qui
- * flottent sur l'image, séparées, au lieu de deux bandeaux assombris.
+ * (`DesktopPlayerControls`), autre dessin : celui du lecteur de tvOS 26 (lot lg8).
  *
- *  - en haut à gauche, la pastille de la sortie et la capsule du titre ;
- *  - en bas, au centre : la capsule du temps (écoulé · piste · restant), puis
- *    trois capsules — le son, le transport, les réglages.
+ *  - un VOILE dégradé en haut et en bas (`GlassScrim`), peint par la page, qui
+ *    naît et part avec les contrôles — percé autour de chaque forme de verre ;
+ *  - en haut à gauche, le rond de la sortie et le titre en TEXTE sur le voile ;
+ *  - en bas, la barre de progression NUE (un trait blanc, le temps en texte),
+ *    puis des RONDS de verre clair : le son à gauche, le transport au centre,
+ *    les réglages à droite (`GlassControlsRow`).
  *
- * Elles paraissent et s'effacent en se MÉTAMORPHOSANT : repliées vers leur pivot
- * (le transport, la sortie), elles s'y fondent en une goutte qui se sépare en
- * capsules (`collapse`, `useCollapsePivots`).
+ * Les ronds paraissent et s'effacent en se repliant vers leur pivot (la lecture,
+ * la sortie : `collapse`, `useCollapsePivots`) ; ce qui est nu, en fondu.
  *
- * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS de la capsule,
- * calés sur son bord droit — des popovers de verre, pas des cartes opaques.
- * Tous sont rendus DANS le dock : celui de la vitesse y est porté depuis sa
- * capsule (`glassDock.ts`).
+ * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS des ronds,
+ * calés sur le bord droit — des popovers de verre, pas des cartes opaques.
+ * Tous sont rendus DANS le dock : celui de la vitesse y est porté depuis son
+ * rond (`glassDock.ts`).
  *
  * # Toujours monté
  *
  * L'habillage n'est jamais démonté quand les contrôles s'effacent : la vitesse
  * de lecture vit dans `PlaybackRateControl`, qui se remet à 1× à son montage.
  * Ce qui part, c'est la MATIÈRE : chaque région native est retirée
- * (`GlassChromeVisibleContext`) à la fin du repli de sa capsule, le contenu
+ * (`GlassChromeVisibleContext`) à la fin du repli de son rond, le contenu
  * s'efface d'abord, et la page n'a plus rien qui se compose au-dessus de la
  * vidéo.
  */
@@ -57,17 +59,18 @@ export function GlassPlayerChrome({
     <GlassChromeVisibleContext.Provider value={visible}>
       <GlassDockContext.Provider value={dock}>
         <div className="lgp-chrome">
+          {/* Le voile d'abord : dessous tout le reste, percé autour du verre. */}
+          <GlassScrim edge="top" visible={visible} />
+          <GlassScrim edge="bottom" visible={visible} />
           <GlassTopBar visible={visible} title={title} subtitle={subtitle} isDirectPlay={isDirectPlay} goBack={goBack} />
 
           <div ref={setDock} className="lgp-dock" onClick={(e) => e.stopPropagation()}>
-            {/* La capsule du temps, puis les trois capsules de boutons : même groupe
-                natif, SÉPARÉES au repos (10 px, au-delà de la fusion), fondues en
-                se repliant vers le transport. */}
-            <GlassSurface className="lgp-timecap" present={visible} collapse adaptiveTone>
-              <div className="lgp-content lgp-timecap__inner">
-                <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
-              </div>
-            </GlassSurface>
+            {/* La barre NUE sur le voile, puis les ronds de verre : même groupe natif,
+                SÉPARÉS au repos (12 px, au-delà de la fusion), fondus en se repliant
+                vers le rond de lecture. */}
+            <div className="lgp-timeline lgp-nude" data-lgp-present={visible}>
+              <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
+            </div>
             <GlassControlsRow
               state={state} itemId={itemId} isEpisode={isEpisode} hasSettings={hasSettings}
               hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
