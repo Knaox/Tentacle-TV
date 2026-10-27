@@ -147,6 +147,8 @@ export interface MusicPlaylistEntry {
   track: MusicTrack;
   /** Pour trier (capacité `music.listOrder`) : l'ajout à la playlist, les écoutes du compte. */
   stats?: MusicListStats;
+  /** Une playlist IMPORTÉE : le rang de ce titre dans la source (serveur 1.40.0) — les attentes se placent d'après lui. */
+  sourceIndex?: number;
 }
 
 export interface MusicPlaylist {

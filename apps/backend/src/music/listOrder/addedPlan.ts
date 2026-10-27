@@ -15,18 +15,28 @@
  * importée, que l'extension insère à sa place (Damien, 27/10 : « Derniers
  * ajouts » montrait l'arrivée de Lidarr, pas l'ajout à la playlist). Il prend
  * la date de l'entrée qui le précède ; l'ordre de la playlist départage.
+ *
+ * Une playlist IMPORTÉE (`pinned`, 27/10) : un titre de la source a la date de
+ * son RANG dans la source — pour Apple Music, l'ordre des ajouts —, qui
+ * remplace toute date relevée ou estimée d'après l'ordre de Jellyfin (faux
+ * avant la 1.40.0). Un titre hors source garde la règle ordinaire, les titres
+ * de la source servant de repères : un vrai ajout fait ensuite reste daté
+ * « maintenant ».
  */
 
 export interface AddedPlan {
   /** La date d'entrée de chaque titre (ms). */
   dates: Map<string, number>;
-  insert: { itemId: string; addedAt: number }[];
+  /** `replace` : une date relevée remplacée (celle d'un titre de la source, qui fait foi). */
+  insert: { itemId: string; addedAt: number; replace?: boolean }[];
   remove: string[];
 }
 
 export interface AddedPlanOptions {
   /** L'ordre de `ids` est celui des ajouts (une playlist) ; les likés n'en ont pas. */
   ordered?: boolean;
+  /** Les dates qui font foi : le rang dans la source d'un titre d'une playlist importée (`playlistSource/`). */
+  pinned?: ReadonlyMap<string, number>;
 }
 
 /** Le rang du dernier titre déjà daté : avant lui, un nouveau a été posé, pas ajouté. */
@@ -62,19 +72,28 @@ export function planAddedDates(
   const dates = new Map<string, number>();
   const insert: AddedPlan["insert"] = [];
   const first = known.size === 0;
-  const placedBefore = options.ordered ? lastKnownIndex(known, ids) : -1;
+  const pinned = options.pinned ?? new Map<string, number>();
+  // Les titres de la source sont des repères, même à la première lecture.
+  const anchors = pinned.size > 0 ? new Map([...known, ...pinned]) : known;
+  const placedBefore = options.ordered ? lastKnownIndex(anchors, ids) : -1;
   let fresh = 0;
   ids.forEach((id, index) => {
     if (dates.has(id)) return;
     const seen = known.get(id);
+    const fixed = pinned.get(id);
+    if (fixed !== undefined) {
+      dates.set(id, fixed);
+      if (seen !== fixed) insert.push({ itemId: id, addedAt: fixed, replace: seen !== undefined });
+      return;
+    }
     if (seen !== undefined) {
       dates.set(id, seen);
       return;
     }
     let at: number;
-    if (first) at = Math.min(estimate(id, index) ?? now - (ids.length - index), now - (ids.length - index));
     // Posé avant un titre connu : à la date de sa place (jamais « maintenant »).
-    else if (index < placedBefore) at = neighbourDate(known, dates, ids, index) ?? now + fresh++;
+    if (index < placedBefore && (!first || pinned.size > 0)) at = neighbourDate(anchors, dates, ids, index) ?? now + fresh++;
+    else if (first) at = Math.min(estimate(id, index) ?? now - (ids.length - index), now - (ids.length - index));
     // Les nouveaux d'une même lecture : dans l'ordre de la liste (le dernier de la playlist est le plus récent).
     else at = now + fresh++;
     dates.set(id, at);

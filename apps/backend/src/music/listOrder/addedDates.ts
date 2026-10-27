@@ -51,7 +51,8 @@ export async function addedDatesFor(
           prisma.musicListAdded.upsert({
             where: { scope_itemId: { scope, itemId: r.itemId } },
             create: { scope, itemId: r.itemId, addedAt: new Date(r.addedAt) },
-            update: {},
+            // Une date du rang dans la source fait foi ; toute autre ne remplace jamais une date déjà gardée.
+            update: r.replace ? { addedAt: new Date(r.addedAt) } : {},
           }),
         ),
       ]);
@@ -61,6 +62,11 @@ export async function addedDatesFor(
     }
   }
   return plan.dates;
+}
+
+/** Toutes les dates d'une liste oubliées : la prochaine lecture repart de son ordre (la réparation d'une playlist). */
+export async function forgetAddedDates(scope: string): Promise<void> {
+  await getPrisma().musicListAdded.deleteMany({ where: { scope } });
 }
 
 /** Un like posé par Octave : daté tout de suite (exact, sans attendre la prochaine lecture). */

@@ -63,4 +63,14 @@ describe("dates d'entrée d'une playlist", () => {
     const dates = await addedDatesFor("liked:u", ["a", "b"], () => 5);
     expect(dates.get("a")).toBe(5);
   });
+
+  it("une playlist importée : la date du rang dans la source remplace celle estimée d'après l'ordre faux, et se garde", async () => {
+    const scope = playlistScope(PLAYLIST);
+    await addedDatesFor(scope, ["c", "a", "b"], undefined, options);
+    const pinned = new Map([["a", 100], ["b", 101], ["c", 102]]);
+    const dates = await addedDatesFor(scope, ["c", "a", "b"], undefined, { ...options, pinned });
+    expect([...dates]).toEqual([["c", 102], ["a", 100], ["b", 101]]);
+    const rows = await client.musicListAdded.findMany({ where: { scope }, orderBy: { addedAt: "asc" } });
+    expect(rows.map((r) => [r.itemId, r.addedAt.getTime()])).toEqual([["a", 100], ["b", 101], ["c", 102]]);
+  });
 });
