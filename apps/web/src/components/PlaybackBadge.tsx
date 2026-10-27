@@ -41,7 +41,7 @@ export function PlaybackBadge({ flash }: { flash: PlaybackFlash | null }) {
   if (glass) {
     return (
       <div key={flash.id} className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" aria-hidden="true">
-        <GlassSurface className="lgp-badge lgp-badge--round" group="player-flash">
+        <GlassSurface className="lgp-badge lgp-badge--round" group="player-flash" variant="regular">
           <div className="flex h-full w-full animate-[playbackFlash_0.7s_ease-out_forwards] items-center justify-center">
             <Trace kind={flash.kind} />
           </div>

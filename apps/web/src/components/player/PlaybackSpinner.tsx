@@ -21,11 +21,11 @@ export const PlaybackSpinner = memo(function PlaybackSpinner({ hint, layer = "z-
   if (isGlassLayout(usePlayerGlassMode())) {
     return (
       <div className={`pointer-events-none absolute inset-0 ${layer} flex flex-col items-center justify-center gap-4 px-6`}>
-        <GlassSurface className="lgp-badge lgp-badge--spinner" group="player-flash">
+        <GlassSurface className="lgp-badge lgp-badge--spinner" group="player-flash" variant="regular">
           <div className="lgp-spinner spinner-lecture animate-spin rounded-full motion-reduce:animate-[spin_2.4s_linear_infinite]" />
         </GlassSurface>
         {hint && (
-          <GlassSurface className="lgp-badge" group="player-flash">
+          <GlassSurface className="lgp-badge" group="player-flash" variant="regular">
             <p role="status" aria-live="polite" className="max-w-sm px-4 py-1.5 text-center text-sm">{hint}</p>
           </GlassSurface>
         )}

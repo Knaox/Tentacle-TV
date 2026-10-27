@@ -53,7 +53,7 @@ export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
 function Pill({ glass, children }: { glass: boolean; children: React.ReactNode }) {
   if (glass) {
     return (
-      <GlassSurface className="lgp-badge" group="player-flash">
+      <GlassSurface className="lgp-badge" group="player-flash" variant="regular">
         <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 px-5 py-2.5">{children}</div>
       </GlassSurface>
     );
