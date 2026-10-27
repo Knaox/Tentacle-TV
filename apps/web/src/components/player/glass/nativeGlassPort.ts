@@ -15,6 +15,7 @@
 import type { RefObject } from "react";
 import { useBackdropTone, useLiquidGlassMode, useLiquidGlassRegion, type BackdropTone } from "../../../theme/glass";
 import { nativeGlassBridge, nativeGlassRefractsVideo } from "../../../theme/liquidGlassMode";
+import type { NativeGlassMaterialize } from "../../../desktop/types";
 
 export interface GlassRegionOptions {
   /**
@@ -23,8 +24,8 @@ export interface GlassRegionOptions {
    * contrôles masqués).
    */
   active: boolean;
-  /** Groupe de fusion : même conteneur natif, AppKit fond les verres qui se touchent. */
-  group: string;
+  /** Groupe de fusion : même conteneur natif, AppKit fond les verres qui se touchent. Absent : seule. */
+  group: string | undefined;
   /** Distance (px CSS) sous laquelle les verres du groupe fusionnent ; absente : celle d'AppKit. */
   spacing?: number;
   /**
@@ -34,6 +35,11 @@ export interface GlassRegionOptions {
   transition: number;
   /** `regular` : la matière par défaut ; `clear` : plus transparente. */
   variant: "regular" | "clear";
+  /**
+   * La matérialisation (`playerGlassMaterialize.ts`) : le verre monte et
+   * s'allume avec son contenu. Sans `group` — son fondu est celui de SON conteneur.
+   */
+  materialize?: NativeGlassMaterialize;
 }
 
 /**
@@ -72,6 +78,7 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
     group: options.group,
     spacing: options.spacing,
     transition: options.transition,
+    materialize: options.materialize,
   });
 }
 

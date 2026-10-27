@@ -5,11 +5,9 @@
  * partagent un NSGlassEffectContainerView, et AppKit les fond à moins de
  * `spacing` points.
  *
- * Au repos, les capsules du lecteur sont SÉPARÉES (écarts de 10 px, au-delà de
- * la distance de fusion) : de petites formes qui flottent, jamais une dalle. Elles
- * ne se fondent qu'en mouvement — repliées vers leur pivot quand les contrôles
- * paraissent ou s'effacent (`collapse`), ou quand un panneau NAÎT de son bouton
- * (`glassMorphProps`, lg-physique) et traverse sa capsule avant de s'en détacher.
+ * Les contrôles et les popovers ne s'en servent plus (lot lg8) : ils se
+ * MATÉRIALISENT, chacun dans SON conteneur (`playerGlassMaterialize.ts`) — plus
+ * de goutte. Le groupe reste celui des surfaces qui ne se matérialisent pas.
  */
 
 /** Le groupe des capsules et de leurs panneaux. */
@@ -18,7 +16,7 @@ export const PLAYER_GLASS_GROUP = "player";
 /** Distance de fusion du groupe, en px CSS (décision du lot : 8). */
 export const PLAYER_FUSION_SPACING = 8;
 
-/** Les identifiants de métamorphose bouton → panneau (`glassMorphProps`). */
+/** Les boutons d'où naissent les popovers (`popoverAnchorProps`, `usePopoverOrigin`). */
 export const PLAYER_MORPH = {
   tracks: "player-tracks",
   episodes: "player-episodes",

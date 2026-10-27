@@ -13,16 +13,16 @@
  *
  * # Trois façons d'apparaître
  *
- * - Les CONTRÔLES (capsules du haut et du bas) se MÉTAMORPHOSENT (`collapse`) :
- *   repliés vers le pivot de leur ensemble, ils s'y fondent en une goutte qui se
- *   sépare en capsules ; la région suit la surface image par image et part
- *   quand la surface, repliée, ne se voit plus (`playerGlass.css`).
+ * - Les CONTRÔLES et les POPOVERS se MATÉRIALISENT (`materialize`, lot lg8) :
+ *   le verre monte de quelques points et « se condense » pendant que son
+ *   conteneur s'allume, dans l'ordre des formes ; la page joue le même geste sur
+ *   son contenu (`playerGlassMaterialize.ts`). La surface elle-même ne bouge pas :
+ *   son rectangle est sa région.
  * - Une surface FIXE (badges, attente) : la vue native entre et sort
  *   en FONDU, par son conteneur (`transition` > 0, lg-natif — l'alpha d'une
  *   NSGlassEffectView seule ne se voit pas, celui de son conteneur, si) ; son
  *   contenu se pose sur le ressort `morph` dans le même temps.
- * - Une surface qui BOUGE image par image (panneau qui naît de son bouton, coin
- *   bas-droit qui monte avec la capsule, bulle de la vignette, avis qui
+ * - Une surface qui BOUGE image par image (coin bas-droit qui monte avec la capsule, bulle de la vignette, avis qui
  *   glissent) : `transition={0}`. Avec une transition, chaque déplacement serait
  *   rejoué au ressort côté natif et le verre courrait derrière la surface ; à
  *   zéro, la primitive (lg-tokens) relit le rectangle — transformations
@@ -36,9 +36,10 @@
  * # Présence
  *
  * `present` faux (contrôles masqués) ou sortie en cours (`AnimatePresence` :
- * `useIsPresent`) → la région est RETIRÉE dès le début de la sortie — à la fin
- * du repli pour une surface qui se replie. Rien de natif ne reste derrière un
- * contrôle qui n'est plus à l'écran.
+ * `useIsPresent`) → la région est RETIRÉE dès le début de la sortie ; le natif
+ * joue alors la sortie (fondu de son conteneur, et la descente d'une forme
+ * matérialisée) puis retire la vue. Rien de natif ne reste derrière un contrôle
+ * qui n'est plus à l'écran.
  *
  * # Matière
  *
@@ -49,16 +50,19 @@
  * s'adapte seul (mesuré : 91 sur la neige, 22 sur le noir, comme QuickTime).
  */
 
-import { createContext, useCallback, useContext, useRef, useState, type HTMLAttributes, type Ref } from "react";
-import { motion, useIsPresent, useReducedMotion } from "framer-motion";
-import type { GlassMorphProps } from "../../../theme/glass";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type HTMLAttributes, type Ref } from "react";
+import { useIsPresent, useReducedMotion } from "framer-motion";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, useVideoBackdropTone, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
+import {
+  CENTER_ORIGIN, MATERIALIZE, MATERIALIZE_REDUCED, materializeStyle, nativeMaterialize,
+  type MaterializeMotion, type MaterializeOrigin,
+} from "./playerGlassMaterialize";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
-import "./playerGlassCollapse.css";
 import "./playerGlassDim.css";
+import "./playerGlassMaterialize.css";
 
 /**
  * Les contrôles du lecteur sont-ils à l'écran ? Fourni par l'habillage : un
@@ -82,17 +86,18 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   /** Distance de fusion du groupe (`playerGlassFusion.ts`) ; par défaut celle du groupe `player`. */
   spacing?: number;
   /**
-   * Métamorphose (`glassMorphProps`, lg-physique) : la surface NAÎT du
-   * rectangle de sa graine (`GlassMorphSeed`, dans le bouton) et y rentre à la
-   * sortie — la région reste alors posée pendant la sortie, pour que le verre
-   * natif suive la surface jusque dans le bouton.
+   * Se MATÉRIALISE à l'apparition et au retrait (`playerGlassMaterialize.ts`) :
+   * la valeur est l'ORDRE de la forme (0, 1, 2…), qui décale son entrée. Une
+   * forme matérialisée a son PROPRE conteneur natif (`group` ignoré) : son fondu
+   * est le sien. Elle ne peint rien elle-même et n'est jamais transformée — ses
+   * enfants directs, `::before` et `::after` portent le geste.
    */
-  morph?: GlassMorphProps;
-  /**
-   * Se REPLIE vers le pivot de son ensemble (`useCollapsePivots`) à l'apparition
-   * et au retrait, au lieu d'un fondu : la métamorphose des contrôles.
-   */
-  collapse?: boolean;
+  materialize?: number;
+  /** Le geste (`MATERIALIZE` par défaut ; `MATERIALIZE_POPOVER` pour un popover). */
+  motion?: MaterializeMotion;
+  /** L'origine de l'échelle (fractions de la forme) ; `originCss` la dit à la page quand elle la connaît mieux. */
+  origin?: MaterializeOrigin;
+  originCss?: string;
   /**
    * Mesure le TON du dessous sous la forme (`data-lg-tone`, la vidéo seule) : son
    * ATTÉNUATION le suit (`playerGlassDim.css`), plus forte sur un dessous clair.
@@ -105,20 +110,23 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function GlassSurface({
-  present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing, morph,
-  collapse = false, adaptiveTone, surfaceRef, className = "", children, ...rest
+  present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing,
+  materialize, motion = MATERIALIZE, origin = CENTER_ORIGIN, originCss, adaptiveTone, surfaceRef, className = "",
+  style, children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
   const resizing = useWindowResizing();
-  const reducedMotion = useReducedMotion();
-  // Repliée, la surface est suivie image par image ; en mouvement réduit, elle
-  // part et revient en fondu natif, sans repli (`playerGlass.css`).
-  const folding = collapse && reducedMotion !== true;
-  // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
-  const shown = present && (isPresent || morph !== undefined) && chromeVisible;
+  const reducedMotion = useReducedMotion() === true;
+  const shown = present && isPresent && chromeVisible;
+  // Le geste, une fois pour la coquille et pour la page (mouvement réduit : un fondu).
+  const gesture = materialize === undefined ? null : reducedMotion ? MATERIALIZE_REDUCED : motion;
+  const native = useMemo(
+    () => (gesture === null ? undefined : nativeMaterialize(gesture, materialize ?? 0, origin)),
+    [gesture, materialize, origin],
+  );
   const ref = useRef<HTMLDivElement | null>(null);
   // L'élément lui-même (pas une ref) : `useBackdropTone` se réabonne quand il change.
   const [element, setElement] = useState<HTMLDivElement | null>(null);
@@ -130,34 +138,32 @@ export function GlassSurface({
   }, [surfaceRef]);
 
   useNativeGlassRegion(ref, {
-    // Qui se replie garde sa région tant qu'elle se voit : c'est la fin du repli
-    // (`visibility`) qui la retire, pas le premier instant du masquage.
-    active: mode === "native" && (shown || collapse) && regionsAllowed,
-    group,
+    active: mode === "native" && shown && regionsAllowed,
+    group: native === undefined ? group : undefined,
     variant,
-    transition: folding || resizing ? 0 : transition,
-    spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
+    transition: resizing ? 0 : gesture?.enterMs ?? transition,
+    spacing: native !== undefined ? undefined : spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
+    materialize: native,
   });
 
   const measured = adaptiveTone ?? variant === "clear";
   const tone = useVideoBackdropTone(element, measured && mode === "native" && shown && regionsAllowed);
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
-  // En sortie (`AnimatePresence`), une surface qui rentre dans son bouton est encore « à l'écran »
-  // pour garder sa région — mais elle ne prend plus les clics (le bouton dessous les reçoit).
-  const props = {
-    ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown,
-    "data-lgp-exiting": isPresent ? undefined : true,
-    "data-lgp-collapse": collapse ? "" : undefined,
-    "data-lg-tone": measured ? tone : undefined,
-    "data-lgp-variant": variant,
-  };
-  if (morph) {
-    return (
-      <motion.div {...props} {...(rest as object)} layoutId={morph.layoutId} transition={morph.transition}>
-        {children}
-      </motion.div>
-    );
-  }
-  return <div {...props} {...rest}>{children}</div>;
+  const surfaceStyle = native === undefined || gesture === null ? style : { ...materializeStyle(native, gesture.enterMs, originCss), ...style };
+  return (
+    <div
+      ref={setRef}
+      className={`lgp-surface${preview} ${className}`}
+      data-lgp-present={shown}
+      data-lgp-exiting={isPresent ? undefined : true}
+      data-lgp-materialize={native === undefined ? undefined : ""}
+      data-lg-tone={measured ? tone : undefined}
+      data-lgp-variant={variant}
+      style={surfaceStyle}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
 }

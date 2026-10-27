@@ -8,8 +8,8 @@ import { ReduceIcon } from "../../../pictureInPicture/pipIcons";
 import { rangeFill } from "../../../lib/rangeFill";
 import { SkipBackGlyph, SkipForwardGlyph } from "./glassIcons";
 import { GLASS_LENS_PROPS } from "../../../theme/glass";
-import { GlassMorphSeed } from "./GlassMorphSeed";
 import { PLAYER_MORPH } from "./playerGlassFusion";
+import { popoverAnchorProps } from "./popoverOrigin";
 import { GlassSurface } from "./GlassSurface";
 import type { ReactNode } from "react";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
@@ -22,8 +22,7 @@ type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
 
 /**
  * La rangée de boutons : TROIS capsules séparées — le son à gauche, le
- * transport au centre (le pivot du bas : les autres capsules s'y replient), les
- * réglages à droite. L'ordre de droite est celui de l'habillage d'avant :
+ * transport au centre (la première à paraître), les réglages à droite. L'ordre de droite est celui de l'habillage d'avant :
  * vitesse, épisodes, pistes, PiP, plein écran.
  *
  * Aucun fond au survol : sur le verre, c'est le symbole qui répond (ressort,
@@ -40,7 +39,7 @@ export function GlassControlsRow({
 
   return (
     <div className="lgp-groups">
-      <Part visible={visible} className="lgp-row__side">
+      <Part visible={visible} className="lgp-row__side" order={2}>
         <button type="button" onClick={() => toggleMute()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
           {/* Quatre états, comme l'habillage d'avant : coupé, bas, moyen, fort. */}
           {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
@@ -52,7 +51,7 @@ export function GlassControlsRow({
           className="lgp-range" />
       </Part>
 
-      <Part visible={visible} className="lgp-row__center" pivot>
+      <Part visible={visible} className="lgp-row__center" order={0}>
         {hasPreviousEpisode && (
           <button type="button" onClick={onPreviousEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:previousEpisodeLabel")} title={t("player:previousEpisode")}><PrevEpIcon /></button>
         )}
@@ -70,7 +69,7 @@ export function GlassControlsRow({
         )}
       </Part>
 
-      <Part visible={visible} className="lgp-row__side lgp-row__side--end">
+      <Part visible={visible} className="lgp-row__side lgp-row__side--end" order={2}>
         <PlaybackRateControl
           apply={setSpeed} resetKey={itemId} state={speed}
           otherPanelOpen={showSettings || showEpisodes}
@@ -78,15 +77,13 @@ export function GlassControlsRow({
         />
         {isEpisode && (
           <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
-            {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
-            <GlassMorphSeed id={PLAYER_MORPH.episodes} />
+            {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.episodes)} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
             <EpisodesIcon />
           </button>
         )}
         {hasSettings && (
           <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
-            {...GLASS_LENS_PROPS} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
-            <GlassMorphSeed id={PLAYER_MORPH.tracks} />
+            {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.tracks)} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
             <GearIcon />
           </button>
         )}
@@ -105,14 +102,14 @@ export function GlassControlsRow({
 }
 
 /**
- * Une partie de la rangée : sa PROPRE capsule de verre, du même groupe natif que
- * la capsule du temps — séparée au repos, fondue avec elles quand elles se
- * replient. Au niveau du module : défini dans le rendu, il changerait d'identité
- * à chaque battement de position et remonterait toute la rangée.
+ * Une partie de la rangée : sa PROPRE capsule de verre, qui se matérialise à
+ * son rang (`order` : le transport d'abord, puis les côtés). Au niveau du
+ * module : défini dans le rendu, il changerait d'identité à chaque battement de
+ * position et remonterait toute la rangée.
  */
-function Part({ visible, className, pivot = false, children }: { visible: boolean; className: string; pivot?: boolean; children: ReactNode }) {
+function Part({ visible, className, order, children }: { visible: boolean; className: string; order: number; children: ReactNode }) {
   return (
-    <GlassSurface className={`lgp-group ${className}`} present={visible} collapse adaptiveTone data-lgp-pivot={pivot ? "" : undefined}>
+    <GlassSurface className={`lgp-group ${className}`} present={visible} materialize={order} adaptiveTone>
       <div className="lgp-content lgp-group__inner">{children}</div>
     </GlassSurface>
   );

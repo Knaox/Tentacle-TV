@@ -8,7 +8,6 @@ import { GlassTopBar } from "./GlassTopBar";
 import { GlassSeekbar } from "./GlassSeekbar";
 import { GlassControlsRow } from "./GlassControlsRow";
 import { GlassDockContext } from "./glassDock";
-import { useCollapsePivots } from "./useCollapsePivots";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 import "./playerGlassBar.css";
 import "./playerGlassTrickplay.css";
@@ -23,9 +22,9 @@ import "./playerGlassCapsules.css";
  *  - en bas, au centre : la capsule du temps (écoulé · piste · restant), puis
  *    trois capsules — le son, le transport, les réglages.
  *
- * Elles paraissent et s'effacent en se MÉTAMORPHOSANT : repliées vers leur pivot
- * (le transport, la sortie), elles s'y fondent en une goutte qui se sépare en
- * capsules (`collapse`, `useCollapsePivots`).
+ * Elles paraissent en se MATÉRIALISANT (lot lg8) : chaque forme monte de quelques
+ * points pendant que son verre s'allume, le transport d'abord, le haut en dernier ;
+ * elles partent ensemble, plus vite (`materialize`, `playerGlassMaterialize.ts`).
  *
  * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS de la capsule,
  * calés sur son bord droit — des popovers de verre, pas des cartes opaques.
@@ -37,9 +36,8 @@ import "./playerGlassCapsules.css";
  * L'habillage n'est jamais démonté quand les contrôles s'effacent : la vitesse
  * de lecture vit dans `PlaybackRateControl`, qui se remet à 1× à son montage.
  * Ce qui part, c'est la MATIÈRE : chaque région native est retirée
- * (`GlassChromeVisibleContext`) à la fin du repli de sa capsule, le contenu
- * s'efface d'abord, et la page n'a plus rien qui se compose au-dessus de la
- * vidéo.
+ * (`GlassChromeVisibleContext`) au masquage — le natif joue sa sortie puis la
+ * retire —, et la page n'a plus rien qui se compose au-dessus de la vidéo.
  */
 export function GlassPlayerChrome({
   visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item, itemId,
@@ -52,7 +50,6 @@ export function GlassPlayerChrome({
   onNextEpisode, onPreviousEpisode, speed,
 }: DesktopPlayerControlsProps) {
   const [dock, setDock] = useState<HTMLDivElement | null>(null);
-  useCollapsePivots(dock);
   return (
     <GlassChromeVisibleContext.Provider value={visible}>
       <GlassDockContext.Provider value={dock}>
@@ -60,10 +57,9 @@ export function GlassPlayerChrome({
           <GlassTopBar visible={visible} title={title} subtitle={subtitle} isDirectPlay={isDirectPlay} goBack={goBack} />
 
           <div ref={setDock} className="lgp-dock" onClick={(e) => e.stopPropagation()}>
-            {/* La capsule du temps, puis les trois capsules de boutons : même groupe
-                natif, SÉPARÉES au repos (10 px, au-delà de la fusion), fondues en
-                se repliant vers le transport. */}
-            <GlassSurface className="lgp-timecap" present={visible} collapse adaptiveTone>
+            {/* La capsule du temps, puis les trois capsules de boutons : chacune son
+                verre, matérialisées dans l'ordre (le transport, le temps, les côtés). */}
+            <GlassSurface className="lgp-timecap" present={visible} materialize={1} adaptiveTone>
               <div className="lgp-content lgp-timecap__inner">
                 <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
               </div>

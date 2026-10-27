@@ -1,0 +1,69 @@
+/* Le lecteur en verre — la MATÉRIALISATION des formes (lot lg8 ; remplace la
+   métamorphose en goutte). Importée par `GlassSurface` après `playerGlass.css`.
+
+   Une forme `[data-lgp-materialize]` ne bouge JAMAIS elle-même : son rectangle
+   est sa région native, et c'est la coquille qui fait monter et « condenser »
+   le verre (animateur d'AppKit, fondu de son conteneur). La page joue le MÊME
+   geste — mêmes nombres, `playerGlassMaterialize.ts`, posés en variables sur la
+   surface — sur TOUT ce qu'elle dessine dans la forme : ses enfants directs,
+   `::before` (l'atténuation) et `::after` (l'ombre qui soulève). Rien n'apparaît
+   avant le verre, rien ne reste après lui.
+
+   N'animer que `transform` et `opacity` (CLAUDE.md, « Coût GPU »).
+
+   `--lg-player-native-lag` : l'acheminement d'une région jusqu'à AppKit (une
+   image de la page, l'IPC, une validation de Core Animation) — la page attend
+   d'autant pour partir en même temps que le verre. Mesuré au banc (lg8). */
+
+:root[data-liquid-glass="native"],
+:root[data-lgp-preview="on"] {
+  --lg-player-native-lag: 16ms;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize] {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Présente : le contenu se pose, décalé de l'ordre de sa forme. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present] > *,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present]::before,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present]::after {
+  transform: none;
+  transform-origin: var(--lgp-mat-origin, 50% 50%);
+  transition:
+    opacity var(--lgp-mat-enter-ms) var(--lgp-mat-enter-ease) calc(var(--lgp-mat-delay) + var(--lg-player-native-lag)),
+    transform var(--lgp-mat-enter-ms) var(--lgp-mat-enter-ease) calc(var(--lgp-mat-delay) + var(--lg-player-native-lag));
+}
+
+/* L'ombre qui soulève la forme : un calque à part, qui naît et part avec elle. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize]::after {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--lg-player-lift-shadow);
+  pointer-events: none;
+}
+
+/* Absente : redescendue, un peu plus petite, effacée — plus vite, sans décalage. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"] > *,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"]::before,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"]::after {
+  opacity: 0;
+  transform: translateY(var(--lgp-mat-rise)) scale(var(--lgp-mat-scale));
+  transition:
+    opacity var(--lgp-mat-exit-ms) var(--lgp-mat-exit-ease) var(--lg-player-native-lag),
+    transform var(--lgp-mat-exit-ms) var(--lgp-mat-exit-ease) var(--lg-player-native-lag);
+}
+
+/* Une forme qui NAÎT présente (un popover monté à l'ouverture) part du même départ. */
+@starting-style {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="true"] > *,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="true"]::before,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="true"]::after {
+    opacity: 0;
+    transform: translateY(var(--lgp-mat-rise)) scale(var(--lgp-mat-scale));
+  }
+}

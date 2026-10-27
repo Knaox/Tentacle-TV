@@ -75,9 +75,13 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(html).toContain("lgp-titlecap");
     expect(html).toContain("lgp-timecap");
     expect(html.match(/lgp-group /g)?.length).toBe(3);
-    // Elles se métamorphosent (repli vers un pivot) : six formes repliables, un pivot en haut, un en bas.
-    expect(html.match(/data-lgp-collapse=""/g)?.length).toBe(6);
-    expect(html.match(/data-lgp-pivot=""/g)?.length).toBe(2);
+    // Elles se MATÉRIALISENT (lot lg8) : six formes, chacune à son rang, plus aucune goutte.
+    expect(html.match(/data-lgp-materialize=""/g)?.length).toBe(6);
+    expect(html).not.toContain("data-lgp-collapse");
+    expect(html).not.toContain("data-lgp-pivot");
+    expect(html.match(/--lgp-mat-delay:(\d+)ms/g)?.sort()).toEqual(
+      ["--lgp-mat-delay:0ms", "--lgp-mat-delay:30ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:60ms", "--lgp-mat-delay:90ms"],
+    );
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");
