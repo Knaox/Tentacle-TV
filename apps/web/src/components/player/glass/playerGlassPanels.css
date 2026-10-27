@@ -15,8 +15,10 @@
      « aucun épisode »). La hiérarchie passe par la taille et la graisse. */
   --text-primary: #ffffff;
   --text-secondary: #ececf0;
-  --text-tertiary: #dcdce2;
-  --text-quaternary: #dcdce2;
+  /* lg8, fenêtre ACTIVE : #dcdce2 tombait à 4,75:1 sur un dessous blanc (valeurs des pistes,
+     croix) ; #ececf0 y tient 5,5:1. */
+  --text-tertiary: #ececf0;
+  --text-quaternary: #ececf0;
   --text-disabled: #6e6e78;
   --border-subtle: rgb(0 0 0 / 0.26);
   --border-strong: #8d8b97;
@@ -99,13 +101,15 @@
 }
 
 /* Les étiquettes (langue, codec, HDR, débit) : un remplissage NOIR à alpha, sans trait
-   (R11 : aucun liseré sur une pastille) — un aplat blanc translucide rendrait gris. */
+   (R11 : aucun liseré sur une pastille) — un aplat blanc translucide rendrait gris.
+   Texte BLANC plein (lg8) : en 10 px, le gris secondaire tombait à 4,75:1 sur un dessous
+   blanc (banc lg8, fenêtre active) — trop juste pour la plus petite écriture du lecteur. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-chip {
   flex-shrink: 0;
   background: var(--lg-player-chip-fill);
   border-radius: var(--lg-player-radius-chip);
   padding: 0 5px;
-  color: var(--lg-player-fg-2);
+  color: var(--lg-player-fg);
   font-size: 10px;
   font-weight: 600;
   line-height: 15px;

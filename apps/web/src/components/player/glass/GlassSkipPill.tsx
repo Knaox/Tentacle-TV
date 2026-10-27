@@ -18,7 +18,9 @@ interface GlassSkipPillProps {
  * Le bouton de saut du lecteur en verre — mêmes gestes que `SkipSegmentButton`
  * (le clic saute, la croix refuse, le balayage dit le temps qui reste), autre
  * matière : une capsule de verre au texte blanc, là où l'habillage d'avant
- * posait un aplat blanc opaque.
+ * posait un aplat blanc opaque. Verre NORMAL (lot lg8) : une surface de TEXTE,
+ * comme les panneaux — il s'assombrit seul sur un dessous clair, sans
+ * l'atténuation des contrôles en verre clair.
  *
  * Le voile de survol et le balayage restent ceux d'`overlayPill.tsx` : du NOIR
  * à alpha, la seule teinte translucide qui se compose juste sur la surface à
@@ -37,7 +39,7 @@ export function GlassSkipPill({
 
   return (
     <div className={`lgp-corner ${layer}`} data-lifted={controlsVisible}>
-      <GlassSurface className="lgp-pill" group="player-corner" transition={0} adaptiveTone>
+      <GlassSurface className="lgp-pill" group="player-corner" variant="regular" transition={0}>
         <div className="lgp-content lgp-rise lgp-pill__inner">
           <button type="button" onClick={(e) => { e.stopPropagation(); onSkip(); }} className="group/skip lgp-pill__action">
             <Veil className="rounded-l-full group-hover/skip:opacity-100" />

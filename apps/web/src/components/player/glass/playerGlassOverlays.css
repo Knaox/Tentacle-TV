@@ -2,6 +2,16 @@
  * badges du centre et des côtés. Jetons : `playerGlass.css` ; mêmes familles
  * de couleurs (opaque, ou noir à alpha). */
 
+/* ── Les surfaces de TEXTE posées sur la vidéo (lot lg8) ─────────────────
+   Pilule de saut, badges, attente, avis Watch Together : du verre NORMAL, comme
+   les panneaux et les fiches — celui du lecteur de tvOS 26. Il s'assombrit seul
+   sur un dessous clair (91/255 sur la neige, fenêtre active) : texte blanc
+   ≥ 6,9:1 sans l'atténuation des contrôles en verre clair, ni gris posé par la
+   page. Même teinte native que les panneaux (aucune en thème sombre). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface:is(.lgp-pill, .lgp-badge, .lgp-wt-capsule)[data-lgp-variant="regular"] {
+  --lg-native-tint-regular: var(--lg-player-panel-tint);
+}
+
 /* ── Le coin bas-droit, partagé ───────────────────────────────────────
    Quand la capsule de lecture paraît, le coin monte AU-DESSUS d'elle : sa
    hauteur, plus l'écart — d'une transformée, jamais d'un `bottom` animé. */
