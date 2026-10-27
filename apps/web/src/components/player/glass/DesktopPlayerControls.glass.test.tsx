@@ -66,17 +66,22 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(LEGACY).not.toContain("lgp-");
   });
 
-  it("verre natif disponible : de petites formes séparées, plus aucun dégradé d'assombrissement", () => {
+  it("verre natif disponible : façon tvOS 26 — voile, texte nu, ronds de verre, plus aucun dégradé d'avant", () => {
     const html = renderToStaticMarkup(
       <PlayerGlassModeContext.Provider value="native">{controls()}</PlayerGlassModeContext.Provider>,
     );
-    // En haut : la pastille de la sortie et la capsule du titre ; en bas : le temps, puis trois capsules.
-    expect(html).toContain("lgp-pastille");
-    expect(html).toContain("lgp-titlecap");
-    expect(html).toContain("lgp-timecap");
-    expect(html.match(/lgp-group /g)?.length).toBe(3);
-    // Elles se métamorphosent (repli vers un pivot) : six formes repliables, un pivot en haut, un en bas.
-    expect(html.match(/data-lgp-collapse=""/g)?.length).toBe(6);
+    // Un voile en haut, un en bas, peints par la page.
+    expect(html).toContain("lgp-scrim--top");
+    expect(html).toContain("lgp-scrim--bottom");
+    // Le titre et la barre sont du TEXTE sur le voile : plus de capsule autour.
+    expect(html).not.toMatch(/lgp-titlecap|lgp-timecap|lgp-pastille/);
+    expect(html).toMatch(/class="lgp-heading lgp-nude"/);
+    expect(html).toMatch(/class="lgp-timeline lgp-nude"/);
+    // Les boutons : un rond de verre chacun — sortie ; son ; −10, lecture, +30 ; vitesse, plein écran.
+    expect(html.match(/lgp-surface lgp-orb/g)?.length).toBe(7);
+    expect(html.match(/lgp-orb--primary/g)?.length).toBe(1);
+    // Ils se métamorphosent (repli vers un pivot) : un pivot en haut (sortie), un en bas (lecture).
+    expect(html.match(/data-lgp-collapse=""/g)?.length).toBe(7);
     expect(html.match(/data-lgp-pivot=""/g)?.length).toBe(2);
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
@@ -94,5 +99,7 @@ describe("l'habillage du lecteur de bureau", () => {
     );
     expect(html).toContain('data-lgp-present="false"');
     expect(html).not.toContain('data-lgp-present="true"');
+    // Le voile et le texte nu partent avec eux.
+    expect(html).toMatch(/lgp-scrim lgp-scrim--bottom" data-lgp-present="false"/);
   });
 });

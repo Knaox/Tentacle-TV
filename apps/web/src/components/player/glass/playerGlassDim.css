@@ -24,17 +24,42 @@
  * — 91 sur la neige, 22 sur le noir fenêtre active, 96 et 36 inactive, déjà le
  * réglage de QuickTime ; atténué, il devenait une dalle noire (32).
  *
- * Rien ne peint en continu : un aplat immobile, dont seule l'OPACITÉ suit un
- * changement de ton (rare : hystérésis de `backdropTone.ts`). */
+ * Lot lg8 (« des pilules grises et plates », Damien) : sur le verre CLAIR,
+ * l'atténuation n'est plus un aplat mais un CŒUR — dense sous le glyphe, au
+ * centre, et presque nulle au bord : la vidéo se voit à travers le liseré, le
+ * reflet du verre reste. Sur un dessous sombre elle est légère (le verre reste
+ * clair) ; sur un dessous clair, le cœur tient le glyphe blanc à 5:1 au moins.
+ * Le voile du lecteur ne passe jamais sur une forme (`GlassScrim`, percé) : c'est
+ * la seule atténuation qu'un rond reçoit.
+ *
+ * Rien ne peint en continu : un calque immobile, dont seules l'OPACITÉ (le ton,
+ * rare : hystérésis de `backdropTone.ts ; le survol) et l'ÉCHELLE (le survol,
+ * l'appui) changent — compositeur seulement. */
 
 :root[data-liquid-glass="native"] {
+  /* Le verre NORMAL atténué (thème clair) : un aplat. */
   --lg-player-dim-dark: 0.5;
   --lg-player-dim-light: 0.65;
+  /* Le CŒUR du verre clair (centre) ; le bord en garde `--lg-player-dim-rim`. Mesuré
+     fenêtre active (banc lg8 A) : blanc 175 au bord, 98 sous le glyphe → 5,9:1. Un gris
+     50 % se lit « sombre » mais le verre clair actif y monte presque au BLANC : à 0,3, 163
+     sous le glyphe (2,3:1) ; à 0,48, 145 (2,9:1) ; d'où 0,58. Le noir garde son verre
+     visible (bord ~70, cœur ~35). */
+  --lg-player-orb-dim-dark: 0.58;
+  --lg-player-orb-dim-light: 0.62;
+  --lg-player-dim-rim: 0.28;
+  /* La réaction « liquide » : le cœur se resserre et s'éclaircit — le verre s'allume
+     depuis son bord au survol, davantage à l'appui, et revient sur un ressort. */
+  --lg-player-orb-hover-scale: 0.82;
+  --lg-player-orb-hover-dim: 0.78;
+  --lg-player-orb-press-scale: 0.66;
+  --lg-player-orb-press-dim: 0.6;
   --lg-player-dim-ms: var(--lg-duration-hover);
 }
 
 :root[data-liquid-glass="native"][data-window-inactive="on"] {
   --lg-player-dim-dark: 0.2;
+  --lg-player-orb-dim-dark: 0.24;
 }
 
 :root[data-liquid-glass="native"] .lgp-surface {
@@ -45,6 +70,14 @@
 
 :root[data-liquid-glass="native"] .lgp-surface[data-lg-tone="light"] {
   --lgp-dim: var(--lg-player-dim-light);
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="clear"] {
+  --lgp-dim: var(--lg-player-orb-dim-dark);
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="clear"][data-lg-tone="light"] {
+  --lgp-dim: var(--lg-player-orb-dim-light);
 }
 
 /* Après la règle du ton : même spécificité, le verre normal l'emporte. */
@@ -70,5 +103,29 @@
   background: rgb(0 0 0);
   opacity: var(--lgp-dim);
   pointer-events: none;
-  transition: opacity var(--lg-player-dim-ms) var(--lg-ease-out);
+  transition:
+    opacity var(--lg-player-dim-ms) var(--lg-ease-out),
+    scale var(--lg-player-settle-ms) var(--lg-player-ease-settle);
+}
+
+/* Le verre CLAIR : un cœur (noir plein au centre, `--lg-player-dim-rim` au bord),
+   l'opacité donnant la densité du centre. Noir à alpha seulement. */
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="clear"]::before {
+  background: radial-gradient(closest-side, rgb(0 0 0) 0%, rgb(0 0 0) 42%, rgb(0 0 0 / var(--lg-player-dim-rim)) 100%);
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="clear"]:hover::before {
+  opacity: calc(var(--lgp-dim) * var(--lg-player-orb-hover-dim));
+  scale: var(--lg-player-orb-hover-scale);
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="clear"]:active::before {
+  opacity: calc(var(--lgp-dim) * var(--lg-player-orb-press-dim));
+  scale: var(--lg-player-orb-press-scale);
+}
+
+/* Mouvement réduit, matière pleine : ni resserrement ni éclaircie. */
+:root[data-liquid-glass="native"][data-lg-motion="reduce"] .lgp-surface::before,
+:root[data-liquid-glass="native"][data-lg-material] .lgp-surface[data-lgp-variant="clear"]:is(:hover, :active)::before {
+  scale: none;
 }

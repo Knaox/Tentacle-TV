@@ -43,12 +43,22 @@ const prompt = (mode: "native" | "legacy") => renderToStaticMarkup(
 );
 
 describe("les couleurs du lecteur en verre", () => {
-  it("piste et remplissage blancs, aucun dégradé dans les feuilles du lecteur", () => {
+  it("piste blanche, partie lue au dégradé de marque d'avant ; aucun autre dégradé de couleur", () => {
     expect(SHEETS).toMatch(/--lg-player-track:\s*rgb\(255 255 255 \/ 0\.3\)/);
     expect(SHEETS).toMatch(/--lg-player-track-fill:\s*rgb\(255 255 255 \/ 0\.9\)/);
+    // La barre et le volume reprennent le violet → rose de la marque (Damien, 27/10), en teintes claires.
+    expect(SHEETS).toMatch(/--lg-player-progress-fill:\s*linear-gradient\(90deg, var\(--brand-light\), var\(--brand-accent-light\)\)/);
+    expect(SHEETS).toMatch(/\.lgp-scrub__fill \{[^}]*background: var\(--lg-player-progress-fill\)/);
     // Un dégradé de MASQUE (l'image de « à suivre ») n'est pas une couleur de marque.
-    const colours = SHEETS.replace(/mask-image:[^;]*;/g, "");
-    expect(colours).not.toMatch(/linear-gradient|radial-gradient|--progress-fill|--ctl-gradient/);
+    // …ni le jeton de la partie lue, la seule couleur de marque admise en dégradé.
+    const colours = SHEETS.replace(/mask-image:[^;]*;/g, "").replace(/--lg-player-progress-fill:[^;]*;/, "");
+    expect(colours).not.toMatch(/--progress-fill|--ctl-gradient/);
+    // Seul dégradé admis : du NOIR à alpha (le cœur atténué des ronds, lg8) — jamais une couleur.
+    const gradients = [...colours.matchAll(/(?:linear|radial)-gradient\(([^;]*)\);/g)].map((m) => m[1]!);
+    for (const gradient of gradients) {
+      const tints = gradient.match(/#[0-9a-f]{3,8}|rgba?\([^)]*\)|var\(--[a-z0-9-]+\)/gi) ?? [];
+      expect(tints.every((tint) => /^rgba?\(0 0 0\b/.test(tint) || tint.startsWith("var(--lg-player-dim"))).toBe(true);
+    }
     // La saison affichée : le jeton du dégradé y reçoit l'accent uni.
     expect(SHEETS).toMatch(/--season-tab-gradient:\s*var\(--lg-player-accent\)/);
   });

@@ -24,8 +24,9 @@ interface GlassSeekbarProps {
  *    qui s'anime (la règle de coût du dépôt). La poignée n'est pas dans le
  *    trait : elle ne s'écrase pas avec lui.
  *
- * Piste et remplissage BLANCS (jetons `--lg-player-track*`), comme QuickTime :
- * posés sur l'atténuation noire de la capsule — cf. `playerGlass.css`.
+ * Piste BLANCHE translucide, partie lue au dégradé de marque de l'habillage
+ * d'avant (`--lg-player-progress-fill`, violet → rose), posées NUES sur le voile
+ * du bas (lot lg8) — cf. `playerGlass.css`.
  */
 export function GlassSeekbar({ seekbar, displayProgress, bufProg, position, duration }: GlassSeekbarProps) {
   const {

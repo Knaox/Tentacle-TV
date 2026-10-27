@@ -26,22 +26,35 @@
   --lg-player-fg-3: #ececf0;
   --lg-player-focus: var(--brand-light);
 
-  /* Géométrie : de PETITES capsules qui flottent, séparées — jamais une dalle. Tous
-     les écarts (10) dépassent la distance de fusion du groupe natif (8) : au repos,
-     AppKit les garde distinctes ; elles ne se fondent que pendant leur
-     métamorphose (`[data-lgp-collapse]`), quand elles se resserrent. */
+  /* Géométrie, façon tvOS 26 (lot lg8) : du TEXTE sur un voile (titre, temps, barre
+     nue) et des BOUTONS RONDS en verre, chacun sa forme. Les écarts entre deux ronds
+     (12) dépassent la distance de fusion du groupe natif (8) : au repos, AppKit les
+     garde distinctes ; elles ne se fondent que pendant leur métamorphose
+     (`[data-lgp-collapse]`), quand elles se resserrent. */
   /* Les marges de l'habillage d'avant, à l'identique : 20 px en haut et en bas
      (`pt-5` / `pb-5`), 24 px sur les côtés (`px-6`, le `right-6` des encarts).
      L'overlay suit la fenêtre et l'écran comme lui (retour de Damien, lg3) :
-     aucune largeur plafonnée — la capsule du temps court d'une marge à l'autre. */
+     aucune largeur plafonnée — la barre court d'une marge à l'autre. */
   --lg-player-edge: 20px;
   --lg-player-inline: 24px;
-  --lg-player-gap: 10px;
-  --lg-player-timecap-height: 36px;
-  --lg-player-group-height: 48px;
-  /* Hauteur FIXE du bas (temps + écart + boutons) : le coin bas-droit monte d'autant (`.lgp-corner`). */
-  --lg-player-bar-height: calc(var(--lg-player-timecap-height) + var(--lg-player-gap) + var(--lg-player-group-height));
-  --lg-player-pastille: 40px;
+  --lg-player-gap: 12px;
+  /* Un rond de verre, et celui de lecture, plus grand : des cibles de 44 px au moins. */
+  --lg-player-orb: 44px;
+  --lg-player-orb-primary: 56px;
+  --lg-player-timeline-height: 28px;
+  /* Hauteur FIXE du bas (barre + écart + ronds) : le coin bas-droit monte d'autant (`.lgp-corner`). */
+  --lg-player-bar-height: calc(var(--lg-player-timeline-height) + var(--lg-player-gap) + var(--lg-player-orb-primary));
+  /* Le VOILE (`GlassScrim`) : hauteur depuis le bord, puis densité du bord vers l'image
+     (arrêts à 0, 42 et 72 % de la hauteur, transparent au bout). Dosé pour la barre et le
+     texte sur le blanc pur : ≥ 0,72 sous la barre, le temps et le titre → fond ≤ 72/255 :
+     la partie lue (violet → rose clairs) à 3:1, le texte blanc à 6:1 au moins (mesuré,
+     banc lg8 A). */
+  --lg-player-scrim-bottom: 260px;
+  --lg-player-scrim-top: 160px;
+  --lg-player-scrim-0: 0.78;
+  --lg-player-scrim-1: 0.72;
+  --lg-player-scrim-2: 0.3;
+  --lg-player-scrim-in-ms: var(--lg-spring-morph-duration);
   --lg-player-radius-capsule: var(--lg-radius-capsule);
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: var(--lg-radius-sm);
@@ -64,10 +77,20 @@
   --lg-player-track: rgb(255 255 255 / 0.3);
   --lg-player-track-buffer: rgb(255 255 255 / 0.45);
   --lg-player-track-fill: rgb(255 255 255 / 0.9);
+  /* La partie LUE de la barre et du volume : le dégradé de marque, violet → rose (retour de
+     Damien du 27/10 : « elle perd son côté rose »), dans ses teintes CLAIRES — opaque, il se
+     compose juste. Mesuré sur le voile au-dessus du blanc pur : le `--progress-fill` d'avant
+     (#8B5CF6 → #EC4899) y tombait à 1,1:1, les teintes claires tiennent 3:1 sur le voile
+     dosé plus haut. Un liseré noir et une ombre courte le détachent encore. Le reste de la
+     couche fonctionnelle (décomptes des encarts) garde `--lg-player-track-fill`. */
+  --lg-player-progress-fill: linear-gradient(90deg, var(--brand-light), var(--brand-accent-light));
+  --lg-player-progress-edge: 0 0 0 0.5px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
   --lg-player-thumb: #ffffff;
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */
   --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);
-  --lg-player-track-hover-scale: 1.6;
+  /* La barre NUE (tvOS 26) : un trait fin, qui s'épaissit au survol (`scaleY`, jamais une hauteur animée). */
+  --lg-player-track-height: 4px;
+  --lg-player-track-hover-scale: 1.75;
 
   /* Lignes des panneaux : la surbrillance façon menu macOS — l'ACCENT uni, jamais le dégradé
      (lg7) ; blanc dessus 5,7:1. Même accent pour la saison affichée du panneau des épisodes. */
@@ -101,6 +124,9 @@
   --lg-player-ease-enter: var(--lg-ease-out);
   --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --lg-player-hide-shift: 10px;
+  /* Ce qui est nu (titre, barre) monte de quelques points en paraissant. */
+  --lg-player-nude-shift: 6px;
+  --lg-player-stagger-ms: 30ms;
   --lg-player-hide-scale: 0.965;
   /* La métamorphose : les capsules se REPLIENT vers le pivot de leur ensemble (le
      transport en bas, le retour en haut), s'y fondent et s'y résorbent ; elles en
@@ -111,19 +137,13 @@
   --lg-player-content-in-delay: 90ms;
   --lg-player-content-out-ms: var(--lg-duration-press);
 
-  /* AUCUNE teinte sur le verre des contrôles : la variante CLAIRE d'Apple, sur la
-     vidéo (HIG « Materials » : le verre clair pour ce qui flotte sur des photos et
-     des vidéos, sous des glyphes francs et clairs). La lisibilité vient d'un
-     voile LOCAL — l'ombre douce qui épouse chaque glyphe et chaque libellé —,
-     jamais d'un fond noir. Les surfaces de TEXTE (panneaux, fiches, avis) sont
-     du verre normal, qui règle lui-même sa luminosité ; elles ne prennent un
-     voile qu'en thème clair (`--lg-player-panel-tint`). */
+  /* AUCUNE teinte native sur le verre des contrôles : la variante CLAIRE d'Apple, sur la
+     vidéo (HIG « Materials »). La lisibilité vient du VOILE de la page autour (lg8,
+     `playerGlassScrim.css`), du cœur atténué de chaque rond (`playerGlassDim.css`) et du
+     halo des glyphes. Les surfaces de TEXTE (panneaux, fiches, avis) sont du verre
+     normal ; elles ne prennent une teinte qu'en thème clair (`--lg-player-panel-tint`). */
   --lg-player-panel-tint: transparent;
-  /* Le voile du verre CLAIR, posé par la vue native DANS la forme : AUCUN (décision du
-     lot : pas de teinte noire sur le verre). La HIG en prévoit un sous le verre clair
-     sur un contenu lumineux ; ici c'est le halo des glyphes qui tient la lisibilité —
-     mesuré, le voile ne change rien au flou du verre (avec ou sans, le détail fin
-     de l'image tombe de 94 %), seulement à son ton. */
+  /* Le voile NATIF du verre clair : aucun (`tintColor` n'y peut rien, mesuré lg3). */
   --lg-player-clear-dim: transparent;
   /* L'ombre portée qui SOULÈVE chaque forme : très douce, hors de la forme — du noir à
      alpha, qui se compose juste sur la fenêtre transparente. */
@@ -203,51 +223,6 @@
   transform: translateY(var(--lg-player-hide-shift)) scale(var(--lg-player-hide-scale));
   transition-duration: var(--lg-player-exit-ms);
   transition-timing-function: var(--lg-player-ease-exit);
-}
-
-/* ── Boutons ─────────────────────────────────────────────────────────── */
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn {
-  position: relative;
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--lg-player-button);
-  height: var(--lg-player-button);
-  border-radius: var(--lg-player-radius-capsule);
-  color: var(--lg-player-fg);
-  cursor: pointer;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--primary {
-  width: var(--lg-player-button-primary);
-  height: var(--lg-player-button-primary);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--small {
-  width: var(--lg-player-button-small);
-  height: var(--lg-player-button-small);
-}
-
-/* Le geste est la LENTILLE du socle (`data-lg-lens`, lg-physique : survol et
-   appui gonflent le bouton) ; ici, la lisibilité du symbole sur un verre
-   presque neutre. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
-  color: var(--lg-player-fg);
-  filter: var(--lg-player-glyph-shadow);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:focus-visible {
-  outline: 2px solid var(--lg-player-focus);
-  outline-offset: 1px;
-}
-
-/* Panneau ouvert : le symbole passe à la marque. Sur le SVG lui-même — les
-   icônes du lecteur portent `text-white` en propre (`PlayerIcons.tsx`). */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-pressed="true"] > svg,
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-expanded="true"] > svg {
-  color: var(--lg-player-focus);
 }
 
 /* ── Texte ───────────────────────────────────────────────────────────── */

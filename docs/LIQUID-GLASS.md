@@ -638,18 +638,35 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   l'image de mpv, un flou CSS n'y floute rien. Le verre natif, ou rien.
 - **Une couture** vers les socles : `nativeGlassPort.ts` (mode, `refractsVideo`,
   `useLiquidGlassRegion` avec `group`, `spacing`, `transition`).
-- **Le décor : de PETITES formes qui flottent, séparées** (refonte du 22/10 ;
-  la première version, UNE dalle givrée teintée de noir, était « ignoble ») —
-  la pastille de la sortie et la capsule du titre en haut ; en bas la capsule
-  du temps, puis le son, le transport, les réglages, à 10 px (`--lg-player-gap`),
-  AU-DELÀ de la distance de fusion du groupe natif `player` (8) : AppKit les
-  garde distinctes au repos. Verre **CLAIR** pour les contrôles (ce qui flotte
-  sur la vidéo), verre normal pour les surfaces de texte (panneaux, fiches,
-  avis). Popovers (pistes, vitesse, épisodes) qui NAISSENT de leur bouton
-  (`glassMorphProps`, la région suit la surface qui grandit). Pilule de saut,
-  « Vous regardez encore ? », fiche « à suivre », badges, attente, avis, Watch
-  Together, bulle de la vignette du survol. Relevé : 6 vues claires contrôles
-  affichés, 7 avec un panneau, 0 masqués.
+- **Le décor : celui du lecteur de tvOS 26** (lot lg8, 27/10 ; avant, des capsules
+  grises et plates — « vraiment dégueulasse », Damien). Du TEXTE sur un VOILE, et du
+  verre pour les seuls BOUTONS :
+  - **le voile** (`GlassScrim`, `playerGlassScrim.css`) : un dégradé NOIR peint par la
+    page, en bas (260 px) et en haut (160 px), qui naît et part avec les contrôles
+    (opacité ; `visibility: hidden` une fois parti). Densité 0,78 au bord, 0,72 sous la
+    barre, le temps et le titre (blanc pur → 72/255 au plus : texte blanc ≥ 6:1 mesuré,
+    partie lue ≥ 3:1), puis une longue traîne. ⚠️ **Il est PERCÉ autour de chaque forme de verre** (`scrimHoles.ts`, un
+    masque SVG) : le verre natif est SOUS la page, un voile qui passerait sur lui le
+    rendrait gris. Les trous sont relus sur les rectangles AFFICHÉS des `.lgp-surface`
+    (transformations comprises), image par image pendant 900 ms après tout changement
+    (forme qui naît, panneau qui sort de son bouton, redimensionnement), rien au repos ;
+  - **le titre et le sous-titre** en texte blanc sur le voile du haut, sans capsule ;
+  - **la barre de progression NUE** : un trait de 4 px (×1,75 au survol, `scaleY`), piste
+    blanche translucide, partie LUE au dégradé de marque violet → rose (retour de Damien
+    du 27/10 : « elle perd son côté rose »), en teintes CLAIRES (`--lg-player-progress-fill`,
+    #A78BFA → #F472B6 : le `--progress-fill` d'avant tombait à 1,1:1 sur le voile au-dessus
+    du blanc pur), liseré noir et ombre courte ; le temps écoulé et restant en texte de
+    part et d'autre ; le curseur du volume, nu et au même dégradé, à côté du rond du son ;
+  - **un ROND de verre clair par bouton** (`GlassOrb` : 44 px, la lecture 56), chacun sa
+    région native du groupe `player`, à 12 px l'un de l'autre (`--lg-player-gap`), au-delà
+    de la distance de fusion (8) : AppKit les garde distincts au repos. Le son à gauche,
+    le transport au centre de la fenêtre (grille `1fr auto 1fr`), les réglages à droite.
+    Le texte nu (`.lgp-nude`) naît en montant de 6 px, décalé de 30 ms par
+    `--lgp-order` (transport 0 ; son, réglages, barre 1 ; le haut 2).
+  Verre normal pour les surfaces de texte (panneaux, fiches, avis). Popovers (pistes,
+  vitesse, épisodes) qui NAISSENT de leur bouton. Pilule de saut, « Vous regardez
+  encore ? », fiche « à suivre », badges, attente, avis, Watch Together, bulle de la
+  vignette du survol.
 - **Une ATTÉNUATION sous le verre clair, comme QuickTime** (lot lg3, 23/10 ; avant :
   aucun voile, la lisibilité par le halo — « sur du blanc ou du noir, ça rend vraiment
   mal »). Mesuré sur les captures de la fenêtre (M4, macOS 26) : fenêtre ACTIVE, le verre
@@ -658,10 +675,17 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   Player sur les mêmes clips : 88 et 26, glyphes BLANCS. La teinte native (`tintColor`)
   n'y peut rien (242 → 231 même à 85 % de noir) : l'atténuation est un noir à alpha posé
   par la PAGE dans chaque forme, sous le contenu (`playerGlassDim.css`, `::before`,
-  `isolation: isolate`), dosé par le TON mesuré dessous (`data-lg-tone`, la vidéo seule) :
-  **0,65** dessous clair (neige → 88), **0,5** dessous sombre (noir → 44, liseré et
-  reflet du verre visibles), **0,2** dessous sombre fenêtre inactive (→ 26). Seule son
-  opacité suit le ton (compositeur). **Glyphes blancs partout** — plus de glyphes sombres
+  `isolation: isolate`), dosé par le TON mesuré dessous (`data-lg-tone`, la vidéo seule).
+  **Depuis lg8, sur le verre clair, un CŒUR et non plus un aplat** (l'aplat de 0,5 à 0,65
+  faisait les pilules grises) : noir plein jusqu'à 42 % du rayon, 28 % de lui-même au bord
+  — la vidéo se voit à travers le liseré, le reflet du verre reste. Densité du cœur **0,62**
+  dessous clair (blanc : 175 au bord, 98 sous le glyphe, 5,9:1), **0,58** dessous sombre
+  (le gris 50 % se lit « sombre » mais le verre clair actif y monte presque au blanc : 2,3:1 à 0,3, 2,9:1 à 0,48), **0,24**
+  fenêtre inactive. Au survol, le cœur se resserre (×0,82) et
+  s'éclaircit (×0,78) — le verre « s'allume » depuis son bord ; à l'appui ×0,66 et ×0,6,
+  retour sur le ressort `settle` (`scale` et opacité : compositeur seulement). Mouvement
+  réduit, matière pleine : ni resserrement ni éclaircie. Le verre normal atténué (thème
+  clair) reste un aplat. **Glyphes blancs partout** — plus de glyphes sombres
   sur un dessous clair ; secondaire `#d4d4da`. Contrastes mesurés : 7,1:1 (neige) à
   17:1 (noir), icônes 7,5:1 à 14:1.
 - **Le verre NORMAL s'adapte seul** (panneaux, fiche « à suivre », « Vous regardez
@@ -684,7 +708,7 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   Relevé, verre allumé contre coupé : de 900 × 600 à 1900 × 1040, bouton retour au pixel
   près, bords du bas identiques ; pendant un redimensionnement, page et vue native égales à
   chaque pas de 16 ms (`bench/liquid-glass/lg3/geometry.mjs`). Seul écart voulu : le bloc
-  du bas monte de 32 px de plus (le temps a sa capsule, les boutons des cibles de 48 px).
+  du bas monte de 32 px de plus (lg8 : la barre de 28 px, puis les ronds de 56 px).
   `playerGlassGeometry.test.ts` lie les jetons aux classes d'avant.
 - **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
   pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y

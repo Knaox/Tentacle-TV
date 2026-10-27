@@ -1,0 +1,58 @@
+/* Le lecteur en verre — les BOUTONS (symbole, état, focus). Jetons : `playerGlass.css`,
+   importée juste après lui par `GlassSurface`. */
+
+/* ── Boutons ─────────────────────────────────────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--lg-player-button);
+  height: var(--lg-player-button);
+  border-radius: var(--lg-player-radius-capsule);
+  color: var(--lg-player-fg);
+  cursor: pointer;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--primary {
+  width: var(--lg-player-button-primary);
+  height: var(--lg-player-button-primary);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--small {
+  width: var(--lg-player-button-small);
+  height: var(--lg-player-button-small);
+}
+
+/* Le geste est la LENTILLE du socle (`data-lg-lens`, lg-physique : survol et
+   appui gonflent le bouton) ; ici, la lisibilité du symbole sur un verre
+   presque neutre. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
+  color: var(--lg-player-fg);
+  filter: var(--lg-player-glyph-shadow);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:focus-visible {
+  outline: 2px solid var(--lg-player-focus);
+  outline-offset: 1px;
+}
+
+/* Panneau ouvert : le symbole reste BLANC (un violet sur le verre tombait à 1,9:1 sur
+   un gris moyen, banc lg8) ; l'état se dit par un POINT blanc sous le symbole, façon
+   tvOS. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-pressed="true"]::after,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-expanded="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: var(--lg-player-radius-capsule);
+  background: var(--lg-player-fg);
+  box-shadow: var(--lg-player-thumb-edge);
+  pointer-events: none;
+}

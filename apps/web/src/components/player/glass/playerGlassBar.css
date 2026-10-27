@@ -1,4 +1,4 @@
-/* Le haut et le bas du lecteur en verre : de petites capsules qui flottent.
+/* Le haut et le bas du lecteur en verre : du texte sur le voile, des ronds de verre.
  * Jetons : `playerGlass.css`. Rien d'autre que `transform` et `opacity` ne
  * s'anime ici : ces capsules flottent sur une vidéo EN LECTURE. */
 
@@ -9,7 +9,7 @@
   pointer-events: none;
 }
 
-/* ── En haut : le rond de la sortie, la capsule du titre ──────────────── */
+/* ── En haut : le rond de la sortie, le titre ─────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-top {
   position: absolute;
@@ -29,34 +29,13 @@
   gap: var(--lg-player-gap);
 }
 
-/* Une pastille : le verre d'un seul bouton, un cercle. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-pastille {
-  flex-shrink: 0;
-  border-radius: var(--lg-player-radius-capsule);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pastille > .lgp-content {
+/* Le titre : du TEXTE sur le voile du haut, sans forme autour (tvOS 26). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-heading {
   display: flex;
-  width: var(--lg-player-pastille);
-  height: var(--lg-player-pastille);
-  align-items: center;
-  justify-content: center;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-titlecap {
   min-width: 0;
-  max-width: min(520px, 56vw);
-  border-radius: var(--lg-player-radius-capsule);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-titlecap__inner {
-  display: flex;
-  min-height: var(--lg-player-pastille);
-  box-sizing: border-box;
-  min-width: 0;
+  max-width: min(640px, 60vw);
   flex-direction: column;
   justify-content: center;
-  padding: 3px 18px;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-devbadge {
@@ -69,7 +48,7 @@
   transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
 }
 
-/* ── En bas : la capsule de lecture ──────────────────────────────────── */
+/* ── En bas : la barre nue, les ronds ─────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-dock {
   position: absolute;
@@ -86,7 +65,12 @@
    pause), et une capsule masquée gardait les siens (un clic sur l'image, là où
    dormait la piste, faisait un saut). Un panneau qui rentre dans son bouton
    (`data-lgp-exiting`) les laisse au bouton. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-pastille, .lgp-titlecap, .lgp-timecap, .lgp-group, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-orb, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
+  pointer-events: auto;
+}
+
+/* Ce qui est nu (barre, curseur du volume) : les clics à l'écran seulement. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude:not([data-lgp-present="false"]) {
   pointer-events: auto;
 }
 
@@ -126,10 +110,11 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__rail {
   position: relative;
   width: 100%;
-  height: 5px;
+  height: var(--lg-player-track-height);
   overflow: hidden;
   border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-track);
+  box-shadow: var(--lg-player-progress-edge);
   transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
@@ -152,7 +137,7 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__fill {
   border-radius: var(--lg-player-radius-capsule);
-  background: var(--lg-player-track-fill);
+  background: var(--lg-player-progress-fill);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__thumb-track {
@@ -182,27 +167,7 @@
   transform: scale(1);
 }
 
-/* Boutons : le son à gauche, le transport au CENTRE de la fenêtre (grille
-   `1fr auto 1fr` de `.lgp-groups`, quelle que soit la largeur des côtés), les
-   réglages à droite */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__side {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 2px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__side--end {
-  justify-content: flex-end;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Curseur de volume : la piste et le remplissage blancs de la ligne de temps (R20) */
+/* Curseur de volume : la piste et le dégradé de marque de la ligne de temps */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range {
   width: 84px;
   height: 20px;
@@ -223,8 +188,9 @@
   height: 4px;
   border-radius: var(--lg-player-radius-capsule);
   background:
-    var(--lg-player-track-fill) 0 / var(--range-fill, 0%) 100% no-repeat,
+    var(--lg-player-progress-fill) 0 / var(--range-fill, 0%) 100% no-repeat,
     var(--lg-player-track);
+  box-shadow: var(--lg-player-progress-edge);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range::-webkit-slider-thumb {
@@ -256,5 +222,33 @@
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__thumb,
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range::-webkit-slider-thumb {
     transition: none;
+  }
+}
+
+/* ── Ce qui est NU (titre, barre, curseur du volume) ──────────────────────
+   Du texte et des traits sur le voile, sans matière native : ils naissent avec
+   les contrôles en montant de quelques points, et partent plus vite. Opacité et
+   transformée seulement. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude {
+  transition:
+    opacity var(--lg-player-enter-ms) var(--lg-player-ease-enter),
+    transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
+  /* Décalés à l'entrée seulement, d'un cran par ordre (`--lgp-order`). */
+  transition-delay: calc(var(--lgp-order, 0) * var(--lg-player-stagger-ms));
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude[data-lgp-present="false"] {
+  opacity: 0;
+  transform: translateY(var(--lg-player-nude-shift));
+  transition-duration: var(--lg-player-exit-ms);
+  transition-timing-function: var(--lg-player-ease-exit);
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude[data-lgp-present="false"] {
+    transform: none;
+    transition-property: opacity;
   }
 }

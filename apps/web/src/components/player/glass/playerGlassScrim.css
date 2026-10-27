@@ -1,0 +1,55 @@
+/* Le lecteur en verre — le VOILE (lot lg8), façon tvOS 26 : un dégradé NOIR
+ * peint par la page, en bas et en haut, sous le texte. Jetons : `playerGlass.css`.
+ *
+ * Noir à alpha seulement (cf. `playerGlass.css`). Percé autour de chaque forme
+ * de verre (`GlassScrim`, `scrimHoles.ts`) : le verre natif est SOUS la page, il
+ * ne passe jamais sous le voile. Seule son OPACITÉ s'anime (compositeur) ; masqué,
+ * il est `visibility: hidden` une fois le fondu fini. */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--lg-player-scrim-in-ms) var(--lg-player-ease-enter),
+    visibility 0s;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim[data-lgp-present="false"] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit),
+    visibility 0s linear var(--lg-player-exit-ms);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim--bottom {
+  bottom: 0;
+  height: var(--lg-player-scrim-bottom);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim--top {
+  top: 0;
+  height: var(--lg-player-scrim-top);
+}
+
+/* Les arrêts, du bord vers l'image : dense sous le texte, puis une longue
+   traîne — jamais une marche visible. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim__stop {
+  stop-color: #000000;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim__stop--0 { stop-opacity: var(--lg-player-scrim-0); }
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim__stop--1 { stop-opacity: var(--lg-player-scrim-1); }
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim__stop--2 { stop-opacity: var(--lg-player-scrim-2); }
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim__stop--3 { stop-opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrim {
+    transition-duration: 0s;
+  }
+}
