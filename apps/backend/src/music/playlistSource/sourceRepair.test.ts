@@ -20,9 +20,12 @@ vi.mock("../playlists/playlistJellyfin", () => ({
   playlistEntries: async () => jf.items.map((itemId) => ({ entryId: `e-${itemId}`, itemId, plays: { count: 0, lastPlayedAt: null } })),
 }));
 vi.mock("../playlists/playlistService", () => ({
-  reorderPlaylist: async (_user: string, _pl: string, entryIds: string[]) => {
-    jf.writes.push(entryIds);
-    jf.items = entryIds.map((e) => e.replace(/^e-/, ""));
+  rewritePlaylist: async (_user: string, _pl: string, plan: (current: { entryId: string; itemId: string }[]) => Promise<string[] | null>) => {
+    const desired = await plan(jf.items.map((itemId) => ({ entryId: `e-${itemId}`, itemId })));
+    if (desired) {
+      jf.writes.push(desired);
+      jf.items = desired;
+    }
     return { ok: true, value: true };
   },
 }));

@@ -175,6 +175,23 @@ export function moveInPlaylist(userId: string, playlistId: string, entryId: stri
   });
 }
 
+/**
+ * Sous le verrou de la playlist : lire ses entrées, en tirer l'ordre voulu (`plan` : les éléments dans l'ordre, ou
+ * `null` pour ne rien écrire — il peut garder ce qu'il en a appris), puis l'écrire. Aucune insertion ne s'y croise.
+ */
+export function rewritePlaylist(userId: string, playlistId: string, plan: (current: readonly PlaylistEntryRef[]) => Promise<string[] | null>): Promise<PlaylistResult<true>> {
+  return locked(playlistId, async () => {
+    const refusal = await editable(userId, playlistId);
+    if (refusal) return { ok: false, failure: refusal };
+    const current = await playlistEntries(userId, playlistId);
+    if (!current) return { ok: false, failure: "unavailable" };
+    const desired = await plan(current);
+    if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
+    done(userId, playlistId);
+    return { ok: true, value: true };
+  });
+}
+
 /** L'ordre COMPLET voulu par le client (glisser dans Octave), écrit dans la playlist Jellyfin elle-même. */
 export function reorderPlaylist(userId: string, playlistId: string, entryIds: string[]): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
