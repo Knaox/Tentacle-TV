@@ -4,7 +4,8 @@
  * d'une rangée et la vue « Sur cet appareil ».
  */
 
-import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import { isHeld } from "./autosync/syncPlan";
 
 export type KeptPhase = "none" | "progress" | "complete" | "failed";
 
@@ -59,4 +60,18 @@ export function collectionSummary(keys: readonly string[], byKey: ReadonlyMap<st
 export function keptBytes(tracks: readonly KeptMusicTrack[]): number {
   // Les octets sur le disque : la taille d'un Allégé n'est qu'une estimation jusqu'au bout.
   return tracks.reduce((sum, k) => sum + k.bytesDone, 0);
+}
+
+/**
+ * Ce que retirer la collection `wholeKey` emporte de l'appareil : les copies de ses titres que rien d'autre ne
+ * retient (un autre album, une autre playlist, un geste) — sous la clé montrée comme sous celle de la copie (un
+ * titre qui a changé d'identité depuis, `keptRenames.ts`) —, chacune une fois.
+ */
+export function ownCopies(keys: readonly string[], byKey: ReadonlyMap<string, KeptMusicTrack>, collections: readonly KeptMusicCollection[], wholeKey: string): KeptMusicTrack[] {
+  const out = new Map<number, KeptMusicTrack>();
+  for (const key of keys) {
+    const copy = byKey.get(key);
+    if (copy && !isHeld(key, collections, wholeKey) && !isHeld(copy.trackKey, collections, wholeKey)) out.set(copy.fileId, copy);
+  }
+  return [...out.values()];
 }

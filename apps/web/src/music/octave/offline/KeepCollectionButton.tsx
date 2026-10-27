@@ -18,12 +18,11 @@ import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
 import { canKeepTrack } from "./keepRules";
-import { collectionSummary } from "./keptProgress";
+import { collectionSummary, ownCopies } from "./keptProgress";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { ProgressRing } from "./ProgressRing";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptMusic } from "./useKeptMusic";
-import { isHeld } from "./autosync/syncPlan";
 
 interface KeepCollectionButtonProps {
   kind: "album" | "playlist";
@@ -61,7 +60,7 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   const keepLabel = t(kind === "album" ? "keepAlbum" : "keepPlaylist");
   const collection = { key: wholeKey, kind, title, subtitle, trackKeys: keys };
   // Retirer la collection n'emporte pas ce qu'un autre album, une autre playlist ou un geste retient encore.
-  const ownKept = () => keys.filter((key) => !isHeld(key, kept.collections, wholeKey)).map((key) => kept.byKey.get(key)).filter((k): k is NonNullable<typeof k> => !!k);
+  const ownKept = () => ownCopies(keys, kept.byKey, kept.collections, wholeKey);
 
   if (summary.phase === "none") {
     if (!keepable) return null;
