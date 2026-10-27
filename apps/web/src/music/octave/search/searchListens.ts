@@ -1,90 +1,16 @@
 /**
- * Octave — ce qu'on a ÉCOUTÉ, gardé sur l'appareil, pour le « déjà écouté » de
- * la recherche (`SearchHome`) : chaque titre dont le premier son est sorti,
- * avec la recherche qui l'a lancé quand la file en vient (`search:<requête>`)
- * et l'album d'où il a été lancé. Le plus récent en tête, un titre une fois.
- * Rien ne part du serveur ni de l'extension : c'est la mémoire de l'appareil,
- * comme les recherches récentes.
+ * Octave — ce qu'on a écouté sur CET appareil (`localStorage`), pour le « déjà écouté » de la recherche. La règle
+ * et la clé vivent dans le partagé (`@tentacle-tv/shared/octave` › pages/searchListens), lues aussi par le mobile.
  */
 
-import type { MusicTrack } from "@tentacle-tv/shared/music";
+import {
+  forgetSearchListensIn, readSearchListensFrom, writeSearchListensTo, type OctaveDeviceStore, type SearchListen,
+} from "@tentacle-tv/shared/octave";
 
-/** Clé de stockage : ne jamais la renommer (l'historique de l'appareil y vit). */
-const KEY = "tentacle_octave_search_listens";
-export const LISTENS_MAX = 40;
+export { LISTENS_MAX, albumTargetOf, queryOfContext, withListen, type SearchListen } from "@tentacle-tv/shared/octave";
 
-export interface SearchListen {
-  /** Le titre tel que la file le jouait : le relancer n'attend aucune requête. */
-  track: MusicTrack;
-  /** La recherche validée d'où vient la file, sinon `null`. */
-  query: string | null;
-  /** Où ouvrir son album : identifiant Jellyfin ou clé `ext:<pluginId>:<id>`, sinon `null`. */
-  albumTarget: string | null;
-  at: number;
-}
+const store = (): OctaveDeviceStore | null => (typeof localStorage === "undefined" ? null : localStorage);
 
-/** Les files nées d'une recherche : `search:<requête>`, et ses listes `:side` (meilleur résultat), `:tracks` (puce). */
-export function queryOfContext(contextId: string | null): string | null {
-  if (!contextId?.startsWith("search:")) return null;
-  const query = contextId.slice("search:".length).replace(/:(side|tracks)$/, "").trim();
-  return query || null;
-}
-
-export function albumTargetOf(track: MusicTrack, contextId: string | null): string | null {
-  if (track.album?.jellyfinId) return track.album.jellyfinId;
-  if (contextId?.startsWith("album:")) return contextId.slice("album:".length) || null;
-  return null;
-}
-
-/**
- * Le titre écouté passe en tête. Réécouté hors d'une recherche, il GARDE la recherche
- * qui l'avait fait découvrir — et l'album d'où on l'avait lancé.
- */
-export function withListen(list: readonly SearchListen[], listen: SearchListen, max = LISTENS_MAX): SearchListen[] {
-  const previous = list.find((l) => l.track.key === listen.track.key);
-  const merged: SearchListen = {
-    ...listen,
-    query: listen.query ?? previous?.query ?? null,
-    albumTarget: listen.albumTarget ?? previous?.albumTarget ?? null,
-  };
-  return [merged, ...list.filter((l) => l.track.key !== listen.track.key)].slice(0, max);
-}
-
-function isTrack(value: unknown): value is MusicTrack {
-  if (typeof value !== "object" || value === null) return false;
-  const t = value as Partial<MusicTrack>;
-  return typeof t.key === "string" && typeof t.title === "string" && Array.isArray(t.artists);
-}
-
-function isListen(value: unknown): value is SearchListen {
-  if (typeof value !== "object" || value === null) return false;
-  const l = value as Partial<SearchListen>;
-  return isTrack(l.track) && typeof l.at === "number" && (l.query === null || typeof l.query === "string")
-    && (l.albumTarget === null || typeof l.albumTarget === "string");
-}
-
-export function readSearchListens(): SearchListen[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter(isListen).slice(0, LISTENS_MAX) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function writeSearchListens(list: readonly SearchListen[]): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list));
-  } catch {
-    /* Stockage refusé ou plein : la recherche marche quand même. */
-  }
-}
-
-/** Une recherche oubliée emporte le lien de ses écoutes (les titres restent, sans recherche). */
-export function forgetSearchListens(query: string): void {
-  const key = query.trim().toLocaleLowerCase();
-  const list = readSearchListens();
-  if (!list.some((l) => l.query?.toLocaleLowerCase() === key)) return;
-  writeSearchListens(list.map((l) => (l.query?.toLocaleLowerCase() === key ? { ...l, query: null } : l)));
-}
+export const readSearchListens = (): SearchListen[] => readSearchListensFrom(store());
+export const writeSearchListens = (list: readonly SearchListen[]): void => writeSearchListensTo(store(), list);
+export const forgetSearchListens = (query: string): void => forgetSearchListensIn(store(), query);
