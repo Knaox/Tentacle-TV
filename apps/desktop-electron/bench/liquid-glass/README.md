@@ -84,3 +84,27 @@ node lg3/geometry.mjs Knaoxtest fs                   # la même en plein écran 
   fenêtre ne serait pas à l'écran (`onscreen: false`, capture impossible).
 - Écran verrouillé (premier plan : `loginwindow`) : aucune transition plein écran ne se joue.
 - Mesurer les gris en sRGB (`%[fx:mean.g]`), jamais après `-colorspace Gray` : linéaire en IM7.
+
+## Lisibilité du lecteur (lg8)
+
+Neuf images FIXES (blanc pur, noir pur, gris 50 %, jaune vif, rouge, bleu, pastel de dessin
+animé, bruit noir/blanc, dégradé noir → blanc), lues une à une dans la fenêtre ACTIVE ; pour
+chaque état (contrôles, panneau de vitesse, panneau des pistes) deux captures de la fenêtre :
+pleine, puis textes, glyphes et barre rendus invisibles. Le masque des pixels qui changent est
+le premier plan de chaque élément ; la capture nue, son fond (verre, voile, vidéo). Contraste
+WCAG contre le fond le plus défavorable sous l'élément ; seuils : texte 4,5:1, glyphes et barre
+3:1. Les éléments sont trouvés sans les classes du lecteur (nœuds texte, `<svg>`, barre :
+`LG8_BAR` ou `[data-lg8-bar]`, `.lgp-scrub__fill`) ; le compteur « cache » et le bouton DEBUG
+(builds instrumentés seulement) sont masqués dans les deux captures.
+
+```bash
+export BANC_STATE=$HOME/Library/Caches/tentacle-lg8-banc BANC_PORT_CDP=9321 BANC_PORT_MAIN=9421
+bash lg8/clips.sh "$BANC_STATE"            # une fois, après jellyfin.sh
+node lg2/hold.mjs Knaoxtest &              # l'app de la branche à juger (build:web:debug + build:ts)
+node lg8/legibility.mjs Knaoxtest          # → rapport.md + mesures.json + captures
+node lg8/contrast.selftest.mjs             # la mesure elle-même, hors ligne
+```
+
+`LG8_CLIPS=blanc,pastel` et `LG8_STATES=controles` pour une passe courte ; `LG8_OUT` pour le
+dossier des preuves. 120 s d'inactivité avant CHAQUE clip (le lancement de mpv active l'app),
+abandon du clip si Damien revient. Couleurs ramenées en sRGB avant la mesure.
