@@ -51,7 +51,7 @@
  */
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type HTMLAttributes, type Ref } from "react";
-import { useIsPresent, useReducedMotion } from "framer-motion";
+import { useIsPresent } from "framer-motion";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, useVideoBackdropTone, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
@@ -59,6 +59,7 @@ import {
   CENTER_ORIGIN, MATERIALIZE, MATERIALIZE_REDUCED, materializeStyle, nativeMaterialize,
   type MaterializeMotion, type MaterializeOrigin,
 } from "./playerGlassMaterialize";
+import { useLiveReducedMotion } from "./useLiveReducedMotion";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
 import "./playerGlassDim.css";
@@ -119,7 +120,7 @@ export function GlassSurface({
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
   const resizing = useWindowResizing();
-  const reducedMotion = useReducedMotion() === true;
+  const reducedMotion = useLiveReducedMotion();
   const shown = present && isPresent && chromeVisible;
   // Le geste, une fois pour la coquille et pour la page (mouvement réduit : un fondu).
   const gesture = materialize === undefined ? null : reducedMotion ? MATERIALIZE_REDUCED : motion;

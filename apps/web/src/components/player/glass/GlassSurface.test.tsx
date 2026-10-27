@@ -30,7 +30,8 @@ vi.mock("./nativeGlassPort", () => ({
 }));
 vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
 const presence = vi.hoisted(() => ({ present: true, reduced: false }));
-vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present, useReducedMotion: () => presence.reduced }));
+vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present }));
+vi.mock("./useLiveReducedMotion", () => ({ useLiveReducedMotion: () => presence.reduced }));
 
 const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import("./GlassSurface");
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");

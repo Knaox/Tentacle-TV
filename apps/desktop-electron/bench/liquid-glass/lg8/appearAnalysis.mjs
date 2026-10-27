@@ -50,7 +50,8 @@ function leavingSeries(native, still, zoom, from) {
   const out = [];
   for (const [t, , , leaving] of native) {
     if (t < from || !leaving) continue;
-    const g = leaving.find((l) => Math.abs(l.frame.x + l.frame.width / 2 - cx) < 3 && Math.abs(l.frame.width - still.width) < still.width * 0.2);
+    // Un popover rétrécit vers son bouton : son centre glisse — tolérance à la mesure de la forme.
+    const g = leaving.find((l) => Math.abs(l.frame.x + l.frame.width / 2 - cx) < still.width * 0.15 && Math.abs(l.frame.width - still.width) < still.width * 0.2);
     if (g) out.push([t, g.containerAlpha, (restCenter - (g.frame.y + g.frame.height / 2)) / zoom, g.frame.width / still.width]);
   }
   return out;

@@ -25,6 +25,13 @@
   transform: none;
 }
 
+/* Un popover NAÎT présent (monté à l'ouverture) : sa région part à l'image suivante
+   seulement, une de plus que pour une forme qui bascule. Mesuré : le verre suivait
+   la page de ~12 ms (à 8) ; à 20, il la précédait de 8 — 16 entre les deux. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-popover[data-lgp-materialize] {
+  --lg-player-native-lag: 16ms;
+}
+
 /* Présente : le contenu se pose, décalé de l'ordre de sa forme. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present] > *,
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present]::before,
@@ -65,5 +72,24 @@
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="true"]::after {
     opacity: 0;
     transform: translateY(var(--lgp-mat-rise)) scale(var(--lgp-mat-scale));
+  }
+}
+
+/* Mouvement réduit : la politique globale (`theme/motion-reduce.css`) rend toute
+   transition instantanée — le contenu paraissait d'un coup pendant que le verre,
+   lui, fondait en 200 ms (mesuré, lg8). Ici, la seule chose qui reste est un FONDU
+   (la HIG le préconise à la place du mouvement : ni montée ni échelle, la coquille
+   et `MATERIALIZE_REDUCED` y veillent) : il garde sa durée, celle du verre. */
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present] > *,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present]::before,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present]::after {
+    transition-duration: var(--lgp-mat-enter-ms) !important;
+  }
+
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"] > *,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"]::before,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-materialize][data-lgp-present="false"]::after {
+    transition-duration: var(--lgp-mat-exit-ms) !important;
   }
 }

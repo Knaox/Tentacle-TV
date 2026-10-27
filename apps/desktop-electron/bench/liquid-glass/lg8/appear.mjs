@@ -8,7 +8,7 @@
 // toutes les 4 ms, la couche de PRÉSENTATION de chaque verre natif (`live` : cadre en vol,
 // opacité de son conteneur) et le nombre de vues natives. Horloge commune : `Date.now()`.
 //
-//   node lg8/appear.mjs <nom> [popover]        → <sortie>/appear-<nom>.json + un résumé
+//   node lg8/appear.mjs <nom> [controls|popover] [normal|reduce]   → <sortie>/appear-<nom>.json + un résumé
 // `popover` : ouvre puis ferme le panneau des pistes au lieu du cycle des contrôles.
 import { writeFileSync } from "node:fs";
 import path from "node:path";
@@ -18,11 +18,16 @@ import { PORTS } from "../lib/electron.mjs";
 import { mouseTo } from "../lib/steps.mjs";
 import { analyse } from "./appearAnalysis.mjs";
 
-const [name = "cycle", mode = "controls"] = process.argv.slice(2);
+const [name = "cycle", mode = "controls", motion = "normal"] = process.argv.slice(2);
 const OUT = process.env.LG8_OUT ?? path.join(process.env.HOME, "Pictures/tentacle-banc-liquid-glass/2026-10-27-lg8-apparition");
 const target = (await listTargets(PORTS.page)).find((t) => t.type === "page" && t.url.startsWith("tentacle://app/"));
 const page = await Cdp.connect(target.webSocketDebuggerUrl);
 await page.send("Runtime.enable");
+// `reduce` : « Réduire les animations » émulé — tenu par CETTE connexion, qui reste ouverte tout le relevé.
+if (motion === "reduce") {
+  await page.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+  await sleep(300);
+}
 const list = await (await fetch(`http://127.0.0.1:${PORTS.main}/json/list`)).json();
 const main = await Cdp.connect(list[0].webSocketDebuggerUrl);
 const evalMain = async (body) => (await main.send("Runtime.evaluate", { expression: `(async () => { ${body} })()`, awaitPromise: true, returnByValue: true })).result?.value;
