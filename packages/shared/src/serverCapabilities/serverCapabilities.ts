@@ -290,6 +290,10 @@ export const SERVER_CAPABILITIES = {
    *  (`GET /api/music/playlists/:id` → `description`) et écrite par `PATCH /api/music/playlists/:id`
    *  { description }. Renommer et supprimer viennent de `music.library`. Sans elle : aucun champ de description. */
   "music.playlistManage": "1.40.0",
+  /** L'ORDRE DE LA SOURCE d'une playlist importée, gardé par le serveur (`musicSourceOrder.ts`) : chaque arrivée à
+   *  sa place, « Date d'ajout » par le rang dans la source (`sourceIndex` des entrées), et la remise dans l'ordre
+   *  de la source (`POST /api/music/playlists/:id/source-order`). Sans elle : aucune entrée « Remettre dans l'ordre ». */
+  "music.playlistSourceOrder": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

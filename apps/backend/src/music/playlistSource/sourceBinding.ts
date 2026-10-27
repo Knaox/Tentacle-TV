@@ -7,12 +7,14 @@
  *   extension d'avant) : le titre de la source encore libre que l'élément est. Un élément qui est un titre DÉJÀ tenu
  *   (une autre version, la mise à niveau d'un fichier) y est lié, à la place que l'appelant a donnée.
  * - Une playlist d'avant (`bindEntries`, la réparation) : les liaisons connues d'abord, puis chaque titre de la
- *   source prend son meilleur élément libre, puis chaque élément resté libre le titre qu'il est (un doublon).
+ *   source prend son meilleur élément libre, puis le monde clos (même titre de base, puis même durée :
+ *   `sourceLooseMatch.ts`), puis chaque élément resté libre le titre qu'il est (un doublon, une autre version).
  */
 
 import { bestTrackMatch } from "../contract/musicLibraryMatch";
 import type { IndexRow } from "../index/indexTypes";
 import { trackMatchable } from "../view/matchViews";
+import { looseSlot, namedSlot, timedSlot } from "./sourceLooseMatch";
 import { slotQuery, type PlaylistSourceRecord, type SourceSlot } from "./sourceRecord";
 
 export interface InsertRank {
@@ -31,7 +33,10 @@ export function rankForInsert(record: PlaylistSourceRecord, row: IndexRow | null
   const hinted = hint !== undefined && record.slots.some((s) => s.rank === hint) ? hint : null;
   if (hinted !== null && record.origin === "import") return { rank: hinted, place: true };
   const matches = row ? slotsMatching(record.slots, row) : [];
-  const free = matches.filter((s) => s.itemIds.length === 0);
+  const strict = matches.filter((s) => s.itemIds.length === 0);
+  // Monde clos : une arrivée dans une playlist importée est l'un de SES titres encore libres (sourceLooseMatch.ts).
+  const loose = strict.length === 0 && row ? looseSlot(record.slots.filter((s) => s.itemIds.length === 0), row) : null;
+  const free = loose ? [loose] : strict;
   if (hinted !== null) return { rank: free.length === 0 || free.some((s) => s.rank === hinted) ? hinted : free[0]!.rank, place: true };
   if (free.length > 0) return { rank: free[0]!.rank, place: true };
   return matches.length > 0 ? { rank: matches[0]!.rank, place: false } : null;
@@ -54,6 +59,16 @@ export function bindEntries(slots: readonly SourceSlot[], itemIds: readonly stri
     slot.itemIds.push(best.id);
     taken.add(best.id);
   }
+  // Monde clos (sourceLooseMatch.ts) : le titre de base d'abord, pour tous ; puis la durée seule.
+  for (const pick of [namedSlot, timedSlot]) {
+    for (const row of free()) {
+      const slot = pick(out.filter((s) => s.itemIds.length === 0), row);
+      if (!slot) continue;
+      slot.itemIds.push(row.id);
+      taken.add(row.id);
+    }
+  }
+  // Ce qui reste : un doublon, une autre version d'un titre déjà tenu (LA règle du cœur).
   for (const row of free()) {
     const slot = slotsMatching(out, row)[0];
     if (!slot) continue;

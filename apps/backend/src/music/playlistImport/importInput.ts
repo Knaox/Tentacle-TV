@@ -57,7 +57,8 @@ export function sanitizePlaylist(raw: ImportedPlaylist): ImportedPlaylist {
   };
 }
 
-function playlistOf(value: unknown): ImportedPlaylist | null {
+/** Une playlist lue par une extension (`importRead`), revérifiée ; `null` si elle n'en a pas la forme. */
+export function playlistOf(value: unknown): ImportedPlaylist | null {
   const raw = record(value);
   const source = MUSIC_IMPORT_SOURCES.find((s) => s === raw?.source) as MusicImportSource | undefined;
   if (!raw || !source || !Array.isArray(raw.tracks)) return null;
