@@ -25,3 +25,11 @@ export function keptAudioPath(userId: string, trackKey: string): string | null {
     return null;
   }
 }
+
+/**
+ * La copie à lire pour ce titre, d'après ce que dit la page (`AudioBridgeSource.kept`) : sous la clé de la COPIE
+ * quand le titre a changé d'identité depuis qu'elle a été gardée (`kept.trackKey`), sinon sous la sienne.
+ */
+export function keptPathFor(kept: { userId: string; trackKey?: string | undefined } | undefined, trackKey: string): string | null {
+  return kept ? keptAudioPath(kept.userId, kept.trackKey ?? trackKey) : null;
+}

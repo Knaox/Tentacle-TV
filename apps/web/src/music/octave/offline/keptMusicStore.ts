@@ -7,6 +7,11 @@
  *
  * Le hors ligne appartient au COMPTE DE L'APPAREIL (`offlineOwner.ts`) : la liste
  * est toujours la sienne, jamais celle d'un profil ouvert.
+ *
+ * Un titre qui a CHANGÉ D'IDENTITÉ chez l'extension depuis qu'il a été gardé
+ * (`keptRenames.ts`) est trouvé sous sa clé d'aujourd'hui : `byKey` la mène à la
+ * copie gardée sous l'ancienne (marque, « titres qui manquent », lecture depuis
+ * le disque) tant que la tenue à jour ne l'a pas regardée sous la nouvelle.
  */
 
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
@@ -26,6 +31,8 @@ export interface KeptMusicState {
 const EMPTY: KeptMusicState = { loaded: false, userId: null, tracks: [], collections: [], byKey: new Map() };
 
 let state: KeptMusicState = EMPTY;
+/** La clé MONTRÉE aujourd'hui → les clés d'hier sous lesquelles sa copie a pu être gardée. */
+let formerOf: ReadonlyMap<string, readonly string[]> = new Map();
 let started = false;
 let inFlight: Promise<void> | null = null;
 let again = false;
@@ -45,12 +52,35 @@ function sameShown(a: KeptMusicTrack, b: KeptMusicTrack): boolean {
 function reconcile(previous: ReadonlyMap<string, KeptMusicTrack>, tracks: readonly KeptMusicTrack[]): KeptMusicTrack[] {
   return tracks.map((t) => {
     const before = previous.get(t.trackKey);
-    return before && sameShown(before, t) ? before : t;
+    return before && before.trackKey === t.trackKey && sameShown(before, t) ? before : t;
   });
 }
 
+const live = (k: KeptMusicTrack | undefined): k is KeptMusicTrack => !!k && k.status !== "canceled";
+
+/** Chaque titre sous sa clé ; un titre renommé, sous sa clé d'aujourd'hui, mène à la copie d'hier (la sienne d'abord). */
+function indexed(tracks: readonly KeptMusicTrack[]): Map<string, KeptMusicTrack> {
+  const byKey = new Map(tracks.map((t) => [t.trackKey, t]));
+  for (const [shown, formers] of formerOf) {
+    if (live(byKey.get(shown))) continue;
+    const copy = formers.map((f) => byKey.get(f)).find(live);
+    if (copy) byKey.set(shown, copy);
+  }
+  return byKey;
+}
+
 function withTracks(userId: string, tracks: readonly KeptMusicTrack[], collections: readonly KeptMusicCollection[]): KeptMusicState {
-  return { loaded: true, userId, tracks, collections, byKey: new Map(tracks.map((t) => [t.trackKey, t])) };
+  return { loaded: true, userId, tracks, collections, byKey: indexed(tracks) };
+}
+
+const sameFormers = (a: ReadonlyMap<string, readonly string[]>, b: ReadonlyMap<string, readonly string[]>): boolean =>
+  a.size === b.size && [...a].every(([k, v]) => { const w = b.get(k); return !!w && w.length === v.length && v.every((x, i) => x === w[i]); });
+
+/** Les identités changées que l'extension a dites (ses attentes, `MusicOfflineScope`) ; la liste se réindexe. */
+export function setKeptRenames(next: ReadonlyMap<string, readonly string[]>): void {
+  if (sameFormers(formerOf, next)) return;
+  formerOf = next;
+  if (state.loaded && state.userId !== null) publish(withTracks(state.userId, state.tracks, state.collections));
 }
 
 /** Relit la liste du compte de l'appareil ; une relecture demandée pendant une autre la suit (jamais deux à la fois). */

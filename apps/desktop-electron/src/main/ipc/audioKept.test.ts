@@ -17,7 +17,7 @@ const state = vi.hoisted(() => ({ db: null as unknown, root: "" }));
 vi.mock("../localDb", () => ({ localDb: () => state.db }));
 vi.mock("../downloadsRuntime", () => ({ downloadsVolume: () => nodeVolume(state.root) }));
 
-import { keptAudioPath } from "./audioKept";
+import { keptAudioPath, keptPathFor } from "./audioKept";
 
 const ID = "0123456789abcdef0123456789abcdef";
 const KEY = `jf:${ID}`;
@@ -61,5 +61,15 @@ describe("keptAudioPath", () => {
 
   it("un fichier effacé non plus", () => {
     expect(keptAudioPath("u1", KEY)).toBeNull();
+  });
+});
+
+describe("keptPathFor", () => {
+  it("un titre qui a changé d'identité (entrée importée rapprochée) : la copie gardée sous l'ANCIENNE clé est lue", () => {
+    const target = writeAudio("flac");
+    expect(keptPathFor({ userId: "u1", trackKey: KEY }, "ext:sillon:ytm:t:nouvelle")).toBe(target);
+    expect(keptPathFor({ userId: "u1" }, KEY)).toBe(target);
+    expect(keptPathFor({ userId: "u1" }, "ext:sillon:ytm:t:nouvelle")).toBeNull();
+    expect(keptPathFor(undefined, KEY)).toBeNull();
   });
 });
