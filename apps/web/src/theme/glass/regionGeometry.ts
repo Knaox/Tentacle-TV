@@ -10,7 +10,7 @@
  * envoyée : la coquille ne garde que ce qui se voit.
  */
 
-import type { NativeGlassLevel, NativeGlassRegion } from "../../desktop/types";
+import type { NativeGlassLevel, NativeGlassMaterialize, NativeGlassRegion } from "../../desktop/types";
 
 export type LiquidGlassShape = "capsule" | "rounded" | "circle" | "rect";
 export type LiquidGlassTint = "brand" | "accent";
@@ -28,6 +28,8 @@ export interface RegionSpec {
   spacing: number | null;
   /** Animation native d'apparition, de déplacement et de retrait en ms, ou `null`. */
   transition: number | null;
+  /** Matérialisation native (lot lg8), ou `null` : le fondu simple. */
+  materialize: NativeGlassMaterialize | null;
 }
 
 /** Ce que les feuilles disent de l'élément. */
@@ -145,6 +147,7 @@ export function regionFromBox(
     ...(spec.group !== null ? { group: spec.group } : {}),
     ...(spec.spacing !== null ? { spacing: spec.spacing } : {}),
     ...(spec.transition !== null ? { transition: spec.transition } : {}),
+    ...(spec.materialize !== null ? { materialize: spec.materialize } : {}),
   };
 }
 
@@ -162,7 +165,19 @@ export function sameRegion(a: NativeGlassRegion, b: NativeGlassRegion): boolean 
     a.z === b.z &&
     a.group === b.group &&
     a.spacing === b.spacing &&
-    a.transition === b.transition
+    a.transition === b.transition &&
+    sameMaterialize(a.materialize, b.materialize)
+  );
+}
+
+/** Deux matérialisations égales, champ pour champ (la page en refabrique à chaque rendu). */
+function sameMaterialize(a: NativeGlassMaterialize | undefined, b: NativeGlassMaterialize | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  return (
+    a.rise === b.rise && a.scale === b.scale && a.originX === b.originX && a.originY === b.originY &&
+    a.delay === b.delay && a.exit === b.exit &&
+    a.enterEase.every((v, i) => v === b.enterEase[i]) && a.exitEase.every((v, i) => v === b.exitEase[i])
   );
 }
 

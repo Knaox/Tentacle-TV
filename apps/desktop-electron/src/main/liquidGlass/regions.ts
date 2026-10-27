@@ -17,11 +17,12 @@
  */
 
 import type { GlassBackend, ViewHandle } from "./backend";
-import { nativeStyle, parseTint, sameRect, stackAnchor, toAppKitFrame, toPointRadius, toPoints, type AppKitRect, type PointRect } from "./geometry";
-import { MAX_REGIONS, type LiquidGlassBatch, type NativeGlassRegion } from "./protocol";
+import { centerOf, nativeStyle, parseTint, sameRect, stackAnchor, toAppKitFrame, toPointRadius, toPoints, type PointRect } from "./geometry";
+import { MAX_REGIONS, type GlassEase, type LiquidGlassBatch, type NativeGlassRegion } from "./protocol";
 import { describeRegion, type RegionsSnapshot } from "./snapshot";
-import { GLASS_SPRINGS, springMotion, type NativeMotion } from "./springCurve";
+import { motionOf } from "./springCurve";
 import { GlassStage, LEAVE_MARGIN_MS, type Timers } from "./stage";
+import { DelayedEntries, enterMotion, exitMotion, materializeFrom } from "./materialize";
 
 export type { Timers } from "./stage";
 
@@ -31,6 +32,7 @@ interface RegionEntry {
   rect: PointRect;
   radius: number;
   groupKey: string;
+  zoom: number; // de la page, à la dernière pose : le décalage d'une matérialisation est en px CSS
   readonly seq: number;
   view: ViewHandle | null;
 }
@@ -39,23 +41,10 @@ interface RegionEntry {
 const keyOf = (region: NativeGlassRegion): string =>
   region.group === undefined ? `seule:${region.id}` : `groupe:${region.group}`;
 
-/** Un point au centre du cadre : d'où un verre naît, où il fond. */
-const centerOf = (frame: AppKitRect): AppKitRect => ({
-  x: frame.x + frame.width / 2,
-  y: frame.y + frame.height / 2,
-  width: 0,
-  height: 0,
-});
-
-/** Le mouvement natif d'une région : son ressort, `morph` de la page sinon ; aucun sans transition. */
-function motionOf(region: NativeGlassRegion): NativeMotion | null {
-  if ((region.transition ?? 0) <= 0) return null;
-  return springMotion(region.spring ?? GLASS_SPRINGS.morph);
-}
-
 export class GlassRegions {
   private enabled = true;
   private readonly stage: GlassStage;
+  private readonly entries: DelayedEntries;
   private readonly regions = new Map<string, RegionEntry>();
   /** Verres qui fondent vers leur centre en quittant un groupe qui reste. */
   private readonly shrinking = new Map<ViewHandle, { timer: ReturnType<typeof setTimeout>; groupKey: string }>();
@@ -68,6 +57,7 @@ export class GlassRegions {
     private readonly log: (message: string) => void,
   ) {
     this.stage = new GlassStage(backend, timers);
+    this.entries = new DelayedEntries(timers);
   }
 
   /** Un lot : le réglage, les départs, les poses, les fondus d'entrée — et le ménage une fois. */
@@ -105,6 +95,7 @@ export class GlassRegions {
 
   /** La fenêtre est détruite : rendre les références sans toucher à AppKit. */
   forget(): void {
+    this.entries.cancelAll();
     for (const [view, leaving] of this.shrinking) {
       this.timers.clear(leaving.timer);
       this.backend.release(view);
@@ -141,13 +132,19 @@ export class GlassRegions {
       this.regions.delete(id);
       removed.push(entry);
     }
-    const retiring = new Map<string, { views: ViewHandle[]; ms: number }>();
+    const retiring = new Map<string, { views: ViewHandle[]; ms: number; ease?: GlassEase }>();
     for (const entry of removed) {
+      this.entries.cancel(entry.region.id);
       const view = entry.view;
       if (view === null) continue;
       entry.view = null;
-      const ms = entry.region.transition ?? 0;
-      if (ms <= 0) {
+      const m = entry.region.materialize;
+      const ms = m === undefined ? entry.region.transition ?? 0 : m.exit;
+      if (m !== undefined && ms > 0 && entry.region.group === undefined) {
+        // Seule dans son conteneur : elle redescend vers son départ pendant qu'il s'éteint.
+        this.backend.setFrame(view, materializeFrom(toAppKitFrame(entry.rect, this.backend.contentHeight()), m, entry.zoom), exitMotion(m));
+        retiring.set(entry.groupKey, { views: [view], ms, ease: m.exitEase });
+      } else if (ms <= 0) {
         this.backend.dispose(view);
       } else if (arriving.has(entry.groupKey) || this.hasLiveView(entry.groupKey)) {
         this.shrink(entry, view);
@@ -158,7 +155,7 @@ export class GlassRegions {
         retiring.set(entry.groupKey, bag);
       }
     }
-    for (const [key, bag] of retiring) this.stage.retire(key, bag.ms, bag.views);
+    for (const [key, bag] of retiring) this.stage.retire(key, bag.ms, bag.views, bag.ease);
   }
 
   private shrink(entry: RegionEntry, view: ViewHandle): void {
@@ -179,13 +176,13 @@ export class GlassRegions {
     const entry = this.regions.get(region.id);
     if (entry === undefined) {
       if (this.regions.size >= MAX_REGIONS) return this.overflow();
-      const fresh: RegionEntry = { region, rect, radius, groupKey, seq: (this.seq += 1), view: null };
+      const fresh: RegionEntry = { region, rect, radius, groupKey, zoom, seq: (this.seq += 1), view: null };
       this.regions.set(region.id, fresh);
       if (this.enabled) this.mount(fresh, height, reveal);
       return;
     }
     const previous = { region: entry.region, rect: entry.rect, radius: entry.radius };
-    Object.assign(entry, { region, rect, radius });
+    Object.assign(entry, { region, rect, radius, zoom });
     if (!this.enabled) return;
     if (entry.groupKey !== groupKey || entry.view === null) {
       // Changer de groupe, c'est changer de conteneur : on repose la vue.
@@ -213,8 +210,10 @@ export class GlassRegions {
     if (content === null) return;
     const frame = toAppKitFrame(entry.rect, height);
     const grow = !opening && ms > 0;
+    const m = entry.region.materialize;
+    const materialize = m !== undefined && opening && ms > 0 && reveal !== null && entry.region.group === undefined;
     entry.view = this.backend.createGlass({
-      frame: grow ? centerOf(frame) : frame,
+      frame: grow ? centerOf(frame) : materialize ? materializeFrom(frame, m, entry.zoom) : frame,
       radius: entry.radius,
       style: nativeStyle(entry.region.level),
       tint: parseTint(entry.region.tint),
@@ -222,7 +221,14 @@ export class GlassRegions {
     });
     this.restack(entry);
     if (grow) this.backend.setFrame(entry.view, frame, motionOf(entry.region));
-    if (opening && ms > 0 && reveal !== null) reveal.set(entry.groupKey, Math.max(reveal.get(entry.groupKey) ?? 0, ms));
+    if (materialize) {
+      const view = entry.view; // né transparent et décalé : au bout du décalage, il monte et s'allume
+      this.entries.schedule(entry.region.id, m.delay, () => {
+        if (entry.view !== view) return;
+        this.backend.setFrame(view, toAppKitFrame(entry.rect, this.backend.contentHeight()), enterMotion(m, ms));
+        this.stage.reveal(entry.groupKey, ms, m.enterEase);
+      });
+    } else if (opening && ms > 0 && reveal !== null) reveal.set(entry.groupKey, Math.max(reveal.get(entry.groupKey) ?? 0, ms));
     this.stage.setSpacing(entry.groupKey, this.spacingOf(entry.groupKey));
   }
 
@@ -272,6 +278,7 @@ export class GlassRegions {
 
   /** Tout retirer d'AppKit tout de suite : fondus soldés, verres, conteneurs, racine. */
   private demolish(): void {
+    this.entries.cancelAll();
     for (const [view, leaving] of this.shrinking) {
       this.timers.clear(leaving.timer);
       this.backend.dispose(view);

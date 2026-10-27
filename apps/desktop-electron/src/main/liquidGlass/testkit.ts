@@ -8,7 +8,7 @@
 
 import type { GlassBackend, GlassInspection, GlassProps, GroupHandle, ViewHandle } from "./backend";
 import type { AppKitRect, Rgba } from "./geometry";
-import type { GlassAppearance } from "./protocol";
+import type { GlassAppearance, GlassEase } from "./protocol";
 import type { NativeMotion } from "./springCurve";
 
 export interface FakeView {
@@ -30,6 +30,8 @@ export interface FakeView {
 export class FakeBackend implements GlassBackend {
   readonly content: FakeView = this.make("content", "contentView");
   readonly ops: string[] = [];
+  /** Chaque cadre posé par `setFrame`, dans l'ordre. */
+  readonly frames: AppKitRect[] = [];
   height = 800;
   private counter = 0;
 
@@ -96,6 +98,7 @@ export class FakeBackend implements GlassBackend {
 
   setFrame(handle: ViewHandle, frame: AppKitRect, motion: NativeMotion | null): void {
     this.ops.push(`setFrame ${motion === null ? "direct" : `ressort ${String(motion.durationMs)}`}`);
+    this.frames.push(frame);
     this.view(handle).frame = frame;
   }
 
@@ -119,11 +122,11 @@ export class FakeBackend implements GlassBackend {
     this.view(handle).tint = tint;
   }
 
-  setAlpha(handle: ViewHandle, alpha: number, durationMs: number): void {
+  setAlpha(handle: ViewHandle, alpha: number, durationMs: number, ease?: GlassEase): void {
     const view = this.view(handle);
     // Comme AppKit : sur un verre, l'alpha ne fait rien (mesuré) — le test le saurait.
     if (view.kind === "glass") throw new Error("alpha pose sur un verre : sans effet dans AppKit");
-    this.ops.push(`setAlpha ${view.kind} ${String(alpha)} ${String(durationMs)}`);
+    this.ops.push(`setAlpha ${view.kind} ${String(alpha)} ${String(durationMs)}${ease === undefined ? "" : ` [${ease.join(",")}]`}`);
     view.alpha = alpha;
   }
 

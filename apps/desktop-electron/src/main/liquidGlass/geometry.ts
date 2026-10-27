@@ -119,3 +119,11 @@ export function stackAnchor(items: readonly Stackable[], key: string): string | 
   if (index < 0) return null;
   return sorted[index + 1]?.key ?? null;
 }
+
+/** Un point au centre du cadre : d'où un verre naît, où il fond. */
+export const centerOf = (frame: AppKitRect): AppKitRect => ({
+  x: frame.x + frame.width / 2,
+  y: frame.y + frame.height / 2,
+  width: 0,
+  height: 0,
+});

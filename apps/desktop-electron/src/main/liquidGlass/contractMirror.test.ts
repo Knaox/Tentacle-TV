@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { GLASS_LEVELS, type GlassSampleRect, type LiquidGlassBridge, type NativeGlassRegion } from "./protocol";
+import { GLASS_LEVELS, type GlassMaterialize, type GlassSampleRect, type LiquidGlassBridge, type NativeGlassRegion } from "./protocol";
 import { GLASS_SPRINGS, SPRING_CUT } from "./springCurve";
 
 function repoRoot(): string {
@@ -30,7 +30,7 @@ type RequiredKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? never : K
 const ALL_FIELDS: Record<keyof NativeGlassRegion, true> = {
   id: true, x: true, y: true, width: true, height: true, radius: true, level: true,
   tint: true, interactive: true, z: true, group: true, spacing: true, transition: true,
-  spring: true, appearance: true,
+  spring: true, appearance: true, materialize: true,
 };
 /** Les champs OBLIGATOIRES du protocole — idem. */
 const REQUIRED_FIELDS: Record<RequiredKeys<NativeGlassRegion>, true> = {
@@ -41,6 +41,10 @@ const BRIDGE_MEMBERS: Record<keyof LiquidGlassBridge, true> = {
   supported: true, refractsVideo: true, setEnabled: true, upsert: true, remove: true, sample: true,
 };
 /** Les champs d'un rectangle de `sample` — idem. */
+/** Les champs d'une matérialisation — idem. */
+const MATERIALIZE_FIELDS: Record<keyof GlassMaterialize, true> = {
+  rise: true, scale: true, originX: true, originY: true, delay: true, exit: true, enterEase: true, exitEase: true,
+};
 const SAMPLE_RECT_FIELDS: Record<keyof GlassSampleRect, true> = { x: true, y: true, width: true, height: true, under: true };
 
 const page = readFileSync(join(repoRoot(), "apps/web/src/desktop/types.ts"), "utf8");
@@ -95,5 +99,11 @@ describe("contrat du verre — la page et la coquille parlent la même langue", 
     const fields = members("NativeGlassSampleRect");
     expect(fields.length).toBeGreaterThan(0);
     for (const field of fields) expect(Object.keys(SAMPLE_RECT_FIELDS)).toContain(field.name);
+  });
+
+  it("une matérialisation parle la même langue des deux côtés, champ pour champ, tous exigés", () => {
+    const fields = members("NativeGlassMaterialize");
+    expect(fields.map((f) => f.name).sort()).toEqual(Object.keys(MATERIALIZE_FIELDS).sort());
+    expect(fields.every((f) => !f.optional)).toBe(true);
   });
 });

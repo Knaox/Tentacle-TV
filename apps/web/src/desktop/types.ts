@@ -124,6 +124,34 @@ export interface NativeGlassRegion {
   readonly spacing?: number;
   /** Apparition, déplacement et disparition animés CÔTÉ NATIF, en ms. Absent : aucun. */
   readonly transition?: number;
+  /**
+   * La MATÉRIALISATION (lot lg8) : le verre part de ce cadre (plus bas, plus petit)
+   * pendant que son conteneur s'allume, et y retourne en sortant — le geste que la
+   * page joue sur son contenu. Exige `transition` (la durée de l'entrée) et une
+   * région sans `group`. Absent : le fondu simple.
+   */
+  readonly materialize?: NativeGlassMaterialize;
+}
+
+/** Une Bézier CSS `cubic-bezier(x1, y1, x2, y2)`, tout dans [0, 1]. */
+export type NativeGlassEase = readonly [number, number, number, number];
+
+/** Le geste d'entrée et de sortie d'un verre qui se matérialise — mêmes nombres que le CSS de la page. */
+export interface NativeGlassMaterialize {
+  /** Px CSS : le verre part d'autant plus bas. */
+  readonly rise: number;
+  /** Échelle de départ, autour de l'origine. */
+  readonly scale: number;
+  /** Origine de l'échelle, 0..1 depuis la gauche. */
+  readonly originX: number;
+  /** Origine de l'échelle, 0..1 depuis le haut. */
+  readonly originY: number;
+  /** Décalage de l'entrée, en ms (l'ordre des formes). */
+  readonly delay: number;
+  /** Durée de la sortie, en ms. */
+  readonly exit: number;
+  readonly enterEase: NativeGlassEase;
+  readonly exitEase: NativeGlassEase;
 }
 
 /**

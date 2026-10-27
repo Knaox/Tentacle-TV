@@ -25,6 +25,8 @@ export interface RegionSnapshot {
   style: number | null;
   /** Vue absente, cachée, ou transparente. */
   hidden: boolean;
+  /** À l'écran, animation comprise : cadre en vol (points) et opacité du conteneur. */
+  live: { frame: { x: number; y: number; width: number; height: number }; containerAlpha: number } | null;
 }
 
 /** L'état d'une fenêtre. */
@@ -60,5 +62,6 @@ export function describeRegion(region: NativeGlassRegion, native: GlassInspectio
     radius: native?.radius ?? null,
     style: native?.style ?? null,
     hidden: native === null || native.hidden,
+    live: native?.live ?? null,
   };
 }

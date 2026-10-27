@@ -94,6 +94,7 @@ describe("regionSpecOf", () => {
       group: null,
       spacing: null,
       transition: null,
+      materialize: null,
     });
     expect(regionSpecOf({ group: "barre", spacing: 8, transition: 200 })).toMatchObject({
       group: "barre",

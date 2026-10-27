@@ -4,7 +4,7 @@
  * React — testé tel quel, et lu par `useLiquidGlassSurface`.
  */
 
-import type { NativeGlassLevel } from "../../desktop/types";
+import type { NativeGlassLevel, NativeGlassMaterialize } from "../../desktop/types";
 import type { LiquidGlassMode } from "../liquidGlassMode";
 import type { LiquidGlassShape, LiquidGlassTint, RegionSpec } from "./regionGeometry";
 
@@ -76,6 +76,8 @@ export interface LiquidGlassAppearance {
   group?: string;
   spacing?: number;
   transition?: number;
+  /** Verre NATIF seulement : la matérialisation (lot lg8), qui exige `transition` et aucun `group`. */
+  materialize?: NativeGlassMaterialize;
   /** Le matériau d'une surface de page (voir `LiquidGlassMaterial`). Défaut `lens`. */
   material?: LiquidGlassMaterial;
   /** Matériau `pane` / `bead` : le ton forcé (le dock sombre d'Octave dans le thème clair). */
@@ -102,6 +104,7 @@ export function regionSpecOf(appearance: LiquidGlassAppearance): RegionSpec {
     group: appearance.group ?? null,
     spacing: appearance.spacing ?? null,
     transition: appearance.transition ?? null,
+    materialize: appearance.materialize ?? null,
   };
 }
 

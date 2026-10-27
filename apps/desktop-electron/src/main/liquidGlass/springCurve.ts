@@ -149,3 +149,9 @@ export function springMotion(spring: GlassSpring): NativeMotion {
   fitted.set(key, motion);
   return motion;
 }
+
+/** Le mouvement natif d'une région : son ressort, `morph` de la page sinon ; aucun sans transition. */
+export function motionOf(region: { readonly transition?: number; readonly spring?: GlassSpring }): NativeMotion | null {
+  if ((region.transition ?? 0) <= 0) return null;
+  return springMotion(region.spring ?? GLASS_SPRINGS.morph);
+}

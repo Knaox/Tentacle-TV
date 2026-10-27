@@ -22,6 +22,7 @@ const spec: RegionSpec = {
   group: null,
   spacing: null,
   transition: null,
+  materialize: null,
 };
 const viewport = { width: 1280, height: 800 };
 const style = { radius: 16, tint: null };
@@ -123,5 +124,17 @@ describe("sameRegion", () => {
     expect(sameRegion(a, c)).toBe(false);
     expect(sameRegion(a, { ...a, tint: "#FFFFFFFF" })).toBe(false);
     expect(sameRegion(a, { ...a, group: "barre" })).toBe(false);
+  });
+
+  it("une matérialisation se compare par VALEUR : refabriquée à l'identique, rien à renvoyer", () => {
+    const m = { rise: 6, scale: 0.96, originX: 0.5, originY: 0.5, delay: 30, exit: 180, enterEase: [0.2, 0.9, 0.3, 1], exitEase: [0.4, 0, 1, 1] } as const;
+    const base = regionFromBox("a", { x: 0, y: 0, width: 10, height: 10, layoutWidth: 10 }, { ...spec, transition: 340, materialize: m }, style, viewport);
+    if (base === null) throw new Error("région attendue");
+    expect(base.materialize).toEqual(m);
+    expect(sameRegion(base, { ...base, materialize: { ...m, enterEase: [0.2, 0.9, 0.3, 1] } })).toBe(true);
+    expect(sameRegion(base, { ...base, materialize: { ...m, delay: 60 } })).toBe(false);
+    expect(sameRegion(base, { ...base, materialize: { ...m, exitEase: [0.4, 0, 1, 0.9] } })).toBe(false);
+    const { materialize: _gone, ...without } = base;
+    expect(sameRegion(base, without)).toBe(false);
   });
 });

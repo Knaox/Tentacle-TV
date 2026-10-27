@@ -54,10 +54,10 @@ export function useLiquidGlassRegion(target: Target, options: LiquidGlassRegionO
   const id = useMemo(() => `lg-${reactId.replace(/[^a-zA-Z0-9_-]/g, "")}`, [reactId]);
   const active = mode === "native" && options.enabled !== false && nativeGlassBridge() !== null;
 
-  const { level, shape, tint, interactive, z, group, spacing, transition } = options;
+  const { level, shape, tint, interactive, z, group, spacing, transition, materialize } = options;
   const spec = useMemo(
-    () => regionSpecOf({ level, shape, tint, interactive, z, group, spacing, transition }),
-    [level, shape, tint, interactive, z, group, spacing, transition],
+    () => regionSpecOf({ level, shape, tint, interactive, z, group, spacing, transition, materialize }),
+    [level, shape, tint, interactive, z, group, spacing, transition, materialize],
   );
   const specRef = useRef(spec);
   specRef.current = spec;
