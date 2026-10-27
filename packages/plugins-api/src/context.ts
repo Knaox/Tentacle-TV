@@ -23,6 +23,13 @@ export interface ActivePluginMeta {
      * Le geste de l'utilisateur sur l'appareil l'emporte (`usePinnedNav`).
      */
     primary?: boolean;
+    /**
+     * MASQUÉE de toute la navigation (capacité `plugins.navigation`) : ni
+     * barre, ni « Plus », ni onglets, ni « Personnaliser la barre », quelle
+     * que soit l'épingle de l'appareil — mais sa route reste, un lien direct
+     * l'ouvre. Seul `true` compte (`isPluginNavHidden`, shared).
+     */
+    hidden?: boolean;
   }>;
   /** La route où l'extension règle sa navigation (`navigation` du manifeste) ; son écriture se relit aussitôt. */
   navigation?: string;

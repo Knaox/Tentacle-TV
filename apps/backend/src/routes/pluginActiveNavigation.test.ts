@@ -3,7 +3,8 @@
  * `/api/plugins/active` : une extension qui ne la déclare pas — ou un invité
  * absent — donne exactement la liste d'avant, sans un appel ; une extension qui
  * la déclare voit son nom et sa place fusionnés dans ses pages, jamais dans son
- * entrée d'administration.
+ * entrée d'administration ; une page qu'elle masque reste dans la liste (les
+ * clients en gardent la route), marquée `hidden`.
  */
 
 import Fastify from "fastify";
@@ -107,6 +108,14 @@ describe("navigation d'extension dans /api/plugins/active", () => {
       { path: "/x/page", icon: "clock", platforms: ["web"], label: "Mes sons", primary: false },
       ADMIN,
     ]);
+  });
+
+  it("page masquée : toujours dans navItems (sa route reste), marquée `hidden`, jamais `primary`", async () => {
+    install("ext-masquee", { navigation: "/navigation" });
+    const socket = await startGuest({ items: [{ path: "/x/page", label: null, primary: false, hidden: true }] });
+    configureNavigationLookup({ socketOf: async () => socket, locale: () => "fr" });
+    const [entry] = await active();
+    expect(entry.navItems).toStrictEqual([{ ...PAGE, primary: false, hidden: true }, ADMIN]);
   });
 
   it("invité absent : la liste d'avant, sans erreur", async () => {
