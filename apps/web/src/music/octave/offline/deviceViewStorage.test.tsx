@@ -46,6 +46,15 @@ vi.mock("../player/OctavePlayerProvider", () => ({ useOctavePlayer: () => ({}) }
 vi.mock("./KeepCollectionButton", () => ({ KeepCollectionButton: () => <i data-keep /> }));
 vi.mock("./OfflineSwitch", () => ({ OfflineNotice: () => <i data-notice />, OfflineSwitchButton: () => <i data-switch /> }));
 vi.mock("./autosync/AutoSyncSetting", () => ({ AutoSyncSetting: () => <i data-autosync /> }));
+vi.mock("../listOrder/ListToolbar", () => ({ ListToolbar: ({ shown, total }: { shown: number; total: number }) => <i data-toolbar={`${shown}/${total}`} /> }));
+vi.mock("../listOrder/NoMatch", () => ({ NoMatch: () => <i data-no-match /> }));
+// Les rangées d'une collection ouverte ont leurs propres tests (`keptPlaylistRows`) : ici, l'ordre gardé tel quel.
+vi.mock("./useKeptListRows", () => ({
+  useKeptListRows: (open: { keys: string[]; tracks: unknown[] } | null) => {
+    const rows = open ? open.keys.map((key, i) => ({ rowKey: key, track: open.tracks[i], pending: null, entryId: null })) : [];
+    return { natural: rows, rows, order: { reset: () => undefined }, toolbar: true, ready: true };
+  },
+}));
 vi.mock("./useKeptMusic", () => ({
   useKeptMusic: () => ({
     loaded: true,
@@ -90,6 +99,13 @@ describe("« Sur cet appareil » dit la place", () => {
     expect(renderToStaticMarkup(<DeviceView />)).toContain("count.tracks[2] · 10 Mio");
     h.params = "c=playlist:jf:p1";
     expect(metaOf(renderToStaticMarkup(<DeviceView />))).toContain("count.tracks[2] · 10 Mio<");
+  });
+
+  it("une playlist ouverte : la barre de la playlist en ligne (recherche, filtres, tris) au-dessus de ses titres", () => {
+    h.params = "c=playlist:jf:p1";
+    const html = renderToStaticMarkup(<DeviceView />);
+    expect(html).toContain('data-toolbar="2/2"');
+    expect(html).toContain("data-tracks");
   });
 
   it("en ligne, la capsule « Passer hors ligne » ; hors ligne, l'avis qui porte la sortie", () => {

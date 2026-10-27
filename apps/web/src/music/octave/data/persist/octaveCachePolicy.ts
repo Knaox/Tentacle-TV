@@ -14,7 +14,9 @@
  * - Vue album / artiste / playlist (`external`) : une réponse non vide ; 14 jours.
  * - Pages de la BIBLIOTHÈQUE (`library` : accueil, playlists, albums, artistes,
  *   titres likés, statut) : ce qu'un lancement en Octave montre avant tout
- *   réseau, puis revalide en silence ; 14 jours.
+ *   réseau, puis revalide en silence ; 14 jours. Avec eux, le tri choisi d'une
+ *   liste (`list-prefs`) : une playlist gardée s'ouvre hors ligne dans l'ordre
+ *   où le compte la voit en ligne.
  *
  * Rangées PAR IDENTITÉ (serveur + compte, profil compris) : jamais rendues à
  * une autre ; les `MAX_OWNERS` identités les plus récentes gardent chacune
@@ -33,7 +35,7 @@ export const MAX_OWNERS = 4;
 export type PersistKind = "search" | "entity" | "library";
 
 /** Les pages de la bibliothèque qu'Octave rouvre sans réseau (clés de `musicKeys`). */
-const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked"]);
+const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked", "list-prefs"]);
 
 export interface StoredEntry {
   /** L'identifiant de stockage : l'identité et la clé (`entryId`). Une entrée d'avant n'avait que la clé. */

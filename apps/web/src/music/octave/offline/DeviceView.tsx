@@ -5,6 +5,9 @@
  * demande le serveur), puis les titres. Hors ligne, c'est la seule vue d'Octave
  * (`OfflineOctave.tsx`) et elle ne montre que ce qui est complet.
  *
+ * Une playlist ouverte est la playlist EN LIGNE en version hors ligne : son
+ * ordre, ses tris, ses filtres, sa recherche, le même rendu (`useKeptListRows`).
+ *
  * La place prise : en tête (tout, et l'espace libre du disque quand la coquille
  * le dit), sur chaque album et playlist, et sur celui qu'on ouvre.
  *
@@ -28,12 +31,15 @@ import { Artwork, ARTWORK_RADIUS } from "../components/Artwork";
 import { CardGrid, Shelf } from "../components/Cards";
 import { CollectionHeader } from "../components/CollectionHeader";
 import { rowsOf, TrackList } from "../components/TrackList";
-import { EmptyState } from "../components/ViewStates";
+import { EmptyState, RowsSkeleton } from "../components/ViewStates";
+import { ListToolbar } from "../listOrder/ListToolbar";
+import { NoMatch } from "../listOrder/NoMatch";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { deviceModel, type DeviceCollection } from "./deviceModel";
 import { bytesOnDisk, collectionBytes } from "./keptStorage";
 import { KeepCollectionButton } from "./KeepCollectionButton";
 import { OfflineNotice, OfflineSwitchButton } from "./OfflineSwitch";
+import { useKeptListRows } from "./useKeptListRows";
 import { useKeptMusic } from "./useKeptMusic";
 import { AutoSyncSetting } from "./autosync/AutoSyncSetting";
 
@@ -75,17 +81,22 @@ export function DeviceView() {
   const [params, setParams] = useSearchParams();
   // La pochette locale arrive avec la racine des transferts (`rootReady`).
   const model = useMemo(
-    () => deviceModel(kept.tracks, kept.collections, rootReady ? localResourceUrl : () => null, { completeOnly: offline }),
-    [kept.tracks, kept.collections, offline, rootReady],
+    // `resolve` : les copies sous la clé d'aujourd'hui d'un titre renommé (`byKey` du magasin).
+    () => deviceModel(kept.tracks, kept.collections, rootReady ? localResourceUrl : () => null, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }),
+    [kept.tracks, kept.collections, kept.byKey, offline, rootReady],
   );
   const open = model.collections.find((c) => c.key === params.get("c")) ?? null;
-  const tracks = open?.tracks ?? model.tracks;
-  const rows = useMemo(() => rowsOf(tracks), [tracks]);
+  // Une playlist ouverte : la playlist en ligne, en version hors ligne (`useKeptListRows`) ; « Lire » joue ce qu'on voit.
+  const list = useKeptListRows(open);
+  const allRows = useMemo(() => rowsOf(model.tracks), [model.tracks]);
+  const rows = open ? list.rows : allRows;
+  const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
+  const count = open ? list.natural.length : model.tracks.length;
   const contextId = open ? `${DEVICE_CONTEXT}:${open.key}` : DEVICE_CONTEXT;
   const bytesOf = (c: DeviceCollection) => collectionBytes(c.tracks.map((track) => track.key), kept.byKey);
   // La place : celle de la collection ouverte ; en tête, tout ce qui est gardé, et ce que le disque a encore de libre.
   const meta = [
-    tm("count.tracks", { count: tracks.length }),
+    tm("count.tracks", { count }),
     open ? formatBytes(bytesOf(open)) : t("view.used", { size: formatBytes(bytesOnDisk(kept.tracks)) }),
     !open && freeBytes !== null ? t("view.free", { size: formatBytes(freeBytes) }) : null,
   ]
@@ -133,11 +144,40 @@ export function DeviceView() {
             </CardGrid>
           </Shelf>
         )}
-        {rows.length > 0 && (
-          <section className="flex flex-col gap-3">
-            {!open && <h2 className="oc-heading px-2 text-xl text-content-primary">{t("view.tracks")}</h2>}
-            <TrackList rows={rows} contextId={contextId} showArtwork showAlbum={!open} label={open?.title ?? t("view.title")} />
+        {open ? (
+          <section className="flex flex-col">
+            {list.toolbar && list.natural.length > 0 && (
+              <ListToolbar
+                query={list.order.query}
+                onQuery={list.order.setQuery}
+                filter={list.order.filter}
+                filters={list.order.filters}
+                onFilter={list.order.setFilter}
+                prefs={list.order.prefs}
+                sorts={list.order.sorts}
+                onSort={list.order.onSort}
+                shown={rows.length}
+                total={list.natural.length}
+              />
+            )}
+            {!list.ready ? (
+              <RowsSkeleton />
+            ) : rows.length === 0 ? (
+              list.natural.length > 0 && <NoMatch onReset={list.order.reset} />
+            ) : open.kind === "playlist" ? (
+              // Le rendu de la playlist en ligne (`PlaylistView`), sans glisser ni retrait.
+              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={open.title} virtual />
+            ) : (
+              <TrackList rows={rows} contextId={contextId} showArtwork label={open.title} />
+            )}
           </section>
+        ) : (
+          rows.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="oc-heading px-2 text-xl text-content-primary">{t("view.tracks")}</h2>
+              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum label={t("view.title")} />
+            </section>
+          )
         )}
       </div>
     </div>

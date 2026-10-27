@@ -18,10 +18,10 @@ function entry(id: unknown[], over: Partial<StoredEntry> = {}): StoredEntry {
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } }) as unknown as OctaveQueryClientLike & QueryClient;
 
 describe("politique du cache gardé d'Octave", () => {
-  it("garde les pages de l'extension et celles de la bibliothèque, sous « music »", () => {
+  it("garde les pages de l'extension et celles de la bibliothèque — tri des listes compris —, sous « music »", () => {
     expect(persistKindOf(SEARCH_KEY)).toBe("search");
     expect(persistKindOf(ALBUM_KEY)).toBe("entity");
-    for (const key of [["music", "home"], ["music", "status"], ["music", "playlists"], ["music", "playlist", "p"], ["music", "album", "a"], ["music", "artist", "r"], ["music", "albums", "recent", 60], ["music", "artists", 60], ["music", "liked", 500]]) {
+    for (const key of [["music", "home"], ["music", "status"], ["music", "playlists"], ["music", "playlist", "p"], ["music", "album", "a"], ["music", "artist", "r"], ["music", "albums", "recent", 60], ["music", "artists", 60], ["music", "liked", 500], ["music", "list-prefs", "playlist:p"]]) {
       expect(persistKindOf(key)).toBe("library");
     }
     // Ni les sources (signées, éphémères), ni les rapprochements, ni la recherche de la bibliothèque, ni Tentacle.
