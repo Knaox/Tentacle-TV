@@ -252,6 +252,8 @@ export interface PendingMusicItem {
   duplicate?: boolean;
   /** Une entrée d'un IMPORT de playlist (`importTracks`) : elle n'attend pas la bibliothèque, sa disponibilité fait foi. */
   imported?: true;
+  /** Son rang dans la SOURCE de l'import (`ImportedTrack.index`) : le cœur la montre à sa place d'après lui. */
+  sourceIndex?: number;
 }
 
 export interface PendingMusicResponse {

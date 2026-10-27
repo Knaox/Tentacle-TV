@@ -8,7 +8,7 @@
  * ou dont l'élément Jellyfin est connu, cède sa place : jamais de doublon.
  */
 
-import { pendingAsPlaylistEntry, type MusicPlaylistEntry, type MusicTrack, type PendingMusicItem } from "../music";
+import { pendingAsPlaylistEntry, sourcePlace, type MusicPlaylistEntry, type MusicTrack, type PendingMusicItem } from "../music";
 import { sameRecording } from "./trackTwins";
 
 export interface ListRow {
@@ -59,17 +59,25 @@ export function mergeLiked(liked: readonly MusicTrack[], pending: readonly Pendi
   return [...waiting, ...liked.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }))];
 }
 
-/** Une playlist : chaque attente à la position voulue (fin si absente). */
+/**
+ * Une playlist : chaque attente à la position voulue (fin si absente). Une attente d'un IMPORT qui dit son rang dans
+ * la source (`sourceIndex`), dans une playlist dont les entrées disent le leur (serveur 1.40.0) : juste après le
+ * titre qui la précède dans la source (`sourcePlace`) — sa position, calculée à l'import, devenait fausse à chaque
+ * arrivée (27/10, une playlist importée d'Apple Music).
+ */
 export function mergePlaylist(entries: readonly MusicPlaylistEntry[], pending: readonly PendingMusicItem[], playlistId: string): ListRow[] {
   const ordered = [...entries].sort((a, b) => a.position - b.position);
   const tracks = ordered.map((e) => e.track);
   const recordings = knownRecordings(tracks);
   const keys = new Set(tracks.map((t) => t.key));
+  const ranks = ordered.map((e) => (typeof e.sourceIndex === "number" ? e.sourceIndex : null));
+  const placeOf = (item: PendingMusicItem): number =>
+    (typeof item.sourceIndex === "number" ? sourcePlace(ranks, item.sourceIndex) : null) ?? pendingAsPlaylistEntry(item).position;
   const waiting = pending
     // Un doublon CONFIRMÉ ne se fond pas dans l'entrée existante : il a sa rangée.
     .filter((item) => item.kind === "playlistAdd" && item.playlistId === playlistId && (item.duplicate === true || !alreadyThere(item, recordings, keys)))
-    .map((item) => ({ item, entry: pendingAsPlaylistEntry(item) }))
-    .sort((a, b) => a.entry.position - b.entry.position || a.item.createdAt - b.item.createdAt);
+    .map((item) => ({ item, entry: { ...pendingAsPlaylistEntry(item), position: placeOf(item) } }))
+    .sort((a, b) => a.entry.position - b.entry.position || (a.item.sourceIndex ?? 0) - (b.item.sourceIndex ?? 0) || a.item.createdAt - b.item.createdAt);
 
   const rows: ListRow[] = [];
   let w = 0;

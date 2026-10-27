@@ -110,6 +110,25 @@ describe("une entrée IMPORTÉE (importTracks)", () => {
     expect(rows[1]?.track.availability).toBe("remote");
   });
 
+  it("une attente qui dit son rang dans la source : juste après celui qui la précède, sa position d'import ignorée (27/10)", () => {
+    // La playlist telle que Jellyfin la tient (rangs 4, 1, 6 : l'ordre faux d'avant la réparation) ; positions figées à 0.
+    const entries = [
+      { entryId: "e-w", position: 0, track: libraryTrack("w"), sourceIndex: 4 },
+      { entryId: "e-b", position: 1, track: libraryTrack("b"), sourceIndex: 1 },
+      { entryId: "e-m", position: 2, track: libraryTrack("m"), sourceIndex: 6 },
+    ];
+    const at = (id: string, sourceIndex: number) => pendingItem(id, { kind: "playlistAdd", playlistId: "pl", position: 0, imported: true, sourceIndex, createdAt: 10 - sourceIndex });
+    const rows = mergePlaylist(entries, [at("s5", 5), at("s2", 2), at("s3", 3), at("s9", 9), at("s0", 0)], "pl");
+    // s0 (aucun rang avant lui) : juste avant le rang 1 ; deux attentes à la même place : par rang.
+    expect(rows.map((r) => r.rowKey)).toEqual(["e-w", "pending:op-s0", "pending:op-s5", "e-b", "pending:op-s2", "pending:op-s3", "e-m", "pending:op-s9"]);
+  });
+
+  it("des entrées sans rang (serveur d'avant) : la position de l'attente, comme avant", () => {
+    const item = pendingItem("s2", { kind: "playlistAdd", playlistId: "pl", position: 1, imported: true, sourceIndex: 2 });
+    const rows = mergePlaylist([{ entryId: "e-a", position: 0, track: libraryTrack("a") }, { entryId: "e-b", position: 1, track: libraryTrack("b") }], [item], "pl");
+    expect(rows.map((r) => r.rowKey)).toEqual(["e-a", "pending:op-s2", "e-b"]);
+  });
+
   it("une entrée d'avant (sans `imported`) reste « en attente »", () => {
     const item = pendingItem("x", { kind: "playlistAdd", playlistId: "pl", position: 0 });
     expect(mergePlaylist([], [item], "pl")[0]?.track.availability).toBe("pending");
