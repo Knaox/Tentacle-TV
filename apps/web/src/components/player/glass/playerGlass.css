@@ -45,13 +45,14 @@
   /* Hauteur FIXE du bas (barre + écart + ronds) : le coin bas-droit monte d'autant (`.lgp-corner`). */
   --lg-player-bar-height: calc(var(--lg-player-timeline-height) + var(--lg-player-gap) + var(--lg-player-orb-primary));
   /* Le VOILE (`GlassScrim`) : hauteur depuis le bord, puis densité du bord vers l'image
-     (arrêts à 0, 35 et 70 % de la hauteur, transparent au bout). Dosé pour le texte
-     BLANC sur le blanc pur : ≥ 0,64 sous le temps et le titre → fond ≤ 92/255, 5:1 au
-     moins, avant le halo des libellés. */
+     (arrêts à 0, 42 et 72 % de la hauteur, transparent au bout). Dosé pour la barre et le
+     texte sur le blanc pur : ≥ 0,72 sous la barre, le temps et le titre → fond ≤ 72/255 :
+     la partie lue (violet → rose clairs) à 3:1, le texte blanc à 6:1 au moins (mesuré,
+     banc lg8 A). */
   --lg-player-scrim-bottom: 260px;
   --lg-player-scrim-top: 160px;
-  --lg-player-scrim-0: 0.74;
-  --lg-player-scrim-1: 0.64;
+  --lg-player-scrim-0: 0.78;
+  --lg-player-scrim-1: 0.72;
   --lg-player-scrim-2: 0.3;
   --lg-player-scrim-in-ms: var(--lg-spring-morph-duration);
   --lg-player-radius-capsule: var(--lg-radius-capsule);
@@ -76,12 +77,13 @@
   --lg-player-track: rgb(255 255 255 / 0.3);
   --lg-player-track-buffer: rgb(255 255 255 / 0.45);
   --lg-player-track-fill: rgb(255 255 255 / 0.9);
-  /* La partie LUE de la barre et du volume : le dégradé de marque de l'habillage d'avant,
-     violet → rose (`--progress-fill`), retour de Damien du 27/10 (« elle perd son côté
-     rose ») — opaque, il se compose juste. Un liseré noir et une ombre courte le
-     détachent du voile sur une image claire. Le reste de la couche fonctionnelle (décomptes
-     des encarts) garde `--lg-player-track-fill`. */
-  --lg-player-progress-fill: var(--progress-fill);
+  /* La partie LUE de la barre et du volume : le dégradé de marque, violet → rose (retour de
+     Damien du 27/10 : « elle perd son côté rose »), dans ses teintes CLAIRES — opaque, il se
+     compose juste. Mesuré sur le voile au-dessus du blanc pur : le `--progress-fill` d'avant
+     (#8B5CF6 → #EC4899) y tombait à 1,1:1, les teintes claires tiennent 3:1 sur le voile
+     dosé plus haut. Un liseré noir et une ombre courte le détachent encore. Le reste de la
+     couche fonctionnelle (décomptes des encarts) garde `--lg-player-track-fill`. */
+  --lg-player-progress-fill: linear-gradient(90deg, var(--brand-light), var(--brand-accent-light));
   --lg-player-progress-edge: 0 0 0 0.5px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
   --lg-player-thumb: #ffffff;
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */

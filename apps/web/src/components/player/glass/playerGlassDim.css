@@ -41,9 +41,9 @@
   --lg-player-dim-dark: 0.5;
   --lg-player-dim-light: 0.65;
   /* Le CŒUR du verre clair (centre) ; le bord en garde `--lg-player-dim-rim`. Mesuré
-     fenêtre active (lg3) : neige 246 × (1 − 0,62) → 93, glyphe blanc 5:1 ; noir 87 ×
-     (1 − 0,3) → 61 ; gris 50 % ≈ 170 → 119, 4:1 avant le halo du glyphe. */
-  --lg-player-orb-dim-dark: 0.3;
+     fenêtre active (banc lg8 A) : blanc 175 au bord, 98 sous le glyphe → 5,9:1 ; gris 50 %
+     (lu « sombre ») : le verre y monte à ~230, d'où 0,48 et non 0,3 (163, 2,3:1) ; noir → ~45. */
+  --lg-player-orb-dim-dark: 0.48;
   --lg-player-orb-dim-light: 0.62;
   --lg-player-dim-rim: 0.28;
   /* La réaction « liquide » : le cœur se resserre et s'éclaircit — le verre s'allume
@@ -57,7 +57,7 @@
 
 :root[data-liquid-glass="native"][data-window-inactive="on"] {
   --lg-player-dim-dark: 0.2;
-  --lg-player-orb-dim-dark: 0.14;
+  --lg-player-orb-dim-dark: 0.24;
 }
 
 :root[data-liquid-glass="native"] .lgp-surface {

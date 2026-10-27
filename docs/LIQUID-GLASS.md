@@ -643,17 +643,20 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   verre pour les seuls BOUTONS :
   - **le voile** (`GlassScrim`, `playerGlassScrim.css`) : un dégradé NOIR peint par la
     page, en bas (260 px) et en haut (160 px), qui naît et part avec les contrôles
-    (opacité ; `visibility: hidden` une fois parti). Densité 0,74 au bord, 0,64 sous le
-    temps et le titre (blanc pur → 92/255 au plus : texte blanc ≥ 5:1), puis une longue
-    traîne. ⚠️ **Il est PERCÉ autour de chaque forme de verre** (`scrimHoles.ts`, un
+    (opacité ; `visibility: hidden` une fois parti). Densité 0,78 au bord, 0,72 sous la
+    barre, le temps et le titre (blanc pur → 72/255 au plus : texte blanc ≥ 6:1 mesuré,
+    partie lue ≥ 3:1), puis une longue traîne. ⚠️ **Il est PERCÉ autour de chaque forme de verre** (`scrimHoles.ts`, un
     masque SVG) : le verre natif est SOUS la page, un voile qui passerait sur lui le
     rendrait gris. Les trous sont relus sur les rectangles AFFICHÉS des `.lgp-surface`
     (transformations comprises), image par image pendant 900 ms après tout changement
     (forme qui naît, panneau qui sort de son bouton, redimensionnement), rien au repos ;
   - **le titre et le sous-titre** en texte blanc sur le voile du haut, sans capsule ;
-  - **la barre de progression NUE** : un trait blanc de 4 px (×1,75 au survol, `scaleY`),
-    le temps écoulé et restant en texte de part et d'autre ; le curseur du volume, nu
-    lui aussi, à côté du rond du son ;
+  - **la barre de progression NUE** : un trait de 4 px (×1,75 au survol, `scaleY`), piste
+    blanche translucide, partie LUE au dégradé de marque violet → rose (retour de Damien
+    du 27/10 : « elle perd son côté rose »), en teintes CLAIRES (`--lg-player-progress-fill`,
+    #A78BFA → #F472B6 : le `--progress-fill` d'avant tombait à 1,1:1 sur le voile au-dessus
+    du blanc pur), liseré noir et ombre courte ; le temps écoulé et restant en texte de
+    part et d'autre ; le curseur du volume, nu et au même dégradé, à côté du rond du son ;
   - **un ROND de verre clair par bouton** (`GlassOrb` : 44 px, la lecture 56), chacun sa
     région native du groupe `player`, à 12 px l'un de l'autre (`--lg-player-gap`), au-delà
     de la distance de fusion (8) : AppKit les garde distincts au repos. Le son à gauche,
@@ -676,8 +679,9 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   **Depuis lg8, sur le verre clair, un CŒUR et non plus un aplat** (l'aplat de 0,5 à 0,65
   faisait les pilules grises) : noir plein jusqu'à 42 % du rayon, 28 % de lui-même au bord
   — la vidéo se voit à travers le liseré, le reflet du verre reste. Densité du cœur **0,62**
-  dessous clair (neige 246 → 93 sous le glyphe, 5:1), **0,3** dessous sombre (le verre
-  reste clair), **0,14** fenêtre inactive. Au survol, le cœur se resserre (×0,82) et
+  dessous clair (blanc : 175 au bord, 98 sous le glyphe, 5,9:1), **0,48** dessous sombre
+  (le gris 50 % se lit « sombre » mais le verre y monte à ~230 : à 0,3, 2,3:1), **0,24**
+  fenêtre inactive. Au survol, le cœur se resserre (×0,82) et
   s'éclaircit (×0,78) — le verre « s'allume » depuis son bord ; à l'appui ×0,66 et ×0,6,
   retour sur le ressort `settle` (`scale` et opacité : compositeur seulement). Mouvement
   réduit, matière pleine : ni resserrement ni éclaircie. Le verre normal atténué (thème

@@ -78,8 +78,8 @@ export function GlassScrim({ edge, visible }: GlassScrimProps) {
       <defs>
         <linearGradient id={`${id}-fade`} x1="0" y1={edge === "bottom" ? "1" : "0"} x2="0" y2={edge === "bottom" ? "0" : "1"}>
           <stop offset="0" className="lgp-scrim__stop lgp-scrim__stop--0" />
-          <stop offset="0.35" className="lgp-scrim__stop lgp-scrim__stop--1" />
-          <stop offset="0.7" className="lgp-scrim__stop lgp-scrim__stop--2" />
+          <stop offset="0.42" className="lgp-scrim__stop lgp-scrim__stop--1" />
+          <stop offset="0.72" className="lgp-scrim__stop lgp-scrim__stop--2" />
           <stop offset="1" className="lgp-scrim__stop lgp-scrim__stop--3" />
         </linearGradient>
         <mask id={`${id}-holes`} maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
