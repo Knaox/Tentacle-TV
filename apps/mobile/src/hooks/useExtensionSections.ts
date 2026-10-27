@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { extensionSectionId } from "@tentacle-tv/api-client";
 import { useActivePlugins, type ActivePlugin } from "@/hooks/useActivePlugins";
+import { mobilePluginNavPages } from "@/hooks/extensionNavPages";
 
 /**
  * Les pages d'extension sur mobile ne sont plus des onglets : elles sont les
@@ -74,11 +75,13 @@ export function shortPluginName(name: string): string {
   return name.split(/\s+[—–-]\s+/)[0].trim() || name;
 }
 
-/** Les pages mobiles de tous les plugins actifs, dans l'ordre des manifestes. */
+/**
+ * Les pages mobiles de tous les plugins actifs, dans l'ordre des manifestes —
+ * sans celles que leur extension MASQUE de la navigation (`extensionNavPages.ts`).
+ */
 export function buildExtensionSections(plugins: ActivePlugin[] | undefined, lang: string): ExtensionSection[] {
   return (plugins ?? []).flatMap((plugin) =>
-    (plugin.navItems ?? [])
-      .filter((item) => item.platforms.includes("mobile"))
+    mobilePluginNavPages(plugin.navItems)
       .map((item) => ({
         id: extensionSectionId(plugin.pluginId, item.path),
         pluginId: plugin.pluginId,

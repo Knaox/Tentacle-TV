@@ -8,6 +8,8 @@ export interface PluginNavItem {
   icon: string;
   platforms: string[];
   labels: Record<string, string>;
+  /** Masquée de la navigation par son extension (`plugins.navigation`) : sa route reste (`extensionNavPages.ts`). */
+  hidden?: boolean;
 }
 
 /**
