@@ -8,6 +8,7 @@ import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { placeFloating } from "./floating/floatingPlacement";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
 import { pluginNavPinnable } from "../hooks/pluginNavPins";
+import { webPluginNavPages } from "../hooks/pluginNavPages";
 
 interface Props {
   onClose: () => void;
@@ -270,9 +271,8 @@ function usePluginPages(): PluginPage[] {
   return useMemo(() => {
     const out: PluginPage[] = [];
     for (const plugin of activePluginsMeta) {
-      if (plugin.configEnabled !== true) continue;
-      for (const nav of plugin.navItems || []) {
-        if (nav.admin || !nav.platforms?.includes("web")) continue;
+      // Une page que son extension MASQUE n'est pas proposée ici (pluginNavPages.ts).
+      for (const nav of webPluginNavPages(plugin)) {
         out.push({
           key: pluginNavKey(plugin.pluginId, nav.path),
           path: nav.path,
