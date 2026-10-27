@@ -57,8 +57,12 @@ export interface MusicKeepOutcome {
 /** Un `trackJson` démesuré n'est pas un titre : borne de la fiche gardée. */
 const MAX_TRACK_JSON = 32 * 1024;
 const JELLYFIN_ID = /^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-/** Un chemin du serveur : `/api/…`, sans `..`, sans `//`, sans schéma ni hôte. */
-const SERVER_PATH = /^\/api\/[A-Za-z0-9_\-./%]+(\?[A-Za-z0-9_\-.=&%]*)?$/;
+/**
+ * Un chemin du serveur : `/api/…`, sans `..`, sans `//`, sans schéma ni hôte. La requête admet ce que
+ * `URLSearchParams` écrit sans l'encoder (`+` pour un espace, `*`) : les pochettes par nom de Sillon
+ * (`/art/q/…?ar=D.Meletis&ti=Giyu+VS+Akaza…`) étaient refusées, et tout le lot avec (27/10, playlist « New »).
+ */
+const SERVER_PATH = /^\/api\/[A-Za-z0-9_\-./%]+(\?[A-Za-z0-9_\-.=&%+*]*)?$/;
 
 /**
  * Empreinte de 128 bits d'une chaîne (quatre FNV-1a 32 bits de graines
@@ -118,6 +122,12 @@ function validExt(value: string): boolean {
   return /^[a-z0-9]{1,5}$/.test(value);
 }
 
+/** La pochette d'un titre : un chemin du serveur, ou (titre d'ailleurs) une adresse https publique. */
+function artworkAllowed(item: MusicKeepItem): boolean {
+  if (item.artworkPath === null) return true;
+  return isServerPath(item.artworkPath) || (item.origin === "external" && isPublicArtUrl(item.artworkPath));
+}
+
 /** Valide le lot ; lève avec un code STABLE (`empty-batch`, `invalid-item`), comme `validateBatch`. */
 export function validateMusicBatch(items: readonly MusicKeepItem[]): void {
   if (items.length === 0) throw new Error("empty-batch");
@@ -126,7 +136,7 @@ export function validateMusicBatch(items: readonly MusicKeepItem[]): void {
       musicItemId(item.trackKey) !== null &&
       (item.origin === "library") === item.trackKey.startsWith("jf:") &&
       isServerPath(item.sourcePath) &&
-      (item.artworkPath === null || isServerPath(item.artworkPath) || (item.origin === "external" && isPublicArtUrl(item.artworkPath))) &&
+      artworkAllowed(item) &&
       (item.variant === "original" || item.variant === "light") &&
       (item.preset === null || validExt(item.preset)) &&
       validExt(item.containerExt) &&
@@ -181,11 +191,13 @@ function upsertMusicMeta(db: DatabaseHandle, itemId: string, item: MusicKeepItem
 export function enqueueMusicBatch(
   db: DatabaseHandle,
   userId: string,
-  items: readonly MusicKeepItem[],
+  batch: readonly MusicKeepItem[],
   freeBytes: number,
   nowMs: number,
   margin = CAPACITY_MARGIN_BYTES,
 ): MusicKeepOutcome {
+  // Une pochette qu'on ne peut pas garder n'empêche jamais de garder le titre : elle part, lui reste.
+  const items = batch.map((item) => (item.artworkPath === null || artworkAllowed(item) ? item : { ...item, artworkPath: null }));
   validateMusicBatch(items);
 
   let needed = pendingBytes(db);

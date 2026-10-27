@@ -75,6 +75,12 @@ describe("identifiants et chemins", () => {
     expect(isServerPath("/autre/chose")).toBe(false);
   });
 
+  it("une pochette par nom de Sillon (espaces en « + ») est un chemin du serveur", () => {
+    expect(isServerPath("/api/plugins/sillon/music/art/q/7ccc7db2f0e090e3/250?ar=D.Meletis&ti=Giyu+VS+Akaza+-+Tomioka+Slayer+Mark+-+%28From+%27Demon+Slayer+Infinity+Castle%27%29&al=Giyu+VS+Akaza")).toBe(true);
+    expect(isServerPath("/api/x?a=b*c")).toBe(true);
+    expect(isServerPath("/api/x?a=<b>")).toBe(false);
+  });
+
   it("une pochette d'ailleurs : https publique seulement, jamais un jeton dedans", () => {
     expect(isPublicArtUrl("https://lh3.googleusercontent.com/abc=w544-h544")).toBe(true);
     expect(isPublicArtUrl("http://ailleurs.exemple/a.jpg")).toBe(false);
@@ -93,11 +99,18 @@ describe("mise en file", () => {
   it("refuse un lot dont une source n'est pas sur le serveur", () => {
     const db = openInMemory();
     expect(() => enqueueMusicBatch(db, "u", [track({ sourcePath: "https://ailleurs.exemple/a.flac" })], 100 * GIB, 1)).toThrow("invalid-item");
-    // Une pochette d'un autre hôte : jamais pour un titre de la bibliothèque (la sienne est au serveur).
-    expect(() => enqueueMusicBatch(db, "u", [track({ artworkPath: "https://ailleurs.exemple/a.jpg" })], 100 * GIB, 1)).toThrow("invalid-item");
-    expect(() => enqueueMusicBatch(db, "u", [{ ...EXTERNAL, artworkPath: "https://ailleurs.exemple/a.jpg?api_key=x" }], 100 * GIB, 1)).toThrow("invalid-item");
     expect(() => enqueueMusicBatch(db, "u", [track({ origin: "external" })], 100 * GIB, 1)).toThrow("invalid-item");
     expect(() => enqueueMusicBatch(db, "u", [], 100 * GIB, 1)).toThrow("empty-batch");
+  });
+
+  it("une pochette qu'on ne peut pas garder part seule : le titre est gardé, sans elle (27/10 : tout le lot était refusé)", () => {
+    const db = openInMemory();
+    // Un autre hôte : jamais pour un titre de la bibliothèque (la sienne est au serveur) ; jamais un jeton dans l'adresse.
+    const library = enqueueMusicBatch(db, "u", [track({ artworkPath: "https://ailleurs.exemple/a.jpg" })], 100 * GIB, 1);
+    const external = enqueueMusicBatch(db, "u", [{ ...EXTERNAL, artworkPath: "https://ailleurs.exemple/a.jpg?api_key=x" }], 100 * GIB, 1);
+    expect([library.accepted, external.accepted]).toEqual([true, true]);
+    const rows = db.prepare("SELECT artwork_path FROM music_meta").all() as Array<{ artwork_path: string | null }>;
+    expect(rows.map((row) => row.artwork_path)).toEqual([null, null]);
   });
 
   it("refuse l'album entier faute de place, jamais la moitié", () => {
