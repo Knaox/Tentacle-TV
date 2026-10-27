@@ -43,11 +43,15 @@ const prompt = (mode: "native" | "legacy") => renderToStaticMarkup(
 );
 
 describe("les couleurs du lecteur en verre", () => {
-  it("piste et remplissage blancs, aucun dégradé dans les feuilles du lecteur", () => {
+  it("piste blanche, partie lue au dégradé de marque d'avant ; aucun autre dégradé de couleur", () => {
     expect(SHEETS).toMatch(/--lg-player-track:\s*rgb\(255 255 255 \/ 0\.3\)/);
     expect(SHEETS).toMatch(/--lg-player-track-fill:\s*rgb\(255 255 255 \/ 0\.9\)/);
+    // La barre et le volume reprennent le violet → rose de l'habillage d'avant (Damien, 27/10).
+    expect(SHEETS).toMatch(/--lg-player-progress-fill:\s*var\(--progress-fill\)/);
+    expect(SHEETS).toMatch(/\.lgp-scrub__fill \{[^}]*background: var\(--lg-player-progress-fill\)/);
     // Un dégradé de MASQUE (l'image de « à suivre ») n'est pas une couleur de marque.
-    const colours = SHEETS.replace(/mask-image:[^;]*;/g, "");
+    // …ni le jeton de la partie lue, la seule couleur de marque admise en dégradé.
+    const colours = SHEETS.replace(/mask-image:[^;]*;/g, "").replace(/--lg-player-progress-fill:[^;]*;/, "");
     expect(colours).not.toMatch(/--progress-fill|--ctl-gradient/);
     // Seul dégradé admis : du NOIR à alpha (le cœur atténué des ronds, lg8) — jamais une couleur.
     const gradients = [...colours.matchAll(/(?:linear|radial)-gradient\(([^;]*)\);/g)].map((m) => m[1]!);

@@ -76,6 +76,13 @@
   --lg-player-track: rgb(255 255 255 / 0.3);
   --lg-player-track-buffer: rgb(255 255 255 / 0.45);
   --lg-player-track-fill: rgb(255 255 255 / 0.9);
+  /* La partie LUE de la barre et du volume : le dégradé de marque de l'habillage d'avant,
+     violet → rose (`--progress-fill`), retour de Damien du 27/10 (« elle perd son côté
+     rose ») — opaque, il se compose juste. Un liseré noir et une ombre courte le
+     détachent du voile sur une image claire. Le reste de la couche fonctionnelle (décomptes
+     des encarts) garde `--lg-player-track-fill`. */
+  --lg-player-progress-fill: var(--progress-fill);
+  --lg-player-progress-edge: 0 0 0 0.5px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
   --lg-player-thumb: #ffffff;
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */
   --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);

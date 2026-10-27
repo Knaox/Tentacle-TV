@@ -114,6 +114,7 @@
   overflow: hidden;
   border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-track);
+  box-shadow: var(--lg-player-progress-edge);
   transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
@@ -136,7 +137,7 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__fill {
   border-radius: var(--lg-player-radius-capsule);
-  background: var(--lg-player-track-fill);
+  background: var(--lg-player-progress-fill);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__thumb-track {
@@ -166,7 +167,7 @@
   transform: scale(1);
 }
 
-/* Curseur de volume : la piste et le remplissage blancs de la ligne de temps (R20) */
+/* Curseur de volume : la piste et le dégradé de marque de la ligne de temps */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range {
   width: 84px;
   height: 20px;
@@ -187,8 +188,9 @@
   height: 4px;
   border-radius: var(--lg-player-radius-capsule);
   background:
-    var(--lg-player-track-fill) 0 / var(--range-fill, 0%) 100% no-repeat,
+    var(--lg-player-progress-fill) 0 / var(--range-fill, 0%) 100% no-repeat,
     var(--lg-player-track);
+  box-shadow: var(--lg-player-progress-edge);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range::-webkit-slider-thumb {
