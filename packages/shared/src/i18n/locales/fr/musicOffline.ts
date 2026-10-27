@@ -44,6 +44,13 @@ export default {
     fromDevice: "Sur cet appareil",
     fromDeviceHint: "Lu depuis la copie gardée sur cet appareil",
   },
+  switch: {
+    goOffline: "Passer hors ligne",
+    goOfflineHint: "N'écouter que la musique gardée sur cet appareil, sans réseau",
+    goOnline: "Revenir en ligne",
+    retry: "Réessayer la connexion",
+    manualHint: "Hors ligne, par choix : seule la musique gardée sur cet appareil est disponible.",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",

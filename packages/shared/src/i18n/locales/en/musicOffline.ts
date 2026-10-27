@@ -41,6 +41,13 @@ export default {
     fromDevice: "On this device",
     fromDeviceHint: "Playing the copy kept on this device",
   },
+  switch: {
+    goOffline: "Go offline",
+    goOfflineHint: "Listen only to the music kept on this device, without a network",
+    goOnline: "Go back online",
+    retry: "Try connecting again",
+    manualHint: "Offline, by choice: only the music kept on this device is available.",
+  },
   view: {
     title: "On this device",
     kicker: "Offline",

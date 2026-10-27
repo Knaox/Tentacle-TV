@@ -5,6 +5,9 @@
  * demande le serveur), puis les titres. Hors ligne, c'est la seule vue d'Octave
  * (`OfflineOctave.tsx`) et elle ne montre que ce qui est complet.
  *
+ * En ligne, « Passer hors ligne » dans l'en-tête ; hors ligne, l'avis porte la
+ * sortie (`OfflineSwitch.tsx`).
+ *
  * Tout vient de la base des transferts (`keptMusicStore.ts`) : aucune requête.
  */
 
@@ -26,6 +29,7 @@ import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { deviceModel, type DeviceCollection } from "./deviceModel";
 import { keptBytes } from "./keptProgress";
 import { KeepCollectionButton } from "./KeepCollectionButton";
+import { OfflineNotice, OfflineSwitchButton } from "./OfflineSwitch";
 import { useKeptMusic } from "./useKeptMusic";
 import { AutoSyncSetting } from "./autosync/AutoSyncSetting";
 
@@ -92,15 +96,15 @@ export function DeviceView() {
         canPlay={tracks.length > 0}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
-        extra={open ? <KeepCollectionButton kind={open.kind} collectionKey={open.key.slice(open.key.indexOf(":") + 1)} title={open.title} subtitle={open.subtitle} tracks={open.tracks} /> : undefined}
+        extra={
+          <>
+            {open && <KeepCollectionButton kind={open.kind} collectionKey={open.key.slice(open.key.indexOf(":") + 1)} title={open.title} subtitle={open.subtitle} tracks={open.tracks} />}
+            <OfflineSwitchButton />
+          </>
+        }
       />
       <div className="flex flex-col gap-8 px-2 md:px-6">
-        {offline && (
-          <p className="mx-2 flex items-center gap-2 rounded-xl bg-fill-subtle px-4 py-3 text-sm text-content-secondary" role="status">
-            <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-            {t("view.offlineHint")}
-          </p>
-        )}
+        {offline && <OfflineNotice />}
         {!open && !offline && <AutoSyncSetting variant="inline" />}
         {kept.loaded && model.tracks.length === 0 && (
           <EmptyState icon={WifiOff} title={t("view.empty")}>
