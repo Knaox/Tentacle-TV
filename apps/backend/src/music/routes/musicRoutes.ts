@@ -18,6 +18,7 @@ import { musicUserRoutes } from "./musicUserRoutes";
 import { musicListRoutes } from "./musicListRoutes";
 import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { musicImportRoutes } from "../playlistImport/importRoutes";
+import { musicSourceOrderRoutes } from "../playlistSource/sourceRoutes";
 import { applyQueryToken } from "./mediaQueryToken";
 import { octaveAccessGate } from "./octaveAccessGate";
 import { capabilityGate } from "../../serverCapabilities/declaredCapabilities";
@@ -79,6 +80,7 @@ export const musicRoutes: FastifyPluginAsync = async (app) => {
   musicMediaRoutes(app);
   musicOfflineRoutes(app);
   musicImportRoutes(app);
+  musicSourceOrderRoutes(app);
   // Encapsulé : le garde de `music.listOrder` ne touche que ses routes.
   await app.register(async (scope) => musicListRoutes(scope));
 };

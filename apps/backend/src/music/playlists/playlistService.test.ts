@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deletePlaylist, insertIntoPlaylist, moveInPlaylist, removeFromPlaylist, reorderPlaylist, updatePlaylistDetails } from "./playlistService";
+import { deletePlaylist, insertIntoPlaylist, moveInPlaylist, removeFromPlaylist, reorderPlaylist, rewritePlaylist, updatePlaylistDetails } from "./playlistService";
 import { resetPlaylistMemoForTests } from "./playlistJellyfin";
 
 interface FakePlaylist {
@@ -113,6 +113,17 @@ describe("playlist d'un compte non administrateur, face aux pièges de Jellyfin 
     expect(firstPost).toBeGreaterThanOrEqual(0);
     expect(firstPost).toBeLessThan(jf.calls.indexOf(`DELETE /Playlists/${P}/Items`));
     expect(jf.calls.some((c) => c.includes("/Move/"))).toBe(false);
+  });
+
+  it("réécrire d'après la playlist telle qu'elle est (la réparation) : le plan lit les entrées, `null` n'écrit rien", async () => {
+    const seen: string[][] = [];
+    expect(await rewritePlaylist(OWNER, P, async (current) => (seen.push(current.map((e) => e.itemId)), ["d", "c", "b", "a"]))).toEqual({ ok: true, value: true });
+    expect(items()).toEqual(["d", "c", "b", "a"]);
+    jf.calls.length = 0;
+    expect((await rewritePlaylist(OWNER, P, async () => null)).ok).toBe(true);
+    expect(deletes()).toEqual([]);
+    expect(seen).toEqual([["a", "b", "c", "d"]]);
+    expect((await rewritePlaylist(OTHER, P, async () => ["a"])).ok).toBe(false);
   });
 
   it("déplacer et retirer : par la fin, sans `Move`", async () => {

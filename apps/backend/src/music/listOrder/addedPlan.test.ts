@@ -69,4 +69,32 @@ describe("dates d'entrée dans une liste", () => {
       expect(planAddedDates(known, ["a", "x", "b", "c"], NOW, () => null).dates.get("x")).toBe(NOW);
     });
   });
+
+  describe("une playlist IMPORTÉE : la date d'un titre de la source suit son rang (relevé du 27/10)", () => {
+    // Jellyfin dans le désordre (l'ordre faux d'avant la 1.40.0) : c (rang 2), a (rang 0), b (rang 1).
+    const pinned = new Map([["a", 100], ["b", 101], ["c", 102]]);
+
+    it("le rang fait foi, jamais l'ordre de Jellyfin ; il REMPLACE une date estimée d'après l'ordre faux", () => {
+      const known = new Map([["c", 1], ["a", 2], ["b", 3]]);
+      const plan = planAddedDates(known, ["c", "a", "b"], NOW, () => null, { ordered: true, pinned });
+      expect([...plan.dates]).toEqual([["c", 102], ["a", 100], ["b", 101]]);
+      expect(plan.insert).toEqual([
+        { itemId: "c", addedAt: 102, replace: true },
+        { itemId: "a", addedAt: 100, replace: true },
+        { itemId: "b", addedAt: 101, replace: true },
+      ]);
+      expect(planAddedDates(new Map([["a", 100]]), ["a"], NOW, () => null, { ordered: true, pinned }).insert).toEqual([]);
+    });
+
+    it("un titre hors source au milieu prend la date du titre qui le précède, même à la première lecture", () => {
+      const plan = planAddedDates(new Map(), ["a", "x", "b"], NOW, () => null, { ordered: true, pinned });
+      expect(plan.dates.get("x")).toBe(100);
+    });
+
+    it("un vrai ajout fait ensuite dans Octave (en fin) reste daté maintenant", () => {
+      const plan = planAddedDates(new Map([["a", 100], ["b", 101], ["c", 102]]), ["a", "b", "c", "n"], NOW, () => null, { ordered: true, pinned });
+      expect(plan.dates.get("n")).toBe(NOW);
+      expect(plan.insert).toEqual([{ itemId: "n", addedAt: NOW }]);
+    });
+  });
 });

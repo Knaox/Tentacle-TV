@@ -11,6 +11,7 @@ import { tellPlaylistChanged } from "../events/musicLiveEvents";
 import { forgetUserPlaylists, playlistEntries, playlistFor } from "./playlistJellyfin";
 import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
 import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
+import { forgetPlaylistSource } from "../playlistSource/sourceStore";
 
 export type PlaylistFailure = "not_found" | "forbidden" | "invalid" | "unavailable";
 export type PlaylistResult<T> = { ok: true; value: T } | { ok: false; failure: PlaylistFailure };
@@ -117,27 +118,45 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
     const removed = await jfWrite(`/Items/${q(playlistId)}`, "DELETE");
     if (!removed.ok) return { ok: false, failure: "unavailable" };
     await forgetPlaylistOrder(playlistId).catch(() => undefined);
+    await forgetPlaylistSource(playlistId).catch(() => undefined);
     done(userId, playlistId);
     return { ok: true, value: true };
   });
 }
 
 export function insertIntoPlaylist(userId: string, playlistId: string, itemIds: string[], position?: number): Promise<PlaylistResult<true>> {
+  return insertAt(userId, playlistId, itemIds, () => position).then((result) => (result.ok ? { ok: true, value: true } : result));
+}
+
+/**
+ * Insère `itemIds` à la place que `place` choisit d'après la playlist TELLE QU'ELLE EST (absente : la fin), sous le
+ * verrou de la playlist — deux insertions ne se croisent jamais ; `settled` aussi, une fois l'insertion écrite
+ * (l'ordre de la source d'une playlist importée y garde sa liaison). Rend la place prise.
+ */
+export function insertAt(
+  userId: string,
+  playlistId: string,
+  itemIds: string[],
+  place: (before: readonly PlaylistEntryRef[]) => Promise<number | undefined> | number | undefined,
+  settled?: (position: number) => Promise<void>,
+): Promise<PlaylistResult<number>> {
   return locked(playlistId, async () => {
     const refusal = await editable(userId, playlistId);
     if (refusal) return { ok: false, failure: refusal };
     const before = await playlistEntries(userId, playlistId);
     if (!before) return { ok: false, failure: "unavailable" };
     const ids = itemIds.map(normalizeId);
-    const desired = insertedOrder(before, ids, position);
+    const desired = insertedOrder(before, ids, await place(before));
     // L'AJOUT d'abord : Jellyfin dit si ce compte peut écrire ; refusé, rien n'a été retiré.
     const fresh = ids.filter((id) => !before.some((e) => e.itemId === id));
     const refused = await append(userId, playlistId, fresh);
     if (refused) return { ok: false, failure: refused };
     const after = await playlistEntries(userId, playlistId);
     if (!after || !(await rewriteTo(userId, playlistId, after, desired))) return { ok: false, failure: "unavailable" };
+    const at = Math.max(0, desired.indexOf(ids[0]!));
+    await settled?.(at);
     done(userId, playlistId);
-    return { ok: true, value: true };
+    return { ok: true, value: at };
   });
 }
 
@@ -150,6 +169,23 @@ export function moveInPlaylist(userId: string, playlistId: string, entryId: stri
     if (!current.some((e) => e.entryId === entryId)) return { ok: false, failure: "not_found" };
     // `Move` de Jellyfin refuse la clé (400) : la fin se réécrit dans l'ordre voulu.
     const desired = movedOrder(current, entryId, position);
+    if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
+    done(userId, playlistId);
+    return { ok: true, value: true };
+  });
+}
+
+/**
+ * Sous le verrou de la playlist : lire ses entrées, en tirer l'ordre voulu (`plan` : les éléments dans l'ordre, ou
+ * `null` pour ne rien écrire — il peut garder ce qu'il en a appris), puis l'écrire. Aucune insertion ne s'y croise.
+ */
+export function rewritePlaylist(userId: string, playlistId: string, plan: (current: readonly PlaylistEntryRef[]) => Promise<string[] | null>): Promise<PlaylistResult<true>> {
+  return locked(playlistId, async () => {
+    const refusal = await editable(userId, playlistId);
+    if (refusal) return { ok: false, failure: refusal };
+    const current = await playlistEntries(userId, playlistId);
+    if (!current) return { ok: false, failure: "unavailable" };
+    const desired = await plan(current);
     if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };

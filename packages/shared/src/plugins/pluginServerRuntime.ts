@@ -137,8 +137,12 @@ export interface HostApi {
    */
   "jellyfin.matchTracks": { params: { userId: string; tracks: HostMatchTrack[] }; result: { ref: string; item: AudioItemRef }[] };
   "jellyfin.setFavorite": { params: { userId: string; itemId: string; favorite: boolean }; result: { ok: true } };
-  /** Insère à `position` (0 = tête ; au-delà de la fin = à la fin). */
-  "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number }; result: { ok: true } };
+  /**
+   * Insère à `position` (0 = tête ; au-delà de la fin = à la fin). `sourceIndex` (serveur 1.40.0, un titre d'une playlist
+   * IMPORTÉE : son rang dans la source, `ImportedTrack.index`) : l'hôte le pose juste après celui qui le précède dans la
+   * source, `position` n'étant qu'un repli ; il rend la place prise. Hôte d'avant : paramètre inconnu (`invalid`).
+   */
+  "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number }; result: { ok: true; position?: number } };
   "jellyfin.playlistEntries": { params: { userId: string; playlistId: string }; result: { entryId: string; itemId: string; position: number }[] };
   /**
    * Ce compte peut-il MODIFIER cette playlist (Jellyfin : `CanDelete`, vu par lui) ? `false` aussi pour une playlist

@@ -1018,3 +1018,22 @@ model MusicListPrefs {
   @@id([userId, listKey])
   @@map("music_list_prefs")
 }
+
+/// 1.40.0 : l'ORDRE DE LA SOURCE d'une playlist importée par Octave (`music/playlistSource/`). Chaque arrivée
+/// (Lidarr, l'index enfin à jour) se pose juste après le titre qui la précède dans la source, et la « Date
+/// d'ajout » d'un titre de la source suit son rang. `slotsJson` = `SourceSlot[]` dans l'ordre de la source (le
+/// titre tel que la source le donne, et les éléments Jellyfin qui le tiennent) ; `origin` = `import` (posé à
+/// l'import : ses rangs sont ceux que l'extension a reçus) ou `repair` (relu pour remettre une playlist d'avant
+/// dans l'ordre). Effacée avec sa playlist.
+model MusicPlaylistSource {
+  playlistId String   @id
+  userId     String
+  source     String
+  url        String?
+  origin     String
+  importedAt DateTime
+  slotsJson  String
+  updatedAt  DateTime @updatedAt
+
+  @@map("music_playlist_sources")
+}

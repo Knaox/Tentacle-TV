@@ -9,6 +9,7 @@
 import { randomUUID } from "crypto";
 import { absentPositions, type ImportAbsentTrack, type ImportedPlaylist, type MusicImportJob } from "../contract/musicImport";
 import type { UserView } from "../view/viewContext";
+import { slotsOf, type PlaylistSourceRecord } from "../playlistSource/sourceRecord";
 import { explainAbsent } from "./importDiagnosis";
 import { matchImported, type MatchFn } from "./importMatching";
 import type { ImportRequestParsed } from "./importInput";
@@ -24,6 +25,8 @@ export interface ImportDeps {
   view: (userId: string) => Promise<UserView>;
   create: (userId: string, name: string, itemIds: string[]) => Promise<{ ok: true; value: string } | { ok: false }>;
   match?: MatchFn;
+  /** Garder l'ordre de la SOURCE de la playlist créée (`playlistSource/`) ; absent : rien de gardé (tests). */
+  remember?: (record: PlaylistSourceRecord) => Promise<void>;
   /** Le journal des absents qu'un titre du même nom a frôlés (`importDiagnosis.ts`) ; tests : à remplacer. */
   explain?: (view: UserView, absent: readonly ImportAbsentTrack[]) => Promise<string[]>;
   now?: () => number;
@@ -70,6 +73,12 @@ async function run(record: JobRecord, parsed: ImportRequestParsed, deps: ImportD
     const itemIds = playlist.tracks.flatMap((t) => (found.has(t.index) ? [found.get(t.index)!.id] : []));
     const created = await deps.create(record.userId, name, itemIds);
     if (!created.ok) return void fail("failed");
+    // L'ordre de la SOURCE, gardé : chaque arrivée se posera à SA place, et « Date d'ajout » suivra son rang.
+    const kept = new Map([...found].map(([index, row]) => [index, row.id.replace(/-/g, "").toLowerCase()]));
+    const url = parsed.input.kind === "url" ? parsed.input.url.url : null;
+    await deps
+      .remember?.({ playlistId: created.value, userId: record.userId, source: playlist.source, url, origin: "import", importedAt: now(), slots: slotsOf(playlist.tracks, kept) })
+      .catch((error: unknown) => console.warn("[music] ordre de la source non gardé :", (error as Error).message));
     job.result = { playlistId: created.value, name, source: playlist.source, total: playlist.tracks.length, added: itemIds.length, absent, truncated: playlist.truncated };
     job.stage = "done";
   } catch (error) {

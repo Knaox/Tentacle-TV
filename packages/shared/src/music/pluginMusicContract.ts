@@ -258,6 +258,8 @@ export interface PendingMusicItem {
    * qu'il tenait sous l'ancienne (une copie gardée sur l'appareil). Absent : aucun.
    */
   formerIds?: string[];
+  /** Son rang dans la SOURCE de l'import (`ImportedTrack.index`) : le cœur la montre à sa place d'après lui. */
+  sourceIndex?: number;
 }
 
 export interface PendingMusicResponse {

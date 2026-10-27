@@ -13,6 +13,8 @@ import { listUserPlaylists, playlistEntries, playlistFor, type JfPlaylist } from
 import { searchTokens } from "../index/searchQuery";
 import { addedDatesFor, legacyPlaylistScope, playlistScope } from "../listOrder/addedDates";
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
+import { pinnedDates, ranksByItem } from "../playlistSource/sourceRecord";
+import { readPlaylistSource } from "../playlistSource/sourceStore";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
   const ticks = item.CumulativeRunTimeTicks ?? item.RunTimeTicks;
@@ -54,12 +56,17 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   const rows = await visibleInOrder(view, ids);
   const tracks = new Map((await tracksOf(view, rows)).map((t) => [t.jellyfinId!, t]));
   // Jellyfin ne date pas une entrée : Tentacle relève quand elle est apparue (l'ordre de la playlist à la première
-  // lecture) ; une arrivée posée à la place de son attente garde la date de sa place.
-  const added = await addedDatesFor(playlistScope(playlistId), ids, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
+  // lecture) ; une arrivée posée à la place de son attente garde la date de sa place. Une playlist IMPORTÉE : un
+  // titre de la source a la date de son rang dans la source (l'ordre des ajouts chez Apple Music).
+  const source = await readPlaylistSource(playlistId).catch(() => null);
+  const ranks = source ? ranksByItem(source) : new Map<string, number>();
+  const pinned = source ? pinnedDates(source, ids) : undefined;
+  const added = await addedDatesFor(playlistScope(playlistId), ids, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId), pinned });
   const out: MusicPlaylistEntry[] = [];
   entries.forEach((entry, position) => {
     const track = tracks.get(entry.itemId);
-    if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays } });
+    const rank = ranks.get(entry.itemId);
+    if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays }, ...(rank !== undefined ? { sourceIndex: rank } : {}) });
   });
   return { ...toPlaylist(playlist), description: playlist.Overview?.trim() || null, entries: out };
 }
