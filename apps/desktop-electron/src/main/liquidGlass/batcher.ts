@@ -15,7 +15,7 @@
  * ⚠️ Importé par le preload (bundlé, bac à sable) : ne dépend que de `protocol.ts`.
  */
 
-import type { LiquidGlassBatch, NativeGlassRegion } from "./protocol";
+import type { GlassEase, GlassMaterialize, LiquidGlassBatch, NativeGlassRegion } from "./protocol";
 
 export interface GlassBatcher {
   setEnabled(enabled: boolean): void;
@@ -50,6 +50,16 @@ function pick(region: NativeGlassRegion): NativeGlassRegion {
       ? {}
       : { spring: { response: region.spring.response, dampingFraction: region.spring.dampingFraction } }),
     ...(region.appearance === undefined ? {} : { appearance: region.appearance }),
+    ...(region.materialize === undefined ? {} : { materialize: pickMaterialize(region.materialize) }),
+  };
+}
+
+/** Champ par champ, courbes recopiées : rien d'autre ne traverse (le principal revalide). */
+function pickMaterialize(m: GlassMaterialize): GlassMaterialize {
+  const ease = (value: GlassEase): GlassEase => (Array.isArray(value) ? [...value] as unknown as GlassEase : value);
+  return {
+    rise: m.rise, scale: m.scale, originX: m.originX, originY: m.originY, delay: m.delay, exit: m.exit,
+    enterEase: ease(m.enterEase), exitEase: ease(m.exitEase),
   };
 }
 

@@ -81,6 +81,17 @@ describe("createGlassBatcher", () => {
     );
   });
 
+  it("laisse passer CHAQUE champ facultatif du protocole (vécu : `materialize` perdu ici, en silence)", () => {
+    const h = harness();
+    const full: Required<NativeGlassRegion> = {
+      ...region("a"), group: "g", spacing: 8, transition: 340, spring: { response: 0.42, dampingFraction: 0.84 }, appearance: "dark",
+      materialize: { rise: 6, scale: 0.96, originX: 0.5, originY: 1, delay: 30, exit: 180, enterEase: [0.2, 0.9, 0.3, 1], exitEase: [0.4, 0, 1, 1] },
+    };
+    h.batcher.upsert([{ ...full, materialize: { ...full.materialize, extra: 1 } as never }]);
+    h.flush();
+    expect(h.sent[0]?.upserts[0]).toEqual(full);
+  });
+
   it("une entrée sans identifiant est ignorée, sans faire tomber le preload", () => {
     const h = harness();
     h.batcher.upsert([null, { x: 1 }, region("ok")] as unknown as NativeGlassRegion[]);
