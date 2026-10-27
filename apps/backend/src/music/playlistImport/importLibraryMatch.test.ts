@@ -143,8 +143,8 @@ describe("le journal dit pourquoi un absent n'a pas été reconnu", () => {
   });
 
   it("un homonyme d'un autre artiste : dit « autre artiste » ; un titre que la bibliothèque n'a pas du tout : rien", async () => {
-    const line = await explainAbsent(everyone, [{ index: 2, position: 2, title: "The Line", artists: ["Twenty One Pilots"], album: null, durationMs: 215_000, isrc: null, sourceId: null }]);
+    const line = await explainAbsent(everyone, [{ index: 2, title: "The Line", artists: ["Twenty One Pilots"], album: null, durationMs: 215_000, isrc: null, sourceId: null }]);
     expect(line[0]).toContain("— autre artiste, laissé hors bibliothèque");
-    expect(await explainAbsent(everyone, [{ index: 0, position: 0, title: "Jamais Vu", artists: ["Personne"], album: null, durationMs: 1_000, isrc: null, sourceId: null }])).toEqual([]);
+    expect(await explainAbsent(everyone, [{ index: 0, title: "Jamais Vu", artists: ["Personne"], album: null, durationMs: 1_000, isrc: null, sourceId: null }])).toEqual([]);
   });
 });
