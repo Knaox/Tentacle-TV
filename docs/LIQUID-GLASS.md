@@ -679,8 +679,8 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   **Depuis lg8, sur le verre clair, un CŒUR et non plus un aplat** (l'aplat de 0,5 à 0,65
   faisait les pilules grises) : noir plein jusqu'à 42 % du rayon, 28 % de lui-même au bord
   — la vidéo se voit à travers le liseré, le reflet du verre reste. Densité du cœur **0,62**
-  dessous clair (blanc : 175 au bord, 98 sous le glyphe, 5,9:1), **0,48** dessous sombre
-  (le gris 50 % se lit « sombre » mais le verre y monte à ~230 : à 0,3, 2,3:1), **0,24**
+  dessous clair (blanc : 175 au bord, 98 sous le glyphe, 5,9:1), **0,58** dessous sombre
+  (le gris 50 % se lit « sombre » mais le verre clair actif y monte presque au blanc : 2,3:1 à 0,3, 2,9:1 à 0,48), **0,24**
   fenêtre inactive. Au survol, le cœur se resserre (×0,82) et
   s'éclaircit (×0,78) — le verre « s'allume » depuis son bord ; à l'appui ×0,66 et ×0,6,
   retour sur le ressort `settle` (`scale` et opacité : compositeur seulement). Mouvement
