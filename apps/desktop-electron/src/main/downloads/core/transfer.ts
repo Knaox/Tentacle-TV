@@ -152,6 +152,8 @@ function discard(files: FileStore, part: string): void {
 export interface TransferHooks {
   /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
   onExpected?: ((totalBytes: number) => void) | undefined;
+  /** Le statut de la réponse, dès les en-têtes (un pilote natif peut ne jamais le dire). */
+  onResponse?: ((status: number) => void) | undefined;
   /**
    * Une exception qu'aucun chemin prévu n'explique. Purement informatif : la
    * fonction rend malgré tout un `TransferEnd`.
@@ -260,7 +262,8 @@ export async function run(
           hooks.onExpected?.(totalBytes);
         }
       },
-      onHeaders: (_status, header) => {
+      onHeaders: (status, header) => {
+        hooks.onResponse?.(status);
         const play = header("x-tentacle-play-session");
         const device = header("x-tentacle-device-id");
         if (play !== null && device !== null) session = { playSessionId: play, deviceId: device };

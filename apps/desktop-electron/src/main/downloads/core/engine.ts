@@ -23,6 +23,7 @@ import type { EngineDeps } from "./engineDeps";
 import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
 import { cancelFile, pauseFile, resumeFile } from "./engineGestures";
 import { NetworkRetryLadder } from "./networkRetry";
+import { enterPrepare, onPrepareResponse, settlePrepare } from "./preparePhase";
 import { RETRY_DELAYS_MS, RetryScheduler } from "./retry";
 import {
   countQueued,
@@ -165,6 +166,8 @@ export class DownloadEngine {
       // Le statut passe à `downloading` AVANT le premier `await` : sans ça, le
       // tour de boucle suivant reprendrait le même fichier.
       setStatus(this.deps.db, file.id, "downloading", null, this.deps.now());
+      // Un titre de musique : « Préparation… » jusqu'à la première réponse (`preparePhase.ts`).
+      enterPrepare(this.deps.db, file, this.deps.now());
       const flags = new TransferFlags();
       this.active.set(file.id, flags);
       void this.work(creds, file.id, flags);
@@ -185,6 +188,7 @@ export class DownloadEngine {
     // Des octets reçus pendant CET essai : la coupure qui suivra repartira de
     // la première marche des relances.
     let moved = false;
+    let lastStatus: number | null = null;
     const received =
       file === null || this.deps.finalizeMedia === undefined
         ? null
@@ -214,6 +218,11 @@ export class DownloadEngine {
             onExpected: (id, totalBytes) => {
               expected = totalBytes;
               setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
+            },
+            onResponse: (id, status) => {
+              lastStatus = status;
+              // Le transfert commence : la page quitte « Préparation… ».
+              if (onPrepareResponse(this.deps.db, id, status, this.deps.now())) this.notifyChanged();
             },
             onUnexpected: this.deps.onUnexpected,
             serverPrepare: this.deps.serverPrepare?.() ?? null,
@@ -245,6 +254,7 @@ export class DownloadEngine {
         end = await this.finalize(file, end.finalSize);
       }
     }
+    settlePrepare(this.deps.db, fileId, end, lastStatus, this.deps.now());
     this.finish(fileId, end, moved);
   }
 
