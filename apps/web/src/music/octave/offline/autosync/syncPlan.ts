@@ -8,9 +8,11 @@
  *    il quitte l'appareil, sauf si quelque chose d'autre le RETIENT (un album
  *    gardé, une autre playlist, ou un titre gardé seul — collection `track`).
  * 2. Un titre gardé depuis l'extension a maintenant sa version Jellyfin (« Jellyfin
- *    fait foi ») : la version Jellyfin est gardée, puis — SEULEMENT une fois
- *    complète — l'ancienne copie part et les collections passent à la nouvelle
- *    clé. Jamais un titre sans fichier entre les deux.
+ *    fait foi »), ou une nouvelle identité chez l'extension (une entrée importée
+ *    rapprochée de sa source, `formerIds`) : la version d'aujourd'hui est gardée,
+ *    puis — SEULEMENT une fois complète — l'ancienne copie part et les collections
+ *    passent à la nouvelle clé. Jamais un titre sans fichier entre les deux ; une
+ *    copie déjà là sous la nouvelle clé (gardée à la main) : l'ancienne part, sans doublon.
  * 3. La forme voulue par le serveur pour un titre de la bibliothèque a changé (le
  *    mode Allégé de l'administration) : la nouvelle forme est gardée, l'ancienne
  *    part une fois la nouvelle complète.
@@ -32,7 +34,10 @@ export interface SyncInputs {
   collections: readonly KeptMusicCollection[];
   /** Le contenu ACTUEL des playlists gardées, par clé de collection ; absente : non relue → intacte. */
   playlists: ReadonlyMap<string, readonly MusicTrack[]>;
-  /** Le titre de la bibliothèque qui EST un titre d'ailleurs, par clé `ext:`. */
+  /**
+   * Ce qu'EST aujourd'hui un titre d'ailleurs, par clé `ext:` : sa version de la bibliothèque, ou sa nouvelle identité
+   * chez l'extension (qui peut à son tour avoir sa version de la bibliothèque : la chaîne est suivie).
+   */
   twins: ReadonlyMap<string, MusicTrack>;
   /** La forme voulue par le serveur pour un titre de la bibliothèque, par clé `jf:`. */
   wanted: ReadonlyMap<string, WantedForm>;
@@ -71,6 +76,22 @@ export function isHeld(trackKey: string, collections: Iterable<KeptMusicCollecti
   return false;
 }
 
+/** Au plus quelques sauts (`imp:` → `ytm:t:` → `jf:`) : une boucle dans ce qu'on a appris ne bloque rien. */
+const MAX_HOPS = 4;
+
+/** Le titre d'AUJOURD'HUI de cette clé, en suivant la chaîne des jumeaux ; `null` : elle n'a pas changé. */
+export function currentOf(twins: ReadonlyMap<string, MusicTrack>, key: string): MusicTrack | null {
+  let current: MusicTrack | null = null;
+  let at = key;
+  for (let hop = 0; hop < MAX_HOPS; hop += 1) {
+    const next = twins.get(at);
+    if (!next || next.key === at || next.key === key) break;
+    current = next;
+    at = next.key;
+  }
+  return current;
+}
+
 export function planSync(input: SyncInputs): SyncActions {
   const files = byKey(input.kept);
   const working = new Map(input.collections.map((c) => [c.key, { ...c, trackKeys: [...c.trackKeys] }]));
@@ -78,7 +99,7 @@ export function planSync(input: SyncInputs): SyncActions {
   const removeCollections = new Set<string>();
   const keep = new Map<string, MusicTrack>();
   const removeFiles = new Set<number>();
-  const canonical = (key: string): string => input.twins.get(key)?.key ?? key;
+  const canonical = (key: string): string => currentOf(input.twins, key)?.key ?? key;
   const wantKeep = (track: MusicTrack): void => {
     if (!files.has(track.key) && input.canKeep(track)) keep.set(track.key, track);
   };
@@ -89,7 +110,7 @@ export function planSync(input: SyncInputs): SyncActions {
     const now = c.kind === "playlist" ? input.playlists.get(c.key) : undefined;
     if (!now) continue;
     const next = unique(now.map((t) => canonical(t.key)));
-    for (const t of now) wantKeep(input.twins.get(t.key) ?? t);
+    for (const t of now) wantKeep(currentOf(input.twins, t.key) ?? t);
     for (const old of c.trackKeys) if (!next.includes(canonical(old))) candidates.set(old, c.key);
     if (!sameKeys(next, c.trackKeys)) {
       c.trackKeys = next;
@@ -99,7 +120,7 @@ export function planSync(input: SyncInputs): SyncActions {
 
   // 2. Les copies d'ailleurs dont la version Jellyfin existe : gardée d'abord, l'ancienne part une fois la nouvelle complète.
   for (const [key, kept] of files) {
-    const twin = input.twins.get(key);
+    const twin = currentOf(input.twins, key);
     if (!twin || kept[0]?.origin !== "external") continue;
     const ready = (files.get(twin.key) ?? []).some((f) => f.status === "complete");
     if (!ready) {

@@ -72,8 +72,10 @@ export interface AudioBridgeSource {
   /**
    * Lire la copie de ce titre GARDÉE HORS LIGNE par ce compte (capacité `offline.music`) : la coquille cherche le
    * fichier dans SA base de transferts — la page ne désigne jamais un chemin — et, s'il manque, lit `url`.
+   * `trackKey` : la clé sous laquelle la copie est gardée quand le titre a changé d'identité depuis (une entrée
+   * importée rapprochée de sa source) ; absente : celle du titre.
    */
-  kept?: { userId: string };
+  kept?: { userId: string; trackKey?: string };
 }
 
 export type AudioBridgeReplayGainMode = "off" | "track" | "album" | "auto";

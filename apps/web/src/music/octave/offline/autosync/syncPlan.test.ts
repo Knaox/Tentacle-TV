@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { holdKey, isHeld, planSync, type SyncInputs } from "./syncPlan";
+import { currentOf, holdKey, isHeld, planSync, type SyncInputs } from "./syncPlan";
 
 function track(key: string, partial: Partial<MusicTrack> = {}): MusicTrack {
   const library = key.startsWith("jf:");
@@ -137,6 +137,37 @@ describe("planSync — la version Jellyfin remplace la copie d'ailleurs", () => 
     expect(out.keep.map((t) => t.key)).toEqual(["jf:z"]);
     expect(out.removeFileIds).toEqual([]);
     expect(out.saveCollections[0]!.trackKeys).toEqual(["jf:z"]);
+  });
+});
+
+describe("planSync — une identité qui change chez l'extension (imp: → ytm:t:)", () => {
+  const OLD = "ext:musique:imp:r";
+  const NOW = "ext:musique:ytm:t:v";
+
+  it("la chaîne est suivie jusqu'à la bibliothèque, sans boucle", () => {
+    const chain = new Map([[OLD, track(NOW)], [NOW, track("jf:z")]]);
+    expect(currentOf(chain, OLD)?.key).toBe("jf:z");
+    expect(currentOf(chain, "jf:z")).toBeNull();
+    expect(currentOf(new Map([[OLD, track(NOW)], [NOW, track(OLD)]]), OLD)?.key).toBe(NOW);
+  });
+
+  it("gardé sous la clé d'hier, déjà gardé sous celle d'aujourd'hui (à la main) : la copie d'hier part, la retenue reste", () => {
+    const old = kept(OLD);
+    const now = kept(NOW);
+    const out = planSync(inputs({
+      kept: [old, now],
+      collections: [collection(PL, "playlist", ["jf:a", OLD]), collection(holdKey(NOW), "track", [NOW])],
+      twins: new Map([[OLD, track(NOW)]]),
+    }));
+    expect(out.removeFileIds).toEqual([old.fileId]);
+    expect(out.keep).toEqual([]);
+    expect(out.saveCollections.map((c) => [c.key, c.trackKeys])).toEqual([[PL, ["jf:a", NOW]]]);
+  });
+
+  it("imp: → ytm:t: → jf: d'un coup : c'est la version Jellyfin qui est gardée", () => {
+    const out = planSync(inputs({ kept: [kept(OLD)], collections: [collection(PL, "playlist", [OLD])], twins: new Map([[OLD, track(NOW)], [NOW, track("jf:z")]]) }));
+    expect(out.keep.map((t) => t.key)).toEqual(["jf:z"]);
+    expect(out.removeFileIds).toEqual([]);
   });
 });
 

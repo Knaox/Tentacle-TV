@@ -5,7 +5,8 @@
  * `keepRules.ts`) et que le serveur répond.
  *
  * Quand (`syncRunner.ts`) : à l'ouverture et à la RECONNEXION, un relevé complet ;
- * aux évènements `music:*` qui comptent, la playlist concernée et les jumeaux ; à
+ * aux évènements `music:*` qui comptent, la playlist concernée, les jumeaux, et —
+ * attentes de l'extension changées — les playlists de la bibliothèque gardées ; à
  * chaque fin de transfert, la règle rejouée sans rien demander — c'est là qu'une
  * copie remplacée part, une fois la nouvelle complète. Jamais un relevé en boucle.
  */
@@ -18,7 +19,7 @@ import { keptMusicState, refreshKeptMusic, subscribeKeptMusic } from "../keptMus
 import { keepTracks, removeKeptFiles, saveKeptCollections } from "../keepMusic";
 import { useAutoSync } from "./autoSyncStore";
 import { onSyncSignal } from "./syncSignals";
-import { readPlaylists, readTwins, readWanted } from "./syncInputs";
+import { readPending, readPlaylists, readTwins, readWanted } from "./syncInputs";
 import { SyncRunner } from "./syncRunner";
 
 /** Les signaux en rafale (une playlist modifiée trois fois) ne font qu'un passage. */
@@ -46,7 +47,8 @@ export function useKeptAutoSync(surface: MusicOfflineSurface): void {
     const runner = new SyncRunner({
       refresh: refreshKeptMusic,
       state: keptMusicState,
-      readPlaylists: (collections, only) => readPlaylists(collections, live.current.provider, only),
+      readPending: () => readPending(live.current.provider),
+      readPlaylists: (collections, only, pending) => readPlaylists(collections, live.current.provider, only, pending),
       readTwins,
       readWanted,
       canKeep: (track) => canKeepTrack(track, live.current.surface),

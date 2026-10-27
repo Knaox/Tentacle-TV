@@ -7,14 +7,17 @@
  */
 
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
-import type { MusicTrack } from "@tentacle-tv/shared/music";
+import type { MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
+import { renamesOf } from "../keptRenames";
 import type { SyncSignal } from "./syncSignals";
 import { planSync, type SyncActions, type WantedForm } from "./syncPlan";
 
 export interface RunnerDeps {
   refresh(): Promise<void>;
   state(): { tracks: readonly KeptMusicTrack[]; collections: readonly KeptMusicCollection[] };
-  readPlaylists(collections: readonly KeptMusicCollection[], only: ReadonlySet<string> | null): Promise<Map<string, MusicTrack[]>>;
+  /** Les attentes de l'extension (les titres hors bibliothèque des playlists importées) ; `null` : illisibles. */
+  readPending(): Promise<PendingMusicItem[] | null>;
+  readPlaylists(collections: readonly KeptMusicCollection[], only: ReadonlySet<string> | null, pending: readonly PendingMusicItem[] | null): Promise<Map<string, MusicTrack[]>>;
   readTwins(tracks: readonly KeptMusicTrack[]): Promise<Map<string, MusicTrack>>;
   readWanted(tracks: readonly KeptMusicTrack[]): Promise<Map<string, WantedForm>>;
   canKeep(track: MusicTrack): boolean;
@@ -23,15 +26,22 @@ export interface RunnerDeps {
   delayMs: number;
 }
 
-/** `full` : tout relire (ouverture, reconnexion) ; `signals` : la playlist et les jumeaux ; `local` : ne rien demander. */
-export type Pass = { kind: "full" } | { kind: "signals"; playlists: Set<string>; twins: boolean } | { kind: "local" };
+/**
+ * `full` : tout relire (ouverture, reconnexion) ; `signals` : la playlist, les jumeaux, et — attentes changées —
+ * les playlists de la bibliothèque gardées ; `local` : ne rien demander.
+ */
+export type Pass = { kind: "full" } | { kind: "signals"; playlists: Set<string>; twins: boolean; pending?: boolean } | { kind: "local" };
 
 export function mergePasses(a: Pass | null, b: Pass): Pass {
   if (a === null || a.kind === "local") return b.kind === "local" && a !== null ? a : b;
   if (a.kind === "full" || b.kind === "full") return { kind: "full" };
   if (b.kind === "local") return a;
-  return { kind: "signals", playlists: new Set([...a.playlists, ...b.playlists]), twins: a.twins || b.twins };
+  const pending = a.pending === true || b.pending === true;
+  return { kind: "signals", playlists: new Set([...a.playlists, ...b.playlists]), twins: a.twins || b.twins, ...(pending ? { pending } : {}) };
 }
+
+const LIBRARY_PLAYLIST = "playlist:jf:";
+const isLibrary = (t: MusicTrack): boolean => !!t.jellyfinId && t.availability === "library";
 
 export class SyncRunner {
   private readonly twins = new Map<string, MusicTrack>();
@@ -50,7 +60,9 @@ export class SyncRunner {
 
   signal(signal: SyncSignal): void {
     if (signal.kind === "twin" && signal.track) this.twins.set(signal.externalKey, signal.track);
-    this.later(signal.kind === "playlist" ? { kind: "signals", playlists: new Set([signal.playlistId]), twins: false } : { kind: "signals", playlists: new Set(), twins: true });
+    if (signal.kind === "playlist") this.later({ kind: "signals", playlists: new Set([signal.playlistId]), twins: false });
+    else if (signal.kind === "pending") this.later({ kind: "signals", playlists: new Set(), twins: false, pending: true });
+    else this.later({ kind: "signals", playlists: new Set(), twins: true });
   }
 
   /** Un transfert vient de finir : la règle rejouée sur ce qui est su. */
@@ -106,13 +118,28 @@ export class SyncRunner {
     });
   }
 
+  /** L'identité d'aujourd'hui d'un titre d'ailleurs gardé : jamais à la place de sa version Jellyfin (elle fait foi). */
+  private rename(former: string, current: MusicTrack): void {
+    const known = this.twins.get(former);
+    if (!known || !isLibrary(known)) this.twins.set(former, current);
+  }
+
   private async run(pass: Pass): Promise<void> {
     await this.deps.refresh();
     const { tracks, collections } = this.deps.state();
     if (tracks.length === 0 && collections.length === 0) return;
+    let only: Set<string> | null = null;
+    if (pass.kind === "signals") {
+      only = new Set(pass.playlists);
+      if (pass.pending) for (const c of collections) if (c.key.startsWith(LIBRARY_PLAYLIST)) only.add(c.key.slice(LIBRARY_PLAYLIST.length));
+    }
     let playlists = new Map<string, MusicTrack[]>();
-    if (pass.kind === "full") playlists = await this.deps.readPlaylists(collections, null);
-    else if (pass.kind === "signals" && pass.playlists.size > 0) playlists = await this.deps.readPlaylists(collections, pass.playlists);
+    if (pass.kind === "full" || (only !== null && only.size > 0)) {
+      // Les attentes UNE fois par passage : les playlists de la bibliothèque s'y complètent, les identités changées s'y lisent.
+      const pending = await this.deps.readPending();
+      for (const [former, current] of renamesOf(pending ?? [])) this.rename(former, current);
+      playlists = await this.deps.readPlaylists(collections, only, pending);
+    }
     if (pass.kind === "full" || (pass.kind === "signals" && pass.twins)) for (const [k, v] of await this.deps.readTwins(tracks)) this.twins.set(k, v);
     if (pass.kind === "full") this.wanted = await this.deps.readWanted(tracks);
     if (this.stopped) return;

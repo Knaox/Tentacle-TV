@@ -15,7 +15,7 @@ import { app } from "electron";
 import { z } from "zod";
 import { CrossfadeDecks } from "../audio/crossfadeDecks";
 import { refuseSource } from "../audio/audioSources";
-import { keptAudioPath } from "./audioKept";
+import { keptPathFor } from "./audioKept";
 import { adoptDirect, directRelay, pluginManifests } from "../clientFetch/directSources";
 import type { Platform } from "../audio/audioOptions";
 import { libmpvAvailable } from "../video/mpvFfi";
@@ -44,7 +44,7 @@ const SOURCE = z.object({
   replayGain: z.object({ trackGainDb: GAIN, trackPeak: GAIN, albumGainDb: GAIN, albumPeak: GAIN }).nullable(),
   expiresAt: z.number().finite().nullable(),
   direct: z.object({ url: z.string().min(1).max(8192), expiresAt: z.number().finite().nullable() }).optional(),
-  kept: z.object({ userId: z.string().min(1).max(128) }).optional(),
+  kept: z.object({ userId: z.string().min(1).max(128), trackKey: KEY.optional() }).optional(),
 });
 const RG_MODE = z.enum(["off", "track", "album", "auto"]);
 const START = z.object({
@@ -98,9 +98,10 @@ function running(): CrossfadeDecks {
  * avec ce serveur pour repli.
  */
 async function checked(source: z.infer<typeof SOURCE>, trackKey: string): Promise<Omit<z.infer<typeof SOURCE>, "direct" | "kept">> {
-  // La copie gardée hors ligne, cherchée par la coquille elle-même (`audioKept.ts`) ; absente : le serveur.
+  // La copie gardée hors ligne, cherchée par la coquille elle-même (`audioKept.ts`) — sous la clé de la copie si le
+  // titre a changé d'identité depuis ; absente : le serveur.
   const { kept, ...served } = source;
-  const local = kept ? keptAudioPath(kept.userId, trackKey) : null;
+  const local = keptPathFor(kept, trackKey);
   if (local !== null) {
     const { direct: _direct, ...plain } = served;
     return { ...plain, url: local, complete: true, expiresAt: null };

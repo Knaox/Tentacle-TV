@@ -6,6 +6,9 @@
  * La source porte `kept` : la coquille cherche elle-même le fichier dans SA
  * base (la page ne désigne jamais un chemin) et ne reprend `url` — le serveur —
  * que s'il manque. Sans copie complète, les résolveurs d'avant, inchangés.
+ *
+ * Consultée à CHAQUE lecture, avant le cache des sources (`SourceCache.kept`) :
+ * une source en flux préparée avant l'arrivée de la copie ne passe plus devant.
  */
 
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
@@ -30,7 +33,8 @@ export function keptSource(kept: KeptMusicTrack, userId: string): PlaybackSource
   };
 }
 
-function keptFor(trackKey: string): PlaybackSource | null {
+/** La source de la copie complète de ce titre, gardée par le compte de l'appareil ; `null` sinon. */
+export function keptFor(trackKey: string): PlaybackSource | null {
   const userId = keptMusicState().userId;
   const kept = userId === null ? null : completeKeptTrack(trackKey);
   return kept && userId !== null ? keptSource(kept, userId) : null;
@@ -40,6 +44,7 @@ function keptFor(trackKey: string): PlaybackSource | null {
 export function withKeptSources(resolvers: SourceResolvers): SourceResolvers {
   return {
     ...resolvers,
+    kept: keptFor,
     library: (jellyfinId) => {
       const kept = keptFor(libraryTrackKey(jellyfinId));
       return kept ? Promise.resolve(kept) : resolvers.library(jellyfinId);

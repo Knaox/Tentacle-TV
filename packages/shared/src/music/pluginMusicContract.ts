@@ -252,6 +252,12 @@ export interface PendingMusicItem {
   duplicate?: boolean;
   /** Une entrée d'un IMPORT de playlist (`importTracks`) : elle n'attend pas la bibliothèque, sa disponibilité fait foi. */
   imported?: true;
+  /**
+   * Les identifiants (de la MÊME extension) sous lesquels ce titre a pu être montré avant `externalId` : une entrée
+   * importée rapprochée d'une source change d'identité (`imp:<clé>` → `ytm:t:<vidéo>`). Le client y reconnaît ce
+   * qu'il tenait sous l'ancienne (une copie gardée sur l'appareil). Absent : aucun.
+   */
+  formerIds?: string[];
 }
 
 export interface PendingMusicResponse {
