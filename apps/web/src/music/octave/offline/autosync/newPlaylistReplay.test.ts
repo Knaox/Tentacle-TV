@@ -5,8 +5,9 @@
  *
  * - La lecture d'avant (entrées Jellyfin seules) aurait effacé les 36 titres hors bibliothèque au premier relevé
  *   complet (prochaine ouverture de l'app).
- * - Désormais : rien n'est effacé, les deux doublons s'en vont seuls (l'ancienne copie n'est plus dans la playlist,
- *   la nouvelle reste), une arrivée de Lidarr est gardée seule.
+ * - Désormais : rien n'est effacé, les deux doublons s'en vont seuls (l'ancienne copie part, la nouvelle reste),
+ *   un titre qui change d'identité est regardé sous la nouvelle AVANT que l'ancienne parte, une arrivée de Lidarr
+ *   est gardée seule.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -57,14 +58,14 @@ function scene() {
 }
 
 const entries = (keys: string[]): MusicPlaylistEntry[] => keys.map((k, position) => ({ entryId: `e${position}`, position, track: track(k) }));
-/** Les attentes de Sillon AUJOURD'HUI : `i0`, `i1` sous leur vidéo. */
-function pendingNow(outside: string[], renamed: Record<string, string>): PendingMusicItem[] {
+/** Les attentes de Sillon AUJOURD'HUI : `i0`, `i1` (et `i2` s'il le faut) sous leur vidéo, avec leur fiche d'hier. */
+function pendingNow(outside: string[], renamed: Record<string, string>, withFormer = true): PendingMusicItem[] {
   return outside.map((key, i) => {
     const id = key.slice("ext:sillon:".length);
     const now = renamed[id] ?? id;
     return {
       operationId: `op${i}`, externalId: now, kind: "playlistAdd", playlistId: "p1", position: 153, track: track(ext(now)), state: "pending",
-      createdAt: i, imported: true,
+      createdAt: i, imported: true, ...(withFormer && now !== id ? { formerIds: [id] } : {}),
     };
   });
 }
@@ -115,6 +116,29 @@ describe("« New » rejouée — la tenue à jour d'une playlist importée gard�
     expect(saved.trackKeys).toContain(ext("ytm:t:r0"));
     expect(saved.trackKeys).not.toContain(ext("imp:i0"));
     expect(actions!.removeCollections).toEqual([]);
+  });
+
+  it("un Sillon d'avant (sans `formerIds`) : les doublons partent aussi — la copie d'hier n'est plus dans la playlist", async () => {
+    const { library, outside, state } = scene();
+    h.entries = entries(library);
+    h.pending = pendingNow(outside, RENAMED, false);
+    const [actions] = await fullPass(state);
+    expect(actions!.removeFileIds.sort()).toEqual([fileOf(state, ext("imp:i0")), fileOf(state, ext("imp:i1"))].sort());
+    expect(actions!.keep).toEqual([]);
+  });
+
+  it("une identité qui change SANS copie sous la nouvelle : celle d'aujourd'hui est gardée d'abord, l'ancienne part une fois elle complète", async () => {
+    const { library, outside, state } = scene();
+    h.entries = entries(library);
+    h.pending = pendingNow(outside, { ...RENAMED, "imp:i2": "ytm:t:r2" });
+    const [first] = await fullPass(state);
+    expect(first!.keep.map((t) => t.key)).toEqual([ext("ytm:t:r2")]);
+    expect(first!.removeFileIds).not.toContain(fileOf(state, ext("imp:i2")));
+    state.tracks.push(kept(ext("ytm:t:r2")));
+    state.collections = state.collections.map((c) => (c.key === PL ? first!.saveCollections.find((s) => s.key === PL)! : c));
+    const [second] = await fullPass(state);
+    expect(second!.removeFileIds).toContain(fileOf(state, ext("imp:i2")));
+    expect(second!.keep).toEqual([]);
   });
 
   it("une arrivée de Lidarr (le titre entre dans la bibliothèque, à sa place) et un ajout à la playlist : gardés seuls", async () => {

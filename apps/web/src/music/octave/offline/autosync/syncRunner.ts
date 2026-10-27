@@ -8,6 +8,7 @@
 
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
 import type { MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
+import { renamesOf } from "../keptRenames";
 import type { SyncSignal } from "./syncSignals";
 import { planSync, type SyncActions, type WantedForm } from "./syncPlan";
 
@@ -40,6 +41,7 @@ export function mergePasses(a: Pass | null, b: Pass): Pass {
 }
 
 const LIBRARY_PLAYLIST = "playlist:jf:";
+const isLibrary = (t: MusicTrack): boolean => !!t.jellyfinId && t.availability === "library";
 
 export class SyncRunner {
   private readonly twins = new Map<string, MusicTrack>();
@@ -116,6 +118,12 @@ export class SyncRunner {
     });
   }
 
+  /** L'identité d'aujourd'hui d'un titre d'ailleurs gardé : jamais à la place de sa version Jellyfin (elle fait foi). */
+  private rename(former: string, current: MusicTrack): void {
+    const known = this.twins.get(former);
+    if (!known || !isLibrary(known)) this.twins.set(former, current);
+  }
+
   private async run(pass: Pass): Promise<void> {
     await this.deps.refresh();
     const { tracks, collections } = this.deps.state();
@@ -127,8 +135,9 @@ export class SyncRunner {
     }
     let playlists = new Map<string, MusicTrack[]>();
     if (pass.kind === "full" || (only !== null && only.size > 0)) {
-      // Les attentes UNE fois par passage : les playlists de la bibliothèque s'y complètent.
+      // Les attentes UNE fois par passage : les playlists de la bibliothèque s'y complètent, les identités changées s'y lisent.
       const pending = await this.deps.readPending();
+      for (const [former, current] of renamesOf(pending ?? [])) this.rename(former, current);
       playlists = await this.deps.readPlaylists(collections, only, pending);
     }
     if (pass.kind === "full" || (pass.kind === "signals" && pass.twins)) for (const [k, v] of await this.deps.readTwins(tracks)) this.twins.set(k, v);

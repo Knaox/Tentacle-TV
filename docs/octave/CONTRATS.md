@@ -118,7 +118,11 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    puces de la recherche vide, ambiance NOMMÉE par une recherche (comparée localement
    aux mots, `moodModel.ts`), page `/octave/mood/:id`.
 4. **En attente** — `music.pending` : les entrées du compte dans « Titres likés »
-   et les playlists, résolues par `music:resolved` (et la synchro Jellyfin).
+   et les playlists, résolues par `music:resolved` (et la synchro Jellyfin). Une entrée
+   qui CHANGE D'IDENTITÉ (Sillon : une entrée importée `imp:<clé>` rapprochée de sa
+   vidéo, `ytm:t:<vidéo>`) porte ses identifiants d'hier (`formerIds`, additif, 27/10) :
+   la copie gardée sous l'ancienne reste reconnue, la tenue à jour la regarde sous la
+   nouvelle avant de retirer l'ancienne. Une extension d'avant ne l'envoie pas : rien ne casse.
 5. **Navigation et réglages** — `navItems`/`routes` du bundle front ; masqués sans
    extension active, configurée et permise au compte. Les pages vivent dans une
    iframe `sandbox="allow-scripts"` SANS `allow-forms` (`PLUGIN_IFRAME_SANDBOX`,
