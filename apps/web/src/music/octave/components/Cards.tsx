@@ -21,6 +21,7 @@ import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 import { CARD_GRID_CLASS } from "./cardGrid";
 import { CollectionSwell } from "../motion/NowSwell";
+import { PlaylistArtwork, playlistCoverUrls } from "./PlaylistArtwork";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
 import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 
@@ -128,7 +129,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
     <div className="group/playlist relative min-w-0">
     <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass} onContextMenu={context.onContextMenu}>
       <div className="relative aspect-square w-full">
-        <Artwork url={playlist.artworkUrl} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+        <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
         <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
       </div>

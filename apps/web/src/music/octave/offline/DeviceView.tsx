@@ -17,7 +17,7 @@ import { localResourceUrl, useDownloadsRootReady } from "../../../downloads/loca
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
 import { formatBytes } from "../../../downloads/presets";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
-import { Artwork, ARTWORK_RADIUS } from "../components/Artwork";
+import { ARTWORK_RADIUS } from "../components/Artwork";
 import { CardGrid, Shelf } from "../components/Cards";
 import { CollectionHeader } from "../components/CollectionHeader";
 import { rowsOf, TrackList } from "../components/TrackList";
@@ -26,6 +26,9 @@ import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { deviceModel, type DeviceCollection } from "./deviceModel";
 import { keptBytes } from "./keptProgress";
 import { KeepCollectionButton } from "./KeepCollectionButton";
+import { KeptCollectionArtwork } from "./KeptCollectionArtwork";
+import { HEADER_ARTWORK_CLASS } from "../components/PlaylistArtwork";
+import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import { useKeptMusic } from "./useKeptMusic";
 import { AutoSyncSetting } from "./autosync/AutoSyncSetting";
 
@@ -34,11 +37,11 @@ const DEVICE_CONTEXT = "device";
 const cardClass =
   "octave-card group flex min-w-0 cursor-pointer flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-function CollectionCard({ collection, onOpen }: { collection: DeviceCollection; onOpen: () => void }) {
+function CollectionCard({ collection, kept, offline, onOpen }: { collection: DeviceCollection; kept: readonly KeptMusicTrack[]; offline: boolean; onOpen: () => void }) {
   const { t } = useTranslation("music");
   return (
     <button type="button" className={cardClass} onClick={onOpen}>
-      <Artwork url={collection.artworkUrl} label={collection.title} radius="art" className="aspect-square w-full shadow-[var(--oc-shadow-art)]" />
+      <KeptCollectionArtwork collection={collection} kept={kept} offline={offline} className="aspect-square w-full shadow-[var(--oc-shadow-art)]" />
       <span className="min-w-0 px-0.5">
         <span className="block truncate text-sm font-semibold leading-5 text-content-primary" title={collection.title}>{collection.title}</span>
         <span className="block truncate text-[13px] leading-5 text-content-tertiary">{collection.subtitle ?? t("count.tracks", { count: collection.tracks.length })}</span>
@@ -86,8 +89,7 @@ export function DeviceView() {
       <CollectionHeader
         kicker={open ? tm(open.kind === "album" ? "album.kind.album" : "playlist.kicker") : t("view.kicker")}
         title={open?.title ?? t("view.title")}
-        artworkUrl={open?.artworkUrl ?? null}
-        art={open ? undefined : <DeviceArt />}
+        art={open ? <KeptCollectionArtwork collection={open} kept={kept.tracks} offline={offline} radius="lg" eager className={HEADER_ARTWORK_CLASS} /> : <DeviceArt />}
         meta={kept.loaded ? <span>{open ? tm("count.tracks", { count: tracks.length }) : meta}</span> : null}
         canPlay={tracks.length > 0}
         onPlay={() => player.playList(tracks, 0, contextId)}
@@ -111,7 +113,7 @@ export function DeviceView() {
           <Shelf title={t("view.collections")}>
             <CardGrid>
               {model.collections.map((c) => (
-                <CollectionCard key={c.key} collection={c} onOpen={() => setParams({ c: c.key })} />
+                <CollectionCard key={c.key} collection={c} kept={kept.tracks} offline={offline} onOpen={() => setParams({ c: c.key })} />
               ))}
             </CardGrid>
           </Shelf>
