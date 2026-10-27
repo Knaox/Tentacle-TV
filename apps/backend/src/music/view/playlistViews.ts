@@ -15,6 +15,7 @@ import { addedDatesFor, legacyPlaylistScope, playlistScope } from "../listOrder/
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
 import { pinnedDates, ranksByItem } from "../playlistSource/sourceRecord";
 import { readPlaylistSource } from "../playlistSource/sourceStore";
+import { mosaicCandidatesFor, rememberMosaic, withMosaic } from "./playlistMosaic";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
   const ticks = item.CumulativeRunTimeTicks ?? item.RunTimeTicks;
@@ -29,9 +30,13 @@ export function toPlaylist(item: JfPlaylist): MusicPlaylist {
   };
 }
 
+/** Les playlists du compte, chacune avec sa jaquette du jour (`playlistMosaic.ts` : aucune relecture au repos). */
 export async function playlistsView(view: UserView): Promise<MusicPlaylist[]> {
   if (view.access.mode === "none") return [];
-  return (await listUserPlaylists(view.userId)).map(toPlaylist);
+  const items = await listUserPlaylists(view.userId);
+  const candidates = await mosaicCandidatesFor(view, items);
+  const now = Date.now();
+  return items.map((item) => withMosaic(toPlaylist(item), candidates.get(normalizeId(item.Id)), now));
 }
 
 /** Les playlists dont le nom répond à la frappe (chaque mot est un préfixe d'un mot du nom). */
@@ -54,7 +59,8 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   const entries = (await playlistEntries(view.userId, playlistId)) ?? [];
   const ids = entries.map((e) => e.itemId);
   const rows = await visibleInOrder(view, ids);
-  const tracks = new Map((await tracksOf(view, rows)).map((t) => [t.jellyfinId!, t]));
+  const ordered = await tracksOf(view, rows);
+  const tracks = new Map(ordered.map((t) => [t.jellyfinId!, t]));
   // Jellyfin ne date pas une entrée : Tentacle relève quand elle est apparue (l'ordre de la playlist à la première
   // lecture) ; une arrivée posée à la place de son attente garde la date de sa place. Une playlist IMPORTÉE : un
   // titre de la source a la date de son rang dans la source (l'ordre des ajouts chez Apple Music).
@@ -68,5 +74,7 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
     const rank = ranks.get(entry.itemId);
     if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays }, ...(rank !== undefined ? { sourceIndex: rank } : {}) });
   });
-  return { ...toPlaylist(playlist), description: playlist.Overview?.trim() || null, entries: out };
+  // La jaquette de l'en-tête est celle des cartes : mêmes titres, même jour (et la liste suivante n'a rien à relire).
+  const place = await rememberMosaic(view, playlist, ordered);
+  return { ...withMosaic(toPlaylist(playlist), place), description: playlist.Overview?.trim() || null, entries: out };
 }
