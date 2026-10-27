@@ -42,6 +42,21 @@ async function connectPage() {
   return page;
 }
 
+const pageActive = async (page) => (await page.evaluate(`return document.documentElement.dataset.windowInactive ?? "off";`)) !== "on";
+
+/** blur puis focus : la page reçoit enfin son évènement `focus`. */
+async function refocus() {
+  const list = await (await fetch(`http://127.0.0.1:${PORTS.main}/json/list`)).json();
+  const main = await Cdp.connect(list[0].webSocketDebuggerUrl);
+  try {
+    await main.send("Runtime.evaluate", { expression: `(() => { const { app, BrowserWindow } = process.mainModule.require("electron");
+      const w = BrowserWindow.getAllWindows().find((x) => x.isVisible()); w.blur(); app.focus({ steal: true }); w.focus(); return 1; })()` });
+    await sleep(600);
+  } finally {
+    main.close();
+  }
+}
+
 /** Remet la fenêtre au milieu du plus grand écran (1280 × 760), sans la réactiver. */
 async function placeOnScreen() {
   const list = await (await fetch(`http://127.0.0.1:${PORTS.main}/json/list`)).json();
@@ -97,6 +112,7 @@ async function captureState(page, clip, state) {
 }
 
 function analyse(clip, shot) {
+  if (shot.pageActive === false) meta.skipped.push(`${clip}/${shot.state} : page inactive à la capture (mesuré quand même)`);
   if (shot.absent) return [{ clip, state: shot.state, kind: "—", name: "panneau absent", verdict: "—" }];
   const full = readRgb(shot.full);
   const bare = readRgb(shot.bare);
@@ -149,6 +165,18 @@ for (const clip of clips) {
     continue;
   }
   const page = await connectPage();
+  // La page apprend le focus par l'évènement `focus` de la fenêtre, qu'une activation par
+  // `app.focus` ne lui donne pas toujours : verre natif actif, dosages CSS inactifs
+  // (`data-window-inactive`, relevé par l'habillage). On la remet d'aplomb, sinon on saute.
+  if (!(await pageActive(page))) {
+    await refocus();
+    if (!(await pageActive(page))) {
+      meta.skipped.push(`${clip} : page restée « fenêtre inactive »`);
+      page.close();
+      console.log(probe("unfront", before));
+      continue;
+    }
+  }
   const shots = [];
   try {
     meta.mode ??= await page.evaluate(`return document.documentElement.getAttribute("data-liquid-glass");`);
@@ -157,7 +185,8 @@ for (const clip of clips) {
         meta.skipped.push(`${clip}/${state} : Damien revenu`);
         break;
       }
-      shots.push(await captureState(page, clip, state));
+      if (!(await pageActive(page))) await refocus();
+      shots.push({ ...(await captureState(page, clip, state)), pageActive: await pageActive(page) });
     }
   } finally {
     page.close();
