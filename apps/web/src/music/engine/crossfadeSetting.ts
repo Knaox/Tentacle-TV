@@ -1,14 +1,14 @@
 /**
  * Le réglage « Transition douce » d'Octave : une préférence de l'APPAREIL (`tentacle_octave_crossfade`, la
- * durée du fondu en ms, « 0 » = coupée ; absente : ALLUMÉE à 3 s, la règle partagée `readCrossfadeSetting`). Lue par le fournisseur du moteur, qui la passe
+ * durée du fondu en ms, 0 = coupée — le défaut, comme Spotify). Lue par le fournisseur du moteur, qui la passe
  * au port (`setCrossfade`), et par la ligne des Réglages d'Octave. Aucune capacité serveur : tout se joue ici.
  * ⚠️ Clé traversée par une chaîne : jamais renommée.
  */
 
 import { useSyncExternalStore } from "react";
-import { CROSSFADE_DEFAULT_MS, CROSSFADE_STORAGE_KEY, readCrossfadeSetting, sanitizeCrossfadeMs } from "./crossfadeRules";
+import { sanitizeCrossfadeMs } from "./crossfadeRules";
 
-export { CROSSFADE_STORAGE_KEY };
+export const CROSSFADE_STORAGE_KEY = "tentacle_octave_crossfade";
 
 function storage(): Storage | null {
   try {
@@ -20,9 +20,9 @@ function storage(): Storage | null {
 
 function read(): number {
   try {
-    return readCrossfadeSetting(storage()?.getItem(CROSSFADE_STORAGE_KEY) ?? null);
+    return sanitizeCrossfadeMs(storage()?.getItem(CROSSFADE_STORAGE_KEY) ?? 0);
   } catch {
-    return CROSSFADE_DEFAULT_MS;
+    return 0;
   }
 }
 
