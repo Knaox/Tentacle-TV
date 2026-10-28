@@ -2,18 +2,23 @@ import { memo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import type { SettingScope } from "@tentacle-tv/shared";
+import type { SettingScope as CatalogScope } from "@tentacle-tv/shared";
 import { RADIUS, spacing, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
-/** La portée d'un réglage — le type du catalogue partagé (`settingsCatalog`), qui fait l'inventaire. */
-export type { SettingScope } from "@tentacle-tv/shared";
+/**
+ * La portée d'un réglage — celles du catalogue partagé (`settingsCatalog`, qui fait l'inventaire), plus `octave`
+ * (un réglage d'Octave qui ne change rien à Tentacle : la page « Réglages d'Octave »), comme la pastille du web.
+ */
+export type SettingScope = CatalogScope | "octave";
+
+const ICONS = { account: "cloud", device: "smartphone", octave: "music" } as const;
 
 interface Props {
   scope: SettingScope;
 }
 
 /**
- * La pastille « Compte » / « Cet appareil » : un mot ET une icône (nuage,
+ * La pastille « Compte » / « Cet appareil » / « Octave seulement » : un mot ET une icône (nuage,
  * téléphone), jamais la couleur seule. Le compte prend la teinte de marque,
  * l'appareil reste neutre. Un composant unique, partagé par toutes les pages
  * de réglages du mobile (notifications comprises).
@@ -29,11 +34,11 @@ export const ScopeBadge = memo(function ScopeBadge({ scope }: Props) {
       style={[st.pill, account ? st.account : st.device]}
       accessible
       accessibilityRole="text"
-      accessibilityLabel={t(account ? "scope.accountA11y" : "scope.deviceA11y")}
+      accessibilityLabel={t(`scope.${scope}A11y`)}
     >
-      <Feather name={account ? "cloud" : "smartphone"} size={10} color={tint} />
+      <Feather name={ICONS[scope]} size={10} color={tint} />
       <Text style={[st.label, { color: tint }]} numberOfLines={1}>
-        {t(account ? "scope.account" : "scope.device")}
+        {t(`scope.${scope}`)}
       </Text>
     </View>
   );

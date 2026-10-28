@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
 import { collectionSummary, keptBytes, ownCopies, trackPhase } from "./keptProgress";
 
 function kept(key: string, partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {

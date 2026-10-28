@@ -40,7 +40,7 @@ import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
 import { runHevcRepair } from "./hevcRepair";
 import { createExpoTransferDriver } from "./expoTransferDriver";
-import { makeFetcher } from "./fetcher";
+import { makeFetcher, makePublicFetcher } from "./fetcher";
 import { resumeTokens } from "./resumeTokens";
 import { offlineVolume } from "./volume";
 
@@ -127,6 +127,8 @@ export function offlineEngine(): DownloadEngine {
     volume: offlineVolume,
     driver: createExpoTransferDriver(expoFileStore, resumeTokens),
     makeFetcher,
+    // Les pochettes d'ailleurs des titres d'Octave gardés : sans jeton.
+    makePublicFetcher,
     emit,
     now: () => Date.now(),
     // Wi-Fi seulement, réseau identifié, serveur joignable : la garde est
@@ -259,7 +261,7 @@ function runUsageRepair(): void {
 
 /** Réparation en tâche de fond, jamais attendue. */
 function runHeal(started: Creds): void {
-  void heal(makeFetcher(started.token), localDb(), started.serverUrl, offlineVolume(), Date.now())
+  void heal(makeFetcher(started.token), localDb(), started.serverUrl, offlineVolume(), Date.now(), makePublicFetcher())
     .then((healed) => {
       if (healed > 0) notifyOfflineChanged();
     })

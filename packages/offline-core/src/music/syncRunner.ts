@@ -6,9 +6,9 @@
  * (`useKeptAutoSync.ts` y branche le serveur, la coquille et le moteur).
  */
 
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
 import type { MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
-import { renamesOf } from "../keptRenames";
+import { renamesOf } from "./keptRenames";
 import type { SyncSignal } from "./syncSignals";
 import { planSync, type SyncActions, type WantedForm } from "./syncPlan";
 

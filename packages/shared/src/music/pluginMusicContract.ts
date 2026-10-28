@@ -71,7 +71,7 @@ export interface PluginMusicManifest {
    */
   rights?: string;
   /**
-   * Garder hors ligne un titre hors bibliothèque (capacité `offline.music`, BUREAU) — GET <offline>/<externalId> → le
+   * Garder hors ligne un titre hors bibliothèque (capacité `offline.music`, bureau et mobile) — GET <offline>/<externalId> → le
    * fichier audio COMPLET (`Content-Length`, `Range` → 206), que l'appareil garde tel quel. Tant qu'il se prépare :
    * 503 (`Retry-After`), le moteur hors ligne réessaie seul ; un titre introuvable ou un droit refusé : 404. Droits
    * tenus par l'extension : session personnelle, `users.rights` → `keepOffline`, et les siens.

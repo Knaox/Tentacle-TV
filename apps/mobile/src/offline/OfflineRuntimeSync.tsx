@@ -19,6 +19,7 @@ import { publicLog } from "../../modules/offline-storage/publicLog";
 import { useOfflinePushWake } from "./offlinePushWake";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
+import { configureMusicOffline } from "@/octave/offline/keptMusic";
 import { configureEngineSettings } from "@/player/engine/engineSettings";
 import { isLocalPlaybackActive } from "./nowPlaying";
 import { useOfflineDevHook } from "./offlineDevHook";
@@ -95,6 +96,8 @@ export function OfflineRuntimeSync() {
   useEffect(() => {
     if (!storageReady) return;
     configureDeviceSettings(storage);
+    // Octave : la musique gardée sait qui est le compte de l'appareil (rien n'est lu ici).
+    configureMusicOffline(storage);
     // Les réglages d'appareil du lecteur (moteur vidéo…) : même stockage, même moment.
     configureEngineSettings(storage);
   }, [storage, storageReady]);

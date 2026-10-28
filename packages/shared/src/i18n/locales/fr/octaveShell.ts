@@ -66,6 +66,13 @@ export default {
     outgoing: "Titre qui part",
     incoming: "Titre qui arrive",
   },
+  launchPin: {
+    label: "Ne pas demander le code PIN au démarrage",
+    hint: "L'application rouverte dans Octave reprend le profil ouvert, sans « Qui regarde ? » ni code PIN. Changer de profil le demande toujours.",
+  },
+  settingsMobile: {
+    switchProfileHint: "Le même choix que dans Tentacle, code PIN compris.",
+  },
   settings: {
     kicker: "Octave",
     title: "Réglages d'Octave",

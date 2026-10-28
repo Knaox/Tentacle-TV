@@ -14,7 +14,7 @@
  *   cacher.
  */
 
-import { offlineSurfaceOf, type KeepRight } from "@tentacle-tv/offline-core";
+import { offlineSurfaceOf, type KeepRight } from "../rights/offlineOwner";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 
 export interface MusicOfflineInputs {

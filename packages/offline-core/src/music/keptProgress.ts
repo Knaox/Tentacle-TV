@@ -4,8 +4,8 @@
  * d'une rangée et la vue « Sur cet appareil ».
  */
 
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
-import { isHeld } from "./autosync/syncPlan";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
+import { isHeld } from "./syncPlan";
 
 export type KeptPhase = "none" | "progress" | "complete" | "failed";
 

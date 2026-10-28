@@ -11,7 +11,7 @@ import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useToast } from "../../../contexts/ToastContext";
 import { formatBytes } from "../../../downloads/presets";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
-import { canKeepTrack } from "./keepRules";
+import { canKeepTrack } from "@tentacle-tv/offline-core/music";
 import { keepTracks, removeKept, type KeepCollection } from "./keepMusic";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 

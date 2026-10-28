@@ -14,6 +14,7 @@ import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { OfflineRowActionsSheet } from "@/offline/manage/OfflineRowActionsSheet";
 import { backOrHome, goHome } from "@/utils/backOrHome";
 import { spacing, typography, FONT_FAMILY, useGrid, useThemedStyles, type AppTheme } from "@/theme";
+import { OfflineMusicEntry, OfflineMusicOrEmpty } from "@/octave/offline/OfflineMusicEntry";
 import { OfflineBackOnlineCard } from "./OfflineBackOnlineCard";
 import { OfflineCatalogSections } from "./OfflineCatalogSections";
 import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
@@ -84,7 +85,8 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
           <OfflineLibrarySkeleton layout={layout} />
         </View>
       ) : !hasContent ? (
-        <OfflineEmptyState standalone={standalone} />
+        // Rien côté films, mais de la musique gardée : la carte d'Octave remplace le message vide.
+        <OfflineMusicOrEmpty fallback={<OfflineEmptyState standalone={standalone} />} topInset={standalone ? spacing.md : headerH} />
       ) : (
         <Animated.ScrollView
           style={st.wrap}
@@ -100,6 +102,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             <FadeIn delay={homeRowFadeDelay(0)}>
               <OfflineStateStrip showManage={!standalone} />
               <OfflineBackOnlineCard />
+              <OfflineMusicEntry />
             </FadeIn>
           )}
           {!searching && resume.length > 0 && (

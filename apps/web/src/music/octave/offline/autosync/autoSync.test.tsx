@@ -6,7 +6,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NO_MUSIC_OFFLINE, type MusicOfflineSurface } from "../keepRules";
+import { NO_MUSIC_OFFLINE, type MusicOfflineSurface } from "@tentacle-tv/offline-core/music";
 
 const h = vi.hoisted(() => ({ surface: null as unknown as MusicOfflineSurface, store: new Map<string, string>() }));
 

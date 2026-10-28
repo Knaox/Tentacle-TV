@@ -8,6 +8,7 @@
  */
 
 import { externalTrackKey, type MusicEvent, type MusicTrack } from "@tentacle-tv/shared/music";
+import { LIKED_PLAYLIST_ID } from "./syncInputs";
 
 export type SyncSignal =
   | { kind: "playlist"; playlistId: string }
@@ -21,6 +22,8 @@ const listeners = new Set<(signal: SyncSignal) => void>();
 export function signalMusicEvent(event: MusicEvent): void {
   let signal: SyncSignal | null = null;
   if (event.type === "music:playlist") signal = { kind: "playlist", playlistId: event.playlistId };
+  // Un cœur posé ou retiré : « Titres likés », si elle est gardée, se relit (`LIKED_PLAYLIST_ID`).
+  else if (event.type === "music:userdata" && event.changes.length > 0) signal = { kind: "playlist", playlistId: LIKED_PLAYLIST_ID };
   // Un ajout, ou une MISE À JOUR : Jellyfin pose souvent un titre avant d'en lire les étiquettes (artiste, durée) —
   // c'est la mise à jour qui le rend reconnaissable comme la version d'une copie d'ailleurs (vu au banc).
   else if (event.type === "music:library" && event.added.length + event.updated.length > 0) signal = { kind: "library" };

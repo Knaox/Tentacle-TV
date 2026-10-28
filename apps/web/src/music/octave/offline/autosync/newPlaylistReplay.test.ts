@@ -23,10 +23,10 @@ vi.mock("@tentacle-tv/api-client", () => ({
   libraryMatchRequest: () => null,
 }));
 
-import { holdKey, planSync } from "./syncPlan";
+import { holdKey, planSync } from "@tentacle-tv/offline-core/music";
 import { readPending, readPlaylists } from "./syncInputs";
-import { SyncRunner } from "./syncRunner";
-import type { SyncActions } from "./syncPlan";
+import { SyncRunner } from "@tentacle-tv/offline-core/music";
+import type { SyncActions } from "@tentacle-tv/offline-core/music";
 
 const SILLON = { pluginId: "sillon", name: "Sillon", music: { search: "/s", resolve: "/r", pending: "/music/pending", offline: "/music/offline" } };
 const PL = "playlist:jf:p1";
