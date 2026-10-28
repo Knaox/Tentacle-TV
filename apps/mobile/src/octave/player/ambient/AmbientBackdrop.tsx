@@ -28,8 +28,8 @@ import { BLOB_ARTWORK_SIZE } from "./ambientBlobs";
 import { trackTempo } from "./ambientBeat";
 import { useBeatClock, type BeatClock } from "./useBeatClock";
 import {
-  AMBIENT_BLUR, AMBIENT_BRAND_TINT, AMBIENT_CROSSFADE_MS, AMBIENT_CYCLE_S, ambientArtworkUrl, ambientLayers, ambientSeed,
-  ambientShouldRun, layerSide, layerTransform, type AmbientLayer,
+  AMBIENT_BLUR, AMBIENT_BRAND_TINT, AMBIENT_CROSSFADE_MS, AMBIENT_CYCLE_S, AMBIENT_SCENE_DELAY_MS, ambientArtworkUrl,
+  ambientLayers, ambientSeed, ambientShouldRun, layerSide, layerTransform, type AmbientLayer,
 } from "./ambientMotion";
 
 const LINEAR = Easing.linear;
@@ -81,12 +81,17 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ open }: { open: b
   // Les dispositions empilées : la nouvelle arrive PAR-DESSUS l'ancienne, qui reste pleine dessous jusqu'à
   // ce que la nouvelle soit entière — jamais un passage par le noir.
   const [scenes, setScenes] = useState<Scene[]>(() => [{ id: 0, uri, blobUri }]);
+  // La nouvelle disposition se monte APRÈS le geste (`AMBIENT_SCENE_DELAY_MS`) : jamais pendant que la pochette
+  // sort et entre ; et d'une rafale de « Suivant », seule la dernière se monte.
   useEffect(() => {
-    setScenes((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && last.uri === uri) return prev;
-      return [...prev, { id: (last?.id ?? 0) + 1, uri, blobUri }].slice(-MAX_SCENES);
-    });
+    const timer = setTimeout(() => {
+      setScenes((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.uri === uri) return prev;
+        return [...prev, { id: (last?.id ?? 0) + 1, uri, blobUri }].slice(-MAX_SCENES);
+      });
+    }, AMBIENT_SCENE_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [uri, blobUri]);
   const onShown = useCallback((id: number) => setScenes((prev) => prev.filter((scene) => scene.id >= id)), []);
 
