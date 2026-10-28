@@ -4,7 +4,7 @@
  */
 
 [data-octave-shell] {
-  --oc-rail-compact-width: 88px;
+  --oc-rail-compact-width: 96px;
 }
 
 /* Aucun reflet gris au toucher, aucun délai de double-tape ; un léger rebond à l'appui. */

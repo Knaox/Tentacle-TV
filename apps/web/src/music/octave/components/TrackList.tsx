@@ -14,6 +14,7 @@ import type { ListRow } from "@tentacle-tv/shared/octave";
 import type { SelectGesture } from "../actions/selection/selectionRules";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { TrackRow, rowColumns } from "./TrackRow";
+import { useCompactRows } from "./compactRows";
 import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
@@ -64,6 +65,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
 
 export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore, virtual = false, reorder = null }: TrackListProps) {
   const { t } = useTranslation("music");
+  const compact = useCompactRows();
   const player = useOctavePlayer();
   const actions = useTrackActions();
   const currentKey = useCurrentKey();
@@ -124,7 +126,8 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
 
   return (
     <div role="grid" aria-label={label} aria-rowcount={virtual ? rows.length : undefined} className="flex flex-col">
-      {showHeader && (
+      {/* Au téléphone, les rangées compactes n'ont pas de colonnes à nommer. */}
+      {showHeader && !compact && (
         <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum, reorder !== null)}`}>
           {reorder && <span role="columnheader" aria-hidden />}
           <span role="columnheader" aria-label={t("selection.column")} />

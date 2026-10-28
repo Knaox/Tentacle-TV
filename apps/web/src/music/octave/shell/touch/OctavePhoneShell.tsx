@@ -1,12 +1,15 @@
 /**
  * Octave — la coquille du TÉLÉPHONE (navigateur d'un téléphone, fenêtre étroite
  * du bureau) : la grammaire de l'app mobile et du miroir. En haut, l'en-tête
- * (‹, la marque, la bascule du mode, le profil) ; la page défile DESSOUS ; en
+ * (‹, la marque, « Sur cet appareil », la bascule du mode, le profil) ; la page défile DESSOUS ; en
  * bas, le mini-lecteur et la barre d'onglets FLOTTENT au-dessus d'elle, dans la
- * zone sûre. Rien ne reste caché sous eux : la page réserve leur place.
+ * zone sûre. Rien ne reste caché sous eux : la page réserve leur place. Les
+ * rangées de titre y sont COMPACTES (`components/compactRows`).
  */
 
 import type { ReactNode, RefObject } from "react";
+import { CompactRowsContext } from "../../components/compactRows";
+import { DeviceHeaderButton } from "../../offline/DeviceNavItem";
 import { usePlayerSelector } from "../../player/OctavePlayerProvider";
 import { OctaveProfileButton } from "../../profiles";
 import { HistoryButtons } from "../HistoryButtons";
@@ -44,11 +47,12 @@ export function OctavePhoneShell({ children, main, onExit, onOpenNowPlaying, ove
             <div className="min-w-0 flex-1 px-1">
               <OctaveWordmark logoSize={28} className="text-xl" />
             </div>
+            <DeviceHeaderButton />
             <OctaveModeSlot onExit={onExit} compact />
             <OctaveProfileButton compact />
           </div>
         </header>
-        {children}
+        <CompactRowsContext.Provider value={true}>{children}</CompactRowsContext.Provider>
       </main>
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2 px-3"
