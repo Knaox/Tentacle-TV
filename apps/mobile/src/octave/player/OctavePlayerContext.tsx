@@ -11,12 +11,13 @@
 
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
+import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { bindCrossfadeStorage, getCrossfadeMs, subscribeCrossfade } from "../audio/crossfadeSetting";
 import { createMobileAudioEngine } from "../audio/mobileAudioEngine";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
+import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
@@ -43,14 +44,20 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const applyCrossfade = () => engine.setCrossfade?.(getCrossfadeMs());
     applyCrossfade();
     const offCrossfade = subscribeCrossfade(applyCrossfade);
+    // La session quittée revient en pause (dernier titre, file, position), comme au bureau.
+    const offResume = attachPlayerResume(p, octaveOwnerOf(storage, auth.baseUrl), mobileResumeDeps(storage, auth.baseUrl));
+    // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
+    if (__DEV__) (globalThis as { __octavePlayer?: OctavePlayer }).__octavePlayer = p;
     setPlayer(p);
     return () => {
+      offResume();
       offCrossfade();
       offRadio();
       p.dispose();
       engine.dispose();
       setPlayer(null);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- le stockage de l'app ne change pas
   }, [auth, qc]);
 
   if (!player) return null;
