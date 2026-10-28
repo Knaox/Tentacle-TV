@@ -3,13 +3,17 @@
  * artistes ou année), artiste (portrait rond, nom), playlist (de la
  * bibliothèque ou d'une extension). Un toucher ouvre la page (un album hors
  * bibliothèque s'affiche aussitôt avec ce que la carte montrait :
- * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut.
+ * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut. Un album qui ne se LIT pas
+ * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » sur sa pochette, et le toucher ouvre sa
+ * feuille (aimer, ajouter à une playlist) au lieu de sa page.
  */
 
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { rememberAlbumPreview } from "@tentacle-tv/shared/octave";
+import { CloudOff } from "lucide-react-native";
+import { openUnavailableAlbum } from "@tentacle-tv/api-client";
+import { isUnavailableAlbum, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { PressableCard } from "@/components/ui";
@@ -19,12 +23,12 @@ import { Artwork } from "./Artwork";
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
-function Caption({ title, subtitle, center }: { title: string; subtitle?: string | null; center?: boolean }) {
+function Caption({ title, subtitle, center, muted }: { title: string; subtitle?: string | null; center?: boolean; muted?: boolean }) {
   const theme = useTheme();
   const align = center ? "center" : "left";
   return (
     <View style={styles.caption}>
-      <Text numberOfLines={1} style={[typography.bodyBold, { color: theme.colors.text.primary, fontSize: 14, textAlign: align }]}>
+      <Text numberOfLines={1} style={[typography.bodyBold, { color: muted ? theme.colors.text.tertiary : theme.colors.text.primary, fontSize: 14, textAlign: align }]}>
         {title}
       </Text>
       {subtitle ? (
@@ -36,14 +40,42 @@ function Caption({ title, subtitle, center }: { title: string; subtitle?: string
   );
 }
 
+/** « Pas lisible » : icône ET mot sur la pochette — jamais la seule couleur. */
+function UnavailableBadge() {
+  const { t } = useTranslation("music");
+  return (
+    <View style={styles.badge} pointerEvents="none">
+      <CloudOff size={12} color="#fff" />
+      <Text style={[typography.caption, styles.badgeText]} numberOfLines={1}>
+        {t("unavailableAlbum.badge")}
+      </Text>
+    </View>
+  );
+}
+
 export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: { album: MusicAlbum; width: number; onLongPress?: () => void }) {
   const nav = useOctaveNav();
+  const { t } = useTranslation("music");
+  const unavailable = isUnavailableAlbum(album);
+  const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
+  if (unavailable) {
+    return (
+      <PressableCard onPress={() => openUnavailableAlbum(album)} style={{ width }} accessibilityRole="button" accessibilityLabel={t("unavailableAlbum.cardLabel", { title: album.title })}>
+        <View>
+          <View style={styles.dimmed}>
+            <Artwork url={album.artworkUrl} size={width} radius={10} />
+          </View>
+          <UnavailableBadge />
+        </View>
+        <Caption title={album.title} subtitle={subtitle} muted />
+      </PressableCard>
+    );
+  }
   const open = () => {
     const target = entityTarget(album);
     if (target && !album.jellyfinId) rememberAlbumPreview(target, album);
     nav.album(album);
   };
-  const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
   return (
     <PressableCard onPress={open} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
       <Artwork url={album.artworkUrl} size={width} radius={10} />
@@ -84,4 +116,10 @@ export const ExternalPlaylistCard = memo(function ExternalPlaylistCard({ playlis
   );
 });
 
-const styles = StyleSheet.create({ caption: { marginTop: 8, gap: 2 } });
+const styles = StyleSheet.create({
+  caption: { marginTop: 8, gap: 2 },
+  // La pochette d'un album qu'on n'écoute pas : estompée (React Native n'a pas de niveaux de gris sans filtre natif).
+  dimmed: { opacity: 0.45 },
+  badge: { position: "absolute", left: 6, top: 6, flexDirection: "row", alignItems: "center", gap: 4, height: 22, paddingHorizontal: 7, borderRadius: 11, backgroundColor: "rgba(0,0,0,0.7)" },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+});
