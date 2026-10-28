@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo } from "react";
-import { Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -31,6 +31,7 @@ import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
+import { clipsOffscreenCells } from "../../layout/listClipping";
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
@@ -138,7 +139,7 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
         contentContainerStyle={{ paddingBottom: bottomInset }}
         initialNumToRender={14}
         windowSize={9}
-        removeClippedSubviews
+        removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       />
       <PageTopBar title={data?.title ?? ""} scrollY={scrollY} threshold={320} />
       <OctavePagesHost />

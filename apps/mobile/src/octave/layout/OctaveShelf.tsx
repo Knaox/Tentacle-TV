@@ -8,6 +8,7 @@
 import { useCallback, type ReactElement } from "react";
 import { FlatList, Platform, type ListRenderItem } from "react-native";
 import { useOctaveLayout } from "./useOctaveLayout";
+import { clipsOffscreenCells } from "./listClipping";
 
 interface Props<T> {
   data: readonly T[];
@@ -37,7 +38,7 @@ export function OctaveShelf<T>({ data, keyOf, renderItem, itemWidth, accessibili
       initialNumToRender={layout.isTablet ? 7 : 4}
       maxToRenderPerBatch={6}
       windowSize={5}
-      removeClippedSubviews={Platform.OS === "android"}
+      removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       accessibilityLabel={accessibilityLabel}
     />
   );

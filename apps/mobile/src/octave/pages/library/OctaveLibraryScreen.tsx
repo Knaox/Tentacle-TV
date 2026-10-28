@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -28,6 +28,7 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 import { useFirstEnter } from "../../layout/enterMotion";
+import { clipsOffscreenCells } from "../../layout/listClipping";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -125,7 +126,7 @@ export function OctaveLibraryScreen() {
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={7}
-        removeClippedSubviews
+        removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       />
       <OctaveTopBar scrollY={scrollY} title={t("library.title")} back={false} />
       <OctavePagesHost />

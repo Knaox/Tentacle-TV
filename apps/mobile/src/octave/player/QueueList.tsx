@@ -4,13 +4,14 @@
  */
 
 import { memo, useCallback } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View, type ListRenderItem } from "react-native";
+import { FlatList, Platform, Pressable, StyleSheet, Text, View, type ListRenderItem } from "react-native";
 import { X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { queueActions, upcoming, type QueueItem } from "@tentacle-tv/shared/octave";
 import { PlayerArtwork } from "./PlayerArtwork";
 import { useOctavePlayer, usePlayerSelector } from "./OctavePlayerContext";
 import { useOctaveColors } from "../theme/octaveColors";
+import { clipsOffscreenCells } from "../layout/listClipping";
 
 const ROW = 60;
 
@@ -38,7 +39,7 @@ export const QueueList = memo(function QueueList() {
           getItemLayout={(_d, index) => ({ length: ROW, offset: ROW * index, index })}
           initialNumToRender={10}
           windowSize={5}
-          removeClippedSubviews
+          removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
           showsVerticalScrollIndicator={false}
         />
       )}
