@@ -62,7 +62,7 @@ export class FileEnds {
   endFile(mpvId: number, kind: EndKind, error: number): void {
     const current = this.host.queue.current();
     if (current === null || current.mpvId !== mpvId) return;
-    if (kind !== "other" && this.reloadCut(current)) return;
+    if (kind !== "other" && this.reloadCut(current, kind === "error")) return;
     if (kind === "error") this.host.fail(`end-file ${error}`, current);
   }
 
@@ -107,11 +107,11 @@ export class FileEnds {
     this.host.run(queue.pendingSwap() !== null ? queue.seek(at) : queue.reload(at));
   }
 
-  /** Une coupure en milieu de titre : relue à la position, au lieu de passer au suivant. */
-  private reloadCut(current: QueueEntry): boolean {
+  /** Une coupure (ou une erreur de lecture) en milieu de titre : relue à la position, au lieu de passer au suivant. */
+  private reloadCut(current: QueueEntry, error = false): boolean {
     const { queue } = this.host;
     if (!queue.isStarted() || this.host.swapScheduled() || queue.pendingSwap() !== null) return false;
-    const at = this.cuts.take(current.track.trackKey, current.source.origin, durationOf(current, this.host.props()));
+    const at = this.cuts.take(current.track.trackKey, current.source.origin, durationOf(current, this.host.props()), error);
     if (at === null) return false;
     console.warn(`[audio] coupure à ${at.toFixed(1)} s : relue à la position`);
     this.host.run(queue.reload(at));
