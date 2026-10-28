@@ -367,13 +367,30 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bundleRelease --no-daemon $ARGS
 
-      # AAB signé toujours archivé : PREMIÈRE soumission Play (upload manuel dans la
-      # console) et secours si l'API échoue.
+      # R8 est allumé (android.enableMinifyInReleaseBuilds) : son mapping.txt part
+      # avec l'AAB — envoyé à Play dans la même édition (play-publish.mjs
+      # --mapping), sans quoi les plantages de la console restent illisibles.
+      # Absent, c'est que R8 a été éteint : on s'arrête plutôt que de publier
+      # un binaire dont personne ne pourra lire les rapports.
+      - name: AAB + mapping R8
+        working-directory: apps/mobile/android/app/build/outputs
+        run: |
+          if [ ! -s mapping/release/mapping.txt ]; then
+            echo "::error::mapping/release/mapping.txt absent — R8 éteint ? (android.enableMinifyInReleaseBuilds, app.json et gradle.properties)"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/aab"
+          cp bundle/release/app-release.aab mapping/release/mapping.txt "$RUNNER_TEMP/aab/"
+          ls -l "$RUNNER_TEMP/aab"
+
+      # AAB signé toujours archivé, son mapping à côté : PREMIÈRE soumission Play
+      # (upload manuel dans la console), secours si l'API échoue, et désobscurcir
+      # à la main un rapport d'un binaire repris par « promote ».
       - name: Upload AAB artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tentacle-mobile-aab
-          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          path: ${{ runner.temp }}/aab
           if-no-files-found: error
 
   # ── Play : envoi OU promotion, en une édition. Sérialisé avec tv.yml : Android
@@ -417,7 +434,9 @@ jobs:
           if [ "${{ needs.prepare.outputs.android }}" = "promote" ]; then
             SOURCE="--promote-from ${{ env.PLAY_MOBILE_TRACK }}"
           else
-            SOURCE="--aab aab/app-release.aab"
+            # Le mapping R8 part dans la même édition, rattaché au versionCode
+            # reçu. La reprise n'en envoie pas : son versionCode a déjà le sien.
+            SOURCE="--aab aab/app-release.aab --mapping aab/mapping.txt"
           fi
           # Au cran store, la piste interne reçoit aussi le binaire de production
           # (sans effet à la promotion : elle le sert déjà).

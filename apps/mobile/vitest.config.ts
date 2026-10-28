@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 // se testent sans React Native : ils n'importent ni `react-native` ni `expo`.
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts", "app.config.test.ts"],
+    include: ["src/**/*.test.ts", "app.config.test.ts", "androidR8.test.ts"],
     environment: "node",
   },
 });
