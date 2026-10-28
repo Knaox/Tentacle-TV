@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { ImportFlowState } from "./importFlow";
-import { classifyPasted, importFraction } from "./importEntry";
+import { arrivingShareLink, classifyPasted, importFraction } from "./importEntry";
 
 const base: ImportFlowState = { phase: "reading", source: null, name: null, total: 0, matched: 0, found: 0, outside: null, failure: null, summary: null };
 
@@ -46,5 +46,15 @@ describe("classifyPasted — lien d'un autre Tentacle", () => {
     expect(classifyPasted(link, [], true)).toMatchObject({ kind: "url", source: "tentacle", readable: true, input: { kind: "url", url: link } });
     expect(classifyPasted(link, [])).toMatchObject({ kind: "url", source: "tentacle", readable: false });
     expect(classifyPasted(link, ["tentacle"], false)).toMatchObject({ readable: false });
+  });
+});
+
+describe("règle 15 : sans le droit du partage, rien", () => {
+  const link = "https://musique.ami.fr/octave/share/AbCdEfGhIjKlMnOpQrStUv";
+  it("l'arrivée par la page d'un lien n'ouvre rien sans le droit ; avec, le lien reconnu seulement", () => {
+    expect(arrivingShareLink(link, false)).toBeNull();
+    expect(arrivingShareLink(link, true)).toBe(link);
+    expect(arrivingShareLink("https://evil.example/x", true)).toBeNull();
+    expect(arrivingShareLink(null, true)).toBeNull();
   });
 });

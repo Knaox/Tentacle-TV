@@ -13,6 +13,7 @@ import { musicPendingKey } from "../../pluginMusic/useMusicActions";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import { musicKeys } from "../musicQueryKeys";
 import { runImport, type ImportFlowState, type ImportPort, type ImportUserInput } from "./importFlow";
+import { useMusicShareLinkImport } from "../useMusicPlaylistShare";
 import { cancelImportTracks, confideImportTracks, fetchCoreImport, fetchImportTracksProgress, readByExtension, refusalCode, startCoreImport } from "./importRequests";
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -70,7 +71,8 @@ export function useMusicImport(provider: MusicProvider | null): MusicImportHandl
   const qc = useQueryClient();
   const [state, setState] = useState<ImportFlowState | null>(null);
   const controller = useRef<AbortController | null>(null);
-  const tentacleShare = useServerCapability("music.playlistShare");
+  // Le lien d'un autre Tentacle : seulement avec le droit du partage (règle 15), comme le serveur.
+  const tentacleShare = useMusicShareLinkImport();
   const port = useMemo(() => importPortFor(provider, tentacleShare), [provider, tentacleShare]);
 
   useEffect(() => () => controller.current?.abort(), []);

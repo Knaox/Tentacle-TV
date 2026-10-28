@@ -2,14 +2,15 @@
  * Octave — ce que lit QUI A LE LIEN : le document public d'une playlist partagée (`SharedMusicPlaylist`),
  * relu À CHAQUE FOIS au nom du propriétaire et dans SES droits du moment — sa playlist telle qu'il la voit,
  * ses bibliothèques. Rien que des métadonnées : jamais un identifiant Jellyfin, un fichier, une image, un
- * jeton. Sans le droit « Partage public » (ou sans accès à la musique), le lien ne sert plus rien ; il revient
- * avec le droit, comme Ma liste.
+ * jeton. Sans le droit « Partage public », sans « Accès à Octave » (ou sans accès à la musique), le lien ne
+ * sert plus rien ; il revient avec le droit, comme Ma liste.
  */
 
 import { MUSIC_IMPORT_LIMITS } from "../contract/musicImport";
 import type { SharedMusicPlaylist } from "../contract/musicShare";
 import type { MusicPlaylistDetail } from "../contract/musicCoreApi";
 import { mayShareInPublic } from "../../services/share/publicSharingRight";
+import { hasOctaveAccess } from "../../services/octaveRights/octaveAccess";
 import { playlistDetail } from "../view/playlistViews";
 import { userView, type UserView } from "../view/viewContext";
 import { shareByToken, type ShareRecord } from "./shareStore";
@@ -19,11 +20,13 @@ export type ShareDocumentResult = { ok: true; document: SharedMusicPlaylist; sha
 export interface ShareDocumentDeps {
   find: (token: string) => Promise<ShareRecord | null>;
   mayShare: (userId: string) => Promise<boolean>;
+  /** « Accès à Octave » du propriétaire (droit Tentacle) : sans lui, ses liens ne servent plus rien. */
+  octave: (userId: string) => Promise<boolean>;
   view: (userId: string) => Promise<UserView>;
   detail: (view: UserView, playlistId: string) => Promise<MusicPlaylistDetail | null>;
 }
 
-const DEFAULT_DEPS: ShareDocumentDeps = { find: shareByToken, mayShare: mayShareInPublic, view: userView, detail: playlistDetail };
+const DEFAULT_DEPS: ShareDocumentDeps = { find: shareByToken, mayShare: mayShareInPublic, octave: hasOctaveAccess, view: userView, detail: playlistDetail };
 
 /** La playlist vue par son propriétaire → le document public (pur). */
 export function sharedDocumentOf(detail: MusicPlaylistDetail, ownerName: string): SharedMusicPlaylist {
@@ -48,7 +51,7 @@ export function sharedDocumentOf(detail: MusicPlaylistDetail, ownerName: string)
 export async function loadShareDocument(token: string, deps: ShareDocumentDeps = DEFAULT_DEPS): Promise<ShareDocumentResult> {
   const share = await deps.find(token);
   if (!share) return { ok: false, reason: "not_found" };
-  if (!(await deps.mayShare(share.ownerUserId))) return { ok: false, reason: "unavailable" };
+  if (!(await deps.mayShare(share.ownerUserId)) || !(await deps.octave(share.ownerUserId))) return { ok: false, reason: "unavailable" };
   const view = await deps.view(share.ownerUserId);
   // Le propriétaire ne voit plus la musique, ou plus cette playlist : le lien ne dit rien de plus qu'« indisponible ».
   const detail = view.access.mode === "none" ? null : await deps.detail(view, share.playlistId);

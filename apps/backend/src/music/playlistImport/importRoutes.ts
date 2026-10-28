@@ -15,12 +15,19 @@ import { networkFetcher } from "./importFetch";
 import { getImport, startImport, type ImportDeps } from "./importJobs";
 import { parseImportRequest } from "./importInput";
 import { savePlaylistSource } from "../playlistSource/sourceStore";
+import { mayUsePlaylistShares } from "../playlistShare/shareRight";
 
 const gate = capabilityGate("music.playlistImport");
 
-const deps: ImportDeps = { fetcher: networkFetcher, view: userView, create: createPlaylist, remember: savePlaylistSource };
+const deps: ImportDeps & { mayImportShare: typeof mayUsePlaylistShares } = {
+  fetcher: networkFetcher,
+  view: userView,
+  create: createPlaylist,
+  remember: savePlaylistSource,
+  mayImportShare: mayUsePlaylistShares,
+};
 
-export function musicImportRoutes(app: FastifyInstance, overrides: Partial<ImportDeps> = {}): void {
+export function musicImportRoutes(app: FastifyInstance, overrides: Partial<typeof deps> = {}): void {
   const used = { ...deps, ...overrides };
 
   app.post("/import", { onRequest: gate, config: { rateLimit: { max: 20, timeWindow: 10 * 60_000 } } }, async (request, reply) => {
@@ -28,6 +35,10 @@ export function musicImportRoutes(app: FastifyInstance, overrides: Partial<Impor
     if (userOf(request).session === "impersonation") return reply.status(403).send({ error: "forbidden" });
     const parsed = parseImportRequest(request.body);
     if (!parsed.ok) return reply.status(400).send({ error: parsed.refusal });
+    // Le lien d'un autre Tentacle : le droit du partage (règle 15) — sans lui, comme un lien inconnu.
+    if (parsed.value.input.kind === "url" && parsed.value.input.url.source === "tentacle" && !(await used.mayImportShare(userOf(request)))) {
+      return reply.status(400).send({ error: "unsupported_url" });
+    }
     const view = await viewOf(request);
     if (view.access.mode === "none") return reply.status(404).send({ error: "not_found" });
     const started = startImport(userOf(request).userId, parsed.value, used);

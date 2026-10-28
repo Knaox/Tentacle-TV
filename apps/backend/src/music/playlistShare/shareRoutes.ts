@@ -10,8 +10,7 @@
 
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from "fastify";
 import { capabilityGate } from "../../serverCapabilities/declaredCapabilities";
-import { mayShareInPublic, PUBLIC_SHARING_DENIED } from "../../services/share/publicSharingRight";
-import { isFamilyGuest } from "../../services/family/familyGuestMarkers";
+import { PUBLIC_SHARING_DENIED } from "../../services/share/publicSharingRight";
 import { publishedPublicUrl } from "../../remoteAccess/exposure";
 import { isShareToken, playlistShareUrl, type MusicPlaylistShare, type MusicPlaylistShareState } from "../contract/musicShare";
 import { isJellyfinId } from "../jellyfin/musicJellyfin";
@@ -20,6 +19,7 @@ import { userOf } from "../routes/requestView";
 import { loadShareDocument } from "./shareDocument";
 import { ensureShare, revokeShare, shareOf, type ShareRecord } from "./shareStore";
 import { sendMusicSharePage, sendShareImportRedirect } from "./sharePage";
+import { mayUsePlaylistShares } from "./shareRight";
 
 const gate = capabilityGate("music.playlistShare");
 const PUBLIC_RATE_LIMIT = { rateLimit: { max: 60, timeWindow: "1 minute" } };
@@ -35,9 +35,7 @@ function linkOf(request: FastifyRequest, share: ShareRecord): MusicPlaylistShare
 async function refusal(request: FastifyRequest): Promise<{ status: number; body: object } | null> {
   const user = userOf(request);
   if (user.session === "impersonation") return { status: 403, body: { error: "forbidden" } };
-  if (user.session === "tvProfile" && (await isFamilyGuest(user.userId).catch(() => true))) return { status: 403, body: PUBLIC_SHARING_DENIED };
-  if (!(await mayShareInPublic(user.userId))) return { status: 403, body: PUBLIC_SHARING_DENIED };
-  return null;
+  return (await mayUsePlaylistShares(user)) ? null : { status: 403, body: PUBLIC_SHARING_DENIED };
 }
 
 export function musicShareOwnerRoutes(app: FastifyInstance): void {

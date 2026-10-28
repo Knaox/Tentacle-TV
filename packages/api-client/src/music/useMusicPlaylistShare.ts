@@ -22,12 +22,27 @@ export const musicShareApi = {
 
 export const musicShareKey = (playlistId: string) => ["music", "share", playlistId] as const;
 
+/**
+ * La porte du partage (règle 15), PURE : le serveur a la musique ET sait partager ET ce compte a le droit
+ * « Partage public » (session personnelle, jamais un invité : `usePublicSharingAllowed`). Faux tant que ce
+ * n'est pas su. Elle garde « Partager » ET l'import du lien d'un autre Tentacle (le serveur refuse pareil).
+ */
+export function playlistShareShown(gate: { music: boolean; capable: boolean; allowed: boolean }): boolean {
+  return gate.music && gate.capable && gate.allowed;
+}
+
 /** « Partager » s'offre-t-il ? Le serveur le sait ET ce compte peut partager en public. */
 export function useMusicPlaylistShareAvailable(): boolean {
   const music = useMusicCapability();
   const capable = useServerCapability("music.playlistShare");
   const allowed = usePublicSharingAllowed();
-  return music && capable && allowed;
+  return playlistShareShown({ music, capable, allowed });
+}
+
+/** Un lien de partage d'un autre Tentacle s'importe-t-il ici ? L'import ET la porte du partage. */
+export function useMusicShareLinkImport(): boolean {
+  const importable = useServerCapability("music.playlistImport");
+  return useMusicPlaylistShareAvailable() && importable;
 }
 
 /** Le lien de cette playlist (`null` : pas partagée), et les gestes pour le créer ou le révoquer. */

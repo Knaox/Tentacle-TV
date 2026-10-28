@@ -99,3 +99,16 @@ describe("partager une playlist", () => {
     expect((await call("POST", `/api/music/playlists/${PL}/share`)).json()).toEqual({ error: "not_available" });
   });
 });
+
+describe("le droit du partage, le même pour créer un lien et importer celui d'un autre serveur", () => {
+  it("jamais « voir en tant que » ni un invité de la Famille ; sinon le droit « Partage public »", async () => {
+    const { mayUsePlaylistShares } = await import("./shareRight");
+    expect(await mayUsePlaylistShares({ userId: "u1", session: "impersonation" })).toBe(false);
+    state.guest = true;
+    expect(await mayUsePlaylistShares({ userId: "u1", session: "tvProfile" })).toBe(false);
+    state.guest = false;
+    expect(await mayUsePlaylistShares({ userId: "u1", session: "tvProfile" })).toBe(true);
+    state.mayShare = false;
+    expect(await mayUsePlaylistShares({ userId: "u1", session: "personal" })).toBe(false);
+  });
+});

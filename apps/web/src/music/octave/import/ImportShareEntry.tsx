@@ -6,13 +6,14 @@
 
 import { useEffect } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { recognizeTentacleShare } from "@tentacle-tv/shared/music";
+import { arrivingShareLink, useMusicShareLinkImport } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 import { openImportDialogWith } from "./importStore";
 
 export function ImportShareEntry() {
   const [params] = useSearchParams();
-  const link = recognizeTentacleShare(params.get("share") ?? "")?.url ?? null;
+  // Sans le droit d'importer un lien (règle 15), rien ne s'ouvre : « Playlists » seulement.
+  const link = arrivingShareLink(params.get("share"), useMusicShareLinkImport());
   useEffect(() => {
     if (link) openImportDialogWith(link);
   }, [link]);

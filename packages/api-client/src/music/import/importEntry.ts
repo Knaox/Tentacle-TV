@@ -5,7 +5,7 @@
  * fraction, pour la barre. Partagée : web large, web étroit et mobile.
  */
 
-import { coreReadsImport, recognizeImportUrl, type MusicImportSource } from "@tentacle-tv/shared/music";
+import { coreReadsImport, recognizeImportUrl, recognizeTentacleShare, type MusicImportSource } from "@tentacle-tv/shared/music";
 import type { ImportFlowState, ImportUserInput } from "./importFlow";
 
 export type PastedImport =
@@ -31,6 +31,16 @@ export function classifyPasted(raw: string, extensionSources: readonly MusicImpo
   }
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
   return { kind: "text", lines, input: { kind: "text", text } };
+}
+
+/**
+ * L'arrivée par la page d'un lien (`/octave/import?share=…`, `tentacle://octave/import?share=…`) : le lien à
+ * coller dans la boîte d'import, ou `null` — lien non reconnu, ou pas le droit d'importer un lien (règle 15 :
+ * rien ne s'ouvre).
+ */
+export function arrivingShareLink(raw: string | null | undefined, allowed: boolean): string | null {
+  if (!allowed || !raw) return null;
+  return recognizeTentacleShare(raw)?.url ?? null;
 }
 
 /** L'avancée en une fraction : lecture 10 %, bibliothèque jusqu'à 70 %, création 80 %, hors bibliothèque jusqu'au bout. */

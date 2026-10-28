@@ -39,6 +39,7 @@ describe("document public d'un partage", () => {
   const deps = (over: Partial<ShareDocumentDeps> = {}): ShareDocumentDeps => ({
     find: async (token) => (token === "tok" ? { token, playlistId: "pl1", ownerUserId: "owner", ownerName: "Damien", createdAt: 1 } : null),
     mayShare: async () => true,
+    octave: async () => true,
     view: async (userId) => ({ userId, access: { mode: "all" } as never, favorites: new Set() }),
     detail: async () => detail(1),
     ...over,
@@ -48,6 +49,8 @@ describe("document public d'un partage", () => {
     expect(await loadShareDocument("tok", deps())).toMatchObject({ ok: true, document: { ownerName: "Damien" } });
     expect(await loadShareDocument("autre", deps())).toEqual({ ok: false, reason: "not_found" });
     expect(await loadShareDocument("tok", deps({ mayShare: async () => false }))).toEqual({ ok: false, reason: "unavailable" });
+    // « Accès à Octave » retiré au propriétaire : ses liens ne servent plus rien.
+    expect(await loadShareDocument("tok", deps({ octave: async () => false }))).toEqual({ ok: false, reason: "unavailable" });
     expect(await loadShareDocument("tok", deps({ view: async (userId) => ({ userId, access: { mode: "none" } as never, favorites: new Set() }) }))).toEqual({ ok: false, reason: "unavailable" });
     expect(await loadShareDocument("tok", deps({ detail: async () => null }))).toEqual({ ok: false, reason: "unavailable" });
   });
