@@ -145,8 +145,20 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
     /** Vrai si la musique joue (le service ne s'arrête pas quand l'application est balayée). */
     fun isPlaying(): Boolean = core?.isPlaying() == true
 
-    /** L'application est balayée et rien ne joue : tout s'arrête, comme `audio_engine_stop`. */
-    fun shutdown() = stop()
+    /**
+     * L'application est balayée et rien ne joue : platines, focus et service libérés — mais le moteur reste
+     * DÉMARRÉ (origine, en-têtes, réglages). Le JS peut survivre au balayage (l'hôte React Native est à
+     * l'application, pas à l'activité) : il apprend par l'état « idle » que le titre est perdu, et sa
+     * « Lecture » suivante le rejoue à sa position. Arrêté comme `audio_engine_stop`, il refusait ensuite
+     * toute source (origine oubliée) sans que le JS le sache : la musique ne repartait plus.
+     */
+    fun releaseIdle() {
+        stopService()
+        core?.let {
+            it.release()
+            it.queueState()
+        }
+    }
 
     private fun ensureService() {
         if (service != null || serviceRequested) return

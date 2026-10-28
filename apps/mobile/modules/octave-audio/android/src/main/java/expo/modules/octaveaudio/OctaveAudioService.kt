@@ -27,7 +27,7 @@ class OctaveAudioService : MediaSessionService() {
     /** L'application balayée : on n'arrête que si rien ne joue (la musique continue sinon). */
     override fun onTaskRemoved(rootIntent: Intent?) {
         if (OctaveAudioEngine.isPlaying()) return
-        OctaveAudioEngine.shutdown()
+        OctaveAudioEngine.releaseIdle()
         stopSelf()
     }
 
