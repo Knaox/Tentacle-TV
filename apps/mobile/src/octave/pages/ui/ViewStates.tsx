@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { TRACK_ROW_HEIGHT } from "./TrackRow";
 import { accentTextOf } from "./pageStyle";
+import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
+import { useOctaveColors } from "../../theme/octaveColors";
 
 export function EmptyState({ icon: Icon, title, hint, action }: { icon: LucideIcon; title: string; hint?: string; action?: ReactNode }) {
   const theme = useTheme();
@@ -28,15 +30,16 @@ export function EmptyState({ icon: Icon, title, hint, action }: { icon: LucideIc
 }
 
 export function PillButton({ label, onPress, icon: Icon }: { label: string; onPress: () => void; icon?: LucideIcon }) {
-  const theme = useTheme();
+  const colors = useOctaveColors();
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.pill, { backgroundColor: theme.colors.cta.brandBg, opacity: pressed ? 0.85 : 1 }]}
-    >
-      {Icon ? <Icon size={16} color={theme.colors.cta.brandFg} /> : null}
-      <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" style={styles.pill}>
+      {({ pressed }) => (
+        <>
+          <OctaveBrandFill radius={22} pressed={pressed} />
+          {Icon ? <Icon size={16} color={colors.onBrandFill} /> : null}
+          <Text style={[typography.bodyBold, { color: colors.onBrandFill }]}>{label}</Text>
+        </>
+      )}
     </Pressable>
   );
 }

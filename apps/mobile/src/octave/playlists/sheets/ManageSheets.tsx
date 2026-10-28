@@ -20,6 +20,7 @@ import { showNotice } from "../../pages";
 import { SheetAction } from "../../pages/actions/SheetAction";
 import { closePlaylistSheet, openPlaylistSheet } from "./playlistSheetStore";
 import { useMobilePlaylistManage } from "./useMobilePlaylistManage";
+import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 /** Une feuille ne s'ouvre qu'une fois la précédente partie (iOS ne présente pas deux fenêtres à la fois). */
 const SHEET_HANDOFF_MS = 380;
@@ -114,15 +115,7 @@ export function NameSheet({ playlist }: { playlist?: MusicPlaylist }) {
           accessibilityLabel={tm("playlistManage.nameLabel")}
           style={[typography.body, styles.input, { color: theme.colors.text.primary, backgroundColor: theme.colors.fill.subtle, borderColor: theme.colors.border.subtle }]}
         />
-        <Pressable
-          onPress={() => void submit()}
-          disabled={!changed || busy}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !changed || busy }}
-          style={[styles.primary, { backgroundColor: theme.colors.cta.brandBg, opacity: !changed || busy ? 0.5 : 1 }]}
-        >
-          <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{playlist ? tm("playlistManage.save") : tm("playlist.create")}</Text>
-        </Pressable>
+        <OctavePlayButton label={playlist ? tm("playlistManage.save") : tm("playlist.create")} Icon={null} onPress={() => void submit()} disabled={!changed || busy} style={styles.primary} />
       </View>
     </BottomSheet>
   );
@@ -135,5 +128,5 @@ const styles = StyleSheet.create({
   danger: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, borderRadius: 12 },
   form: { paddingHorizontal: 20, paddingBottom: 24, gap: 10 },
   input: { minHeight: 48, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14 },
-  primary: { minHeight: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginTop: 6 },
+  primary: { marginTop: 6 },
 });

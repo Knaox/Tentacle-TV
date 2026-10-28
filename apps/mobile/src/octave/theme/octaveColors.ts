@@ -24,6 +24,14 @@ export interface OctaveColors {
   pressed: string;
   /** La signature : violet → rose (progression, marque, bouton Lecture). */
   gradient: readonly [string, string, string];
+  /**
+   * Le remplissage de l'action principale (« Lecture », et l'unique bouton
+   * d'appel d'une feuille) : violet → rose, celui du gros bouton du lecteur.
+   * Jamais `cta.brandBg` (le violet seul) dans Octave : `OctaveBrandFill`.
+   */
+  brandFill: readonly [string, string];
+  /** Le texte et le glyphe posés sur `brandFill`. */
+  onBrandFill: string;
   isDark: boolean;
 }
 
@@ -42,6 +50,8 @@ export function useOctaveColors(): OctaveColors {
       line: colors.border.subtle,
       pressed: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
       gradient: [colors.brand.violet, colors.brand.accent, colors.brand.accentLight] as const,
+      brandFill: [colors.brand.violet, colors.brand.accent] as const,
+      onBrandFill: colors.cta.brandFg,
       isDark,
     }),
     [colors, isDark],

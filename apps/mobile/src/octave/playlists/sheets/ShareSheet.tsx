@@ -14,6 +14,7 @@ import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { closePlaylistSheet } from "./playlistSheetStore";
+import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 export function ShareSheet({ playlist }: { playlist: MusicPlaylist }) {
   const { t } = useTranslation("musicShare");
@@ -63,10 +64,7 @@ export function ShareSheet({ playlist }: { playlist: MusicPlaylist }) {
             {link.reach === "local" ? (
               <Text style={[typography.caption, styles.warn, { color: theme.colors.statusPairs.warning.fg, backgroundColor: theme.colors.statusPairs.warning.bg }]}>{t("localOnly")}</Text>
             ) : null}
-            <Pressable onPress={() => void send(link.url)} accessibilityRole="button" style={({ pressed }) => [styles.primary, { backgroundColor: theme.colors.cta.brandBg, opacity: pressed ? 0.85 : 1 }]}>
-              <Send size={18} color={theme.colors.cta.brandFg} />
-              <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{t("shareSheet")}</Text>
-            </Pressable>
+            <OctavePlayButton label={t("shareSheet")} Icon={Send} onPress={() => void send(link.url)} />
             <Pressable onPress={revoke} disabled={share.busy !== null} accessibilityRole="button" style={({ pressed }) => [styles.secondary, { opacity: share.busy ? 0.5 : pressed ? 0.7 : 1 }]}>
               <Link2Off size={18} color={theme.colors.status.error} />
               <Text style={[typography.bodyBold, { color: theme.colors.status.error }]}>{share.busy === "revoke" ? t("revoking") : t("revoke")}</Text>
@@ -74,15 +72,7 @@ export function ShareSheet({ playlist }: { playlist: MusicPlaylist }) {
             <Text style={[typography.small, { color: theme.colors.text.tertiary, textAlign: "center" }]}>{t("revokeHint")}</Text>
           </>
         ) : !share.loading ? (
-          <Pressable
-            onPress={() => void create()}
-            disabled={share.busy !== null}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.primary, { backgroundColor: theme.colors.cta.brandBg, opacity: share.busy ? 0.5 : pressed ? 0.85 : 1 }]}
-          >
-            <Link2 size={18} color={theme.colors.cta.brandFg} />
-            <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{share.busy === "create" ? t("creating") : t("create")}</Text>
-          </Pressable>
+          <OctavePlayButton label={share.busy === "create" ? t("creating") : t("create")} Icon={Link2} onPress={() => void create()} disabled={share.busy !== null} />
         ) : null}
         {share.failed ? (
           <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: theme.colors.status.error }]}>
@@ -102,6 +92,5 @@ const styles = StyleSheet.create({
   spin: { marginVertical: 12 },
   link: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 12 },
   warn: { borderRadius: 10, padding: 10, overflow: "hidden" },
-  primary: { minHeight: 48, borderRadius: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   secondary: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
 });

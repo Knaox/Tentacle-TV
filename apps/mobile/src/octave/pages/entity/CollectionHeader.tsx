@@ -13,11 +13,12 @@ import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValu
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { Play, Shuffle } from "lucide-react-native";
+import { Shuffle } from "lucide-react-native";
 import { GlassSurface } from "@/components/ui";
 import { typography, useTheme, withAlpha } from "@/theme";
 import { Artwork } from "../ui/Artwork";
 import { usePageMetrics } from "../ui/pageStyle";
+import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 interface CollectionHeaderProps {
   kicker: string;
@@ -60,10 +61,7 @@ export const CollectionHeader = memo(function CollectionHeader(props: Collection
           </Text>
           {meta ? <View style={[styles.meta, { justifyContent: isTablet ? "flex-start" : "center" }]}>{meta}</View> : null}
           <View style={[styles.buttons, { justifyContent: isTablet ? "flex-start" : "center" }]}>
-            <Pressable onPress={onPlay} disabled={!canPlay} accessibilityRole="button" accessibilityLabel={t("common.playAll")} style={({ pressed }) => [styles.play, { backgroundColor: theme.colors.cta.brandBg, opacity: !canPlay ? 0.45 : pressed ? 0.85 : 1 }]}>
-              <Play size={18} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
-              <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{t("common.playAll")}</Text>
-            </Pressable>
+            <OctavePlayButton label={t("common.playAll")} onPress={onPlay} disabled={!canPlay} />
             <Pressable onPress={onShuffle} disabled={!canPlay} accessibilityRole="button" accessibilityLabel={t("common.shuffle")} style={{ opacity: canPlay ? 1 : 0.45 }}>
               <GlassSurface tier="subtle" tint="regular" radius={24} interactive style={styles.shuffle}>
                 <Shuffle size={18} color={theme.colors.text.primary} />
@@ -93,6 +91,5 @@ const styles = StyleSheet.create({
   textTablet: { flex: 1, minWidth: 0 },
   meta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
   buttons: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, marginBottom: 8 },
-  play: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48, paddingHorizontal: 26, borderRadius: 24 },
   shuffle: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48, paddingHorizontal: 22 },
 });

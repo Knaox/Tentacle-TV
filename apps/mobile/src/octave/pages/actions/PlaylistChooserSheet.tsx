@@ -17,6 +17,7 @@ import { typography, useTheme } from "@/theme";
 import { useMobileTrackActions } from "../env/useMobileActionsUi";
 import { Artwork } from "../ui/Artwork";
 import { accentTextOf } from "../ui/pageStyle";
+import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 
 function Chooser({ request }: { request: ChooserRequest }) {
   const { t } = useTranslation("music");
@@ -60,8 +61,9 @@ function Chooser({ request }: { request: ChooserRequest }) {
           disabled={!name.trim() || busy}
           accessibilityRole="button"
           accessibilityLabel={t("playlist.create")}
-          style={[styles.create, { backgroundColor: theme.colors.cta.brandBg, opacity: !name.trim() || busy ? 0.5 : 1 }]}
+          style={[styles.create, { opacity: !name.trim() || busy ? 0.5 : 1 }]}
         >
+          <OctaveBrandFill radius={12} />
           <Plus size={18} color={theme.colors.cta.brandFg} />
         </Pressable>
       </View>

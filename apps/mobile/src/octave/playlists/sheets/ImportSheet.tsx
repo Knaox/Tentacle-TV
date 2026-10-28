@@ -17,6 +17,7 @@ import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { showNotice, useOctavePagesProvider } from "../../pages";
 import { closePlaylistSheet } from "./playlistSheetStore";
+import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string }) {
   const { t } = useTranslation("musicImport");
@@ -103,9 +104,7 @@ export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string 
             />
             <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: toneColor }]}>{hint}</Text>
             <Text style={[typography.small, { color: theme.colors.text.tertiary }]}>{t(handle.outsideSupported ? "withOutside" : "libraryOnly")}</Text>
-            <Pressable onPress={() => void go()} disabled={!input} accessibilityRole="button" style={[styles.primary, { backgroundColor: theme.colors.cta.brandBg, opacity: input ? 1 : 0.5 }]}>
-              <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{t("start")}</Text>
-            </Pressable>
+            <OctavePlayButton label={t("start")} Icon={null} onPress={() => void go()} disabled={!input} style={styles.primary} />
           </>
         ) : running ? (
           <>
@@ -127,16 +126,12 @@ export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string 
             {state.summary.outside > 0 ? <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("outside", { count: state.summary.outside })}</Text> : null}
             {state.summary.missing.length > 0 ? <Text style={[typography.body, { color: theme.colors.text.tertiary }]}>{t("missing", { count: state.summary.missing.length })}</Text> : null}
             {state.summary.truncated ? <Text style={[typography.small, { color: theme.colors.text.tertiary }]}>{t("truncated")}</Text> : null}
-            <Pressable onPress={() => openPlaylist(state.summary!.playlistId)} accessibilityRole="button" style={[styles.primary, { backgroundColor: theme.colors.cta.brandBg }]}>
-              <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{t("open")}</Text>
-            </Pressable>
+            <OctavePlayButton label={t("open")} Icon={null} onPress={() => openPlaylist(state.summary!.playlistId)} style={styles.primary} />
           </>
         ) : (
           <>
             <Text style={[typography.body, { color: theme.colors.status.error }]}>{t(`failure.${state.failure ?? "network"}`)}</Text>
-            <Pressable onPress={reset} accessibilityRole="button" style={[styles.primary, { backgroundColor: theme.colors.cta.brandBg }]}>
-              <Text style={[typography.bodyBold, { color: theme.colors.cta.brandFg }]}>{t("retry")}</Text>
-            </Pressable>
+            <OctavePlayButton label={t("retry")} Icon={null} onPress={reset} style={styles.primary} />
           </>
         )}
       </View>
@@ -148,7 +143,7 @@ const styles = StyleSheet.create({
   title: { paddingHorizontal: 20, paddingBottom: 8 },
   body: { paddingHorizontal: 20, paddingBottom: 28, gap: 12 },
   field: { minHeight: 96, maxHeight: 200, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 12, textAlignVertical: "top" },
-  primary: { minHeight: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginTop: 4 },
+  primary: { marginTop: 4 },
   secondary: { minHeight: 44, alignItems: "center", justifyContent: "center" },
   track: { height: 6, borderRadius: 3, overflow: "hidden" },
   bar: { height: 6, borderRadius: 3 },

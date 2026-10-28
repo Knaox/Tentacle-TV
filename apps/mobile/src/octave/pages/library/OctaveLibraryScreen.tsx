@@ -1,6 +1,6 @@
 /**
  * Octave mobile — la BIBLIOTHÈQUE, comme le bureau : Albums (triables, le tri
- * retenu sur l'appareil), Artistes, Playlists, par onglets (dans l'adresse,
+ * retenu sur l'appareil), Artistes, Playlists, par puces (dans l'adresse,
  * `?tab=`), en grilles virtualisées qui chargent la page suivante à l'approche
  * du bas. En tête, l'accès aux Titres likés. Téléphone : 2 colonnes (3 pour
  * les artistes) ; tablette : autant que la largeur en tient.
@@ -25,7 +25,8 @@ import { AlbumCard, ArtistCard, PlaylistCard } from "../ui/Cards";
 import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
-import { LibraryTabs, SortChips } from "./LibraryTabs";
+import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
+import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -37,7 +38,8 @@ function LikedEntry() {
   const nav = useOctaveNav();
   return (
     <Pressable onPress={nav.liked} accessibilityRole="button" style={({ pressed }) => [styles.liked, { backgroundColor: pressed ? theme.colors.fill.soft : theme.colors.fill.faint }]}>
-      <View style={[styles.likedIcon, { backgroundColor: theme.colors.cta.brandBg }]}>
+      <View style={styles.likedIcon}>
+        <OctaveBrandFill radius={10} />
         <Heart size={20} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
       </View>
       <Text style={[typography.bodyBold, { color: theme.colors.text.primary, flex: 1 }]}>{t("liked.title")}</Text>
@@ -86,12 +88,14 @@ export function OctaveLibraryScreen() {
 
   const header = (
     <View style={{ paddingHorizontal: gutter, gap: 16, paddingBottom: 12 }}>
-      <Text accessibilityRole="header" style={[typography.hero, { color: theme.colors.text.primary }]}>
-        {t("library.title")}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text accessibilityRole="header" style={[typography.hero, styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
+          {t("library.title")}
+        </Text>
+        {tab === "albums" ? <LibrarySortControl sort={sort} onSort={setSort} /> : null}
+      </View>
       <LikedEntry />
-      <LibraryTabs value={tab} onChange={setTab} />
-      {tab === "albums" ? <SortChips value={sort} onChange={setSort} /> : null}
+      <LibraryFilterBar tab={tab} onTab={setTab} />
     </View>
   );
   const empty = pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
@@ -127,6 +131,8 @@ export function OctaveLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  title: { flex: 1, minWidth: 0 },
   liked: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, borderRadius: 14, paddingHorizontal: 12 },
   likedIcon: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 });
