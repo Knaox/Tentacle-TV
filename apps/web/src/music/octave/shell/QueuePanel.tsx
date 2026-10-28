@@ -1,6 +1,8 @@
 /**
- * Octave — la file d'attente : le titre en cours, puis ce qui suit (dans
- * l'ordre réel de lecture, aléatoire compris). Chaque entrée se lit, monte,
+ * Octave — « À suivre » : le titre en cours, puis les DEUX files dans l'ordre
+ * réel de lecture — la file d'attente de l'utilisateur (« Lire ensuite »,
+ * « Ajouter à la file d'attente »), puis la suite du contexte (« Suite de
+ * l'album »…), règle partagée `queueFiles.ts`. Chaque entrée se lit, monte,
  * descend ou se retire au clavier comme à la souris — jamais un glisser seul.
  * Le panneau n'est MONTÉ qu'ouvert (rien à composer fermé) ; c'est un îlot
  * d'encre prune, le titre en cours en rose.
@@ -9,7 +11,7 @@
 import { memo, useMemo } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { type QueueItem, upcoming, queueActions } from "@tentacle-tv/shared/octave";
+import { type QueueItem, queueActions, queueContextTitleKey, queueSections } from "@tentacle-tv/shared/octave";
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { TrackMenu } from "../components/TrackMenu";
@@ -96,22 +98,58 @@ function QueueEntry({ item, index, count, current, actions, selection }: { item:
 
 const sectionTitle = "px-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.14em]";
 
+/** Une des deux files : son titre (et son geste), puis ses entrées ; les déplacements restent dans SA file. */
+function QueueSection({ title, items, actions, selection, action }: {
+  title: string;
+  items: readonly QueueItem[];
+  actions: TrackActions;
+  selection: { selected: ReadonlySet<string>; selecting: boolean; onSelect: (uid: string, gesture: SelectGesture) => void };
+  action?: { label: string; aria: string; run: () => void };
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section className="pt-5">
+      <div className="flex items-center justify-between pr-1">
+        <h3 className={`${sectionTitle} text-content-quaternary`}>{title}</h3>
+        {action && (
+          <button type="button" onClick={action.run} aria-label={action.aria} className="-mt-1.5 cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold text-octave-accent-text transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+            {action.label}
+          </button>
+        )}
+      </div>
+      <ul className="flex flex-col gap-0.5">
+        {items.map((item, i) => (
+          <QueueEntry
+            key={item.uid}
+            item={item}
+            index={i}
+            count={items.length}
+            current={false}
+            actions={actions}
+            selection={{ selected: selection.selected.has(item.uid), selecting: selection.selecting, onSelect: selection.onSelect }}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const queue = usePlayerSelector((s) => s.queue);
-  const current = queue.items[queue.cursor] ?? null;
-  const next = useMemo(() => upcoming(queue), [queue]);
+  const { current, userQueue, contextQueue } = useMemo(() => queueSections(queue), [queue]);
+  const next = useMemo(() => [...userQueue, ...contextQueue], [userQueue, contextQueue]);
   const actions = useTrackActions();
-  // La sélection multiple de « À suivre » : les gestes groupés, et « Retirer de la file ».
+  // La sélection multiple de « À suivre » (les deux files) : les gestes groupés, et « Retirer de la file ».
   const order = useMemo(() => next.map((i) => i.uid), [next]);
   const selection = useListSelection(order);
   const chosen = orderedKeys(order, selection.selected);
-  const { select } = selection;
+  const sectionSelection = { selected: selection.selected, selecting: selection.selecting, onSelect: selection.select };
   return (
     <aside aria-label={t("queue.title")} className="flex h-full flex-col">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
-        <h2 className="oc-heading text-lg text-content-primary">{t("queue.title")}</h2>
+        <h2 className="oc-heading text-lg text-content-primary">{t("queue.upNext")}</h2>
         <button type="button" onClick={onClose} aria-label={t("queue.close")} className={small}>
           <X className="h-4 w-4" aria-hidden />
         </button>
@@ -125,24 +163,15 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
             </ul>
           </>
         )}
-        <h3 className={`${sectionTitle} pt-5 text-content-quaternary`}>{t("queue.upNext")}</h3>
-        {next.length === 0 ? (
-          <p className="px-2 text-sm text-content-tertiary">{t("queue.empty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-0.5">
-            {next.map((item, i) => (
-              <QueueEntry
-                key={item.uid}
-                item={item}
-                index={i}
-                count={next.length}
-                current={false}
-                actions={actions}
-                selection={{ selected: selection.selected.has(item.uid), selecting: selection.selecting, onSelect: select }}
-              />
-            ))}
-          </ul>
-        )}
+        <QueueSection
+          title={t("queue.userQueue")}
+          items={userQueue}
+          actions={actions}
+          selection={sectionSelection}
+          action={{ label: t("queue.clear"), aria: t("queue.clearLabel"), run: () => queueActions.clearUserQueue(player) }}
+        />
+        <QueueSection title={t(queueContextTitleKey(queue.contextId))} items={contextQueue} actions={actions} selection={sectionSelection} />
+        {next.length === 0 && <p className="px-2 pt-5 text-sm text-content-tertiary">{t("queue.empty")}</p>}
       </div>
       {selection.selecting && (
         <SelectionBar
