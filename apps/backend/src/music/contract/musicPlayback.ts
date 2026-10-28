@@ -45,9 +45,10 @@ export interface PlaybackSource {
   /**
    * La copie GARDÉE HORS LIGNE de ce titre par ce compte (bureau, capacité `offline.music`) : le moteur natif la lit
    * depuis le disque (la coquille la cherche elle-même) et ne reprend `url` que si elle manque. Jamais posé par le
-   * serveur ni par une extension ; un moteur qui ne le connaît pas lit `url`.
+   * serveur ni par une extension ; un moteur qui ne le connaît pas lit `url`. Sur le MOBILE, `localUri` (`file://…`)
+   * désigne le fichier gardé : le moteur y vit dans le même processus que la base, rien à chercher.
    */
-  kept?: { userId: string };
+  kept?: { userId: string; localUri?: string };
 }
 
 export type ReplayGainMode = "off" | "track" | "album" | "auto";
@@ -61,7 +62,7 @@ export interface AudioOutputDevice {
 
 /** Ce que CE moteur sait faire — l'interface n'affiche que ce qui est vrai. */
 export interface AudioEngineCapabilities {
-  engine: "mpv" | "html";
+  engine: "mpv" | "html" | "media3";
   gapless: boolean;
   exclusiveOutput: boolean;
   replayGain: boolean;
@@ -95,7 +96,12 @@ export type EngineEvent =
   | { type: "advanced"; fromKey: string | null; toKey: string | null }
   /** Le moteur a besoin de la source d'un titre (préchargement du suivant, expiration). */
   | { type: "needSource"; trackKey: string }
-  | { type: "swapped"; trackKey: string; origin: PlaybackSource["origin"] };
+  | { type: "swapped"; trackKey: string; origin: PlaybackSource["origin"] }
+  /**
+   * Une commande du SYSTÈME (écran verrouillé, notification média, casque, appel) : le lecteur l'applique comme
+   * un geste — l'intention « lecture » et la file sont les siennes. Un moteur sans contrôles système n'en émet pas.
+   */
+  | { type: "remote"; command: "play" | "pause" | "next" | "previous" };
 
 /**
  * Le moteur ne connaît que des titres et des sources : la FILE (ordre,

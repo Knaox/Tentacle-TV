@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
+import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useExternalPlaylist } from "../data/useExternalPlaylist";
@@ -51,6 +52,7 @@ export function ExternalPlaylistView() {
             {data.owner && <span className="font-semibold text-content-primary">{data.owner}</span>}
             {data.owner && <Dot />}
             <span>{meta}</span>
+            <KeptSizeMeta kind="playlist" collectionKey={id} tracks={tracks} />
           </>
         }
         canPlay={tracks.length > 0}

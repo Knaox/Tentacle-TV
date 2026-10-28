@@ -58,8 +58,9 @@ export function OctaveDeviceScreen({ params }: OctaveScreenProps) {
   const openKey = params.c ?? null;
   const openCollection = useCallback((key: string) => router.push(`${octavePaths.device}?c=${encodeURIComponent(key)}` as Href), [router]);
   const model = useMemo(
-    () => deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: offline }),
-    [kept.tracks, kept.collections, offline],
+    // `resolve` : un titre renommé depuis qu'il a été gardé reste à sa place dans sa playlist (comme le bureau).
+    () => deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }),
+    [kept.tracks, kept.collections, kept.byKey, offline],
   );
   const open: DeviceCollection | null = model.collections.find((c) => c.key === openKey) ?? null;
   const tracks = open?.tracks ?? model.tracks;

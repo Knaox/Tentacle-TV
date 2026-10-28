@@ -20,3 +20,8 @@ export * from "./syncInputs";
 export * from "./autoSync";
 export * from "./offlinePlayback";
 export * from "./keptSearch";
+export * from "./keptStorage";
+export * from "./keptPlaylistArt";
+export * from "./keptPlaylistRows";
+export * from "./offlineSwitchRule";
+export * from "./coverPlan";

@@ -42,6 +42,8 @@ export class OctavePlayer {
   readonly engineKeys = new Map<string, string>();
   /** L'entrée préchargée comme « suivante » dans le moteur. */
   nextUid: string | null = null;
+  /** … et sa source est la copie gardée : l'enchaînement sans blanc le dira (`fromDevice`). */
+  nextFromDevice = false;
   /** Une session quittée, REPRISE en pause (`octaveResume.ts`) : rien de chargé, « Lecture » la démarre à cette position. */
   restoredAtMs: number | null = null;
   /** Le suivant attend que le courant SONNE : préchargé plus tôt, il disputait au courant l'ouverture (mpv, mesuré). */
@@ -93,6 +95,7 @@ export class OctavePlayer {
       durationMs: item.track.durationMs,
       format: item.track.format,
       origin: null,
+      fromDevice: false,
       error: null,
       notice: null,
     });
@@ -116,7 +119,12 @@ export class OctavePlayer {
 
   private launch(item: QueueItem, source: Parameters<AudioEnginePort["play"]>[1], startMs: number): void {
     this.engineKeys.set(item.uid, item.track.key);
-    this.snapshot.update({ origin: source.origin, format: source.format ?? item.track.format, durationMs: source.durationMs ?? item.track.durationMs });
+    this.snapshot.update({
+      origin: source.origin,
+      fromDevice: source.kept !== undefined,
+      format: source.format ?? item.track.format,
+      durationMs: source.durationMs ?? item.track.durationMs,
+    });
     this.deps.engine.play(item.track, source, startMs);
     if (!this.snapshot.get().wantsPlay) this.deps.engine.pause();
     this.nextAfterStart = true;
@@ -151,6 +159,7 @@ export class OctavePlayer {
     const hand = (source: Parameters<AudioEnginePort["setNext"]>[1]) => {
       if (token !== this.playToken || !source) return;
       this.nextUid = next.uid;
+      this.nextFromDevice = source.kept !== undefined;
       this.engineKeys.set(next.uid, next.track.key);
       this.deps.engine.setNext(next.track, source);
     };
@@ -219,7 +228,7 @@ export class OctavePlayer {
     this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
     this.deps.engine.stop();
     this.nextUid = null;
-    this.snapshot.update({ current: null, wantsPlay: false, phase: "idle", origin: null, error: null, notice: null });
+    this.snapshot.update({ current: null, wantsPlay: false, phase: "idle", origin: null, fromDevice: false, error: null, notice: null });
     this.position.set(INITIAL_POSITION);
   }
 
@@ -291,7 +300,7 @@ export class OctavePlayer {
     this.deps.reporter.stopped(this.position.get().durationMs ?? this.position.get().positionMs, this.position.get().durationMs);
     this.engineKeys.set(item.uid, toKey);
     this.playToken += 1;
-    this.snapshot.update({ queue: moved, current: item.track, phase: "playing", durationMs: item.track.durationMs, format: item.track.format, error: null });
+    this.snapshot.update({ queue: moved, current: item.track, phase: "playing", durationMs: item.track.durationMs, format: item.track.format, fromDevice: this.nextFromDevice, error: null });
     this.position.set({ positionMs: 0, durationMs: item.track.durationMs, running: true });
     this.nextUid = null;
     this.scheduleNext();

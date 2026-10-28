@@ -20,6 +20,21 @@ export interface KeptSummary {
 
 const NONE: KeptSummary = { phase: "none", done: 0, total: 0, fraction: 0 };
 
+/**
+ * Ce que la marque d'un titre en cours dit (28/10 : « en début de transfert », puis « gardé » d'un coup) :
+ * `waiting` en file ; `preparing` le serveur le prépare, aucun octet encore (`KeptMusicTrack.preparing`) ;
+ * `transferring` ses octets arrivent, la fraction avance.
+ */
+export type KeptStage = "none" | "waiting" | "preparing" | "transferring" | "complete" | "failed";
+
+export function trackStage(kept: KeptMusicTrack | null | undefined): KeptStage {
+  const phase = trackPhase(kept);
+  if (phase !== "progress") return phase;
+  const live = kept?.status === "downloading" || (kept?.status === "paused" && !kept.pausedByUser);
+  if (kept?.preparing && live) return "preparing";
+  return kept?.status === "downloading" ? "transferring" : "waiting";
+}
+
 /** Un titre seul. */
 export function trackPhase(kept: KeptMusicTrack | null | undefined): KeptPhase {
   if (!kept || kept.status === "canceled") return "none";
@@ -28,7 +43,7 @@ export function trackPhase(kept: KeptMusicTrack | null | undefined): KeptPhase {
   return "progress";
 }
 
-function trackFraction(kept: KeptMusicTrack): number {
+export function trackFraction(kept: KeptMusicTrack): number {
   if (kept.status === "complete") return 1;
   if (kept.expectedSize !== null && kept.expectedSize > 0) return Math.min(1, kept.bytesDone / kept.expectedSize);
   return 0;
@@ -54,6 +69,19 @@ export function collectionSummary(keys: readonly string[], byKey: ReadonlyMap<st
   const fraction = kept.reduce((sum, k) => sum + trackFraction(k), 0) / kept.length;
   const phase: KeptPhase = running ? "progress" : failed ? "failed" : done === kept.length ? "complete" : "progress";
   return { phase, done, total: kept.length, fraction };
+}
+
+/**
+ * Où en est un lot (une playlist entière) : combien de ses titres attendent, se préparent, arrivent. L'en-tête
+ * peut le dire à côté de « 12 sur 189 ».
+ */
+export function collectionStages(keys: readonly string[], byKey: ReadonlyMap<string, KeptMusicTrack>): Record<"waiting" | "preparing" | "transferring", number> {
+  const out = { waiting: 0, preparing: 0, transferring: 0 };
+  for (const key of keys) {
+    const stage = trackStage(byKey.get(key));
+    if (stage === "waiting" || stage === "preparing" || stage === "transferring") out[stage] += 1;
+  }
+  return out;
 }
 
 /** La place occupée par ce que le compte a gardé (octets complets ou reçus). */

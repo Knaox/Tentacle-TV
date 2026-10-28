@@ -42,7 +42,7 @@ describe("searchKept", () => {
   });
 
   it("les albums et playlists gardés par leur nom", () => {
-    const collection = { key: "playlist:jf:p", kind: "playlist" as const, title: "Nuit d'été", subtitle: null, artworkUrl: null, tracks: [] };
+    const collection = { key: "playlist:jf:p", kind: "playlist" as const, title: "Nuit d'été", subtitle: null, artworkUrl: null, tracks: [], keys: [] };
     expect(searchKept([], [collection], "nuit ete").collections).toEqual([collection]);
   });
 });

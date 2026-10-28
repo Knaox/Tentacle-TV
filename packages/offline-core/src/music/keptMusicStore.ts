@@ -50,6 +50,7 @@ export const EMPTY_KEPT_MUSIC: KeptMusicState = { loaded: false, userId: null, t
 /** Ce qu'une rangée montre d'un titre gardé : inchangé, l'objet d'avant est gardé (la rangée ne se redessine pas). */
 function sameShown(a: KeptMusicTrack, b: KeptMusicTrack): boolean {
   return a.fileId === b.fileId && a.status === b.status && a.bytesDone === b.bytesDone && a.expectedSize === b.expectedSize
+    && a.preparing === b.preparing
     && a.errorCode === b.errorCode && a.pausedByUser === b.pausedByUser && a.coverRel === b.coverRel;
 }
 
@@ -128,7 +129,8 @@ export function createKeptMusicStore(port: KeptMusicPort): KeptMusicStore {
     if (index < 0 || state.userId === null) return;
     const tracks = [...state.tracks];
     const current = tracks[index]!;
-    tracks[index] = { ...current, status: "downloading", bytesDone, expectedSize: expectedSize ?? current.expectedSize };
+    // Des octets arrivent : la préparation est finie.
+    tracks[index] = { ...current, status: "downloading", preparing: false, bytesDone, expectedSize: expectedSize ?? current.expectedSize };
     publish(withTracks(state.userId, tracks, state.collections));
   };
 

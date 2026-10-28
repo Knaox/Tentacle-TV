@@ -10,17 +10,20 @@
  *    sobres (`--lg-content-*`), jamais du verre ;
  *  - jamais de verre sur du verre : une rangée de menu est une pastille
  *    INSÉRÉE (`--lg-row-*`), concentrique à sa surface ;
- *  - la teinte est une emphase : la sélection d'un menu est l'accent UNI de la
- *    marque (glyphes blancs), celle d'une barre latérale un remplissage NEUTRE
- *    (l'icône à l'accent) ;
+ *  - la teinte est une emphase, jamais un aplat : la rangée survolée d'un menu
+ *    est une pastille NEUTRE et translucide au ton du verre (le texte garde sa
+ *    couleur — 28/10, la pastille violette pleine jugée « vraiment moche »),
+ *    la sélection d'une barre latérale un remplissage NEUTRE (l'icône à
+ *    l'accent) ;
  *  - un grand verre a UN ton, tenu (`data-lg-tone` + `data-lg-scale="surface"`) :
  *    les jetons qui vivent DANS un verre (rangées, séparateurs, intitulés)
  *    suivent son ton, en bas du fichier.
  *
  * ── CATALOGUE ─────────────────────────────────────────────────────────────
  *  - rangées      --lg-surface-radius, --lg-row-inset, --lg-row-radius
- *                 (= rayon de la surface − marge), --lg-row-highlight,
- *                 --lg-row-highlight-glyph
+ *                 (= rayon de la surface − marge), --lg-row-highlight
+ *                 (suit le ton ; --lg-row-highlight-on-{dark|light} recopiés
+ *                 de `surfaceMaterial.ts`, qui prouve le texte dessus)
  *  - structure    --lg-separator, --lg-section-label
  *  - barre lat.   --lg-sidebar-selection, --lg-sidebar-selection-glyph
  *  - ombre        --lg-surface-shadow (une surface qui flotte : profonde, douce)
@@ -38,9 +41,11 @@
   --lg-surface-radius: var(--lg-radius-md);
   --lg-row-inset: 5px;
   --lg-row-radius: calc(var(--lg-surface-radius) - var(--lg-row-inset));
-  /* L'accent UNI de la marque, un cran profond : blanc dessus ≥ 5,7:1. */
-  --lg-row-highlight: var(--brand-dark);
-  --lg-row-highlight-glyph: #FFFFFF;
+  /* La pastille NEUTRE d'une rangée, au ton du verre (plus bas) : le texte
+   * principal y tient ≥ 4,5:1 sur tout dessous (`surfaceMaterial.ts`). */
+  --lg-row-highlight-on-dark: rgba(255, 255, 255, 0.14);
+  --lg-row-highlight-on-light: rgba(0, 0, 0, 0.09);
+  --lg-row-highlight: var(--lg-row-highlight-on-dark);
 
   /* ── Le matériau ÉPAIS d'une surface (règle 3) ──────────────────────
    * Givre et diffusion forts, dessous jamais avivé (saturation ≤ 1 : plus de
@@ -90,7 +95,7 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-row-highlight: var(--brand);
+  --lg-row-highlight: var(--lg-row-highlight-on-light);
   --lg-separator: rgba(0, 0, 0, 0.1);
   --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
@@ -111,12 +116,14 @@
 
 /* ── Les jetons qui vivent DANS un verre suivent SON ton, pas le thème ──── */
 :root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-row-highlight: var(--lg-row-highlight-on-dark);
   --lg-separator: rgba(255, 255, 255, 0.12);
   --lg-section-label: var(--lg-surface-glyph-on-dark-secondary);
   --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-row-highlight: var(--lg-row-highlight-on-light);
   --lg-separator: rgba(0, 0, 0, 0.1);
   --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);

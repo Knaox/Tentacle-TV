@@ -13,6 +13,7 @@ import { MAX_TILE_BYTES } from "./fetcher";
 import { saveBytes } from "./meta";
 import { isPublicArtUrl, isServerPath } from "./musicKeep";
 import { mediaFileExists } from "./paths";
+import { PREPARE_PHASE } from "./preparePhase";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
 import { FILE_COLS, mapFileRow, type DownloadStatus, type DownloadVariant } from "./store";
 
@@ -30,6 +31,8 @@ export interface KeptMusicTrack {
   pausedByUser: boolean;
   bytesDone: number;
   expectedSize: number | null;
+  /** Le serveur le prépare encore (aucun octet n'est parti) — `preparePhase.ts`. Absent : non (la liste le dit toujours). */
+  preparing?: boolean;
   title: string;
   artist: string | null;
   album: string | null;
@@ -84,6 +87,7 @@ function mapKept(row: Row): KeptMusicTrack {
     pausedByUser: flag(row, "paused_by_user"),
     bytesDone: file.bytesDone,
     expectedSize: file.expectedSize,
+    preparing: file.phase === PREPARE_PHASE,
     title: text(row, "title"),
     artist: textOrNull(row, "artist"),
     album: textOrNull(row, "album"),

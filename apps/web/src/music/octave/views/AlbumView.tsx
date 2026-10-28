@@ -17,6 +17,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
+import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useAlbumEntity } from "../data/useEntityQueries";
@@ -110,6 +111,7 @@ export function AlbumView() {
                 </span>
               </>
             )}
+            {!preview && <KeptSizeMeta kind="album" collectionKey={data.key} tracks={tracks} />}
           </>
         }
         canPlay={tracks.length > 0}

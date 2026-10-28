@@ -22,7 +22,7 @@ import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
-import { Artwork } from "../components/Artwork";
+import { PlaylistArtwork, playlistCoverUrls } from "../components/PlaylistArtwork";
 import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
 import { OctaveWordmark } from "./OctaveWordmark";
@@ -134,7 +134,7 @@ function RailPlaylist({ playlist }: { playlist: MusicPlaylist }) {
   return (
     <div className="group/rail relative">
       <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${playlist.editable ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
-        <Artwork url={playlist.artworkUrl} className="h-9 w-9" />
+        <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="sm" thumb className="h-9 w-9" />
         <span className="truncate">{playlist.name}</span>
       </NavLink>
       <div className={`absolute right-1 top-1/2 -translate-y-1/2 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/rail:opacity-100"}`}>

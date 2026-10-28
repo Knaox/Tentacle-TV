@@ -27,7 +27,7 @@ export const DeviceSummary = memo(function DeviceSummary({ summary, free, offlin
   return (
     <View style={styles.wrap}>
       {summary !== null && <Text style={[styles.summary, { color: colors.textSecondary }]}>{summary}</Text>}
-      {free !== null && <Text style={[styles.free, { color: colors.textTertiary }]}>{t("view.free", { size: free })}</Text>}
+      {free !== null && <Text style={[styles.free, { color: colors.textTertiary }]}>{t("view.freeOnDevice", { size: free })}</Text>}
       {offline && (
         <View accessibilityRole="text" style={[styles.hint, { backgroundColor: colors.pressed }]}>
           <Feather name="wifi-off" size={16} color={colors.textSecondary} />

@@ -29,6 +29,8 @@ export interface PlayerSnapshot {
   /** Le format réellement décodé si le moteur l'a dit, sinon celui du titre. */
   format: MusicAudioFormat | null;
   origin: PlaybackSource["origin"] | null;
+  /** La source en cours est la copie GARDÉE sur cet appareil (`PlaybackSource.kept`) : le lecteur le dit. */
+  fromDevice: boolean;
   error: PlayerErrorKind | null;
   /** « Lecture dans un instant… » : l'extension a dit « réessaie plus tard » (`sourceRetry.ts`). */
   notice: "retrySoon" | null;
@@ -44,6 +46,7 @@ export const INITIAL_SNAPSHOT: PlayerSnapshot = {
   muted: false,
   format: null,
   origin: null,
+  fromDevice: false,
   error: null,
   notice: null,
 };

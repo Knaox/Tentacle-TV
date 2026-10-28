@@ -23,6 +23,19 @@ export function createStreamDriver(
   };
 }
 
+/**
+ * Le total attendu d'après la réponse : la fin de `Content-Range` d'un 206,
+ * sinon `Content-Length` plus ce qui est déjà sur le disque. `null` quand le
+ * serveur ne le dit pas (un transcodage tiré en direct).
+ */
+export function announcedTotal(status: number, header: (name: string) => string | null, from: number): number | null {
+  const range = status === 206 ? /\/(\d+)\s*$/.exec(header("content-range") ?? "") : null;
+  if (range) return Number(range[1]);
+  const length = header("content-length");
+  const value = length === null ? NaN : Number(length);
+  return Number.isSafeInteger(value) && value > 0 ? from + value : null;
+}
+
 async function download(
   net: TransferNet,
   writer: PartWriter,
@@ -51,6 +64,11 @@ async function download(
     total = 0;
     mode = "truncate";
   }
+  // Le total, dès les en-têtes (contrat de `TransferRequest.onTotal`) : sans lui,
+  // un fichier dont la taille n'était pas connue d'avance (un titre d'une
+  // extension) gardait une barre vide jusqu'au bout (28/10).
+  const announced = announcedTotal(stream.status, stream.header, total);
+  if (announced !== null) request.onTotal?.(announced);
 
   const fh = await writer.open(request.partPath, mode).catch(() => null);
   if (fh === null) return { kind: "failed", cause: "io", bytesKnown: total };

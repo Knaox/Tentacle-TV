@@ -58,7 +58,8 @@ const PLAY_PROPS = {
   fallbackStyle: { boxShadow: "var(--oc-shadow-play)" },
 } as const;
 
-const SHUFFLE_PROPS = {
+/** La capsule SECONDAIRE de l'en-tête (« Aléatoire ») : un geste de plus dans `extra` la reprend. */
+export const SECONDARY_CAPSULE_PROPS = {
   appearance: { material: "pane", level: "regular", shape: "capsule" },
   className: "flex h-12 items-center gap-2 px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-40",
   fallbackClassName:
@@ -98,7 +99,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
           <Play className="h-5 w-5" fill="currentColor" aria-hidden />
           <span className="relative">{t("common.playAll")}</span>
         </PressableGlass>
-        <PressableGlass {...SHUFFLE_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onShuffle}>
+        <PressableGlass {...SECONDARY_CAPSULE_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onShuffle}>
           <Shuffle className="h-4 w-4" aria-hidden />
           <span className="relative">{t("common.shuffle")}</span>
         </PressableGlass>

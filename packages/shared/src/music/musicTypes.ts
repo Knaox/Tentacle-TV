@@ -162,7 +162,13 @@ export interface MusicPlaylist {
   name: string;
   trackCount: number;
   durationMs: number | null;
+  /** L'image `Primary` de Jellyfin : celle qu'on a posée à la main, ou son collage automatique. */
   artworkUrl: string | null;
+  /**
+   * La jaquette composée par Tentacle (serveur 1.40.0, `musicMosaic.ts`) : 1 ou 4 pochettes d'albums différents,
+   * qui tournent chaque jour. Absente : `artworkUrl` (une image posée à la main, ou un serveur d'avant).
+   */
+  mosaic?: string[];
   /** Le compte peut-il la modifier (propriétaire ou partage en écriture) ? */
   editable: boolean;
   /** La description (Jellyfin `Overview`), rendue par le détail d'une playlist (`music.playlistManage`) ; `null` : aucune. */

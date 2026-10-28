@@ -37,6 +37,7 @@ export const THUMB_ARTWORK_SIZE = 128;
  * (https) reste telle quelle : la taille est une règle de NOTRE route.
  */
 export function sizedArtworkUrl(url: string, size: number): string {
-  if (/^https?:\/\//i.test(url) || /[?&]size=/.test(url)) return url;
+  // Un autre hôte, une image gardée sur l'appareil (`tentacle://local`, `blob:`) : telle quelle.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url) || /[?&]size=/.test(url)) return url;
   return `${url}${url.includes("?") ? "&" : "?"}size=${size}`;
 }

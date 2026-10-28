@@ -10,12 +10,10 @@ import { AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
-import { canKeepTrack } from "@tentacle-tv/offline-core/music";
-import { trackPhase } from "@tentacle-tv/offline-core/music";
+import { canKeepTrack, trackPhase, holdKey } from "@tentacle-tv/offline-core/music";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptTrack } from "./useKeptMusic";
-import { holdKey } from "@tentacle-tv/offline-core/music";
 
 interface KeepMenuItemProps {
   track: MusicTrack;

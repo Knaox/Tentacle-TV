@@ -7,17 +7,21 @@
  *     ne fait rien de plus (aucun geste accidentel) ;
  *   - gardé (glyphe plein, ton de réussite) ou en défaut : le clic retire,
  *     réessaie, ou garde les titres qui manquent (retirés un à un, ajoutés à la
- *     playlist depuis), dans un petit menu (le retrait n'est jamais au premier clic).
+ *     playlist depuis), dans un petit menu (le retrait n'est jamais au premier clic) —
+ *     qui dit la place prise, et celle que le retrait rendra (les titres qu'un
+ *     autre album ou une autre playlist retient restent).
  * Rien sans le droit, rien sur le web.
  */
 
 import { useMemo, useRef, useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
-import { canKeepTrack, collectionSummary, ownCopies } from "@tentacle-tv/offline-core/music";
+import { formatBytes } from "../../../downloads/presets";
+import { canKeepTrack, collectionSummary, ownCopies, bytesOnDisk, collectionBytes } from "@tentacle-tv/offline-core/music";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { ProgressRing } from "./ProgressRing";
 import { useKeepGestures } from "./useKeepGestures";
@@ -106,7 +110,9 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
           // L'îlot d'encre opaque des menus d'Octave (IDENTITE.md) : jamais de verre sur du verre.
           style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)" }}
         >
-          <p className="px-3 py-2 text-xs text-content-tertiary">{t("keptCount", { count: summary.done })}</p>
+          <p className="px-3 py-2 text-xs tabular-nums text-content-tertiary">
+            {t("keptCount", { count: summary.done })} · {formatBytes(collectionBytes(keys, kept.byKey))}
+          </p>
           {missing.length > 0 && (
             <button type="button" role="menuitem" className={ITEM} onClick={() => (setOpen(false), void gestures.keep(missing, collection))}>
               <DownloadGlyph done={false} className="h-4 w-4 text-content-tertiary" />
@@ -120,11 +126,20 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
             </button>
           )}
           <button type="button" role="menuitem" className={`${ITEM} text-status-error-fg`} onClick={() => (setOpen(false), void gestures.remove(ownKept(), collection.key))}>
-            <Trash2 className="h-4 w-4" aria-hidden />
+            <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
             {t(kind === "album" ? "removeAlbum" : "removePlaylist")}
+            <FreedSize copies={ownKept()} />
           </button>
         </FloatingLayer>
       )}
     </>
   );
+}
+
+/** Ce que le retrait rend au disque : les copies que rien d'autre ne retient. Rien s'il ne rend rien. */
+function FreedSize({ copies }: { copies: readonly KeptMusicTrack[] }) {
+  const { t } = useTranslation("musicOffline");
+  const bytes = bytesOnDisk(copies);
+  if (bytes === 0) return null;
+  return <span className="ml-auto pl-2 text-xs tabular-nums text-content-tertiary">{t("size.frees", { size: formatBytes(bytes) })}</span>;
 }

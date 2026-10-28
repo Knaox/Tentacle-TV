@@ -10,7 +10,7 @@ import { memo } from "react";
 import { AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
-import { trackPhase } from "@tentacle-tv/offline-core/music";
+import { trackFraction, trackStage } from "@tentacle-tv/offline-core/music";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { useKeptTrack } from "./useKeptMusic";
 import { ProgressRing } from "./ProgressRing";
@@ -24,9 +24,9 @@ export const KeptMark = memo(function KeptMark({ trackKey }: { trackKey: string 
 function KeptMarkFor({ trackKey }: { trackKey: string }) {
   const { t } = useTranslation("musicOffline");
   const kept = useKeptTrack(trackKey);
-  const phase = trackPhase(kept);
-  if (phase === "none" || !kept) return null;
-  if (phase === "complete") {
+  const stage = trackStage(kept);
+  if (stage === "none" || !kept) return null;
+  if (stage === "complete") {
     return (
       <span className="inline-flex shrink-0 items-center text-status-success-fg" title={t("onDevice")}>
         <DownloadGlyph done className="h-3.5 w-3.5" />
@@ -34,7 +34,7 @@ function KeptMarkFor({ trackKey }: { trackKey: string }) {
       </span>
     );
   }
-  if (phase === "failed") {
+  if (stage === "failed") {
     return (
       <span className="inline-flex shrink-0 items-center text-status-error-fg" title={t("failed")}>
         <AlertCircle className="h-3.5 w-3.5" aria-hidden />
@@ -42,11 +42,14 @@ function KeptMarkFor({ trackKey }: { trackKey: string }) {
       </span>
     );
   }
-  const fraction = kept.expectedSize ? kept.bytesDone / kept.expectedSize : 0;
+  // Trois attentes distinctes, jamais la couleur seule : la forme de l'anneau et un mot.
+  const fraction = trackFraction(kept);
+  const label =
+    stage === "preparing" ? t("preparing") : stage === "waiting" ? t("waiting") : t("transferring", { percent: Math.round(fraction * 100) });
   return (
-    <span className="inline-flex shrink-0 items-center text-octave-accent-text" title={t("inProgress")}>
-      <ProgressRing fraction={fraction} size={14} />
-      <span className="sr-only">{t("inProgress")}</span>
+    <span className="inline-flex shrink-0 items-center text-octave-accent-text" title={label}>
+      <ProgressRing fraction={fraction} size={14} mode={stage === "transferring" ? "progress" : stage} />
+      <span className="sr-only">{label}</span>
     </span>
   );
 }

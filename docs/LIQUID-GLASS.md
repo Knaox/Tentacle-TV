@@ -352,7 +352,7 @@ déclarés SOUS la porte, sombre et clair — son en-tête tient le catalogue :
 
 | Famille | Jetons |
 |---------|--------|
-| Rangées (menus) | `--lg-surface-radius`, `--lg-row-inset`, `--lg-row-radius` (= rayon de la surface − marge : concentrique), `--lg-row-highlight` (l'accent UNI, jamais le dégradé), `--lg-row-highlight-glyph` |
+| Rangées (menus) | `--lg-surface-radius`, `--lg-row-inset`, `--lg-row-radius` (= rayon de la surface − marge : concentrique), `--lg-row-highlight` (la pastille NEUTRE au ton du verre ; `-on-dark` blanc 0,14, `-on-light` noir 0,09, prouvés dans `surfaceMaterial.ts`) |
 | Structure | `--lg-separator`, `--lg-section-label` — suivent le TON du verre qui les porte |
 | Barre latérale | `--lg-sidebar-selection` (neutre translucide), `--lg-sidebar-selection-glyph` (l'icône à l'accent) |
 | Contenu (jamais du verre) | `--lg-content-fill` · `-hover`, `--lg-content-stroke` : remplissages sobres et opaques |
@@ -853,8 +853,14 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   éditeur de la barre, filtres et tri, menus contextuels, notifications, Watch
   Together, hors ligne, palette ⌘K, sélecteur de pays. UNE plaque par menu ;
   dedans, jamais un verre de plus : marge de 5 px (`--lg-row-inset`), survol
-  et focus clavier en PASTILLE insérée à l'accent UNI (`--lg-row-highlight`,
-  blanc ≥ 5,7:1 — jamais une barre bord à bord ni le dégradé de marque), rayon
+  et focus clavier en PASTILLE insérée NEUTRE et translucide, au ton du verre
+  (`--lg-row-highlight` : blanc 0,14 sur un verre sombre, noir 0,09 sur un
+  clair, comme un menu du Mac en accent graphite ; le texte garde sa couleur,
+  ses secondaires montent au principal — ≥ 4,5:1 au pire dessous —, la marque
+  reste en touches : coche, icône active ; la pastille violette PLEINE d'avant
+  était « vraiment moche », Damien, 28/10 — jamais une barre bord à bord ni un
+  aplat d'accent ; le segment choisi d'une feuille, `.lg-choice-tile`, est
+  soulevé et neutre comme `.lg-seg`), rayon
   de la rangée = rayon du panneau − marge (calculé sur le panneau qui la porte :
   un popover large a `--lg-radius-lg`), en-têtes discrets
   (`--lg-section-label`, sans capitales), filets fins (`--lg-separator`),

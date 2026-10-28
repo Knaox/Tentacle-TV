@@ -29,6 +29,9 @@ export function offlinePlayableQueue(tracks: readonly MusicTrack[], index: numbe
 
 export function useKeptSearch(query: string): KeptSearchResult {
   const kept = useKeptMusic();
-  const model = useMemo(() => deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: true }), [kept.tracks, kept.collections]);
+  const model = useMemo(
+    () => deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: true, resolve: (key) => kept.byKey.get(key) }),
+    [kept.tracks, kept.collections, kept.byKey],
+  );
   return useMemo(() => searchKept(model.tracks, model.collections, query), [model, query]);
 }

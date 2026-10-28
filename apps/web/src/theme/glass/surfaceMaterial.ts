@@ -26,6 +26,9 @@ export interface SurfaceToneMaterial {
   glyph: Rgba;
   glyphSecondary: Rgba;
   danger: Rgba;
+  /** La pastille d'une rangée survolée ou active (`--lg-row-highlight-on-*`) :
+   * NEUTRE et translucide, au ton du verre — le texte y garde sa couleur. */
+  rowHighlight: Rgba;
 }
 
 export interface SurfaceMaterial {
@@ -58,6 +61,9 @@ export const SURFACE_MATERIAL: SurfaceMaterial = {
     // Un corail plus clair que celui des contrôles (#FFB4AB) : sur le pire
     // dessous (blanc), le corail d'un contrôle tombait à 4,26:1.
     danger: rgba(255, 196, 188),
+    // Le blanc à 0,14 : plus marqué que la page courante (0,1), et le texte
+    // principal y tient ≥ 4,5:1 même sur un dessous blanc pur.
+    rowHighlight: rgba(255, 255, 255, 0.14),
   },
   // Ton clair : glyphes sombres, tenus même posés sur un noir pur.
   light: {
@@ -66,6 +72,8 @@ export const SURFACE_MATERIAL: SurfaceMaterial = {
     glyph: rgba(12, 12, 18, 0.88),
     glyphSecondary: rgba(12, 12, 18, 0.72),
     danger: rgba(110, 11, 16),
+    // Le noir à 0,09 : plus marqué que la page courante (0,07).
+    rowHighlight: rgba(0, 0, 0, 0.09),
   },
 };
 
@@ -154,4 +162,24 @@ export function chromaTransfer(backdrop: Rgba, tone: BackdropTone, material: Sur
   const before = spread(backdrop);
   if (before === 0) return 0;
   return spread(surfaceColorOver(backdrop, tone, material, 0)) / before;
+}
+
+/**
+ * Le PIRE contraste d'un texte posé sur la pastille d'une rangée (surface du
+ * ton, puis `rowHighlight` par-dessus), sur tous les dessous.
+ */
+export function worstRowHighlightContrast(
+  text: Rgba,
+  tone: BackdropTone,
+  material: SurfaceMaterial = SURFACE_MATERIAL,
+  backdrops: Rgba[] = backdropGrid(),
+): number {
+  let worst = Infinity;
+  for (const backdrop of backdrops) {
+    for (const sheenAt of [0, 1]) {
+      const pill = compositeOver(material[tone].rowHighlight, surfaceColorOver(backdrop, tone, material, sheenAt));
+      worst = Math.min(worst, contrastRatio(compositeOver(text, pill), pill));
+    }
+  }
+  return worst;
 }

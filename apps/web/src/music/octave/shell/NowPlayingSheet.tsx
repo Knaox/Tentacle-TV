@@ -1,6 +1,6 @@
 /**
  * Octave — le lecteur « en cours » : grande pochette, surtitre rose, titre,
- * artistes, qualité, progression, transport (et volume, fenêtre large). Ouvert
+ * artistes, qualité (et d'où il lit), progression, transport (et volume, fenêtre large). Ouvert
  * par la pochette du dock (bureau) ou le mini-lecteur (téléphone) ; deux
  * colonnes en fenêtre large, une pile au téléphone.
  *
@@ -20,6 +20,7 @@ import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { HeartButton } from "../components/HeartButton";
+import { FromDeviceMark } from "../offline/FromDeviceMark";
 import { TrackMenu } from "../components/TrackMenu";
 import { AlbumLink, ArtistLinks } from "../components/TrackLinks";
 import { QuickAddButton } from "../components/QuickAddButton";
@@ -138,6 +139,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
           <div className="flex flex-wrap items-center gap-2">
             <AvailabilityMark availability={track.availability} variant="chip" showLibrary />
             <FormatBadge format={format} />
+            <FromDeviceMark variant="chip" />
           </div>
           <SeekBar />
           <Transport size="lg" />
