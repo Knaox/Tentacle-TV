@@ -27,7 +27,8 @@ export function useMusicOfflineSurface(provider: MusicProvider | null): MusicOff
   const rights = useQuery({
     queryKey: musicRightsKey(provider?.pluginId ?? null),
     queryFn: ({ signal }) => fetchMusicRights(provider!, signal),
-    enabled: capability && online && !profileSession && rightsPath !== null,
+    // Ni requête sans le droit du compte : `keepOffline` refusé ou session de profil → rien n'est demandé.
+    enabled: capability && online && !profileSession && keepRight !== "refused" && rightsPath !== null,
     staleTime: 60_000,
   });
   const hasContent = kept.tracks.length > 0;
