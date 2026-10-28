@@ -140,3 +140,20 @@ export function releaseFileCounts(job: Pick<ReleaseImportJob, "files"> | null): 
   }
   return out;
 }
+
+/** Une sortie importée en route vers la bibliothèque Jellyfin : la page la relit à ce rythme, tant qu'elle est ouverte. */
+export const RELEASE_LIBRARY_POLL_MS = 20_000;
+
+/**
+ * Le passage d'une sortie IMPORTÉE dans la bibliothèque Jellyfin (le serveur la dépose dans un dossier que
+ * Jellyfin voit, la fait scanner, puis l'album porte son `jellyfinId`) :
+ * - `library` : elle y est — la page cède la place à l'album de la bibliothèque (même album, navigation remplacée) ;
+ * - `onTheWay` : des titres sont en route (`availability: "pending"`) — la page se relit, le marqueur « en attente »
+ *   du lot mo3 le dit, rien de plus ;
+ * - `none` : rien de tel (dossier non réglé, extension d'avant) — la sortie reste lisible comme « Importé ».
+ */
+export function importedLibraryState(album: Pick<MusicAlbum, "imported" | "jellyfinId" | "tracks"> | null | undefined): { kind: "library"; jellyfinId: string } | { kind: "onTheWay" } | { kind: "none" } {
+  if (!album?.imported) return { kind: "none" };
+  if (album.jellyfinId) return { kind: "library", jellyfinId: album.jellyfinId };
+  return (album.tracks ?? []).some((t) => t.availability === "pending") ? { kind: "onTheWay" } : { kind: "none" };
+}

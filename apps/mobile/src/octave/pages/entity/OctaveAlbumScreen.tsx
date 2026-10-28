@@ -30,6 +30,7 @@ import { AlbumNotes } from "./AlbumNotes";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { ImportedAlbumMeta } from "../../releases/ImportedAlbumMeta";
+import { useImportedLibraryFollow } from "../../releases/useImportedLibraryFollow";
 import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
@@ -60,6 +61,8 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
   useEffect(() => {
     if (ownership.libraryAlbumId) router.replace(octavePaths.album(ownership.libraryAlbumId) as never);
   }, [ownership.libraryAlbumId, router]);
+  // Une sortie importée entrée dans la bibliothèque Jellyfin : sa page à elle ; en route : relue (useImportedLibraryFollow).
+  useImportedLibraryFollow(album.data, album.refetch);
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = [];
     tracks.forEach((track, index) => {

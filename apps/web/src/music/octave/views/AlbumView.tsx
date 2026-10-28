@@ -31,6 +31,8 @@ import { useRecordVisit } from "../search/recentVisits";
 import { AlbumNotes } from "./AlbumNotes";
 import { ImportedAlbumMeta } from "../releases/ImportedAlbumMeta";
 import { ImportedCover } from "../releases/ImportedCover";
+import { useImportedLibraryWatch } from "../releases/useImportedLibraryWatch";
+import { importedLibraryState } from "@tentacle-tv/api-client";
 
 // Les règles de la page (qualité, ordre des disques, date longue) sont partagées avec le mobile.
 export { bestFormat, longReleaseDate } from "@tentacle-tv/shared/octave";
@@ -48,6 +50,8 @@ export function AlbumView() {
   const meta = useCountAndDuration(album.data?.trackCount ?? tracks.length, album.data?.durationMs ?? tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const format = useMemo(() => bestFormat(tracks), [tracks]);
   const contextId = `album:${id}`;
+  const library = importedLibraryState(album.data);
+  useImportedLibraryWatch(library.kind === "onTheWay", album.refetch);
 
   if (album.isPending) {
     return (
@@ -61,6 +65,8 @@ export function AlbumView() {
   }
   if (album.isError || !album.data) return <ErrorState onRetry={() => void album.refetch()} message={t("album.notFound")} />;
   if (ownership.libraryAlbumId) return <Navigate replace to={octavePaths.album(ownership.libraryAlbumId)} />;
+  // Une sortie importée entrée dans la bibliothèque Jellyfin : la page cède la place à la sienne, sans entrée d'historique.
+  if (library.kind === "library") return <Navigate replace to={octavePaths.album(library.jellyfinId)} />;
   const data = album.data;
   const elsewhere = data.jellyfinId === null;
   // L'aperçu de la carte : l'en-tête tout de suite, à sa place définitive ; les titres (et leur compte) à la réponse
