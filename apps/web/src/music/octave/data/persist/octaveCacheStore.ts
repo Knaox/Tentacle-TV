@@ -5,14 +5,10 @@
  * base bloquée) rend un stockage VIDE : Octave marche alors comme avant.
  */
 
-import type { StoredEntry } from "./octaveCachePolicy";
+import type { OctaveCacheBackend, StoredEntry } from "@tentacle-tv/api-client";
 
-export interface OctaveCacheBackend {
-  /** Toutes les entrées (tous comptes : la politique trie). */
-  loadAll(): Promise<StoredEntry[]>;
-  put(entries: readonly StoredEntry[]): Promise<void>;
-  remove(ids: readonly string[]): Promise<void>;
-}
+// Le port et la version en mémoire sont communs au mobile (`@tentacle-tv/api-client`, `octaveCache/`).
+export { memoryBackend, type OctaveCacheBackend } from "@tentacle-tv/api-client";
 
 /** Noms traversés par le navigateur de l'utilisateur : ne jamais les renommer (son cache y vit). */
 const DB_NAME = "tentacle_octave_cache";
@@ -80,21 +76,6 @@ export function indexedDbBackend(factory: IDBFactory | undefined = globalThis.in
       } catch {
         /* Rien à faire : l'éviction recommencera au prochain montage. */
       }
-    },
-  };
-}
-
-/** Pour les tests (et un navigateur sans IndexedDB : rien n'y survit au rechargement). */
-export function memoryBackend(initial: readonly StoredEntry[] = []): OctaveCacheBackend & { entries: Map<string, StoredEntry> } {
-  const entries = new Map(initial.map((e) => [e.id, structuredClone(e)]));
-  return {
-    entries,
-    loadAll: async () => [...entries.values()].map((e) => structuredClone(e)),
-    put: async (list) => {
-      for (const e of list) entries.set(e.id, structuredClone(e));
-    },
-    remove: async (ids) => {
-      for (const id of ids) entries.delete(id);
     },
   };
 }

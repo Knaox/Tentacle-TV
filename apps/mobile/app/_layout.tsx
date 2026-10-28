@@ -37,6 +37,9 @@ import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
 import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
 import { markBoot } from "@/bootIntro/bootTimeline";
+import { octaveLaunchDecision } from "@/octave/launch/octaveLaunch";
+import { configureOctaveMode } from "@/octave/mode/octaveModeStore";
+import { useTentacleHeld } from "@/octave/launch/tentacleHold";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -79,6 +82,9 @@ export default function RootLayout() {
       // l'app vit dans l'écran du poulpe.
       await bootDecision();
       configureBootIntroSettings(storage);
+      // Le lancement en Octave est décidé avec l'ouverture (même lecture du disque, déjà finie).
+      await octaveLaunchDecision();
+      configureOctaveMode(storage);
 
       if (!mounted) return;
 
@@ -158,6 +164,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
   const surface = theme.colors.surface.s0;
   // Ce qui s'ouvre en MODALE au lancement sort de l'écran du poulpe : il attend l'arrivée de l'ouverture.
   const introLanded = useBootIntroLanded();
+  // Lancement en Octave : les recouvrements de démarrage de Tentacle attendent qu'on quitte la musique.
+  const tentacleHeld = useTentacleHeld();
   const screenOptions = useMemo(() => ({
     headerShown: false,
     gestureEnabled: true,
@@ -180,6 +188,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
+            {/* Octave, le mode musique : sa propre coquille (onglets, barre latérale, mini-lecteur). */}
+            <Stack.Screen name="octave" options={{ animation: "fade", gestureEnabled: false }} />
             <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
             <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
             <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
@@ -226,7 +236,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le
             lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
             lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
-        {serverUrl && !showLoading && introLanded ? <FamilyInvitationHost /> : null}
+        {serverUrl && !showLoading && introLanded && !tentacleHeld ? <FamilyInvitationHost /> : null}
         {/* « Qui regarde ? » et son code, puis le premier lancement du profil (code PIN, accueil, photo) :
             montés PENDANT l'ouverture — nés pendant elle, ils se rendent dans l'écran du poulpe
             (`BootAwareModal`), et c'est dans eux que la caméra plonge, jamais dans l'accueil qu'ils cachent. */}
@@ -235,9 +245,9 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         {serverUrl && !showLoading ? <RightsLiveHost /> : null}
         {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
             (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
-        {serverUrl && !showLoading && introLanded ? <AvatarInviteHost /> : null}
+        {serverUrl && !showLoading && introLanded && !tentacleHeld ? <AvatarInviteHost /> : null}
         {/* « Action recommandée : posez votre code PIN » : après l'invitation aux avatars. */}
-        {serverUrl && !showLoading && introLanded ? <FamilyPinStartupHost /> : null}
+        {serverUrl && !showLoading && introLanded && !tentacleHeld ? <FamilyPinStartupHost /> : null}
         {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
         <SessionMessageHost />
         {/* Compte désactivé ou hors de ses heures : la page remplace l'app, lecteur fermé. */}
