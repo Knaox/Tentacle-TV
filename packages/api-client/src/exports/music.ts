@@ -31,6 +31,10 @@ export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music
 export { useWholeLiked } from "../music/lists/useWholeLiked";
 // Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, useMusicShareLinkImport, playlistShareShown, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
+// Octave — l'import de sorties hors catalogue (point `releases` du contrat music : lien Bandcamp, fichiers).
+export { useReleaseImport, useImportedReleases, releaseSourcesOf, releasePortFor, importedReleasesKey, releaseImportState, subscribeReleaseImport, type ReleaseImportHandle } from "../music/releases/useReleaseImport";
+export { runReleaseFiles, runReleaseLink, RELEASE_RETRY_DELAYS_MS, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePhase, type ReleasePort } from "../music/releases/releaseFlow";
+export { ReleaseRequestError, toReleaseError } from "../music/releases/releaseRequests";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";

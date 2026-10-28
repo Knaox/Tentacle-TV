@@ -61,7 +61,8 @@ export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): 
     ...clientFetchAnnounceHeaders(apiPath),
     ...(init?.headers as Record<string, string>),
   };
-  if (init?.body) headers["Content-Type"] = "application/json";
+  // Un corps BRUT (morceau d'un fichier) dit son propre type ; tout autre corps est du JSON.
+  if (init?.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
   const res = await fetch(`${_backendRoot}${apiPath}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
