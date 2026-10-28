@@ -10,7 +10,7 @@
 import { useSyncExternalStore } from "react";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { OCTAVE_MODE_KEY } from "@tentacle-tv/shared/octave/mode";
-import { octaveLaunch } from "../launch/octaveLaunch";
+import { markOctaveReached, octaveLaunch } from "../launch/octaveLaunch";
 
 let storage: StorageAdapter | null = null;
 let current = false;
@@ -34,6 +34,8 @@ export function isOctaveMode(): boolean {
 }
 
 export function setOctaveMode(on: boolean): void {
+  // Quitter Octave tranche la redirection du lancement : Tentacle ne renvoie plus jamais dans la musique.
+  if (!on) markOctaveReached();
   if (on === current) return;
   current = on;
   persist(on);

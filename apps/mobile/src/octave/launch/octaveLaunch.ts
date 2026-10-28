@@ -9,16 +9,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { preloadOctaveCache } from "@tentacle-tv/api-client";
 import "../cache/sqliteOctaveCache";
+import { useSyncExternalStore } from "react";
+import { launchRedirectOf, launchRedirectPending, NO_LAUNCH_REDIRECT, settleLaunchRedirect, takeLaunchRedirect, type LaunchRedirect } from "./launchRedirect";
 import { NOT_IN_OCTAVE, OCTAVE_LAUNCH_READ_KEYS, decideMobileOctaveLaunch, type MobileOctaveLaunch } from "./octaveLaunchRules";
 
 let decided: MobileOctaveLaunch | null = null;
 let decision: Promise<MobileOctaveLaunch> | null = null;
-let decidedAt = 0;
-/** La coquille d'Octave est montée (ou Tentacle a pris la main) : la redirection du lancement ne vaut plus. */
-let reached = false;
+/** La redirection du lancement (`launchRedirect.ts`) : un seul départ, puis tranchée. */
+let redirect: LaunchRedirect = NO_LAUNCH_REDIRECT;
+const redirectListeners = new Set<() => void>();
 
-/** Au-delà, la redirection du lancement ne vaut plus (lien profond ouvert ailleurs, puis retour aux films). */
-export const OCTAVE_REDIRECT_WINDOW_MS = 10_000;
+function setRedirect(next: LaunchRedirect): void {
+  if (next === redirect) return;
+  redirect = next;
+  for (const listener of redirectListeners) listener();
+}
 
 async function decide(): Promise<MobileOctaveLaunch> {
   try {
@@ -33,7 +38,7 @@ async function decide(): Promise<MobileOctaveLaunch> {
 export function octaveLaunchDecision(): Promise<MobileOctaveLaunch> {
   decision ??= decide().then((launch) => {
     decided = launch;
-    decidedAt = Date.now();
+    setRedirect(launchRedirectOf(launch.inOctave, launch.path));
     if (launch.inOctave) void preloadOctaveCache();
     return launch;
   });
@@ -48,16 +53,30 @@ export function octaveLaunch(): MobileOctaveLaunch {
 }
 
 /**
- * La page où arriver au lancement en Octave : la première coquille de Tentacle
- * montée y renvoie au lieu de se peindre. Elle vaut jusqu'à ce qu'Octave soit
- * atteint (`markOctaveReached`) — jamais consommée par une simple lecture : le
- * mode strict de React rejoue les initialisations.
+ * La page où arriver au lancement en Octave, UNE fois (`OctaveLaunchRedirect`,
+ * racine) ; null ensuite, ou si l'app s'est ouverte ailleurs (`atEntry` faux).
  */
-export function pendingOctaveLaunchRedirect(now: number = Date.now()): string | null {
-  if (reached || !decided?.inOctave || !decided.path) return null;
-  return now - decidedAt <= OCTAVE_REDIRECT_WINDOW_MS ? decided.path : null;
+export function takeOctaveLaunchRedirect(atEntry: boolean): string | null {
+  const { next, go } = takeLaunchRedirect(redirect, atEntry);
+  setRedirect(next);
+  return go;
 }
 
+/** Octave atteint (sa coquille montée) ou quitté : la redirection du lancement est tranchée pour de bon. */
 export function markOctaveReached(): void {
-  reached = true;
+  setRedirect(settleLaunchRedirect(redirect));
+}
+
+function subscribeRedirect(listener: () => void): () => void {
+  redirectListeners.add(listener);
+  return () => {
+    redirectListeners.delete(listener);
+  };
+}
+
+const redirectPending = (): boolean => launchRedirectPending(redirect);
+
+/** La coquille de Tentacle attend la redirection du lancement (ne rien peindre, ne rien demander). */
+export function useOctaveLaunchRedirectPending(): boolean {
+  return useSyncExternalStore(subscribeRedirect, redirectPending, redirectPending);
 }

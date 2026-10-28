@@ -19,8 +19,11 @@ export default function OctaveLayout() {
   const colors = useOctaveColors();
   const screenOptions = useMemo(() => ({ headerShown: false, contentStyle: { backgroundColor: colors.ink } }), [colors.ink]);
   return (
-    <OctaveGate>
-      <OctaveCacheGate>
+    // Le cache d'abord : sa restauration synchrone (lancement en Octave) se fait avant qu'aucun
+    // observateur ne soit monté — jamais un état mis à jour pendant le rendu d'un autre composant —,
+    // et la porte lit aussitôt le statut gardé.
+    <OctaveCacheGate>
+      <OctaveGate>
         <OctaveShell>
           <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
             <Stack.Screen name="index" options={TAB_ROOT} />
@@ -28,7 +31,7 @@ export default function OctaveLayout() {
             <Stack.Screen name="library" options={TAB_ROOT} />
           </Stack>
         </OctaveShell>
-      </OctaveCacheGate>
-    </OctaveGate>
+      </OctaveGate>
+    </OctaveCacheGate>
   );
 }

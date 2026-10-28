@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Redirect, Tabs, type Href } from "expo-router";
+import { Tabs } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -16,7 +16,7 @@ import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
-import { pendingOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
+import { useOctaveLaunchRedirectPending } from "@/octave/launch/octaveLaunch";
 
 /**
  * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
@@ -32,12 +32,14 @@ import { pendingOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
  * extensions n'ont rien à montrer sans serveur.
  *
  * Lancement en Octave (l'app quittée en mode musique) : la coquille de
- * Tentacle ne se peint pas, elle renvoie UNE fois à la page d'Octave gardée —
- * ni accueil des films, ni ses requêtes, avant la musique.
+ * Tentacle ne se peint pas tant que la redirection du lancement (partie de la
+ * racine, une fois : `OctaveLaunchRedirect`) n'est pas tranchée — ni accueil
+ * des films, ni ses requêtes, avant la musique. Jamais un `<Redirect>` ici :
+ * expo-router le relancerait à chaque rendu.
  */
 export default function TabsLayout() {
-  const [octavePath] = useState(() => pendingOctaveLaunchRedirect());
-  if (octavePath) return <Redirect href={octavePath as Href} />;
+  const theme = useTheme();
+  if (useOctaveLaunchRedirectPending()) return <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }} />;
   return <TentacleTabs />;
 }
 
