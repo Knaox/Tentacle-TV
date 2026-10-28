@@ -21,6 +21,13 @@ export const AMBIENT_ARTWORK_SIZE = 160;
 export const AMBIENT_BLUR = 24;
 /** Le fondu croisé d'un titre à l'autre (ms) : le temps d'une respiration. */
 export const AMBIENT_CROSSFADE_MS = 900;
+/**
+ * Le délai (ms) avant de monter la disposition d'un nouveau titre : la pochette balayée a fini de sortir et
+ * d'entrer (~170 + ~300 ms). Monter des vues pendant le geste lui volait des images.
+ */
+export const AMBIENT_SCENE_DELAY_MS = 450;
+/** Le côté (pt) auquel les dégradés du fond sont dessinés avant d'être agrandis (`RasterGradient`). */
+export const AMBIENT_GRADIENT_RASTER = 64;
 
 export interface AmbientLayer {
   /** Opacité du calque (le premier est plein : il couvre l'écran). */
