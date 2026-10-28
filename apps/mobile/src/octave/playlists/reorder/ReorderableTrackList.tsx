@@ -100,7 +100,7 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         handle={canDrag ? handlers(index) : undefined}
         onStep={step}
         onRemove={onRemove ? remove : undefined}
-        swipeable={!editing}
+        editing={editing}
       />
     ),
     [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, play, remove, step, tracks],

@@ -55,7 +55,8 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
   const canEdit = !loading && natural.length > 0 && (order.reorder !== null || onRemove !== undefined);
   const [editRequested, setEditing] = useState(false);
   const editing = canEdit && editRequested;
-  const editHint = editing ? tl(onRemove ? "editHint" : "reorderHint") : null;
+  // Ordre bloqué (recherche, filtre, tri) : pas de poignée, la barre dit seule pourquoi.
+  const editHint = editing && block === null ? tl(onRemove ? "editHint" : "reorderHint") : null;
 
   const header = (
     <View>
