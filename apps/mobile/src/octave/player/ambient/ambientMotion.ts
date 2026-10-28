@@ -2,9 +2,9 @@
  * Octave (mobile) — les règles PURES du fond vivant du lecteur plein écran (`ambientMotion.test.ts`).
  *
  * Le fond, ce sont les COULEURS DE LA POCHETTE : la pochette elle-même, réduite (une vignette suffit) et
- * floutée une fois au décodage, posée en trois grands calques qui couvrent l'écran (jamais un bord visible,
- * même tournés) et dérivent lentement les uns sur les autres — les teintes se mélangent comme chez Apple
- * Music —, plus une touche du dégradé de la marque. Rien que des transformations : la couleur ne se calcule
+ * floutée une fois au décodage, posée en deux grands calques qui couvrent l'écran (jamais un bord visible,
+ * même tournés) et dérivent lentement ; par-dessus, des TACHES de couleur, chacune tirée d'une autre région de
+ * la pochette (`ambientBlobs`), qui battent au tempo (`ambientBeat`), plus une touche du dégradé de la marque. Rien que des transformations : la couleur ne se calcule
  * jamais à chaque image.
  *
  * Une seule horloge (secondes, bouclée sur `AMBIENT_CYCLE_S`) ; chaque période DIVISE le cycle, donc le
@@ -67,12 +67,13 @@ function period(seed: number, salt: number): number {
   return PERIODS[Math.floor(pick(seed, salt) * PERIODS.length) % PERIODS.length];
 }
 
-/** Les trois calques de la pochette, du fond vers le dessus. */
+/** Les deux calques de la pochette entière, du fond vers le dessus. */
 export function ambientLayers(seed: number): AmbientLayer[] {
   const base = [
     { opacity: 1, scale: 1.05, scaleSwing: 0.06, driftX: 0.06, driftY: 0.05, rotate: 14, mirrored: false },
-    { opacity: 0.6, scale: 1.25, scaleSwing: 0.1, driftX: 0.14, driftY: 0.1, rotate: -26, mirrored: true },
-    { opacity: 0.42, scale: 1.4, scaleSwing: 0.12, driftX: 0.18, driftY: 0.16, rotate: 34, mirrored: false },
+    // Un seul calque par-dessus, léger : trois calques pleins se moyennaient en UNE teinte boueuse (retour du
+    // 28/10) ; la variété des couleurs vient des taches (`ambientBlobs`), chacune d'une région de la pochette.
+    { opacity: 0.35, scale: 1.25, scaleSwing: 0.1, driftX: 0.14, driftY: 0.1, rotate: -26, mirrored: true },
   ];
   return base.map((layer, i) => ({
     ...layer,
@@ -142,8 +143,8 @@ export function ambientShouldRun(input: AmbientRunInput): boolean {
 }
 
 /** La vignette de la pochette pour le fond (`?size=` du serveur) ; une image d'un autre hôte ou de l'appareil, telle quelle. */
-export function ambientArtworkUrl(url: string | null | undefined): string | null {
+export function ambientArtworkUrl(url: string | null | undefined, size: number = AMBIENT_ARTWORK_SIZE): string | null {
   if (!url) return null;
   if (/^[a-z][a-z0-9+.-]*:/i.test(url) || /[?&]size=/.test(url)) return url;
-  return `${url}${url.includes("?") ? "&" : "?"}size=${AMBIENT_ARTWORK_SIZE}`;
+  return `${url}${url.includes("?") ? "&" : "?"}size=${size}`;
 }

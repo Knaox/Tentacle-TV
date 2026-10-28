@@ -60,7 +60,7 @@ describe("fond vivant du lecteur", () => {
     const a = ambientLayers(ambientSeed("/api/music/album/1/art"));
     const b = ambientLayers(ambientSeed("/api/music/album/2/art"));
     expect(a.map((l) => [l.driftPeriod, l.rotatePeriod, l.phase])).not.toEqual(b.map((l) => [l.driftPeriod, l.rotatePeriod, l.phase]));
-    expect(ambientLayers(ambientSeed(null))).toHaveLength(3);
+    expect(ambientLayers(ambientSeed(null))).toHaveLength(2);
   });
 
   it("lit une vignette du serveur, jamais l'image d'un autre hôte retouchée", () => {

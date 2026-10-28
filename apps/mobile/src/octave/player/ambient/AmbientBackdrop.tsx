@@ -1,7 +1,8 @@
 /**
  * Octave (mobile) — le FOND VIVANT du lecteur plein écran : les couleurs de la pochette en grands calques
- * floutés qui dérivent lentement (`ambientMotion`), une touche du dégradé de la marque, puis le voile d'encre
- * qui garde le texte lisible. Au changement de titre, la nouvelle disposition arrive en FONDU CROISÉ, par-dessus
+ * floutés qui dérivent lentement (`ambientMotion`), une touche du dégradé de la marque, des taches de couleur
+ * tirées chacune d'une région de la pochette qui battent au tempo du titre (`AmbientBlobs`, `ambientBeat`), puis
+ * le voile d'encre qui garde le texte lisible. Au changement de titre, la nouvelle disposition arrive en FONDU CROISÉ, par-dessus
  * l'ancienne restée pleine, une fois sa vignette décodée (jamais un passage par le noir).
  *
  * Coût : la vignette est floutée une fois au décodage ; à chaque image, seules des transformations changent,
@@ -22,6 +23,10 @@ import { usePlayerSelector } from "../OctavePlayerContext";
 import { useArtworkUri } from "../PlayerArtwork";
 import { useOctaveColors } from "../../theme/octaveColors";
 import { useAppActive } from "./useAppActive";
+import { AmbientBlobs } from "./AmbientBlobLayer";
+import { BLOB_ARTWORK_SIZE } from "./ambientBlobs";
+import { trackTempo } from "./ambientBeat";
+import { useBeatClock, type BeatClock } from "./useBeatClock";
 import {
   AMBIENT_BLUR, AMBIENT_BRAND_TINT, AMBIENT_CROSSFADE_MS, AMBIENT_CYCLE_S, ambientArtworkUrl, ambientLayers, ambientSeed,
   ambientShouldRun, layerSide, layerTransform, type AmbientLayer,
@@ -51,6 +56,8 @@ function useAmbientClock(running: boolean): SharedValue<number> {
 interface Scene {
   id: number;
   uri: string | null;
+  /** La vignette des taches (plus petite) : du même titre que `uri`. */
+  blobUri: string | null;
 }
 
 /** Au plus tant de dispositions montées à la fois (des « Suivant » en rafale) : les plus anciennes partent. */
@@ -65,26 +72,31 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ open }: { open: b
   const playing = usePlayerSelector((s) => s.wantsPlay);
   const url = usePlayerSelector((s) => s.current?.artworkUrl ?? null);
   const uri = useArtworkUri(ambientArtworkUrl(url));
-  const clock = useAmbientClock(ambientShouldRun({ open, appActive, playing, reduceMotion }));
+  const blobUri = useArtworkUri(ambientArtworkUrl(url, BLOB_ARTWORK_SIZE));
+  const running = ambientShouldRun({ open, appActive, playing, reduceMotion });
+  const clock = useAmbientClock(running);
+  // Le battement : la position de lecture, au tempo du titre (`ambientBeat` dit pourquoi pas le son).
+  const beat = useBeatClock(running);
+  const bpm = trackTempo(usePlayerSelector((s) => s.current?.key ?? null));
   // Les dispositions empilées : la nouvelle arrive PAR-DESSUS l'ancienne, qui reste pleine dessous jusqu'à
   // ce que la nouvelle soit entière — jamais un passage par le noir.
-  const [scenes, setScenes] = useState<Scene[]>(() => [{ id: 0, uri }]);
+  const [scenes, setScenes] = useState<Scene[]>(() => [{ id: 0, uri, blobUri }]);
   useEffect(() => {
     setScenes((prev) => {
       const last = prev[prev.length - 1];
       if (last && last.uri === uri) return prev;
-      return [...prev, { id: (last?.id ?? 0) + 1, uri }].slice(-MAX_SCENES);
+      return [...prev, { id: (last?.id ?? 0) + 1, uri, blobUri }].slice(-MAX_SCENES);
     });
-  }, [uri]);
+  }, [uri, blobUri]);
   const onShown = useCallback((id: number) => setScenes((prev) => prev.filter((scene) => scene.id >= id)), []);
 
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.ink }]} pointerEvents="none">
       {scenes.map((scene, i) => (
-        <AmbientScene key={scene.id} scene={scene} clock={clock} first={i === 0 && scene.id === 0} onShown={onShown} />
+        <AmbientScene key={scene.id} scene={scene} clock={clock} beat={beat} bpm={bpm} first={i === 0 && scene.id === 0} onShown={onShown} />
       ))}
       <LinearGradient
-        colors={[withAlpha(colors.ink, 0.28, colors.ink), withAlpha(colors.ink, 0.55, colors.ink), withAlpha(colors.ink, 0.9, colors.ink)]}
+        colors={[withAlpha(colors.ink, 0.2, colors.ink), withAlpha(colors.ink, 0.45, colors.ink), withAlpha(colors.ink, 0.88, colors.ink)]}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -96,7 +108,16 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ open }: { open: b
  * Une disposition : pleine d'emblée à l'ouverture du lecteur (`first`), sinon invisible jusqu'à ce que sa
  * vignette soit décodée, puis un fondu vers le plein ; entière, elle congédie celles d'en dessous.
  */
-const AmbientScene = memo(function AmbientScene({ scene, clock, first, onShown }: { scene: Scene; clock: SharedValue<number>; first: boolean; onShown: (id: number) => void }) {
+interface SceneProps {
+  scene: Scene;
+  clock: SharedValue<number>;
+  beat: BeatClock;
+  bpm: number;
+  first: boolean;
+  onShown: (id: number) => void;
+}
+
+const AmbientScene = memo(function AmbientScene({ scene, clock, beat, bpm, first, onShown }: SceneProps) {
   const opacity = useSharedValue(first ? 1 : 0);
   const started = useRef(first);
   const reveal = useCallback(() => {
@@ -119,6 +140,7 @@ const AmbientScene = memo(function AmbientScene({ scene, clock, first, onShown }
   return (
     <Animated.View style={[StyleSheet.absoluteFill, style]}>
       <AmbientLayers uri={scene.uri} clock={clock} imageTransition={first ? 250 : 0} onLoad={reveal} />
+      {scene.blobUri !== null ? <AmbientBlobs uri={scene.blobUri} seedKey={scene.uri} clock={clock} beat={beat} bpm={bpm} /> : null}
     </Animated.View>
   );
 });
