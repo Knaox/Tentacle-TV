@@ -170,6 +170,7 @@ export default {
   album: {
     disc: "Disc {{number}}",
     notFound: "This album can't be found.",
+    notes: "About this album",
     kind: {
       album: "Album",
       single: "Single",

@@ -13,14 +13,18 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 ## [1.40.0]
 <!-- Pas encore publié : la 1.40 est en aperçu restreint (serveur de développement privé, testeurs autorisés). Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Rien sur les extensions ni sur leur source de musique. -->
 ### FR
-- **Octave, le mode musique de Tentacle** : le serveur sert la musique de votre bibliothèque aux applications — albums, artistes, playlists, titres aimés, recherche —, et les applications de bureau et web l'ouvrent dans leur nouveau mode musique
+- **Octave, le mode musique de Tentacle** : le serveur sert la musique de votre bibliothèque aux applications — albums, artistes, playlists, titres aimés, recherche —, et les applications de bureau, web et mobiles (iPhone, iPad, Android) l'ouvrent dans leur mode musique
+- **Partage de playlist** : un lien que le destinataire importe sur son propre serveur Tentacle, ses titres retrouvés dans sa bibliothèque
+- **La description d'un album** (crédits, licence) s'affiche sur sa page
 - **Droits de la musique** : dans la fiche d'un utilisateur, une rubrique « Musique · Octave » rassemble l'accès aux bibliothèques de musique, la conversion du son et le nouveau droit « Accès à Octave », allumé d'office
 - **Sessions en cours** : une écoute s'affiche avec sa pochette, son artiste et son album, et se met en pause ou s'arrête depuis l'administration
 - **Accueil et « Pour vous »** : les images déjà vues ne clignotent plus au retour sur la page
 - Octave et ses réglages n'apparaissent qu'avec un serveur 1.40 : un serveur d'avant garde exactement ce qu'il montrait
 
 ### EN
-- **Octave, Tentacle's music mode**: the server serves your library's music to the apps — albums, artists, playlists, liked songs, search —, and the desktop and web apps open it in their new music mode
+- **Octave, Tentacle's music mode**: the server serves your library's music to the apps — albums, artists, playlists, liked songs, search —, and the desktop, web and mobile apps (iPhone, iPad, Android) open it in their music mode
+- **Playlist sharing**: a link the recipient imports on their own Tentacle server, its songs matched in their library
+- **An album's description** (credits, license) shows on its page
 - **Music permissions**: in a user's profile, a "Music · Octave" section gathers access to music libraries, audio conversion and the new "Octave access" permission, on by default
 - **Now playing**: a listening session shows its cover, artist and album, and can be paused or stopped from the administration
 - **Home and "For you"**: images you have already seen no longer flicker when you come back to the page
