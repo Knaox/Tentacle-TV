@@ -11,10 +11,13 @@ import { useCallback, useState } from "react";
 import { RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { Music2, Search } from "lucide-react-native";
+import { Music2, Search, WifiOff } from "lucide-react-native";
 import { useMusicHome } from "@tentacle-tv/api-client";
 import { isHomeEmpty } from "@tentacle-tv/shared/octave";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useTheme } from "@/theme";
+import { OctaveDeviceScreen } from "../../offline/OctaveDeviceScreen";
+import { useOfflineSurface } from "../../offline/musicOfflineContext";
 import { OctaveTopBar } from "../../layout/OctaveTopBar";
 import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
@@ -27,7 +30,32 @@ import { ForYouTop, HomeShelves } from "./HomeSections";
 import { MoodsShelf } from "./MoodsShelf";
 import { QuickPicks } from "./QuickPicks";
 
+/**
+ * Hors ligne, l'accueil est la musique GARDÉE sur cet appareil (playlists, albums, titres) : la seule qu'il sait
+ * servir — jamais des étagères du serveur qu'on ne peut pas lire. Hors de la portée (session de profil) : il le dit.
+ */
 export function OctaveHomeScreen() {
+  const offline = useOfflineMode();
+  if (offline) return <OfflineHome />;
+  return <OnlineHome />;
+}
+
+function OfflineHome() {
+  const surface = useOfflineSurface();
+  const { t } = useTranslation("musicOffline");
+  const { scrollY } = useOctavePageScroll();
+  if (surface.visible) return <OctaveDeviceScreen params={NO_PARAMS} asHome />;
+  return (
+    <View style={{ flex: 1, justifyContent: "center" }}>
+      <EmptyState icon={WifiOff} title={t("home.noSurfaceTitle")} hint={t("home.noSurfaceHint")} />
+      <OctaveTopBar scrollY={scrollY} title={t("home.title")} back={false} />
+    </View>
+  );
+}
+
+const NO_PARAMS = {};
+
+function OnlineHome() {
   const { t } = useTranslation("music");
   const theme = useTheme();
   const { scrollY, scrollProps } = useOctavePageScroll();

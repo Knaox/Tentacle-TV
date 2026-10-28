@@ -42,6 +42,16 @@ export default {
     subtitle_one: "{{count}} track · listen in Octave",
     subtitle_other: "{{count}} tracks · listen in Octave",
   },
+  page: {
+    missingTitle: "Not available offline",
+    missingHint: "This page hasn’t been opened online on this device yet. Music kept on this device is still at hand.",
+    openDevice: "On this device",
+  },
+  home: {
+    title: "Home",
+    noSurfaceTitle: "Offline",
+    noSurfaceHint: "Music kept offline belongs to this device’s account. It comes back with the connection.",
+  },
   retest: {
     label: "Test the connection again",
     idle: "Checks whether the server answers. If it does, Octave goes back online.",

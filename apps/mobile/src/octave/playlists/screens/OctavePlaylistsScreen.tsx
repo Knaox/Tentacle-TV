@@ -21,6 +21,8 @@ import { useOctaveNav } from "../../pages/env/nav";
 import { EmptyState, ErrorState, PillButton, TrackRowsSkeleton } from "../../pages/ui/ViewStates";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { GlassIconButton, GlassTextButton } from "./BarButtons";
+import { useOfflineMode } from "@/offline/useOfflineMode";
+import { OfflineMissingState } from "../../offline/OfflinePageFallback";
 
 type Item = { kind: "liked" } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -33,6 +35,7 @@ export function OctavePlaylistsScreen() {
   const nav = useOctaveNav();
   const playlists = useMusicPlaylists();
   const importable = useMusicImport(useOctavePagesProvider()).available;
+  const offline = useOfflineMode();
   const { scrollY, scrollProps } = useOctavePageScroll();
   const columns = layout.isTablet ? layout.columns(180) : 1;
   const items = useMemo<Item[]>(() => [{ kind: "liked" }, ...(playlists.data ?? []).map((playlist) => ({ kind: "playlist" as const, playlist }))], [playlists.data]);
@@ -112,12 +115,16 @@ export function OctavePlaylistsScreen() {
 
   const actions = (
     <View style={styles.actions}>
-      {importable ? <GlassTextButton label={ti("entryShort")} onPress={() => openPlaylistSheet({ kind: "import" })} /> : null}
-      <GlassIconButton icon={Plus} label={tl("newTitle")} onPress={() => openPlaylistSheet({ kind: "create" })} />
+      {importable && !offline ? <GlassTextButton label={ti("entryShort")} onPress={() => openPlaylistSheet({ kind: "import" })} /> : null}
+      {/* Importer, créer : le serveur seul le sait faire — hors ligne, ces entrées n'existent pas. */}
+      {offline ? null : <GlassIconButton icon={Plus} label={tl("newTitle")} onPress={() => openPlaylistSheet({ kind: "create" })} />}
     </View>
   );
 
-  const empty = playlists.isPending ? (
+  // Hors ligne sans liste gardée : le dire, jamais une attente ni un « Réessayer ».
+  const empty = offline && (playlists.data ?? []).length === 0 ? (
+    <OfflineMissingState />
+  ) : playlists.isPending ? (
     <TrackRowsSkeleton count={6} gutter={layout.gutter} />
   ) : playlists.isError ? (
     <ErrorState onRetry={() => void playlists.refetch()} />

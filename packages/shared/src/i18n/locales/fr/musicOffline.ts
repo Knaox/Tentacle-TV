@@ -45,6 +45,16 @@ export default {
     subtitle_one: "{{count}} titre · écouter dans Octave",
     subtitle_other: "{{count}} titres · écouter dans Octave",
   },
+  page: {
+    missingTitle: "Pas disponible hors ligne",
+    missingHint: "Cette page n’a pas encore été ouverte en ligne sur cet appareil. La musique gardée sur cet appareil reste à portée de main.",
+    openDevice: "Sur cet appareil",
+  },
+  home: {
+    title: "Accueil",
+    noSurfaceTitle: "Hors ligne",
+    noSurfaceHint: "La musique gardée hors ligne appartient au compte de cet appareil. Elle revient avec la connexion.",
+  },
   retest: {
     label: "Retester la connexion",
     idle: "Vérifie si le serveur répond. S’il répond, Octave repasse en ligne.",
