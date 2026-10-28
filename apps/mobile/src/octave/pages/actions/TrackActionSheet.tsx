@@ -23,9 +23,7 @@ import { closeTrackSheet, useTrackSheet, type TrackSheetRequest } from "./trackS
 import { trackSheetActions, type TrackSheetActionId } from "./trackSheetActions";
 import { useTrackKeep } from "./useTrackKeep";
 import { playFrom } from "../env/playFrom";
-
-/** Une feuille ne s'ouvre qu'une fois la précédente partie (iOS ne présente pas deux fenêtres à la fois). */
-const SHEET_HANDOFF_MS = 380;
+import { handOffSheet } from "./sheetHandoff";
 
 function SheetBody({ request }: { request: TrackSheetRequest }) {
   const { t } = useTranslation("music");
@@ -62,7 +60,7 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
       case "addToQueue":
         return <SheetAction key={id} icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => player && queueActions.enqueue(player, [track]))} />;
       case "addToPlaylist":
-        return <SheetAction key={id} icon={ListPlus} label={t("playlist.addTo")} onPress={then(() => setTimeout(() => openPlaylistChooser(track), SHEET_HANDOFF_MS))} />;
+        return <SheetAction key={id} icon={ListPlus} label={t("playlist.addTo")} onPress={() => handOffSheet(closeTrackSheet, () => openPlaylistChooser(track))} />;
       case "keep":
         return <SheetAction key={id} icon={ArrowDownToLine} label={tOffline("keep")} onPress={then(keep.run)} />;
       case "removeKept":

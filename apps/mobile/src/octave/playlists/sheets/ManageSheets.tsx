@@ -18,12 +18,11 @@ import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { showNotice } from "../../pages";
 import { SheetAction } from "../../pages/actions/SheetAction";
+import { handOffSheet } from "../../pages/actions/sheetHandoff";
 import { closePlaylistSheet, openPlaylistSheet } from "./playlistSheetStore";
 import { useMobilePlaylistManage } from "./useMobilePlaylistManage";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
-/** Une feuille ne s'ouvre qu'une fois la précédente partie (iOS ne présente pas deux fenêtres à la fois). */
-const SHEET_HANDOFF_MS = 380;
 const NAME_MAX = 200;
 
 export function ManageSheet({ playlist }: { playlist: MusicPlaylist }) {
@@ -33,10 +32,8 @@ export function ManageSheet({ playlist }: { playlist: MusicPlaylist }) {
   const theme = useTheme();
   const shareable = useMusicPlaylistShareAvailable();
   const manage = useMobilePlaylistManage();
-  const then = (next: () => void) => () => {
-    closePlaylistSheet();
-    setTimeout(next, SHEET_HANDOFF_MS);
-  };
+  // La suivante (feuille, confirmation) une fois celle-ci retirée : `handOffSheet`.
+  const then = (next: () => void) => () => handOffSheet(closePlaylistSheet, next);
   return (
     <BottomSheet
       visible

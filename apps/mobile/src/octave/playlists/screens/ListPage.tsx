@@ -1,11 +1,13 @@
 /**
  * Octave mobile — la page d'une liste de titres (playlist, « Titres likés ») : la tête de page, la barre de
- * la liste (chercher, trier, filtrer), les titres qu'on glisse à leur place, et ses états (attente à la place
- * des rangées, vide, « aucun titre ne correspond »). La barre du haut garde le retour (verre) et, à droite,
- * les actions de la page. Les feuilles et avis des pages (m3) sont montés ici comme sur toute page d'Octave.
+ * la liste (chercher, trier, filtrer), les titres, et ses états (attente à la place des rangées, vide, « aucun
+ * titre ne correspond »). La barre du haut garde le retour (verre) et, à droite, « Modifier » puis les actions
+ * de la page. L'ordre ne se change QU'EN MODE « MODIFIER » (poignées, et « – » sur une playlist modifiable) :
+ * hors de ce mode, aucune poignée, et la rangée se balaie (« Lire ensuite », file). Les feuilles et avis des
+ * pages (m3) sont montés ici comme sur toute page d'Octave.
  */
 
-import { type ReactElement, type ReactNode } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +22,7 @@ import { EmptyState, PillButton, TrackRowsSkeleton } from "../../pages/ui/ViewSt
 import { usePageMetrics } from "../../pages/ui/pageStyle";
 import { ListControls } from "../controls/ListControls";
 import { ReorderableTrackList } from "../reorder/ReorderableTrackList";
+import { GlassTextButton } from "./BarButtons";
 
 type ListOrder = ReturnType<typeof useListOrder>;
 
@@ -33,21 +36,27 @@ interface Props {
   loading: boolean;
   /** L'état vide (aucun titre du tout). */
   empty: ReactElement;
-  /** Mode « Modifier » : le « – » de chaque rangée (playlist modifiable seulement). */
+  /** Le « – » de chaque rangée en mode « Modifier » (playlist modifiable seulement). */
   onRemove?: (row: ListRow) => void;
-  editHint?: string | null;
-  /** À droite de la barre du haut. */
+  /** À droite de la barre du haut, après « Modifier ». */
   actions?: ReactNode;
 }
 
-export function ListPage({ title, contextId, hero, natural, order, loading, empty, onRemove, editHint, actions }: Props) {
+export function ListPage({ title, contextId, hero, natural, order, loading, empty, onRemove, actions }: Props) {
   const { t } = useTranslation("music");
+  const { t: tl } = useTranslation("musicLists");
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { gutter, bottomInset } = usePageMetrics();
   const scrollY = useSharedValue(0);
   const rows = order.rows;
   const block = order.reorder?.block ?? null;
+  // « Modifier » existe dès qu'il y a quelque chose à modifier : l'ordre (liste du compte) ou les titres.
+  const canEdit = !loading && natural.length > 0 && (order.reorder !== null || onRemove !== undefined);
+  const [editRequested, setEditing] = useState(false);
+  const editing = canEdit && editRequested;
+  // Ordre bloqué (recherche, filtre, tri) : pas de poignée, la barre dit seule pourquoi.
+  const editHint = editing && block === null ? tl(onRemove ? "editHint" : "reorderHint") : null;
 
   const header = (
     <View>
@@ -87,10 +96,16 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
         header={header}
         bottomInset={bottomInset}
         reorder={order.reorder}
-        onRemove={onRemove}
+        editing={editing}
+        onRemove={editing ? onRemove : undefined}
       />
       <PageTopBar title={title} scrollY={scrollY} threshold={320} />
-      {actions ? <View style={[styles.actions, { top: insets.top + 4, right: gutter - 4 }]}>{actions}</View> : null}
+      {canEdit || actions ? (
+        <View style={[styles.actions, { top: insets.top + 4, right: gutter - 4 }]}>
+          {canEdit ? <GlassTextButton label={editing ? tl("done") : tl("edit")} strong={editing} onPress={() => setEditing(!editing)} /> : null}
+          {actions}
+        </View>
+      ) : null}
       <OctavePagesHost />
     </View>
   );

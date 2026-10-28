@@ -20,4 +20,9 @@ export default {
   likedSubtitle_one: "{{count}} titre aimé",
   likedSubtitle_other: "{{count}} titres aimés",
   owner: "Par {{name}}",
+  swipe: {
+    nextNotice: "« {{title}} » sera lu ensuite",
+    queuedNotice: "« {{title}} » ajouté à la file",
+    close: "Refermer les actions de « {{title}} »",
+  },
 };

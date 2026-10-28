@@ -1,13 +1,13 @@
 /**
  * Octave mobile — une PLAYLIST, comme le bureau : sa tête (pochette, nom, description, nombre de titres et
- * durée, Lecture, Aléatoire), puis ses titres — chercher, filtrer, trier, et glisser un titre à sa place par
- * sa poignée (l'ordre glissé devient celui de la playlist Jellyfin ; les attentes gardent la leur dans la
+ * durée, Lecture, Aléatoire), puis ses titres — chercher, filtrer, trier, et, en mode « Modifier » seulement,
+ * glisser un titre à sa place par sa poignée (l'ordre glissé devient celui de la playlist Jellyfin ; les attentes gardent la leur dans la
  * préférence du compte). Une playlist modifiable a « Modifier » (le « – » de chaque titre, avec « Annuler »
  * dans l'avis) et « ⋯ » (renommer, dupliquer, partager, supprimer). Tout se voit en direct sur les autres
  * appareils du compte (`music:playlist`, `music:listPrefs`).
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ListMusic, MoreHorizontal, Search } from "lucide-react-native";
@@ -24,18 +24,16 @@ import { usePageMetrics } from "../../pages/ui/pageStyle";
 import { usePlaylistData } from "../data/useListData";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { useMobilePlaylistRemoval } from "../sheets/useMobilePlaylistManage";
-import { GlassIconButton, GlassTextButton } from "./BarButtons";
+import { GlassIconButton } from "./BarButtons";
 import { ListPage } from "./ListPage";
 
 export function OctavePlaylistScreen({ id }: { id: string }) {
   const { t } = useTranslation("music");
-  const { t: tl } = useTranslation("musicLists");
   const theme = useTheme();
   const player = usePagesPlayer();
   const nav = useOctaveNav();
   const { gutter } = usePageMetrics();
   const { playlist, natural, order, editable, loading } = usePlaylistData(id);
-  const [editing, setEditing] = useState(false);
   const data = playlist.data;
   const target = useMemo(() => (data ? { jellyfinId: id, name: data.name } : null), [data, id]);
   const removeRows = useMobilePlaylistRemoval(target);
@@ -79,10 +77,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
 
   const actions =
     data && editable ? (
-      <>
-        {natural.length > 0 ? <GlassTextButton label={editing ? tl("done") : tl("edit")} strong={editing} onPress={() => setEditing((e) => !e)} /> : null}
-        <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: "manage", playlist: data })} />
-      </>
+      <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: "manage", playlist: data })} />
     ) : null;
 
   return (
@@ -94,8 +89,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
       order={order}
       loading={loading}
       empty={empty}
-      onRemove={editing && editable ? onRemove : undefined}
-      editHint={editing ? tl("editHint") : null}
+      onRemove={editable ? onRemove : undefined}
       actions={actions}
     />
   );
