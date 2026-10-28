@@ -5,6 +5,7 @@
  */
 
 import type { EngineEvent, EngineState, MusicTrack, PlaybackSource } from "../../music";
+import { trimTrailingSlashes } from "../../utils/trailingSlashes";
 
 /** De quoi joindre le serveur Tentacle, tel que le client Jellyfin de la page le sait. */
 export interface MusicEngineAuth {
@@ -21,7 +22,7 @@ export interface MusicEngineAuth {
  */
 export function absoluteSourceUrl(url: string, baseUrl: string): string {
   if (/^https?:\/\//i.test(url)) return url;
-  const base = baseUrl.replace(/\/+$/, "");
+  const base = trimTrailingSlashes(baseUrl);
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 

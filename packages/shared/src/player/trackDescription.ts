@@ -34,13 +34,25 @@ function flagWord(part: string, words: TrackWords): string | null {
   }
 }
 
+/**
+ * `[libellé, codec]` d'un libellé qui finit par « (CODEC) » ; `null` sinon. Comme `/^(.*?)\s*\((\w+)\)$/`, sans
+ * son temps quadratique sur une longue suite d'espaces (js/polynomial-redos) : le libellé s'arrête aux espaces
+ * qui précèdent la parenthèse, et ne passe jamais une fin de ligne (le « . » de l'ancienne expression).
+ */
+export function trailingCodec(label: string): [string, string] | null {
+  const codec = /\(([A-Za-z0-9_]+)\)$/.exec(label);
+  if (!codec) return null;
+  const head = label.slice(0, codec.index).trimEnd();
+  return /[\n\r\u2028\u2029]/.test(head) ? null : [head, codec[1]];
+}
+
 export function describeTrack(label: string, words: TrackWords): TrackDescription {
   // « … - Par défaut (AC3) » : le codec que `formatTrackLabel` ajoute en fin de libellé.
-  const paren = /^(.*?)\s*\(([A-Za-z0-9_]+)\)$/.exec(label.trim());
-  const parts = (paren ? paren[1] : label).split(" - ").map((part) => part.trim()).filter(Boolean);
+  const paren = trailingCodec(label.trim());
+  const parts = (paren ? paren[0] : label).split(" - ").map((part) => part.trim()).filter(Boolean);
   if (parts.length === 0) return { title: label };
   const title = parts[0];
-  const rest = [...parts.slice(1), ...(paren ? [paren[2]] : [])];
+  const rest = [...parts.slice(1), ...(paren ? [paren[1]] : [])];
   const seen = new Set<string>();
   const detail = rest
     .map((part) => CODEC_NAMES[part.toUpperCase()] ?? flagWord(part, words) ?? part)
