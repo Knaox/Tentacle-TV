@@ -15,7 +15,7 @@ import expo.modules.ReactActivityDelegateWrapper
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Partage système vers Tentacle TV (withShareToTentacle) : avant que React Native ne lise l'intent.
-    ShareIntake.rewrite(intent)
+    ShareIntake.rewrite(intent, contentResolver)
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
@@ -33,7 +33,7 @@ class MainActivity : ReactActivity() {
 
   // Partage système vers Tentacle TV (withShareToTentacle) : l'app déjà ouverte reçoit le lien par `url`.
   override fun onNewIntent(intent: Intent) {
-    ShareIntake.rewrite(intent)
+    ShareIntake.rewrite(intent, contentResolver)
     super.onNewIntent(intent)
   }
 

@@ -1,7 +1,8 @@
 /**
  * Partage système vers Tentacle TV — la moitié ANDROID du config plugin `withShareToTentacle` :
- * l'activité principale reçoit l'intent `SEND` (texte) et le réécrit en lien profond
- * `tentacle://octave/import?shared=<texte>` (`ShareIntake.kt`, source dans `targets/ShareIntakeAndroid/`).
+ * l'activité principale reçoit l'intent `SEND` (texte) et `SEND` / `SEND_MULTIPLE` (fichiers audio, lot « sf »)
+ * et le réécrit en lien profond `tentacle://octave/import?…` (`ShareIntake.kt`, source dans
+ * `targets/ShareIntakeAndroid/`).
  * Le projet Android est COMMITÉ (la CI ne fait pas de prebuild) : ce plugin garde `expo prebuild` cohérent
  * avec lui. Idempotent : rien n'est posé deux fois.
  */
@@ -12,17 +13,17 @@ const { withAndroidManifest, withDangerousMod, withMainActivity } = require("@ex
 
 const SOURCE = "ShareIntake.kt";
 const ON_CREATE = `    // Partage système vers Tentacle TV (withShareToTentacle) : avant que React Native ne lise l'intent.
-    ShareIntake.rewrite(intent)
+    ShareIntake.rewrite(intent, contentResolver)
 `;
 const ON_NEW_INTENT = `  // Partage système vers Tentacle TV (withShareToTentacle) : l'app déjà ouverte reçoit le lien par \`url\`.
   override fun onNewIntent(intent: Intent) {
-    ShareIntake.rewrite(intent)
+    ShareIntake.rewrite(intent, contentResolver)
     super.onNewIntent(intent)
   }
 
 `;
 
-/** Le filtre `SEND` de texte sur l'activité principale (jamais deux). */
+/** Les filtres `SEND` (texte) et `SEND` / `SEND_MULTIPLE` (audio) sur l'activité principale (jamais deux). */
 function addSendFilter(manifest) {
   const activity = manifest.manifest.application?.[0]?.activity?.find((a) => a.$["android:name"] === ".MainActivity");
   if (!activity) throw new Error("withShareToTentacle : .MainActivity introuvable.");
@@ -33,6 +34,15 @@ function addSendFilter(manifest) {
       action: [{ $: { "android:name": "android.intent.action.SEND" } }],
       category: [{ $: { "android:name": "android.intent.category.DEFAULT" } }],
       data: [{ $: { "android:mimeType": "text/plain" } }],
+    });
+  }
+  // Les fichiers audio : un ou plusieurs (lot « sf »), un filtre à part (jamais deux).
+  const hasAudio = activity["intent-filter"].some((f) => f.data?.some((d) => d.$["android:mimeType"] === "audio/*"));
+  if (!hasAudio) {
+    activity["intent-filter"].push({
+      action: [{ $: { "android:name": "android.intent.action.SEND" } }, { $: { "android:name": "android.intent.action.SEND_MULTIPLE" } }],
+      category: [{ $: { "android:name": "android.intent.category.DEFAULT" } }],
+      data: [{ $: { "android:mimeType": "audio/*" } }],
     });
   }
   return manifest;

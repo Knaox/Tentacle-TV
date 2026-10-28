@@ -9,7 +9,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { SHARED_IMPORT_PARAM, SHARED_IMPORT_TEXT_MAX } from "@tentacle-tv/shared/octave/mode";
+import { SHARED_FILE_NAME_PARAM, SHARED_FILE_PARAM, SHARED_FILE_TYPE_PARAM, SHARED_FILES_MAX, SHARED_IMPORT_PARAM, SHARED_IMPORT_TEXT_MAX } from "@tentacle-tv/shared/octave/mode";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -44,6 +44,33 @@ describe("partage système : les sources natives commitées sont celles de targe
   });
 });
 
+describe("partage système de FICHIERS audio (lot « sf »)", () => {
+  it("Android : ShareIntake écrit les paramètres et la borne de sharedReleaseFiles.ts", () => {
+    const kotlin = read("targets/ShareIntakeAndroid/ShareIntake.kt");
+    for (const param of [SHARED_FILE_PARAM, SHARED_FILE_NAME_PARAM, SHARED_FILE_TYPE_PARAM]) expect(kotlin).toContain(`"${param}"`);
+    expect(kotlin).toContain(`FILES_MAX = ${SHARED_FILES_MAX}`);
+    expect(kotlin).toContain("ACTION_SEND_MULTIPLE");
+  });
+
+  it("Android : le filtre audio (SEND et SEND_MULTIPLE) s'ajoute une seule fois, et le manifeste commité l'a", () => {
+    const manifest = { manifest: { application: [{ activity: [{ $: { "android:name": ".MainActivity" }, "intent-filter": [] }] }] } };
+    android.addSendFilter(manifest);
+    const out = android.addSendFilter(manifest);
+    expect(out.manifest.application[0]!.activity[0]!["intent-filter"]).toHaveLength(2);
+    expect(read("android/app/src/main/AndroidManifest.xml")).toMatch(/action\.SEND"\/>\s*<action android:name="android\.intent\.action\.SEND_MULTIPLE"\/>\s*<category android:name="android\.intent\.category\.DEFAULT"\/>\s*<data android:mimeType="audio\/\*"\/>/);
+  });
+
+  it("iOS : les documents audio s'ouvrent dans l'app (copiés), dans app.json comme dans le plist commité", () => {
+    const plist = read("ios/TentacleTV/Info.plist");
+    expect(plist).toMatch(/<key>LSItemContentTypes<\/key>\s*<array>\s*<string>public\.audio<\/string>/);
+    expect(plist).toMatch(/<key>LSSupportsOpeningDocumentsInPlace<\/key>\s*<false\/>/);
+    const info = JSON.parse(read("app.json")).expo.ios.infoPlist;
+    expect(info.CFBundleDocumentTypes[0].LSItemContentTypes).toEqual(["public.audio"]);
+    expect(info.LSSupportsOpeningDocumentsInPlace).toBe(false);
+    expect(read("app/+native-intent.tsx")).toContain("releaseFileImportPath");
+  });
+});
+
 describe("partage système : le config plugin redonne le natif commité", () => {
   it("MainActivity : le plugin, appliqué au fichier d'avant (le commité sans ses ajouts), le redonne, une fois", () => {
     const committed = read(`${KOTLIN}/MainActivity.kt`);
@@ -59,7 +86,9 @@ describe("partage système : le config plugin redonne le natif commité", () => 
     android.addSendFilter(manifest);
     const out = android.addSendFilter(manifest);
     const filters = out.manifest.application[0]!.activity[0]!["intent-filter"];
-    expect(filters.filter((f) => f.action?.some((a) => a.$["android:name"] === "android.intent.action.SEND"))).toHaveLength(1);
+    // Le texte : un filtre ; les fichiers audio ont le leur (lot « sf »).
+    const text = (f: (typeof filters)[number] & { data?: { $: Record<string, string> }[] }) => f.data?.some((d) => d.$["android:mimeType"] === "text/plain");
+    expect(filters.filter((f) => f.action?.some((a) => a.$["android:name"] === "android.intent.action.SEND") && text(f))).toHaveLength(1);
     expect(read("android/app/src/main/AndroidManifest.xml")).toMatch(/android\.intent\.action\.SEND"\/>\s*<category android:name="android\.intent\.category\.DEFAULT"\/>\s*<data android:mimeType="text\/plain"\/>/);
   });
 
