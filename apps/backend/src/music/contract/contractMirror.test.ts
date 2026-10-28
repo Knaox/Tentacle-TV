@@ -4,7 +4,7 @@
  * octet pour octet (le backend ne dépend pas de `@tentacle-tv/shared`). La
  * source canonique est SHARED ; on modifie là-bas, on recopie ici :
  *
- *   for f in musicTypes musicKeys musicPlayback musicCoreApi musicEvents musicLibraryMatch musicImport musicListOrder musicSourceOrder musicShare musicMosaic; do
+ *   for f in musicTypes musicKeys musicPlayback musicCoreApi musicEvents musicLibraryMatch musicImport musicListOrder musicSourceOrder musicShare musicMosaic shazamLink; do
  *     cp packages/shared/src/music/$f.ts apps/backend/src/music/contract/; done
  */
 
@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { describe, expect, it } from "vitest";
 
-const FILES = ["musicTypes", "musicKeys", "musicPlayback", "musicCoreApi", "musicEvents", "musicLibraryMatch", "musicImport", "musicListOrder", "musicSourceOrder", "musicShare", "musicMosaic"];
+const FILES = ["musicTypes", "musicKeys", "musicPlayback", "musicCoreApi", "musicEvents", "musicLibraryMatch", "musicImport", "musicListOrder", "musicSourceOrder", "musicShare", "musicMosaic", "shazamLink"];
 
 function repoRoot(): string {
   let folder = process.cwd();

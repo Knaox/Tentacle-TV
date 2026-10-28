@@ -300,6 +300,11 @@ export const SERVER_CAPABILITIES = {
    *  et l'import d'un lien d'un AUTRE serveur Tentacle (source `tentacle` de `POST /api/music/import`).
    *  Sans elle : ni « Partager », ni lien Tentacle reconnu à l'import. */
   "music.playlistShare": "1.40.0",
+  /** Les LIENS partagés d'Octave (`shazamLink.ts`, `octaveOpenLink.ts`) : `GET /api/music/links/track?url=` lit le
+   *  titre et l'artiste d'un lien Shazam (la recherche les pose), et la page d'ouverture `/octave/open/<page>`
+   *  (« Ouvrir dans l'app Tentacle », sans script) qu'on envoie pour une playlist partagée. Sans elle : le lien
+   *  Shazam se cherche par ce que le texte dit (message, slug), et l'on partage la route nue. */
+  "music.sharedLinks": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

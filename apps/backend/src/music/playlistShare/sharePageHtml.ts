@@ -11,7 +11,7 @@ import { MUSIC_SHARE_PAGE_TEXT, type MusicSharePageLang } from "./sharePageText"
 
 export const SHOWN_TRACKS = 50;
 
-const CSS = `
+export const CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:16px;
@@ -49,7 +49,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #c4b5
 .foot a{color:#c4b5fd}
 `;
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
