@@ -6,6 +6,7 @@
 import {
   RELEASE_FILE_EXTENSIONS,
   RELEASE_FILE_MIME_TYPES,
+  type MusicAlbum,
   type ReleaseImportJob,
   type ReleaseRefusal,
 } from "@tentacle-tv/shared/music";
@@ -55,4 +56,10 @@ export function albumHintOf(paths: readonly (string | null | undefined)[]): stri
   const folders = paths.map((p) => p?.split("/").slice(-2, -1)[0]?.trim()).filter((f): f is string => !!f);
   if (folders.length === 0 || folders.length !== paths.length) return undefined;
   return folders.every((f) => f === folders[0]) && folders[0].length <= 200 ? folders[0] : undefined;
+}
+
+/** L'album où mener à la fin d'un import : celui du `focus` du job, sinon le premier créé ; `null` : rien de neuf. */
+export function releaseArrival(job: Pick<ReleaseImportJob, "albums" | "focus"> | null): MusicAlbum | null {
+  if (!job) return null;
+  return job.albums.find((a) => a.external?.id === job.focus?.albumId) ?? job.albums[0] ?? null;
 }

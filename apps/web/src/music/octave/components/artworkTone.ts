@@ -10,6 +10,8 @@
  *   mégaoctets.
  */
 
+import { releaseArtSized } from "@tentacle-tv/shared/music";
+
 /** Le nombre de teintes de repli (`octaveViews.css`, `[data-tone]`). */
 export const FALLBACK_TONES = 6;
 
@@ -37,6 +39,9 @@ export const THUMB_ARTWORK_SIZE = 128;
  * (https) reste telle quelle : la taille est une règle de NOTRE route.
  */
 export function sizedArtworkUrl(url: string, size: number): string {
+  // Une pochette IMPORTÉE (musicReleases.ts) a ses tailles fixes : la plus petite, 300.
+  const imported = releaseArtSized(url, "300");
+  if (imported !== url) return imported;
   // Un autre hôte, une image gardée sur l'appareil (`tentacle://local`, `blob:`) : telle quelle.
   if (/^[a-z][a-z0-9+.-]*:/i.test(url) || /[?&]size=/.test(url)) return url;
   return `${url}${url.includes("?") ? "&" : "?"}size=${size}`;

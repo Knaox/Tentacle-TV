@@ -30,6 +30,7 @@ import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
 import { UnavailableAlbumHost } from "../actions/UnavailableAlbumDialog";
 import { ImportPlaylistHost } from "../import/ImportPlaylistHost";
+import { ReleaseImportHost } from "../releases/ReleaseImportHost";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
 import { useOctaveEvents } from "../events/useOctaveEvents";
 import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
@@ -128,6 +129,7 @@ function ShellHosts() {
       <UnavailableAlbumHost />
       <BulkDuplicateHost />
       <ImportPlaylistHost />
+      <ReleaseImportHost />
       <PlaylistManageHost />
     </>
   );
