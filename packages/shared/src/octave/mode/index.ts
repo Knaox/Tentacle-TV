@@ -9,3 +9,4 @@ export * from "./octavePageResume";
 export * from "./octaveStorageKeys";
 export * from "./octaveTabs";
 export * from "./octaveStay";
+export * from "./sharedImport";

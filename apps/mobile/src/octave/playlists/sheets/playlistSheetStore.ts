@@ -12,7 +12,8 @@ export type PlaylistSheet =
   | { kind: "rename"; playlist: MusicPlaylist }
   | { kind: "share"; playlist: MusicPlaylist }
   | { kind: "create" }
-  | { kind: "import"; prefill?: string };
+  /** `autoStart` : un lien reçu par le partage système part sans attendre « Importer ». */
+  | { kind: "import"; prefill?: string; autoStart?: boolean };
 
 let current: PlaylistSheet | null = null;
 const listeners = new Set<() => void>();
