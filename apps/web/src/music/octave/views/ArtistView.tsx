@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { AlbumKind, MusicAlbum } from "@tentacle-tv/shared/music";
+import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { AlbumCard, CardGrid, Shelf } from "../components/Cards";
 import { CollectionHeader } from "../components/CollectionHeader";
 import { TrackList, rowsOf } from "../components/TrackList";
@@ -19,39 +19,15 @@ import { useArtistEntity } from "../data/useEntityQueries";
 import type { ShownAlbum } from "../library/ownedItems";
 import { useOwnedAlbums } from "../library/useOwnedAlbums";
 import { useOwnedTracks } from "../library/useOwnedTracks";
-import { queueActions } from "@tentacle-tv/shared/octave";
+import { ARTIST_TOP_FOLDED, ARTIST_TOP_MAX, groupReleases, queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { ArtistMore } from "./artist/ArtistMore";
 import { useRecordVisit } from "../search/recentVisits";
 
-type Group = "albums" | "singles" | "compilations" | "live" | "other";
-
-const GROUP_OF: Record<AlbumKind, Group> = {
-  album: "albums",
-  single: "singles",
-  ep: "singles",
-  compilation: "compilations",
-  live: "live",
-  soundtrack: "other",
-  other: "other",
-};
-
-const ORDER: Group[] = ["albums", "singles", "compilations", "live", "other"];
-
-/** Titres phares : cinq montrés, dix au plus. */
-const TOP_FOLDED = 5;
-const TOP_MAX = 10;
-
-/** Les parutions par type, chacune de la plus récente à la plus ancienne. */
-export function groupReleases<T extends { album: MusicAlbum }>(albums: readonly T[]): { group: Group; albums: T[] }[] {
-  const map = new Map<Group, T[]>();
-  for (const a of albums) map.set(GROUP_OF[a.album.kind], [...(map.get(GROUP_OF[a.album.kind]) ?? []), a]);
-  const date = (a: MusicAlbum) => a.releaseDate ?? String(a.year ?? "");
-  return ORDER.filter((g) => map.has(g)).map((group) => ({
-    group,
-    albums: [...(map.get(group) ?? [])].sort((x, y) => date(y.album).localeCompare(date(x.album))),
-  }));
-}
+// Le rangement des parutions et les titres phares sont partagés avec le mobile.
+export { groupReleases } from "@tentacle-tv/shared/octave";
+const TOP_FOLDED = ARTIST_TOP_FOLDED;
+const TOP_MAX = ARTIST_TOP_MAX;
 
 const NO_ALBUMS: MusicAlbum[] = [];
 

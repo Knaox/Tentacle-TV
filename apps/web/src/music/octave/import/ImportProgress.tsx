@@ -7,8 +7,7 @@
 
 import { Check, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { ImportFlowState, ImportPhase } from "@tentacle-tv/api-client";
-import { importFraction } from "./importEntry";
+import { importFraction, type ImportFlowState, type ImportPhase } from "@tentacle-tv/api-client";
 import { SourceMark } from "./SourceMark";
 
 const ORDER: readonly ImportPhase[] = ["reading", "matching", "creating", "outside"];

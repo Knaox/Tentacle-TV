@@ -1,12 +1,13 @@
 /**
  * Octave — le menu « … » d'une playlist (sa page, ses cartes, le rail ; au clic droit aussi) : modifier les
- * détails, dupliquer, supprimer. Seulement sur une playlist que le compte peut modifier (`editable`, la règle
+ * détails, dupliquer, partager (si le serveur le sait et le compte en a le droit), supprimer. Seulement sur une playlist que le compte peut modifier (`editable`, la règle
  * du serveur) : ailleurs, ni bouton ni menu. La suppression est à part, en rouge, et demande confirmation.
  */
 
 import { useRef, type RefObject } from "react";
-import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, Link2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useMusicPlaylistShareAvailable } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { FloatingAnchor } from "../../../components/floating/useFloatingPlacement";
@@ -18,7 +19,9 @@ const itemClass =
 
 export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: MusicPlaylist; anchor: FloatingAnchor; onClose: () => void }) {
   const { t } = useTranslation("music");
+  const { t: ts } = useTranslation("musicShare");
   const { duplicate } = usePlaylistManagement();
+  const shareable = useMusicPlaylistShareAvailable();
   const run = (fn: () => void) => () => {
     onClose();
     fn();
@@ -44,6 +47,12 @@ export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: Mus
         <Copy className="h-4 w-4 text-content-tertiary" aria-hidden />
         {t("playlistManage.duplicate")}
       </button>
+      {shareable && (
+        <button type="button" role="menuitem" className={itemClass} onClick={run(() => requestPlaylistManage({ kind: "share", playlist }))}>
+          <Link2 className="h-4 w-4 text-content-tertiary" aria-hidden />
+          {ts("action")}
+        </button>
+      )}
       <div role="separator" className="mx-2 my-1.5 h-px bg-line-subtle" />
       <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(() => requestPlaylistManage({ kind: "delete", playlist }))}>
         <Trash2 className="h-4 w-4" aria-hidden />

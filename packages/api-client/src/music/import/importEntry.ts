@@ -2,11 +2,11 @@
  * Octave — ce que la boîte d'import comprend de ce qui est collé, AVANT
  * l'envoi (règle pure) : un lien reconnu (sa source, playlist ou album), un
  * lien inconnu, ou une liste de titres. Et l'avancée d'un import en une
- * fraction, pour la barre.
+ * fraction, pour la barre. Partagée : web large, web étroit et mobile.
  */
 
-import { CORE_IMPORT_SOURCES, recognizeImportUrl, type MusicImportSource } from "@tentacle-tv/shared/music";
-import type { ImportFlowState, ImportUserInput } from "@tentacle-tv/api-client";
+import { coreReadsImport, recognizeImportUrl, type MusicImportSource } from "@tentacle-tv/shared/music";
+import type { ImportFlowState, ImportUserInput } from "./importFlow";
 
 export type PastedImport =
   | { kind: "empty" }
@@ -16,14 +16,17 @@ export type PastedImport =
 
 const LINK = /^(?:https?:\/\/|spotify:)\S+$/i;
 
-/** `extensionSources` : ce que l'extension du compte lit en plus du cœur (YouTube…). */
-export function classifyPasted(raw: string, extensionSources: readonly MusicImportSource[]): PastedImport {
+/**
+ * `extensionSources` : ce que l'extension du compte lit en plus du cœur (YouTube…) ; `tentacleShare` : le
+ * serveur lit un lien de partage d'un autre Tentacle (`music.playlistShare`).
+ */
+export function classifyPasted(raw: string, extensionSources: readonly MusicImportSource[], tentacleShare = false): PastedImport {
   const text = raw.trim();
   if (!text) return { kind: "empty" };
   if (!text.includes("\n") && LINK.test(text)) {
     const url = recognizeImportUrl(text);
     if (!url) return { kind: "unknownUrl" };
-    const readable = CORE_IMPORT_SOURCES.includes(url.source) || extensionSources.includes(url.source);
+    const readable = coreReadsImport(url.source, tentacleShare) || (url.source !== "tentacle" && extensionSources.includes(url.source));
     return { kind: "url", source: url.source, album: url.kind === "album", readable, input: { kind: "url", url: text } };
   }
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0).length;

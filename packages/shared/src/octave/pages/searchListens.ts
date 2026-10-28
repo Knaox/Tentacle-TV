@@ -8,6 +8,8 @@
  */
 
 import type { MusicTrack } from "../../music";
+import type { OctavePlayer } from "../octavePlayer";
+import { currentItem } from "../queueModel";
 import { readJson, writeJson, type OctaveDeviceStore } from "./deviceStore";
 
 /** Clé de stockage : ne jamais la renommer (l'historique de l'appareil y vit). */
@@ -85,4 +87,19 @@ export function forgetSearchListensIn(store: OctaveDeviceStore | null, query: st
   const list = readSearchListensFrom(store);
   if (!list.some((l) => l.query?.toLocaleLowerCase() === key)) return;
   writeSearchListensTo(store, list.map((l) => (l.query?.toLocaleLowerCase() === key ? { ...l, query: null } : l)));
+}
+
+/**
+ * L'enregistreur du « déjà écouté » : suit le lecteur et note chaque titre dont le PREMIER son est sorti (pas un
+ * clic sans son, pas un préchargement), une écriture par titre. Rend sa désinscription. Web et mobile.
+ */
+export function recordSearchListensTo(player: OctavePlayer, store: OctaveDeviceStore | null, now: () => number = Date.now): () => void {
+  let noted: string | null = null;
+  return player.snapshot.subscribe(() => {
+    const snap = player.snapshot.get();
+    const item = currentItem(snap.queue);
+    if (!item || snap.phase !== "playing" || item.uid === noted) return;
+    noted = item.uid;
+    recordSearchListenTo(store, item.track, snap.queue.contextId, now());
+  });
 }

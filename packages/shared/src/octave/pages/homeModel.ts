@@ -3,7 +3,7 @@
  * sous-titre d'un mix, et ce que dit la reprise (le titre gardé, en pause).
  */
 
-import type { MusicHomeMix, MusicTrack } from "../../music";
+import type { MusicHomeForYou, MusicHomeMix, MusicHomeResponse, MusicTrack } from "../../music";
 
 /** La file d'un mix : sa propre clé de contexte (le mix en cours se reconnaît sur sa carte). */
 export const mixContextId = (mix: Pick<MusicHomeMix, "id">): string => `home:mix:${mix.id}`;
@@ -50,4 +50,14 @@ export const RESUME_WINDOW_MS = 1500;
 export function resumeShown(shown: boolean, inWindow: boolean, current: MusicTrack | null, wantsPlay: boolean): boolean {
   if (!current) return false;
   return shown || (inWindow && resumeOffer(current, wantsPlay) !== null);
+}
+
+/** Des rangées « pour vous » à montrer (un serveur d'avant n'en envoie pas : rien). */
+export function hasForYou(forYou: MusicHomeForYou | undefined): boolean {
+  return !!forYou && (forYou.mixes.length > 0 || forYou.recentAlbums.length > 0 || forYou.because.length > 0 || forYou.recentArtists.length > 0);
+}
+
+/** Un accueil sans rien à montrer : il dit quoi faire (chercher de la musique). */
+export function isHomeEmpty(home: MusicHomeResponse): boolean {
+  return !home.recentlyPlayed.length && !home.recentlyAdded.length && !home.mostPlayed.length && !home.playlists.length && !hasForYou(home.forYou);
 }

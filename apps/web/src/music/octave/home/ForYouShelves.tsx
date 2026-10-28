@@ -52,6 +52,5 @@ export const ForYouMore = memo(function ForYouMore({ forYou }: { forYou: MusicHo
   );
 });
 
-export function hasForYou(forYou: MusicHomeForYou | undefined): boolean {
-  return !!forYou && (forYou.mixes.length > 0 || forYou.recentAlbums.length > 0 || forYou.because.length > 0 || forYou.recentArtists.length > 0);
-}
+/** La règle est partagée avec le mobile (`@tentacle-tv/shared/octave` › homeModel). */
+export { hasForYou } from "@tentacle-tv/shared/octave";

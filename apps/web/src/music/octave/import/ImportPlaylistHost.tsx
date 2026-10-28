@@ -16,7 +16,7 @@ import { octavePaths } from "../octavePaths";
 import { ImportForm } from "./ImportForm";
 import { ImportProgress } from "./ImportProgress";
 import { ImportResult } from "./ImportResult";
-import { closeImportDialog, importDialogOpen, subscribeImportDialog } from "./importStore";
+import { closeImportDialog, importDialogOpen, subscribeImportDialog, takeImportPrefill } from "./importStore";
 
 export function ImportPlaylistHost() {
   const { t } = useTranslation("musicImport");
@@ -29,7 +29,10 @@ export function ImportPlaylistHost() {
   const openRef = useRef(open);
   useEffect(() => {
     openRef.current = open;
-  }, [open]);
+    // Un lien de partage ouvert depuis sa page (`/octave/import?share=`) : déjà collé, prêt à importer.
+    const prefill = open ? takeImportPrefill() : null;
+    if (prefill && handle.state === null) setText(prefill);
+  }, [open, handle.state]);
 
   const { start, reset } = handle;
   const go = useCallback(
@@ -76,6 +79,7 @@ export function ImportPlaylistHost() {
             value={text}
             onChange={setText}
             extensionSources={handle.extensionSources}
+            tentacleShare={handle.tentacleShare}
             outsideSupported={handle.outsideSupported}
             onStart={(input) => void go(input)}
             onCancel={dismiss}

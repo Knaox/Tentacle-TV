@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MusicArtist, MusicTrack } from "@tentacle-tv/shared/music";
-import { mixContextId, mixMosaic, mixSubtitle, mixTitle, resumeOffer, resumeShown } from "./homeModel";
+import { hasForYou, isHomeEmpty, mixContextId, mixMosaic, mixSubtitle, mixTitle, resumeOffer, resumeShown } from "./homeModel";
 
 const track = (key: string, artworkUrl: string | null) => ({ key, artworkUrl }) as MusicTrack;
 const artist = { name: "Air" } as MusicArtist;
@@ -34,5 +34,17 @@ describe("homeModel", () => {
     expect(resumeShown(true, false, t, true)).toBe(true);
     expect(resumeShown(true, false, null, false)).toBe(false);
     expect(resumeShown(false, true, t, true)).toBe(false);
+  });
+});
+
+describe("accueil vide, rangées « pour vous »", () => {
+  const home = { recentlyPlayed: [], recentlyAdded: [], mostPlayed: [], playlists: [] };
+  it("un serveur d'avant (sans forYou) et rien d'écouté : vide", () => {
+    expect(hasForYou(undefined)).toBe(false);
+    expect(isHomeEmpty(home)).toBe(true);
+  });
+  it("un mix du jour suffit à remplir l'accueil", () => {
+    const forYou = { mixes: [{ id: "favorites" }], recentAlbums: [], because: [], recentArtists: [] } as never;
+    expect(isHomeEmpty({ ...home, forYou })).toBe(false);
   });
 });

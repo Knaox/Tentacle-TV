@@ -24,3 +24,6 @@ export { mayOfferAcquire, quotaExhausted, remainingToTell } from "../music/octav
 export { useAcquireRights, type AcquireRights } from "../music/octave/actions/useAcquireRights";
 export { usePlaylistGestures, isLibraryTrack, type PlaylistGestures } from "../music/octave/actions/usePlaylistGestures";
 export { useTrackActions, type TrackActions } from "../music/octave/actions/useTrackActions";
+export { useAlbumOwnership, type AlbumLibraryOwnership } from "../music/octave/useAlbumOwnership";
+export { useOwnedAlbums } from "../music/octave/useOwnedAlbums";
+export { useOwnedTracks } from "../music/octave/useOwnedTracks";

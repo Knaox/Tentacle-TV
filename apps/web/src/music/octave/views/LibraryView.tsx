@@ -17,28 +17,18 @@ import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates"
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
 import { LoadMore, flattenPages } from "./LoadMore";
 import { useOctaveGlassStage } from "../glass/glassStage";
+import { LIBRARY_ALBUM_SORT_KEY, LIBRARY_ALBUM_SORTS, LIBRARY_TABS, parseAlbumSort, parseLibraryTab, type LibraryTab } from "@tentacle-tv/shared/octave";
 
-const TABS = ["albums", "artists", "playlists"] as const;
-type Tab = (typeof TABS)[number];
-
-/** L'onglet d'une adresse ; « albums » pour une valeur absente ou inconnue. */
-export function parseLibraryTab(value: string | null): Tab {
-  return TABS.find((tab) => tab === value) ?? "albums";
-}
-
-/** Les tris demandés au serveur (`/api/music/albums?sort=`). */
-const SORTS: readonly { value: MusicAlbumSort; key: string }[] = [
-  { value: "recent", key: "library.sortAdded" },
-  { value: "name", key: "library.sortName" },
-  { value: "year", key: "library.sortYear" },
-];
-
-const SORT_KEY = "tentacle_octave_album_sort";
+// Onglets, tris et clé du tri retenu : partagés avec le mobile (`@tentacle-tv/shared/octave` › libraryModel).
+const TABS = LIBRARY_TABS;
+type Tab = LibraryTab;
+export { parseLibraryTab };
+const SORTS = LIBRARY_ALBUM_SORTS;
+const SORT_KEY = LIBRARY_ALBUM_SORT_KEY;
 
 function readSort(): MusicAlbumSort {
   try {
-    const v = localStorage.getItem(SORT_KEY);
-    return SORTS.find((s) => s.value === v)?.value ?? "recent";
+    return parseAlbumSort(localStorage.getItem(SORT_KEY));
   } catch {
     return "recent";
   }

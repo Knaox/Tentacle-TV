@@ -1,12 +1,13 @@
 /**
  * Octave — l'hôte des gestes de gestion d'une playlist (une fois par coquille) : la boîte « Modifier les
- * détails » et la confirmation de suppression, qui dit ce qui arrive aux titres en attente.
+ * détails », le partage, et la confirmation de suppression, qui dit ce qui arrive aux titres en attente.
  */
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { PlaylistDetailsDialog } from "./PlaylistDetailsDialog";
+import { SharePlaylistDialog } from "./SharePlaylistDialog";
 import { closePlaylistManage, usePlaylistManageRequest } from "./playlistManageStore";
 import { usePlaylistManagement } from "./usePlaylistManagement";
 
@@ -21,6 +22,7 @@ export function PlaylistManageHost() {
   if (request.kind === "edit") {
     return <PlaylistDetailsDialog key={playlist.jellyfinId} playlist={playlist} onSave={(change) => manage.saveDetails(playlist, change)} onClose={closePlaylistManage} />;
   }
+  if (request.kind === "share") return <SharePlaylistDialog key={playlist.jellyfinId} playlist={playlist} onClose={closePlaylistManage} />;
   const waiting = manage.waitingCount(playlist);
   return (
     <ConfirmDialog

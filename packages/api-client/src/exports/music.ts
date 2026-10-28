@@ -37,3 +37,4 @@ export { useWholeLiked } from "../music/lists/useWholeLiked";
 // Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";
+export { classifyPasted, importFraction, type PastedImport } from "../music/import/importEntry";

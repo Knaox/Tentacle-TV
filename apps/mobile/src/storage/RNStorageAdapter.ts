@@ -79,6 +79,10 @@ const STORAGE_KEYS = [
   "tentacle_octave_mode", "tentacle_octave_launch", "tentacle_octave_page",
   // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
   "tentacle_octave_player",
+  // Octave (pages) : la mémoire de l'appareil — recherches récentes, « déjà écouté », albums et artistes
+  // consultés, dernière playlist du « + », tri des albums (@tentacle-tv/shared/octave › pages, api-client).
+  "tentacle_octave_recent_searches", "tentacle_octave_search_listens", "tentacle_octave_recent_visits",
+  "tentacle_octave_last_playlist", "tentacle_octave_album_sort",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
