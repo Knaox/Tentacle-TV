@@ -16,6 +16,7 @@ import {
   cssSaturate,
   surfaceColorOver,
   surfaceToneIsLegible,
+  worstRowHighlightContrast,
   worstSurfaceContrast,
 } from "./surfaceMaterial";
 
@@ -76,10 +77,25 @@ describe("le contraste du texte sur une surface, quel que soit le dessous", () =
     expect(surfaceToneIsLegible("dark", thin)).toBe(false);
   });
 
-  it("la pastille d'un menu (accent UNI, opaque) tient le blanc, dans les deux thèmes", () => {
-    // `--brand-dark` (sombre) et `--brand` (clair) du thème par défaut (tokens.css) : le même #7C3AED.
-    expect(contrastRatio(WHITE, parseColor("#7C3AED")!)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
-  });
+  for (const tone of ["dark", "light"] as const) {
+    it(`ton ${tone} : sur la pastille NEUTRE d'une rangée, le texte principal tient ≥ 4,5:1 sur 216 dessous`, () => {
+      // Le secondaire y monte au principal (`lgMenu.css`) : seul le principal compte.
+      expect(worstRowHighlightContrast(SURFACE_MATERIAL[tone].glyph, tone)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    });
+
+    it(`ton ${tone} : la pastille se voit sur le verre, et plus que la page courante`, () => {
+      const pill = SURFACE_MATERIAL[tone].rowHighlight;
+      // Neutre : un blanc (verre sombre) ou un noir (verre clair), translucide.
+      expect(pill.r === pill.g && pill.g === pill.b).toBe(true);
+      expect(pill.a).toBeLessThan(0.2);
+      // La page courante d'un menu vaut 0,1 (sombre) et 0,07 (clair) : `lgMenu.css`.
+      expect(pill.a).toBeGreaterThan(tone === "dark" ? 0.1 : 0.07);
+      for (const backdrop of [WHITE, BLACK]) {
+        const glass = surfaceColorOver(backdrop, tone);
+        expect(contrastRatio(compositeOver(pill, glass), glass)).toBeGreaterThan(1.1);
+      }
+    });
+  }
 });
 
 describe("plus de taches de couleur", () => {
@@ -123,6 +139,7 @@ describe("parité avec surfaceTokens.css", () => {
       expect(color(`--lg-surface-glyph-on-${tone}`)).toEqual(m.glyph);
       expect(color(`--lg-surface-glyph-on-${tone}-secondary`)).toEqual(m.glyphSecondary);
       expect(color(`--lg-surface-danger-on-${tone}`)).toEqual(m.danger);
+      expect(color(`--lg-row-highlight-on-${tone}`)).toEqual(m.rowHighlight);
     }
   });
 

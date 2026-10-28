@@ -5,9 +5,11 @@
  * vit DEDANS n'est jamais un verre de plus — des remplissages, et l'idiome des
  * menus du Mac, SANS changer une dimension (Damien, 26/10 : le verre change le
  * MATÉRIAU, jamais les DIMENSIONS — marges, rangées et intertitres d'avant) :
- *  - le survol et la sélection au clavier en PASTILLE arrondie INSÉRÉE, à la
- *    couleur d'accent UNIE, glyphes blancs (`--lg-row-highlight*`) — jamais
- *    une barre bord à bord, jamais le dégradé de marque ;
+ *  - le survol et la sélection au clavier en PASTILLE arrondie INSÉRÉE,
+ *    NEUTRE et translucide, au ton du verre (`--lg-row-highlight`, comme un
+ *    menu du Mac en accent graphite) : le texte garde sa couleur, la marque
+ *    reste en touches (coche, icône active) — jamais un aplat d'accent
+ *    (« vraiment moche », Damien, 28/10), jamais une barre bord à bord ;
  *  - des rayons CONCENTRIQUES : rangée = menu − `--lg-row-inset` (un rayon) ;
  *  - des en-têtes de section discrets (`--lg-section-label`) ;
  *  - des séparateurs fins (`--lg-separator`) ;
@@ -36,10 +38,9 @@
   /* Concentrique au panneau QUI la porte (un popover large a un rayon plus
    * grand que le `--lg-row-radius` du socle, calculé sur le menu type). */
   --lgm-radius: calc(var(--lgm-panel-radius) - var(--lgm-inset));
-  /* L'accent UNI, sombre assez pour un blanc à 4,5:1 : #7C3AED (5,7:1). Le
-   * violet du thème sombre (#8B5CF6) n'y tient que 4,2:1. */
-  --lgm-highlight: var(--lg-row-highlight, rgb(124, 58, 237));
-  --lgm-glyph: var(--lg-row-highlight-glyph, #fff);
+  /* La pastille NEUTRE, au ton du verre : le blanc translucide d'un verre
+   * sombre (le ton clair la réécrit plus bas, en noir translucide). */
+  --lgm-highlight: var(--lg-row-highlight, rgba(255, 255, 255, 0.14));
   /* La destruction : rouge plein, blanc à 4,8:1 (#DC2626). */
   --lgm-danger-highlight: rgb(220, 38, 38);
   --lgm-separator: var(--lg-separator, rgba(var(--lg-light-rgb), 0.14));
@@ -52,6 +53,7 @@
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette)[data-lg-tone="light"] {
   --lgm-separator: var(--lg-separator, rgba(var(--lg-shade-rgb), 0.12));
   --lgm-current: rgba(var(--lg-shade-rgb), 0.07);
+  --lgm-highlight: var(--lg-row-highlight, rgba(0, 0, 0, 0.09));
 }
 
 :root[data-liquid-glass="native"] .lg-menu.lg-menu-wide {
@@ -136,21 +138,26 @@
 :root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]),
 :root[data-liquid-glass="native"] .lg-menu .lg-row:has(:focus-visible),
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) [role="option"]:is([data-lg-active="true"], :focus-visible) {
-  --text-primary: var(--lgm-glyph);
-  --text-secondary: var(--lgm-glyph);
-  --text-tertiary: var(--lgm-glyph);
-  --text-quaternary: var(--lgm-glyph);
-  --brand-light: var(--lgm-glyph);
-  --brand-accent: var(--lgm-glyph);
-  --status-error-fg: var(--lgm-glyph);
+  /* Les textes secondaires montent au principal du ton : sur la pastille, le
+   * secondaire tomberait sous 4,5:1 au pire dessous (`surfaceMaterial.ts`).
+   * Le principal et la marque (`--brand-*`) gardent leur couleur. */
+  --text-secondary: var(--text-primary);
+  --text-tertiary: var(--text-primary);
+  --text-quaternary: var(--text-primary);
   background: var(--lgm-highlight);
   border-color: transparent;
-  color: var(--lgm-glyph);
   text-shadow: none;
 }
 
+/* La destruction, elle, garde sa pastille rouge PLEINE, glyphes blancs. */
 :root[data-liquid-glass="native"] .lg-menu .lg-row-danger:is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) {
+  --text-primary: #fff;
+  --text-secondary: #fff;
+  --text-tertiary: #fff;
+  --text-quaternary: #fff;
+  --status-error-fg: #fff;
   background: var(--lgm-danger-highlight);
+  color: #fff;
 }
 
 /* Les icônes du ton du dessous : sur la pastille, plus d'ombre portée. */
@@ -160,8 +167,8 @@
 }
 
 /* Une rangée RICHE d'un popover (notification : icône teintée, badges) : au
- * survol, le remplissage neutre — l'accent plein y effacerait ses couleurs,
- * qui portent du sens (état, type). */
+ * survol, le remplissage de la page courante, plus discret encore — ses
+ * couleurs portent du sens (état, type). */
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-row-soft:is(:hover, :focus-visible) {
   background: var(--lgm-current);
 }
