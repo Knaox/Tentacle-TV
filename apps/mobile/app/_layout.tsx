@@ -41,6 +41,7 @@ import { markBoot } from "@/bootIntro/bootTimeline";
 import { octaveLaunchDecision } from "@/octave/launch/octaveLaunch";
 import { configureOctaveMode } from "@/octave/mode/octaveModeStore";
 import { useTentacleHeld } from "@/octave/launch/tentacleHold";
+import { OctaveLaunchRedirect } from "@/octave/launch/OctaveLaunchRedirect";
 import { startupOverlayAllowed } from "@/octave/launch/tentacleOverlays";
 
 // Prevent splash screen from auto-hiding
@@ -145,6 +146,8 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ServerUrlContext.Provider value={serverUrlValue}>
           <AuthRedirect storage={storage} ready={ready} />
+          {/* Lancement en Octave : la page gardée, une fois (jamais un <Redirect> qui se relance). */}
+          <OctaveLaunchRedirect storage={storage} ready={ready} />
           <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl} storageReady={ready}>
             {/* Watch Together : TOUJOURS monté (porte fermée, la séance est inerte). */}
             <WatchTogetherProvider>

@@ -8,7 +8,7 @@
  * prochain lancement.
  */
 
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { View } from "react-native";
 import { useMusicStatus, useOctaveAvailability } from "@tentacle-tv/api-client";
 import { octaveStayVerdict } from "@tentacle-tv/shared/octave/mode";
@@ -27,8 +27,12 @@ export function OctaveGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (fresh.settled && !failed) noteOctaveAvailability(fresh.available);
   }, [fresh.settled, fresh.available, failed]);
+  // Une seule sortie par montage : jamais un aller-retour Tentacle ↔ Octave en boucle.
+  const left = useRef(false);
   useEffect(() => {
-    if (verdict === "leave") leave();
+    if (verdict !== "leave" || left.current) return;
+    left.current = true;
+    leave();
   }, [verdict, leave]);
 
   if (verdict !== "open") return <View style={{ flex: 1, backgroundColor: colors.ink }} />;

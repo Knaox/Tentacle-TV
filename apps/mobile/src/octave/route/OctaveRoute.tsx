@@ -4,8 +4,8 @@
  * (absent : retour à l'accueil d'Octave), sinon la page d'attente. Les fichiers de `app/octave/` ne font qu'appeler ceci.
  */
 
-import { memo, useEffect, useMemo } from "react";
-import { Redirect, useLocalSearchParams, usePathname, type Href } from "expo-router";
+import { memo, useEffect, useMemo, useRef } from "react";
+import { useLocalSearchParams, usePathname, useRouter, type Href } from "expo-router";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { OctaveRequires } from "../registry/OctaveRequires";
 import { reportOctaveFirstPage } from "../launch/octaveBootReport";
@@ -31,6 +31,18 @@ function decode(value: string | string[] | undefined): string | undefined {
   }
 }
 
+/** Un écran sans son droit : retour à l'accueil d'Octave, UNE fois (un `<Redirect>` se relancerait à chaque rendu). */
+function BackToOctaveHome() {
+  const router = useRouter();
+  const gone = useRef(false);
+  useEffect(() => {
+    if (gone.current) return;
+    gone.current = true;
+    router.replace(octavePaths.home as Href);
+  }, [router]);
+  return null;
+}
+
 export const OctaveRoute = memo(function OctaveRoute({ name }: { name: OctaveScreenName }) {
   const raw = useLocalSearchParams();
   const { t } = useTranslation("music");
@@ -41,7 +53,7 @@ export const OctaveRoute = memo(function OctaveRoute({ name }: { name: OctaveScr
   if (!entry) return <OctavePlaceholder title={t(PLACEHOLDER_TITLE[name])} />;
   const Screen = entry.component;
   // Droit absent (serveur, extension, compte) : l'écran n'existe pas, son adresse ramène à l'accueil d'Octave.
-  const away = name === "home" ? null : <Redirect href={octavePaths.home as Href} />;
+  const away = name === "home" ? null : <BackToOctaveHome />;
   return (
     <OctaveRequires requires={entry.requires} unmet={away}>
       <Screen params={params} />
