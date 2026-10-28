@@ -110,6 +110,7 @@ export default {
     bytesAbout: "{{done}} of about {{total}}",
     timeAbout: "about {{time}}",
     stalled: "Nothing is moving: it will retry automatically once the connection is back.",
+    serverPacing: "More on the way: the server is preparing the tracks at its own pace.",
     measuring: "Measuring speed…",
     pausedHint: "Paused: nothing moves until you resume.",
     failed_one: "{{count}} track failed",

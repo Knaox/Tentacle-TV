@@ -6,7 +6,8 @@
  * gestes sur la file d'Octave et la file elle-même. Absente quand rien ne bouge.
  *
  * Une coupure que le moteur relance seul se DIT (« Ça n'avance plus… ») au
- * lieu de laisser le temps restant figé.
+ * lieu de laisser le temps restant figé ; un serveur qui prépare les titres à
+ * son rythme (une playlist entière) dit « la suite arrive », jamais « la connexion ».
  *
  * Le pourcentage n'est jamais seul : la barre a sa valeur pour les lecteurs
  * d'écran, l'état se dit en mots (« En pause », « 2 titres en défaut »).
@@ -67,7 +68,13 @@ export const DeviceTransferCard = memo(function DeviceTransferCard({ summary }: 
       </View>
       <Text style={[styles.line, { color: colors.textSecondary }]}>{bytes ? `${count} · ${bytes}` : count}</Text>
       {pace !== null && <Text style={[styles.line, { color: colors.textTertiary }]}>{pace}</Text>}
-      {summary.stalled && (
+      {summary.stalled && summary.serverPacing && (
+        <View style={styles.failed} accessibilityLiveRegion="polite">
+          <Feather name="clock" size={14} color={colors.textTertiary} />
+          <Text style={[styles.line, styles.flex, { color: colors.textTertiary }]}>{t("transfers.serverPacing")}</Text>
+        </View>
+      )}
+      {summary.stalled && !summary.serverPacing && (
         <View style={styles.failed} accessibilityLiveRegion="polite">
           <Feather name="wifi-off" size={14} color={theme.statusPairs.warning.fg} />
           <Text style={[styles.line, styles.flex, { color: theme.statusPairs.warning.fg }]}>{t("transfers.stalled")}</Text>

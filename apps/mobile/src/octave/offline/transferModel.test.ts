@@ -21,6 +21,15 @@ function kept(partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {
 const noRate = () => undefined;
 
 describe("transferSummary", () => {
+  it("le serveur prépare une playlist entière à son rythme : « la suite arrive », pas une coupure", () => {
+    // Le serveur a dit 503 « je prépare » : la phase reste, le moteur relancera seul.
+    const waiting = { status: "paused" as const, preparing: true, bytesDone: 0, expectedSize: null, sourcePath: "/music/offline/x", origin: "external" as const };
+    const s = transferSummary([kept({ createdAt: 10 }), kept({ createdAt: 11, ...waiting }), kept({ createdAt: 12, ...waiting })], noRate);
+    expect(s).toMatchObject({ active: true, done: 1, total: 3, serverPacing: true });
+    const moving = transferSummary([kept({ createdAt: 11, ...waiting }), kept({ createdAt: 12, status: "downloading", bytesDone: 50 })], noRate);
+    expect(moving.serverPacing).toBe(false);
+  });
+
   it("rien en cours : carte absente", () => {
     const s = transferSummary([kept(), kept({ status: "canceled" })], noRate);
     expect(s.active).toBe(false);
