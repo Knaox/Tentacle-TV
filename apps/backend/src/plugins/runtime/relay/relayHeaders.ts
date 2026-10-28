@@ -22,6 +22,12 @@ const HOP_BY_HOP = new Set([
   "connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "host",
 ]);
 
+/**
+ * Un nom d'en-tête vient du client ou de l'invité : jamais une clé qui toucherait le prototype de l'objet
+ * construit (« __proto__ » est un nom d'en-tête valide). Les objets rendus n'ont pas de prototype non plus.
+ */
+const PROTOTYPE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
 /** Ce qui authentifie le client auprès du cœur ou de Jellyfin : jamais pour l'invité. */
 const CLIENT_SECRETS = new Set(["authorization", "cookie", "x-emby-token", "x-emby-authorization", "x-mediabrowser-token"]);
 
@@ -31,10 +37,10 @@ export function guestRequestHeaders(
   locale: string,
   requestId: string,
 ): OutgoingHttpHeaders {
-  const out: OutgoingHttpHeaders = {};
+  const out: OutgoingHttpHeaders = Object.create(null);
   for (const [name, value] of Object.entries(incoming)) {
     const key = name.toLowerCase();
-    if (value === undefined || HOP_BY_HOP.has(key) || CLIENT_SECRETS.has(key) || key.startsWith("x-tentacle-")) continue;
+    if (value === undefined || PROTOTYPE_KEYS.has(key) || HOP_BY_HOP.has(key) || CLIENT_SECRETS.has(key) || key.startsWith("x-tentacle-")) continue;
     // Le client ne dit pas d'où il vient à l'invité : l'hôte le sait, l'invité n'en a pas besoin.
     if (key === "x-forwarded-for" || key === "x-real-ip" || key === "forwarded") continue;
     out[key] = value;
@@ -54,10 +60,10 @@ export function guestRequestHeaders(
 }
 
 export function clientResponseHeaders(incoming: IncomingHttpHeaders): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {};
+  const out: Record<string, string | string[]> = Object.create(null);
   for (const [name, value] of Object.entries(incoming)) {
     const key = name.toLowerCase();
-    if (value === undefined || HOP_BY_HOP.has(key) || key === "set-cookie" || key.startsWith("x-tentacle-")) continue;
+    if (value === undefined || PROTOTYPE_KEYS.has(key) || HOP_BY_HOP.has(key) || key === "set-cookie" || key.startsWith("x-tentacle-")) continue;
     // CORS et sécurité : ceux du cœur, jamais ceux de l'invité.
     if (key.startsWith("access-control-") || key === "content-security-policy" || key === "strict-transport-security") continue;
     out[key] = value;
