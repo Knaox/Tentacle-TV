@@ -44,14 +44,16 @@ interface ArtworkProps {
   label?: string;
   /** Vignette de liste (≤ 64 px) : 128 px demandés au cœur. */
   thumb?: boolean;
-  /** Le rayon, par jeton d'Octave : `xs` ≤ 32 px, `sm` rangée (défaut), `art` carte, `lg` tête de vue. */
+  /** Le rayon, par jeton d'Octave : `none` case de mosaïque, `xs` ≤ 32 px, `sm` rangée (défaut), `art` carte, `lg` tête de vue. */
   radius?: ArtworkRadius;
 }
 
-export type ArtworkRadius = "xs" | "sm" | "art" | "lg";
+export type ArtworkRadius = "none" | "xs" | "sm" | "art" | "lg";
 
 /** Le rayon d'une pochette (`--oc-radius-art-*`, octaveTokens.css) ; un repli si les jetons manquent. */
 export const ARTWORK_RADIUS: Record<ArtworkRadius, string> = {
+  // Une case d'une mosaïque : c'est le cadre de la mosaïque qui arrondit.
+  none: "0",
   xs: "var(--oc-radius-art-xs, 4px)",
   sm: "var(--oc-radius-art-sm, 6px)",
   art: "var(--oc-radius-art, 10px)",

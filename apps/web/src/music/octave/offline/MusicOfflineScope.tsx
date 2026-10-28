@@ -9,6 +9,7 @@ import { OfflineSurfaceContext } from "./offlineSurfaceContext";
 import { useMusicOfflineSurface } from "./useMusicOfflineSurface";
 import { useKeptAutoSync } from "./autosync/useKeptAutoSync";
 import { useKeptRenames } from "./useKeptRenames";
+import { useKeptCoverKeeper } from "./keptCovers/useKeptCoverKeeper";
 
 export function MusicOfflineScope({ children }: { children: ReactNode }) {
   const surface = useMusicOfflineSurface();
@@ -16,5 +17,7 @@ export function MusicOfflineScope({ children }: { children: ReactNode }) {
   useKeptAutoSync(surface);
   // Un titre importé gardé sous sa fiche d'hier, reconnu sous sa clé d'aujourd'hui.
   useKeptRenames(surface);
+  // La jaquette en ligne de chaque playlist gardée, gardée elle aussi (« Sur cet appareil » la montre à l'identique).
+  useKeptCoverKeeper(surface);
   return <OfflineSurfaceContext.Provider value={surface}>{children}</OfflineSurfaceContext.Provider>;
 }

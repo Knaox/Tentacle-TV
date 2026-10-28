@@ -12,6 +12,7 @@
 import type { Mbid, MusicAlbum, MusicArtist, MusicPage, MusicPlaylist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
 import type { MusicListStats } from "./musicListOrder";
+import type { MusicPlaylistCover } from "./musicMosaic";
 
 export const MUSIC_ROUTES = {
   /** GET — l'état : y a-t-il une bibliothèque musique visible pour ce compte ? */
@@ -160,6 +161,12 @@ export type MusicArtistPage = MusicPage<MusicArtist>;
 
 export interface MusicPlaylistDetail extends MusicPlaylist {
   entries: MusicPlaylistEntry[];
+  /**
+   * De quoi refaire la jaquette SANS RÉSEAU (serveur 1.40.0) : l'appareil qui garde la playlist le garde, et
+   * « Sur cet appareil » montre exactement la jaquette en ligne, chaque jour (`coverUrlsOf`). Absent : un serveur
+   * d'avant.
+   */
+  cover?: MusicPlaylistCover;
 }
 
 export interface MusicByMbidResponse {

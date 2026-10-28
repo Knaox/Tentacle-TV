@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useMusicPlaylist, useReorderMusicPlaylist } from "@tentacle-tv/api-client";
 import { parseListKey } from "@tentacle-tv/shared/music";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
+import { HEADER_ARTWORK_CLASS, PlaylistArtwork, playlistCoverUrls } from "../components/PlaylistArtwork";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
 import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList } from "../components/TrackList";
@@ -76,7 +77,7 @@ export function PlaylistView() {
       <CollectionHeader
         kicker={t("playlist.kicker")}
         title={data.name}
-        artworkUrl={data.artworkUrl}
+        art={<PlaylistArtwork urls={playlistCoverUrls(data)} label={data.name} radius="lg" eager className={HEADER_ARTWORK_CLASS} />}
         meta={
           <>
             <span>{meta}</span>

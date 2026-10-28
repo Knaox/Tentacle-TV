@@ -9,22 +9,10 @@ import { memo } from "react";
 import { Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicHomeMix } from "@tentacle-tv/shared/music";
-import { Artwork } from "../components/Artwork";
+import { PlaylistArtwork } from "../components/PlaylistArtwork";
 import { CollectionSwell } from "../motion/NowSwell";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { mixContextId, mixMosaic, mixSubtitle, mixTitle } from "./homeModel";
-
-function Mosaic({ urls, label }: { urls: readonly string[]; label: string }) {
-  if (urls.length < 4) return <Artwork url={urls[0] ?? null} label={label} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />;
-  return (
-    // Des carreaux en flex, pas une grille à rangées : le client des téléviseurs LG (Chrome 53) compile ce fichier.
-    <div className="flex h-full w-full flex-wrap overflow-hidden rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]">
-      {urls.map((url) => (
-        <Artwork key={url} url={url} label={label} radius="xs" className="h-1/2 w-1/2 rounded-none" />
-      ))}
-    </div>
-  );
-}
 
 export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
   const { t, i18n } = useTranslation("music");
@@ -42,7 +30,7 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
       className="octave-card group flex min-w-0 cursor-pointer flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
       <div className="relative aspect-square w-full">
-        <Mosaic urls={mixMosaic(mix.tracks)} label={title} />
+        <PlaylistArtwork urls={mixMosaic(mix.tracks)} label={title} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <CollectionSwell contextId={contextId} />
         <span aria-hidden className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--oc-shadow-play)]">
           <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
