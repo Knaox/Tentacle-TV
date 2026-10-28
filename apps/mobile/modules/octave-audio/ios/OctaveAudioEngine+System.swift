@@ -238,7 +238,7 @@ extension OctaveAudioEngine {
       out["mixable"] = session.categoryOptions.contains(.mixWithOthers)
       out["longFormAudio"] = session.routeSharingPolicy == .longFormAudio
     }
-    out["decks"] = decks.map { ["active": $0.isActive, "positionMs": $0.positionMs] }
+    out["decks"] = decks.map { ["active": $0.isActive, "paused": $0.isPaused, "positionMs": $0.positionMs] }
     out["front"] = front
     out["fading"] = fade != nil
     return out

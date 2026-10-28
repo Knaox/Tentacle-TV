@@ -96,6 +96,12 @@ final class AudioDeck {
   // MARK: - Commandes
 
   /// Remplace tout par `url`, à `startMs`, en pause ou non.
+  ///
+  /// La pause est posée AVANT `loadfile` (rien ne sonne d'un suivant préchargé) et reposée APRÈS : une
+  /// platine arrêtée au bout d'un titre (`keep-open`, file terminée) se remet d'elle-même en pause quand on
+  /// la relance sur ce bout, avant que `loadfile` ne parte — le nouveau titre s'ouvrait alors en pause,
+  /// état « playing », position figée à 0, aucun son (une fois sur trois au banc). Après `loadfile`, la fin
+  /// de l'ancien titre n'est plus attendue : la pause reposée vaut pour le nouveau.
   func load(_ url: String, startMs: Double, paused: Bool) {
     guard let mpv = handle else { return }
     restarted = false
@@ -104,6 +110,7 @@ final class AudioDeck {
     var args = ["loadfile", url, "replace", "-1"]
     if startMs > 0 { args.append("start=\(String(format: "%.3f", startMs / 1000))") }
     command(mpv, args)
+    setFlag("pause", paused)
   }
 
   /// Le suivant, ajouté à la liste : mpv le précharge et l'enchaîne sans blanc.
@@ -157,6 +164,8 @@ final class AudioDeck {
   var positionMs: Double { (getDouble("time-pos") ?? 0) * 1000 }
   var durationMs: Double? { getDouble("duration").map { $0 * 1000 } }
   var isActive: Bool { handle != nil && loaded }
+  /// La pause telle que mpv la tient (bancs : `audio_debug`).
+  var isPaused: Bool { getFlag("pause") ?? true }
 
   // MARK: - Évènements
 
@@ -213,6 +222,12 @@ final class AudioDeck {
     guard let mpv = handle else { return }
     var flag: Int32 = value ? 1 : 0
     mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &flag)
+  }
+
+  private func getFlag(_ name: String) -> Bool? {
+    guard let mpv = handle else { return nil }
+    var value: Int32 = 0
+    return mpv_get_property(mpv, name, MPV_FORMAT_FLAG, &value) >= 0 ? value != 0 : nil
   }
 
   private func getDouble(_ name: String) -> Double? {
