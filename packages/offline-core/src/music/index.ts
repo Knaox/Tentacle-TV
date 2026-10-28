@@ -18,3 +18,5 @@ export * from "./syncRunner";
 export * from "./syncSignals";
 export * from "./syncInputs";
 export * from "./autoSync";
+export * from "./offlinePlayback";
+export * from "./keptSearch";
