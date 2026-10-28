@@ -40,6 +40,7 @@ import { holdQuitForFarewell } from "./quitFarewell";
 import { stopDownloadsRuntime, transfersInFlight } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
 import { askNative, installQuitGuard } from "./quitGuard";
+import { backgroundDrain, closeKeepsTransfers, finishTransfersWithoutWindow, rememberQuitAnswer, watchQuitRequests } from "./backgroundTransfers";
 import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
@@ -149,7 +150,8 @@ function main(): void {
 
   const singleInstance = claimSingleInstance(() => {
     const win = getMainWindow();
-    if (!win) return;
+    // Sans fenêtre, c'est que la file se finit en arrière-plan : on relance (`backgroundDrain.ts`).
+    if (!win) return void backgroundDrain.reopen();
     if (win.isMinimized()) win.restore();
     win.focus();
   });
@@ -265,7 +267,7 @@ function main(): void {
       // deux, un Alt+F4 emporterait un téléchargement sans un mot.
       const open = (): void => {
         const window = createMainWindow(capabilities);
-        installQuitGuard(window, transfersInFlight, askNative(window));
+        installQuitGuard(window, transfersInFlight, rememberQuitAnswer(askNative(window)), closeKeepsTransfers);
         // APRÈS la garde, et Linux seulement : sa fenêtre de mpv est une fenêtre
         // de premier niveau, qui survivrait à la nôtre. Windows et macOS ont un
         // enfant, détruit avec son parent — on ne touche pas à ce qui est en
@@ -287,7 +289,9 @@ function main(): void {
       // Sans effet ailleurs — les paquets reçoivent la leur du gestionnaire.
       if (process.platform === "linux") refreshDesktopIcons();
 
+      watchQuitRequests();
       app.on("activate", () => {
+        if (backgroundDrain.reopen()) return;
         if (BrowserWindow.getAllWindows().length === 0) open();
       });
     })
@@ -347,10 +351,12 @@ function main(): void {
    *
    * Quitter pour de bon rend l'état neuf à chaque ouverture. La sortie emprunte
    * le chemin de Cmd+Q, celui que la garde de sortie surveille : un
-   * téléchargement en cours fait toujours poser la question avant de partir.
+   * téléchargement en cours fait toujours poser la question avant de partir — sauf « Continuer en
+   * arrière-plan » : la fenêtre partie, le processus finit la file sans elle, puis quitte
+   * (`backgroundTransfers.ts`).
    */
   app.on("window-all-closed", () => {
-    app.quit();
+    if (!finishTransfersWithoutWindow()) app.quit();
   });
 }
 

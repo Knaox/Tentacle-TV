@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { backgroundTransfersOn, setBackgroundTransfers } from "../backgroundTransfers";
 import { downloadsRoot, downloadsVolume } from "../downloadsRuntime";
 import { nodeFiles } from "../downloads/node/nodeFiles";
 import { freeSpace, setRoot } from "../downloads/core/paths";
@@ -17,6 +18,7 @@ import { CommandRegistry } from "./registry";
 
 const NO_ARGS = z.object({}).passthrough();
 const SET_ROOT = z.object({ path: z.string().min(1) });
+const SET_BACKGROUND = z.object({ on: z.boolean() });
 
 export function registerDownloadsStorageCommands(registry: CommandRegistry): void {
   registry
@@ -25,6 +27,9 @@ export function registerDownloadsStorageCommands(registry: CommandRegistry): voi
       schema: SET_ROOT,
       run: ({ path }) => setRoot(localDb(), nodeFiles, path),
     })
+    // « Continuer en arrière-plan » : la fenêtre fermée laisse finir les transferts (`backgroundTransfers.ts`).
+    .add("downloads_background_get", { schema: NO_ARGS, run: () => backgroundTransfersOn() })
+    .add("downloads_background_set", { schema: SET_BACKGROUND, run: ({ on }) => setBackgroundTransfers(on) })
     .add("downloads_disk_free", { schema: NO_ARGS, run: () => freeSpace(downloadsVolume()) })
     .add("downloads_disk_usage", { schema: NO_ARGS, run: () => diskUsage(localDb()) })
     .add("downloads_asset_base", {

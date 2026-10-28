@@ -39,6 +39,8 @@ const MUSIC_PARALLEL = 3;
 let engine: DownloadEngine | null = null;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
 let wakeConnected = false;
+/** Un transfert tourne en ce moment (`onBusy`) : la fin des transferts fenêtre fermée le suit (`backgroundDrain.ts`). */
+let busyNow = false;
 
 /**
  * Anti-suspension du système, posée tant qu'un transfert tourne.
@@ -81,6 +83,7 @@ export function downloadsEngine(): DownloadEngine {
       console.warn(`[transferts] ${context} : ${String(error)}`);
     },
     onBusy: (busy) => {
+      busyNow = busy;
       if (busy) systemWakeLock.prevent();
       else systemWakeLock.release();
     },
@@ -108,6 +111,9 @@ export function transfersInFlight(): number {
     return 0;
   }
 }
+
+/** Au moins un transfert tourne. */
+export const transfersBusy = (): boolean => busyNow;
 
 /**
  * Reprise au réveil de veille.
