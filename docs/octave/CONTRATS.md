@@ -19,7 +19,7 @@ compte ; une playlist EST une playlist Jellyfin. Aucun stockage propre au cœur.
 
 | Fichier | Contenu |
 |---|---|
-| `packages/shared/src/music/musicTypes.ts` | titre, album, artiste, playlist, disponibilité (`library` · `cache` · `pending` · `remote`) ; un titre d'ailleurs dit où mènent son album et ses artistes chez l'extension (`MusicAlbumRef.external`, `MusicArtistRef.external`, optionnels, 25/10 — « Voir l'album / l'artiste » : `jellyfinId` d'abord, sinon `external`, sinon pas de lien ; une extension d'avant ne les envoie pas, rien ne casse) |
+| `packages/shared/src/music/musicTypes.ts` | titre, album, artiste, playlist, disponibilité (`library` · `cache` · `pending` · `remote`) ; un titre d'ailleurs dit où mènent son album et ses artistes chez l'extension (`MusicAlbumRef.external`, `MusicArtistRef.external`, optionnels, 25/10 — « Voir l'album / l'artiste » : `jellyfinId` d'abord, sinon `external`, sinon pas de lien ; une extension d'avant ne les envoie pas, rien ne casse) ; un album qui ne se LIT pas porte `unavailable: "notStreamable"` (28/10, posé par l'extension : carte grisée « Pas lisible », la toucher propose de l'aimer ou de l'ajouter à une playlist pour que le serveur le récupère — règle `octave/pages/unavailableAlbum.ts`, aucune capacité) |
 | `packages/shared/src/music/musicKeys.ts` | clés stables `jf:<id>` / `ext:<pluginId>:<externalId>`, MBID |
 | `packages/shared/src/music/musicPlayback.ts` | `PlaybackSource`, port du moteur `AudioEnginePort` (bascule à chaud `swapSource`) |
 | `packages/shared/src/music/musicCoreApi.ts` | routes `/api/music/*` du cœur et leurs réponses |
