@@ -9,3 +9,4 @@ export * from "./audioBridgeContract";
 export * from "./bridgeAudioEngine";
 export * from "./deferredEngine";
 export * from "./crossfadeControl";
+export * from "./midTrackRecovery";
