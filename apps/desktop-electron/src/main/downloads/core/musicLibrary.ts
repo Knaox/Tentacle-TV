@@ -33,6 +33,8 @@ export interface KeptMusicTrack {
   expectedSize: number | null;
   /** Le serveur le prépare encore (aucun octet n'est parti) — `preparePhase.ts`. Absent : non (la liste le dit toujours). */
   preparing?: boolean;
+  /** L'heure de la prochaine relance (la file du serveur l'a dite : `Retry-After`), `null` sans relance prévue. Absent : inconnue. */
+  retryAt?: number | null;
   title: string;
   artist: string | null;
   album: string | null;
@@ -88,6 +90,7 @@ function mapKept(row: Row): KeptMusicTrack {
     bytesDone: file.bytesDone,
     expectedSize: file.expectedSize,
     preparing: file.phase === PREPARE_PHASE,
+    retryAt: file.nextRetryAt,
     title: text(row, "title"),
     artist: textOrNull(row, "artist"),
     album: textOrNull(row, "album"),
