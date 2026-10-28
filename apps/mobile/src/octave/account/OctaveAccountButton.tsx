@@ -1,7 +1,8 @@
 /**
  * Octave (mobile) — l'AVATAR en tête des pages racines, comme celui d'Apple Music : la photo du profil en cours
  * (sinon son initiale), un rond de 36 pt dans une cible de 44. Le toucher ouvre le hub « Compte »
- * (`octavePaths.account`) : profil, réglages d'Octave, apparence, hors ligne, retour à Tentacle TV.
+ * (`octavePaths.account`) : profil, réglages d'Octave, apparence, hors ligne
+ * (la bascule vers Tentacle TV est à sa gauche, `OctaveLeaveButton`).
  */
 
 import { memo, useCallback } from "react";

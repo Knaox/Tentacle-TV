@@ -1,8 +1,8 @@
 /**
  * Octave (mobile) — le hub « Compte » (`/octave/account`), ouvert par l'avatar en tête des pages, à la manière
  * d'Apple Music : l'identité (photo, nom), le PROFIL (changer, code PIN, gérer la famille), OCTAVE (ses réglages,
- * la musique gardée hors ligne), l'APPARENCE d'Octave sur place. La bascule vers Tentacle TV est en haut à
- * droite (`LeaveOctavePill`), plus en bas de page.
+ * la musique gardée hors ligne), l'APPARENCE d'Octave sur place. La bascule vers Tentacle TV n'y est plus :
+ * elle est en tête des pages racines, à gauche de l'avatar (`OctaveLeaveButton`).
  * Tablette : une colonne centrée, jamais un téléphone étiré.
  */
 
@@ -18,7 +18,6 @@ import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
 import { AppearanceRows } from "../settings/view/OctaveOnlySettings";
 import { AccountIdentity } from "./AccountIdentity";
 import { AccountProfileRows } from "./AccountProfileRows";
-import { LeaveOctavePill } from "./LeaveOctavePill";
 
 const MAX_WIDTH = 640;
 
@@ -26,7 +25,7 @@ export function OctaveAccountScreen(_props: OctaveScreenProps) {
   const { t } = useTranslation("octaveShell");
   const { gutter } = useOctaveLayout();
   return (
-    <OctavePage title={t("account.title")} subtitle={t("settings.kicker")} right={<LeaveOctavePill />} back>
+    <OctavePage title={t("account.title")} subtitle={t("settings.kicker")} back>
       <View style={[styles.column, { paddingHorizontal: gutter }]}>
         <AccountIdentity />
         <AccountProfileRows />

@@ -47,3 +47,18 @@ describe("Octave mobile : la barre du téléphone, à la Apple Music", () => {
     expect(bar.indexOf("OCTAVE_SEARCH_ITEM.tab)")).toBeGreaterThan(bar.indexOf("OCTAVE_PILL_ITEMS.map"));
   });
 });
+
+describe("Octave mobile : la bascule vers Tentacle TV, à gauche de l'avatar", () => {
+  const topBar = readFileSync(join(ROOT, "layout/OctaveTopBar.tsx"), "utf8");
+  const account = readFileSync(join(ROOT, "account/OctaveAccountScreen.tsx"), "utf8");
+
+  it("en tête des pages racines, juste avant l'avatar", () => {
+    const leave = topBar.indexOf("<OctaveLeaveButton />");
+    expect(leave).toBeGreaterThan(0);
+    expect(topBar.indexOf("<OctaveAccountButton />")).toBeGreaterThan(leave);
+  });
+
+  it("plus dans le hub « Compte »", () => {
+    expect(account).not.toMatch(/useLeaveOctave\(|<OctaveLeaveButton|<LeaveOctavePill|import .*Leave/);
+  });
+});
