@@ -26,6 +26,7 @@ import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
+import { playFrom } from "../env/playFrom";
 
 const NO_ALBUMS: MusicAlbum[] = [];
 const HIDE = { artist: true } as const;
@@ -46,7 +47,7 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const albums = useOwnedAlbums(artist.data?.albums ?? NO_ALBUMS);
   const groups = useMemo(() => groupReleases(albums), [albums]);
   const contextId = `artist:${id}`;
-  const playAll = useCallback(() => player?.playList(top, 0, contextId), [contextId, player, top]);
+  const playAll = useCallback(() => playFrom(player, top, 0, contextId), [contextId, player, top]);
 
   if (artist.isError || (!artist.isPending && !artist.data)) {
     return (

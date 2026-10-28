@@ -20,6 +20,7 @@ import { useMobileTrackActions } from "../env/useMobileActionsUi";
 import { Artwork } from "../ui/Artwork";
 import { SheetAction } from "./SheetAction";
 import { closeTrackSheet, useTrackSheet, type TrackSheetRequest } from "./trackSheetStore";
+import { playFrom } from "../env/playFrom";
 
 /** Une feuille ne s'ouvre qu'une fois la précédente partie (iOS ne présente pas deux fenêtres à la fois). */
 const SHEET_HANDOFF_MS = 380;
@@ -43,7 +44,7 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
     <View style={styles.body}>
       {player ? (
         <>
-          <SheetAction icon={Play} label={t("common.playAll")} onPress={then(() => player.playList(list.length ? list : [track], list.length ? index : 0, contextId))} />
+          <SheetAction icon={Play} label={t("common.playAll")} onPress={then(() => playFrom(player, list.length ? list : [track], list.length ? index : 0, contextId))} />
           <SheetAction icon={ListStart} label={t("track.playNext")} onPress={then(() => queueActions.playNext(player, [track]))} />
           <SheetAction icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => queueActions.enqueue(player, [track]))} />
         </>

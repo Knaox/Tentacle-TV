@@ -16,6 +16,7 @@ import { typography, useTheme } from "@/theme";
 import { usePagesContextId, usePagesPlayer, usePagesWantsPlay } from "../env/pagesPlayer";
 import { Artwork } from "../ui/Artwork";
 import { accentTextOf } from "../ui/pageStyle";
+import { playFrom } from "../env/playFrom";
 
 function Mosaic({ urls, size }: { urls: readonly string[]; size: number }) {
   if (urls.length < 4) return <Artwork url={urls[0] ?? null} size={size} radius={10} />;
@@ -43,7 +44,7 @@ export const MixCard = memo(function MixCard({ mix, width }: { mix: MusicHomeMix
   const toggle = () => {
     if (!player) return;
     if (current) player.togglePlay();
-    else player.playList(mix.tracks, 0, contextId);
+    else playFrom(player, mix.tracks, 0, contextId);
   };
   const Icon = playing ? Pause : Play;
   return (

@@ -19,15 +19,18 @@ import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
+import { KeepCollectionButton } from "../../offline/KeepCollectionButton";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useDeviceStore, useOctaveOwner, useOctavePagesProvider } from "../env/pagesEnv";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { TrackRow } from "../ui/TrackRow";
 import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
+import { AlbumNotes } from "./AlbumNotes";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
+import { playFrom } from "../env/playFrom";
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
@@ -61,7 +64,7 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
     });
     return out;
   }, [discs.length, tracks]);
-  const play = useCallback((index: number) => player?.playList(tracks, index, contextId), [contextId, player, tracks]);
+  const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
 
   if (album.isError || (!album.isPending && !album.data)) {
     return (
@@ -87,8 +90,9 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
           artworkUrl={data.artworkUrl}
           scrollY={scrollY}
           canPlay={tracks.length > 0}
-          onPlay={() => player?.playList(tracks, 0, contextId)}
+          onPlay={() => playFrom(player, tracks, 0, contextId)}
           onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
+          extra={preview ? undefined : <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />}
           meta={
             <MetaLine
               parts={[data.artists.map((a) => a.name).join(", "), year, !preview && meta, !preview && owned > 0 && t("availability.albumCoverage", { count: owned, total: tracks.length })]}
@@ -102,10 +106,15 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
     </View>
   );
   const footer =
-    !preview && (date || data?.label) ? (
-      <View style={{ paddingHorizontal: gutter, paddingTop: 20, gap: 2 }}>
-        {date ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{t("views.released", { date })}</Text> : null}
-        {data?.label ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>℗ {data.label}</Text> : null}
+    !preview && data ? (
+      <View>
+        {date || data.label ? (
+          <View style={{ paddingHorizontal: gutter, paddingTop: 20, gap: 2 }}>
+            {date ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{t("views.released", { date })}</Text> : null}
+            {data.label ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>℗ {data.label}</Text> : null}
+          </View>
+        ) : null}
+        <AlbumNotes album={data} gutter={gutter} />
       </View>
     ) : null;
 

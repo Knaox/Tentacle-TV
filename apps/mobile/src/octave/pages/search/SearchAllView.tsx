@@ -19,6 +19,7 @@ import { TrackList } from "../ui/TrackList";
 import { TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { TopResultCard } from "./TopResultCard";
+import { playFrom } from "../env/playFrom";
 
 const TRACKS_WITHOUT_TOP = 8;
 const ALBUMS_SHOWN = 12;
@@ -40,7 +41,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
   const { gutter, sectionGap } = usePageMetrics();
   const contextId = `search:${query}`;
   const top = layout.top;
-  const playTop = useCallback(() => player?.playList(layout.sideTracks, 0, `${contextId}:top`), [contextId, layout.sideTracks, player]);
+  const playTop = useCallback(() => playFrom(player, layout.sideTracks, 0, `${contextId}:top`), [contextId, layout.sideTracks, player]);
   const tracks = top ? layout.sideTracks : layout.tracks.slice(0, TRACKS_WITHOUT_TOP);
   const more = top ? layout.tracks.length > layout.sideTracks.length : layout.tracks.length > TRACKS_WITHOUT_TOP;
   const seeAll = (filter: SearchFilter) => (

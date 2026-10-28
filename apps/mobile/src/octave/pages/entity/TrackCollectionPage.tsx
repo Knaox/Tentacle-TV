@@ -22,6 +22,7 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
+import { playFrom } from "../env/playFrom";
 
 const NO_TRACKS: MusicTrack[] = [];
 
@@ -43,9 +44,11 @@ interface TrackCollectionPageProps {
   notFound: string;
   onRetry: () => void;
   footer?: ReactElement | null;
+  /** À côté de Lecture et Aléatoire (« garder sur cet appareil »), selon les titres montrés. */
+  extra?: (tracks: readonly MusicTrack[]) => ReactElement | null;
 }
 
-export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer }: TrackCollectionPageProps) {
+export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer, extra }: TrackCollectionPageProps) {
   const { t } = useTranslation("music");
   const insets = useSafeAreaInsets();
   const player = usePagesPlayer();
@@ -54,7 +57,7 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
   // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
   const { scrollY, scrollProps } = useOctavePageScroll();
   const { tracks } = useOwnedTracks(raw ?? NO_TRACKS);
-  const play = useCallback((index: number) => player?.playList(tracks, index, contextId), [contextId, player, tracks]);
+  const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
   const meta = useCountAndDuration(tracks.length, tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const owned = useMemo(() => ownedCount(tracks), [tracks]);
 
@@ -76,9 +79,10 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
           tint={head.tint}
           scrollY={scrollY}
           canPlay={tracks.length > 0}
-          onPlay={() => player?.playList(tracks, 0, contextId)}
+          onPlay={() => playFrom(player, tracks, 0, contextId)}
           onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
           meta={<MetaLine parts={[meta, head.extraMeta?.(owned)]} />}
+          extra={pending ? undefined : (extra?.(tracks) ?? undefined)}
         />
       ) : (
         <View style={{ height: insets.top + 400 }} />

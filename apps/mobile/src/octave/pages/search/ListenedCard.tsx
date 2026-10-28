@@ -12,6 +12,7 @@ import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { usePagesPlayer } from "../env/pagesPlayer";
 import { Artwork } from "../ui/Artwork";
+import { playFrom } from "../env/playFrom";
 
 export const ListenedCard = memo(function ListenedCard({ card }: { card: Card }) {
   const { t } = useTranslation("music");
@@ -40,7 +41,7 @@ export const ListenedCard = memo(function ListenedCard({ card }: { card: Card })
         </Pressable>
       ) : null}
       {card.tracks.map((track, i) => (
-        <Pressable key={track.key} onPress={() => player?.playList(card.tracks, i, context)} accessibilityRole="button" accessibilityLabel={t("track.play", { title: track.title })} style={styles.line}>
+        <Pressable key={track.key} onPress={() => playFrom(player, card.tracks, i, context)} accessibilityRole="button" accessibilityLabel={t("track.play", { title: track.title })} style={styles.line}>
           {card.album ? <View style={styles.indent} /> : <Artwork url={track.artworkUrl} size={44} radius={6} />}
           <View style={styles.text}>
             <Text numberOfLines={1} style={[typography.body, { color: theme.colors.text.primary }]}>{track.title}</Text>

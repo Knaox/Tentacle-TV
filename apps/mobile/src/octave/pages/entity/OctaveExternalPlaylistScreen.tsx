@@ -7,6 +7,7 @@
 
 import { useTranslation } from "react-i18next";
 import { useMusicExternalPlaylist } from "@tentacle-tv/api-client";
+import { KeepCollectionButton } from "../../offline/KeepCollectionButton";
 import { useOctavePagesProvider } from "../env/pagesEnv";
 import { TrackCollectionPage } from "./TrackCollectionPage";
 
@@ -24,6 +25,7 @@ export function OctaveExternalPlaylistScreen({ id }: { id: string }) {
       failed={playlist.isError}
       notFound={t("playlist.notFound")}
       onRetry={() => void playlist.refetch()}
+      extra={(tracks) => (data ? <KeepCollectionButton kind="playlist" collectionKey={id} title={data.title} subtitle={data.owner ?? null} tracks={tracks} /> : null)}
     />
   );
 }
