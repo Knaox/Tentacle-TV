@@ -43,8 +43,18 @@ Natif → JS : l'évènement Expo `onBridgeEvent` `{ json }`, où `json` est un 
 
 - `source.url` est ABSOLUE. Adresse de l'origine `serverOrigin` → requêtes avec `headers` (`X-Emby-Token`).
   `file://…` → fichier local (copie gardée hors ligne, résolue en JS avant l'appel). Toute autre origine est
-  refusée (état `error`).
-- `direct` et `kept` sont ignorés par le natif (le JS a déjà résolu `kept` en `file://`).
+  refusée (état `error`), sauf un flux direct.
+- **Flux direct** (`open: "direct"`, constante `directStreams` du module) : un titre que le TÉLÉPHONE a résolu
+  (requêtes déléguées de Sillon) ; l'URL de YouTube ne vaut que depuis sa connexion. La page l'a jugé
+  (`src/octave/clientFetch/directSource.ts` : hôte dans les `mediaHosts` déclarés, https, 30 s de vie) ; le natif
+  exige https et un `fallbackUrl` du serveur, et l'ouvre SANS `headers` — iOS : `http-header-fields=` pour CE
+  fichier (`loadfile`), et un suivant direct ne s'ajoute jamais à la liste de mpv (le préchargement partirait
+  avec les en-têtes globaux) : il s'ouvre sur la platine arrière et passe devant net à la fin du courant ;
+  Android : l'adresse exacte admise par `SourcePolicy`, résolue sans en-tête. Au premier échec, le natif relit
+  `fallbackUrl` (le serveur, `direct=failed`) à la même position, une fois — aussi app en arrière-plan.
+  Banc : `audio_debug` → `decks[].bareHeaders` (vrai : aucun en-tête pour le fichier en cours ; jamais la valeur).
+- `direct` (la forme du serveur) et `kept` sont ignorés par le natif (le JS a déjà résolu `kept` en `file://`
+  et `direct` en `open: "direct"`).
 - ReplayGain : `source.replayGain` × mode (`off` : 1 ; `track` : gain du titre ; `album` / `auto` : gain
   d'album s'il existe, sinon du titre), gain linéaire `10^(dB/20)` borné par `1/peak`, multiplié au volume.
 
