@@ -6,7 +6,11 @@
  *   sans cookie ni jeton, JSON attendu ;
  * - HTTPS, et l'hôte résolu UNE fois, adresse par adresse, à la connexion même (`lookup`) : jamais la boucle
  *   locale, un réseau privé (RFC 1918, ULA), le lien local (métadonnées des clouds), la multidiffusion ;
- * - aucune redirection suivie, délai et taille bornés.
+ * - aucune redirection suivie, délai et taille bornés : l'inactivité (`TIMEOUT_MS`) ET la durée totale
+ *   (`DEADLINE_MS` — un serveur qui égrène un octet de temps en temps ne retient pas la requête) ;
+ * - aucune connexion gardée d'une requête à l'autre (`agent: false`) : une socket du pool commun, ouverte
+ *   vers le même nom sans cette garde, ne serait jamais repassée par `lookup`.
+ * Le port est libre : il ne mène qu'aux adresses déjà permises (un serveur Tentacle écoute où il veut).
  * `TENTACLE_SHARE_IMPORT_PRIVATE=on` lève la garde des adresses privées et permet HTTP (deux serveurs d'une
  * même maison, bancs) — jamais le lien local ni les adresses non spécifiées.
  */
@@ -21,6 +25,7 @@ import { sharedDocumentUrl } from "../contract/musicShare";
 import { ImportFetchError } from "./importFetch";
 
 const TIMEOUT_MS = 12_000;
+const DEADLINE_MS = 30_000;
 const MAX_BYTES = 2 * 1024 * 1024;
 const USER_AGENT = "TentacleTV/1.40 (Octave shared playlist import; +https://tentacletv.app)";
 
@@ -64,7 +69,7 @@ export function shareDocumentTarget(link: string, allowPrivate: boolean): URL | 
   return url;
 }
 
-export function createShareFetcher(allowPrivate = privateShareImportAllowed()): ShareFetcher {
+export function createShareFetcher(allowPrivate = privateShareImportAllowed(), deadlineMs = DEADLINE_MS): ShareFetcher {
   return (link) =>
     new Promise((resolve, reject) => {
       const url = shareDocumentTarget(link, allowPrivate);
@@ -72,7 +77,12 @@ export function createShareFetcher(allowPrivate = privateShareImportAllowed()): 
       const client = url.protocol === "https:" ? https : http;
       const request = client.get(
         url,
-        { lookup: guardedLookup(allowPrivate), timeout: TIMEOUT_MS, headers: { "user-agent": USER_AGENT, accept: "application/json" } },
+        {
+          agent: false,
+          lookup: guardedLookup(allowPrivate),
+          timeout: TIMEOUT_MS,
+          headers: { "user-agent": USER_AGENT, accept: "application/json" },
+        },
         (response) => {
           const declared = Number(response.headers["content-length"] ?? "0");
           if (declared > MAX_BYTES) {
@@ -92,6 +102,8 @@ export function createShareFetcher(allowPrivate = privateShareImportAllowed()): 
           response.on("error", () => reject(new ImportFetchError("network")));
         },
       );
+      const deadline = setTimeout(() => request.destroy(new ImportFetchError("network")), deadlineMs);
+      request.on("close", () => clearTimeout(deadline));
       request.on("timeout", () => request.destroy(new ImportFetchError("network")));
       request.on("error", (error) => reject(error instanceof ImportFetchError ? error : new ImportFetchError("network")));
     });
