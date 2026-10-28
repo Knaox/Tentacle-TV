@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReleaseImportJob, ReleaseSource } from "@tentacle-tv/shared/music";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import { runReleaseFiles, runReleaseLink, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePort } from "./releaseFlow";
+import { externalEntityKey } from "../octave/useMusicEntities";
 import { cancelReleaseJob, fetchImportedReleases, fetchReleaseJob, fetchReleaseUpload, putReleaseChunk, startFilesImport, startLinkImport } from "./releaseRequests";
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -96,6 +97,10 @@ export function useReleaseImport(provider: MusicProvider | null, chunkLimit?: nu
       try {
         const final = await run(releasePortFor(provider, chunkLimit), controller.signal);
         if (final.phase === "done") {
+          // Les albums touchés par l'import (créés OU complétés) : leur fiche en cache est fausse — elle ne doit pas
+          // s'afficher un instant à l'ouverture (mesuré : « 1 titre » avant les 11). L'aperçu de la carte prend le relais.
+          for (const album of final.job?.albums ?? []) qc.removeQueries({ queryKey: externalEntityKey("album", album.key) });
+          void qc.invalidateQueries({ queryKey: ["music", "external"] });
           void qc.invalidateQueries({ queryKey: importedReleasesKey(provider.pluginId) });
           void qc.invalidateQueries({ queryKey: ["music", "search"] });
         }
