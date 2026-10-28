@@ -69,6 +69,10 @@ export const PROFILE_STORAGE_KEYS: readonly string[] = [
   "tentacle_playback_marker",
   // Le profil de la session ouverte (Famille, Apple TV).
   TV_PROFILE_KEY,
+  // Octave (api-client) : la dernière playlist du « + » et la session du lecteur — des données du
+  // compte. Octave ne vit pas sur la TV ; classées ici pour qu'aucune ne survive à un profil.
+  "tentacle_octave_last_playlist",
+  "tentacle_octave_player",
 ];
 
 /**
