@@ -10,20 +10,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, Info, XCircle } from "lucide-react-native";
 import { GlassSurface } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
+import { useOctaveChrome } from "../../shell/octaveChrome";
 import { dismissNotice, useNotice } from "../env/notices";
+import { accentTextOf } from "../ui/pageStyle";
 
-/** La place du mini-lecteur et de la barre d'onglets, sous l'avis. */
-const ABOVE_CHROME = 132;
 
 export function NoticeHost() {
   const notice = useNotice();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  // Au-dessus de la barre d'onglets et du mini-lecteur mesurés par la coquille.
+  const above = Math.max(useOctaveChrome().bottomInset, insets.bottom + 24);
   if (!notice) return null;
   const Icon = notice.kind === "error" ? XCircle : notice.kind === "success" ? CheckCircle2 : Info;
-  const tone = notice.kind === "error" ? theme.colors.status.error : theme.colors.brand.accentLight;
+  const tone = notice.kind === "error" ? theme.colors.status.error : accentTextOf(theme);
   return (
-    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer, { paddingBottom: insets.bottom + ABOVE_CHROME }]}>
+    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer, { paddingBottom: above }]}>
       <Animated.View key={notice.id} entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(160)} style={styles.wrap} accessibilityLiveRegion="polite">
         <GlassSurface tier="dropdown" tint="strong" radius={18} style={styles.pill}>
           <Icon size={18} color={tone} />
@@ -41,7 +43,7 @@ export function NoticeHost() {
               accessibilityRole="button"
               style={styles.action}
             >
-              <Text style={[typography.bodyBold, { color: theme.colors.brand.accentLight }]}>{notice.action.label}</Text>
+              <Text style={[typography.bodyBold, { color: accentTextOf(theme) }]}>{notice.action.label}</Text>
             </Pressable>
           ) : null}
         </GlassSurface>

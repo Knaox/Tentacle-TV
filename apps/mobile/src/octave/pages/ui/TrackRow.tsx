@@ -18,6 +18,7 @@ import { haptic as playHaptic } from "@/utils/haptics";
 import { openTrackSheet } from "../actions/trackSheetStore";
 import { Artwork } from "./Artwork";
 import { NowPlayingBars } from "./NowPlayingBars";
+import { accentTextOf } from "./pageStyle";
 
 export const TRACK_ROW_HEIGHT = 60;
 
@@ -43,7 +44,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
     openTrackSheet({ track, list, contextId, hide });
   }, [contextId, hide, list, track]);
   const artists = track.artists.map((a) => a.name).join(", ");
-  const accent = theme.colors.brand.accentLight;
+  const accent = accentTextOf(theme);
   return (
     <Pressable
       onPress={() => onPlay(index)}

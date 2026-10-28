@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { Text, View } from "react-native";
-import Animated, { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -18,10 +18,10 @@ import { albumPreview, inDiscOrder, longReleaseDate, queueActions } from "@tenta
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
+import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useDeviceStore, useOctaveOwner, useOctavePagesProvider } from "../env/pagesEnv";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
-import { PAGE_BOTTOM_ROOM } from "../home/OctaveHomeScreen";
 import { TrackRow } from "../ui/TrackRow";
 import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
@@ -39,11 +39,9 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
   const insets = useSafeAreaInsets();
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
-  const { gutter } = usePageMetrics();
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
-  });
+  const { gutter, bottomInset } = usePageMetrics();
+  // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
+  const { scrollY, scrollProps } = useOctavePageScroll();
   const album = useMusicAlbumEntity(useOctavePagesProvider(), id, albumPreview);
   const { ordered, discs } = useMemo(() => inDiscOrder(album.data?.tracks ?? []), [album.data]);
   const ownership = useAlbumOwnership(album.data, ordered, album.isPlaceholder);
@@ -125,9 +123,10 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
         }
         ListHeaderComponent={header}
         ListFooterComponent={footer}
-        onScroll={onScroll}
+        onScroll={scrollProps.onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: insets.bottom + PAGE_BOTTOM_ROOM }}
+        contentOffset={scrollProps.contentOffset}
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         initialNumToRender={14}
         windowSize={9}
         removeClippedSubviews

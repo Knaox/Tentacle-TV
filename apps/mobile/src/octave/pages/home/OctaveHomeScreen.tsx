@@ -8,30 +8,29 @@
  */
 
 import { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { RefreshControl, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Music2, Search } from "lucide-react-native";
 import { useMusicHome } from "@tentacle-tv/api-client";
 import { isHomeEmpty } from "@tentacle-tv/shared/octave";
 import { useTheme } from "@/theme";
+import { OctaveTopBar } from "../../layout/OctaveTopBar";
+import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useOctaveNav } from "../env/nav";
 import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState, PillButton } from "../ui/ViewStates";
-import { usePageMetrics } from "../ui/pageStyle";
+import { usePageMetrics, accentTextOf } from "../ui/pageStyle";
 import { HomeGreeting } from "./HomeGreeting";
 import { ForYouTop, HomeShelves } from "./HomeSections";
 import { MoodsShelf } from "./MoodsShelf";
 import { QuickPicks } from "./QuickPicks";
 
-/** La place du mini-lecteur et des onglets sous la page (la coquille les pose par-dessus). */
-export const PAGE_BOTTOM_ROOM = 160;
-
 export function OctaveHomeScreen() {
   const { t } = useTranslation("music");
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const { scrollY, scrollProps } = useOctavePageScroll();
   const nav = useOctaveNav();
   const home = useMusicHome();
   const { sectionGap } = usePageMetrics();
@@ -47,9 +46,10 @@ export function OctaveHomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + PAGE_BOTTOM_ROOM, gap: sectionGap }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.colors.brand.accentLight} />}
+      <Animated.ScrollView
+        {...scrollProps}
+        contentContainerStyle={[scrollProps.contentContainerStyle, { gap: sectionGap }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={accentTextOf(theme)} />}
         showsVerticalScrollIndicator={false}
       >
         <HomeGreeting />
@@ -67,7 +67,8 @@ export function OctaveHomeScreen() {
         <MoodsShelf />
         {data ? <ForYouTop home={data} /> : null}
         {data ? <HomeShelves home={data} gap={sectionGap} /> : null}
-      </ScrollView>
+      </Animated.ScrollView>
+      <OctaveTopBar scrollY={scrollY} title={t("nav.home")} back={false} />
       <OctavePagesHost />
     </View>
   );

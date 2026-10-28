@@ -4,7 +4,7 @@
  * `/octave/album/[id]`, `/octave/artist/[id]`, `/octave/mood/[id]`), l'hôte des
  * feuilles et des avis, et le port du lecteur.
  */
-export { OctaveHomeScreen, PAGE_BOTTOM_ROOM } from "./home/OctaveHomeScreen";
+export { OctaveHomeScreen } from "./home/OctaveHomeScreen";
 export { OctaveSearchScreen } from "./search/OctaveSearchScreen";
 export { OctaveLibraryScreen } from "./library/OctaveLibraryScreen";
 export { OctaveAlbumScreen } from "./entity/OctaveAlbumScreen";

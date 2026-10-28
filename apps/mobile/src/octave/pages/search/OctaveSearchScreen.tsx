@@ -17,7 +17,6 @@ import { isEmptyLayout, layoutSearch } from "@tentacle-tv/shared/octave";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useMobileArtworkPreloader } from "../env/artworkPreload";
 import { useDeviceStore, useOctavePagesProvider } from "../env/pagesEnv";
-import { PAGE_BOTTOM_ROOM } from "../home/OctaveHomeScreen";
 import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { FilterChips } from "./FilterChips";
@@ -35,7 +34,7 @@ export function OctaveSearchScreen() {
   const provider = useOctavePagesProvider();
   const store = useDeviceStore();
   const preloadArtwork = useMobileArtworkPreloader();
-  const { gutter, sectionGap } = usePageMetrics();
+  const { gutter, sectionGap, bottomInset } = usePageMetrics();
   const { query, filter, submit: route, clear: clearRoute, setFilter } = useSearchRoute();
   const input = useRef<TextInput>(null);
   const [draft, setDraft] = useState(query);
@@ -73,7 +72,7 @@ export function OctaveSearchScreen() {
     setTyping(true);
   }, []);
 
-  const bottom = insets.bottom + PAGE_BOTTOM_ROOM;
+  const bottom = bottomInset;
   const showSuggestions = typing && draft.trim() !== "" && draft !== query;
   const nothing = !!results.library && isEmptyLayout(layout) && !results.externalPending && (results.external?.complete ?? true);
   const bar = (

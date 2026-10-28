@@ -7,6 +7,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { typography, useTheme } from "@/theme";
+import { accentTextOf } from "../ui/pageStyle";
 
 interface SheetActionProps {
   icon: LucideIcon;
@@ -19,7 +20,7 @@ interface SheetActionProps {
 
 export const SheetAction = memo(function SheetAction({ icon: Icon, label, onPress, filled, tone }: SheetActionProps) {
   const theme = useTheme();
-  const color = tone === "accent" ? theme.colors.brand.accentLight : theme.colors.text.primary;
+  const color = tone === "accent" ? accentTextOf(theme) : theme.colors.text.primary;
   return (
     <Pressable
       onPress={onPress}

@@ -3,6 +3,7 @@ import { libraryTrack } from "@tentacle-tv/shared/octave/testing";
 import { closeTrackSheet, openTrackSheet, readTrackSheet } from "./actions/trackSheetStore";
 import { NOTICE_MS, dismissNotice, readNotice, showNotice } from "./env/notices";
 import { octaveOwnerOf } from "./env/owner";
+import { activeHost } from "./env/singleHost";
 import { quickPicksShown } from "./home/quickPicksRule";
 
 describe("pages d'Octave (mobile) — règles pures", () => {
@@ -37,6 +38,12 @@ describe("pages d'Octave (mobile) — règles pures", () => {
     expect(readNotice()?.kind).toBe("error");
     vi.advanceTimersByTime(NOTICE_MS + 10);
     expect(readNotice()).toBeNull();
+  });
+
+  it("un seul hôte rend : celui de la coquille s'il est là, sinon le premier monté", () => {
+    expect(activeHost([{ id: 3, primary: false }, { id: 5, primary: true }])).toBe(5);
+    expect(activeHost([{ id: 3, primary: false }, { id: 4, primary: false }])).toBe(3);
+    expect(activeHost([])).toBeNull();
   });
 
   it("la feuille d'un titre s'ouvre et se ferme par son magasin", () => {

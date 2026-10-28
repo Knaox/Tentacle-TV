@@ -24,8 +24,9 @@ function SearchListenRecorder() {
   return null;
 }
 
-export function OctavePagesHost() {
-  const active = useSingleHost();
+/** `primary` : celui de la coquille (au-dessus des onglets et du mini-lecteur), qui passe avant ceux des écrans. */
+export function OctavePagesHost({ primary = false }: { primary?: boolean }) {
+  const active = useSingleHost(primary);
   if (!active) return null;
   return (
     <>

@@ -16,7 +16,7 @@ import { Artwork } from "../ui/Artwork";
 import { NowPlayingBars } from "../ui/NowPlayingBars";
 import { SectionTitle } from "../ui/Shelf";
 import { quickPicksShown } from "./quickPicksRule";
-import { usePageMetrics } from "../ui/pageStyle";
+import { usePageMetrics, accentTextOf } from "../ui/pageStyle";
 
 const CONTEXT = "home:recent";
 
@@ -26,7 +26,7 @@ const Tile = memo(function Tile({ track, index, list, playing }: { track: MusicT
   const player = usePagesPlayer();
   const { t } = useTranslation("music");
   const play = useCallback(() => player?.playList(list, index, CONTEXT), [index, list, player]);
-  const accent = theme.colors.brand.accentLight;
+  const accent = accentTextOf(theme);
   return (
     <Pressable
       onPress={play}

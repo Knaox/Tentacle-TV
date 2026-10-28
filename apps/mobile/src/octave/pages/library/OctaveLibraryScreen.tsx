@@ -7,8 +7,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Heart, Library } from "lucide-react-native";
@@ -16,10 +16,11 @@ import { useMusicAlbums, useMusicArtists, useMusicPlaylists } from "@tentacle-tv
 import { LIBRARY_ALBUM_SORT_KEY, parseAlbumSort, parseLibraryTab, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
+import { OctaveTopBar } from "../../layout/OctaveTopBar";
+import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useOctaveNav } from "../env/nav";
 import { useDeviceStore } from "../env/pagesEnv";
-import { PAGE_BOTTOM_ROOM } from "../home/OctaveHomeScreen";
 import { AlbumCard, ArtistCard, PlaylistCard } from "../ui/Cards";
 import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
@@ -48,7 +49,7 @@ function LikedEntry() {
 export function OctaveLibraryScreen() {
   const { t } = useTranslation("music");
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const { scrollY, scrollProps } = useOctavePageScroll();
   const router = useRouter();
   const store = useDeviceStore();
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -84,7 +85,7 @@ export function OctaveLibraryScreen() {
   }, [query]);
 
   const header = (
-    <View style={{ paddingHorizontal: gutter, paddingTop: insets.top + 12, gap: 16, paddingBottom: 12 }}>
+    <View style={{ paddingHorizontal: gutter, gap: 16, paddingBottom: 12 }}>
       <Text accessibilityRole="header" style={[typography.hero, { color: theme.colors.text.primary }]}>
         {t("library.title")}
       </Text>
@@ -97,7 +98,8 @@ export function OctaveLibraryScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <FlatList
+      <Animated.FlatList
+        {...scrollProps}
         key={`${tab}:${columns}`}
         data={items}
         keyExtractor={keyOf}
@@ -113,12 +115,12 @@ export function OctaveLibraryScreen() {
         ListFooterComponent={query?.isFetchingNextPage ? <ActivityIndicator style={{ marginVertical: 20 }} /> : null}
         onEndReached={more}
         onEndReachedThreshold={1.2}
-        contentContainerStyle={{ paddingBottom: insets.bottom + PAGE_BOTTOM_ROOM }}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={7}
         removeClippedSubviews
       />
+      <OctaveTopBar scrollY={scrollY} title={t("library.title")} back={false} />
       <OctavePagesHost />
     </View>
   );

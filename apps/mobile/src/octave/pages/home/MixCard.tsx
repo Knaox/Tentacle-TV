@@ -15,6 +15,7 @@ import { PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { usePagesContextId, usePagesPlayer, usePagesWantsPlay } from "../env/pagesPlayer";
 import { Artwork } from "../ui/Artwork";
+import { accentTextOf } from "../ui/pageStyle";
 
 function Mosaic({ urls, size }: { urls: readonly string[]; size: number }) {
   if (urls.length < 4) return <Artwork url={urls[0] ?? null} size={size} radius={10} />;
@@ -53,7 +54,7 @@ export const MixCard = memo(function MixCard({ mix, width }: { mix: MusicHomeMix
           <Icon size={16} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
         </View>
       </View>
-      <Text numberOfLines={1} style={[typography.bodyBold, styles.title, { color: current ? theme.colors.brand.accentLight : theme.colors.text.primary }]}>
+      <Text numberOfLines={1} style={[typography.bodyBold, styles.title, { color: current ? accentTextOf(theme) : theme.colors.text.primary }]}>
         {name}
       </Text>
       <Text numberOfLines={2} style={[typography.caption, { color: theme.colors.text.tertiary }]}>

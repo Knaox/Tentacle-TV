@@ -8,17 +8,17 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import Animated, { LinearTransition, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import Animated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useMusicArtistEntity, useOwnedAlbums, useOwnedTracks, useRecordMusicVisit } from "@tentacle-tv/api-client";
 import { ARTIST_TOP_FOLDED, ARTIST_TOP_MAX, groupReleases, queueActions } from "@tentacle-tv/shared/octave";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
+import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useDeviceStore, useOctaveOwner, useOctavePagesProvider } from "../env/pagesEnv";
 import { usePagesPlayer } from "../env/pagesPlayer";
-import { PAGE_BOTTOM_ROOM } from "../home/OctaveHomeScreen";
 import { AlbumCard } from "../ui/Cards";
 import { SectionTitle, Shelf } from "../ui/Shelf";
 import { TrackList } from "../ui/TrackList";
@@ -35,11 +35,9 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const player = usePagesPlayer();
-  const { gutter, sectionGap } = usePageMetrics();
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
-  });
+  const { gutter, sectionGap, bottomInset } = usePageMetrics();
+  // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
+  const { scrollY, scrollProps } = useOctavePageScroll();
   const artist = useMusicArtistEntity(useOctavePagesProvider(), id);
   useRecordMusicVisit(useDeviceStore(), useOctaveOwner(), "artist", artist.isPlaceholder ? undefined : artist.data);
   const [expanded, setExpanded] = useState(false);
@@ -62,7 +60,7 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const releases = data?.albums?.length ?? 0;
   return (
     <View style={{ flex: 1 }}>
-      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + PAGE_BOTTOM_ROOM }}>
+      <Animated.ScrollView onScroll={scrollProps.onScroll} scrollEventThrottle={16} contentOffset={scrollProps.contentOffset} contentContainerStyle={{ paddingBottom: bottomInset }}>
         {data ? (
           <CollectionHeader
             kicker={t("artist.kicker")}
