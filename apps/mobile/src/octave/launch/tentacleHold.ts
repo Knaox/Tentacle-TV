@@ -1,42 +1,35 @@
 /**
- * Octave (mobile) — ce qu'un lancement en Octave RETIENT de Tentacle, comme sur
- * le bureau (`octaveLaunchStore.ts` du web) : tant qu'on n'a pas quitté Octave,
- * ni les recouvrements de démarrage de Tentacle (affiche de la Famille,
- * invitation aux avatars, conseil du code PIN), ni la relecture du cache des
- * films. Quitter Octave relâche tout, une fois pour la session.
+ * Octave (mobile) — ce qu'Octave RETIENT de Tentacle, comme sur le bureau
+ * (`octaveLaunchStore.ts` du web) :
+ * - en mode Octave, et au lancement en Octave jusqu'à la première sortie, les
+ *   recouvrements de démarrage de Tentacle (règle : `tentacleOverlays.ts`) ;
+ * - au lancement en Octave, la relecture du cache des films, jusqu'à la
+ *   première sortie (ou le repos).
  */
 
 import { useSyncExternalStore } from "react";
 import { isOctaveMode, subscribeOctaveMode } from "../mode/octaveModeStore";
 import { octaveLaunch, octaveLaunchDecision } from "./octaveLaunch";
+import { tentacleHeldNow } from "./tentacleOverlays";
 
 let released = false;
-const listeners = new Set<() => void>();
-
-function release(): void {
-  if (released) return;
-  released = true;
-  for (const listener of listeners) listener();
-}
+/** Attendent la première sortie d'Octave (lancement en Octave). */
+const releaseListeners = new Set<() => void>();
 
 subscribeOctaveMode(() => {
-  if (!isOctaveMode()) release();
+  if (isOctaveMode() || released) return;
+  released = true;
+  for (const listener of releaseListeners) listener();
 });
 
-/** Tentacle est-il encore retenu (lancement en Octave, jamais quitté depuis) ? */
+/** Tentacle est-il retenu (mode Octave, ou lancement en Octave jamais quitté) ? */
 export function isTentacleHeld(): boolean {
-  return !released && octaveLaunch().inOctave;
+  return tentacleHeldNow({ octaveMode: isOctaveMode(), launchedInOctave: octaveLaunch().inOctave, released });
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
+/** Suit le mode Octave (entrée, sortie) : `isTentacleHeld` en dépend. */
 export function useTentacleHeld(): boolean {
-  return useSyncExternalStore(subscribe, isTentacleHeld, isTentacleHeld);
+  return useSyncExternalStore(subscribeOctaveMode, isTentacleHeld, isTentacleHeld);
 }
 
 /** Après la première image d'Octave, le temps au repos avant le travail de Tentacle retenu. */
@@ -57,11 +50,11 @@ export function whenTentacleNeeded(run: () => void): void {
     const go = () => {
       if (done) return;
       done = true;
-      listeners.delete(go);
+      releaseListeners.delete(go);
       clearTimeout(timer);
       run();
     };
-    listeners.add(go);
+    releaseListeners.add(go);
     const timer = setTimeout(go, TENTACLE_IDLE_DELAY_MS);
   });
 }
