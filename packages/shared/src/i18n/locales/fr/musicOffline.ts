@@ -26,6 +26,11 @@ export default {
   failed: "N'a pas pu être gardé",
   retry: "Réessayer",
   kept: "Gardé sur cet appareil",
+  state: {
+    library: "Dans la bibliothèque",
+    cloud: "En cloud, lu depuis Internet",
+    unavailable: "Indisponible",
+  },
   keptCount_one: "{{count}} titre gardé",
   keptCount_other: "{{count}} titres gardés",
   queued_one: "{{count}} titre part sur cet appareil",
@@ -39,6 +44,23 @@ export default {
     title: "Votre musique sur cet appareil",
     subtitle_one: "{{count}} titre · écouter dans Octave",
     subtitle_other: "{{count}} titres · écouter dans Octave",
+  },
+  page: {
+    missingTitle: "Pas disponible hors ligne",
+    missingHint: "Cette page n’a pas encore été ouverte en ligne sur cet appareil. La musique gardée sur cet appareil reste à portée de main.",
+    openDevice: "Sur cet appareil",
+  },
+  home: {
+    title: "Accueil",
+    noSurfaceTitle: "Hors ligne",
+    noSurfaceHint: "La musique gardée hors ligne appartient au compte de cet appareil. Elle revient avec la connexion.",
+  },
+  retest: {
+    label: "Retester la connexion",
+    idle: "Vérifie si le serveur répond. S’il répond, Octave repasse en ligne.",
+    idleManual: "Vous êtes hors ligne par choix : si le serveur répond, Octave repasse en ligne.",
+    checking: "Test en cours…",
+    still: "Le serveur ne répond toujours pas. La musique gardée sur cet appareil reste disponible.",
   },
   autosync: {
     section: "Hors ligne",

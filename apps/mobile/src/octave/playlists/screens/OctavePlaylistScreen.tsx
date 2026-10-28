@@ -15,7 +15,11 @@ import { queueActions, type ListRow } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
 import { usePagesPlayer } from "../../pages";
 import { playFrom } from "../../pages/env/playFrom";
+import { libraryPlaylistKey } from "@tentacle-tv/offline-core/music";
 import { KeepCollectionButton } from "../../offline/KeepCollectionButton";
+import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
+import { useOfflinePage } from "../../offline/useOfflinePage";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useOctaveNav } from "../../pages/env/nav";
 import { CollectionHeader, MetaLine } from "../../pages/entity/CollectionHeader";
 import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
@@ -41,11 +45,15 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const tracks = useMemo(() => order.rows.map((r) => r.track), [order.rows]);
   const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const contextId = `playlist:${id}`;
+  const page = useOfflinePage(playlist, [libraryPlaylistKey(id)]);
+  // Modifier, gérer : le serveur seul le sait faire — hors ligne, la playlist se lit, elle ne se modifie pas.
+  const offline = useOfflineMode();
+  const canEdit = editable && !offline;
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
 
-  if (playlist.isError || (!playlist.isPending && !data)) {
-    return <ErrorState onRetry={() => void playlist.refetch()} message={t("playlist.notFound")} />;
-  }
+  // Hors ligne, la page gardée (son dernier affichage en ligne) se montre ; sans elle, la playlist gardée sur l'appareil.
+  if (page.view === "kept" || page.view === "offlineMissing") return <OfflinePageFallback keptKey={page.keptKey} />;
+  if (page.view === "error") return <ErrorState onRetry={() => void playlist.refetch()} message={t("playlist.notFound")} />;
 
   const hero = (scrollY: Parameters<typeof CollectionHeader>[0]["scrollY"]) => (
     <>
@@ -76,7 +84,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   );
 
   const actions =
-    data && editable ? (
+    data && canEdit ? (
       <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: "manage", playlist: data })} />
     ) : null;
 
@@ -89,7 +97,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
       order={order}
       loading={loading}
       empty={empty}
-      onRemove={editable ? onRemove : undefined}
+      onRemove={canEdit ? onRemove : undefined}
       actions={actions}
     />
   );

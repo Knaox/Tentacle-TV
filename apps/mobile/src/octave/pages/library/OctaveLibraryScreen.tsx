@@ -28,6 +28,8 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 import { useFirstEnter } from "../../layout/enterMotion";
+import { useOfflineMode } from "@/offline/useOfflineMode";
+import { OfflineMissingState } from "../../offline/OfflinePageFallback";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -70,6 +72,7 @@ export function OctaveLibraryScreen() {
   const albums = useMusicAlbums({ sort, enabled: tab === "albums" });
   const artists = useMusicArtists({ enabled: tab === "artists" });
   const playlists = useMusicPlaylists();
+  const offline = useOfflineMode();
 
   const query = tab === "albums" ? albums : tab === "artists" ? artists : null;
   const items = useMemo<Item[]>(() => {
@@ -100,7 +103,7 @@ export function OctaveLibraryScreen() {
       <LibraryFilterBar tab={tab} onTab={setTab} />
     </View>
   );
-  const empty = pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
+  const empty = items.length === 0 && offline ? <OfflineMissingState /> : pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
 
   return (
     <View style={{ flex: 1 }}>

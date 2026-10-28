@@ -24,6 +24,7 @@ export function OctaveExternalPlaylistScreen({ id }: { id: string }) {
       pending={playlist.isPending}
       failed={playlist.isError}
       notFound={t("playlist.notFound")}
+      keptKeys={[`playlist:${id}`]}
       onRetry={() => void playlist.refetch()}
       extra={(tracks) => (data ? <KeepCollectionButton kind="playlist" collectionKey={id} title={data.title} subtitle={data.owner ?? null} tracks={tracks} /> : null)}
     />

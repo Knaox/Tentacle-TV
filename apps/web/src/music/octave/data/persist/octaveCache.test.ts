@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { artworkUrlsOf, preconnectOrigins, warmArtworkList } from "./artworkWarm";
 import { attachOctaveCache, hydrateOctaveCache, type OctaveQueryClientLike } from "./octaveCachePersister";
-import { ENTITY_MAX_AGE_MS, entryId, evictionPlan, persistable, persistKindOf, SEARCH_MAX_AGE_MS, type StoredEntry } from "./octaveCachePolicy";
+import { anchoredKey, ENTITY_MAX_AGE_MS, entryId, evictionPlan, expired, persistable, persistKindOf, SEARCH_MAX_AGE_MS, type StoredEntry } from "./octaveCachePolicy";
 import { memoryBackend } from "./octaveCacheStore";
 
 const OWNER = "http://srv|user-1";
@@ -28,6 +28,21 @@ describe("politique du cache gardé d'Octave", () => {
     for (const key of [["music", "source", "t"], ["music", "match", "x"], ["music", "by-mbid", "x"], ["music", "search", "q", 20], ["music", "external-suggest", "x"], ["resume-items"]]) {
       expect(persistKindOf(key)).toBeNull();
     }
+  });
+
+  it("les playlists gardent leur dernier affichage en ligne : ancrées, sans âge limite, évincées en dernier", () => {
+    expect(persistKindOf(["music", "pending", "sillon"])).toBe("library");
+    for (const key of [["music", "playlist", "p"], ["music", "playlists"], ["music", "liked", 500], ["music", "pending", "sillon"], ["music", "list-prefs", "playlist:p"], ["music", "list-prefs", "liked"]]) {
+      expect(anchoredKey(JSON.stringify(key))).toBe(true);
+    }
+    for (const key of [["music", "home"], ["music", "album", "a"], ["music", "list-prefs", "album:a"]]) expect(anchoredKey(JSON.stringify(key))).toBe(false);
+    const old = 1_000 + 365 * 24 * 3_600_000;
+    expect(expired(entry(["music", "playlist", "p"], { kind: "library" }), old)).toBe(false);
+    expect(expired(entry(["music", "album", "a"], { kind: "library" }), old)).toBe(true);
+    // La place manque : la page d'album part, la playlist (moins récente) reste.
+    const playlist = entry(["music", "playlist", "p"], { kind: "library", usedAt: 1 });
+    const album = entry(["music", "album", "a"], { kind: "library", usedAt: 9 });
+    expect(evictionPlan([playlist, album], OWNER, 2_000, 1)).toEqual([album.id]);
   });
 
   it("une recherche se garde FINIE et jamais provisoire", () => {

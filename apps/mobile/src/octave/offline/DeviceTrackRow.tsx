@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { PressableScale } from "../layout/PressableScale";
 import { useOctaveColors } from "../theme/octaveColors";
-import { KeptMark } from "./KeptMark";
+import { TrackStateMark } from "./TrackStateMark";
 
 export const DEVICE_ROW_HEIGHT = 64;
 
@@ -32,7 +32,7 @@ export const DeviceTrackRow = memo(function DeviceTrackRow({ track, index, onPla
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{track.title}</Text>
         {artist ? <Text style={[styles.artist, { color: colors.textSecondary }]} numberOfLines={1}>{artist}</Text> : null}
       </View>
-      <KeptMark trackKey={track.key} />
+      <TrackStateMark track={track} />
     </PressableScale>
   );
 });

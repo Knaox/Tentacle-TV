@@ -12,6 +12,7 @@ import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { openTrackSheet } from "../actions/trackSheetStore";
+import { TrackStateMark } from "../../offline/TrackStateMark";
 import { Artwork } from "../ui/Artwork";
 import { NowPlayingBars } from "../ui/NowPlayingBars";
 import { SectionTitle } from "../ui/Shelf";
@@ -41,9 +42,12 @@ const Tile = memo(function Tile({ track, index, list, playing }: { track: MusicT
         <Text numberOfLines={1} style={[typography.bodyBold, { fontSize: 14, color: playing ? accent : theme.colors.text.primary }]}>
           {track.title}
         </Text>
-        <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.tertiary }]}>
-          {track.artists.map((a) => a.name).join(", ")}
-        </Text>
+        <View style={styles.sub}>
+          <TrackStateMark track={track} size={11} />
+          <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
+            {track.artists.map((a) => a.name).join(", ")}
+          </Text>
+        </View>
       </View>
       {playing ? <NowPlayingBars color={accent} /> : null}
     </Pressable>
@@ -74,4 +78,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -4 },
   tile: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, paddingRight: 10, overflow: "hidden", minHeight: 52 },
   tileText: { flex: 1, minWidth: 0, gap: 1 },
+  sub: { flexDirection: "row", alignItems: "center", gap: 4 },
+  flex: { flex: 1 },
 });

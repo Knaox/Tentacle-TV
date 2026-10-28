@@ -2,7 +2,8 @@
  * Octave mobile — une pochette : `expo-image` (cache mémoire + disque), la
  * place RÉSERVÉE à sa taille (rien ne bouge à l'arrivée), un fond d'attente
  * calme puis un fondu court. Sans image : la note de musique dessinée, jamais
- * une case vide. Ronde pour un artiste.
+ * une case vide. Ronde pour un artiste. Le cache disque est rangé SANS jeton
+ * et, hors ligne, la pochette gardée avec le titre passe d'abord (`artworkSource.ts`).
  */
 
 import { memo } from "react";
@@ -10,7 +11,9 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import { Disc3, Mic2 } from "lucide-react-native";
 import { useTheme } from "@/theme";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useArtworkResolver } from "../env/pagesEnv";
+import { artworkSource } from "./artworkSource";
 
 interface ArtworkProps {
   url: string | null | undefined;
@@ -19,12 +22,15 @@ interface ArtworkProps {
   radius?: number;
   kind?: "album" | "artist";
   style?: StyleProp<ViewStyle>;
+  /** La pochette gardée sur l'appareil (titre gardé hors ligne), s'il y en a une. */
+  localUrl?: string | null;
 }
 
-export const Artwork = memo(function Artwork({ url, size, round, radius = 8, kind = "album", style }: ArtworkProps) {
+export const Artwork = memo(function Artwork({ url, size, round, radius = 8, kind = "album", style, localUrl = null }: ArtworkProps) {
   const theme = useTheme();
   const resolve = useArtworkResolver();
-  const src = resolve(url);
+  const offline = useOfflineMode();
+  const src = artworkSource(resolve(url), localUrl, offline);
   const box: ViewStyle = size === "fill" ? { width: "100%", aspectRatio: 1 } : { width: size, height: size };
   const r = round ? 9999 : radius;
   const Fallback = kind === "artist" ? Mic2 : Disc3;
@@ -32,7 +38,7 @@ export const Artwork = memo(function Artwork({ url, size, round, radius = 8, kin
   return (
     <View style={[box, { borderRadius: r, backgroundColor: theme.colors.surface.s2, overflow: "hidden" }, style]}>
       {src ? (
-        <Image source={{ uri: src }} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" recyclingKey={src} accessibilityIgnoresInvertColors />
+        <Image source={src} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" recyclingKey={src.cacheKey ?? src.uri} accessibilityIgnoresInvertColors />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.center]}>
           <Fallback size={glyph} color={theme.colors.text.quaternary} strokeWidth={1.6} />

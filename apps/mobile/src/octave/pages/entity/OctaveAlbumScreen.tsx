@@ -31,6 +31,8 @@ import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
+import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
+import { useOfflinePage } from "../../offline/useOfflinePage";
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
@@ -65,8 +67,11 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
     return out;
   }, [discs.length, tracks]);
   const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
+  // L'album gardé sur l'appareil, sous sa clé de bibliothèque ou d'extension.
+  const page = useOfflinePage(album, [`album:${id}`, `album:jf:${id}`]);
 
-  if (album.isError || (!album.isPending && !album.data)) {
+  if (page.view === "kept" || page.view === "offlineMissing") return <OfflinePageFallback keptKey={page.keptKey} />;
+  if (page.view === "error") {
     return (
       <View style={{ flex: 1, paddingTop: insets.top + 60 }}>
         <ErrorState onRetry={() => void album.refetch()} message={t("album.notFound")} />

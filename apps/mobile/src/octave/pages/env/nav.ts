@@ -20,6 +20,8 @@ export interface OctaveNav {
   externalPlaylist: (key: string) => void;
   liked: () => void;
   search: (query?: string) => void;
+  /** « Sur cet appareil » : la musique gardée, lisible sans réseau. */
+  device: () => void;
 }
 
 export function useOctaveNav(): OctaveNav {
@@ -42,6 +44,7 @@ export function useOctaveNav(): OctaveNav {
       externalPlaylist: (key) => go(octavePaths.externalPlaylist(key)),
       liked: () => go(octavePaths.liked),
       search: (query) => go(query ? `${octavePaths.search}?q=${encodeURIComponent(query)}` : octavePaths.search),
+      device: () => go(octavePaths.device),
     };
   }, [router]);
 }

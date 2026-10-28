@@ -18,6 +18,7 @@ import { typography } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { useArtworkResolver } from "../env/pagesEnv";
 import { useMoodPlay } from "../env/useMoodPlay";
+import { artworkCacheKey } from "../ui/artworkSource";
 
 export const MoodCard = memo(function MoodCard({ mood, width }: { mood: ExternalMusicMood; width: number }) {
   const { t } = useTranslation("music");
@@ -31,7 +32,7 @@ export const MoodCard = memo(function MoodCard({ mood, width }: { mood: External
         <LinearGradient colors={[shade(mood.color, 0.4), mood.color]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         {src ? (
           <>
-            <Image source={{ uri: src }} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" />
+            <Image source={{ uri: src, cacheKey: artworkCacheKey(src) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" />
             <LinearGradient colors={[shade(mood.color, 0.55), "transparent"]} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 0.8 }} style={StyleSheet.absoluteFill} />
           </>
         ) : null}

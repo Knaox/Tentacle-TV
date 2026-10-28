@@ -23,6 +23,11 @@ export default {
   failed: "Couldn't be kept",
   retry: "Try again",
   kept: "Kept on this device",
+  state: {
+    library: "In the library",
+    cloud: "In the cloud, streamed from the internet",
+    unavailable: "Unavailable",
+  },
   keptCount_one: "{{count}} track kept",
   keptCount_other: "{{count}} tracks kept",
   queued_one: "{{count}} track is coming to this device",
@@ -36,6 +41,23 @@ export default {
     title: "Your music on this device",
     subtitle_one: "{{count}} track · listen in Octave",
     subtitle_other: "{{count}} tracks · listen in Octave",
+  },
+  page: {
+    missingTitle: "Not available offline",
+    missingHint: "This page hasn’t been opened online on this device yet. Music kept on this device is still at hand.",
+    openDevice: "On this device",
+  },
+  home: {
+    title: "Home",
+    noSurfaceTitle: "Offline",
+    noSurfaceHint: "Music kept offline belongs to this device’s account. It comes back with the connection.",
+  },
+  retest: {
+    label: "Test the connection again",
+    idle: "Checks whether the server answers. If it does, Octave goes back online.",
+    idleManual: "You chose to be offline: if the server answers, Octave goes back online.",
+    checking: "Testing…",
+    still: "The server still isn’t answering. Music kept on this device is still available.",
   },
   autosync: {
     section: "Offline",

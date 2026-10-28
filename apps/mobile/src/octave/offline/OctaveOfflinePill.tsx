@@ -29,7 +29,8 @@ export const OctaveOfflinePill = memo(function OctaveOfflinePill() {
   const offline = useOfflineMode();
   const surface = useOfflineSurface();
   const pathname = usePathname();
-  if (!offline || !surface.visible || pathname.startsWith(octavePaths.device)) return null;
+  // Sur « Sur cet appareil » et l’accueil hors ligne (la même vue), sa bascule le dit déjà.
+  if (!offline || !surface.visible || pathname.startsWith(octavePaths.device) || pathname === octavePaths.home) return null;
   return <Pill />;
 });
 

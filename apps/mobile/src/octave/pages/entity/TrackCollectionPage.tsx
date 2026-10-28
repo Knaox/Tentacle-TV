@@ -23,6 +23,8 @@ import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
+import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
+import { useOfflinePage } from "../../offline/useOfflinePage";
 
 const NO_TRACKS: MusicTrack[] = [];
 
@@ -46,9 +48,11 @@ interface TrackCollectionPageProps {
   footer?: ReactElement | null;
   /** À côté de Lecture et Aléatoire (« garder sur cet appareil »), selon les titres montrés. */
   extra?: (tracks: readonly MusicTrack[]) => ReactElement | null;
+  /** Hors ligne sans la page : ses clés de collection gardée possibles (`offlinePageRule.ts`). */
+  keptKeys?: readonly string[];
 }
 
-export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer, extra }: TrackCollectionPageProps) {
+export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer, extra, keptKeys }: TrackCollectionPageProps) {
   const { t } = useTranslation("music");
   const insets = useSafeAreaInsets();
   const player = usePagesPlayer();
@@ -60,8 +64,10 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
   const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
   const meta = useCountAndDuration(tracks.length, tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const owned = useMemo(() => ownedCount(tracks), [tracks]);
+  const page = useOfflinePage({ data: head, isPending: pending, isError: failed }, keptKeys);
 
-  if (failed || (!pending && !head)) {
+  if (page.view === "kept" || page.view === "offlineMissing") return <OfflinePageFallback keptKey={page.keptKey} />;
+  if (page.view === "error") {
     return (
       <View style={{ flex: 1, paddingTop: insets.top + 60 }}>
         <ErrorState onRetry={onRetry} message={notFound} />

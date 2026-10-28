@@ -44,7 +44,8 @@ function freeSpaceText(): string | null {
   }
 }
 
-export function OctaveDeviceScreen({ params }: OctaveScreenProps) {
+/** `asHome` : l'ACCUEIL hors ligne (`OctaveHomeScreen`) — la même vue, sans « Retour ». */
+export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps & { asHome?: boolean }) {
   const { t } = useTranslation("musicOffline");
   const { t: tm } = useTranslation("music");
   const colors = useOctaveColors();
@@ -116,7 +117,7 @@ export function OctaveDeviceScreen({ params }: OctaveScreenProps) {
         removeClippedSubviews
         showsVerticalScrollIndicator={false}
       />
-      <OctaveTopBar scrollY={scrollY} title={title} />
+      <OctaveTopBar scrollY={scrollY} title={title} back={!(asHome && !open)} />
     </View>
   );
 }

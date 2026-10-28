@@ -27,6 +27,8 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { playFrom } from "../env/playFrom";
+import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
+import { useOfflinePage } from "../../offline/useOfflinePage";
 
 const NO_ALBUMS: MusicAlbum[] = [];
 const HIDE = { artist: true } as const;
@@ -48,8 +50,10 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const groups = useMemo(() => groupReleases(albums), [albums]);
   const contextId = `artist:${id}`;
   const playAll = useCallback(() => playFrom(player, top, 0, contextId), [contextId, player, top]);
+  const page = useOfflinePage(artist);
 
-  if (artist.isError || (!artist.isPending && !artist.data)) {
+  if (page.view === "kept" || page.view === "offlineMissing") return <OfflinePageFallback keptKey={null} />;
+  if (page.view === "error") {
     return (
       <View style={{ flex: 1, paddingTop: insets.top + 60 }}>
         <ErrorState onRetry={() => void artist.refetch()} message={t("artist.notFound")} />
