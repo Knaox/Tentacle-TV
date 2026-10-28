@@ -15,6 +15,7 @@ import { ProfileChip } from "@/components/header/ProfileChip";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { DataSaverPill } from "@/offline/DataSaverPill";
 import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
+import { OctaveEnterButton } from "@/octave/mode/OctaveEnterButton";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useDataSaverActive } from "@/offline/useDataSaver";
 import { useOfflineMode } from "@/offline/useOfflineMode";
@@ -118,6 +119,8 @@ export const PersistentHeader = memo(function PersistentHeader() {
           </View>
         ) : (
           <View style={styles.actions}>
+            {/* Octave : seulement si le serveur et le compte ont la musique. */}
+            <OctaveEnterButton />
             <HeaderContentMenu anchorTop={headerH} />
             <Pressable onPress={() => router.push("/search")} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
               <Feather name="search" size={21} color={colors.text.primary} />
