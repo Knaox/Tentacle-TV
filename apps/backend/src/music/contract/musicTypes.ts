@@ -12,6 +12,7 @@
  */
 
 import type { MusicListStats } from "./musicListOrder";
+import type { MusicPlaylistSharing } from "./musicPlaylistMembers";
 
 /** Un identifiant MusicBrainz (UUID en minuscules). */
 export type Mbid = string;
@@ -183,8 +184,13 @@ export interface MusicPlaylist {
    * qui tournent chaque jour. Absente : `artworkUrl` (une image posée à la main, ou un serveur d'avant).
    */
   mosaic?: string[];
-  /** Le compte peut-il la modifier (propriétaire ou partage en écriture) ? */
+  /** Le compte peut-il la GÉRER (renommer, décrire, supprimer, partager) ? Le propriétaire seulement. */
   editable: boolean;
+  /**
+   * Partagée entre comptes du serveur (capacité `music.playlistMembers`, `musicPlaylistMembers.ts`) : qui y a accès,
+   * et le droit du compte qui lit. Absente : une playlist que personne d'autre ne voit (ou un serveur d'avant).
+   */
+  sharing?: MusicPlaylistSharing;
   /** La description (Jellyfin `Overview`), rendue par le détail d'une playlist (`music.playlistManage`) ; `null` : aucune. */
   description?: string | null;
   entries?: MusicPlaylistEntry[];

@@ -174,8 +174,8 @@ function compare(a: MusicListSubject, b: MusicListSubject, sort: MusicListSortKe
  * La liste dans l'ordre de la préférence. `natural` est l'ordre de la source (celui de la playlist ;
  * le dernier like en tête) : il départage tout ex æquo, et l'ordre personnalisé s'y applique.
  */
-export function sortListItems<T>(natural: readonly T[], subjectOf: (item: T) => MusicListSubject, prefs: MusicListPrefs): T[] {
-  if (prefs.sort === "custom") return applyCustomOrder(natural, subjectOf, prefs.custom);
+export function sortListItems<T>(natural: readonly T[], subjectOf: (item: T) => MusicListSubject, prefs: MusicListPrefs, newcomers: MusicListNewcomers = "after"): T[] {
+  if (prefs.sort === "custom") return applyCustomOrder(natural, subjectOf, prefs.custom, newcomers);
   const sign = prefs.direction === "desc" ? -1 : 1;
   const decorated = natural.map((item, index) => ({ item, index, subject: subjectOf(item) }));
   // « Dernier ajout » : à date égale (un import entier, une arrivée posée à sa place), plus bas dans la liste =
@@ -186,12 +186,24 @@ export function sortListItems<T>(natural: readonly T[], subjectOf: (item: T) => 
 }
 
 /**
- * L'ordre personnalisé appliqué à l'ordre naturel. Un titre connu prend son rang ; un titre inconnu
- * se pose juste après son prédécesseur naturel (en tête sans prédécesseur), les inconnus consécutifs
- * gardant leur ordre naturel. Un titre devenu « bibliothèque » retrouve la place de son attente par
- * son MBID d'enregistrement.
+ * Où se pose un titre que l'ordre personnalisé ne connaît pas encore : juste après son prédécesseur naturel
+ * (`after`, le défaut), ou à la FIN (`end` : une playlist partagée, où chacun garde son ordre et où un titre
+ * ajouté par un autre entre au bout de l'ordre de chacun — `musicPlaylistMembers.ts`).
  */
-export function applyCustomOrder<T>(natural: readonly T[], subjectOf: (item: T) => MusicListSubject, custom: readonly MusicCustomEntry[] | null): T[] {
+export type MusicListNewcomers = "after" | "end";
+
+/**
+ * L'ordre personnalisé appliqué à l'ordre naturel. Un titre connu prend son rang ; un titre inconnu
+ * se pose juste après son prédécesseur naturel (en tête sans prédécesseur) — ou à la fin (`newcomers`
+ * = `end`) —, les inconnus consécutifs gardant leur ordre naturel. Un titre devenu « bibliothèque »
+ * retrouve la place de son attente par son MBID d'enregistrement.
+ */
+export function applyCustomOrder<T>(
+  natural: readonly T[],
+  subjectOf: (item: T) => MusicListSubject,
+  custom: readonly MusicCustomEntry[] | null,
+  newcomers: MusicListNewcomers = "after",
+): T[] {
   if (!custom || custom.length === 0) return [...natural];
   const byKey = new Map<string, number>();
   const byRecording = new Map<string, number>();
@@ -226,7 +238,7 @@ export function applyCustomOrder<T>(natural: readonly T[], subjectOf: (item: T) 
       return { item, rank, sub: 0 };
     }
     sub += 1;
-    return { item, rank: anchor, sub };
+    return { item, rank: newcomers === "end" ? custom.length : anchor, sub: newcomers === "end" ? index + 1 : sub };
   });
   decorated.sort((a, b) => a.rank - b.rank || a.sub - b.sub);
   return decorated.map((d) => d.item);

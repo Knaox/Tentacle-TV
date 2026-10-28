@@ -300,6 +300,11 @@ export const SERVER_CAPABILITIES = {
    *  et l'import d'un lien d'un AUTRE serveur Tentacle (source `tentacle` de `POST /api/music/import`).
    *  Sans elle : ni « Partager », ni lien Tentacle reconnu à l'import. */
   "music.playlistShare": "1.40.0",
+  /** Une playlist PARTAGÉE entre comptes du même serveur (`musicPlaylistMembers.ts`) : le propriétaire donne à un
+   *  compte (jamais un invité de la Famille) le droit de lire, d'ajouter, ou d'ajouter et retirer — tenu par le
+   *  serveur (`/api/music/playlists/:id/members`) ; chacun garde SON ordre ; un membre peut la quitter. Sans elle :
+   *  ni « Partager avec… », ni badge, ni playlist d'un autre compte. Rien à voir avec `music.playlistShare`. */
+  "music.playlistMembers": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */
