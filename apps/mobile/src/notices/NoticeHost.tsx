@@ -20,6 +20,8 @@ import { dismissToast, toastAppearance, useToasts } from "./toastStore";
 import { useSwipeDismiss } from "./useSwipeDismiss";
 import { useNoticesSettled } from "./useNoticesSettled";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
+import { useTentacleHeld } from "@/octave/launch/tentacleHold";
+import { startupOverlayAllowed } from "@/octave/launch/tentacleOverlays";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
 interface Confirmation {
@@ -43,7 +45,9 @@ export function NoticeHost() {
   const isAdmin = useIsAdmin();
   const { serverVersion } = useServerCompat();
   const { serverUrl } = useServerUrl();
-  const notice = useClientNotice({ isAdmin, serverVersion, minServer: MIN_SERVER_VERSION });
+  const pending = useClientNotice({ isAdmin, serverVersion, minServer: MIN_SERVER_VERSION });
+  // En mode Octave, les avertissements de Tentacle attendent le retour aux films ; les messages brefs restent.
+  const notice = startupOverlayAllowed("notices", useTentacleHeld()) ? pending : null;
   const pathname = usePathname();
   const screenReader = useScreenReaderEnabled();
   const { mutate } = useSetHintDismissed();
