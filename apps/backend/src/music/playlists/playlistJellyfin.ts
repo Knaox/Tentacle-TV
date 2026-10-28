@@ -19,6 +19,8 @@ export interface JfPlaylist extends JfItem {
   CumulativeRunTimeTicks?: number;
   /** Change quand la playlist est réenregistrée (ajout, retrait, déplacement) : le tampon de sa jaquette. */
   Etag?: string;
+  /** Tentacle, pas Jellyfin : lue pour un MEMBRE au nom de ce propriétaire (`playlistMembers/playlistAccess.ts`). */
+  TentacleReaderId?: string;
 }
 
 /** Les playlists AUDIO que Jellyfin montre à ce compte (les siennes, partagées, publiques). */

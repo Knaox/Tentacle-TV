@@ -8,11 +8,14 @@
 
 import { jfAdmin, jfWrite, normalizeId, q, type JfItem } from "../jellyfin/musicJellyfin";
 import { tellPlaylistChanged } from "../events/musicLiveEvents";
-import { forgetUserPlaylists, playlistEntries, playlistFor } from "./playlistJellyfin";
+import { forgetUserPlaylists, playlistEntries } from "./playlistJellyfin";
 import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
 import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
 import { forgetPlaylistSource } from "../playlistSource/sourceStore";
 import { forgetPlaylistShares } from "../playlistShare/shareStore";
+import { accessAllows, isShared, playlistAccess, type PlaylistGesture } from "../playlistMembers/playlistAccess";
+import { forgetPlaylistMembers } from "../playlistMembers/memberStore";
+import { tellPlaylistPeople } from "../playlistMembers/memberEvents";
 
 export type PlaylistFailure = "not_found" | "forbidden" | "invalid" | "unavailable";
 export type PlaylistResult<T> = { ok: true; value: T } | { ok: false; failure: PlaylistFailure };
@@ -31,15 +34,26 @@ function locked<T>(playlistId: string, task: () => Promise<T>): Promise<T> {
   return next;
 }
 
-async function editable(userId: string, playlistId: string): Promise<PlaylistFailure | null> {
-  const playlist = await playlistFor(userId, playlistId);
-  if (!playlist) return "not_found";
-  return playlist.CanDelete === true ? null : "forbidden";
+interface Authorized {
+  /** Le compte au nom duquel Jellyfin est lu et écrit (le propriétaire, pour un membre). */
+  actor: string;
+  /** Une playlist partagée : son ordre est à chacun, Jellyfin n'est jamais réordonné. */
+  shared: boolean;
 }
 
-function done(userId: string, playlistId: string): void {
+/** Le droit vérifié AVANT tout geste (`playlistAccess.ts`) : la clé d'administration, elle, ne contrôle rien. */
+async function authorize(userId: string, playlistId: string, gesture: PlaylistGesture): Promise<Authorized | PlaylistFailure> {
+  const access = await playlistAccess(userId, playlistId);
+  if (!access) return "not_found";
+  if (!accessAllows(access.right, gesture)) return "forbidden";
+  return { actor: access.readerId, shared: await isShared(playlistId) };
+}
+
+/** Le propriétaire et chacun des membres relisent la playlist ; `also` : des comptes qui n'en sont plus (déjà retirés). */
+function done(userId: string, playlistId: string, also: readonly string[] = []): void {
   forgetUserPlaylists();
-  tellPlaylistChanged(userId, playlistId);
+  for (const account of new Set([userId, ...also])) tellPlaylistChanged(account, playlistId);
+  void tellPlaylistPeople(playlistId, [userId, ...also]);
 }
 
 /** 100 identifiants (~3,3 Kio) par requête : sous la borne de 8 Kio de la ligne de requête de Jellyfin. */
@@ -64,7 +78,7 @@ async function append(userId: string, playlistId: string, itemIds: string[]): Pr
 async function rewriteTo(userId: string, playlistId: string, current: PlaylistEntryRef[], desired: string[]): Promise<boolean> {
   const plan = planRewrite(current, desired);
   if (!plan) return true;
-  // Sans contrôle de propriétaire chez Jellyfin : l'appelant a vérifié le droit (`editable`).
+  // Sans contrôle de propriétaire chez Jellyfin : l'appelant a vérifié le droit (`authorize`).
   for (const batch of chunks(plan.remove, BATCH)) {
     const removed = await jfWrite(`/Playlists/${q(playlistId)}/Items?entryIds=${batch.map(q).join(",")}`, "DELETE");
     if (!removed.ok) {
@@ -99,8 +113,8 @@ export interface PlaylistDetailsChange {
 /** Le nom et/ou la description (Jellyfin `Overview`) : la fiche de l'élément, relue puis réécrite entière. */
 export function updatePlaylistDetails(userId: string, playlistId: string, change: PlaylistDetailsChange): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
+    const auth = await authorize(userId, playlistId, "manage");
+    if (typeof auth === "string") return { ok: false, failure: auth };
     // `POST /Playlists/{id}` exige le jeton du compte ; la fiche de l'élément, la clé suffit.
     const item = await jfAdmin<JfItem & Record<string, unknown>>(`/Items/${q(playlistId)}?userId=${q(userId)}`);
     if (!item.ok) return { ok: false, failure: "unavailable" };
@@ -114,15 +128,17 @@ export function updatePlaylistDetails(userId: string, playlistId: string, change
 
 export function deletePlaylist(userId: string, playlistId: string): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
+    const auth = await authorize(userId, playlistId, "manage");
+    if (typeof auth === "string") return { ok: false, failure: auth };
     const removed = await jfWrite(`/Items/${q(playlistId)}`, "DELETE");
     if (!removed.ok) return { ok: false, failure: "unavailable" };
     await forgetPlaylistOrder(playlistId).catch(() => undefined);
     await forgetPlaylistSource(playlistId).catch(() => undefined);
     // Le lien de partage d'une playlist supprimée ne sert plus rien : il part avec elle.
     await forgetPlaylistShares(playlistId).catch(() => undefined);
-    done(userId, playlistId);
+    // Ses membres la perdent aussi : chacun relit sa liste.
+    const members = await forgetPlaylistMembers(playlistId).catch(() => []);
+    done(userId, playlistId, members);
     return { ok: true, value: true };
   });
 }
@@ -144,19 +160,21 @@ export function insertAt(
   settled?: (position: number) => Promise<void>,
 ): Promise<PlaylistResult<number>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
-    const before = await playlistEntries(userId, playlistId);
+    const auth = await authorize(userId, playlistId, "add");
+    if (typeof auth === "string") return { ok: false, failure: auth };
+    const { actor, shared } = auth;
+    const before = await playlistEntries(actor, playlistId);
     if (!before) return { ok: false, failure: "unavailable" };
     const ids = itemIds.map(normalizeId);
-    const desired = insertedOrder(before, ids, await place(before));
+    // Partagée : chaque ajout entre au BOUT (l'ordre est à chacun), rien de déjà là ne bouge.
+    const desired = shared ? null : insertedOrder(before, ids, await place(before));
     // L'AJOUT d'abord : Jellyfin dit si ce compte peut écrire ; refusé, rien n'a été retiré.
     const fresh = ids.filter((id) => !before.some((e) => e.itemId === id));
-    const refused = await append(userId, playlistId, fresh);
+    const refused = await append(actor, playlistId, fresh);
     if (refused) return { ok: false, failure: refused };
-    const after = await playlistEntries(userId, playlistId);
-    if (!after || !(await rewriteTo(userId, playlistId, after, desired))) return { ok: false, failure: "unavailable" };
-    const at = Math.max(0, desired.indexOf(ids[0]!));
+    const after = await playlistEntries(actor, playlistId);
+    if (!after || (desired && !(await rewriteTo(actor, playlistId, after, desired)))) return { ok: false, failure: "unavailable" };
+    const at = Math.max(0, (desired ?? after.map((e) => e.itemId)).indexOf(ids[0]!));
     await settled?.(at);
     done(userId, playlistId);
     return { ok: true, value: at };
@@ -165,14 +183,16 @@ export function insertAt(
 
 export function moveInPlaylist(userId: string, playlistId: string, entryId: string, position: number): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
-    const current = await playlistEntries(userId, playlistId);
+    const auth = await authorize(userId, playlistId, "manage");
+    if (typeof auth === "string") return { ok: false, failure: auth };
+    const current = await playlistEntries(auth.actor, playlistId);
     if (!current) return { ok: false, failure: "unavailable" };
     if (!current.some((e) => e.entryId === entryId)) return { ok: false, failure: "not_found" };
+    // Partagée : l'ordre est à chacun (sa préférence de liste), Jellyfin ne bouge pas.
+    if (auth.shared) return { ok: true, value: true };
     // `Move` de Jellyfin refuse la clé (400) : la fin se réécrit dans l'ordre voulu.
     const desired = movedOrder(current, entryId, position);
-    if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
+    if (desired && !(await rewriteTo(auth.actor, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };
   });
@@ -184,12 +204,12 @@ export function moveInPlaylist(userId: string, playlistId: string, entryId: stri
  */
 export function rewritePlaylist(userId: string, playlistId: string, plan: (current: readonly PlaylistEntryRef[]) => Promise<string[] | null>): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
-    const current = await playlistEntries(userId, playlistId);
+    const auth = await authorize(userId, playlistId, "manage");
+    if (typeof auth === "string") return { ok: false, failure: auth };
+    const current = await playlistEntries(auth.actor, playlistId);
     if (!current) return { ok: false, failure: "unavailable" };
     const desired = await plan(current);
-    if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
+    if (desired && !(await rewriteTo(auth.actor, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };
   });
@@ -198,11 +218,13 @@ export function rewritePlaylist(userId: string, playlistId: string, plan: (curre
 /** L'ordre COMPLET voulu par le client (glisser dans Octave), écrit dans la playlist Jellyfin elle-même. */
 export function reorderPlaylist(userId: string, playlistId: string, entryIds: string[]): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
-    const current = await playlistEntries(userId, playlistId);
+    const auth = await authorize(userId, playlistId, "manage");
+    if (typeof auth === "string") return { ok: false, failure: auth };
+    // Partagée : l'ordre glissé ne vaut que pour celui qui l'a glissé (sa préférence de liste, déjà gardée).
+    if (auth.shared) return { ok: true, value: true };
+    const current = await playlistEntries(auth.actor, playlistId);
     if (!current) return { ok: false, failure: "unavailable" };
-    if (!(await rewriteTo(userId, playlistId, current, reorderedOrder(current, entryIds)))) return { ok: false, failure: "unavailable" };
+    if (!(await rewriteTo(auth.actor, playlistId, current, reorderedOrder(current, entryIds)))) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };
   });
@@ -210,9 +232,9 @@ export function reorderPlaylist(userId: string, playlistId: string, entryIds: st
 
 export function removeFromPlaylist(userId: string, playlistId: string, entryId: string): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
-    const refusal = await editable(userId, playlistId);
-    if (refusal) return { ok: false, failure: refusal };
-    const current = await playlistEntries(userId, playlistId);
+    const auth = await authorize(userId, playlistId, "remove");
+    if (typeof auth === "string") return { ok: false, failure: auth };
+    const current = await playlistEntries(auth.actor, playlistId);
     if (!current) return { ok: false, failure: "unavailable" };
     if (!current.some((e) => e.entryId === entryId)) return { ok: false, failure: "not_found" };
     const removed = await jfWrite(`/Playlists/${q(playlistId)}/Items?entryIds=${q(entryId)}`, "DELETE");

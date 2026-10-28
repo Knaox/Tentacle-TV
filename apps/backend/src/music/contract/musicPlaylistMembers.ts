@@ -16,6 +16,12 @@ export type MusicPlaylistMemberRight = "read" | "add" | "remove";
 /** Du plus faible au plus fort : chaque droit contient les précédents. */
 export const MUSIC_PLAYLIST_MEMBER_RIGHTS: readonly MusicPlaylistMemberRight[] = ["read", "add", "remove"];
 
+/**
+ * La notification (cloche) du compte à qui l'on vient de partager une playlist : `title` = le nom de la playlist,
+ * `body` = le nom de qui la partage (des DONNÉES ; chaque client compose la phrase), `refId` = la playlist.
+ */
+export const MUSIC_PLAYLIST_SHARED_NOTIFICATION = "music_playlist_shared";
+
 /** Au-delà, le partage est refusé (400 `too_many_members`). */
 export const MUSIC_PLAYLIST_MEMBERS_MAX = 50;
 

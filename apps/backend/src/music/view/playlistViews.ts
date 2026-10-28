@@ -9,13 +9,15 @@ import type { MusicPlaylistDetail } from "../contract/musicCoreApi";
 import type { MusicPlaylist, MusicPlaylistEntry } from "../contract/musicTypes";
 import { normalizeId } from "../jellyfin/musicJellyfin";
 import { artworkUrl } from "../model/toMusic";
-import { listUserPlaylists, playlistEntries, playlistFor, type JfPlaylist } from "../playlists/playlistJellyfin";
+import { listUserPlaylists, playlistEntries, type JfPlaylist } from "../playlists/playlistJellyfin";
 import { searchTokens } from "../index/searchQuery";
 import { addedDatesFor, legacyPlaylistScope, playlistScope } from "../listOrder/addedDates";
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
 import { pinnedDates, ranksByItem } from "../playlistSource/sourceRecord";
 import { readPlaylistSource } from "../playlistSource/sourceStore";
 import { mosaicCandidatesFor, rememberMosaic, withMosaic } from "./playlistMosaic";
+import { playlistAccess } from "../playlistMembers/playlistAccess";
+import { playStatsFor, sharedListing, sharingFor } from "../playlistMembers/memberViews";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
   const ticks = item.CumulativeRunTimeTicks ?? item.RunTimeTicks;
@@ -26,17 +28,27 @@ export function toPlaylist(item: JfPlaylist): MusicPlaylist {
     trackCount: item.ChildCount ?? 0,
     durationMs: typeof ticks === "number" && ticks > 0 ? Math.round(ticks / 10_000) : null,
     artworkUrl: tag ? artworkUrl(`${normalizeId(item.Id)}/${tag}`) : null,
-    editable: item.CanDelete === true,
+    // Lue au nom du propriétaire pour un membre : jamais « gérable » par lui.
+    editable: item.CanDelete === true && !item.TentacleReaderId,
   };
 }
 
 /** Les playlists du compte, chacune avec sa jaquette du jour (`playlistMosaic.ts` : aucune relecture au repos). */
 export async function playlistsView(view: UserView): Promise<MusicPlaylist[]> {
   if (view.access.mode === "none") return [];
-  const items = await listUserPlaylists(view.userId);
+  const own = await listUserPlaylists(view.userId);
+  // Les playlists partagées AVEC ce compte s'ajoutent aux siennes (une playlist publique qu'il est aussi membre : une fois).
+  const { received, sharing } = await sharedListing(view.userId, own);
+  const receivedIds = new Set(received.map((p) => normalizeId(p.Id)));
+  const items = [...own.filter((p) => !receivedIds.has(normalizeId(p.Id))), ...received];
   const candidates = await mosaicCandidatesFor(view, items);
   const now = Date.now();
-  return items.map((item) => withMosaic(toPlaylist(item), candidates.get(normalizeId(item.Id)), now));
+  return items.map((item) => {
+    const id = normalizeId(item.Id);
+    const playlist = withMosaic(toPlaylist(item), candidates.get(id), now);
+    const shared = sharing.get(id);
+    return shared ? { ...playlist, sharing: shared } : playlist;
+  });
 }
 
 /** Les playlists dont le nom répond à la frappe (chaque mot est un préfixe d'un mot du nom). */
@@ -54,10 +66,13 @@ export async function searchPlaylists(view: UserView, query: string, limit: numb
 
 export async function playlistDetail(view: UserView, playlistId: string): Promise<MusicPlaylistDetail | null> {
   if (view.access.mode === "none") return null;
-  const playlist = await playlistFor(view.userId, playlistId);
-  if (!playlist) return null;
-  const entries = (await playlistEntries(view.userId, playlistId)) ?? [];
+  const access = await playlistAccess(view.userId, playlistId);
+  if (!access) return null;
+  const { playlist, readerId } = access;
+  const entries = (await playlistEntries(readerId, playlistId)) ?? [];
   const ids = entries.map((e) => e.itemId);
+  // Lue au nom du propriétaire, Jellyfin rend SES écoutes : celles du membre se relisent à son nom.
+  const ownPlays = readerId === normalizeId(view.userId) ? null : await playStatsFor(view.userId, ids);
   const rows = await visibleInOrder(view, ids);
   const ordered = await tracksOf(view, rows);
   const tracks = new Map(ordered.map((t) => [t.jellyfinId!, t]));
@@ -72,9 +87,10 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   entries.forEach((entry, position) => {
     const track = tracks.get(entry.itemId);
     const rank = ranks.get(entry.itemId);
-    if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays }, ...(rank !== undefined ? { sourceIndex: rank } : {}) });
+    if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...(ownPlays ? (ownPlays.get(entry.itemId) ?? { plays: 0, lastPlayedAt: null }) : entry.plays) }, ...(rank !== undefined ? { sourceIndex: rank } : {}) });
   });
   // La jaquette de l'en-tête est celle des cartes : mêmes titres, même jour (et la liste suivante n'a rien à relire).
   const place = await rememberMosaic(view, playlist, ordered);
-  return { ...withMosaic(toPlaylist(playlist), place), cover: place, description: playlist.Overview?.trim() || null, entries: out };
+  const sharing = await sharingFor(access, playlistId);
+  return { ...withMosaic(toPlaylist(playlist), place), ...(sharing ? { sharing } : {}), cover: place, description: playlist.Overview?.trim() || null, entries: out };
 }

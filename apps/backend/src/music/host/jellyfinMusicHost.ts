@@ -16,7 +16,8 @@ import { normalizeMbid } from "../contract/musicKeys";
 import { audioRef } from "../index/indexSync";
 import { isJellyfinId, jfAdmin, jfWrite, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
 import { getMusicLibrary } from "../jellyfin/musicLibrary";
-import { listUserPlaylists, playlistEntries as entriesOf, playlistFor } from "../playlists/playlistJellyfin";
+import { listUserPlaylists, playlistEntries as entriesOf } from "../playlists/playlistJellyfin";
+import { accessAllows, playlistAccess } from "../playlistMembers/playlistAccess";
 import { insertFromHost } from "../playlistSource/sourcePlacement";
 import type { AudioItemRef } from "../events/audioItemsFeed";
 import { isAdminUser, listUserIds } from "./hostUsers";
@@ -116,19 +117,22 @@ export async function playlistInsert(params: { userId: string; playlistId: strin
 
 export async function playlistEntries(params: { userId: string; playlistId: string }): Promise<{ entryId: string; itemId: string; position: number }[]> {
   const [userId, playlistId] = ids([params.userId, params.playlistId]);
-  const entries = await entriesOf(userId!, playlistId!);
+  // Un membre d'une playlist partagée la lit au nom de son propriétaire (`playlistMembers/playlistAccess.ts`).
+  const access = await playlistAccess(userId!, playlistId!);
+  const entries = await entriesOf(access?.readerId ?? userId!, playlistId!);
   if (!entries) throw new HostMusicFailure("unavailable", "Jellyfin muet");
   return entries.map((e, position) => ({ ...e, position }));
 }
 
 /**
- * Ce compte peut-il modifier cette playlist ? La règle de `playlistService` (`CanDelete` vu PAR lui) : une
- * extension ne pose rien dans la playlist d'un autre (import de playlists, entrées hors bibliothèque).
+ * Ce compte peut-il AJOUTER à cette playlist ? La règle de `playlistService` (`playlistAccess.ts` : la sienne, ou
+ * partagée avec « ajouter ») : une extension ne pose rien ailleurs (import de playlists, entrées hors bibliothèque).
  */
 export async function playlistEditable(params: { userId: string; playlistId: string }): Promise<{ editable: boolean }> {
   const [userId, playlistId] = ids([params.userId, params.playlistId]);
-  const playlist = await playlistFor(userId!, playlistId!);
-  return { editable: playlist?.CanDelete === true };
+  // Un membre qui peut AJOUTER y pose aussi ses titres hors bibliothèque (le droit tenu par Tentacle).
+  const access = await playlistAccess(userId!, playlistId!);
+  return { editable: !!access && accessAllows(access.right, "add") };
 }
 
 /**
