@@ -27,4 +27,4 @@ export {
 } from "../music/useMusicListOrder";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
-export { useOctaveAvailability, type OctaveAvailability } from "../music/useOctaveAvailability";
+export { useOctaveAvailability, octaveAvailabilityOf, type OctaveAvailability, type OctaveAvailabilityInput } from "../music/useOctaveAvailability";
