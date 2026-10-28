@@ -19,3 +19,22 @@ export function DeviceNavItem({ className }: { className: string }) {
     </li>
   );
 }
+
+/** L'entrée « Sur cet appareil » de l'en-tête du téléphone (ses onglets n'ont pas la place) : l'icône seule, nommée. */
+export function DeviceHeaderButton() {
+  const { t } = useTranslation("musicOffline");
+  const surface = useOfflineSurface();
+  if (!surface.visible) return null;
+  return (
+    <NavLink
+      to={octavePaths.device}
+      aria-label={t("onDevice")}
+      title={t("onDevice")}
+      className={({ isActive }) =>
+        `octave-touch flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${isActive ? "text-octave-accent-text" : "text-content-secondary"}`
+      }
+    >
+      <DownloadGlyph done={false} className="h-5 w-5" />
+    </NavLink>
+  );
+}

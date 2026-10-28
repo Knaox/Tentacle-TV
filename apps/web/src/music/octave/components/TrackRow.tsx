@@ -5,6 +5,8 @@
  * début. Le survol et l'appui ANTICIPENT (`hover`, `press`). Le titre en cours
  * est marqué en mot (lecteurs d'écran) et en couleur de marque ; en lecture,
  * une houle qui roule (`motion/OceanSwell`), qui se calme en pause.
+ * Au téléphone, la rangée COMPACTE (`compactRows.ts`) : un appui long y entre
+ * en sélection.
  */
 
 import { memo, useCallback } from "react";
@@ -28,6 +30,8 @@ import { AlbumLink, ArtistLinks } from "./TrackLinks";
 import { OceanSwell } from "../motion/OceanSwell";
 import { useOctaveGlassStage } from "../glass/glassStage";
 import { DragHandle, type HandleSlot } from "../listOrder/DragHandle";
+import { useLongPress } from "../../../mirror/ui/useLongPress";
+import { chainHandlers, compactRowColumns, useCompactRows } from "./compactRows";
 
 /**
  * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
@@ -102,6 +106,14 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
   const onRemove = rowKey !== undefined && onRemoveRow ? () => onRemoveRow(rowKey) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
   const muted = track.availability === "pending" || failed;
+  const compact = useCompactRows();
+  // Au doigt, l'appui long choisit la rangée (et ouvre la sélection) ; un clic simple lit, toujours.
+  const longPress = useLongPress(compact && onSelect ? () => select("toggle") : undefined);
+  const showSelect = !compact || selecting;
+  const showNumber = !compact || !showArtwork;
+  const columns = compact
+    ? compactRowColumns({ handle: handle !== null, select: !!onSelect && selecting, number: !showArtwork })
+    : rowColumns(showAlbum, handle !== null);
   return (
     <div
       role="row"
@@ -110,6 +122,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       aria-selected={onSelect ? selected : undefined}
       // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic simple coche aussi (il ne lit plus).
       onClick={(e) => {
+        if (compact && longPress.consumeClick()) return;
         const gesture = onSelect ? clickGesture(e, selecting) : "play";
         if (gesture === "play") onPlay();
         else select(gesture);
@@ -122,18 +135,18 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
           select(e.shiftKey ? "range" : "toggle");
         }
       }}
-      {...prefetch}
+      {...(compact ? chainHandlers(prefetch, longPress.handlers) : prefetch)}
       // Glisser le titre sur une playlist du rail l'y ajoute (souris) ; le menu « Ajouter à une playlist » en est l'équivalent.
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
-      } ${rowColumns(showAlbum, handle !== null)}`}
+      } ${columns}`}
     >
       {handle && <DragHandle slot={handle} />}
-      {onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : <div role="gridcell" />}
-      <NumberCell number={number} current={current} playing={playing} />
+      {showSelect && (onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : compact ? null : <div role="gridcell" />)}
+      {showNumber && <NumberCell number={number} current={current} playing={playing} />}
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
         {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-10 w-10" />}
         <div className="min-w-0">
@@ -163,17 +176,17 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
           </div>
         </div>
       </div>
-      {showAlbum && (
+      {showAlbum && !compact && (
         <div role="gridcell" className="hidden min-w-0 truncate text-[13px] text-content-tertiary lg:block">
           <AlbumLink track={track} />
         </div>
       )}
       <div role="gridcell" className="flex items-center gap-1">
-        {onRemove && <QuickRemoveButton title={track.title} onRemove={onRemove} />}
-        <QuickAddButton track={track} actions={actions} />
+        {onRemove && !compact && <QuickRemoveButton title={track.title} onRemove={onRemove} />}
+        {!compact && <QuickAddButton track={track} actions={actions} />}
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
-        <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
+        {!compact && <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>}
         <TrackMenu track={track} actions={actions} onRemove={onRemove} />
       </div>
     </div>

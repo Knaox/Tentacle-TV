@@ -1,8 +1,11 @@
 /**
  * Octave — le cadre du mode. Bureau : le rail de navigation à gauche, la page
  * au centre avec le DOCK qui flotte au-dessus d'elle (la page défile dessous),
- * la file d'attente en îlot à droite. Téléphone : en-tête, page, mini-lecteur,
- * onglets. Le lecteur « en cours » s'ouvre par-dessus tout.
+ * la file d'attente en îlot à droite. Téléphone : en-tête, page, mini-lecteur
+ * et onglets flottants (`touch/OctavePhoneShell`). Tablette : en portrait un
+ * rail d'icônes (`touch/OctaveCompactRail`), en paysage la barre latérale ; la
+ * file en tiroir par-dessus la page (`touch/octaveLayout`). Le lecteur
+ * « en cours » s'ouvre par-dessus tout.
  *
  * Le bandeau d'hôte de macOS (feux tricolores) garde sa place
  * (`--hote-bandeau`), comme dans la coquille vidéo.
@@ -15,9 +18,10 @@
  */
 
 import { PlaylistManageHost } from "../playlists/PlaylistManageHost";
+import "./touch/octaveTouch.css";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { useIsMobile } from "../../../hooks/useIsMobile";
+import { useTranslation } from "react-i18next";
 import { useDisplayedSurface } from "../../../theme/displayedSurface";
 import { useLiquidGlassMode } from "../../../theme/glass";
 import { OctaveAmbient } from "../glass/OctaveAmbient";
@@ -28,14 +32,14 @@ import { ImportPlaylistHost } from "../import/ImportPlaylistHost";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
 import { useOctaveEvents } from "../events/useOctaveEvents";
 import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
-import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
-import { OctaveModeSlot } from "./OctaveModeSlot";
-import { OctaveProfileButton } from "../profiles";
-import { OctaveSidebar, OctaveTabBar } from "./OctaveSidebar";
-import { OctaveWordmark } from "./OctaveWordmark";
-import { MiniPlayer, PlayerBar } from "./PlayerBar";
+import { OctaveSidebar } from "./OctaveSidebar";
+import { PlayerBar } from "./PlayerBar";
 import { QueuePanel } from "./QueuePanel";
+import { OctaveCompactRail } from "./touch/OctaveCompactRail";
+import { OctavePhoneShell } from "./touch/OctavePhoneShell";
+import { isTabletLayout } from "./touch/octaveLayout";
+import { useOctaveLayout } from "./touch/useOctaveLayout";
 
 interface OctaveShellProps {
   children: ReactNode;
@@ -54,7 +58,8 @@ function useResetScroll(main: React.RefObject<HTMLElement | null>) {
 }
 
 export function OctaveShell({ children, onExit }: OctaveShellProps) {
-  const mobile = useIsMobile();
+  const { t } = useTranslation("music");
+  const layout = useOctaveLayout();
   const native = useLiquidGlassMode() === "native";
   const [queueOpen, setQueueOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -70,35 +75,27 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   useQueueLibraryTwins();
   useResetScroll(main);
 
-  if (mobile) {
+  const overlays = (
+    <>
+      {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
+      <ShellHosts />
+    </>
+  );
+
+  if (layout === "phone") {
     return (
-      <div className="fixed inset-0 flex flex-col bg-octave-ink" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="mobile">
-        <header className="flex h-14 shrink-0 items-center gap-1 px-2 pt-[env(safe-area-inset-top,0px)]">
-          <HistoryButtons compact />
-          <div className="min-w-0 flex-1 px-2">
-            <OctaveWordmark logoSize={28} className="text-xl" />
-          </div>
-          <OctaveModeSlot onExit={onExit} compact />
-          <OctaveProfileButton compact />
-        </header>
-        <main ref={main} id="octave-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
-          {children}
-        </main>
-        <div className="shrink-0 pb-2">
-          <MiniPlayer onOpen={openSheet} />
-        </div>
-        <OctaveTabBar />
-        {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
-        <ShellHosts />
-      </div>
+      <OctavePhoneShell main={main} onExit={onExit} onOpenNowPlaying={openSheet} overlays={overlays}>
+        {children}
+      </OctavePhoneShell>
     );
   }
 
+  const tablet = isTabletLayout(layout);
   return (
     <OctaveGlassStageContext.Provider value={native}>
-    <div className={`fixed inset-0 flex bg-octave-ink${native ? " octave-stage" : ""}`} style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop">
+    <div className={`fixed inset-0 flex bg-octave-ink${native ? " octave-stage" : ""}`} style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell={tablet ? layout : "desktop"}>
       {native && <OctaveAmbient />}
-      <OctaveSidebar onExit={onExit} />
+      {layout === "tablet-rail" ? <OctaveCompactRail onExit={onExit} /> : <OctaveSidebar onExit={onExit} />}
       <div className="relative min-w-0 flex-1">
         <main ref={main} id="octave-main" className="h-full overflow-y-auto overscroll-contain" style={{ paddingBottom: DOCK_ROOM }}>
           {children}
@@ -107,12 +104,15 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         <PlayerBar queueOpen={queueOpen} onToggleQueue={toggleQueue} onOpenNowPlaying={openSheet} />
       </div>
       {queueOpen && (
-        <div className="octave-drawer octave-island my-2 mr-2 w-[var(--oc-queue-width)] shrink-0 overflow-hidden">
-          <QueuePanel onClose={closeQueue} />
-        </div>
+        // Tablette : un tiroir PAR-DESSUS la page (une colonne de plus l'écraserait), fermé au toucher du voile.
+        <>
+          {tablet && <button type="button" aria-label={t("queue.close")} className="octave-veil fixed inset-0 z-30 cursor-default" onClick={closeQueue} />}
+          <div className={`octave-drawer octave-island overflow-hidden ${tablet ? "fixed bottom-2 right-2 top-2 z-40 w-[min(var(--oc-queue-width),calc(100vw-96px))]" : "my-2 mr-2 w-[var(--oc-queue-width)] shrink-0"}`}>
+            <QueuePanel onClose={closeQueue} />
+          </div>
+        </>
       )}
-      {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
-      <ShellHosts />
+      {overlays}
     </div>
     </OctaveGlassStageContext.Provider>
   );

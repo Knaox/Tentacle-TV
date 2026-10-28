@@ -11,9 +11,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../cards/cardGlyphs";
 import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
 import { GLASS_LENS_PROPS, useLiquidGlassMode, useLiquidGlassSurface } from "../../theme/glass";
-import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
-import { openRoomModal } from "../../watchTogether/roomModalStore";
-import { useToast } from "../../contexts/ToastContext";
+import { useWtDetailAction } from "../../watchTogether/useWtDetailAction";
 
 /**
  * Les bascules de la fiche — Favoris, Ma liste, Vu, Hors ligne, Watch
@@ -29,9 +27,8 @@ import { useToast } from "../../contexts/ToastContext";
  * vrai — ce qu'on a reconnu sur l'affiche se retrouve ici, là où on le retire.
  */
 export function DetailActionCapsule({ item }: { item: MediaItem }) {
-  const { t } = useTranslation(["common", "cards", "watchTogether"]);
-  const { show } = useToast();
-  const { isInGroup, isHost, mayCreate, elsewhere: wtElsewhere, actions: wtActions } = useWatchTogether();
+  const { t } = useTranslation(["common", "cards"]);
+  const wt = useWtDetailAction(item);
   const isEpisode = item.Type === "Episode";
   const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
@@ -47,8 +44,6 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
   const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
   const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
   const isWatched = item.UserData?.Played === true;
-  // Créer un salon, ou y inviter en hôte : « Créer et rejoindre » seulement (SyncPlayAccess).
-  const canWatchTogether = item.Type !== "BoxSet" && mayCreate && (!isInGroup || isHost);
 
   return (
     <DetailCapsule>
@@ -81,25 +76,8 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
 
       {/* Watch Together : crée la salle avec ce média au programme et l'ouvre ;
           en salle, l'hôte invite d'ici. */}
-      {canWatchTogether && (
-        <CapsuleButton
-          active={isInGroup}
-          onClick={async () => {
-            if (isInGroup) { openRoomModal("invite"); return; }
-            // En groupe sur un autre appareil : cet appareil s'y ajoute.
-            if (wtElsewhere) {
-              await wtActions.joinHere().catch(() => show("error", t("watchTogether:elsewhereJoinFailed")));
-              return;
-            }
-            try {
-              await wtActions.create(item.Id);
-              openRoomModal("room", { fresh: true });
-            } catch {
-              show("error", t("watchTogether:alreadyInGroup"));
-            }
-          }}
-          label={isInGroup ? t("watchTogether:invite") : wtElsewhere ? t("watchTogether:elsewhereJoinHere") : t("watchTogether:watchTogetherAction")}
-        >
+      {wt && (
+        <CapsuleButton active={wt.active} onClick={() => void wt.run()} label={wt.label}>
           <UsersIcon />
         </CapsuleButton>
       )}

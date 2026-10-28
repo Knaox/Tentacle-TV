@@ -7,6 +7,7 @@ import { DetailActionsRow } from "./DetailActionsRow";
 import { PlayCtaButton } from "./PlayCtaButton";
 import { StageBlock } from "./StageBlock";
 import { TrailerPill } from "./TrailerPill";
+import { MirrorWtDetailPill } from "../../watchTogether/MirrorWtDetailPill";
 import { TrailerHintMirror } from "./TrailerHintMirror";
 import { DetailPosterFallback } from "../../../components/detail/DetailArtworkFallback";
 import { playCta, PLAY_MAX_WIDTH, type DetailGeometry } from "./detailMetrics";
@@ -50,6 +51,10 @@ export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchS
       <div className={`mirror-detail-in-actions flex justify-center empty:hidden ${cta.targetId ? "mt-3" : "mt-5"}`}>
         <TrailerPill item={item} maxWidth={PLAY_MAX_WIDTH} />
         <TrailerHintMirror item={item} />
+      </div>
+      {/* « Regarder ensemble » (WtDetailPill de l'app) : sous la bande-annonce, 12 d'écart. */}
+      <div className="mirror-detail-in-actions mt-3 flex justify-center empty:hidden">
+        <MirrorWtDetailPill item={item} maxWidth={PLAY_MAX_WIDTH} />
       </div>
     </>
   );

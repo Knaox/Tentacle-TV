@@ -28,7 +28,16 @@ import { useOctaveProfileMenu } from "./useOctaveProfileMenu";
 const itemClass =
   "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
-export const OctaveProfileButton = memo(function OctaveProfileButton({ compact = false }: { compact?: boolean }) {
+/** Où s'ouvre le menu : sous le rond (en-tête), au-dessus (barre latérale), à droite (rail de la tablette). */
+type MenuPlacement = "below" | "above" | "beside";
+
+const MENU_PLACEMENT: Record<MenuPlacement, string> = {
+  below: "right-0 top-full mt-2",
+  above: "bottom-full left-0 mb-2",
+  beside: "bottom-0 left-full ml-3",
+};
+
+export const OctaveProfileButton = memo(function OctaveProfileButton({ compact = false, menu: placement }: { compact?: boolean; menu?: MenuPlacement }) {
   const { t } = useTranslation("octaveShell");
   const navigate = useNavigate();
   const { menu, activeProfileId, refetch } = useOctaveProfileMenu();
@@ -93,7 +102,7 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
           role="menu"
           aria-label={t("profile.menu")}
           onKeyDown={onKeyDown}
-          className={`octave-island octave-enter absolute z-50 w-64 p-1.5 ${compact ? "right-0 top-full mt-2" : "bottom-full left-0 mb-2"}`}
+          className={`octave-island octave-enter absolute z-50 w-64 p-1.5 ${MENU_PLACEMENT[placement ?? (compact ? "below" : "above")]}`}
         >
           <div className="flex items-center gap-3 px-3 pb-2 pt-2.5">
             {identity.avatar(40)}

@@ -11,6 +11,7 @@ import { HeaderContentMenu } from "./HeaderContentMenu";
 import { MirrorNotificationBell } from "./MirrorNotificationBell";
 import { ProfileChip } from "./ProfileChip";
 import { useProfileSwitchOffered } from "./useProfileSwitchOffered";
+import { OctaveModeSwitch } from "../../music/octave/mode/OctaveModeSwitch";
 
 /** De combien l'en-tête remonte au repli. */
 const COLLAPSE_SHIFT = 8;
@@ -21,7 +22,8 @@ const COLLAPSE_SHIFT = 8;
  * TV » (22, graisse 800) ; à droite, espacés de 22, « Mes contenus », la
  * recherche et la cloche. Un filet violet à 12 % le souligne.
  * Hors ligne, la pastille de connexion prend la place du titre et les actions
- * serveur disparaissent. Famille de plusieurs profils : la puce du profil
+ * serveur disparaissent. Avec la musique (Octave : capacité ET bibliothèque
+ * visible, sinon rien), sa bascule ouvre la rangée d'actions — celle du bureau. Famille de plusieurs profils : la puce du profil
  * actif remplace le titre (comme le mobile) — la toucher change de profil.
  */
 export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapsed: boolean }) {
@@ -55,18 +57,19 @@ export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapse
               <ProfileChip />
             </div>
           ) : (
-            <Link to="/" onClick={countLogoClick} className="flex items-center gap-2" aria-label="Tentacle TV">
+            <Link to="/" onClick={countLogoClick} className="flex min-w-0 items-center gap-2" aria-label="Tentacle TV">
               <TentacleSvg size={28} />
               {offline ? (
                 <ConnectivityChip />
               ) : (
-                <span className="text-[22px] font-extrabold leading-7 text-content-primary">Tentacle TV</span>
+                <span className="truncate text-[22px] font-extrabold leading-7 text-content-primary">Tentacle TV</span>
               )}
             </Link>
           )}
 
           {!localNav && (
-            <div className="flex items-center gap-[22px]">
+            <div className="flex shrink-0 items-center gap-[18px]">
+              <OctaveModeSwitch placement="tentacle" />
               <HeaderContentMenu />
               <button
                 type="button"

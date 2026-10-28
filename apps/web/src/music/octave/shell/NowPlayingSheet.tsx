@@ -6,12 +6,15 @@
  *
  * Monté seulement ouvert, par un portail ; il monte du dock (entrée finie,
  * `octave-stage-in`), Échap ou ⌄ le referme et le focus revient d'où il venait.
+ * Au doigt (téléphone, tablette) : une poignée, et le glisser vers le bas le
+ * referme (`touch/useSwipeDismiss`) ; au téléphone, qui n'a pas de dock, la
+ * file d'attente s'ouvre DANS le lecteur, à la place de la pochette.
  * Un fond d'encre opaque et un voile fixe : aucun flou.
  */
 
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ListMusic } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
@@ -27,6 +30,9 @@ import { Transport } from "./Transport";
 import { VolumeControl } from "./VolumeControl";
 import { CrossfadeButton } from "./crossfade/CrossfadeButton";
 import { OceanAmbience } from "../motion/OceanAmbience";
+import { QueuePanel } from "./QueuePanel";
+import { useOctaveLayout } from "./touch/useOctaveLayout";
+import { useSwipeDismiss } from "./touch/useSwipeDismiss";
 
 /** Échap referme ; le focus entre sur ⌄ et revient, à la fermeture, là où il était. */
 function useDialogFocus(onClose: () => void) {
@@ -50,18 +56,25 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
   const format = usePlayerSelector((s) => s.format);
   const actions = useTrackActions();
   const close = useDialogFocus(onClose);
+  const layout = useOctaveLayout();
+  const touch = layout !== "desktop";
+  const sheet = useRef<HTMLDivElement>(null);
+  const [queue, setQueue] = useState(false);
+  useSwipeDismiss(sheet, onClose, touch && !!track);
   if (!track) return null;
   // Un portail : sous un verre ou un `transform`, un `fixed` prendrait son parent pour cadre.
   return createPortal(
     <div
+      ref={sheet}
       role="dialog"
       aria-modal="true"
       aria-label={t("shell.nowPlaying")}
       data-octave-now-playing-view
-      className="octave-stage-in fixed inset-0 z-50 flex flex-col overflow-y-auto bg-octave-ink px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] md:px-12"
+      className={`${touch ? "octave-sheet-rise" : "octave-stage-in"} fixed inset-0 z-50 flex flex-col overflow-y-auto bg-octave-ink px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] md:px-12`}
       style={{ paddingTop: "calc(var(--hote-bandeau, 0px) + 1rem + env(safe-area-inset-top, 0px))" }}
     >
       <div aria-hidden className="octave-now-veil" />
+      {touch && <span aria-hidden className="octave-sheet-grip" />}
       <OceanAmbience artworkUrl={track.artworkUrl} />
       <div className="relative flex items-center justify-between">
         <button
@@ -75,18 +88,36 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
           <ChevronDown className="h-6 w-6" aria-hidden />
         </button>
         <p className="oc-eyebrow">{t("shell.nowPlaying")}</p>
-        <span className="h-11 w-11" aria-hidden />
+        {layout === "phone" ? (
+          <button
+            type="button"
+            aria-pressed={queue}
+            aria-label={t("player.queue")}
+            onClick={() => setQueue((v) => !v)}
+            className={`octave-touch flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${queue ? "bg-octave-hover text-octave-accent-text" : "text-content-secondary"}`}
+          >
+            <ListMusic className="h-5 w-5" aria-hidden />
+          </button>
+        ) : (
+          <span className="h-11 w-11" aria-hidden />
+        )}
       </div>
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-6 py-6 md:flex-row md:items-center md:gap-14">
-        <div className="flex justify-center md:w-[46%] md:shrink-0">
-          <Artwork
-            url={track.artworkUrl}
-            alt={track.album?.title ?? track.title}
-            className="aspect-square w-full max-w-sm shadow-[var(--oc-shadow-art-lg)] md:max-w-[520px]"
-            eager
-          />
-        </div>
+        {queue ? (
+          <div data-swipe-keep className="octave-island octave-enter h-[min(56vh,460px)] overflow-hidden">
+            <QueuePanel onClose={() => setQueue(false)} />
+          </div>
+        ) : (
+          <div className="flex justify-center md:w-[46%] md:shrink-0">
+            <Artwork
+              url={track.artworkUrl}
+              alt={track.album?.title ?? track.title}
+              className="aspect-square w-full max-w-sm shadow-[var(--oc-shadow-art-lg)] md:max-w-[520px]"
+              eager
+            />
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-5">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
