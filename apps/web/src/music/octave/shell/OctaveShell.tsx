@@ -41,6 +41,7 @@ import { OctaveCompactRail } from "./touch/OctaveCompactRail";
 import { OctavePhoneShell } from "./touch/OctavePhoneShell";
 import { isTabletLayout } from "./touch/octaveLayout";
 import { useOctaveLayout } from "./touch/useOctaveLayout";
+import { useAlbumWarmupSink } from "../data/albumWarmup";
 
 interface OctaveShellProps {
   children: ReactNode;
@@ -65,6 +66,8 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   const [queueOpen, setQueueOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const main = useRef<HTMLElement>(null);
+  // Les albums vus défiler (toutes les pages, large ou étroite) : préparés à l'arrêt (`data/albumWarmup.ts`).
+  useAlbumWarmupSink();
   const toggleQueue = useCallback(() => setQueueOpen((v) => !v), []);
   const closeQueue = useCallback(() => setQueueOpen(false), []);
   const openSheet = useCallback(() => setSheetOpen(true), []);

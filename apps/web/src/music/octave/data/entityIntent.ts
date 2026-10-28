@@ -1,7 +1,7 @@
 /**
  * Octave — l'INTENTION sur une carte d'album ou d'artiste hors bibliothèque :
- * survolée `INTENT_MS` (ou focalisée au clavier), ou appui commencé (le doigt,
- * le bouton de la souris : le clic arrive), sa page est demandée d'avance,
+ * survolée `INTENT_MS` (ou focalisée au clavier), ou bouton de la souris
+ * enfoncé (le clic arrive), sa page est demandée d'avance,
  * dans le MÊME cache que la vue (`prefetchExternalEntity` d'api-client, la
  * même que le mobile) — le clic l'ouvre d'emblée. Rien ne s'affiche, une
  * erreur ne se voit pas (la vue redemandera). Plafond : `INTENT_PER_MINUTE`.
@@ -17,7 +17,7 @@ export const INTENT_MS = 150;
 export interface IntentHandlers {
   onPointerEnter(): void;
   onPointerLeave(): void;
-  onPointerDown(): void;
+  onPointerDown(e: { pointerType: string }): void;
   onFocus(): void;
 }
 
@@ -49,7 +49,9 @@ export function useEntityIntent(kind: "album" | "artist", idOrKey: string | null
               timer.current = setTimeout(fire, INTENT_MS);
             },
             onPointerLeave: cancel,
-            onPointerDown: () => {
+            // La souris seulement : un doigt qui se pose pour faire défiler coûterait une requête YouTube au budget commun.
+            onPointerDown: (e: { pointerType: string }) => {
+              if (e.pointerType !== "mouse") return;
               cancel();
               fire();
             },
