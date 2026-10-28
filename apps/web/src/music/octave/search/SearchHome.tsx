@@ -12,35 +12,23 @@
  * fois). Seul un geste (retirer une recherche) change la page.
  */
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { Clock, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { musicApi, musicKeys, useMusicCapability } from "@tentacle-tv/api-client";
-import type { MusicHomeResponse } from "@tentacle-tv/shared/music";
+import { useSearchHomeSnapshot } from "@tentacle-tv/api-client";
+import type { OctaveDeviceStore } from "@tentacle-tv/shared/octave";
 import { ListenedCard } from "./ListenedCard";
-import { buildListenedCards } from "./searchHomeModel";
-import { readSearchListens } from "./searchListens";
+import { octaveOwner } from "../cache/octaveOwner";
 import { SearchHomeMoodsSlot } from "../home/ambianceSlots";
 import { AlbumCard, ArtistCard, Shelf } from "../components/Cards";
 import { CardRow } from "../components/CardRow";
-import { readRecentVisits } from "./recentVisits";
-import { buildRecentShelves } from "./recentShelves";
 
-/** L'instantané d'arrivée : ce que l'appareil a noté, et l'accueil déjà connu du serveur. */
+const store: OctaveDeviceStore | null = typeof localStorage === "undefined" ? null : localStorage;
+
+/** L'instantané d'arrivée (api-client `useSearchHomeSnapshot`, le même que le mobile) : stockage et identité du web. */
 function useArrivalSnapshot(recents: readonly string[]) {
-  const qc = useQueryClient();
-  const capable = useMusicCapability();
-  const [snapshot] = useState(() => {
-    const home = qc.getQueryData<MusicHomeResponse>(musicKeys.home());
-    return { listens: readSearchListens(), history: home?.recentlyPlayed ?? [], shelves: buildRecentShelves(readRecentVisits(), home?.forYou) };
-  });
-  useEffect(() => {
-    if (!capable || qc.getQueryData(musicKeys.home())) return;
-    void qc.prefetchQuery({ queryKey: musicKeys.home(), queryFn: ({ signal }) => musicApi.home(signal), staleTime: 30_000 });
-  }, [capable, qc]);
-  const cards = useMemo(() => buildListenedCards({ recents, listens: snapshot.listens, history: snapshot.history }), [recents, snapshot]);
-  return { cards, shelves: snapshot.shelves };
+  const [owner] = useState(octaveOwner);
+  return useSearchHomeSnapshot(recents, store, owner);
 }
 
 interface SearchHomeProps {

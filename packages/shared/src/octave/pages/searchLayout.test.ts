@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
-import { sameTrack, twinText } from "./libraryTwins";
+import { sameTrack, twinText } from "../trackTwins";
 import { isEmptyLayout, layoutSearch, SIDE_TRACKS, type ShownExternalLists } from "./searchLayout";
 
 const track = (key: string, title: string, artist: string, durationMs: number | null = null, library = false): MusicTrack => ({

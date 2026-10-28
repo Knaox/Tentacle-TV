@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { musicRightsKey } from "@tentacle-tv/api-client";
+import { musicRightsKey } from "../../../pluginMusic/musicRights";
 import type { MusicRights } from "@tentacle-tv/shared/music";
 import { useAcquireRights, type AcquireRights } from "./useAcquireRights";
 
@@ -16,19 +16,15 @@ vi.mock("@tanstack/react-query", () => ({
   }),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string, opts?: { count?: number }) => (opts?.count !== undefined ? `${key}:${opts.count}` : key) }),
-}));
-vi.mock("../mode/useOctaveProvider", () => ({
-  useOctaveProvider: () => ({ pluginId: "ext", name: "Ext", music: { search: "/s", resolve: "/r", rights: h.rightsRoute } }),
-}));
+const t = (key: string, opts?: { count?: number }) => (opts?.count !== undefined ? `${key}:${opts.count}` : key);
+const provider = () => ({ pluginId: "ext", name: "Ext", music: { search: "/s", resolve: "/r", rights: h.rightsRoute } }) as never;
 
 function grab(seed: MusicRights | null): { api: AcquireRights } {
   h.cache.clear();
   if (seed) h.cache.set(JSON.stringify(musicRightsKey("ext")), seed);
   let api: AcquireRights | null = null;
   function Probe() {
-    api = useAcquireRights();
+    api = useAcquireRights(provider(), t as never);
     return null;
   }
   renderToStaticMarkup(<Probe />);
