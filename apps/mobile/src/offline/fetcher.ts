@@ -31,3 +31,27 @@ export function makeFetcher(token: string): FetchBytes {
     }
   };
 }
+
+/**
+ * Une pochette d'un AUTRE hôte (titre de musique hors bibliothèque, Octave) :
+ * demandée SANS aucun jeton ni en-tête d'authentification — le jeton ne quitte
+ * jamais le serveur Tentacle. Le cœur n'y envoie qu'une adresse https publique
+ * (`isPublicArtUrl`).
+ */
+export function makePublicFetcher(): FetchBytes {
+  return async (url: string, maxBytes: number): Promise<Uint8Array | null> => {
+    if (!url.startsWith("https://")) return null;
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { credentials: "omit", signal: abort.signal });
+      if (!response.ok) return null;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      return bytes.byteLength > maxBytes ? null : bytes;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
