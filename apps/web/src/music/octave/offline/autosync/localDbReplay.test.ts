@@ -23,8 +23,7 @@ vi.mock("../../../../desktop/capabilities", () => ({ supportsMusicOffline: () =>
 vi.mock("../../../../offline/offlineOwner", () => ({ readOfflineOwner: () => ({ userId: h.userId, token: "jeton" }) }));
 
 import { keptMusicState, refreshKeptMusic, setKeptRenames } from "../keptMusicStore";
-import { renamesOf, shownToFormer } from "../keptRenames";
-import { planSync, type SyncActions } from "./syncPlan";
+import { renamesOf, shownToFormer, planSync, type SyncActions } from "@tentacle-tv/offline-core/music";
 
 const FILE = process.env["OCTAVE_LOCAL_DB"];
 const RENAMES = new Map((process.env["OCTAVE_RENAMES"] ?? "").split(",").filter(Boolean).map((pair) => pair.split("=") as [string, string]));

@@ -17,7 +17,7 @@ vi.mock("../../../desktop/capabilities", () => ({ supportsMusicOffline: () => tr
 vi.mock("../../../offline/offlineOwner", () => ({ readOfflineOwner: () => ({ userId: "compte", token: "jeton" }) }));
 
 import { completeKeptTrack, keptMusicState, refreshKeptMusic, setKeptRenames } from "./keptMusicStore";
-import { renamesOf, shownToFormer } from "./keptRenames";
+import { renamesOf, shownToFormer } from "@tentacle-tv/offline-core/music";
 import { keptFor } from "./keptSources";
 
 const OLD = "imp:5ce21388-9a8a-568e-8c8f-cd87ff2538c7";
