@@ -10,6 +10,40 @@ import type { AmbientLayer } from "./ambientMotion";
 
 /** La vignette des taches (px) : la plus petite du serveur, le flou fait le reste. */
 export const BLOB_ARTWORK_SIZE = 64;
+/**
+ * Le côté (pt) auquel une tache est DESSINÉE, puis agrandie par le compositeur jusqu'à sa taille à l'écran. Le
+ * flou du SVG se calcule sur le fil principal, et son coût suit le nombre de pixels : dessinée à sa taille
+ * réelle (~650 pt, ~2 000 px), une tache gelait l'interface près d'une seconde à chaque titre (le balayage
+ * « laggait », relevé du 28/10). La source fait 64 px et le flou efface tout détail : 96 pt suffisent.
+ */
+export const BLOB_RASTER_SIDE = 96;
+
+/** L'agrandissement à appliquer à une tache dessinée à `BLOB_RASTER_SIDE` pour couvrir `side` pt. */
+export function blobRasterScale(side: number): number {
+  return side / BLOB_RASTER_SIDE;
+}
+/** Le rayon des copies du flou, en part du côté de la tache (≈ l'écart type 0,04 du flou gaussien d'avant). */
+const BLOB_BLUR_REACH = 0.06;
+
+export interface BlurTap {
+  dx: number;
+  dy: number;
+  opacity: number;
+}
+
+/**
+ * Le FLOU d'une tache sans filtre : la région posée neuf fois (au centre, puis sur un cercle de rayon
+ * `BLOB_BLUR_REACH`), la i-ième copie à l'opacité 1/i — empilées, elles pèsent chacune exactement 1/9 : une
+ * moyenne. Le filtre `FeGaussianBlur` de react-native-svg passe par Core Image, de façon synchrone, sur le fil
+ * principal : ~300 ms de gel à chaque titre, même sur une petite tache (trace du 28/10). Ces copies sont du
+ * simple dessin CoreGraphics, et la vignette de 64 px agrandie est déjà lisse.
+ */
+export function blobBlurTaps(side: number): BlurTap[] {
+  const reach = side * BLOB_BLUR_REACH;
+  const offsets = [[0, 0], ...Array.from({ length: 8 }, (_, k) => [Math.cos((k * Math.PI) / 4), Math.sin((k * Math.PI) / 4)])];
+  return offsets.map(([x, y], i) => ({ dx: x * reach, dy: y * reach, opacity: 1 / (i + 1) }));
+}
+
 /** L'agrandissement d'une région : un peu moins de la moitié de la pochette par tache. */
 export const BLOB_ZOOM = 2.4;
 

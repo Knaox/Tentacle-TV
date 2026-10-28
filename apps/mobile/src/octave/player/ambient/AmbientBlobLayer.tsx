@@ -1,16 +1,18 @@
 /**
  * Octave (mobile) — les TACHES de couleur du fond (`ambientBlobs`) : chacune une région de la pochette, floutée
- * et fondue en disque doux. Le dessin (SVG : la vignette, un flou, un masque radial) est fait UNE fois par
- * pochette ; à chaque image ne changent que la transformation et l'opacité de sa vue, sur le fil d'interface —
- * la dérive de l'horloge du fond, et le battement (`ambientBeat`).
+ * et fondue en disque doux. Le dessin (SVG : la vignette, un flou en copies décalées, un masque radial) est fait
+ * UNE fois par pochette, PETIT puis agrandi (`BLOB_RASTER_SIDE`) ; à chaque image ne changent que la
+ * transformation et l'opacité de sa vue, sur le fil d'interface — la dérive de l'horloge du fond, et le
+ * battement (`ambientBeat`). Jamais un filtre SVG ici : react-native-svg le calcule par Core Image, de façon
+ * synchrone, sur le fil principal (le balayage du lecteur « laggait », 28/10).
  */
 
 import { memo, useMemo } from "react";
-import { StyleSheet, useWindowDimensions } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import Svg, { Defs, FeGaussianBlur, Filter, G, Image as SvgImage, Mask, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, G, Image as SvgImage, Mask, RadialGradient, Rect, Stop, Use } from "react-native-svg";
 import { ambientSeed, layerTransform } from "./ambientMotion";
-import { ambientBlobs, blobImageFrame, type AmbientBlob } from "./ambientBlobs";
+import { ambientBlobs, blobBlurTaps, blobImageFrame, blobRasterScale, BLOB_RASTER_SIDE, type AmbientBlob } from "./ambientBlobs";
 import { beatPulse } from "./ambientBeat";
 import type { BeatClock } from "./useBeatClock";
 
@@ -63,17 +65,21 @@ const BlobView = memo(function BlobView({ id, blob, uri, clock, beat, bpm }: Blo
   }, [blob, width, height, bpm]);
   return (
     <Animated.View style={[styles.blob, { width: side, height: side, left: blob.anchorX * width - side / 2, top: blob.anchorY * height - side / 2 }, style]}>
-      <BlobArt id={id} side={side} uri={uri} focusX={blob.focusX} focusY={blob.focusY} />
+      {/* Dessinée petite, agrandie par le compositeur : le dessin ne coûte presque rien au fil principal. */}
+      <View style={[styles.raster, { left: (side - BLOB_RASTER_SIDE) / 2, top: (side - BLOB_RASTER_SIDE) / 2, transform: [{ scale: blobRasterScale(side) }] }]}>
+        <BlobArt id={id} side={BLOB_RASTER_SIDE} uri={uri} focusX={blob.focusX} focusY={blob.focusY} />
+      </View>
     </Animated.View>
   );
 });
 
-/** Le dessin d'une tache : peint une fois (les props ne changent qu'avec la pochette ou la taille de l'écran). */
+/** Le dessin d'une tache, à `BLOB_RASTER_SIDE` : peint une fois (les props ne changent qu'avec la pochette). */
 const BlobArt = memo(function BlobArt({ id, side, uri, focusX, focusY }: { id: number; side: number; uri: string; focusX: number; focusY: number }) {
   const frame = blobImageFrame(side, focusX, focusY);
+  const taps = useMemo(() => blobBlurTaps(side), [side]);
   const gradient = `blobFade${id}`;
   const mask = `blobMask${id}`;
-  const blur = `blobBlur${id}`;
+  const image = `blobImage${id}`;
   return (
     <Svg width={side} height={side}>
       <Defs>
@@ -85,12 +91,13 @@ const BlobArt = memo(function BlobArt({ id, side, uri, focusX, focusY }: { id: n
         <Mask id={mask}>
           <Rect x="0" y="0" width={side} height={side} fill={`url(#${gradient})`} />
         </Mask>
-        <Filter id={blur}>
-          <FeGaussianBlur stdDeviation={side * 0.04} />
-        </Filter>
+        <SvgImage id={image} href={{ uri }} x={frame.x} y={frame.y} width={frame.size} height={frame.size} preserveAspectRatio="xMidYMid slice" />
       </Defs>
+      {/* Le flou : la même image (chargée une fois) posée en copies décalées, qui se moyennent (`blobBlurTaps`). */}
       <G mask={`url(#${mask})`}>
-        <SvgImage href={{ uri }} x={frame.x} y={frame.y} width={frame.size} height={frame.size} preserveAspectRatio="xMidYMid slice" filter={`url(#${blur})`} />
+        {taps.map((tap, i) => (
+          <Use key={i} href={`#${image}`} x={tap.dx} y={tap.dy} opacity={tap.opacity} />
+        ))}
       </G>
     </Svg>
   );
@@ -98,4 +105,5 @@ const BlobArt = memo(function BlobArt({ id, side, uri, focusX, focusY }: { id: n
 
 const styles = StyleSheet.create({
   blob: { position: "absolute" },
+  raster: { position: "absolute", width: BLOB_RASTER_SIDE, height: BLOB_RASTER_SIDE },
 });
