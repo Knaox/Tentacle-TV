@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@tentacle-tv/shared": "workspace:*",
-    "@tanstack/react-query": "^4.44.0"
+    "@tanstack/react-query": "^5.62.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
