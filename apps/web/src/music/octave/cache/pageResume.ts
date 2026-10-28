@@ -7,47 +7,16 @@
  * Clé de stockage : elle ne se renomme jamais.
  */
 
-export const OCTAVE_PAGE_KEY = "tentacle_octave_page";
+import { OCTAVE_PAGE_KEY, parseSavedOctavePage, resumeScroll, type SavedOctavePage } from "@tentacle-tv/shared/octave/mode";
 
-/** Au-delà, la page gardée ne vaut plus : on rouvre l'accueil d'Octave. */
-export const PAGE_RESUME_MAX_AGE_MS = 30 * 24 * 3_600_000;
-
-export interface SavedOctavePage {
-  owner: string;
-  /** `pathname` + `search` (une recherche garde sa question). */
-  path: string;
-  scrollTop: number;
-  savedAt: number;
-}
-
-/** Une adresse d'Octave qu'on peut rouvrir (jamais une adresse hors du mode). */
-export function isOctavePath(path: string, basePath: string): boolean {
-  return path === basePath || path.startsWith(`${basePath}/`) || path.startsWith(`${basePath}?`);
-}
-
-function valid(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string): saved is SavedOctavePage {
-  if (!saved || owner === null || saved.owner !== owner) return false;
-  if (now - saved.savedAt > PAGE_RESUME_MAX_AGE_MS || saved.savedAt > now + 60_000) return false;
-  return isOctavePath(saved.path, basePath);
-}
-
-/** Où arriver au lancement : la page gardée de CETTE identité, sinon l'accueil d'Octave. */
-export function resumePath(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string): string {
-  return valid(saved, owner, now, basePath) ? saved.path : basePath;
-}
-
-/** Le défilement à rejouer, seulement sur la page gardée elle-même. */
-export function resumeScroll(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string, path: string): number | null {
-  if (!valid(saved, owner, now, basePath) || saved.path !== path) return null;
-  return saved.scrollTop > 0 ? saved.scrollTop : null;
-}
+// La règle est partagée avec le mobile (`@tentacle-tv/shared/octave/mode`, `octavePageResume.ts`).
+export {
+  OCTAVE_PAGE_KEY, PAGE_RESUME_MAX_AGE_MS, isOctavePath, resumePath, resumeScroll, type SavedOctavePage,
+} from "@tentacle-tv/shared/octave/mode";
 
 export function readSavedOctavePage(): SavedOctavePage | null {
   try {
-    const parsed = JSON.parse(localStorage.getItem(OCTAVE_PAGE_KEY) ?? "null") as Partial<SavedOctavePage> | null;
-    if (!parsed || typeof parsed.owner !== "string" || typeof parsed.path !== "string") return null;
-    const scrollTop = typeof parsed.scrollTop === "number" && Number.isFinite(parsed.scrollTop) ? Math.max(0, Math.round(parsed.scrollTop)) : 0;
-    return { owner: parsed.owner, path: parsed.path, scrollTop, savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : 0 };
+    return parseSavedOctavePage(localStorage.getItem(OCTAVE_PAGE_KEY));
   } catch {
     return null;
   }
