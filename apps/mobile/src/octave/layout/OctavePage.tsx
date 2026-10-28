@@ -1,6 +1,7 @@
 /**
  * Octave (mobile) — une PAGE du mode, prête à l'emploi : fond d'encre, grand
- * titre qui se replie dans l'en-tête de verre, marges du chrome. Deux formes :
+ * titre qui se replie dans l'en-tête de verre, marges du chrome ; le contenu arrive en montant à peine
+ * (`enterMotion`). Deux formes :
  * - `<OctavePage title>` : un défilement simple (peu de contenu, étagères) ;
  * - pour une LONGUE liste, `useOctavePageScroll()` sur un `Animated.FlatList`
  *   + `<OctaveLargeTitle>` en tête de liste + `<OctaveTopBar>` (virtualisée).
@@ -10,6 +11,7 @@ import { memo, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { useOctaveColors } from "../theme/octaveColors";
+import { enterAnimation } from "./enterMotion";
 import { OctaveTopBar } from "./OctaveTopBar";
 import { useOctaveLayout } from "./useOctaveLayout";
 import { useOctavePageScroll } from "./useOctavePageScroll";
@@ -63,7 +65,7 @@ export function OctavePage({ title, subtitle, right, accessory, back, children }
     <View style={[styles.page, { backgroundColor: colors.ink }]}>
       <Animated.ScrollView {...scrollProps} showsVerticalScrollIndicator={false}>
         <OctaveLargeTitle title={title} subtitle={subtitle} scrollY={scrollY} accessory={accessory} />
-        {children}
+        <Animated.View entering={enterAnimation()}>{children}</Animated.View>
       </Animated.ScrollView>
       <OctaveTopBar scrollY={scrollY} title={title} right={right} back={back} />
     </View>

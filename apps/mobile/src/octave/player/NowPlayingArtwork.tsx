@@ -19,6 +19,9 @@ interface Props {
 }
 
 const SPRING = { damping: 18, stiffness: 220, mass: 0.9 } as const;
+const BREATHE = { damping: 16, stiffness: 120, mass: 1 } as const;
+/** La pochette en pause : elle recule, sans disparaître. */
+const PAUSED_SCALE = 0.84;
 
 export const NowPlayingArtwork = memo(function NowPlayingArtwork({ size, onDrag, onDragEnd }: Props) {
   const player = useOctavePlayer();
@@ -79,14 +82,15 @@ export const NowPlayingArtwork = memo(function NowPlayingArtwork({ size, onDrag,
   const style = useAnimatedStyle(() => ({
     transform: [
       { translateX: offset.value },
-      { scale: withSpring(playing ? 1 : 0.86, SPRING) },
+      // En lecture la pochette s'avance, en pause elle recule — un ressort plus lent que le geste : elle respire.
+      { scale: reduceMotion ? withTiming(playing ? 1 : PAUSED_SCALE, { duration: 120 }) : withSpring(playing ? 1 : PAUSED_SCALE, BREATHE) },
       { rotateZ: `${(offset.value / Math.max(1, size)) * -4}deg` },
     ],
-  }), [playing, size]);
+  }), [playing, size, reduceMotion]);
 
   return (
     <Animated.View style={[styles.wrap, { width: size, height: size }, style]} {...responder.panHandlers}>
-      <PlayerArtwork url={url} size={size} radius={Math.round(size * 0.05) + 6} />
+      <PlayerArtwork url={url} size={size} radius={Math.round(size * 0.05) + 6} crossfade />
     </Animated.View>
   );
 });
