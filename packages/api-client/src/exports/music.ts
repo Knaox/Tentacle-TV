@@ -10,6 +10,7 @@ export {
 export {
   useMusicLibraryMatch, libraryMatchRequest, trackMatchQuery, albumMatchQuery, type LibraryMatches, type LibraryAlbumMatch,
 } from "../music/useMusicLibraryMatch";
+export { useAlbumNotes } from "../music/useAlbumNotes";
 export { useMusicSearch, useDebouncedText, musicSearchText, type MusicSearchOptions } from "../music/useMusicSearch";
 export { useMusicLiked, useToggleMusicFavorite, patchFavorites, MUSIC_LIKED_PAGE } from "../music/useMusicFavorite";
 export {

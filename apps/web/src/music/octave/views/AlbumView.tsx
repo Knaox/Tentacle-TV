@@ -2,7 +2,8 @@
  * Octave — un album : pochette, type, artistes, année, nombre de titres,
  * durée, qualité de la parution (la meilleure de ses pistes), puis ses titres,
  * disque par disque. La date complète et le label ferment la page, comme au
- * dos d'une pochette — la ligne de tête reste courte.
+ * dos d'une pochette — la ligne de tête reste courte —, puis les notes de
+ * l'album (sa description Jellyfin : mentions, licence, source), `AlbumNotes`.
  *
  * Un album d'AILLEURS que la bibliothèque a en entier ouvre la vue de la
  * bibliothèque (à sa place dans l'historique) ; en partie, ses titres présents
@@ -27,6 +28,7 @@ import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { FormatBadge } from "../shell/FormatBadge";
 import { useRecordVisit } from "../search/recentVisits";
+import { AlbumNotes } from "./AlbumNotes";
 
 /** La meilleure qualité de l'album (sans perte d'abord, puis profondeur et fréquence). */
 export function bestFormat(tracks: readonly MusicTrack[]): MusicAudioFormat | null {
@@ -139,6 +141,7 @@ export function AlbumView() {
           sectionBefore={discs.length > 1 ? (row, index) => (index === 0 || rows[index - 1]?.track.discNumber !== row.track.discNumber ? t("album.disc", { number: row.track.discNumber ?? 1 }) : null) : undefined}
         />}
         {!preview && <AlbumFooter releaseDate={data.releaseDate ?? null} label={data.label ?? null} />}
+        {!preview && <AlbumNotes album={data} />}
       </div>
     </div>
   );
