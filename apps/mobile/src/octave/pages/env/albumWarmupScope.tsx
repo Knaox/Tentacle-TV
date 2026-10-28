@@ -3,12 +3,14 @@
  * règle `albumWarmup` du partagé). Une page qui porte des étagères d'albums crée sa portée (`useAlbumWarmupPage`),
  * la pose (`AlbumWarmupProvider`) et branche sa liste verticale ; chaque étagère dit ce qu'elle montre (`useShelfWarmup`). À l'arrêt
  * (`WARM_SETTLE_MS` sans mouvement, ni vertical ni horizontal), seules les étagères DANS la fenêtre comptent
- * (`measureInWindow`), leurs cartes visibles dans l'ordre de la page. Hors d'une portée : inerte.
+ * (`measureInWindow`), leurs cartes visibles dans l'ordre de la page, et seulement pour l'écran au premier plan.
+ * Hors d'une portée : inerte.
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import { Dimensions, type View, type ViewToken } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect } from "expo-router";
 import { warmModeOf, warmVisibleAlbums } from "@tentacle-tv/api-client";
 import { WARM_SETTLE_MS } from "@tentacle-tv/shared/octave";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
@@ -49,8 +51,12 @@ export function useAlbumWarmupPage() {
   const shelves = useRef(new Map<number, ShelfEntry>());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = warmModeOf(provider) !== null;
+  // Seul l'écran au premier plan parle : une page restée montée sous la pile (une recherche d'avant) REMPLACERAIT
+  // chez l'extension la liste de celle qu'on regarde (vu au banc : 84 ms après la bonne).
+  const focused = useRef(false);
 
   const fire = useCallback(async () => {
+    if (!focused.current) return;
     const entries = [...shelves.current.entries()].sort(([a], [b]) => a - b).map(([, e]) => e);
     const seen = await Promise.all(entries.map((e) => visibleIn(e.ref)));
     const albums = entries.filter((_, i) => seen[i]).flatMap((e) => e.shown);
@@ -72,6 +78,16 @@ export function useAlbumWarmupPage() {
   }, []);
 
   useEffect(() => moving, [moving]);
+  useFocusEffect(
+    useCallback(() => {
+      focused.current = true;
+      settle();
+      return () => {
+        focused.current = false;
+        moving();
+      };
+    }, [settle, moving]),
+  );
 
   const scope = useMemo<WarmupScope>(
     () => ({
