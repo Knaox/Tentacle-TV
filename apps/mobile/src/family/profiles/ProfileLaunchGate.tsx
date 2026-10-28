@@ -18,7 +18,7 @@ import { usePickerListing } from "./usePickerListing";
 import { WhoIsWatchingView } from "./view/WhoIsWatchingView";
 import { accountFallbackHappened } from "@/offline/rights/accountFallbackNotice";
 import { octaveLaunchAsked } from "@tentacle-tv/shared/octave";
-import { launchedInOctave } from "@/octave/settings/octaveLaunchPort";
+import { octaveLaunch } from "@/octave/launch/octaveLaunch";
 import { octaveSkipLaunchPin } from "@/octave/settings/octaveSettings";
 
 const noop = () => undefined;
@@ -61,7 +61,7 @@ export function ProfileLaunchGate() {
   // Rouvert dans Octave, « Ne pas demander le code PIN au démarrage » allumé : l'identité gardée, sans l'écran
   // proposé d'office — la sécurité du serveur et une session de profil close le ramènent (`octaveLaunchPin.ts`).
   const skipPin = octaveSkipLaunchPin.use();
-  const gateAsked = octaveLaunchAsked(asked, { inOctave: launchedInOctave(), skipPin, request });
+  const gateAsked = octaveLaunchAsked(asked, { inOctave: octaveLaunch().inOctave, skipPin, request });
 
   // Relu à chaque rendu (préchargé) : la liste qui répond, ou une fin de session, le relisent.
   const stayRaw = serverUrl && accountId ? storage.getItem(MOBILE_PROFILE_STAY_KEY) : null;

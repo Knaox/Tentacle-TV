@@ -18,6 +18,11 @@ describe("quand jouer l'ouverture sur le mobile", () => {
     expect(mobileBootPlan(cold)).toEqual({ plan: "intro", sound: true });
   });
 
+  it("jamais sur un lancement en Octave (quitté en mode musique) ; quitté en Tentacle, inchangée", () => {
+    expect(mobileBootPlan({ ...cold, inOctave: true })).toEqual({ plan: "boot", sound: false });
+    expect(mobileBootPlan({ ...cold, inOctave: false })).toEqual({ plan: "intro", sound: true });
+  });
+
   it("jamais hors du démarrage à froid (retour d'arrière-plan, rechargement, changement de profil)", () => {
     expect(mobileBootPlan({ ...cold, coldStart: false })).toEqual({ plan: "boot", sound: false });
   });

@@ -2,6 +2,7 @@ import { AccessibilityInfo } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FRESH_PROCESS, bootIntroTurn, type BootIntroMemory } from "@tentacle-tv/shared/brandIntro";
 import { bootSound } from "@tentacle-tv/brand-intro-native";
+import { octaveLaunchDecision } from "@/octave/launch/octaveLaunch";
 import { readBootIntroSettings } from "./bootIntroSettings";
 import { mobileBootPlan, type MobileBootPlan } from "./bootIntroRules";
 
@@ -35,8 +36,8 @@ export function claimColdStart(): boolean {
 }
 
 async function bootPlanOf(coldStart: boolean): Promise<MobileBootPlan> {
-  const [motion, stored] = await Promise.all([reducedMotion, settings]);
-  const plan = mobileBootPlan({ coldStart, reducedMotion: motion, settings: stored });
+  const [motion, stored, octave] = await Promise.all([reducedMotion, settings, octaveLaunchDecision()]);
+  const plan = mobileBootPlan({ coldStart, reducedMotion: motion, settings: stored, inOctave: octave.inOctave });
   // Le son se décode dès maintenant, pendant que l'app monte : un démarrage lent (premier
   // lancement, appareil occupé) n'a plus à attendre sa préparation sur le bouton lecture.
   if (plan.sound) void bootSound.prepare();

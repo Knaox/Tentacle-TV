@@ -6,16 +6,7 @@
  * ⚠️ Clés traversées par une chaîne : jamais renommées (le bureau les écrit depuis le 26/10).
  */
 
-/** « Au démarrage, ouvrir » : `last` (défaut, et toute valeur inconnue) · `octave` · `tentacle`. */
-export const OCTAVE_STARTUP_KEY = "tentacle_octave_startup";
-export const OCTAVE_STARTUP_CHOICES = ["last", "octave", "tentacle"] as const;
-export type OctaveStartupChoice = (typeof OCTAVE_STARTUP_CHOICES)[number];
-export const DEFAULT_OCTAVE_STARTUP: OctaveStartupChoice = "last";
-
-/** Une valeur lue sur le disque : ce qui n'est pas un choix connu vaut le défaut. */
-export function parseOctaveStartup(raw: string | null | undefined): OctaveStartupChoice {
-  return (OCTAVE_STARTUP_CHOICES as readonly string[]).includes(raw ?? "") ? (raw as OctaveStartupChoice) : DEFAULT_OCTAVE_STARTUP;
-}
+// « Au démarrage, ouvrir » : la règle du mode (`@tentacle-tv/shared/octave/mode` › `octaveStartup.ts`).
 
 /** « Apparence d'Octave » : `same` (comme Tentacle, le défaut) · `light` · `dark`. */
 export const OCTAVE_THEME_KEY = "tentacle_octave_theme";
