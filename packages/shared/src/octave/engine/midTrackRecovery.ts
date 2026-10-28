@@ -15,7 +15,7 @@ export const RECOVERY_MARGIN_MS = 2000;
 /** Reprises de suite au plus, au même endroit. */
 export const MAX_RECOVERIES = 3;
 /** Le saut de la n-ième reprise : la position même (un flux rompu), puis au-delà d'une zone abîmée. */
-export const RECOVERY_SKIPS_MS = [0, 750, 2500] as const;
+export const RECOVERY_SKIPS_MS = [0, 1000, 6000] as const;
 /** La lecture a avancé de tant depuis la dernière reprise : un défaut plus loin a de nouveau ses reprises. */
 export const RECOVERY_PROGRESS_MS = 10_000;
 

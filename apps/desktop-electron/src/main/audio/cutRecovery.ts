@@ -21,7 +21,7 @@ export const CUT_MARGIN_MS = 2000;
 /** Relectures de suite au plus (Metrolist : 3), puis la fin est tenue pour vraie. */
 export const MAX_CUT_RELOADS = 3;
 /** Le saut de la n-ième relecture (ms) : la position même (un flux rompu), puis au-delà d'une zone abîmée. */
-export const CUT_SKIPS_MS = [0, 750, 2500] as const;
+export const CUT_SKIPS_MS = [0, 1000, 6000] as const;
 /** La lecture a avancé de tant depuis la dernière relecture : un défaut plus loin a de nouveau ses relectures. */
 export const CUT_PROGRESS_MS = 10_000;
 

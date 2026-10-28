@@ -59,7 +59,7 @@ describe("coupure en milieu de titre — la règle (S5)", () => {
     expect(cuts.take("t1", "plugin", 200_000), "aucune position jouée").toBeNull();
     cuts.played("t1", 61.5);
     // Au même endroit : la position, puis au-delà de la zone abîmée.
-    expect([0, 1, 2].map(() => cuts.take("t1", "plugin", 200_000))).toEqual([61.5, 62.25, 64.75]);
+    expect([0, 1, 2].map(() => cuts.take("t1", "plugin", 200_000))).toEqual([61.5, 62.5, 68.5]);
     expect(cuts.take("t1", "plugin", 200_000), "trois relectures au plus").toBeNull();
     cuts.played("t2", 30);
     expect(cuts.take("t2", "plugin", 200_000), "un autre titre repart de zéro").toBe(30);
@@ -72,8 +72,8 @@ describe("coupure en milieu de titre — la règle (S5)", () => {
     cuts.played("t1", 20);
     cuts.take("t1", "plugin", 200_000);
     cuts.take("t1", "plugin", 200_000);
-    cuts.played("t1", 20.75 + CUT_PROGRESS_MS / 1000);
-    expect(cuts.take("t1", "plugin", 200_000)).toBe(20.75 + CUT_PROGRESS_MS / 1000);
+    cuts.played("t1", 21 + CUT_PROGRESS_MS / 1000);
+    expect(cuts.take("t1", "plugin", 200_000)).toBe(21 + CUT_PROGRESS_MS / 1000);
   });
 });
 

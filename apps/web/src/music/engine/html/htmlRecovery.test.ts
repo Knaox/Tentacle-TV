@@ -58,10 +58,10 @@ describe("moteur <audio> — reprise en plein titre", () => {
     const b = lastLoaded(elements);
     b.fire("error");
     const c = lastLoaded(elements);
-    expect(c.currentTime).toBeCloseTo(17.55);
+    expect(c.currentTime).toBeCloseTo(17.8);
     c.fire("error");
     const d = lastLoaded(elements);
-    expect(d.currentTime).toBeCloseTo(20.05);
+    expect(d.currentTime).toBeCloseTo(23.8);
     d.fire("error");
     expect(engine.getState().status).toBe("error");
   });

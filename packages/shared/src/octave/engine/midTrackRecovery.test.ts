@@ -4,8 +4,8 @@ import { MAX_RECOVERIES, MidTrackRecovery, RECOVERY_MARGIN_MS, RECOVERY_PROGRESS
 describe("recoveryStartMs", () => {
   it("reprend d'abord à la position même, puis saute au-delà de la zone abîmée", () => {
     expect(recoveryStartMs(16_800, 143_000, 0)).toBe(16_800);
-    expect(recoveryStartMs(16_800, 143_000, 1)).toBe(17_550);
-    expect(recoveryStartMs(16_800, 143_000, 2)).toBe(19_300);
+    expect(recoveryStartMs(16_800, 143_000, 1)).toBe(17_800);
+    expect(recoveryStartMs(16_800, 143_000, 2)).toBe(22_800);
     expect(recoveryStartMs(16_800, 143_000, MAX_RECOVERIES)).toBeNull();
   });
 
@@ -28,8 +28,8 @@ describe("MidTrackRecovery", () => {
     const r = new MidTrackRecovery();
     r.played("t", 16_800);
     expect(r.take("t", 143_000)).toBe(16_800);
-    expect(r.take("t", 143_000)).toBe(17_550);
-    expect(r.take("t", 143_000)).toBe(20_050);
+    expect(r.take("t", 143_000)).toBe(17_800);
+    expect(r.take("t", 143_000)).toBe(23_800);
     expect(r.take("t", 143_000)).toBeNull();
   });
 
@@ -38,8 +38,8 @@ describe("MidTrackRecovery", () => {
     r.played("t", 16_800);
     r.take("t", 143_000);
     r.take("t", 143_000);
-    r.played("t", 17_550 + RECOVERY_PROGRESS_MS);
-    expect(r.take("t", 143_000)).toBe(17_550 + RECOVERY_PROGRESS_MS);
+    r.played("t", 17_800 + RECOVERY_PROGRESS_MS);
+    expect(r.take("t", 143_000)).toBe(17_800 + RECOVERY_PROGRESS_MS);
   });
 
   it("un autre titre repart de zéro", () => {
