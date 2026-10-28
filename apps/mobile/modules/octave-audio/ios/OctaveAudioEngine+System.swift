@@ -240,7 +240,7 @@ extension OctaveAudioEngine {
     }
     out["decks"] = decks.map {
       ["active": $0.isActive, "paused": $0.isPaused, "positionMs": $0.positionMs,
-       "path": String(($0.debugPath ?? "").prefix(80)), "output": $0.debugOutput ?? NSNull()] as [String: Any]
+       "path": String(($0.debugPath ?? "").prefix(80)), "output": $0.debugOutput ?? NSNull(), "bareHeaders": $0.debugBareHeaders] as [String: Any]
     }
     out["front"] = front
     out["fading"] = fade != nil

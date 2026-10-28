@@ -18,8 +18,22 @@ internal data class BridgeMeta(val title: String, val artist: String?, val album
 
 internal data class BridgeTrack(val trackKey: String, val albumKey: String?, val durationMs: Long?, val meta: BridgeMeta?)
 
-/** `direct`, `kept`, `complete`… sont ignorés ici : le JS a déjà résolu la copie gardée en `file://`. */
-internal data class BridgeSource(val url: String, val origin: String, val durationMs: Long?, val replayGain: BridgeReplayGain?)
+/**
+ * `kept`, `complete`… sont ignorés ici : le JS a déjà résolu la copie gardée en `file://`. `direct` : `url` est
+ * un flux DIRECT (requêtes déléguées, jugé par la page), ouvert sans les en-têtes du serveur ; `fallbackUrl`
+ * est son repli (le serveur, `direct=failed`), lu à son premier échec.
+ */
+internal data class BridgeSource(
+    val url: String,
+    val origin: String,
+    val durationMs: Long?,
+    val replayGain: BridgeReplayGain?,
+    val direct: Boolean = false,
+    val fallbackUrl: String? = null,
+) {
+    /** La même source, lue par le serveur ; `null` sans repli. */
+    fun serverFallback(): BridgeSource? = if (direct && fallbackUrl != null) copy(url = fallbackUrl, direct = false, fallbackUrl = null) else null
+}
 
 internal data class BridgeStart(
     val serverOrigin: String,
@@ -73,7 +87,11 @@ internal object BridgeJson {
         val rg = o.optJSONObject("replayGain")?.let { r ->
             BridgeReplayGain(r.doubleOrNull("trackGainDb"), r.doubleOrNull("trackPeak"), r.doubleOrNull("albumGainDb"), r.doubleOrNull("albumPeak"))
         }
-        return BridgeSource(url, o.stringOrNull("origin") ?: "library", o.longOrNull("durationMs"), rg)
+        return BridgeSource(
+            url, o.stringOrNull("origin") ?: "library", o.longOrNull("durationMs"), rg,
+            direct = o.stringOrNull("open") == "direct",
+            fallbackUrl = o.stringOrNull("fallbackUrl"),
+        )
     }
 
     fun capabilities(): String = JSONObject()

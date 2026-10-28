@@ -15,12 +15,19 @@ type OctaveAudioModuleEvents = {
 declare class OctaveAudioNativeModule extends NativeModule<OctaveAudioModuleEvents> {
   /** Une commande du pont (`AUDIO_BRIDGE_COMMANDS`), arguments et réponse en JSON. */
   invoke(command: string, argsJson: string): Promise<string>;
+  /** Le module lit un flux DIRECT (`open: "direct"`, sans les en-têtes du serveur, repli `fallbackUrl`). Absent : un build d'avant. */
+  readonly directStreams?: boolean;
 }
 
 const native = requireOptionalNativeModule<OctaveAudioNativeModule>("OctaveAudio");
 
 export function isOctaveAudioAvailable(): boolean {
   return native !== null;
+}
+
+/** Vrai si ce build sait lire un flux direct (requêtes déléguées) ; faux pour un module d'avant. */
+export function octaveAudioSupportsDirect(): boolean {
+  return native?.directStreams === true;
 }
 
 /**

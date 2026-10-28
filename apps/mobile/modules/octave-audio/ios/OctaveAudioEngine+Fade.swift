@@ -71,7 +71,7 @@ extension OctaveAudioEngine {
     fade = nil
     applyGains()
     // Un suivant donné pendant le fondu (à fondre lui aussi) s'ouvre maintenant sur la platine libérée.
-    if let next, next.crossfadeMs > 0, !nextPreloaded { preloadNext() }
+    if let next, next.opensOnBackDeck, !nextPreloaded { preloadNext() }
     ensureTicker()
   }
 

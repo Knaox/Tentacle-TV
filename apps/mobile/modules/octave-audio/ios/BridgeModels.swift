@@ -52,12 +52,18 @@ struct BridgeSource {
   let origin: String
   let durationMs: Double?
   let replayGain: BridgeReplayGain?
+  /// `url` est un flux DIRECT (requêtes déléguées, jugé par la page) : ouvert SANS les en-têtes du serveur.
+  let direct: Bool
+  /// Le repli du flux direct : l'adresse du serveur (`direct=failed`), lue à son premier échec.
+  let fallbackUrl: String?
 
   init?(_ raw: Any?) {
     guard let dict = raw as? [String: Any], let url = dict["url"] as? String else { return nil }
     self.url = url
     origin = dict["origin"] as? String ?? "library"
     durationMs = (dict["durationMs"] as? NSNumber)?.doubleValue
+    direct = (dict["open"] as? String) == "direct"
+    fallbackUrl = dict["fallbackUrl"] as? String
     if let rg = dict["replayGain"] as? [String: Any] {
       replayGain = BridgeReplayGain(
         trackGainDb: (rg["trackGainDb"] as? NSNumber)?.doubleValue, trackPeak: (rg["trackPeak"] as? NSNumber)?.doubleValue,
@@ -65,6 +71,21 @@ struct BridgeSource {
     } else {
       replayGain = nil
     }
+  }
+
+  private init(url: String, origin: String, durationMs: Double?, replayGain: BridgeReplayGain?) {
+    self.url = url
+    self.origin = origin
+    self.durationMs = durationMs
+    self.replayGain = replayGain
+    direct = false
+    fallbackUrl = nil
+  }
+
+  /// La même source, lue par le serveur (le repli d'un flux direct) ; `nil` sans repli.
+  func serverFallback() -> BridgeSource? {
+    guard direct, let fallbackUrl else { return nil }
+    return BridgeSource(url: fallbackUrl, origin: origin, durationMs: durationMs, replayGain: replayGain)
   }
 }
 
@@ -75,6 +96,8 @@ struct LoadedTrack {
   var crossfadeMs: Double = 0
 
   var durationMs: Double? { source.durationMs ?? track.durationMs }
+  /// Le suivant s'ouvre sur la platine arrière : un fondu, ou un flux direct (jamais ajouté à la liste de mpv).
+  var opensOnBackDeck: Bool { crossfadeMs > 0 || source.direct }
 }
 
 enum BridgeJson {

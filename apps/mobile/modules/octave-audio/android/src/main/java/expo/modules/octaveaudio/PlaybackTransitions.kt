@@ -23,7 +23,7 @@ internal fun PlaybackCore.replaceNext(entry: DeckEntry?, crossfadeMs: Long) {
     fade?.let { if (!it.passedMid) abortFade(it, rearm = false) }
     clearNext()
     if (entry == null) return
-    if (!SourcePolicy.allows(entry.source.url)) {
+    if (!SourcePolicy.allows(entry.source)) {
         Log.w(TAG, "suivant refusé : origine inconnue")
         return
     }
@@ -151,7 +151,7 @@ internal fun PlaybackCore.settleFadeForSeek() {
  * le fondu) la prend. Vrai si un titre de cette clé l'a reçue.
  */
 internal fun PlaybackCore.swapSource(trackKey: String, source: BridgeSource): Boolean {
-    if (!SourcePolicy.allows(source.url)) return false
+    if (!SourcePolicy.allows(source)) return false
     var swapped = false
     for (deck in loadedDecks) {
         deck.currentEntry?.takeIf { it.trackKey == trackKey }?.let {
@@ -214,6 +214,18 @@ internal fun PlaybackCore.handleDeckError(deck: AudioDeck, error: PlaybackExcept
     val message = "${error.errorCodeName}: ${error.message ?: ""}"
     Log.w(TAG, "lecture en échec : $message", error)
     val run = fade
+    // Un flux direct refusé (URL expirée, liée à une autre adresse) : le serveur le relit, à la même position.
+    val failing = deck.currentEntry
+    val fallback = failing?.source?.serverFallback()
+    if (failing != null && fallback != null) {
+        Log.w(TAG, "flux direct refusé : le serveur reprend")
+        failing.source = fallback
+        if (deck === frontOrNull) clearError()
+        deck.reloadCurrent(failing)
+        applyVolumes()
+        queueState()
+        return
+    }
     when {
         deck === frontOrNull -> {
             val key = deck.currentEntry?.trackKey

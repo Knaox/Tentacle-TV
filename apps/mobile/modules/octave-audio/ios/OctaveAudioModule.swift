@@ -8,6 +8,9 @@ public class OctaveAudioModule: Module {
 
     Events("onBridgeEvent")
 
+    // Ce build lit un flux DIRECT (`open: "direct"`, repli `fallbackUrl`) : la page peut l'adopter.
+    Constants(["directStreams": true])
+
     OnCreate {
       OctaveAudioEngine.shared.emit = { [weak self] json in
         self?.sendEvent("onBridgeEvent", ["json": json])

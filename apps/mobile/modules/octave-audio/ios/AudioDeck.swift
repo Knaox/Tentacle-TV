@@ -113,18 +113,26 @@ final class AudioDeck {
   /// la relance sur ce bout, avant que `loadfile` ne parte — le nouveau titre s'ouvrait alors en pause,
   /// état « playing », position figée à 0, aucun son (une fois sur trois au banc). Après `loadfile`, la fin
   /// de l'ancien titre n'est plus attendue : la pause reposée vaut pour le nouveau.
-  func load(_ url: String, startMs: Double, paused: Bool) {
+  ///
+  /// `bare` : un flux DIRECT (hors du serveur) — ses requêtes partent SANS `http-header-fields`, option posée
+  /// pour ce fichier seul (mpv l'applique avant d'ouvrir le flux, et rend la valeur globale ensuite). Jamais par
+  /// `append` : le préchargement d'un suivant (`prefetch-playlist`) s'ouvre avec les options GLOBALES, le jeton
+  /// partirait chez l'hôte du flux.
+  func load(_ url: String, startMs: Double, paused: Bool, bare: Bool = false) {
     guard let mpv = handle else { return }
     restarted = false
     loaded = true
     setFlag("pause", paused)
     var args = ["loadfile", url, "replace", "-1"]
-    if startMs > 0 { args.append("start=\(String(format: "%.3f", startMs / 1000))") }
+    var options: [String] = []
+    if startMs > 0 { options.append("start=\(String(format: "%.3f", startMs / 1000))") }
+    if bare { options.append("http-header-fields=") }
+    if !options.isEmpty { args.append(options.joined(separator: ",")) }
     command(mpv, args)
     setFlag("pause", paused)
   }
 
-  /// Le suivant, ajouté à la liste : mpv le précharge et l'enchaîne sans blanc.
+  /// Le suivant, ajouté à la liste : mpv le précharge et l'enchaîne sans blanc. Jamais un flux direct (`load`).
   func append(_ url: String) {
     guard let mpv = handle else { return }
     command(mpv, ["loadfile", url, "append"])
@@ -202,6 +210,8 @@ final class AudioDeck {
   /// Bancs : d'où la platine lit (`file://…` pour une copie gardée), et sa sortie ouverte ou non.
   var debugPath: String? { getString("path") }
   var debugOutput: String? { getString("current-ao") }
+  /// Bancs : aucun en-tête posé pour le fichier en cours (flux direct) — jamais la valeur, qui porte le jeton.
+  var debugBareHeaders: Bool { (getString("http-header-fields") ?? "").isEmpty }
   #endif
 
   // MARK: - Évènements
