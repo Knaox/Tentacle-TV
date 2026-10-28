@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { profilePhotoUrl } from "@/auth/storedUser";
+import { useCachedPhotoRepair } from "@/avatars/useCachedPhotoRepair";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { profileColorStops } from "@tentacle-tv/shared";
 import { useAccountFaceColor } from "@/family/profiles/useAccountFaceColor";
@@ -40,6 +41,7 @@ export const ProfileChip = memo(function ProfileChip({ compact }: { compact?: bo
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const photo = user ? profilePhotoUrl(serverUrl, user.Id, user.PrimaryImageTag) : null;
   const shown = photo !== null && photo !== failed ? photo : null;
+  const repair = useCachedPhotoRepair(shown);
 
   return (
     <Pressable
@@ -50,7 +52,7 @@ export const ProfileChip = memo(function ProfileChip({ compact }: { compact?: bo
       style={({ pressed }) => [st.chip, compact && st.chipCompact, pressed && st.pressed]}
     >
       {shown ? (
-        <Image source={{ uri: shown }} style={st.photo} contentFit="cover" onError={() => setFailed(shown)} />
+        <Image key={repair.key} onLoad={repair.onLoad} source={{ uri: shown }} style={st.photo} contentFit="cover" onError={() => setFailed(shown)} />
       ) : (
         <LinearGradient
           colors={faceColor ? [...profileColorStops(faceColor)] : [theme.colors.brand.violet, theme.colors.brand.accent]}

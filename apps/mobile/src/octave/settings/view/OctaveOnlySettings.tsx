@@ -42,7 +42,8 @@ export const OctaveOnlySettings = memo(function OctaveOnlySettings() {
   );
 });
 
-function AppearanceRows() {
+/** Les lignes de l'apparence d'Octave : aussi posées sur place dans le hub « Compte ». */
+export function AppearanceRows() {
   const { t } = useTranslation("octaveShell");
   const { liquidGlass } = useThemeMode();
   const theme = octaveTheme.use();

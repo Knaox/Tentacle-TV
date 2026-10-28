@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -32,30 +32,38 @@ import { SettingsScaffold } from "../settings/SettingsScaffold";
  * hors ligne), la page n'existe pas : un lien profond y ramène au profil.
  */
 export function FamilyScreen() {
-  const { t } = useTranslation(["familyWeb", "profile"]);
+  const { t } = useTranslation("profile");
   const router = useRouter();
+  const onGone = useCallback(() => backOrHome(router), [router]);
+  return (
+    <SettingsScaffold title={t("family")}>
+      <FamilyPane onGone={onGone} />
+    </SettingsScaffold>
+  );
+}
+
+/**
+ * Le contenu seul, sans cadre : « Gérer les profils » d'Octave le pose dans sa page (`/octave/profiles`).
+ * `onGone` : la page n'a plus rien à montrer (serveur sans Famille, rien à y faire) — à l'hôte de partir.
+ */
+export function FamilyPane({ onGone }: { onGone: () => void }) {
+  const { t } = useTranslation("familyWeb");
   const { available, settled } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
   // Rien à y faire (pas de famille, aucune invitation, la fonder refusé) : la page n'existe pas.
   const gone = (settled && !available) || familyEntryShown(overview.data, Date.now()) === false;
 
   useEffect(() => {
-    if (gone) backOrHome(router);
-  }, [gone, router]);
+    if (gone) onGone();
+  }, [gone, onGone]);
 
-  return (
-    <SettingsScaffold title={t("profile:family")}>
-      {overview.data ? (
-        <FamilyContent overview={overview.data} />
-      ) : overview.isError ? (
-        familyErrorFromApi(overview.error)?.code === "family.personal_session_required"
-          ? <FamilyNotice text={t("familyWeb:notice.personalOnly")} />
-          : <LoadError error={overview.error} onRetry={() => void overview.refetch()} />
-      ) : gone ? null : (
-        <FamilySkeleton />
-      )}
-    </SettingsScaffold>
-  );
+  if (overview.data) return <FamilyContent overview={overview.data} />;
+  if (overview.isError) {
+    return familyErrorFromApi(overview.error)?.code === "family.personal_session_required"
+      ? <FamilyNotice text={t("notice.personalOnly")} />
+      : <LoadError error={overview.error} onRetry={() => void overview.refetch()} />;
+  }
+  return gone ? null : <FamilySkeleton />;
 }
 
 function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {

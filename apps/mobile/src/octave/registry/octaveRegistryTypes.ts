@@ -10,7 +10,7 @@ import type { ServerCapability } from "@tentacle-tv/shared";
 /** Les écrans d'Octave, un par adresse (`octavePaths`, shared). */
 export type OctaveScreenName =
   | "home" | "search" | "library" | "liked" | "playlists" | "playlist" | "album" | "artist"
-  | "externalPlaylist" | "mood" | "device" | "settings" | "profiles";
+  | "externalPlaylist" | "mood" | "device" | "settings" | "profiles" | "account";
 
 /**
  * Ce que reçoit un écran : les paramètres de son adresse, DÉCODÉS — `id` (album,
