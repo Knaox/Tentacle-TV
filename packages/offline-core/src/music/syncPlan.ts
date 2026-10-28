@@ -20,9 +20,9 @@
  * passage suivant, sans rien dupliquer (un titre déjà en file n'est pas redemandé).
  */
 
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { keptToTrack } from "../deviceModel";
+import { keptToTrack } from "./deviceModel";
 
 export interface WantedForm {
   variant: "original" | "light";

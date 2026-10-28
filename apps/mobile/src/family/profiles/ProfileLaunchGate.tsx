@@ -17,6 +17,9 @@ import { useCommitPick } from "./useCommitPick";
 import { usePickerListing } from "./usePickerListing";
 import { WhoIsWatchingView } from "./view/WhoIsWatchingView";
 import { accountFallbackHappened } from "@/offline/rights/accountFallbackNotice";
+import { octaveLaunchAsked } from "@tentacle-tv/shared/octave";
+import { launchedInOctave } from "@/octave/settings/octaveLaunchPort";
+import { octaveSkipLaunchPin } from "@/octave/settings/octaveSettings";
 
 const noop = () => undefined;
 
@@ -55,6 +58,10 @@ export function ProfileLaunchGate() {
   const readChoice = useCallback(() => readLaunchChoice({ storage, serverUrl: serverUrl ?? "" }), [storage, serverUrl]);
   const choice = useSyncExternalStore(subscribeLaunchChoice, readChoice, readChoice);
   const asked = useMobileLaunchAsked();
+  // Rouvert dans Octave, « Ne pas demander le code PIN au démarrage » allumé : l'identité gardée, sans l'écran
+  // proposé d'office — la sécurité du serveur et une session de profil close le ramènent (`octaveLaunchPin.ts`).
+  const skipPin = octaveSkipLaunchPin.use();
+  const gateAsked = octaveLaunchAsked(asked, { inOctave: launchedInOctave(), skipPin, request });
 
   // Relu à chaque rendu (préchargé) : la liste qui répond, ou une fin de session, le relisent.
   const stayRaw = serverUrl && accountId ? storage.getItem(MOBILE_PROFILE_STAY_KEY) : null;
@@ -73,7 +80,7 @@ export function ProfileLaunchGate() {
     choice,
     stay,
     now: Date.now(),
-    asked,
+    asked: gateAsked,
   });
   // Une session de profil revenue au compte faute de connexion (`OfflineAccountFallback`) : au
   // retour du réseau, rien ne s'impose — « Qui regarde ? » suit sa règle au prochain démarrage.

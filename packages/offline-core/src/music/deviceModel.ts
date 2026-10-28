@@ -5,7 +5,7 @@
  * dans leur ordre.
  */
 
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 
 export interface DeviceCollection {

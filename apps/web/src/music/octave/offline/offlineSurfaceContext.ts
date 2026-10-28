@@ -5,7 +5,7 @@
  */
 
 import { createContext, useContext } from "react";
-import { NO_MUSIC_OFFLINE, type MusicOfflineSurface } from "./keepRules";
+import { NO_MUSIC_OFFLINE, type MusicOfflineSurface } from "@tentacle-tv/offline-core/music";
 
 export const OfflineSurfaceContext = createContext<MusicOfflineSurface>(NO_MUSIC_OFFLINE);
 

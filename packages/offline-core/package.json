@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
-    "./node": "./src/node/index.ts"
+    "./node": "./src/node/index.ts",
+    "./music": "./src/music/index.ts"
   },
   "engines": {
     "node": ">=22.13.0"

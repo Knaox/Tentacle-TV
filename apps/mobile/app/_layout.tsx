@@ -36,6 +36,7 @@ import { BootIntroShell } from "@/bootIntro/BootIntroShell";
 import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
 import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
+import { configureOctaveSettings } from "@/octave/settings/deviceSetting";
 import { markBoot } from "@/bootIntro/bootTimeline";
 import { octaveLaunchDecision } from "@/octave/launch/octaveLaunch";
 import { configureOctaveMode } from "@/octave/mode/octaveModeStore";
@@ -82,6 +83,7 @@ export default function RootLayout() {
       // l'app vit dans l'écran du poulpe.
       await bootDecision();
       configureBootIntroSettings(storage);
+      configureOctaveSettings(storage);
       // Le lancement en Octave est décidé avec l'ouverture (même lecture du disque, déjà finie).
       await octaveLaunchDecision();
       configureOctaveMode(storage);
