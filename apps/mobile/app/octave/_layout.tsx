@@ -12,10 +12,20 @@ import { OctaveCacheGate } from "@/octave/cache/OctaveCacheGate";
 import { OctaveGate } from "@/octave/shell/OctaveGate";
 import { OctaveShell } from "@/octave/shell/OctaveShell";
 import { useOctaveColors } from "@/octave/theme/octaveColors";
+import { OctaveThemeScope } from "@/octave/theme/OctaveThemeScope";
 
 const TAB_ROOT = { animation: "fade" as const, gestureEnabled: false };
 
 export default function OctaveLayout() {
+  // L'apparence d'Octave (clair, sombre, verre) avant tout : le fond de la pile la suit aussi.
+  return (
+    <OctaveThemeScope>
+      <OctaveStack />
+    </OctaveThemeScope>
+  );
+}
+
+function OctaveStack() {
   const colors = useOctaveColors();
   const screenOptions = useMemo(() => ({ headerShown: false, contentStyle: { backgroundColor: colors.ink } }), [colors.ink]);
   return (
