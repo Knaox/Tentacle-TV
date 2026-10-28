@@ -50,7 +50,7 @@ const FACE = 76;
 function StillFace() {
   const colors = useOctaveColors();
   const face = useProfileFace();
-  if (face.uri) return <Image source={{ uri: face.uri }} style={styles.face} contentFit="cover" cachePolicy="none" onError={face.onError} accessibilityIgnoresInvertColors />;
+  if (face.uri) return <Image key={face.imageKey} onLoad={face.onLoad} source={{ uri: face.uri }} style={styles.face} contentFit="cover" cachePolicy="none" onError={face.onError} accessibilityIgnoresInvertColors />;
   return (
     <LinearGradient colors={[...(face.stops ?? colors.gradient)] as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.face}>
       <Text style={styles.initial}>{face.initial}</Text>

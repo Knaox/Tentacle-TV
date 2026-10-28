@@ -37,7 +37,7 @@ export const OctaveAccountButton = memo(function OctaveAccountButton() {
       style={({ pressed }) => [styles.ring, { borderColor: colors.line }, pressed && styles.pressed]}
     >
       {face.uri ? (
-        <Image source={{ uri: face.uri }} style={styles.face} contentFit="cover" transition={150} onError={face.onError} />
+        <Image key={face.imageKey} onLoad={face.onLoad} source={{ uri: face.uri }} style={styles.face} contentFit="cover" transition={150} onError={face.onError} />
       ) : (
         <LinearGradient colors={[...(face.stops ?? colors.gradient)] as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.face}>
           <Text style={styles.initial}>{face.initial}</Text>

@@ -11,6 +11,7 @@ import { useOfflineMode } from "@/offline/useOfflineMode";
 import { cachedAvatarUri } from "@/offline/avatarCache";
 import { pendingPhotoSnapshot, photoTagFor, subscribePendingPhoto } from "@/avatars/pendingPhoto";
 import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
+import { useCachedPhotoRepair } from "@/avatars/useCachedPhotoRepair";
 import { profileColorStops } from "@tentacle-tv/shared";
 import { useAccountFaceColor } from "@/family/profiles/useAccountFaceColor";
 
@@ -59,6 +60,8 @@ export function ProfileAvatar({ user, initial }: Props) {
   const fallback = offline || (photoUrl !== null && failedUrl === photoUrl);
   const cachedUri = useMemo(() => (userId && fallback ? cachedAvatarUri(userId) : null), [userId, fallback]);
   const shownUri = fallback ? cachedUri : photoUrl;
+  // Une photo gardée tronquée par le cache disque se répare au chargement (`useCachedPhotoRepair`).
+  const repair = useCachedPhotoRepair(fallback ? null : photoUrl);
 
   const current = useMemo(() => ({ uri: shownUri, initial }), [shownUri, initial]);
   const closeGallery = useCallback(() => setGalleryOpen(false), []);
@@ -74,7 +77,9 @@ export function ProfileAvatar({ user, initial }: Props) {
       >
         {shownUri ? (
           <Image
+            key={repair.key}
             source={{ uri: shownUri }}
+            onLoad={repair.onLoad}
             style={st.photo}
             contentFit="cover"
             transition={200}

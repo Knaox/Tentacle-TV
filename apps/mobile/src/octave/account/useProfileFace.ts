@@ -10,6 +10,7 @@ import { profileColorStops } from "@tentacle-tv/shared";
 import { profilePhotoUrl } from "@/auth/storedUser";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { pendingPhotoSnapshot, photoTagFor, subscribePendingPhoto } from "@/avatars/pendingPhoto";
+import { useCachedPhotoRepair } from "@/avatars/useCachedPhotoRepair";
 import { useAccountFaceColor } from "@/family/profiles/useAccountFaceColor";
 import { cachedAvatarUri } from "@/offline/avatarCache";
 import { useOfflineMode } from "@/offline/useOfflineMode";
@@ -23,6 +24,9 @@ export interface ProfileFace {
   stops: readonly string[] | null;
   /** L'image n'a pas pu se charger (l'initiale ou la copie locale la remplace). */
   onError: () => void;
+  /** À poser sur l'`<Image>` : la réparation d'une photo gardée tronquée (`useCachedPhotoRepair`). */
+  imageKey: string;
+  onLoad: () => void;
 }
 
 export function useProfileFace(): ProfileFace {
@@ -43,6 +47,8 @@ export function useProfileFace(): ProfileFace {
     if (!fallback) setFailed(photo);
   }, [fallback, photo]);
 
+  const repair = useCachedPhotoRepair(fallback ? null : photo);
+
   const name = user?.Name ?? "";
   return {
     name,
@@ -50,5 +56,7 @@ export function useProfileFace(): ProfileFace {
     uri: fallback ? cached : photo,
     stops: faceColor ? profileColorStops(faceColor) : null,
     onError,
+    imageKey: repair.key,
+    onLoad: repair.onLoad,
   };
 }
