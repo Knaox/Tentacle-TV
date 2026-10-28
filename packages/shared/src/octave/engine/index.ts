@@ -7,3 +7,5 @@ export * from "./crossfadeSetting";
 export * from "./engineShared";
 export * from "./audioBridgeContract";
 export * from "./bridgeAudioEngine";
+export * from "./deferredEngine";
+export * from "./crossfadeControl";

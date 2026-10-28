@@ -76,6 +76,10 @@ const STORAGE_KEYS = [
   // consultés, dernière playlist du « + », tri des albums (@tentacle-tv/shared/octave › pages, api-client).
   "tentacle_octave_recent_searches", "tentacle_octave_search_listens", "tentacle_octave_recent_visits",
   "tentacle_octave_last_playlist", "tentacle_octave_album_sort",
+  // Octave : la transition douce de l'appareil (`octave/audio/crossfadeSetting.ts`, magasin partagé).
+  "tentacle_octave_crossfade",
+  // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
+  "tentacle_octave_player",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

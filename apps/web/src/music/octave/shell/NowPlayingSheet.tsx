@@ -25,6 +25,7 @@ import { FormatBadge } from "./FormatBadge";
 import { SeekBar } from "./SeekBar";
 import { Transport } from "./Transport";
 import { VolumeControl } from "./VolumeControl";
+import { CrossfadeButton } from "./crossfade/CrossfadeButton";
 import { OceanAmbience } from "../motion/OceanAmbience";
 
 /** Échap referme ; le focus entre sur ⌄ et revient, à la fermeture, là où il était. */
@@ -109,8 +110,11 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
           </div>
           <SeekBar />
           <Transport size="lg" />
-          <div className="hidden justify-center md:flex">
-            <VolumeControl className="w-40" />
+          <div className="flex items-center justify-center gap-3">
+            <CrossfadeButton />
+            <div className="hidden md:flex">
+              <VolumeControl className="w-40" />
+            </div>
           </div>
         </div>
       </div>
