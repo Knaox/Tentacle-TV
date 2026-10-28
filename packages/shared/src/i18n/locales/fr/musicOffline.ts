@@ -45,6 +45,13 @@ export default {
     subtitle_one: "{{count}} titre · écouter dans Octave",
     subtitle_other: "{{count}} titres · écouter dans Octave",
   },
+  retest: {
+    label: "Retester la connexion",
+    idle: "Vérifie si le serveur répond. S’il répond, Octave repasse en ligne.",
+    idleManual: "Vous êtes hors ligne par choix : si le serveur répond, Octave repasse en ligne.",
+    checking: "Test en cours…",
+    still: "Le serveur ne répond toujours pas. La musique gardée sur cet appareil reste disponible.",
+  },
   autosync: {
     section: "Hors ligne",
     caption: "Ce qui est gardé sur cet appareil.",

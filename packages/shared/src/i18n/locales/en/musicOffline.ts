@@ -42,6 +42,13 @@ export default {
     subtitle_one: "{{count}} track · listen in Octave",
     subtitle_other: "{{count}} tracks · listen in Octave",
   },
+  retest: {
+    label: "Test the connection again",
+    idle: "Checks whether the server answers. If it does, Octave goes back online.",
+    idleManual: "You chose to be offline: if the server answers, Octave goes back online.",
+    checking: "Testing…",
+    still: "The server still isn’t answering. Music kept on this device is still available.",
+  },
   autosync: {
     section: "Offline",
     caption: "What is kept on this device.",

@@ -1,7 +1,7 @@
 /**
  * Octave (mobile) — la première moitié des Réglages d'Octave : ce qui ne touche QUE la musique (pastille
  * « Octave seulement »), dans l'ordre du bureau (`apps/web/src/music/octave/settings/OctaveSettingsView.tsx`) :
- * l'apparence, la transition douce, la tenue à jour des playlists gardées, puis « ne pas demander le code PIN
+ * l’apparence, la transition douce, « Hors ligne » (en tête quand l’application l’est : « Retester la connexion », la tenue à jour des playlists gardées), puis « ne pas demander le code PIN
  * au démarrage » (mobile seulement). Chaque ligne écrit le réglage de l'appareil (`../octaveSettings.ts`).
  */
 
@@ -11,23 +11,28 @@ import { useServerCapability } from "@tentacle-tv/api-client";
 import type { OctaveTheme } from "@tentacle-tv/shared/octave";
 import { SettingsChoiceRow, SettingsSection } from "@/components/settings";
 import { useAccountKeepRight, useOfflineProfileSession } from "@/offline/rights/useOfflineOwner";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useThemeMode } from "@/theme";
 import { octaveAutoSync, octaveLiquidGlass, octaveSkipLaunchPin, octaveTheme } from "../octaveSettings";
 import { autoSyncRowShown } from "../settingsRights";
 import { CrossfadeRows } from "./CrossfadeRows";
+import { RetestConnectionRow } from "./RetestConnectionRow";
 import { SwitchRow } from "./SwitchRow";
 
 export const OctaveOnlySettings = memo(function OctaveOnlySettings() {
   const { t } = useTranslation(["octaveShell", "musicOffline"]);
+  // Hors ligne, la section « Hors ligne » (et son « Retester la connexion ») passe en tête : c'est ce qu'on vient y chercher.
+  const offline = useOfflineMode();
   return (
     <>
+      {offline && <OfflineSection />}
       <SettingsSection title={t("octaveShell:settings.appearance")} caption={t("octaveShell:appearance.caption")}>
         <AppearanceRows />
       </SettingsSection>
       <SettingsSection title={t("octaveShell:crossfade.section")} caption={t("octaveShell:crossfade.caption")}>
         <CrossfadeRows />
       </SettingsSection>
-      <AutoSyncSection />
+      {!offline && <OfflineSection />}
       <SettingsSection title={t("octaveShell:settings.startup")}>
         <SwitchRow
           icon="unlock"
@@ -76,19 +81,23 @@ export function AppearanceRows() {
 }
 
 /**
- * La tenue à jour : comme sur le bureau, seulement pour le compte de l'appareil qui peut garder de la musique
- * (`settingsRights.ts` : capacité `offline.music`, jamais une session de profil, droit `keepOffline` du compte).
+ * « Hors ligne » : hors ligne, « Retester la connexion » (`RetestConnectionRow`) ; puis la tenue à jour, comme sur
+ * le bureau, seulement pour le compte de l'appareil qui peut garder de la musique (`settingsRights.ts` : capacité
+ * `offline.music`, jamais une session de profil, droit `keepOffline` du compte). Ni l'une ni l'autre : pas de section.
  */
-function AutoSyncSection() {
+function OfflineSection() {
   const { t } = useTranslation("musicOffline");
   const capable = useServerCapability("offline.music");
   const profileSession = useOfflineProfileSession();
   const keepRight = useAccountKeepRight();
+  const offline = useOfflineMode();
   const on = octaveAutoSync.use();
-  if (!autoSyncRowShown({ capable, profileSession, keepRight })) return null;
+  const autoSync = autoSyncRowShown({ capable, profileSession, keepRight });
+  if (!autoSync && !offline) return null;
   return (
     <SettingsSection title={t("autosync.section")} caption={t("autosync.caption")}>
-      <SwitchRow icon="refresh-cw" label={t("autosync.label")} description={t("autosync.hint")} value={on} onChange={octaveAutoSync.set} last />
+      <RetestConnectionRow last={!autoSync} />
+      {autoSync && <SwitchRow icon="refresh-cw" label={t("autosync.label")} description={t("autosync.hint")} value={on} onChange={octaveAutoSync.set} last />}
     </SettingsSection>
   );
 }
