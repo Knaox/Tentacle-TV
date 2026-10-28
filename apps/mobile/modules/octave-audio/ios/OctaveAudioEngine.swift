@@ -61,6 +61,10 @@ final class OctaveAudioEngine {
     #if DEBUG
     // Bancs de développement : ce que le système affiche (écran verrouillé), relu tel quel.
     case "audio_debug": return debugSnapshot()
+    // Bancs : rejoue une commande de l'écran verrouillé par le MÊME chemin que ses boutons.
+    case "audio_debug_remote":
+      let command = args["command"] as? String ?? ""
+      if command == "play" || command == "pause" { systemPlayOnQueue(command == "play") } else { sendRemote(command) }
     #endif
     default: break
     }
