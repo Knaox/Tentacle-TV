@@ -38,6 +38,8 @@ import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
 import { configureOctaveSettings } from "@/octave/settings/deviceSetting";
 import { markBoot } from "@/bootIntro/bootTimeline";
+import { octaveLaunchDecision } from "@/octave/launch/octaveLaunch";
+import { configureOctaveMode } from "@/octave/mode/octaveModeStore";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -81,6 +83,9 @@ export default function RootLayout() {
       await bootDecision();
       configureBootIntroSettings(storage);
       configureOctaveSettings(storage);
+      // Le lancement en Octave est décidé avec l'ouverture (même lecture du disque, déjà finie).
+      await octaveLaunchDecision();
+      configureOctaveMode(storage);
 
       if (!mounted) return;
 
@@ -182,6 +187,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
+            {/* Octave, le mode musique : sa propre coquille (onglets, barre latérale, mini-lecteur). */}
+            <Stack.Screen name="octave" options={{ animation: "fade", gestureEnabled: false }} />
             <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
             <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
             <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
