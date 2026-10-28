@@ -1,22 +1,17 @@
 /**
  * Octave mobile — le LECTEUR vu par les pages : l'`OctavePlayer` partagé
- * (`@tentacle-tv/shared/octave`), posé UNE fois par la coquille avec le moteur
- * mobile (`<OctavePagesPlayerProvider player={…}>`, m1/m2). Sans lui, les
- * boutons Lecture ne font rien et rien ne plante ; les listes savent le titre
- * en cours par `usePagesCurrentKey`.
+ * (`@tentacle-tv/shared/octave`) que le lecteur mobile pose sur la coquille
+ * (`OctavePlayerProvider`, axe m2). Hors de lui (un écran rendu sans la
+ * coquille), les boutons Lecture ne font rien et rien ne plante ; les listes
+ * savent le titre en cours par `usePagesCurrentKey`.
  */
 
-import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 import type { OctavePlayer, PlayerSnapshot } from "@tentacle-tv/shared/octave";
-
-const PagesPlayerContext = createContext<OctavePlayer | null>(null);
-
-export function OctavePagesPlayerProvider({ player, children }: { player: OctavePlayer | null; children: ReactNode }) {
-  return <PagesPlayerContext.Provider value={player}>{children}</PagesPlayerContext.Provider>;
-}
+import { useOptionalOctavePlayer } from "../../player";
 
 export function usePagesPlayer(): OctavePlayer | null {
-  return useContext(PagesPlayerContext);
+  return useOptionalOctavePlayer();
 }
 
 const noop = () => () => undefined;

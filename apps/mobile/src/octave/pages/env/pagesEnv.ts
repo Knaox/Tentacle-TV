@@ -8,19 +8,17 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { useJellyfinClient, useMusicProvider, useTentacleConfig, type MusicProvider } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, type MusicProvider } from "@tentacle-tv/api-client";
 import { elementSourceUrl, type OctaveDeviceStore } from "@tentacle-tv/shared/octave";
-import type { MusicCapablePlugin } from "@tentacle-tv/shared/music";
-import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { useMobileMusicProvider } from "../../audio/useMobileMusicProvider";
 import { octaveOwnerOf } from "./owner";
 
 export { octaveOwnerOf };
 
-/** L'extension de musique de ce serveur pour ce compte, ou `null` (rien hors bibliothèque, nulle part). */
+/** L'extension de musique de ce serveur pour ce compte, ou `null` : la porte du lecteur mobile (une seule). */
 export function useOctavePagesProvider(): MusicProvider | null {
-  const plugins = useActivePlugins().data;
-  return useMusicProvider(plugins as readonly MusicCapablePlugin[] | undefined);
+  return useMobileMusicProvider();
 }
 
 /** Le stockage synchrone de l'appareil, vu par les règles des pages. */
