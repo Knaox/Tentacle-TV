@@ -27,7 +27,7 @@ export const WEB_UNRENDERED: Readonly<Record<string, string>> = {
   "screen:offlineTitles": "Garder des titres hors ligne : le navigateur ne le sait pas (seules les apps).",
   "action:goOffline": "Passer hors ligne : le navigateur n'a pas de mode hors ligne.",
   "block:offlineSpace": "Espace occupé par les titres gardés sur l'appareil : sans objet dans un navigateur.",
-  "control:wifiOnly": "Transferts hors ligne en Wi-Fi seulement : le navigateur ne garde pas de titres.",
+  "control:wifiOnly": "Transferts sur données cellulaires : le navigateur ne garde pas de titres.",
   "control:backgroundTransfers": "Transferts en arrière-plan : propres aux apps qui gardent des titres.",
   "control:notifyReady": "Notification « prêt hors ligne » : notification LOCALE des apps.",
   "control:liveTransfers": "Activité en direct des transferts (île dynamique, notification Android) : natif.",

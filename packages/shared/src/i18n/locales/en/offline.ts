@@ -88,6 +88,8 @@ export default {
   waitingWifiCard_one: "{{count}} transfer is waiting for Wi-Fi",
   waitingWifiCard_other: "{{count}} transfers are waiting for Wi-Fi",
   continueOnCellular: "Continue on cellular",
+  cellularOffNotice: "Transferring on cellular data is turned off",
+  cellularOffEnable: "Turn it on",
   removeConfirmTitle: "Remove this title from the device?",
   removeConfirmMessage:
     "The file is removed for this account. Another account on this device that kept it still has it.",
@@ -126,8 +128,9 @@ export default {
   sectionSpace: "Space",
   storageHint: "Titles live in the app's own space. No folder to pick.",
   sectionTransfers: "Transfers",
-  wifiOnly: "Wi-Fi only",
-  wifiOnlyDesc: "Transfers wait for a Wi-Fi connection.",
+  // Clés d'avant (« Wi-Fi only ») : le réglage se dit désormais à l'endroit, la clé reste.
+  wifiOnly: "Transfer on cellular data",
+  wifiOnlyDesc: "When off, transfers wait for Wi-Fi. Videos and Octave music.",
   backgroundTransfers: "Continue in the background",
   backgroundTransfersDesc: "Transfers keep going with the app behind or the screen off.",
   transferNotifChannel: "Transfers",
