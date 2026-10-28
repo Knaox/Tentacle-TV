@@ -1,9 +1,10 @@
 /**
  * Octave — des `File` du navigateur (choix ou dépôt) en fichiers d'import : la tranche se lit par `Blob.slice`
- * (rien n'est chargé en mémoire en entier). Les fichiers non audio sont écartés ICI (le serveur juge en dernier).
+ * (rien n'est chargé en mémoire en entier). Ne partent que l'audio et les images de pochette (`pickReleaseLot` :
+ * la plus grande image devient la pochette) ; le serveur juge en dernier.
  */
 
-import { albumHintOf, isImportableAudio, type ReleaseLocalFile } from "@tentacle-tv/api-client";
+import { albumHintOf, pickReleaseLot, type ReleaseLocalFile } from "@tentacle-tv/api-client";
 import { RELEASE_FILES_PER_JOB } from "@tentacle-tv/shared/music";
 
 export interface PickedFiles {
@@ -11,12 +12,13 @@ export interface PickedFiles {
   ignored: number;
   /** Plus que ce qu'un import accepte : les premiers sont gardés. */
   truncated: boolean;
+  /** Des images de pochette sont jointes. */
+  covers: number;
 }
 
 export function pickAudio(list: Iterable<File>): PickedFiles {
-  const all = [...list];
-  const audio = all.filter((f) => isImportableAudio(f.name, f.type));
-  return { files: audio.slice(0, RELEASE_FILES_PER_JOB), ignored: all.length - audio.length, truncated: audio.length > RELEASE_FILES_PER_JOB };
+  const { files, ignored, truncated, covers } = pickReleaseLot([...list], RELEASE_FILES_PER_JOB);
+  return { files, ignored, truncated, covers };
 }
 
 export function toLocalFiles(files: readonly File[]): ReleaseLocalFile[] {

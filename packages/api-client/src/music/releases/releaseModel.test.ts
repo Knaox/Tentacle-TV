@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { albumHintOf, releaseArtForPixels, isImportableAudio, readReleaseRefusal, releaseFraction, remainingChunks } from "./releaseModel";
+import { pickReleaseLot, albumHintOf, releaseArtForPixels, isImportableAudio, readReleaseRefusal, releaseFraction, remainingChunks } from "./releaseModel";
 
 describe("modèle client de l'import de sorties", () => {
   it("propose l'audio par type ou par extension", () => {
@@ -32,5 +32,12 @@ describe("modèle client de l'import de sorties", () => {
     expect(releaseArtForPixels(art, 1000)).toBe("/api/plugins/sillon/music/releases/art/a1/1200");
     expect(releaseArtForPixels(art, 2400)).toBe("/api/plugins/sillon/music/releases/art/a1/full");
     expect(releaseArtForPixels("/api/music/artwork/x", 120)).toBe("/api/music/artwork/x");
+  });
+  it("un lot garde l'audio ET les images de pochette (25 Mo au plus), l'audio d'abord", () => {
+    const f = (name: string, type = "", size = 10) => ({ name, type, size });
+    const lot = pickReleaseLot([f("cover.png", "image/png"), f("01.flac"), f("notes.pdf", "application/pdf"), f("geante.jpg", "image/jpeg", 30 * 1024 * 1024), f("02.mp3")], 100);
+    expect(lot.files.map((x) => x.name)).toEqual(["01.flac", "02.mp3", "cover.png"]);
+    expect(lot).toMatchObject({ ignored: 2, truncated: false, audio: 2, covers: 1 });
+    expect(pickReleaseLot([f("a.png"), f("b.mp3")], 1).files.map((x) => x.name)).toEqual(["b.mp3"]);
   });
 });

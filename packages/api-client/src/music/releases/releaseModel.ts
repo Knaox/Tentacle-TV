@@ -5,6 +5,8 @@
 
 import {
   releaseArtSized,
+  RELEASE_COVER_EXTENSIONS,
+  RELEASE_COVER_MIME_TYPES,
   RELEASE_FILE_EXTENSIONS,
   RELEASE_FILE_MIME_TYPES,
   type MusicAlbum,
@@ -22,14 +24,56 @@ export function readReleaseRefusal(value: unknown): ReleaseRefusal {
   return REFUSALS.find((r) => r === value) ?? "failed";
 }
 
-/** Ce que le sélecteur de fichiers propose (le serveur juge en dernier, sur le contenu). */
-export const RELEASE_ACCEPT: readonly string[] = ["audio/*", ...RELEASE_FILE_MIME_TYPES, ...RELEASE_FILE_EXTENSIONS.map((e) => `.${e}`)];
+/** Une image jointe au lot devient la pochette (≤ 25 Mo, contrat des sorties) ; au-delà, elle n'est pas envoyée. */
+export const RELEASE_COVER_MAX_BYTES = 25 * 1024 * 1024;
 
-/** Un fichier qu'il vaut la peine d'envoyer : un type audio, ou une extension connue. */
+/**
+ * Ce que le sélecteur de fichiers propose : l'audio ET les images (le `cover.png` d'un téléchargement Bandcamp
+ * devient la pochette). Le serveur juge en dernier, sur le contenu.
+ */
+export const RELEASE_ACCEPT: readonly string[] = [
+  "audio/*",
+  ...RELEASE_FILE_MIME_TYPES,
+  ...RELEASE_FILE_EXTENSIONS.map((e) => `.${e}`),
+  ...RELEASE_COVER_MIME_TYPES,
+  ...RELEASE_COVER_EXTENSIONS.map((e) => `.${e}`),
+];
+
+const extensionOf = (name: string) => name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? "";
+
+/** Un fichier audio : un type audio, ou une extension connue. */
 export function isImportableAudio(name: string, type: string | null | undefined): boolean {
   if (type && type.startsWith("audio/")) return true;
-  const ext = name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
-  return !!ext && RELEASE_FILE_EXTENSIONS.includes(ext);
+  return RELEASE_FILE_EXTENSIONS.includes(extensionOf(name));
+}
+
+/** Une image de pochette (JPEG, PNG, WebP), par type ou par extension. */
+export function isReleaseCover(name: string, type: string | null | undefined): boolean {
+  if (type && RELEASE_COVER_MIME_TYPES.includes(type)) return true;
+  return RELEASE_COVER_EXTENSIONS.includes(extensionOf(name));
+}
+
+/** Ce qui part dans un lot : l'audio, et les images de pochette de 25 Mo au plus. */
+export function isReleaseLotFile(name: string, type: string | null | undefined, size: number): boolean {
+  return isImportableAudio(name, type) || (isReleaseCover(name, type) && size <= RELEASE_COVER_MAX_BYTES);
+}
+
+/**
+ * Le tri d'un choix de fichiers : ce qui part (audio et images de pochette, 100 au plus — l'audio d'abord, une image
+ * ne prend jamais la place d'un titre), ce qui est laissé de côté, et si la borne a coupé.
+ */
+export function pickReleaseLot<F extends { name: string; type: string; size: number }>(all: readonly F[], max: number): { files: F[]; ignored: number; truncated: boolean; audio: number; covers: number } {
+  const audio = all.filter((f) => isImportableAudio(f.name, f.type));
+  const covers = all.filter((f) => !isImportableAudio(f.name, f.type) && isReleaseLotFile(f.name, f.type, f.size));
+  const kept = [...audio, ...covers];
+  const files = kept.slice(0, max);
+  return {
+    files,
+    ignored: all.length - kept.length,
+    truncated: kept.length > max,
+    audio: files.filter((f) => isImportableAudio(f.name, f.type)).length,
+    covers: files.filter((f) => !isImportableAudio(f.name, f.type)).length,
+  };
 }
 
 /** Les morceaux qui restent à envoyer, depuis ce que le serveur a déjà reçu. */

@@ -139,6 +139,7 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
                   </button>
                 </div>
               )}
+              {picked.covers > 0 && <p className="text-xs text-content-tertiary">{t("coverNote")}</p>}
               {picked.ignored > 0 && <p className="text-xs text-amber-300">{t("ignored", { count: picked.ignored })}</p>}
               {picked.truncated && <p className="text-xs text-amber-300">{t("tooMany", { max: RELEASE_FILES_PER_JOB })}</p>}
             </div>

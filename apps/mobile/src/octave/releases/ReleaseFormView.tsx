@@ -86,6 +86,7 @@ export function ReleaseFormView({ sources, link, onLink, picked, onPick, onClear
               <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{t("chooseOnPhone")}</Text>
             </Pressable>
           )}
+          {picked && picked.covers > 0 ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{t("coverNote")}</Text> : null}
           {picked && picked.ignored > 0 ? <Text style={[typography.caption, { color: warn }]}>{t("ignored", { count: picked.ignored })}</Text> : null}
           {picked?.truncated ? <Text style={[typography.caption, { color: warn }]}>{t("tooMany", { max: RELEASE_FILES_PER_JOB })}</Text> : null}
         </View>

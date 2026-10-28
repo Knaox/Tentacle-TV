@@ -1,15 +1,15 @@
 /**
- * Octave mobile — les fichiers audio du TÉLÉPHONE pour l'import d'une sortie : le sélecteur du système (iOS :
- * Fichiers ; Android : le sélecteur de documents, SAF), plusieurs fichiers d'un coup, COPIÉS dans le cache de
- * l'app (une adresse `file://` qui se relit par tranches, même après une coupure : la reprise en dépend). Une
+ * Octave mobile — les fichiers audio du TÉLÉPHONE (et l'image de pochette jointe) pour l'import d'une sortie : le
+ * sélecteur du système (iOS : Fichiers ; Android : le sélecteur de documents, SAF), plusieurs fichiers d'un coup,
+ * COPIÉS dans le cache de l'app (une adresse `file://` qui se relit par tranches, même après une coupure : la reprise en dépend). Une
  * tranche se lit par `FileHandle` (position + `readBytes`) : jamais le fichier entier en mémoire.
  */
 
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File, Paths } from "expo-file-system";
 import { copyAsync } from "expo-file-system/legacy";
-import { isImportableAudio, type ReleaseLocalFile } from "@tentacle-tv/api-client";
-import { RELEASE_FILES_PER_JOB } from "@tentacle-tv/shared/music";
+import { pickReleaseLot, type ReleaseLocalFile } from "@tentacle-tv/api-client";
+import { RELEASE_COVER_MIME_TYPES, RELEASE_FILES_PER_JOB } from "@tentacle-tv/shared/music";
 import type { SharedAudioFile } from "@tentacle-tv/shared/octave/mode";
 
 /** Un fichier du téléphone choisi pour l'import (copie dans le cache de l'app). */
@@ -24,17 +24,18 @@ export interface PhonePick {
   files: PhoneAudioFile[];
   ignored: number;
   truncated: boolean;
+  covers: number;
 }
 
-/** Ce qui vaut la peine d'être envoyé : l'audio, 100 au plus (règle commune au web). */
+/** Ce qui vaut la peine d'être envoyé : l'audio et les images de pochette, 100 au plus (règle commune au web). */
 export function keepAudio(all: readonly PhoneAudioFile[]): PhonePick {
-  const audio = all.filter((f) => isImportableAudio(f.name, f.type));
-  return { files: audio.slice(0, RELEASE_FILES_PER_JOB), ignored: all.length - audio.length, truncated: audio.length > RELEASE_FILES_PER_JOB };
+  const { files, ignored, truncated, covers } = pickReleaseLot(all, RELEASE_FILES_PER_JOB);
+  return { files, ignored, truncated, covers };
 }
 
 /** Le sélecteur du système ; `null` : rien choisi (annulé). */
 export async function pickPhoneAudio(): Promise<PhonePick | null> {
-  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*"], multiple: true, copyToCacheDirectory: true });
+  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*", ...RELEASE_COVER_MIME_TYPES], multiple: true, copyToCacheDirectory: true });
   if (result.canceled || !result.assets?.length) return null;
   return keepAudio(
     result.assets.map((asset) => ({
