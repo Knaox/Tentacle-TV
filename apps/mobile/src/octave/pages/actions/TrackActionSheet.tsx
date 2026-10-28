@@ -10,7 +10,6 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ArrowDownToLine, CircleCheck, Disc3, Heart, ListEnd, ListPlus, ListStart, Mic2, Play } from "lucide-react-native";
 import { openPlaylistChooser, useLiked } from "@tentacle-tv/api-client";
-import { queueActions } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
@@ -24,10 +23,12 @@ import { trackSheetActions, type TrackSheetActionId } from "./trackSheetActions"
 import { useTrackKeep } from "./useTrackKeep";
 import { playFrom } from "../env/playFrom";
 import { handOffSheet } from "./sheetHandoff";
+import { enqueueWithNotice, playNextWithNotice } from "./queueNotice";
 
 function SheetBody({ request }: { request: TrackSheetRequest }) {
   const { t } = useTranslation("music");
   const { t: tOffline } = useTranslation("musicOffline");
+  const { t: tLists } = useTranslation("musicLists");
   const player = usePagesPlayer();
   const actions = useMobileTrackActions();
   const nav = useOctaveNav();
@@ -56,9 +57,9 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
       case "play":
         return <SheetAction key={id} icon={Play} label={t("common.playAll")} onPress={then(() => playFrom(player, list.length ? list : [track], list.length ? index : 0, contextId))} />;
       case "playNext":
-        return <SheetAction key={id} icon={ListStart} label={t("track.playNext")} onPress={then(() => player && queueActions.playNext(player, [track]))} />;
+        return <SheetAction key={id} icon={ListStart} label={t("track.playNext")} onPress={then(() => player && playNextWithNotice(player, track, tLists))} />;
       case "addToQueue":
-        return <SheetAction key={id} icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => player && queueActions.enqueue(player, [track]))} />;
+        return <SheetAction key={id} icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => player && enqueueWithNotice(player, track, tLists))} />;
       case "addToPlaylist":
         return <SheetAction key={id} icon={ListPlus} label={t("playlist.addTo")} onPress={() => handOffSheet(closeTrackSheet, () => openPlaylistChooser(track))} />;
       case "keep":

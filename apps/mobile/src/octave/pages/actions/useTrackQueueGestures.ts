@@ -7,9 +7,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { queueActions } from "@tentacle-tv/shared/octave";
 import { usePagesPlayer } from "../env/pagesPlayer";
-import { showNotice } from "../env/notices";
+import { enqueueWithNotice, playNextWithNotice } from "./queueNotice";
 
 export interface TrackQueueGestures {
   playNext: () => void;
@@ -22,14 +21,8 @@ export function useTrackQueueGestures(track: MusicTrack, playable: boolean): Tra
   return useMemo(() => {
     if (!player || !playable) return null;
     return {
-      playNext: () => {
-        queueActions.playNext(player, [track]);
-        showNotice("success", t("swipe.nextNotice", { title: track.title }));
-      },
-      enqueue: () => {
-        queueActions.enqueue(player, [track]);
-        showNotice("success", t("swipe.queuedNotice", { title: track.title }));
-      },
+      playNext: () => playNextWithNotice(player, track, t),
+      enqueue: () => enqueueWithNotice(player, track, t),
     };
   }, [playable, player, t, track]);
 }
