@@ -24,7 +24,7 @@ import { useOctavePagesProvider } from "../env/pagesEnv";
 import { Artwork } from "./Artwork";
 
 /** La vue d'un album ou d'un artiste hors bibliothèque demandée au toucher, avant la navigation. */
-function useOpenWarmup() {
+export function useOpenWarmup() {
   const qc = useQueryClient();
   const provider = useOctavePagesProvider();
   return (kind: "album" | "artist", target: string) => void prefetchExternalEntity(qc, provider, kind, target);

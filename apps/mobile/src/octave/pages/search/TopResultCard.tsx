@@ -14,6 +14,7 @@ import { GlassSurface, PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { Artwork } from "../ui/Artwork";
+import { useOpenWarmup } from "../ui/Cards";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 function describe(top: TopResult): { title: string; art: string | null; round: boolean; kind: string; by: string | null } {
@@ -34,14 +35,22 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
   const theme = useTheme();
   const nav = useOctaveNav();
   const d = describe(top);
+  const warm = useOpenWarmup();
   const open = () => {
     if (top.kind === "track") return onPlay();
     if (top.kind === "album") {
       const target = entityTarget(top.album);
-      if (target && !top.album.jellyfinId) rememberAlbumPreview(target, top.album);
+      if (target && !top.album.jellyfinId) {
+        rememberAlbumPreview(target, top.album);
+        warm("album", target);
+      }
       return nav.album(top.album);
     }
-    if (top.kind === "artist") return nav.artist(top.artist);
+    if (top.kind === "artist") {
+      const target = entityTarget(top.artist);
+      if (target && !top.artist.jellyfinId) warm("artist", target);
+      return nav.artist(top.artist);
+    }
     nav.externalPlaylist(top.playlist.key);
   };
   return (
