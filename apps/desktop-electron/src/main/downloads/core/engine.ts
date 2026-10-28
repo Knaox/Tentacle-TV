@@ -46,12 +46,6 @@ export const MAX_PARALLEL = 1;
 
 /** Garde-fou : au-delà, on sature la connexion sans rien terminer plus vite. */
 const PARALLEL_CEILING = 4;
-/**
- * Plafond des places de MUSIQUE, plus haut : un titre pèse quelques mégaoctets, et
- * l'iPhone qui se verrouille ne lance plus rien — seuls les titres remis à la
- * session d'arrière-plan AVANT la suspension arrivent (`backgroundParallel.ts`).
- */
-const MUSIC_PARALLEL_CEILING = 24;
 
 export class DownloadEngine {
   private creds: Creds | null = null;
@@ -159,7 +153,7 @@ export class DownloadEngine {
     const creds = this.creds;
     if (creds === null) return;
     const all = this.parallelLimit();
-    const music = Math.min(Math.max(0, Math.trunc(this.deps.musicParallelLimit?.() ?? 0)), MUSIC_PARALLEL_CEILING);
+    const music = Math.min(Math.max(0, Math.trunc(this.deps.musicParallelLimit?.() ?? 0)), PARALLEL_CEILING);
     for (;;) {
       const file = nextQueued(this.deps.db);
       if (file === null) return;

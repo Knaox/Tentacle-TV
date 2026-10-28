@@ -40,20 +40,16 @@ export function transferParallelLimit(): number {
 }
 
 /**
- * Les places des titres d'OCTAVE (`EngineDeps.musicParallelLimit`). Au premier
- * plan, trois, comme le bureau : leur temps part dans la préparation du
- * serveur, qui se recouvre (`musicLane.ts`). Le temps d'une suspension iOS,
- * bien plus : un titre pèse quelques mégaoctets, et ce qui n'est pas remis au
- * système avant le verrouillage n'arrivera qu'à la réouverture — une playlist
- * de 300 titres n'avançait que de trois. Vingt-quatre : un album ou un bon
- * morceau de playlist, sans ouvrir des centaines de requêtes d'un coup chez le
- * serveur (qui garde la main sur leur rythme).
+ * Les places des titres d'OCTAVE (`EngineDeps.musicParallelLimit`) : trois, comme le bureau — leur temps part
+ * dans la préparation du serveur, qui se recouvre (`musicLane.ts`). Trois AUSSI le temps d'une suspension iOS,
+ * jamais plus : l'extension prépare un titre à la fois, à son rythme (sa file du hors ligne en masse), et fait
+ * attendre la demande jusqu'à 45 s avant de répondre 503 + `Retry-After`. Remettre au système deux douzaines
+ * de demandes en attente, c'était les voir expirer chez iOS (60 s sans octet) ; la suite part à l'heure dite.
  */
 const MUSIC_PARALLEL = 3;
-const SUSPENDED_MUSIC_PARALLEL = 24;
 
 export function transferMusicParallelLimit(): number {
-  return suspended ? SUSPENDED_MUSIC_PARALLEL : MUSIC_PARALLEL;
+  return MUSIC_PARALLEL;
 }
 
 /**

@@ -17,11 +17,9 @@ describe("places des transferts", () => {
     expect(transferMusicParallelLimit()).toBe(3);
   });
 
-  it("iPhone qui passe derrière : bien plus de titres remis au système avant la suspension", () => {
+  it("iPhone qui passe derrière : trois films remis au système, et toujours trois titres (la file du serveur les fait attendre)", () => {
     setTransfersSuspended(true);
     expect(transferParallelLimit()).toBe(3);
-    expect(transferMusicParallelLimit()).toBe(24);
-    setTransfersSuspended(false);
     expect(transferMusicParallelLimit()).toBe(3);
   });
 

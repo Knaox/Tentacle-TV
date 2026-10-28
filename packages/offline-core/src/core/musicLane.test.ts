@@ -103,23 +103,13 @@ describe("le moteur et les places de musique", () => {
     expect(server.urls[0]).toContain("/api/downloads/original/item1");
   });
 
-  it("l'iPhone qui se verrouille en demande vingt-quatre : vingt-quatre titres partent avant la suspension", async () => {
-    const db = openInMemory();
-    const server = silentNet();
-    const { engine } = makeEngine(db, preparedRoot(), server.net, { parallelLimit: () => 3, musicParallelLimit: () => 24 });
-    enqueueMusicBatch(db, "u", Array.from({ length: 30 }, (_, n) => item(n + 1)), 1e12, 1_000);
-    engine.start(CREDS);
-    await flush();
-    expect(server.urls).toHaveLength(24);
-  });
-
-  it("un plafond démesuré est borné (vingt-quatre au plus)", async () => {
+  it("un plafond démesuré est borné (quatre au plus)", async () => {
     const db = openInMemory();
     const server = silentNet();
     const { engine } = makeEngine(db, preparedRoot(), server.net, { musicParallelLimit: () => 50 });
-    enqueueMusicBatch(db, "u", Array.from({ length: 30 }, (_, n) => item(n + 1)), 1e12, 1_000);
+    enqueueMusicBatch(db, "u", [1, 2, 3, 4, 5, 6].map(item), 1e12, 1_000);
     engine.start(CREDS);
     await flush();
-    expect(server.urls).toHaveLength(24);
+    expect(server.urls).toHaveLength(4);
   });
 });
