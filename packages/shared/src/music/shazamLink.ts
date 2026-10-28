@@ -5,12 +5,14 @@
  * Formes reconnues (liste fermée d'hôtes, jamais un autre) :
  * - `https://www.shazam.com/track/<id>/<slug>` et `…/song/<id>/<slug>`, avec ou sans préfixe de langue (`/fr-fr/`) ;
  * - `https://shz.am/<code>` (lien court : seul le serveur peut le suivre).
- * Le titre et l'artiste se lisent, dans l'ordre : sur la page Shazam par le serveur (`og:title`, capacité
- * `music.sharedLinks`), sinon dans le texte du partage (« I used Shazam to discover X by Y »), sinon dans le slug.
+ * Le titre et l'artiste se lisent, dans l'ordre : par le serveur (capacité `music.sharedLinks`) — un `/song/<id>`
+ * porte l'identifiant APPLE MUSIC du titre (catalogue iTunes), un `/track/<id>` la clé SHAZAM (catalogue de
+ * Shazam) —, sinon dans le texte du partage (« I used Shazam to discover X by Y »), sinon dans le slug.
+ * (La page web de Shazam ne sert à rien : son `og:title` est celui d'un titre en vogue, pas du lien — mesuré.)
  */
 
 export type ShazamLink =
-  | { kind: "track"; url: string; trackId: string; slug: string | null }
+  | { kind: "track"; url: string; catalog: "shazam" | "apple"; trackId: string; slug: string | null }
   | { kind: "short"; url: string; code: string };
 
 /** Ce qu'un lien de titre donne à chercher : le titre, l'artiste s'il est connu, et la requête à poser. */
@@ -23,7 +25,7 @@ export interface SharedTrackQuery {
 
 const CANDIDATE = /https?:\/\/[^\s<>"'«»]+/gi;
 const TRAILING = /[.,;:!?)\]}…]+$/;
-const TRACK_PATH = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?(?:track|song)\/(\d{1,15})(?:\/([^/?#]+))?\/?$/i;
+const TRACK_PATH = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?(track|song)\/(\d{1,15})(?:\/([^/?#]+))?\/?$/i;
 const SHORT_PATH = /^\/([A-Za-z0-9_-]{1,40})\/?$/;
 const TEXT_MAX = 4096;
 
@@ -44,8 +46,9 @@ export function recognizeShazamUrl(candidate: string): ShazamLink | null {
   if (host === "shazam.com" || host === "www.shazam.com") {
     const match = TRACK_PATH.exec(url.pathname);
     if (!match) return null;
-    const slug = match[2] ? safeDecode(match[2]) : null;
-    return { kind: "track", url: url.toString(), trackId: match[1]!, slug: slug || null };
+    const slug = match[3] ? safeDecode(match[3]) : null;
+    const catalog = match[1]!.toLowerCase() === "song" ? "apple" : "shazam";
+    return { kind: "track", url: url.toString(), catalog, trackId: match[2]!, slug: slug || null };
   }
   if (host === "shz.am" || host === "www.shz.am") {
     const match = SHORT_PATH.exec(url.pathname);
@@ -104,19 +107,6 @@ export function shazamShareTextQuery(text: string | null | undefined): SharedTra
     if (match) return trackQueryOf(match[1]!.replace(/^[«"“]|[»"”]$/g, ""), match[2]!.replace(/^[«"“]|[»"”]$/g, ""));
   }
   return null;
-}
-
-/**
- * Le `og:title` d'une page Shazam (« Blinding Lights - The Weeknd: Song Lyrics, Music Videos & Concerts ») →
- * titre et artiste. Le suffixe se coupe au dernier « : » ; l'artiste est après le DERNIER « - » (un titre
- * « Song - Remastered » garde son tiret). `null` si la forme n'y est pas.
- */
-export function parseShazamPageTitle(raw: string | null | undefined): SharedTrackQuery | null {
-  if (!raw) return null;
-  const head = clean(raw).replace(/:\s*(?:song lyrics|paroles|lyrics)[^:]*$/i, "");
-  const cut = head.lastIndexOf(" - ");
-  if (cut <= 0) return null;
-  return trackQueryOf(head.slice(0, cut), head.slice(cut + 3));
 }
 
 /** Ce qu'un client sait seul d'un texte partagé (le message, sinon le slug) — sans le serveur. */
