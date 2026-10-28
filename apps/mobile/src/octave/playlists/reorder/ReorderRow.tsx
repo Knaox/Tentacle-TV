@@ -36,10 +36,12 @@ interface ReorderRowProps {
   onStep?: (index: number, delta: -1 | 1) => void;
   /** Mode « Modifier » d'une playlist modifiable : le bouton « retirer ». */
   onRemove?: (index: number) => void;
+  /** Hors du mode « Modifier » : la rangée se balaie (« Lire ensuite », file). */
+  swipeable: boolean;
 }
 
 export const ReorderRow = memo(function ReorderRow(props: ReorderRowProps) {
-  const { track, index, list, contextId, playing, onPlay, gutter, shift, dragging, active, lift, handle, onStep, onRemove } = props;
+  const { track, index, list, contextId, playing, onPlay, gutter, shift, dragging, active, lift, handle, onStep, onRemove, swipeable } = props;
   const { t } = useTranslation("musicLists");
   const { t: tm } = useTranslation("music");
   const theme = useTheme();
@@ -76,7 +78,7 @@ export const ReorderRow = memo(function ReorderRow(props: ReorderRowProps) {
         </Pressable>
       ) : null}
       <View style={styles.flex}>
-        <TrackRow track={track} index={index} list={list} contextId={contextId} playing={playing} onPlay={onPlay} gutter={onRemove ? 4 : gutter} />
+        <TrackRow track={track} index={index} list={list} contextId={contextId} playing={playing} onPlay={onPlay} gutter={onRemove ? 4 : gutter} swipeable={swipeable} />
       </View>
       {handle ? (
         <View

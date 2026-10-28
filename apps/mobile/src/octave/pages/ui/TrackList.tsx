@@ -2,7 +2,8 @@
  * Octave mobile — une courte liste de titres DANS une page qui défile déjà
  * (accueil, recherche « Tout », artiste : quelques rangées, sans liste
  * virtualisée imbriquée). Toucher une rangée lit la liste depuis elle, avec son
- * contexte (`search:<requête>`, `album:<id>`…).
+ * contexte (`search:<requête>`, `album:<id>`…). Chaque rangée se balaie vers
+ * la droite (« Lire ensuite », file), comme sur une playlist.
  */
 
 import { memo, useCallback } from "react";

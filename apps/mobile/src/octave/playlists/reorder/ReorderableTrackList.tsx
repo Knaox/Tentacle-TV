@@ -8,12 +8,13 @@
 
 import { useCallback, useMemo, useRef, type ReactElement } from "react";
 import { AccessibilityInfo, FlatList, View, type ListRenderItem } from "react-native";
-import Animated, { useAnimatedScrollHandler, type SharedValue } from "react-native-reanimated";
+import Animated, { runOnJS, useAnimatedScrollHandler, type SharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import type { ReorderBlock } from "@tentacle-tv/api-client";
 import { rowShift, type ListRow } from "@tentacle-tv/shared/octave";
 import { TRACK_ROW_HEIGHT, usePagesCurrentKey, usePagesPlayer } from "../../pages";
 import { playFrom } from "../../pages/env/playFrom";
+import { closeSwipe } from "../../pages/actions/swipeOpenStore";
 import { ReorderRow } from "./ReorderRow";
 import { useRowReorder } from "./useRowReorder";
 
@@ -42,8 +43,14 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
   const listRef = useRef<FlatList<ListRow>>(null);
   const viewport = useRef<View>(null);
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.value = e.contentOffset.y;
+    },
+    // Défiler referme la rangée balayée ouverte.
+    onBeginDrag: () => {
+      runOnJS(closeSwipe)();
+    },
   });
   // Le défilement DANS la liste de titres (la tête de page retirée) : celui que le glisser compte.
   const readOffset = useCallback(() => scrollY.value, [scrollY]);
@@ -93,9 +100,10 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         handle={canDrag ? handlers(index) : undefined}
         onStep={step}
         onRemove={onRemove ? remove : undefined}
+        swipeable={!editing}
       />
     ),
-    [canDrag, contextId, current, drag, gutter, handlers, lift, onRemove, play, remove, step, tracks],
+    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, play, remove, step, tracks],
   );
 
   return (

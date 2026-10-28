@@ -20,4 +20,9 @@ export default {
   likedSubtitle_one: "{{count}} liked track",
   likedSubtitle_other: "{{count}} liked tracks",
   owner: "By {{name}}",
+  swipe: {
+    nextNotice: "“{{title}}” will play next",
+    queuedNotice: "“{{title}}” added to the queue",
+    close: "Close the actions for “{{title}}”",
+  },
 };
