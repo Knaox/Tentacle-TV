@@ -21,9 +21,9 @@ export interface PlaylistTarget {
 export function usePlaylistRemoval(
   provider: MusicProvider | null,
   playlist: PlaylistTarget | null,
-  ui: Pick<OctaveActionsUi, "t" | "notify">,
+  ui: Pick<OctaveActionsUi, "t" | "notify" | "onRemovedFromPlaylist" | "onRestoredToPlaylist">,
 ): (rows: readonly ListRow[], keys: ReadonlySet<string>) => Promise<boolean> {
-  const { t, notify } = ui;
+  const { t, notify, onRemovedFromPlaylist, onRestoredToPlaylist } = ui;
   const gestures = useMusicGestures(provider);
   const { mutateAsync: removeEntry } = useRemoveMusicPlaylistEntry();
   const { mutateAsync: insertEntries } = useAddToMusicPlaylist();
@@ -58,15 +58,26 @@ export function usePlaylistRemoval(
         failed();
         return false;
       }
+      const removedTracks = [...done.entries, ...done.waits].map((r) => r.track);
+      // Ce qui reste listé : toute rangée qui n'est pas VRAIMENT partie (non visée, refusée, l'autre occurrence d'un doublon).
+      const goneEntries = new Set(done.entries.map((e) => e.entryId));
+      const goneWaits = new Set(done.waits.map((w) => w.operationId));
+      const stillListed = new Set(
+        rows.filter((r) => !(r.entryId !== null && goneEntries.has(r.entryId)) && !(r.pending && goneWaits.has(r.pending.operationId))).map((r) => r.track.key),
+      );
+      onRemovedFromPlaylist?.(target.jellyfinId, removedTracks, stillListed);
       const single = removed === 1 ? (done.entries[0] ?? done.waits[0])?.track : undefined;
       const message = single ? t("playlist.removedOne", { title: single.title, name: target.name }) : t("playlist.removedMany", { count: removed, name: target.name });
       const undo = async () => {
-        if (await applyRestore(deps(target), done)) notify("success", t("playlist.restored", { name: target.name }));
+        if (await applyRestore(deps(target), done)) {
+          onRestoredToPlaylist?.(target.jellyfinId, removedTracks);
+          notify("success", t("playlist.restored", { name: target.name }));
+        }
         else failed();
       };
       notify("success", message, { action: { label: t("playlist.undo"), onPress: () => void undo() } });
       return true;
     },
-    [deps, failed, notify, playlist, t],
+    [deps, failed, notify, onRemovedFromPlaylist, onRestoredToPlaylist, playlist, t],
   );
 }

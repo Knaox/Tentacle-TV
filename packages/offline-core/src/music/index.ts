@@ -11,6 +11,7 @@ export * from "./keepActions";
 export * from "./keptMusicStore";
 export * from "./keptProgress";
 export * from "./trackState";
+export * from "./playlistRemoval";
 export * from "./keptRenames";
 export * from "./keptSources";
 export * from "./deviceModel";

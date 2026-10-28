@@ -43,7 +43,7 @@ export function isLibraryTrack(track: MusicTrack): track is MusicTrack & { jelly
 }
 
 export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveActionsUi): PlaylistGestures {
-  const { t, store } = ui;
+  const { t, store, onRemovedFromPlaylist } = ui;
   const toast = useMemo(() => ({ show: ui.notify }), [ui.notify]);
   const gestures = useMusicGestures(provider);
   const readPlaylist = useMusicPlaylistReader();
@@ -181,6 +181,9 @@ export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveAc
           if (!operationId) toast.show("info", t("playlist.notIn", { title: track.title, name: playlist.name }));
           return false;
         }
+        // Une seule occurrence part : s'il en reste une autre, le titre est toujours listé.
+        const remaining = found.entryIds.length + found.operationIds.length > 1;
+        onRemovedFromPlaylist?.(playlist.jellyfinId, [track], remaining ? new Set([track.key]) : new Set());
         toast.show("success", t("playlist.removed", { name: playlist.name }));
         return true;
       } catch {
@@ -188,7 +191,7 @@ export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveAc
         return false;
       }
     },
-    [failed, readPlaylist, removeEntry, removePending, t, toast],
+    [failed, onRemovedFromPlaylist, readPlaylist, removeEntry, removePending, t, toast],
   );
 
   return useMemo(
