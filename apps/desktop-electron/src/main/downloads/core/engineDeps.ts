@@ -79,6 +79,12 @@ export interface EngineDeps {
    */
   parallelLimit?: () => number;
   /**
+   * Places des TITRES DE MUSIQUE (`source_path`), au-delà de `parallelLimit` :
+   * leur temps part dans la préparation du serveur, pas dans la bande passante
+   * (`musicLane.ts`). Jamais à côté d'un film. Absente (mobile) : aucune de plus.
+   */
+  musicParallelLimit?: () => number;
+  /**
    * Le serveur sait-il préparer un fichier Allégé lui-même (capacité
    * `offline.serverPrepare`) ? Consultée à chaque transfert. Oui : le fichier
    * se prépare sur le serveur que l'application soit là ou non, se lit pendant

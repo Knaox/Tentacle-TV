@@ -20,24 +20,16 @@
  */
 
 import type { EngineDeps } from "./engineDeps";
-import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
+import { applyEnd } from "./engineEnd";
 import { cancelFile, pauseFile, resumeFile } from "./engineGestures";
+import { runAttempt } from "./engineWork";
+import { mayStart } from "./musicLane";
 import { NetworkRetryLadder } from "./networkRetry";
+import { enterPrepare, preparedByServer } from "./preparePhase";
 import { RETRY_DELAYS_MS, RetryScheduler } from "./retry";
-import {
-  countQueued,
-  getFile,
-  nextQueued,
-  normalizeOnEngineStart,
-  requeueSystemPauses,
-  setBytesDone,
-  setExpectedSize,
-  setStatus,
-  suspendQueued,
-} from "./queue";
-import type { FileRow } from "./store";
+import { countQueued, nextQueued, normalizeOnEngineStart, requeueSystemPauses, setStatus, suspendQueued } from "./queue";
 import { TransferFlags, type TransferEnd } from "./transfer";
-import { runWorker, type Creds } from "./worker";
+import type { Creds } from "./worker";
 
 export type { EngineDeps, FinalizeVerdict } from "./engineDeps";
 
@@ -58,6 +50,8 @@ const PARALLEL_CEILING = 4;
 export class DownloadEngine {
   private creds: Creds | null = null;
   private readonly active = new Map<number, TransferFlags>();
+  /** Ceux d'`active` qui sont des titres de musique (`musicLane.ts`). */
+  private readonly activeMusic = new Set<number>();
   private busy = false;
   /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
   private systemSuspended = false;
@@ -158,15 +152,21 @@ export class DownloadEngine {
   private startWhatCanRun(): void {
     const creds = this.creds;
     if (creds === null) return;
-    const limit = this.parallelLimit();
-    while (this.active.size < limit) {
+    const all = this.parallelLimit();
+    const music = Math.min(Math.max(0, Math.trunc(this.deps.musicParallelLimit?.() ?? 0)), PARALLEL_CEILING);
+    for (;;) {
       const file = nextQueued(this.deps.db);
       if (file === null) return;
+      const isMusic = preparedByServer(file);
+      if (!mayStart({ music: isMusic }, { total: this.active.size, music: this.activeMusic.size }, { all, music })) return;
       // Le statut passe à `downloading` AVANT le premier `await` : sans ça, le
       // tour de boucle suivant reprendrait le même fichier.
       setStatus(this.deps.db, file.id, "downloading", null, this.deps.now());
+      // Un titre de musique : « Préparation… » jusqu'à la première réponse (`preparePhase.ts`).
+      enterPrepare(this.deps.db, file, this.deps.now());
       const flags = new TransferFlags();
       this.active.set(file.id, flags);
+      if (isMusic) this.activeMusic.add(file.id);
       void this.work(creds, file.id, flags);
     }
   }
@@ -180,93 +180,13 @@ export class DownloadEngine {
   }
 
   private async work(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
-    const file = getFile(this.deps.db, fileId);
-    let end: TransferEnd;
-    // Des octets reçus pendant CET essai : la coupure qui suivra repartira de
-    // la première marche des relances.
-    let moved = false;
-    const received =
-      file === null || this.deps.finalizeMedia === undefined
-        ? null
-        : mediaAwaitingFinalize(this.deps.db, this.deps.volume(), file, this.deps.now());
-    if (file === null) {
-      end = { kind: "failed", code: "io", bytesDone: 0 };
-    } else if (received !== null) {
-      // Média entièrement reçu, seul le remux avait échoué : on le retente, et
-      // rien ne repart sur le réseau.
-      end = await this.finalize(file, received);
-    } else {
-      // Mutable : le pilote peut annoncer le total en cours de route, et une
-      // valeur gelée ici laisserait la barre sans repère jusqu'à la fin.
-      let expected = file.expectedSize;
-      try {
-        end = await runWorker(
-          {
-            db: this.deps.db,
-            volume: this.deps.volume(),
-            driver: this.deps.driver,
-            fetchBytes: this.deps.makeFetcher(creds.token),
-            fetchPublic: this.deps.makePublicFetcher?.() ?? null,
-            onProgress: (id, bytes) => {
-              moved = true;
-              this.progress(id, bytes, expected);
-            },
-            onExpected: (id, totalBytes) => {
-              expected = totalBytes;
-              setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
-            },
-            onUnexpected: this.deps.onUnexpected,
-            serverPrepare: this.deps.serverPrepare?.() ?? null,
-            now: this.deps.now,
-          },
-          creds,
-          file,
-          flags,
-          this.deps.now(),
-        );
-      } catch (error) {
-        // Une exception levée PARCE QU'ON VIENT D'INTERROMPRE n'est pas une
-        // panne : le pilote a été coupé net, c'est tout ce qu'elle dit. La
-        // traduire en « imprévu » armait une relance à cinq secondes, qui
-        // faisait repartir ce que l'utilisateur venait d'arrêter — depuis la
-        // notification Android comme depuis la feuille d'actions.
-        if (flags.cancel) end = { kind: "canceled" };
-        else if (flags.pause) end = { kind: "paused", bytesDone: file.bytesDone };
-        else {
-          // Un défaut inattendu ne doit pas laisser le fichier en `downloading`
-          // pour l'éternité — il resterait invisible jusqu'au prochain
-          // démarrage. La trace est tout ce qui restera pour comprendre : le
-          // statut, lui, ne dit rien de plus que « imprévu ».
-          this.deps.onUnexpected?.("engine.work", error);
-          end = { kind: "failed", code: "unexpected", bytesDone: file.bytesDone };
-        }
-      }
-      if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
-        end = await this.finalize(file, end.finalSize);
-      }
-    }
+    const { end, moved } = await runAttempt(this.deps, creds, fileId, flags, () => this.notifyChanged());
     this.finish(fileId, end, moved);
-  }
-
-  private finalize(file: FileRow, finalSize: number): Promise<TransferEnd> {
-    return runFinalize(
-      this.deps.db,
-      this.deps.volume(),
-      file.id,
-      this.deps.finalizeMedia!,
-      file,
-      finalSize,
-      this.deps.now(),
-    );
-  }
-
-  private progress(fileId: number, bytes: number, expectedSize: number | null): void {
-    setBytesDone(this.deps.db, fileId, bytes, this.deps.now());
-    this.deps.emit("downloads://progress", { fileId, bytesDone: bytes, expectedSize });
   }
 
   private finish(fileId: number, end: TransferEnd, moved: boolean): void {
     this.active.delete(fileId);
+    this.activeMusic.delete(fileId);
     const now = this.deps.now();
     applyEnd(this.deps.db, fileId, end, {
       nowMs: now,
