@@ -4,7 +4,7 @@
  * a jamais — le mobile n'en voit rien.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { enqueueMusicBatch, type MusicKeepItem } from "./musicKeep";
 import { listMusicForUser } from "./musicLibrary";
@@ -73,18 +73,19 @@ describe("la préparation d'un titre de musique", () => {
     const { engine, events } = makeEngine(db, preparedRoot(), server.net);
     const fileId = keepOne(db);
     engine.start(CREDS);
-    await flush();
-    expect(server.opened()).toBe(1);
+    // Sous charge, un délai fixe ne suffit pas : on attend que la requête soit partie.
+    await vi.waitFor(() => expect(server.opened()).toBe(1));
     expect(getFile(db, fileId)?.phase).toBe(PREPARE_PHASE);
     expect(listMusicForUser(db, "u")[0]).toMatchObject({ status: "downloading", preparing: true });
 
     const before = events.filter((e) => e === "downloads://changed").length;
     server.answer(200, "abcdef");
-    await flush();
-    const row = listMusicForUser(db, "u")[0];
-    expect(row).toMatchObject({ status: "complete", preparing: false, expectedSize: 6, bytesDone: 6 });
-    // La page relit à l'arrivée de la réponse : elle quitte « Préparation… » sans attendre la fin.
-    expect(events.filter((e) => e === "downloads://changed").length).toBeGreaterThanOrEqual(before + 2);
+    await vi.waitFor(() => {
+      const row = listMusicForUser(db, "u")[0];
+      expect(row).toMatchObject({ status: "complete", preparing: false, expectedSize: 6, bytesDone: 6 });
+      // La page relit à l'arrivée de la réponse : elle quitte « Préparation… » sans attendre la fin.
+      expect(events.filter((e) => e === "downloads://changed").length).toBeGreaterThanOrEqual(before + 2);
+    });
   });
 
   it("un 503 (le serveur prépare encore) : pause système, la préparation reste dite", async () => {
@@ -93,10 +94,9 @@ describe("la préparation d'un titre de musique", () => {
     const { engine } = makeEngine(db, preparedRoot(), server.net);
     const fileId = keepOne(db);
     engine.start(CREDS);
-    await flush();
+    await vi.waitFor(() => expect(server.opened()).toBe(1));
     server.answer(503);
-    await flush();
-    expect(getFile(db, fileId)).toMatchObject({ status: "paused", phase: PREPARE_PHASE });
+    await vi.waitFor(() => expect(getFile(db, fileId)).toMatchObject({ status: "paused", phase: PREPARE_PHASE }));
     expect(listMusicForUser(db, "u")[0]?.pausedByUser).toBe(false);
     expect(listMusicForUser(db, "u")[0]?.preparing).toBe(true);
   });
@@ -110,14 +110,14 @@ describe("la préparation d'un titre de musique", () => {
       const { engine } = makeEngine(db, preparedRoot(), net);
       const fileId = keepOne(db);
       engine.start(CREDS);
-      await flush();
+      if (end === "throw") await flush();
+      else await vi.waitFor(() => expect(server.opened()).toBe(1));
       if (end === "404") server.answer(404);
       if (end === "pause") {
         engine.pause(fileId);
         server.answer(200);
       }
-      await flush();
-      expect(getFile(db, fileId)?.phase, end).toBeNull();
+      await vi.waitFor(() => expect(getFile(db, fileId)?.phase, end).toBeNull());
     }
   });
 
@@ -128,8 +128,7 @@ describe("la préparation d'un titre de musique", () => {
     const { engine } = makeEngine(db, root, server.net);
     const fileId = seed(db, "item1", 1_000);
     engine.start(CREDS);
-    await flush();
-    expect(getFile(db, fileId)).toMatchObject({ status: "downloading", phase: null });
+    await vi.waitFor(() => expect(getFile(db, fileId)).toMatchObject({ status: "downloading", phase: null }));
     server.answer(503);
     await flush();
     expect(getFile(db, fileId)?.phase).toBeNull();
