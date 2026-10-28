@@ -69,6 +69,11 @@ const STORAGE_KEYS = [
   // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
   // une invitation refermée sans réponse reviendrait à chaque lancement.
   "tentacle_wt_invites_shown",
+  // Octave — réglages d'APPAREIL (`src/octave/settings/`, mêmes clés que le bureau) : transition douce, tenue à
+  // jour des playlists gardées, « ne pas demander le code PIN au démarrage », « au démarrage, ouvrir »,
+  // apparence et Liquid Glass d'Octave.
+  "tentacle_octave_crossfade", "tentacle_octave_offline_autosync", "tentacle_octave_skip_launch_pin",
+  "tentacle_octave_startup", "tentacle_octave_theme", "tentacle_octave_liquid_glass",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
