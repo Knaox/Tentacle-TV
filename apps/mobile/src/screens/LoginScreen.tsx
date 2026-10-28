@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { setPairingToken, setPreferencesToken, setPushToken, setShareLinkToken, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
@@ -13,6 +13,19 @@ import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthLink, AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
 import { signInErrorText, signInFailureOf } from "@/problems/signInMessage";
 import { FONT_FAMILY, useTheme } from "@/theme";
+
+/**
+ * Le jeton de la session pour les appels au serveur TENTACLE (préférences, musique, partage, jumelage,
+ * notifications) : `AppProviders` ne le pose qu'au démarrage. Sans cette pose à la connexion, tout ce qui
+ * passe par `tentacleApiFetch` partait SANS jeton (401) jusqu'à la relance de l'app — Octave restait
+ * invisible (statut de la musique en erreur), vu à l'émulateur le 28/10.
+ */
+function adoptSessionToken(token: string): void {
+  setPreferencesToken(token);
+  setShareLinkToken(token);
+  setPairingToken(token);
+  setPushToken(token);
+}
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -51,12 +64,14 @@ export function LoginScreen() {
         if (cancelled) return;
         if (res.ok) {
           client.setAccessToken(storedToken);
+          adoptSessionToken(storedToken);
           setSessionExpired(false);
           router.replace("/(tabs)");
         } else {
           const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
           if (!cancelled && reAuth) {
             client.setAccessToken(reAuth.AccessToken);
+            adoptSessionToken(reAuth.AccessToken);
             if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
@@ -104,6 +119,7 @@ export function LoginScreen() {
 
       const data = await response.json();
       client.setAccessToken(data.AccessToken);
+      adoptSessionToken(data.AccessToken);
       // L'identifiant d'appareil réellement présenté à Jellyfin : on l'adopte
       // pour nos propres en-têtes (le backend le dérive de la graine).
       if (data.DeviceId) client.adoptJellyfinDeviceId(data.DeviceId);

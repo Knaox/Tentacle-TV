@@ -1,0 +1,36 @@
+// Le moteur audio d'Octave sur Android : deux ExoPlayer (Media3) en « platines »
+// pour l'enchaînement sans blanc et la transition douce, et un MediaSessionService
+// pour la notification média, l'écran verrouillé et les commandes du système.
+// Le pont (commandes, évènements) est celui de la coquille du bureau :
+// packages/shared/src/octave/engine/audioBridgeContract.ts — voir ../README.md.
+//
+// Aucune dépendance nouvelle : Media3 est déjà dans l'APK (react-native-video,
+// décodeurs FFmpeg LGPL `app.tentacletv:media3-decoder-ffmpeg`, chargés par
+// réflexion quand les extensions sont allumées — l'ALAC).
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.octaveaudio'
+version = '1.0.0'
+
+// UNE version de Media3 pour tout l'APK : celle de react-native-video et du
+// décodeur FFmpeg (gradle.properties de l'app), 1.9.0 à défaut.
+def media3Version = project.findProperty('RNVideo_media3Version') ?: '1.9.0'
+
+android {
+  namespace "expo.modules.octaveaudio"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  implementation "androidx.media3:media3-exoplayer:${media3Version}"
+  implementation "androidx.media3:media3-session:${media3Version}"
+  implementation "androidx.media3:media3-common:${media3Version}"
+  implementation "androidx.media3:media3-datasource:${media3Version}"
+}

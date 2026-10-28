@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flux de la bibliothèque et de Sillon -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lecture écran éteint : ExoPlayer garde le processeur et le Wi-Fi (WAKE_MODE_NETWORK) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- La notification média : service de premier plan de type « lecture » -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <application>
+        <!--
+          La session média d'Octave (Media3) : notification, écran verrouillé,
+          casque, montre. Exporté : les contrôleurs du système (interface de
+          l'écran verrouillé, Android Auto, Wear) s'y lient par cette action.
+        -->
+        <service
+            android:name="expo.modules.octaveaudio.OctaveAudioService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
