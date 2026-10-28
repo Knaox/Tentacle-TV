@@ -28,7 +28,6 @@ const CONTRACT = [
   "--lg-row-radius",
   "--lg-row-inset",
   "--lg-row-highlight",
-  "--lg-row-highlight-glyph",
   "--lg-separator",
   "--lg-section-label",
   "--lg-sidebar-selection",
@@ -41,7 +40,7 @@ const CONTRACT = [
 ] as const;
 
 /** Ce qui porte une couleur : redit en clair. */
-const COLORED = CONTRACT.filter((name) => !["--lg-row-radius", "--lg-row-inset", "--lg-row-highlight-glyph"].includes(name));
+const COLORED = CONTRACT.filter((name) => !["--lg-row-radius", "--lg-row-inset"].includes(name));
 
 describe("le contrat du lot lg2", () => {
   it("chaque jeton du contrat est déclaré sous la porte", () => {
@@ -74,8 +73,10 @@ describe("le contrat du lot lg2", () => {
     expect(blockFor(GATE)).toMatch(/--lg-row-radius:\s*calc\(var\(--lg-surface-radius\) - var\(--lg-row-inset\)\)/);
   });
 
-  it("la sélection d'un menu est l'accent UNI (jamais le dégradé de la marque)", () => {
-    expect(CSS).not.toMatch(/--lg-row-highlight:[^;]*gradient/);
+  it("la pastille d'un menu est NEUTRE : ni la marque, ni un dégradé, et elle suit le ton du verre", () => {
+    expect(CSS).not.toMatch(/--lg-row-highlight[a-z-]*:[^;]*(gradient|brand)/);
+    expect(CSS).toMatch(/\[data-lg-tone="dark"\] \{[^}]*--lg-row-highlight: var\(--lg-row-highlight-on-dark\)/);
+    expect(CSS).toMatch(/\[data-lg-tone="light"\] \{[^}]*--lg-row-highlight: var\(--lg-row-highlight-on-light\)/);
     expect(CSS).not.toMatch(/--lg-sidebar-selection:[^;]*(gradient|brand)/);
   });
 
