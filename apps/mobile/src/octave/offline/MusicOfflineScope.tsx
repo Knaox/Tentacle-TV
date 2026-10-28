@@ -12,12 +12,13 @@ import { useKeptAutoSync } from "./useKeptAutoSync";
 import { useKeptRenames } from "./useKeptRenames";
 import { useMusicOfflineProvider } from "./useMusicOfflineProvider";
 import { useMusicOfflineSurface } from "./useMusicOfflineSurface";
-import { useAutoSyncOn } from "./autoSyncSetting";
+import { octaveAutoSync } from "../settings/octaveSettings";
 
 export function MusicOfflineScope({ children }: { children: ReactNode }) {
   const provider = useMusicOfflineProvider();
   const surface = useMusicOfflineSurface(provider);
-  useKeptAutoSync(surface, provider, useAutoSyncOn());
+  // « Tenir à jour les playlists gardées sur cet appareil » : le réglage d'appareil d'Octave (allumé par défaut).
+  useKeptAutoSync(surface, provider, octaveAutoSync.use());
   useKeptRenames(surface, provider);
   const value = useMemo(() => ({ surface, provider }), [surface, provider]);
   return <MusicOfflineContext.Provider value={value}>{children}</MusicOfflineContext.Provider>;

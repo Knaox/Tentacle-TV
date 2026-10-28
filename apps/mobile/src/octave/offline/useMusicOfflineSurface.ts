@@ -8,6 +8,7 @@
  * absente : rien hors bibliothèque).
  */
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMusicRights, musicRightsKey, useServerCapability, type MusicProvider } from "@tentacle-tv/api-client";
 import { musicOfflineSurface, type MusicOfflineSurface } from "@tentacle-tv/offline-core/music";
@@ -29,13 +30,12 @@ export function useMusicOfflineSurface(provider: MusicProvider | null): MusicOff
     enabled: capability && online && !profileSession && rightsPath !== null,
     staleTime: 60_000,
   });
-  return musicOfflineSurface({
-    native: true,
-    capability,
-    profileSession,
-    keepRight,
-    hasContent: kept.tracks.length > 0,
-    providerId: rightsPath !== null && provider ? provider.pluginId : null,
-    providerKeep: rights.data ? rights.data.keepOffline : null,
-  });
+  const hasContent = kept.tracks.length > 0;
+  const providerId = rightsPath !== null && provider ? provider.pluginId : null;
+  const providerKeep = rights.data ? rights.data.keepOffline : null;
+  // Figée sur ce qu'elle dit : les rangées qui la lisent ne se redessinent pas à chaque rendu de la portée.
+  return useMemo(
+    () => musicOfflineSurface({ native: true, capability, profileSession, keepRight, hasContent, providerId, providerKeep }),
+    [capability, profileSession, keepRight, hasContent, providerId, providerKeep],
+  );
 }
