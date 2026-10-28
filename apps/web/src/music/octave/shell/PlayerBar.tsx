@@ -3,7 +3,7 @@
  * FLOTTE au-dessus des pages (la famille de la barre de navigation de
  * Tentacle), la page défilant dessous. Titre en cours à gauche (sa pochette
  * ouvre le lecteur « en cours »), transport et progression au centre, qualité
- * réelle, état, file et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
+ * réelle, état, transition douce (`CrossfadeButton`), file et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
  * la même capsule en une ligne.
  *
  * TOUJOURS SOMBRE, dans les deux thèmes (« jamais une barre blanche ») : la
@@ -26,6 +26,7 @@ import { useLiquidGlassSurface } from "../../../theme/glass";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { Artwork } from "../components/Artwork";
 import { useOctavePlayer, usePlayerPosition, usePlayerSelector } from "../player/OctavePlayerProvider";
+import { CrossfadeButton } from "./crossfade/CrossfadeButton";
 import { FormatBadge } from "./FormatBadge";
 import { NowPlayingInfo } from "./NowPlayingInfo";
 import { SeekBar } from "./SeekBar";
@@ -92,6 +93,7 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
               <FormatBadge format={format} icon />
             </span>
           </div>
+          <CrossfadeButton />
           <QueueButton open={queueOpen} onToggle={onToggleQueue} />
           <VolumeControl className="octave-dock-volume" />
         </div>

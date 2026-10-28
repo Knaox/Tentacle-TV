@@ -11,10 +11,11 @@
  * suivant pour réessayer, et `RADIO_MISSES_MAX` de suite arrêtent la radio — jamais une boucle de requêtes.
  */
 
-import { fetchExternalRadioPage, type MusicProvider } from "@tentacle-tv/api-client";
+import { fetchExternalRadioPage } from "../../pluginMusic/musicRequests";
+import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import type { ExternalMusicRadio } from "@tentacle-tv/shared/music";
 import { currentItem, queueActions, upcoming, type OctavePlayer } from "@tentacle-tv/shared/octave";
-import { isFromProvider } from "../mode/useOctaveProvider";
+import { isFromMusicProvider as isFromProvider } from "./buildOctavePlayer";
 
 /** Les files nées d'une recherche (`search:<requête>`, son meilleur résultat, ses titres). */
 const SEARCH_CONTEXT = /^search:/;

@@ -77,6 +77,8 @@ const STORAGE_KEYS = [
   // apparence et Liquid Glass d'Octave.
   "tentacle_octave_crossfade", "tentacle_octave_offline_autosync", "tentacle_octave_skip_launch_pin",
   "tentacle_octave_theme", "tentacle_octave_liquid_glass",
+  // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
+  "tentacle_octave_player",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

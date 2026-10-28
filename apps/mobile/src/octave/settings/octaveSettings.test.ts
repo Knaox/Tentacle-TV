@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { configureOctaveSettings } from "./deviceSetting";
-import { getCrossfadeMs, setCrossfadeMs } from "./crossfadeStore";
 import { octaveAutoSync, octaveLiquidGlass, octaveSkipLaunchPin, octaveStartup, octaveTheme } from "./octaveSettings";
 
 function memory(initial: Record<string, string> = {}): StorageAdapter & { data: Map<string, string> } {
@@ -18,7 +17,6 @@ describe("Réglages d'Octave (mobile) — les défauts de Damien, jamais une ré
   beforeEach(() => configureOctaveSettings(memory()));
 
   it("un appareil neuf : transition douce à 3 s, tenue à jour et code PIN au démarrage allumés", () => {
-    expect(getCrossfadeMs()).toBe(3_000);
     expect(octaveAutoSync.get()).toBe(true);
     expect(octaveSkipLaunchPin.get()).toBe(true);
     expect(octaveStartup.get()).toBe("last");
@@ -35,7 +33,6 @@ describe("Réglages d'Octave (mobile) — les défauts de Damien, jamais une ré
       tentacle_octave_theme: "light",
       tentacle_liquid_glass: "false",
     }));
-    expect(getCrossfadeMs()).toBe(0);
     expect(octaveAutoSync.get()).toBe(false);
     expect(octaveSkipLaunchPin.get()).toBe(false);
     expect(octaveStartup.get()).toBe("octave");
@@ -55,9 +52,30 @@ describe("Réglages d'Octave (mobile) — les défauts de Damien, jamais une ré
     expect(store.data.has("tentacle_octave_skip_launch_pin")).toBe(false);
     expect(calls).toBe(2);
     off();
+  });
+});
+
+/** La transition douce est le magasin du lecteur (m2), qui garde sa première lecture : un module neuf par cas. */
+describe("Réglages d'Octave (mobile) — la transition douce", () => {
+  beforeEach(() => vi.resetModules());
+
+  async function fresh(initial: Record<string, string> = {}) {
+    const store = memory(initial);
+    const settings = await import("./deviceSetting");
+    const crossfade = await import("./crossfadeStore");
+    settings.configureOctaveSettings(store);
+    return { store, ...crossfade };
+  }
+
+  it("un appareil neuf : allumée, à 3 s", async () => {
+    const { getCrossfadeMs } = await fresh();
+    expect(getCrossfadeMs()).toBe(3_000);
+  });
+
+  it("coupée sur cet appareil (par le bureau, ou hier) : reste coupée ; une durée choisie s'écrit", async () => {
+    const { store, getCrossfadeMs, setCrossfadeMs } = await fresh({ tentacle_octave_crossfade: "0" });
+    expect(getCrossfadeMs()).toBe(0);
     setCrossfadeMs(6_400);
     expect(store.data.get("tentacle_octave_crossfade")).toBe("6000");
-    setCrossfadeMs(0);
-    expect(getCrossfadeMs()).toBe(0);
   });
 });
