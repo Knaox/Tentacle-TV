@@ -35,8 +35,6 @@ export interface PluginMusicManifest {
   importRead?: string;
   importSources?: MusicImportSource[];
   importTracks?: string;
-  releases?: string;
-  releaseSources?: ("bandcamp" | "files")[];
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
   labels?: Record<string, string>;
 }
@@ -57,7 +55,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
@@ -68,10 +66,6 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
-  }
-  if (Array.isArray(m.releaseSources)) {
-    const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));
-    if (sources.length > 0) out.releaseSources = sources as NonNullable<PluginMusicManifest["releaseSources"]>;
   }
   if (m.labels && typeof m.labels === "object") {
     const labels: Record<string, string> = {};

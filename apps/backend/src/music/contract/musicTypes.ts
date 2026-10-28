@@ -103,11 +103,6 @@ export interface MusicTrack {
   favorite: boolean;
   /** Contenu explicite, si la source le dit. */
   explicit?: boolean;
-  /**
-   * Une sortie IMPORTÉE par le compte (lien Bandcamp, fichiers ; musicReleaseImport.ts) : la source fait foi, aucun
-   * catalogue ne la connaît. Les clients posent une pastille « Importé » discrète. Absent : rien de tel.
-   */
-  imported?: boolean;
 }
 
 /**
@@ -149,11 +144,6 @@ export interface MusicAlbum {
   unavailable?: MusicUnavailableReason | null;
   /** Rendu par la vue album seulement (pas par la recherche). */
   tracks?: MusicTrack[];
-  /**
-   * Une sortie IMPORTÉE par le compte (lien Bandcamp, fichiers ; musicReleaseImport.ts) : la source fait foi, aucun
-   * catalogue ne la connaît. Les clients posent une pastille « Importé » discrète. Absent : rien de tel.
-   */
-  imported?: boolean;
 }
 
 export interface MusicArtist {
@@ -166,11 +156,6 @@ export interface MusicArtist {
   /** Rendus par la vue artiste seulement. */
   topTracks?: MusicTrack[];
   albums?: MusicAlbum[];
-  /**
-   * Une sortie IMPORTÉE par le compte (lien Bandcamp, fichiers ; musicReleaseImport.ts) : la source fait foi, aucun
-   * catalogue ne la connaît. Les clients posent une pastille « Importé » discrète. Absent : rien de tel.
-   */
-  imported?: boolean;
 }
 
 /** Une entrée de playlist : réelle (Jellyfin) ou en attente de son élément. */

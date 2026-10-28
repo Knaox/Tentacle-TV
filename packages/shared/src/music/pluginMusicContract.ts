@@ -15,7 +15,6 @@
 import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
 import type { MusicImportSource } from "./musicImport";
-import type { ReleaseImportSource } from "./musicReleaseImport";
 
 /** Ce que déclare le manifeste (`plugin.json` → `music`), relayé par `/api/plugins/active`. */
 export interface PluginMusicManifest {
@@ -92,10 +91,6 @@ export interface PluginMusicManifest {
   importSources?: MusicImportSource[];
   /** Import — POST `ImportTracksRequest` → 202 `ImportTracksAccepted` ; GET/DELETE `<importTracks>/<operationId>`. */
   importTracks?: string;
-  /** Sorties hors catalogue (musicReleaseImport.ts) — base des routes : `/link`, `/files`, `/jobs/<id>`, et la liste. */
-  releases?: string;
-  /** Ce que `releases` sait importer (liste fermée) ; absente ou vide : aucune entrée « Importer ». */
-  releaseSources?: ReleaseImportSource[];
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -296,7 +291,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
@@ -307,10 +302,6 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
-  }
-  if (Array.isArray(m.releaseSources)) {
-    const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));
-    if (sources.length > 0) out.releaseSources = sources as NonNullable<PluginMusicManifest["releaseSources"]>;
   }
   if (m.labels && typeof m.labels === "object") {
     const labels: Record<string, string> = {};
