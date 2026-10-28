@@ -17,11 +17,13 @@ import { usePlayerSelector } from "./OctavePlayerContext";
 import { closeNowPlaying, useNowPlayingOpen } from "./nowPlayingStore";
 import { decideDismiss, gestureAxis, sheetDragOffset } from "./playerGestures";
 import {
-  CONTENT_FADE_RANGE, phoneMiniRect, rangeProgress, SHAPE_FADE_RANGE, SHEET_RADIUS, sheetFrame, sheetOrigin, tabletMiniRect, type SheetOrigin,
+  CONTENT_FADE_RANGE, phoneMiniRect, rangeProgress, SHAPE_FADE_RANGE, SHEET_RADIUS, sheetFrame, sheetRadius, sheetOrigin, tabletMiniRect, type SheetOrigin,
 } from "./sheetTransition";
 import { OCTAVE_MINI_GAP, useOctaveChrome } from "../shell/octaveChrome";
 
 const OPEN_SPRING = { damping: 26, stiffness: 220, mass: 1 } as const;
+/** L'ouverture depuis la pastille : un ressort plus posé, qu'on voie la forme grandir (~0,45 s). */
+const GROW_SPRING = { damping: 24, stiffness: 150, mass: 1, overshootClamping: true } as const;
 /** La fermeture, plus brève que l'ouverture, sans rebond : la forme se pose sur la pastille. */
 const CLOSE_TIMING = { duration: 300, easing: Easing.bezier(0.3, 0, 0.2, 1) } as const;
 
@@ -58,7 +60,7 @@ const SheetFrame = memo(function SheetFrame({ open, onClosed }: { open: boolean;
 
   useEffect(() => {
     if (open) {
-      progress.value = reduceMotion ? withTiming(1, { duration: 160 }) : withSpring(1, OPEN_SPRING);
+      progress.value = reduceMotion ? withTiming(1, { duration: 160 }) : withSpring(1, GROW_SPRING);
       return;
     }
     const close = reduceMotion ? { duration: 160 } : CLOSE_TIMING;
@@ -97,8 +99,8 @@ const SheetFrame = memo(function SheetFrame({ open, onClosed }: { open: boolean;
     const frame = sheetFrame(origin, progress.value);
     return {
       opacity: rangeProgress(progress.value, SHAPE_FADE_RANGE),
-      transform: [{ translateX: frame.translateX }, { translateY: frame.translateY + drag.value }, { scaleX: frame.scaleX }],
-      borderRadius: progress.value < 0.995 || drag.value > 1 ? SHEET_RADIUS : 0,
+      transform: [{ translateX: frame.translateX }, { translateY: frame.translateY + drag.value }, { scaleX: frame.scaleX }, { scaleY: frame.scaleY }],
+      borderRadius: drag.value > 1 ? SHEET_RADIUS : sheetRadius(progress.value),
     };
   }, [origin]);
   const contentStyle = useAnimatedStyle(() => ({ opacity: rangeProgress(progress.value, CONTENT_FADE_RANGE) }));

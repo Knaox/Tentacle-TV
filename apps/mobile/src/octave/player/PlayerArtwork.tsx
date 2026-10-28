@@ -20,6 +20,11 @@ interface Props {
   style?: StyleProp<ViewStyle>;
   /** Flou de fond (le décor du lecteur plein écran). */
   blurRadius?: number;
+  /**
+   * D'un titre à l'autre, un FONDU CROISÉ : l'ancienne pochette reste jusqu'à ce que la nouvelle soit là
+   * (la grande pochette du lecteur). Sans lui, la pochette repart du dégradé (listes, recyclage).
+   */
+  crossfade?: boolean;
 }
 
 export function useArtworkUri(url: string | null | undefined): string | null {
@@ -27,7 +32,7 @@ export function useArtworkUri(url: string | null | undefined): string | null {
   return useMemo(() => (url ? elementSourceUrl(url, auth) : null), [url, auth]);
 }
 
-export const PlayerArtwork = memo(function PlayerArtwork({ url, size, radius, style, blurRadius }: Props) {
+export const PlayerArtwork = memo(function PlayerArtwork({ url, size, radius, style, blurRadius, crossfade = false }: Props) {
   const colors = useOctaveColors();
   const uri = useArtworkUri(url);
   const box = size === undefined ? null : { width: size, height: size };
@@ -41,9 +46,9 @@ export const PlayerArtwork = memo(function PlayerArtwork({ url, size, radius, st
           source={{ uri }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
-          transition={180}
+          transition={crossfade ? CROSSFADE : 180}
           blurRadius={blurRadius}
-          recyclingKey={uri}
+          recyclingKey={crossfade ? undefined : uri}
           cachePolicy="memory-disk"
           accessibilityIgnoresInvertColors
         />
@@ -51,6 +56,8 @@ export const PlayerArtwork = memo(function PlayerArtwork({ url, size, radius, st
     </View>
   );
 });
+
+const CROSSFADE = { duration: 360, effect: "cross-dissolve", timing: "ease-in-out" } as const;
 
 const styles = StyleSheet.create({
   frame: { overflow: "hidden" },

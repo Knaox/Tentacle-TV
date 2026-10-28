@@ -90,7 +90,7 @@ export const NowPlayingArtwork = memo(function NowPlayingArtwork({ size, onDrag,
 
   return (
     <Animated.View style={[styles.wrap, { width: size, height: size }, style]} {...responder.panHandlers}>
-      <PlayerArtwork url={url} size={size} radius={Math.round(size * 0.05) + 6} />
+      <PlayerArtwork url={url} size={size} radius={Math.round(size * 0.05) + 6} crossfade />
     </Animated.View>
   );
 });

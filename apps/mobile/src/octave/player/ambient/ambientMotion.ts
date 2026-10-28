@@ -13,8 +13,8 @@
 
 /** Le cycle de l'horloge (s) : toutes les périodes le divisent. */
 export const AMBIENT_CYCLE_S = 240;
-/** Les périodes possibles d'un mouvement (s), toutes diviseurs de 240 : lentes, jamais nerveuses. */
-const PERIODS = [40, 48, 60, 80, 120] as const;
+/** Les périodes possibles d'un mouvement (s), toutes diviseurs de 240 : lentes, jamais nerveuses (< 2 pt par image). */
+const PERIODS = [30, 40, 48, 60, 80] as const;
 /** La vignette lue pour le fond (px) : le flou efface tout détail au-delà. */
 export const AMBIENT_ARTWORK_SIZE = 160;
 /** Le flou appliqué à la vignette (une fois, au décodage). */
@@ -91,7 +91,7 @@ export const AMBIENT_BRAND_TINT: AmbientLayer = {
   driftY: 0.14,
   rotate: 40,
   driftPeriod: 80,
-  rotatePeriod: 120,
+  rotatePeriod: 80,
   phase: 0.37,
   mirrored: false,
 };
