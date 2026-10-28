@@ -18,6 +18,7 @@ export interface PluginMusicManifest {
   search: string;
   resolve: string;
   prefetch?: string;
+  prefetchAlbums?: boolean;
   like?: string;
   playlistAdd?: string;
   pending?: string;
@@ -59,6 +60,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
+  if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;

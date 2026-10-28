@@ -61,7 +61,7 @@ export function isSourceFresh(source: PlaybackSource, now = Date.now()): boolean
  * 5 s : l'extension l'oublie après 8 s (sa politique d'anticipation), un
  * second survol plus tard doit donc arriver. `press` passe toujours.
  */
-const PREFETCH_DEDUP_MS: Record<PrefetchIntent, number> = { results: 30_000, hover: 5_000, press: 0, next: 30_000 };
+const PREFETCH_DEDUP_MS: Record<PrefetchIntent, number> = { results: 30_000, hover: 5_000, press: 0, next: 30_000, albums: 10 * 60_000 };
 const recentPrefetch = new Map<string, number>();
 
 /**
