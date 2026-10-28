@@ -2,8 +2,8 @@
  * Octave — les mesures du bas de l'écran au téléphone : la barre d'onglets du
  * miroir (`TAB_BAR_HEIGHT`, 63) et le mini-lecteur (64), séparés de 8, posés à
  * `max(zone sûre, 10)` du bord. La page réserve cette place, plus un souffle ;
- * la zone sûre s'ajoute dans la feuille (`.octave-phone-main`, octaveTouch.css) :
- * pas de `max()` en style en ligne (le garde de compatibilité du client LG).
+ * la zone sûre s'ajoute par un plancher en fin de page (classe Tailwind) : pas de
+ * `max()` en style en ligne (garde du client LG) ni dans une feuille d'Octave.
  */
 
 import { TAB_BAR_HEIGHT, TAB_MIN_BOTTOM_INSET } from "../../../../mirror/shell/metrics";

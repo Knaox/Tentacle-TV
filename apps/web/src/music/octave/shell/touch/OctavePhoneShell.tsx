@@ -7,7 +7,7 @@
  * rangées de titre y sont COMPACTES (`components/compactRows`).
  */
 
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { CompactRowsContext } from "../../components/compactRows";
 import { DeviceHeaderButton } from "../../offline/DeviceNavItem";
 import { usePlayerSelector } from "../../player/OctavePlayerProvider";
@@ -36,10 +36,10 @@ export function OctavePhoneShell({ children, main, onExit, onOpenNowPlaying, ove
         ref={main}
         id="octave-main"
         className="octave-phone-main h-full overflow-y-auto overscroll-contain"
-        style={{ "--oc-phone-room": `${phoneBottomRoom(playing)}px` } as CSSProperties}
+        style={{ paddingBottom: phoneBottomRoom(playing) }}
       >
         <header
-          className="octave-phone-header sticky top-0 z-20 flex items-center gap-1"
+          className="octave-phone-header sticky top-0 z-20 flex items-center gap-1 pl-[max(8px,env(safe-area-inset-left,0px))] pr-[max(8px,env(safe-area-inset-right,0px))] pt-[env(safe-area-inset-top,0px)]"
         >
           <div className="flex h-14 min-w-0 flex-1 items-center gap-1">
             <HistoryButtons compact />
@@ -52,9 +52,9 @@ export function OctavePhoneShell({ children, main, onExit, onOpenNowPlaying, ove
           </div>
         </header>
         <CompactRowsContext.Provider value={true}>{children}</CompactRowsContext.Provider>
-        <div aria-hidden className="octave-phone-safe-floor" />
+        <div aria-hidden className="pt-[max(env(safe-area-inset-bottom,0px),10px)]" />
       </main>
-      <div className="octave-phone-bottom pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2 pb-[max(env(safe-area-inset-bottom,0px),10px)] pl-[max(12px,env(safe-area-inset-left,0px))] pr-[max(12px,env(safe-area-inset-right,0px))]">
         <div className="pointer-events-auto">
           <MiniPlayer onOpen={onOpenNowPlaying} />
         </div>
