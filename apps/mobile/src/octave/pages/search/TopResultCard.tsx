@@ -6,15 +6,15 @@
  */
 
 import { memo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Play } from "lucide-react-native";
 import { rememberAlbumPreview, type TopResult } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import { GlassSurface, PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { Artwork } from "../ui/Artwork";
+import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
 function describe(top: TopResult): { title: string; art: string | null; round: boolean; kind: string; by: string | null } {
   switch (top.kind) {
@@ -53,9 +53,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
           <Text numberOfLines={2} style={[typography.title, { color: theme.colors.text.primary }]}>{d.title}</Text>
           <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.secondary }]}>{[t(d.kind), d.by].filter(Boolean).join(" · ")}</Text>
         </View>
-        <Pressable onPress={onPlay} hitSlop={6} accessibilityRole="button" accessibilityLabel={t("search.playTop", { title: d.title })} style={[styles.play, { backgroundColor: theme.colors.cta.brandBg }]}>
-          <Play size={20} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
-        </Pressable>
+        <OctavePlayButton round={48} label={t("search.playTop", { title: d.title })} onPress={onPlay} />
       </GlassSurface>
     </PressableCard>
   );
@@ -64,5 +62,4 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
 const styles = StyleSheet.create({
   card: { flexDirection: "row", alignItems: "center", gap: 16, padding: 14 },
   text: { flex: 1, minWidth: 0, gap: 4 },
-  play: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
 });

@@ -17,6 +17,8 @@ import { usePagesContextId, usePagesPlayer, usePagesWantsPlay } from "../env/pag
 import { Artwork } from "../ui/Artwork";
 import { accentTextOf } from "../ui/pageStyle";
 import { playFrom } from "../env/playFrom";
+import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
+import { useOctaveColors } from "../../theme/octaveColors";
 
 function Mosaic({ urls, size }: { urls: readonly string[]; size: number }) {
   if (urls.length < 4) return <Artwork url={urls[0] ?? null} size={size} radius={10} />;
@@ -33,6 +35,7 @@ function Mosaic({ urls, size }: { urls: readonly string[]; size: number }) {
 export const MixCard = memo(function MixCard({ mix, width }: { mix: MusicHomeMix; width: number }) {
   const { t, i18n } = useTranslation("music");
   const theme = useTheme();
+  const colors = useOctaveColors();
   const player = usePagesPlayer();
   const contextId = mixContextId(mix);
   const current = usePagesContextId() === contextId;
@@ -51,8 +54,9 @@ export const MixCard = memo(function MixCard({ mix, width }: { mix: MusicHomeMix
     <PressableCard onPress={toggle} style={{ width }} accessibilityRole="button" accessibilityLabel={name}>
       <View>
         <Mosaic urls={urls} size={width} />
-        <View style={[styles.badge, { backgroundColor: theme.colors.cta.brandBg }]}>
-          <Icon size={16} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
+        <View style={styles.badge}>
+          <OctaveBrandFill radius={18} />
+          <Icon size={16} color={colors.onBrandFill} fill={colors.onBrandFill} />
         </View>
       </View>
       <Text numberOfLines={1} style={[typography.bodyBold, styles.title, { color: current ? accentTextOf(theme) : theme.colors.text.primary }]}>

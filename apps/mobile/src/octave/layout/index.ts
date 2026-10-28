@@ -13,3 +13,5 @@ export { useOctaveLayout, octaveLayoutOf, type OctaveLayout } from "./useOctaveL
 export { useOctavePageScroll, OCTAVE_TOP_BAR_HEIGHT, type OctavePageScroll } from "./useOctavePageScroll";
 export { useOctaveColors, type OctaveColors } from "../theme/octaveColors";
 export { useOctaveChrome, type OctaveChrome } from "../shell/octaveChrome";
+export { OctaveBrandFill } from "./OctaveBrandFill";
+export { OctavePlayButton } from "./OctavePlayButton";

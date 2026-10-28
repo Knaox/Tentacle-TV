@@ -26,6 +26,7 @@ import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryTabs, SortChips } from "./LibraryTabs";
+import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -37,7 +38,8 @@ function LikedEntry() {
   const nav = useOctaveNav();
   return (
     <Pressable onPress={nav.liked} accessibilityRole="button" style={({ pressed }) => [styles.liked, { backgroundColor: pressed ? theme.colors.fill.soft : theme.colors.fill.faint }]}>
-      <View style={[styles.likedIcon, { backgroundColor: theme.colors.cta.brandBg }]}>
+      <View style={styles.likedIcon}>
+        <OctaveBrandFill radius={10} />
         <Heart size={20} color={theme.colors.cta.brandFg} fill={theme.colors.cta.brandFg} />
       </View>
       <Text style={[typography.bodyBold, { color: theme.colors.text.primary, flex: 1 }]}>{t("liked.title")}</Text>
