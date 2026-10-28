@@ -26,6 +26,11 @@ export interface ClientFetchBrokerDeps {
   /** Pousse le travail sur les sockets de l'appareil ; faux s'il n'en a aucune. */
   send(deviceKey: string, job: ClientFetchJob): boolean;
   online(deviceKey: string): boolean;
+  /**
+   * Le budget de l'ADRESSE DE SORTIE de l'appareil (`egressBudget.ts`), partagé par tous les appareils qui sortent
+   * par elle : refusé → `budget`, sans rien envoyer ; `waitMs` : la requête part après ce délai. Absent : aucun.
+   */
+  admit?(egress: string, kind: "play" | "prefetch", pluginId: string): { granted: true; waitMs: number } | { granted: false };
 }
 
 interface Pending {
@@ -41,17 +46,20 @@ const REPLY_MARGIN_MS = 1_500;
 
 export class ClientFetchBroker {
   private readonly secret = randomBytes(32);
-  private readonly handles = new Map<string, { pluginId: string; deviceKey: string }>();
+  private readonly handles = new Map<string, { pluginId: string; deviceKey: string; egress: string | null }>();
   private readonly pending = new Map<string, Pending>();
   private readonly inFlight = new Map<string, number>();
 
   constructor(private readonly deps: ClientFetchBrokerDeps) {}
 
-  /** La poignée de (extension, appareil), retenue tant que l'appareil a une socket. */
-  handleFor(pluginId: string, deviceKey: string): string | null {
+  /**
+   * La poignée de (extension, appareil), retenue tant que l'appareil a une socket. `egress` : son adresse de
+   * sortie vue sur CETTE requête (un téléphone qui passe du Wi-Fi à la 4G en change) ; `null` : aucun budget.
+   */
+  handleFor(pluginId: string, deviceKey: string, egress: string | null = null): string | null {
     if (!this.deps.online(deviceKey)) return null;
     const handle = createHmac("sha256", this.secret).update(`${pluginId}\n${deviceKey}`).digest("base64url").slice(0, 32);
-    this.handles.set(handle, { pluginId, deviceKey });
+    this.handles.set(handle, { pluginId, deviceKey, egress });
     return handle;
   }
 
@@ -66,12 +74,18 @@ export class ClientFetchBroker {
   }
 
   /** `client.fetch` : la requête de `pluginId`, exécutée par l'appareil de `handle`. */
-  run(pluginId: string, manifest: ClientFetchManifest | undefined, handle: string, request: ClientFetchRequest): Promise<ClientFetchOutcome> {
-    if (!manifest || checkClientFetchRequest(request, manifest) !== null) return Promise.resolve({ ok: false, reason: "refused" });
+  async run(pluginId: string, manifest: ClientFetchManifest | undefined, handle: string, request: ClientFetchRequest): Promise<ClientFetchOutcome> {
+    if (!manifest || checkClientFetchRequest(request, manifest) !== null) return { ok: false, reason: "refused" };
     const target = this.handles.get(handle);
-    if (!target || target.pluginId !== pluginId || !this.deps.online(target.deviceKey)) return Promise.resolve({ ok: false, reason: "offline" });
+    if (!target || target.pluginId !== pluginId || !this.deps.online(target.deviceKey)) return { ok: false, reason: "offline" };
+    if ((this.inFlight.get(target.deviceKey) ?? 0) >= CLIENT_FETCH_LIMITS.maxParallel) return { ok: false, reason: "budget" };
+    // Le plafond de l'adresse de sortie, partagé par les appareils derrière la même box (les gestes d'abord).
+    const admission = target.egress !== null && this.deps.admit ? this.deps.admit(target.egress, request.kind ?? "play", pluginId) : { granted: true as const, waitMs: 0 };
+    if (!admission.granted) return { ok: false, reason: "budget" };
+    if (admission.waitMs > 0) await new Promise((r) => setTimeout(r, admission.waitMs));
+    if (!this.deps.online(target.deviceKey)) return { ok: false, reason: "offline" };
     const busy = this.inFlight.get(target.deviceKey) ?? 0;
-    if (busy >= CLIENT_FETCH_LIMITS.maxParallel) return Promise.resolve({ ok: false, reason: "budget" });
+    if (busy >= CLIENT_FETCH_LIMITS.maxParallel) return { ok: false, reason: "budget" };
 
     const id = randomUUID();
     const timeoutMs = request.timeoutMs ?? CLIENT_FETCH_LIMITS.defaultTimeoutMs;
