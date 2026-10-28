@@ -32,7 +32,12 @@ export function refreshEngineSource(player: OctavePlayer, engineKey: string): vo
   if (!item) return;
   player.deps.sources.invalidate(item.track.key);
   void player.deps.sources.get(item.track).then((source) => {
-    if (source) player.deps.engine.swapSource(engineKey, { ...source, trackKey: engineKey });
+    if (!source) return;
+    player.deps.engine.swapSource(engineKey, { ...source, trackKey: engineKey });
+    // D'où le lecteur lit : la copie gardée, ou de nouveau le serveur (une copie effacée entre-temps).
+    const fromDevice = source.kept !== undefined;
+    if (item.uid === player.nextUid) player.nextFromDevice = fromDevice;
+    if (item.uid === currentItem(player.snapshot.get().queue)?.uid) player.snapshot.update({ fromDevice });
   });
 }
 
@@ -57,6 +62,7 @@ export function applyResolution(player: OctavePlayer, event: MusicResolvedEvent)
       const engineKey = player.engineKeys.get(item.uid);
       if (engineKey) player.deps.engine.swapSource(engineKey, { ...source, trackKey: engineKey });
     }
-    if (live.some((item) => item.uid === now?.uid)) player.snapshot.update({ origin: source.origin, format: source.format ?? resolved.format });
+    if (live.some((item) => item.uid === player.nextUid)) player.nextFromDevice = source.kept !== undefined;
+    if (live.some((item) => item.uid === now?.uid)) player.snapshot.update({ origin: source.origin, fromDevice: source.kept !== undefined, format: source.format ?? resolved.format });
   });
 }

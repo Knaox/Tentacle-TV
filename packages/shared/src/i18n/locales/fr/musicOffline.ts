@@ -40,10 +40,26 @@ export default {
     label: "Tenir à jour les playlists gardées sur cet appareil",
     hint: "Un titre ajouté à une playlist gardée part de lui-même sur l’appareil, un titre retiré le quitte ; la version de la bibliothèque remplace une copie d’ailleurs dès qu’elle existe. Sans réseau, tout se rattrape au retour.",
   },
+  player: {
+    fromDevice: "Sur cet appareil",
+    fromDeviceHint: "Lu depuis la copie gardée sur cet appareil",
+  },
+  switch: {
+    goOffline: "Passer hors ligne",
+    goOfflineHint: "N'écouter que la musique gardée sur cet appareil, sans réseau",
+    goOnline: "Revenir en ligne",
+    retry: "Réessayer la connexion",
+    manualHint: "Hors ligne, par choix : seule la musique gardée sur cet appareil est disponible.",
+  },
+  size: {
+    onDevice: "{{size}} sur cet appareil",
+    frees: "libère {{size}}",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",
-    summary: "{{tracks}} · {{size}}",
+    used: "{{size}} occupés",
+    free: "{{size}} libres",
     collections: "Albums et playlists",
     albums: "Albums",
     playlists: "Playlists",

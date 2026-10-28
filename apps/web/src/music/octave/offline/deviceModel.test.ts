@@ -33,4 +33,20 @@ describe("deviceModel", () => {
     expect(offline.tracks.map((t) => t.key)).toEqual(["jf:a", "jf:c"]);
     expect(offline.collections[0]!.tracks.map((t) => t.key)).toEqual(["jf:c", "jf:a"]);
   });
+
+  it("un titre RENOMMÉ depuis qu'il a été gardé reste à sa place dans sa playlist (Damien, 28/10 : « une copie »)", () => {
+    const old = kept("ext:sillon:imp:b", { origin: "external", fileId: 2 });
+    const tracks = [kept("jf:a"), old, kept("jf:c", { fileId: 3 })];
+    const collections = [{ key: "playlist:jf:p", kind: "playlist" as const, title: "New", subtitle: null, coverItemId: null, trackKeys: ["jf:a", "ext:sillon:ytm:t:b", "jf:c"], updatedAt: 1 }];
+    // Sans les renommages : le titre disparaissait de la playlist gardée.
+    expect(deviceModel(tracks, collections, local, { completeOnly: true }).collections[0]!.keys).toEqual(["jf:a", "jf:c"]);
+    const renames = new Map(tracks.map((t) => [t.trackKey, t]));
+    renames.set("ext:sillon:ytm:t:b", old);
+    const model = deviceModel(tracks, collections, local, { completeOnly: true, resolve: (key) => renames.get(key) });
+    expect(model.collections[0]!.keys).toEqual(["jf:a", "ext:sillon:ytm:t:b", "jf:c"]);
+    expect(model.collections[0]!.tracks[1]!.key).toBe("ext:sillon:imp:b");
+    // Une copie pas encore complète, hors ligne : pas là, même renommée.
+    const partial = deviceModel([kept("jf:a"), { ...old, status: "downloading" }], collections, local, { completeOnly: true, resolve: (key) => (key === "ext:sillon:ytm:t:b" ? { ...old, status: "downloading" } : undefined) });
+    expect(partial.collections[0]!.keys).toEqual(["jf:a"]);
+  });
 });

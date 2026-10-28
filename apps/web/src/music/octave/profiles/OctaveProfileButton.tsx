@@ -4,8 +4,9 @@
  * petite feuille « Qui écoute ? », code PIN compris) et « Gérer les profils »
  * (là où « Qui regarde ? » l'offre ; sa page DANS Octave, `/octave/profiles`) — ces deux
  * seulement avec une famille de plusieurs profils, en ligne
- * (`octaveProfileMenu`) —, puis « Réglages d'Octave… » (`/octave/settings`,
- * dans Octave), toujours.
+ * (`octaveProfileMenu`) —, « Passer hors ligne » / « Revenir en ligne » (bureau,
+ * compte de l'appareil, `offline/OfflineSwitch.tsx`), puis « Réglages
+ * d'Octave… » (`/octave/settings`, dans Octave), toujours.
  *
  * Bureau : une rangée en pied de la barre latérale, le menu s'ouvre au-dessus.
  * Fenêtre étroite (`compact`) : le rond seul dans l'en-tête, le menu dessous.
@@ -21,6 +22,7 @@ import { ManageProfilesIcon, SwitchProfileIcon } from "../../../components/userM
 import { useMenuKeyboard } from "../../../components/userMenu/useMenuKeyboard";
 import { switchActiveId } from "../../../profiles/switcher/switchPlan";
 import { octavePaths } from "../octavePaths";
+import { OfflineSwitchMenuItem } from "../offline/OfflineSwitch";
 import { OctaveProfileSheet } from "./OctaveProfileSheet";
 import { shellIdentityOf } from "./shellIdentity";
 import { useOctaveProfileMenu } from "./useOctaveProfileMenu";
@@ -115,6 +117,8 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
               {t("profile.manage")}
             </button>
           )}
+          {/* Bureau, compte de l'appareil : passer hors ligne, ou en revenir (le même état que le mode films). */}
+          <OfflineSwitchMenuItem className={itemClass} onDone={() => close(false)} />
           <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(octavePaths.settings); }}>
             <Settings2 aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {t("settings.shortcut")}
