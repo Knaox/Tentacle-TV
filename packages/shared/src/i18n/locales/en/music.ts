@@ -276,6 +276,15 @@ export default {
     moveDown: "Move down",
     close: "Close queue",
   },
+  nowPlayingSource: {
+    fromAlbum: "Playing from album",
+    fromPlaylist: "Playing from playlist",
+    fromArtist: "Playing from artist",
+    fromLiked: "Playing from",
+    fromMood: "Playing from mood",
+    likedName: "Liked songs",
+    openHint: "Closes the player and opens the page",
+  },
   refusal: {
     title: "Couldn't do that",
     quota: "Today's addition limit is reached. It resets at midnight.",
