@@ -6,7 +6,7 @@
  */
 
 import { memo, useCallback, useMemo, type ReactElement } from "react";
-import { FlatList, View } from "react-native";
+import { FlatList, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
 import { layoutSearch, type SearchFilter, type ShownExternalLists } from "@tentacle-tv/shared/octave";
@@ -17,6 +17,7 @@ import { TrackRow } from "../ui/TrackRow";
 import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { playFrom } from "../env/playFrom";
+import { clipsOffscreenCells } from "../../layout/listClipping";
 
 type Cell =
   | { kind: "track"; track: MusicTrack; index: number }
@@ -85,7 +86,7 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
       initialNumToRender={12}
       maxToRenderPerBatch={10}
       windowSize={7}
-      removeClippedSubviews
+      removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
     />

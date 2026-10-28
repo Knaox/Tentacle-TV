@@ -6,13 +6,14 @@
  */
 
 import { memo, type ReactElement, type ReactNode } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useFirstEnter } from "../../layout/enterMotion";
 import { usePageMetrics } from "./pageStyle";
+import { clipsOffscreenCells } from "../../layout/listClipping";
 
 interface ShelfProps<T> {
   title: string;
@@ -66,7 +67,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
         initialNumToRender={4}
         maxToRenderPerBatch={4}
         windowSize={3}
-        removeClippedSubviews
+        removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
         decelerationRate="fast"
         snapToInterval={w + 12}
         snapToAlignment="start"

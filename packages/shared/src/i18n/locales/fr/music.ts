@@ -276,6 +276,15 @@ export default {
     moveDown: "Descendre",
     close: "Fermer la file d'attente",
   },
+  nowPlayingSource: {
+    fromAlbum: "Lu depuis l'album",
+    fromPlaylist: "Lu depuis la playlist",
+    fromArtist: "Lu depuis l'artiste",
+    fromLiked: "Lu depuis",
+    fromMood: "Lu depuis l'ambiance",
+    likedName: "Titres likés",
+    openHint: "Ferme le lecteur et ouvre la page",
+  },
   refusal: {
     title: "Action impossible",
     quota: "Limite d'ajouts du jour atteinte. Elle repart à minuit.",

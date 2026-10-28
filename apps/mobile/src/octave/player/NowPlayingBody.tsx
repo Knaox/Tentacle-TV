@@ -15,6 +15,7 @@ import { CrossfadeChip, CrossfadePanel } from "./CrossfadeControl";
 import { NowPlayingActions } from "./NowPlayingActions";
 import { NowPlayingArtwork } from "./NowPlayingArtwork";
 import { QueueList } from "./QueueList";
+import { NowPlayingSourceButton } from "./source/NowPlayingSourceButton";
 import { SeekBar } from "./SeekBar";
 import { TransportControls } from "./TransportControls";
 import { usePlayerSelector } from "./OctavePlayerContext";
@@ -47,7 +48,7 @@ export const NowPlayingBody = memo(function NowPlayingBody({ headerHandlers, onD
         <IconButton label={t("player.close")} onPress={closeNowPlaying}>
           <ChevronDown size={28} color={colors.text} />
         </IconButton>
-        <Text style={[styles.kicker, { color: colors.textSecondary }]}>{t("queue.nowPlaying")}</Text>
+        <NowPlayingSourceButton />
         {split ? <View style={styles.iconSpace} /> : (
           <IconButton label={t("player.queue")} onPress={() => setShowQueue((v) => !v)} active={showQueue}>
             <ListMusic size={24} color={showQueue ? colors.accentText : colors.text} />
@@ -152,8 +153,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   header: { paddingHorizontal: 12, paddingTop: 6 },
   grabber: { alignSelf: "center", width: 38, height: 5, borderRadius: 3, opacity: 0.6, marginBottom: 6 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  kicker: { fontSize: 13, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   icon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   iconSpace: { width: 44 },
   stage: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },

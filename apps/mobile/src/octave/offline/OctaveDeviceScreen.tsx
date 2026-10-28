@@ -11,7 +11,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, type Href } from "expo-router";
-import { FlatList, StyleSheet, Text, View, type ListRenderItem } from "react-native";
+import { FlatList, Platform, StyleSheet, Text, View, type ListRenderItem } from "react-native";
 import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { deviceModel, keptBytes, type DeviceCollection } from "@tentacle-tv/offline-core/music";
@@ -31,6 +31,7 @@ import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { useKeptMusic } from "./useKeptMusic";
 import { DeviceEmpty } from "./DeviceEmpty";
+import { clipsOffscreenCells } from "../layout/listClipping";
 
 const DEVICE_CONTEXT = "device";
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<MusicTrack>);
@@ -114,7 +115,7 @@ export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps
         style={styles.page}
         initialNumToRender={14}
         windowSize={7}
-        removeClippedSubviews
+        removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
         showsVerticalScrollIndicator={false}
       />
       <OctaveTopBar scrollY={scrollY} title={title} back={!(asHome && !open)} />

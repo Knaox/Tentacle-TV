@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useMemo, type ReactElement } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,7 @@ import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
+import { clipsOffscreenCells } from "../../layout/listClipping";
 
 const NO_TRACKS: MusicTrack[] = [];
 
@@ -110,7 +111,7 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
         contentContainerStyle={{ paddingBottom: bottomInset }}
         initialNumToRender={12}
         windowSize={9}
-        removeClippedSubviews
+        removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
         accessibilityLabel={head?.title ?? t("common.playAll")}
       />
       <PageTopBar title={head?.title ?? ""} scrollY={scrollY} threshold={320} />
