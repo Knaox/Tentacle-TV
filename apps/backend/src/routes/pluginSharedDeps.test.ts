@@ -10,26 +10,28 @@
 
 import Fastify from "fastify";
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
 import { join } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const ROOT = join(tmpdir(), `tentacle-shared-deps-${process.pid}`);
+// `mkdtempSync` (nom imprévisible, créé par ce seul processus), avant les simulations qui le lisent.
+const ROOT = vi.hoisted(() => {
+  const { join: j } = process.getBuiltinModule("path");
+  const { tmpdir: t } = process.getBuiltinModule("os");
+  return process.getBuiltinModule("fs").mkdtempSync(j(t(), "tentacle-shared-deps-"));
+});
 const DATA_ROOT = join(ROOT, "data");
 const BUILD_DIR = join(ROOT, "package", "data", "shared-deps");
 
 const build = vi.hoisted(() => ({ allowed: true, run: async () => {} }));
 
 vi.mock("../services/dataDir", async () => {
-  const { tmpdir: tmp } = await import("os");
   const path = await import("path");
-  return { DATA_ROOT: path.join(tmp(), `tentacle-shared-deps-${process.pid}`, "data") };
+  return { DATA_ROOT: path.join(ROOT, "data") };
 });
 vi.mock("../services/pluginSharedDeps/sharedDepsBuild", async () => {
-  const { tmpdir: tmp } = await import("os");
   const path = await import("path");
   return {
-    SHARED_DEPS_BUILD_DIR: path.join(tmp(), `tentacle-shared-deps-${process.pid}`, "package", "data", "shared-deps"),
+    SHARED_DEPS_BUILD_DIR: path.join(ROOT, "package", "data", "shared-deps"),
     mayBuildSharedDeps: () => build.allowed,
     buildSharedDeps: () => build.run(),
   };

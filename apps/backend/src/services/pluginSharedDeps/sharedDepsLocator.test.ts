@@ -1,10 +1,14 @@
-import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createSharedDepsLocator, sharedDepsDirs } from "./sharedDepsLocator";
 
-const ROOT = join(tmpdir(), `tentacle-shared-deps-locator-${process.pid}`);
+// Un dossier neuf par test, par `mkdtempSync` : jamais un nom deviné d'avance (pid).
+let ROOT = "";
+beforeEach(() => {
+  ROOT = mkdtempSync(join(tmpdir(), "tentacle-shared-deps-locator-"));
+});
 afterEach(() => rmSync(ROOT, { recursive: true, force: true }));
 
 describe("localisateur des dépendances partagées", () => {
