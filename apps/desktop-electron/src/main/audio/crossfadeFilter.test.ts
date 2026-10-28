@@ -5,7 +5,7 @@ import { chainFor } from "./audioEngineOutput";
 import { LEVEL_FILTER } from "./audioLevel";
 import { formatFileOptions } from "./audioOptions";
 import type { QueueEntry } from "./audioQueue";
-import { cutSteps, deckChain, fadeInExpr, fadeOutExpr, gainCommand, type FadedSource } from "./crossfadeFilter";
+import { cutSteps, deckChain, fadeInExpr, fadeOutExpr, gainCommand, lavfiEscape, type FadedSource } from "./crossfadeFilter";
 import { armDecision, deckTimeline } from "./crossfadeTiming";
 import { freshFlags, NO_PROPS } from "./audioEngineState";
 
@@ -75,5 +75,13 @@ describe("transition douce — quand fondre", () => {
     expect(deckTimeline(current, { ...NO_PROPS, timePos: 10, mpvDuration: 199.37 }, freshFlags(false), 10).durationS).toBe(199.37);
     expect(deckTimeline(current, { ...NO_PROPS, timePos: 10 }, freshFlags(false), 10)).toMatchObject({ durationS: 200, playing: true, loaded: true });
     expect(deckTimeline(current, { ...NO_PROPS }, freshFlags(true), 0)).toMatchObject({ playing: false, loaded: false });
+  });
+});
+
+describe("échappement d'une expression dans la chaîne lavfi", () => {
+  it("la barre oblique inverse d'abord, puis la virgule ; une expression des fondus est inchangée hors virgules", () => {
+    expect(lavfiEscape("if(lt(t,1),0,1)")).toBe("if(lt(t\\,1)\\,0\\,1)");
+    expect(lavfiEscape("a\\,b")).toBe("a\\\\\\,b");
+    expect(deckChain(fadeInExpr(2))).toContain(`volume=volume=${lavfiEscape(fadeInExpr(2))}:eval=frame`);
   });
 });

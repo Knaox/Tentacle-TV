@@ -46,13 +46,19 @@ export interface DeckTimeline {
 /** Un nombre pour une expression de libavfilter : décimal, sans exposant. */
 const num = (x: number): string => Math.max(0, x).toFixed(6);
 
+/** Une expression posée telle quelle dans une chaîne lavfi : « \\ » puis « , » échappés. */
+export function lavfiEscape(expr: string): string {
+  return expr.replace(/\\/g, "\\\\").replace(/,/g, "\\,");
+}
+
 /**
  * La chaîne `af` d'une instance : le gain du fondu (`expr`, gain plein par défaut), PUIS la mesure du niveau — la
  * houle suit ce qu'on entend de l'instance, et le banc y lit l'enveloppe de chacune pendant un fondu.
  */
 export function deckChain(expr = "1"): string {
-  // Dans une chaîne lavfi, la virgule sépare les filtres : celles de l'expression sont échappées.
-  return `@${XF_LABEL}:lavfi=[asetnsamples=n=256:p=0,volume=volume=${expr.replace(/,/g, "\\,")}:eval=frame],${LEVEL_FILTER}`;
+  // Dans une chaîne lavfi, la virgule sépare les filtres : celles de l'expression sont échappées — et la barre
+  // oblique inverse d'abord, sinon elle échapperait ce qui la suit.
+  return `@${XF_LABEL}:lavfi=[asetnsamples=n=256:p=0,volume=volume=${lavfiEscape(expr)}:eval=frame],${LEVEL_FILTER}`;
 }
 
 /** Le titre qui arrive : de 0 à plein, en `durationS`, sur sa propre chronologie (`t` = 0 à son début). */
