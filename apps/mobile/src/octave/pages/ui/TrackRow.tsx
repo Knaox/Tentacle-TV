@@ -3,7 +3,8 @@
  * album), titre, artistes, le titre EN COURS marqué (couleur et barres
  * animées), le cœur affiché tout de suite (`useLiked`), un « ⋯ » à 44 pt.
  * Toucher : lire depuis ce titre (la liste garde la suite) ; appui maintenu ou
- * « ⋯ » : la feuille d'actions. Hauteur FIXE (`TRACK_ROW_HEIGHT`) : les listes
+ * « ⋯ » : la feuille d'actions. Gardé sur l'appareil : sa marque (`KeptMark`,
+ * m5) ; hors ligne et pas gardé : atténué et inerte (`useTrackPlayable`). Hauteur FIXE (`TRACK_ROW_HEIGHT`) : les listes
  * virtualisées connaissent la place de chaque rangée.
  */
 
@@ -15,9 +16,12 @@ import { useLiked } from "@tentacle-tv/api-client";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { haptic as playHaptic } from "@/utils/haptics";
+import { KeptMark } from "../../offline/KeptMark";
+import { useTrackPlayable } from "../../offline/useOfflineMusic";
 import { openTrackSheet } from "../actions/trackSheetStore";
 import { Artwork } from "./Artwork";
 import { NowPlayingBars } from "./NowPlayingBars";
+import { accentTextOf } from "./pageStyle";
 
 export const TRACK_ROW_HEIGHT = 60;
 
@@ -38,22 +42,24 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const theme = useTheme();
   const { t } = useTranslation("music");
   const liked = useLiked(track.key, track.favorite);
+  const playable = useTrackPlayable()(track.key);
   const sheet = useCallback(() => {
     playHaptic("longPress");
     openTrackSheet({ track, list, contextId, hide });
   }, [contextId, hide, list, track]);
   const artists = track.artists.map((a) => a.name).join(", ");
-  const accent = theme.colors.brand.accentLight;
+  const accent = accentTextOf(theme);
   return (
     <Pressable
       onPress={() => onPlay(index)}
+      disabled={!playable}
       onLongPress={sheet}
       delayLongPress={350}
-      style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
+      style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, opacity: playable ? 1 : 0.4, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
       accessibilityRole="button"
       accessibilityLabel={t("track.play", { title: track.title })}
       accessibilityHint={artists}
-      accessibilityState={{ selected: playing }}
+      accessibilityState={{ selected: playing, disabled: !playable }}
     >
       {numbered ? (
         <View style={styles.number}>
@@ -74,6 +80,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
           {track.title}
         </Text>
         <View style={styles.sub}>
+          <KeptMark trackKey={track.key} size={11} />
           {liked ? <Heart size={11} color={accent} fill={accent} accessibilityLabel={t("track.unlike")} /> : null}
           <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
             {artists}

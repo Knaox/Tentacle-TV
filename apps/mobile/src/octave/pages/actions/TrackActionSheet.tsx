@@ -8,7 +8,7 @@
 
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Disc3, Heart, ListEnd, ListPlus, ListStart, Mic2, Play } from "lucide-react-native";
+import { ArrowDownToLine, CircleCheck, Disc3, Heart, ListEnd, ListPlus, ListStart, Mic2, Play } from "lucide-react-native";
 import { openPlaylistChooser, useLiked } from "@tentacle-tv/api-client";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
@@ -20,17 +20,22 @@ import { useMobileTrackActions } from "../env/useMobileActionsUi";
 import { Artwork } from "../ui/Artwork";
 import { SheetAction } from "./SheetAction";
 import { closeTrackSheet, useTrackSheet, type TrackSheetRequest } from "./trackSheetStore";
+import { trackSheetActions, type TrackSheetActionId } from "./trackSheetActions";
+import { useTrackKeep } from "./useTrackKeep";
+import { playFrom } from "../env/playFrom";
 
 /** Une feuille ne s'ouvre qu'une fois la précédente partie (iOS ne présente pas deux fenêtres à la fois). */
 const SHEET_HANDOFF_MS = 380;
 
 function SheetBody({ request }: { request: TrackSheetRequest }) {
   const { t } = useTranslation("music");
+  const { t: tOffline } = useTranslation("musicOffline");
   const player = usePagesPlayer();
   const actions = useMobileTrackActions();
   const nav = useOctaveNav();
   const { track, list, contextId, hide } = request;
   const liked = useLiked(track.key, track.favorite);
+  const keep = useTrackKeep(track);
   const albumTarget = track.album ? entityTarget(track.album) : null;
   const artist = track.artists.find((a) => a.jellyfinId || a.external);
   const artistTarget = artist ? entityTarget(artist) : null;
@@ -39,23 +44,38 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
     fn();
   };
   const index = Math.max(0, list.findIndex((x) => x.key === track.key));
-  return (
-    <View style={styles.body}>
-      {player ? (
-        <>
-          <SheetAction icon={Play} label={t("common.playAll")} onPress={then(() => player.playList(list.length ? list : [track], list.length ? index : 0, contextId))} />
-          <SheetAction icon={ListStart} label={t("track.playNext")} onPress={then(() => queueActions.playNext(player, [track]))} />
-          <SheetAction icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => queueActions.enqueue(player, [track]))} />
-        </>
-      ) : null}
-      {actions.canAddToPlaylist(track) ? <SheetAction icon={ListPlus} label={t("playlist.addTo")} onPress={then(() => setTimeout(() => openPlaylistChooser(track), SHEET_HANDOFF_MS))} /> : null}
-      {actions.canLike(track) ? (
-        <SheetAction icon={Heart} filled={liked} tone={liked ? "accent" : undefined} label={t(liked ? "track.unlike" : "track.like")} onPress={then(() => actions.toggleLike(track))} />
-      ) : null}
-      {albumTarget && !hide?.album ? <SheetAction icon={Disc3} label={t("track.goToAlbum")} onPress={then(() => nav.albumTarget(albumTarget))} /> : null}
-      {artistTarget && !hide?.artist ? <SheetAction icon={Mic2} label={t("track.goToArtist")} onPress={then(() => nav.artistTarget(artistTarget))} /> : null}
-    </View>
-  );
+  const shown = trackSheetActions({
+    hasPlayer: !!player,
+    canAddToPlaylist: actions.canAddToPlaylist(track),
+    canLike: actions.canLike(track),
+    keep: keep.state,
+    albumTarget,
+    artistTarget,
+    hide,
+  });
+  const row = (id: TrackSheetActionId) => {
+    switch (id) {
+      case "play":
+        return <SheetAction key={id} icon={Play} label={t("common.playAll")} onPress={then(() => playFrom(player, list.length ? list : [track], list.length ? index : 0, contextId))} />;
+      case "playNext":
+        return <SheetAction key={id} icon={ListStart} label={t("track.playNext")} onPress={then(() => player && queueActions.playNext(player, [track]))} />;
+      case "addToQueue":
+        return <SheetAction key={id} icon={ListEnd} label={t("track.addToQueue")} onPress={then(() => player && queueActions.enqueue(player, [track]))} />;
+      case "addToPlaylist":
+        return <SheetAction key={id} icon={ListPlus} label={t("playlist.addTo")} onPress={then(() => setTimeout(() => openPlaylistChooser(track), SHEET_HANDOFF_MS))} />;
+      case "keep":
+        return <SheetAction key={id} icon={ArrowDownToLine} label={tOffline("keep")} onPress={then(keep.run)} />;
+      case "removeKept":
+        return <SheetAction key={id} icon={CircleCheck} label={tOffline("remove")} onPress={then(keep.run)} />;
+      case "like":
+        return <SheetAction key={id} icon={Heart} filled={liked} tone={liked ? "accent" : undefined} label={t(liked ? "track.unlike" : "track.like")} onPress={then(() => actions.toggleLike(track))} />;
+      case "goToAlbum":
+        return albumTarget ? <SheetAction key={id} icon={Disc3} label={t("track.goToAlbum")} onPress={then(() => nav.albumTarget(albumTarget))} /> : null;
+      case "goToArtist":
+        return artistTarget ? <SheetAction key={id} icon={Mic2} label={t("track.goToArtist")} onPress={then(() => nav.artistTarget(artistTarget))} /> : null;
+    }
+  };
+  return <View style={styles.body}>{shown.map(row)}</View>;
 }
 
 function SheetHeader({ request }: { request: TrackSheetRequest }) {

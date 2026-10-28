@@ -9,7 +9,7 @@ export { useKindResults, type KindResults } from "../music/octave/useKindResults
 export { useOctaveSuggestions, SUGGEST_DEBOUNCE_MS } from "../music/octave/useOctaveSuggestions";
 export { useMusicMoods, useMusicMoodMix, useMusicMoodTracks, moodLanguage, moodContextId } from "../music/octave/useMusicMoods";
 export {
-  useMusicAlbumEntity, useMusicArtistEntity, externalEntityKey, externalEntityRef, isFromMusicProvider, type MusicEntityState,
+  useMusicAlbumEntity, useMusicArtistEntity, useMusicExternalPlaylist, externalEntityKey, externalEntityRef, type MusicEntityState,
 } from "../music/octave/useMusicEntities";
 export { useRecordMusicVisit, useSearchHomeSnapshot } from "../music/octave/useSearchMemory";
 // Octave — les GESTES sur un titre (cœur, playlists, droits d'ajout), et leurs magasins d'interface.

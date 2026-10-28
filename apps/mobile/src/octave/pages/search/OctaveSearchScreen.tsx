@@ -14,14 +14,15 @@ import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
 import { useKindResults, useOctaveSuggestions, useOwnedLists, useRevealedResults } from "@tentacle-tv/api-client";
 import { isEmptyLayout, layoutSearch } from "@tentacle-tv/shared/octave";
+import { useOfflineMode } from "../../../offline/useOfflineMode";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useMobileArtworkPreloader } from "../env/artworkPreload";
 import { useDeviceStore, useOctavePagesProvider } from "../env/pagesEnv";
-import { PAGE_BOTTOM_ROOM } from "../home/OctaveHomeScreen";
 import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { FilterChips } from "./FilterChips";
 import { MoodResults } from "./MoodResults";
+import { OfflineSearchResults } from "./OfflineSearchResults";
 import { SearchAllView } from "./SearchAllView";
 import { SearchBar } from "./SearchBar";
 import { SearchHome } from "./SearchHome";
@@ -35,9 +36,11 @@ export function OctaveSearchScreen() {
   const provider = useOctavePagesProvider();
   const store = useDeviceStore();
   const preloadArtwork = useMobileArtworkPreloader();
-  const { gutter, sectionGap } = usePageMetrics();
+  const { gutter, sectionGap, bottomInset } = usePageMetrics();
   const { query, filter, submit: route, clear: clearRoute, setFilter } = useSearchRoute();
   const input = useRef<TextInput>(null);
+  // Sans réseau : la recherche se fait dans la musique gardée sur l'appareil.
+  const offline = useOfflineMode();
   const [draft, setDraft] = useState(query);
   const [typing, setTyping] = useState(false);
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
@@ -73,12 +76,12 @@ export function OctaveSearchScreen() {
     setTyping(true);
   }, []);
 
-  const bottom = insets.bottom + PAGE_BOTTOM_ROOM;
+  const bottom = bottomInset;
   const showSuggestions = typing && draft.trim() !== "" && draft !== query;
   const nothing = !!results.library && isEmptyLayout(layout) && !results.externalPending && (results.external?.complete ?? true);
   const bar = (
     <View style={{ paddingHorizontal: gutter, paddingTop: insets.top + 8, paddingBottom: 8 }}>
-      <SearchBar ref={input} value={draft} onChange={change} onSubmit={submit} onClear={clear} onFocus={() => setTyping(true)} preparing={results.preparing} />
+      <SearchBar ref={input} value={draft} onChange={change} onSubmit={submit} onClear={clear} onFocus={() => setTyping(true)} preparing={!offline && results.preparing} />
     </View>
   );
   const filters = !nothing && results.library ? <FilterChips value={filter} onChange={setFilter} gutter={gutter} /> : null;
@@ -94,6 +97,12 @@ export function OctaveSearchScreen() {
     body = (
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }}>
         <SearchHome recents={recents} onSearch={submit} onForget={forget} />
+      </ScrollView>
+    );
+  } else if (offline) {
+    body = (
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }}>
+        <OfflineSearchResults query={query} gutter={gutter} />
       </ScrollView>
     );
   } else if (filter !== "all" && results.library) {

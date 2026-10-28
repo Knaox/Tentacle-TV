@@ -18,6 +18,7 @@ import { SectionTitle, Shelf } from "../ui/Shelf";
 import { TrackRow } from "../ui/TrackRow";
 import { usePageMetrics } from "../ui/pageStyle";
 import { MixCard } from "./MixCard";
+import { playFrom } from "../env/playFrom";
 
 const MOST_CONTEXT = "home:most";
 
@@ -26,7 +27,7 @@ function MostPlayed({ tracks }: { tracks: readonly MusicTrack[] }) {
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
   const { gutter } = usePageMetrics();
-  const play = useCallback((index: number) => player?.playList(tracks, index, MOST_CONTEXT), [player, tracks]);
+  const play = useCallback((index: number) => playFrom(player, tracks, index, MOST_CONTEXT), [player, tracks]);
   if (tracks.length === 0) return null;
   return (
     <View>

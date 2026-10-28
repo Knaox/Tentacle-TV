@@ -20,7 +20,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useState, useSyn
 import type { AudioEnginePort, EngineState } from "@tentacle-tv/shared/music";
 import { createAudioEngine } from "./createAudioEngine";
 import { getCrossfadeMs, subscribeCrossfade } from "./crossfadeSetting";
-import { createDeferredEngine } from "./deferredEngine";
+import { createDeferredEngine } from "@tentacle-tv/shared/octave";
 import { useMusicEngineAuth } from "./engineAuth";
 import { adoptPrestartedEngine } from "./enginePrestart";
 import type { EnginePrefs } from "./mpv/mpvAudioEngine";

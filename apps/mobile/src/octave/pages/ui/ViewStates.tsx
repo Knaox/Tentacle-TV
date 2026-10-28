@@ -11,13 +11,14 @@ import { RotateCw, type LucideIcon } from "lucide-react-native";
 import { Skeleton } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { TRACK_ROW_HEIGHT } from "./TrackRow";
+import { accentTextOf } from "./pageStyle";
 
 export function EmptyState({ icon: Icon, title, hint, action }: { icon: LucideIcon; title: string; hint?: string; action?: ReactNode }) {
   const theme = useTheme();
   return (
     <View style={styles.empty}>
       <View style={[styles.badge, { backgroundColor: theme.colors.brand.soft }]}>
-        <Icon size={26} color={theme.colors.brand.accentLight} />
+        <Icon size={26} color={accentTextOf(theme)} />
       </View>
       <Text style={[typography.subtitle, { color: theme.colors.text.primary, textAlign: "center" }]}>{title}</Text>
       {hint ? <Text style={[typography.body, { color: theme.colors.text.tertiary, textAlign: "center" }]}>{hint}</Text> : null}

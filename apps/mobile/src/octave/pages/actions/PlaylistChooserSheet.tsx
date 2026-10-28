@@ -16,6 +16,7 @@ import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useMobileTrackActions } from "../env/useMobileActionsUi";
 import { Artwork } from "../ui/Artwork";
+import { accentTextOf } from "../ui/pageStyle";
 
 function Chooser({ request }: { request: ChooserRequest }) {
   const { t } = useTranslation("music");
@@ -64,7 +65,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
           <Plus size={18} color={theme.colors.cta.brandFg} />
         </Pressable>
       </View>
-      {playlists.isPending ? <ActivityIndicator color={theme.colors.brand.accentLight} style={{ marginTop: 24 }} /> : null}
+      {playlists.isPending ? <ActivityIndicator color={accentTextOf(theme)} style={{ marginTop: 24 }} /> : null}
       {!playlists.isPending && editable.length === 0 ? <Text style={[typography.caption, styles.none, { color: theme.colors.text.tertiary }]}>{t("playlist.none")}</Text> : null}
       <FlatList
         data={editable}

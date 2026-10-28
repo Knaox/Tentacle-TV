@@ -69,13 +69,22 @@ const STORAGE_KEYS = [
   // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
   // une invitation refermée sans réponse reviendrait à chaque lancement.
   "tentacle_wt_invites_shown",
+  // Octave — réglages d'APPAREIL (`src/octave/settings/`, mêmes clés que le bureau) : transition douce, tenue à
+  // jour des playlists gardées, « ne pas demander le code PIN au démarrage », « au démarrage, ouvrir »,
+  // apparence et Liquid Glass d'Octave.
+  "tentacle_octave_crossfade", "tentacle_octave_offline_autosync", "tentacle_octave_skip_launch_pin",
+  "tentacle_octave_startup", "tentacle_octave_theme", "tentacle_octave_liquid_glass",
   // Octave — le mode musique (mêmes clés que le web et le bureau, `@tentacle-tv/shared/octave/mode`) :
   // le mode, « Au démarrage, ouvrir », le miroir de sa disponibilité, la page où l'on était.
-  "tentacle_octave_mode", "tentacle_octave_startup", "tentacle_octave_launch", "tentacle_octave_page",
+  "tentacle_octave_mode", "tentacle_octave_launch", "tentacle_octave_page",
   // Octave (pages) : la mémoire de l'appareil — recherches récentes, « déjà écouté », albums et artistes
   // consultés, dernière playlist du « + », tri des albums (@tentacle-tv/shared/octave › pages, api-client).
   "tentacle_octave_recent_searches", "tentacle_octave_search_listens", "tentacle_octave_recent_visits",
   "tentacle_octave_last_playlist", "tentacle_octave_album_sort",
+  // Octave : la transition douce de l'appareil (`octave/audio/crossfadeSetting.ts`, magasin partagé).
+  "tentacle_octave_crossfade",
+  // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
+  "tentacle_octave_player",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

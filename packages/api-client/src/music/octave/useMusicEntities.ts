@@ -12,9 +12,10 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { parseTrackKey, type MusicAlbum, type MusicArtist } from "@tentacle-tv/shared/music";
+import { parseTrackKey, type ExternalMusicPlaylist, type MusicAlbum, type MusicArtist } from "@tentacle-tv/shared/music";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
-import { fetchExternalAlbum, fetchExternalArtist } from "../../pluginMusic/musicRequests";
+import { fetchExternalAlbum, fetchExternalArtist, fetchExternalPlaylist } from "../../pluginMusic/musicRequests";
+import { isFromMusicProvider } from "../player/buildOctavePlayer";
 import { useMusicAlbum, useMusicArtist } from "../useMusicLibrary";
 
 export interface MusicEntityState<T> {
@@ -27,17 +28,15 @@ export interface MusicEntityState<T> {
 }
 
 /** La clé de cache d'une page hors bibliothèque (vue ET demande d'avance). */
-export const externalEntityKey = (kind: "album" | "artist", idOrKey: string) => ["music", "external", kind, idOrKey] as const;
+export const externalEntityKey = (kind: "album" | "artist" | "playlist", idOrKey: string) => ["music", "external", kind, idOrKey] as const;
 
 export function externalEntityRef(idOrKey: string | null | undefined): { pluginId: string; id: string } | null {
   const parsed = idOrKey?.startsWith("ext:") ? parseTrackKey(idOrKey) : null;
   return parsed?.kind === "external" ? { pluginId: parsed.ref.pluginId, id: parsed.ref.id } : null;
 }
 
-/** Ce titre (album, artiste) vient-il de CETTE extension (et donc ses gestes sont-ils possibles) ? */
-export function isFromMusicProvider(provider: MusicProvider | null, pluginId: string | null | undefined): provider is MusicProvider {
-  return provider !== null && !!pluginId && provider.pluginId === pluginId;
-}
+// Ce titre (album, artiste) vient-il de CETTE extension ? La règle du lecteur (`buildOctavePlayer`), une seule.
+export { isFromMusicProvider };
 
 function useExternal<T>(
   provider: MusicProvider | null,
@@ -72,4 +71,21 @@ export function useMusicArtistEntity(provider: MusicProvider | null, idOrKey: st
   const external = useExternal<MusicArtist>(provider, "artist", idOrKey, fetchExternalArtist);
   const library = useMusicArtist(external ? null : idOrKey);
   return external ?? { data: library.data, isPending: library.isPending, isError: library.isError, isPlaceholder: false, refetch: library.refetch };
+}
+
+/**
+ * Une playlist HORS bibliothèque (clé `ext:<pluginId>:<id>`), servie par l'extension qui l'a donnée si elle déclare
+ * la vue (`music.playlist`) ; sans elle, « introuvable », sans rien trahir. Même clé de cache que la lecture d'un
+ * geste depuis sa carte : elle s'ouvre ensuite aussitôt.
+ */
+export function useMusicExternalPlaylist(provider: MusicProvider | null, key: string) {
+  const ref = externalEntityRef(key);
+  const usable = ref !== null && isFromMusicProvider(provider, ref.pluginId) && !!provider.music.playlist;
+  return useQuery<ExternalMusicPlaylist | null>({
+    queryKey: externalEntityKey("playlist", key),
+    queryFn: ({ signal }) => (usable && ref && provider ? fetchExternalPlaylist(provider, ref.id, signal) : Promise.resolve(null)),
+    enabled: ref !== null,
+    staleTime: 60_000,
+    retry: false,
+  });
 }
