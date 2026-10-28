@@ -26,6 +26,7 @@ import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryTabs, SortChips } from "./LibraryTabs";
+import { useFirstEnter } from "../../layout/enterMotion";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -80,6 +81,7 @@ export function OctaveLibraryScreen() {
   const target = tab === "artists" ? (isTablet ? 150 : 104) : isTablet ? 180 : 150;
   const columns = Math.max(tab === "artists" ? 3 : 2, Math.floor((contentWidth - gutter * 2) / target));
   const cell = Math.floor((contentWidth - (gutter - 6) * 2) / columns - 12);
+  const enterOnce = useFirstEnter(`${tab}:${columns}`);
   const more = useCallback(() => {
     if (query?.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
   }, [query]);
@@ -105,10 +107,11 @@ export function OctaveLibraryScreen() {
         keyExtractor={keyOf}
         numColumns={columns}
         columnWrapperStyle={{ paddingHorizontal: gutter - 6 }}
-        renderItem={({ item }) => (
-          <View style={{ width: `${100 / columns}%`, padding: 6 }}>
+        renderItem={({ item, index }) => (
+          // Un changement d'onglet remonte la grille (clé) : ses premières cartes arrivent l'une après l'autre.
+          <Animated.View entering={enterOnce(keyOf(item), index)} style={{ width: `${100 / columns}%`, padding: 6 }}>
             {item.kind === "album" ? <AlbumCard album={item.album} width={cell} /> : item.kind === "artist" ? <ArtistCard artist={item.artist} width={cell} /> : <PlaylistCard playlist={item.playlist} width={cell} />}
-          </View>
+          </Animated.View>
         )}
         ListHeaderComponent={header}
         ListEmptyComponent={empty}

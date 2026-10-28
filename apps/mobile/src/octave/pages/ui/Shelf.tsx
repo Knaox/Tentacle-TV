@@ -2,14 +2,16 @@
  * Octave mobile — une ÉTAGÈRE : un titre (et « Tout afficher »), puis une rangée
  * horizontale de cartes, virtualisée (`FlatList` horizontale, fenêtre courte).
  * L'attente a la forme exacte de la rangée (`ShelfSkeleton`). Une étagère vide
- * ne s'écrit pas.
+ * ne s'écrit pas. Les premières cartes arrivent l'une après l'autre (`enterMotion`).
  */
 
 import { memo, type ReactElement, type ReactNode } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
+import { useFirstEnter } from "../../layout/enterMotion";
 import { usePageMetrics } from "./pageStyle";
 
 interface ShelfProps<T> {
@@ -44,6 +46,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
   const theme = useTheme();
   const { gutter, card } = usePageMetrics();
   const w = width ?? card;
+  const enterOnce = useFirstEnter();
   if (items.length === 0) return null;
   const action = onSeeAll ? (
     <Pressable onPress={onSeeAll} hitSlop={10} accessibilityRole="button" style={styles.seeAll}>
@@ -57,7 +60,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
         horizontal
         data={items as T[]}
         keyExtractor={keyOf}
-        renderItem={({ item }) => render(item, w)}
+        renderItem={({ item, index }) => <Animated.View entering={enterOnce(keyOf(item), index)}>{render(item, w)}</Animated.View>}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: gutter, gap: 12 }}
         initialNumToRender={4}
