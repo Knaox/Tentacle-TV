@@ -18,7 +18,7 @@ import { usePickerListing } from "./usePickerListing";
 import { WhoIsWatchingView } from "./view/WhoIsWatchingView";
 import { accountFallbackHappened } from "@/offline/rights/accountFallbackNotice";
 import { octaveLaunchAsked } from "@tentacle-tv/shared/octave";
-import { launchedInOctave } from "@/octave/settings/octaveLaunchPort";
+import { octaveLaunch } from "@/octave/launch/octaveLaunch";
 import { octaveSkipLaunchPin } from "@/octave/settings/octaveSettings";
 
 const noop = () => undefined;
@@ -61,7 +61,7 @@ export function ProfileLaunchGate() {
   // Rouvert dans Octave, « Ne pas demander le code PIN au démarrage » allumé : l'identité gardée, sans l'écran
   // proposé d'office — la sécurité du serveur et une session de profil close le ramènent (`octaveLaunchPin.ts`).
   const skipPin = octaveSkipLaunchPin.use();
-  const gateAsked = octaveLaunchAsked(asked, { inOctave: launchedInOctave(), skipPin, request });
+  const gateAsked = octaveLaunchAsked(asked, { inOctave: octaveLaunch().inOctave, skipPin, request });
 
   // Relu à chaque rendu (préchargé) : la liste qui répond, ou une fin de session, le relisent.
   const stayRaw = serverUrl && accountId ? storage.getItem(MOBILE_PROFILE_STAY_KEY) : null;
@@ -108,12 +108,18 @@ export function ProfileLaunchGate() {
     if (result === "switched") router.replace("/(tabs)" as never);
   }, [commit, accountId, router, asked]);
 
+  // « Continuer hors ligne » (serveur muet) : l'écran se referme, au nom du compte.
+  const onLeave = useCallback(() => {
+    clearProfilePickerRequest();
+    setDecided({ account: accountId, show: false });
+  }, [accountId]);
+
   if (!show) return null;
   const stayInitial = listing.data ? mobileStayInitial(listing.data, choice, stay, Date.now(), asked) : false;
   return (
     <BootAwareModal bootOverlay="profiles" animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={noop}>
       <Retained />
-      <WhoIsWatchingView listing={listing.data} mode="launch" stayOffered={asked} stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} />
+      <WhoIsWatchingView listing={listing.data} mode="launch" stayOffered={asked} stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} listingFailed={listing.isError} onLeave={onLeave} />
     </BootAwareModal>
   );
 }

@@ -17,6 +17,7 @@ import { launchPassed, noteFreshLogin, noteLoggedOut, readLaunchMirror, writeLau
 import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
 import { forgetStayOnDevice, readStayOnDevice, readStayOnThisServer } from "./stayOnDevice";
 import { LaunchSplash } from "./LaunchSplash";
+import { usePickerExits } from "./usePickerExits";
 import { publishStartupWindow, usePublishStartupWindow } from "../../startup/startupStore";
 import { octaveGateStep } from "../../music/octave/mode/octaveLaunch";
 import { isTentacleHeld } from "../../music/octave/mode/octaveLaunchStore";
@@ -142,7 +143,7 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   if (gate.phase === "picker") {
     return <ProfileLaunchScreen initialListing={initialListing} ended={gate.requested} onDone={onDone} onAccountLost={logout} />;
   }
-  if (gate.phase === "error") return <ErrorScreen onRetry={check} />;
+  if (gate.phase === "error") return <ErrorScreen onRetry={check} onEnterApp={onDone} onSignOut={logout} />;
   return isTentacleHeld() ? <OctaveLaunchBackdrop /> : <LaunchSplash />;
 }
 
@@ -219,11 +220,17 @@ async function freshAnswer(queryClient: QueryClient): Promise<FreshAnswer> {
   }
 }
 
-/** Le sélecteur EXIGÉ (fin d'un profil) et un serveur muet : Réessayer, jamais le compte sans son code. */
-function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+/**
+ * Le sélecteur EXIGÉ (fin d'un profil) et un serveur muet : Réessayer — jamais le compte EN LIGNE sans son code ;
+ * mais aussi le hors ligne du compte (le sien, comme quand la connexion tombe pendant un profil) et la
+ * déconnexion (`usePickerExits`) : jamais bloqué.
+ */
+function ErrorScreen({ onRetry, onEnterApp, onSignOut }: { onRetry: () => void; onEnterApp: () => void; onSignOut: () => void }) {
   const { t } = useTranslation("profilePicker");
+  const exits = usePickerExits(true, onEnterApp, onSignOut);
   return (
     <WhoIsWatchingView
+      exits={exits}
       model={{ kind: "error", message: t("refusal.offline") }}
       onPick={noop}
       onManage={noop}

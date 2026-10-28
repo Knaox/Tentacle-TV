@@ -46,7 +46,7 @@ export interface PickerModelInput {
   listing: PickerProfilesDto | null;
   /** La liste n'a pas pu être lue, et aucune n'est connue. */
   error: string | null;
-  flow: Pick<PickFlow, "pin" | "opening" | "notice">;
+  flow: Pick<PickFlow, "pin" | "opening" | "notice"> & Partial<Pick<PickFlow, "unreachable">>;
   /** Le profil en cours, depuis « Changer de profil » : il s'ouvre sans code. */
   currentId?: string | null;
   /** Le dernier profil choisi : il reprend le focus quand le pavé se referme. */
@@ -78,6 +78,7 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
     profiles: orderedProfiles(listing.profiles).map((profile) => pickerProfileOf(profile, now, language, t, input.currentId ?? null)),
     canManage: input.canManage ?? listing.profiles.some((profile) => profile.personal),
     notice: flow.notice,
+    unreachable: flow.unreachable ?? false,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,
     focusId: input.lastChosen ?? null,
     // Sans objet si l'administration a coupé « Qui regarde ? » à l'ouverture des ordinateurs.

@@ -38,6 +38,15 @@ export default {
     offline: "The server isn't responding. Check the connection, then try again.",
     failed: "This profile couldn't be opened. Try again.",
   },
+  /** The server does not answer on “Who's watching?”: never stuck (`pickerUnreachable`, offline-core). */
+  unreachable: {
+    title: "The server isn't responding",
+    lead: "Check the connection, then try again. You can also continue without it.",
+    goOffline: "Continue offline",
+    goOfflineHint: "With what your account keeps on this device.",
+    signOut: "Sign out",
+    signOutHint: "To sign in to another server, or with another account.",
+  },
   switcher: {
     title: "Switch profile",
     cancel: "Cancel",

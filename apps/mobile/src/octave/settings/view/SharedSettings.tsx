@@ -8,7 +8,7 @@
 import { memo, useMemo } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { OctaveStartupChoice } from "@tentacle-tv/shared/octave";
+import type { OctaveStartupChoice } from "@tentacle-tv/shared/octave/mode";
 import { SettingsChoiceRow, SettingsRow, SettingsSection } from "@/components/settings";
 import { LanguageChoiceRow } from "@/components/profile/LanguageChoiceRow";
 import { openProfileSwitcher, useProfileSwitchOffered } from "@/profileSwitch/profileSwitchEntry";

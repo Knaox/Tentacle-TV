@@ -10,6 +10,8 @@ import { usePickerPick } from "../usePickerPick";
 import { PinPad } from "./PinPad";
 import { ProfileTile } from "./ProfileTile";
 import { StayAtLaunchCheck } from "./StayAtLaunchCheck";
+import { UnreachableExits } from "./UnreachableExits";
+import { usePickerExits } from "../usePickerExits";
 import { PlainButton } from "@/components/ui/buttons";
 
 export type WhoIsWatchingMode = "launch" | "switch";
@@ -26,6 +28,10 @@ interface WhoIsWatchingViewProps {
   onPicked: (picked: PickedProfileDto, stayChecked: boolean) => void;
   onStale: () => void;
   onCancel?: () => void;
+  /** La liste n'a pas pu être lue (le serveur ne répond pas). */
+  listingFailed?: boolean;
+  /** Refermer l'écran après « Continuer hors ligne » (à l'ouverture ; depuis Réglages, `onCancel`). */
+  onLeave?: () => void;
 }
 
 /**
@@ -36,7 +42,7 @@ interface WhoIsWatchingViewProps {
  * connecté. Centré, largeur bornée : propre en paysage sur
  * l'iPad comme sur le téléphone.
  */
-export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInitial = false, onPicked, onStale, onCancel }: WhoIsWatchingViewProps) {
+export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInitial = false, onPicked, onStale, onCancel, listingFailed = false, onLeave }: WhoIsWatchingViewProps) {
   const { t } = useTranslation(["profilePicker", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -52,6 +58,8 @@ export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInit
   const picked = useCallback((result: PickedProfileDto) => onPicked(result, mode === "launch" && stayOffered && stayRef.current), [onPicked, mode, stayOffered]);
   const toggleStay = useCallback(() => setStayChecked((value) => !value), []);
   const flow = usePickFlow({ profiles, opensWithoutPin, pick, onPicked: picked, onStale });
+  // Le serveur ne répond pas : jamais bloqué (hors ligne du compte, déconnexion, autre serveur).
+  const exits = usePickerExits((flow.unreachable || (listingFailed && !listing)) && flow.opening === null, onLeave ?? onCancel ?? noop);
 
   return (
     <View style={[st.page, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -77,7 +85,7 @@ export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInit
                     />
                   ))}
                 </View>
-              ) : (
+              ) : exits ? null : (
                 <View style={st.loading}>
                   <ActivityIndicator color={theme.colors.text.secondary} />
                   <Text style={st.caption}>{t("familyMobile:launch.loading")}</Text>
@@ -87,6 +95,7 @@ export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInit
                 <StayAtLaunchCheck checked={stayChecked} disabled={flow.opening !== null} onToggle={toggleStay} />
               ) : null}
               {flow.notice ? <Text style={st.notice} accessibilityLiveRegion="polite">{flow.notice}</Text> : null}
+              {exits ? <UnreachableExits exits={exits} /> : null}
               <Text style={st.caption}>{t(mode === "switch" ? "familyMobile:launch.switchCaption" : "familyMobile:launch.caption")}</Text>
               {onCancel ? (
                 <PlainButton label={t("familyMobile:launch.cancel")} onPress={onCancel} disabled={flow.opening !== null} style={st.cancel} />
@@ -98,6 +107,8 @@ export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInit
     </View>
   );
 }
+
+function noop(): void {}
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
