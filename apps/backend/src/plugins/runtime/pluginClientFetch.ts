@@ -36,6 +36,11 @@ export interface ClientFetchRequest {
   timeoutMs?: number;
   /** Corps de réponse lu au plus (octets) ; défaut 1 Mo, au plus 2 Mo. */
   maxBytes?: number;
+  /**
+   * Un GESTE (`play` : clic, recherche validée, suivant) ou le FOND (`prefetch`) : le budget par adresse IP de
+   * l'hôte sert les gestes d'abord. Absent (une extension d'avant) : un geste. L'appareil l'ignore.
+   */
+  kind?: "play" | "prefetch";
 }
 
 export interface ClientFetchResponse {
@@ -160,6 +165,7 @@ export function checkClientFetchRequest(request: unknown, manifest: ClientFetchM
   if (r.body !== undefined && (typeof r.body !== "string" || r.method !== "POST" || utf8Bytes(r.body) > CLIENT_FETCH_LIMITS.maxRequestBody)) return "corps refusé";
   if (r.timeoutMs !== undefined && !(Number.isInteger(r.timeoutMs) && r.timeoutMs > 0 && r.timeoutMs <= CLIENT_FETCH_LIMITS.maxTimeoutMs)) return "délai refusé";
   if (r.maxBytes !== undefined && !(Number.isInteger(r.maxBytes) && r.maxBytes > 0 && r.maxBytes <= CLIENT_FETCH_LIMITS.maxResponseBytes)) return "taille refusée";
+  if (r.kind !== undefined && r.kind !== "play" && r.kind !== "prefetch") return "nature refusée";
   if (r.headers !== undefined) {
     if (!r.headers || typeof r.headers !== "object" || Array.isArray(r.headers)) return "en-têtes refusés";
     const entries = Object.entries(r.headers);
