@@ -4,6 +4,9 @@
 //               --changelog changelogs/mobile.md --version 1.8.1
 //   Promotion : --package <id> --promote-from internal --track production
 //               --changelog changelogs/mobile.md --version 1.8.1
+//   Ajouter --mapping <mapping.txt> à un envoi pour y joindre le fichier de
+//   désobscurcissement de R8, rattaché au versionCode reçu, dans la même
+//   édition (lib/play-deobfuscation.mjs). Sans objet à la promotion.
 //   Ajouter --dry-run pour tout jouer SAUF le commit (l'édition est jetée).
 //   Ajouter --also-track <piste> pour poser la MÊME release sur une seconde
 //   piste, dans la même édition (cran store : la production ET la piste interne).
@@ -33,6 +36,7 @@
 import fs from 'node:fs';
 import { createPlayClient } from './lib/play-api.mjs';
 import { explainPlayError } from './lib/play-errors.mjs';
+import { mappingProblem, uploadMapping } from './lib/play-deobfuscation.mjs';
 import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
 import { promotableVersionCodes, releaseVersion } from './lib/promote.mjs';
 import { describePlayReleases, playReleaseProblems, playReplacedReleases } from './lib/release-check.mjs';
@@ -50,14 +54,30 @@ const changelog = flag('changelog');
 const version = flag('version');
 const status = flag('status') ?? 'completed';
 const alsoTrack = flag('also-track');
+const mapping = flag('mapping');
 const dryRun = has('dry-run');
 
 if (!pkg || !track || !version || (!aab && !promoteFrom)) {
   console.error('usage : play-publish.mjs --package <id> --track <piste> --version <X.Y.Z>');
   console.error('        (--aab <fichier> | --promote-from <piste>) [--changelog <f>] [--status completed|draft]');
-  console.error('        [--also-track <piste>] [--dry-run]');
+  console.error('        [--also-track <piste>] [--mapping <mapping.txt>] [--dry-run]');
   process.exit(1);
 }
+if (mapping && !aab) {
+  console.error('::error::--mapping accompagne un envoi (--aab) : une promotion reprend un versionCode dont le mapping est déjà sur Play.');
+  process.exit(1);
+}
+// Lu et vérifié AVANT d'ouvrir l'édition : un mapping absent ou vide arrête
+// tout, plutôt qu'un AAB publié dont les plantages resteraient illisibles.
+const mappingBytes = mapping ? (() => {
+  const bytes = fs.existsSync(mapping) ? fs.readFileSync(mapping) : null;
+  const problem = bytes ? mappingProblem(bytes.toString('utf8')) : `${mapping} introuvable.`;
+  if (problem) {
+    console.error(`::error::mapping R8 refusé : ${problem}`);
+    process.exit(1);
+  }
+  return bytes;
+})() : null;
 if (!process.env.PLAY_SERVICE_ACCOUNT_JSON) {
   console.error('::error::PLAY_SERVICE_ACCOUNT_JSON manquant.');
   process.exit(1);
@@ -120,6 +140,11 @@ async function publish(play) {
       const bundle = await play.upload(`${base}/edits/${editId}/bundles`, bytes, 'application/octet-stream');
       versionCodes = [String(bundle.versionCode)];
       console.log(`[play] versionCode ${bundle.versionCode} reçu.`);
+      if (mappingBytes) {
+        await uploadMapping(play, { pkg, editId, versionCodes, bytes: mappingBytes, log: console.log });
+      } else {
+        console.log('[play] aucun mapping R8 joint (pas de --mapping).');
+      }
     } else {
       const from = await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(promoteFrom)}`);
       versionCodes = promotableVersionCodes(from, version);
