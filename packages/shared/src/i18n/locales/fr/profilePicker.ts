@@ -42,6 +42,15 @@ export default {
     offline: "Le serveur ne répond pas. Vérifiez la connexion, puis réessayez.",
     failed: "Ce profil n'a pas pu s'ouvrir. Réessayez.",
   },
+  /** Le serveur ne répond pas sur « Qui regarde ? » : jamais bloqué (`pickerUnreachable`, offline-core). */
+  unreachable: {
+    title: "Le serveur ne répond pas",
+    lead: "Vérifiez la connexion, puis réessayez. Vous pouvez aussi continuer sans lui.",
+    goOffline: "Continuer hors ligne",
+    goOfflineHint: "Avec ce que votre compte garde sur cet appareil.",
+    signOut: "Se déconnecter",
+    signOutHint: "Pour se connecter à un autre serveur, ou avec un autre compte.",
+  },
   switcher: {
     title: "Changer de profil",
     cancel: "Annuler",

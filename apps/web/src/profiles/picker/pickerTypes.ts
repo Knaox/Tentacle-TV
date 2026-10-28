@@ -57,5 +57,7 @@ export type WhoIsWatchingModel =
       /** « Ne plus proposer sur cet appareil » : cochée ou non ; null (ou absent)
        *  quand la case est sans objet (le compte ne demande pas qui regarde). */
       stay?: boolean | null;
+      /** Le dernier choix a échoué faute de serveur : les sorties s'offrent sous la rangée (`UnreachableExits`). */
+      unreachable?: boolean;
     }
   | { kind: "pin"; pad: PinPadModel };

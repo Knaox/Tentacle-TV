@@ -85,3 +85,4 @@ export * from "./variants/offlineVariants";
 export * from "./rights/offlineHidden";
 export * from "./rights/offlineOwner";
 export * from "./rights/keepRightMemory";
+export * from "./rights/pickerUnreachable";

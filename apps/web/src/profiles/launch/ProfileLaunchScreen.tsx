@@ -19,6 +19,7 @@ import { commitPick, curtainOf } from "../switch/commitPick";
 import { ProfileCurtain, type CurtainProfile } from "../switch/ProfileCurtain";
 import { commitStay, manageTarget, switchActiveId, switchPick } from "../switcher/switchPlan";
 import { pickerModelOf } from "./pickerModel";
+import { usePickerExits } from "./usePickerExits";
 import { askOnThisServer, readDeviceChoiceOnThisServer, readStayOnThisServer, writeStayOnThisServer } from "./stayOnDevice";
 
 /** « Ouverture de Léa… » ne paraît que si le serveur tarde au-delà (comme sur la TV). */
@@ -202,10 +203,15 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
     [listing.data, listing.isError, flow, ended, lastChosen, activeId, slowOpening, profiles, i18n.language, t, stay, manager],
   );
 
+  // Le serveur ne répond pas (liste illisible, ou choix refusé faute de lui) : jamais bloqué.
+  const enterApp = useCallback(() => (onCancel ? onCancel() : onDone()), [onCancel, onDone]);
+  const exits = usePickerExits(model.kind === "error" || (model.kind === "picker" && model.unreachable === true), enterApp, onAccountLost);
+
   return (
     <>
       <WhoIsWatchingView
         model={model}
+        exits={exits}
         onPick={onPick}
         onManage={onManage}
         onRetry={() => void refetch()}

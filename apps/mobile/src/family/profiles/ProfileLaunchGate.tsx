@@ -108,12 +108,18 @@ export function ProfileLaunchGate() {
     if (result === "switched") router.replace("/(tabs)" as never);
   }, [commit, accountId, router, asked]);
 
+  // « Continuer hors ligne » (serveur muet) : l'écran se referme, au nom du compte.
+  const onLeave = useCallback(() => {
+    clearProfilePickerRequest();
+    setDecided({ account: accountId, show: false });
+  }, [accountId]);
+
   if (!show) return null;
   const stayInitial = listing.data ? mobileStayInitial(listing.data, choice, stay, Date.now(), asked) : false;
   return (
     <BootAwareModal bootOverlay="profiles" animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={noop}>
       <Retained />
-      <WhoIsWatchingView listing={listing.data} mode="launch" stayOffered={asked} stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} />
+      <WhoIsWatchingView listing={listing.data} mode="launch" stayOffered={asked} stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} listingFailed={listing.isError} onLeave={onLeave} />
     </BootAwareModal>
   );
 }

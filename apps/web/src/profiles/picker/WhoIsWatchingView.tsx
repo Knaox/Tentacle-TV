@@ -5,6 +5,7 @@ import { ProfilePinPad } from "./ProfilePinPad";
 import { ProfileRow } from "./ProfileRow";
 import { StayOnDeviceToggle } from "./StayOnDeviceToggle";
 import type { WhoIsWatchingModel } from "./pickerTypes";
+import { UnreachableExits, type PickerExits } from "./UnreachableExits";
 
 export interface WhoIsWatchingViewProps {
   model: WhoIsWatchingModel;
@@ -20,6 +21,8 @@ export interface WhoIsWatchingViewProps {
   /** Ouvert par « Changer de profil » : « Annuler » (et Échap) referme l'écran sans
    *  rien changer. Absent à l'ouverture de l'application : il n'y a nulle part où revenir. */
   onCancel?: () => void;
+  /** Le serveur ne répond pas : les sorties (hors ligne, déconnexion). Absent : seulement « Réessayer ». */
+  exits?: PickerExits;
 }
 
 /** Un bouton secondaire de l'écran. Pas de couleur animée (règle « Coût GPU » 3) :
@@ -82,6 +85,7 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
             <button type="button" onClick={props.onRetry} className={`${SECONDARY} mt-6`} autoFocus>
               {t("retry")}
             </button>
+            {props.exits && <UnreachableExits exits={props.exits} />}
           </div>
         )}
         {model.kind === "picker" && (
@@ -109,6 +113,7 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
                 {t("manageProfiles")}
               </button>
             )}
+            {model.unreachable && props.exits && model.entering === null && <UnreachableExits exits={props.exits} />}
           </>
         )}
         {model.kind === "pin" && (
