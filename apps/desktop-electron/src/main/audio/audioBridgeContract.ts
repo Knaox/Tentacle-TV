@@ -1,11 +1,12 @@
 /**
  * Octave — le pont du moteur audio natif : ce que la page envoie à la coquille
- * et ce qu'elle en reçoit.
+ * et ce qu'elle en reçoit. Le MÊME pont pour le bureau (mpv dans Electron) et
+ * le mobile (module natif `octave-audio` : mpv sur iOS, Media3 sur Android).
  *
- * ⚠️ Fichier MIROIR, recopié octet pour octet dans
- * `apps/web/src/music/engine/mpv/audioBridgeContract.ts` (le test
- * `audioBridgeMirror.test.ts` le tient) : la coquille est compilée sans
- * dépendre de la page, ni de `@tentacle-tv/shared`. On modifie ICI, puis `cp`.
+ * ⚠️ Fichier MIROIR : `apps/desktop-electron/src/main/audio/audioBridgeContract.ts`
+ * et `packages/shared/src/octave/engine/audioBridgeContract.ts`, octet pour octet
+ * (le test `audioBridgeMirror.test.ts` le tient) : la coquille est compilée sans
+ * dépendre de la page, ni de `@tentacle-tv/shared`. On modifie l'un, puis `cp`.
  *
  * Aucun import : des types et des constantes seulement. Les formes reprennent
  * celles du port `AudioEnginePort` (`packages/shared/src/music/musicPlayback.ts`)
@@ -53,6 +54,18 @@ export interface AudioBridgeTrack {
   durationMs: number | null;
   /** Le format annoncé par la bibliothèque (profondeur de bits que le décodeur ne dit pas). */
   format: AudioBridgeFormat | null;
+  /**
+   * Ce que le SYSTÈME affiche du titre (écran verrouillé, Centre de contrôle, notification média) : le mobile
+   * le publie, le bureau l'ignore. Pochette en adresse ABSOLUE, déjà authentifiée si elle vient du serveur.
+   */
+  meta?: AudioBridgeTrackMeta;
+}
+
+export interface AudioBridgeTrackMeta {
+  title: string;
+  artist: string | null;
+  album: string | null;
+  artworkUrl: string | null;
 }
 
 /** Une source de lecture, URL déjà ABSOLUE (l'origine du serveur réglée au démarrage). */
@@ -93,7 +106,7 @@ export interface AudioBridgeStart {
 }
 
 export interface AudioBridgeCapabilities {
-  engine: "mpv";
+  engine: "mpv" | "media3";
   gapless: boolean;
   exclusiveOutput: boolean;
   replayGain: boolean;
@@ -150,4 +163,12 @@ export type AudioBridgeEvent =
   | { type: "state"; state: AudioBridgeState; at: number }
   | { type: "advanced"; fromKey: string | null; toKey: string | null }
   | { type: "needSource"; trackKey: string }
-  | { type: "swapped"; trackKey: string; origin: "library" | "plugin" };
+  | { type: "swapped"; trackKey: string; origin: "library" | "plugin" }
+  /**
+   * Une commande du SYSTÈME (écran verrouillé, notification, casque, appel, sortie débranchée) : la file et
+   * l'intention « lecture » sont dans la page, la coquille transmet. Une pause qui ne peut pas attendre (casque
+   * débranché, appel) est déjà faite quand elle arrive ; la position, la coquille l'applique seule.
+   */
+  | { type: "remote"; command: AudioBridgeRemoteCommand };
+
+export type AudioBridgeRemoteCommand = "play" | "pause" | "next" | "previous";
