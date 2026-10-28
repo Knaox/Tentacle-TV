@@ -43,3 +43,4 @@ export { usePlaylistManageGestures, type PlaylistManageHooks } from "../music/oc
 export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
 export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";
+export { applyOctaveEvent } from "../music/octave/events/octaveEventEffects";
