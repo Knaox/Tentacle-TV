@@ -55,6 +55,7 @@ extension OctaveAudioEngine {
     current = arriving
     next = nil
     nextPreloaded = false
+    playedDurationMs = nil
     front = 1 - state.outgoing
     pendingPositionMs = nil
     stalled = false

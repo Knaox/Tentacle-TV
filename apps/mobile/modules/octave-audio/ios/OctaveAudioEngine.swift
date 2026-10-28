@@ -35,6 +35,10 @@ final class OctaveAudioEngine {
   var error: String?
   /// La position demandée tant que le son n'a pas redémarré (ouverture, saut).
   var pendingPositionMs: Double?
+  /// Un titre interrompu en plein milieu se reprend plus loin (`MidTrackRecovery.swift`).
+  var recovery = MidTrackRecovery()
+  /// La durée réelle du titre devant, relevée pendant qu'il joue (après un enchaînement, la platine dit déjà celle du suivant).
+  var playedDurationMs: Double?
   var ticker: DispatchSourceTimer?
   var tickInterval = 0.25
   var lastStateAt = Date.distantPast
@@ -116,6 +120,8 @@ final class OctaveAudioEngine {
     error = nil
     stalled = false
     wantsPlay = true
+    recovery.reset()
+    playedDurationMs = nil
     pendingPositionMs = startMs
     ensureSession()
     frontDeck.load(loaded.source.url, startMs: startMs, paused: false)
@@ -199,6 +205,7 @@ final class OctaveAudioEngine {
     guard current != nil else { return }
     finishFadeNow()
     ended = false
+    recovery.reset()
     pendingPositionMs = max(0, ms)
     frontDeck.seek(ms)
     emitState()

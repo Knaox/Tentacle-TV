@@ -96,6 +96,10 @@ final class AudioDeck {
     ("audio-samplerate", "48000"), ("audio-channels", "stereo"), ("audio-format", "float"),
     ("cache", "yes"), ("demuxer-max-bytes", "48MiB"), ("demuxer-max-back-bytes", "8MiB"),
     ("demuxer-readahead-secs", "30"), ("network-timeout", "20"),
+    // Un flux rompu se reprend seul à l'octet où il s'est arrêté (mpv le fait déjà, jusqu'à 7 s d'attente) :
+    // aussi sur une erreur réseau (téléphone qui change d'antenne), et vite abandonné — la reprise du moteur
+    // (`MidTrackRecovery`) prend la relève. Les réglages du bureau (`audioOptions.ts`).
+    ("stream-lavf-o", "reconnect_on_network_error=1,reconnect_delay_max=2"),
     ("tls-verify", "yes"), ("volume-max", "150"), ("input-default-bindings", "no"),
     ("load-scripts", "no"), ("ytdl", "no"), ("config", "no"), ("terminal", "no"),
   ]
