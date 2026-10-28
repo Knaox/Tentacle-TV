@@ -24,6 +24,8 @@ export const octavePaths = {
   settings: `${OCTAVE_BASE_PATH}/settings`,
   /** « Gérer les profils », DANS Octave : la page Famille de Tentacle, en miroir. */
   profiles: `${OCTAVE_BASE_PATH}/profiles`,
+  /** Le hub « Compte » (mobile : ouvert par l'avatar en tête des pages) — profil, réglages, apparence, hors ligne. */
+  account: `${OCTAVE_BASE_PATH}/account`,
   playlist: (id: string) => `${OCTAVE_BASE_PATH}/playlist/${enc(id)}`,
   /** Une playlist HORS bibliothèque (celle d'une extension), par sa clé `ext:<pluginId>:<id>`. */
   externalPlaylist: (key: string) => `${OCTAVE_BASE_PATH}/mix/${enc(key)}`,
