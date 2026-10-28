@@ -136,6 +136,30 @@ export function pickMosaic(candidates: readonly MosaicCandidate[], subject: stri
   return chosen.map((c) => c.url);
 }
 
+/** Ce que le cœur sait de la jaquette d'une playlist : de quoi la refaire n'importe quel jour, sans lui. */
+export interface MusicPlaylistCover {
+  /** L'image de Jellyfin a été posée à la main : c'est elle, toujours. */
+  handPlaced: boolean;
+  candidates: MosaicCandidate[];
+}
+
+/**
+ * Les images MONTRÉES pour une playlist à l'instant `now` : l'image posée à la main, sinon la mosaïque du jour,
+ * sinon l'image de Jellyfin (son collage), sinon rien. La même règle en ligne (`MusicPlaylist.mosaic` en est le
+ * résultat) et hors ligne (`MusicPlaylistDetail.cover` gardé sur l'appareil).
+ */
+export function coverUrlsOf(cover: MusicPlaylistCover, artworkUrl: string | null, subject: string, now: number): string[] {
+  const mosaic = cover.handPlaced ? [] : pickMosaic(cover.candidates, subject, now);
+  if (mosaic.length > 0) return mosaic;
+  return artworkUrl ? [artworkUrl] : [];
+}
+
+/** Toutes les images qu'une playlist PEUT montrer un jour : celles qu'un appareil doit avoir pour la refaire. */
+export function coverImagesOf(cover: MusicPlaylistCover, artworkUrl: string | null): string[] {
+  if (cover.handPlaced || cover.candidates.length === 0) return artworkUrl ? [artworkUrl] : [];
+  return cover.candidates.map((c) => c.url);
+}
+
 /** La jaquette d'une liste de titres (dans l'ordre de la playlist). */
 export function playlistMosaic(tracks: readonly MosaicTrack[], subject: string, now: number): string[] {
   return pickMosaic(mosaicCandidates(tracks), subject, now);

@@ -76,5 +76,5 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   });
   // La jaquette de l'en-tête est celle des cartes : mêmes titres, même jour (et la liste suivante n'a rien à relire).
   const place = await rememberMosaic(view, playlist, ordered);
-  return { ...withMosaic(toPlaylist(playlist), place), description: playlist.Overview?.trim() || null, entries: out };
+  return { ...withMosaic(toPlaylist(playlist), place), cover: place, description: playlist.Overview?.trim() || null, entries: out };
 }

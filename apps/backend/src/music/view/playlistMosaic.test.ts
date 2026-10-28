@@ -176,4 +176,10 @@ describe("withMosaic", () => {
     expect(jf.imageReads).toEqual(["p1", "p1"]);
     expect(place.handPlaced).toBe(true);
   });
+
+  it("le détail rend sa couverture sans rien du cache (ni tampon, ni date)", async () => {
+    fill("p1", 5);
+    const place = await rememberMosaic(view, jfPlaylist("p1"), jf.entries.get("p1")!.map(trackFor), NOW);
+    expect(Object.keys(place).sort()).toEqual(["candidates", "handPlaced"]);
+  });
 });

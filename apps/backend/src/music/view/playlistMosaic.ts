@@ -15,7 +15,7 @@
  * Seul le choix du jour se calcule à chaque réponse (une note par album) : il tourne à minuit UTC, partout pareil.
  */
 
-import { mosaicCandidates, pickMosaic, type MosaicCandidate } from "../contract/musicMosaic";
+import { mosaicCandidates, pickMosaic, type MosaicCandidate, type MusicPlaylistCover } from "../contract/musicMosaic";
 import type { MusicPlaylist, MusicTrack } from "../contract/musicTypes";
 import { normalizeId } from "../jellyfin/musicJellyfin";
 import { playlistEntries, playlistHasHandPlacedImage, type JfPlaylist } from "../playlists/playlistJellyfin";
@@ -29,11 +29,8 @@ interface Kept {
   at: number;
 }
 
-/** Ce que la vue d'une playlist pose sur sa réponse. */
-export interface MosaicPlace {
-  candidates: MosaicCandidate[];
-  handPlaced: boolean;
-}
+/** Ce que la vue d'une playlist pose sur sa réponse (`MusicPlaylistDetail.cover`). */
+export type MosaicPlace = MusicPlaylistCover;
 
 /** Au-delà, la place se relit quand même (une pochette d'album arrivée après le titre). */
 const MAX_AGE_MS = 6 * 3_600_000;
@@ -68,7 +65,8 @@ export async function rememberMosaic(view: UserView, item: JfPlaylist, tracks: r
   const key = keyOf(view, item.Id);
   const before = kept.get(key);
   const handPlaced = before && before.stamp === playlistStamp(item) ? before.handPlaced : await handPlacedOf(item, before);
-  return remember(key, { stamp: playlistStamp(item), candidates: mosaicCandidates(tracks), handPlaced, at: now });
+  const entry = remember(key, { stamp: playlistStamp(item), candidates: mosaicCandidates(tracks), handPlaced, at: now });
+  return { candidates: entry.candidates, handPlaced: entry.handPlaced };
 }
 
 /** Jellyfin muet : le verdict d'avant, sinon « non » (la jaquette composée, jamais une case vide). */

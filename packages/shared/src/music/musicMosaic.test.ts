@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MOSAIC_PERIOD_MS, artworkOwner, mosaicCandidates, pickMosaic, playlistMosaic, type MosaicTrack } from "./musicMosaic";
+import { MOSAIC_PERIOD_MS, artworkOwner, coverImagesOf, coverUrlsOf, mosaicCandidates, pickMosaic, playlistMosaic, type MosaicTrack } from "./musicMosaic";
 
 const DAY = MOSAIC_PERIOD_MS;
 const NOW = Date.UTC(2026, 9, 28, 12);
@@ -141,5 +141,26 @@ describe("artworkOwner", () => {
   it("lit l'élément d'une pochette du cœur, en minuscules sans tirets", () => {
     expect(artworkOwner("/api/music/artwork/AB-CD?tag=1")).toBe("abcd");
     expect(artworkOwner("https://example.org/cover.jpg")).toBeNull();
+  });
+});
+
+describe("coverUrlsOf / coverImagesOf", () => {
+  const candidates = mosaicCandidates(playlist(8));
+  it("la mosaïque du jour, exactement celle du cœur (même règle, même graine)", () => {
+    expect(coverUrlsOf({ handPlaced: false, candidates }, "/collage", "p", NOW)).toEqual(pickMosaic(candidates, "p", NOW));
+  });
+
+  it("posée à la main : l'image de la playlist, toujours ; et c'est la seule à garder", () => {
+    expect(coverUrlsOf({ handPlaced: true, candidates }, "/mine", "p", NOW)).toEqual(["/mine"]);
+    expect(coverImagesOf({ handPlaced: true, candidates }, "/mine")).toEqual(["/mine"]);
+  });
+
+  it("aucun candidat : le collage de Jellyfin, sinon rien", () => {
+    expect(coverUrlsOf({ handPlaced: false, candidates: [] }, "/collage", "p", NOW)).toEqual(["/collage"]);
+    expect(coverUrlsOf({ handPlaced: false, candidates: [] }, null, "p", NOW)).toEqual([]);
+  });
+
+  it("à garder : toutes les pochettes candidates (chaque jour en montre d'autres)", () => {
+    expect(coverImagesOf({ handPlaced: false, candidates }, "/collage")).toHaveLength(8);
   });
 });
