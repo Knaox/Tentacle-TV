@@ -1,5 +1,5 @@
 /**
- * Octave mobile — les fichiers audio du TÉLÉPHONE (et l'image de pochette jointe) pour l'import d'une sortie : le
+ * Octave mobile — les fichiers audio du TÉLÉPHONE (le ZIP d'un achat Bandcamp, l'image de pochette jointe) pour l'import d'une sortie : le
  * sélecteur du système (iOS : Fichiers ; Android : le sélecteur de documents, SAF), plusieurs fichiers d'un coup,
  * COPIÉS dans le cache de l'app (une adresse `file://` qui se relit par tranches, même après une coupure : la reprise en dépend). Une
  * tranche se lit par `FileHandle` (position + `readBytes`) : jamais le fichier entier en mémoire.
@@ -8,7 +8,7 @@
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File, Paths } from "expo-file-system";
 import { copyAsync } from "expo-file-system/legacy";
-import { pickReleaseLot, type ReleaseLocalFile } from "@tentacle-tv/api-client";
+import { pickReleaseLot, RELEASE_ARCHIVE_MIME_TYPES, type ReleaseLocalFile } from "@tentacle-tv/api-client";
 import { RELEASE_COVER_MIME_TYPES, RELEASE_FILES_PER_JOB } from "@tentacle-tv/shared/music";
 import type { SharedAudioFile } from "@tentacle-tv/shared/octave/mode";
 
@@ -35,7 +35,7 @@ export function keepAudio(all: readonly PhoneAudioFile[]): PhonePick {
 
 /** Le sélecteur du système ; `null` : rien choisi (annulé). */
 export async function pickPhoneAudio(): Promise<PhonePick | null> {
-  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*", ...RELEASE_COVER_MIME_TYPES], multiple: true, copyToCacheDirectory: true });
+  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*", ...RELEASE_ARCHIVE_MIME_TYPES, ...RELEASE_COVER_MIME_TYPES], multiple: true, copyToCacheDirectory: true });
   if (result.canceled || !result.assets?.length) return null;
   return keepAudio(
     result.assets.map((asset) => ({

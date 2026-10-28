@@ -1,12 +1,15 @@
 /**
  * Octave — l'import EN COURS (ou en pause) : où il en est en une ligne, une barre (`transform: scaleX`, jamais
  * une largeur animée), puis chaque fichier avec son état en MOTS (jamais la seule couleur). En pause : ce qui est
- * déjà transféré est gardé, « Reprendre » repart de là. La boîte peut se fermer : l'import continue.
+ * déjà transféré est gardé, « Reprendre » repart de là. La boîte peut se fermer : l'import continue. L'album paraît
+ * avec sa pochette DÈS que le serveur l'a lu (premier fichier d'un lot), sans attendre la fin.
  */
 
 import { Check, CircleAlert, Copy, Loader2, PauseCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { releaseFraction, type ReleaseFlowState } from "@tentacle-tv/api-client";
+import { releaseArrival, releaseFraction, type ReleaseFlowState } from "@tentacle-tv/api-client";
+import { releaseArtSized } from "@tentacle-tv/shared/music";
+import { Artwork } from "../components/Artwork";
 import type { ReleaseJobFile } from "@tentacle-tv/shared/music";
 import { formatBytes } from "./webReleaseFiles";
 
@@ -44,6 +47,7 @@ export function ReleaseImportProgress({ titleId, state, onHide, onCancel, onResu
   const fraction = releaseFraction(state.job, state.sentBytes, state.totalBytes);
   const paused = state.phase === "paused";
   const current = state.sending !== null ? files[state.sending] : null;
+  const early = releaseArrival(state.job);
   const line =
     state.source === "bandcamp"
       ? t("linkReading")
@@ -66,6 +70,15 @@ export function ReleaseImportProgress({ titleId, state, onHide, onCancel, onResu
           </p>
         </div>
       </div>
+      {early && (
+        <div className="flex items-center gap-3">
+          <Artwork url={early.artworkUrl ? releaseArtSized(early.artworkUrl, "300") : null} alt={early.title} label={early.title} radius="sm" className="h-14 w-14 shrink-0" eager />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-content-primary">{early.title}</p>
+            <p className="truncate text-xs text-content-tertiary">{early.artists.map((a) => a.name).join(", ")}</p>
+          </div>
+        </div>
+      )}
       <div className="h-1.5 overflow-hidden rounded-full bg-fill-subtle" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)} aria-labelledby={titleId}>
         <div className="octave-brand-fill h-full w-full origin-left transition-transform duration-300 ease-out motion-reduce:transition-none" style={{ transform: `scaleX(${fraction})` }} />
       </div>

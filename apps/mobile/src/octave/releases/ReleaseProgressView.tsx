@@ -82,6 +82,8 @@ export function ReleaseProgressView({ state, onHide, onCancel, onResume, onOpen,
   const paused = state.phase === "paused";
   const files = state.job?.files ?? [];
   const current = state.sending !== null ? files[state.sending] : null;
+  // L'album paraît dès que le serveur l'a lu (premier fichier d'un lot), avec sa pochette.
+  const early = releaseArrival(state.job);
   const fraction = releaseFraction(state.job, state.sentBytes, state.totalBytes);
   const line = paused
     ? t("pausedHint")
@@ -99,6 +101,15 @@ export function ReleaseProgressView({ state, onHide, onCancel, onResume, onOpen,
         <Text accessibilityLiveRegion="polite" numberOfLines={2} style={[typography.caption, { color: theme.colors.text.tertiary }]}>
           {line}
         </Text>
+      ) : null}
+      {early ? (
+        <View style={styles.early}>
+          <Artwork url={early.artworkUrl} size={56} radius={8} />
+          <View style={styles.flex}>
+            <Text numberOfLines={1} style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{early.title}</Text>
+            <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.tertiary }]}>{early.artists.map((a) => a.name).join(", ")}</Text>
+          </View>
+        </View>
       ) : null}
       <View style={[styles.track, { backgroundColor: theme.colors.fill.subtle }]} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(fraction * 100) }}>
         <View style={[styles.bar, { width: `${Math.round(fraction * 100)}%`, backgroundColor: theme.colors.brand.accent }]} />
@@ -121,6 +132,7 @@ export function ReleaseProgressView({ state, onHide, onCancel, onResume, onOpen,
 
 const styles = StyleSheet.create({
   arrival: { flexDirection: "row", alignItems: "center", gap: 16 },
+  early: { flexDirection: "row", alignItems: "center", gap: 12 },
   flex: { flex: 1, minWidth: 0 },
   primary: { marginTop: 4 },
   secondary: { minHeight: 44, alignItems: "center", justifyContent: "center" },

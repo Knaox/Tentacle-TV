@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { AppState, ScrollView, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useReleaseImport, releaseArrival, type ReleaseFlowState } from "@tentacle-tv/api-client";
@@ -82,6 +82,18 @@ export function ReleaseSheetHost() {
       setPicked((before) => keepAudio([...(before?.files ?? []), ...prefill.files]));
     }
   }, [available, finish, handle.state, open, startLink, version]);
+
+  // Le système a suspendu l'app pendant un transfert (arrière-plan) : il repart seul au retour, de ce que le serveur
+  // tient déjà — jamais du début.
+  const { resume } = handle;
+  const paused = handle.state?.phase === "paused";
+  useEffect(() => {
+    if (!paused) return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") void resume().then(finish);
+    });
+    return () => sub.remove();
+  }, [finish, paused, resume]);
 
   if (!handle.available) return null;
   const state = handle.state;

@@ -35,7 +35,8 @@
             "CFBundleTypeRole": "Viewer",
             "LSHandlerRank": "Alternate",
             "LSItemContentTypes": [
-              "public.audio"
+              "public.audio",
+              "public.zip-archive"
             ]
           }
         ],

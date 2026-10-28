@@ -22,6 +22,7 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.audio</string>
+				<string>public.zip-archive</string>
 			</array>
 		</dict>
 	</array>

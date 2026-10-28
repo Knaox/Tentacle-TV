@@ -40,4 +40,10 @@ describe("modèle client de l'import de sorties", () => {
     expect(lot).toMatchObject({ ignored: 2, truncated: false, audio: 2, covers: 1 });
     expect(pickReleaseLot([f("a.png"), f("b.mp3")], 1).files.map((x) => x.name)).toEqual(["b.mp3"]);
   });
+  it("le ZIP d'un achat Bandcamp part tel quel, comme un fichier qui porte des titres", () => {
+    const f = (name: string, type = "", size = 10) => ({ name, type, size });
+    const lot = pickReleaseLot([f("cover.png", "image/png"), f("Bastian Baker - TRUTH LIES IN BETWEEN.zip", "application/zip", 392e6)], 100);
+    expect(lot.files.map((x) => x.name)).toEqual(["Bastian Baker - TRUTH LIES IN BETWEEN.zip", "cover.png"]);
+    expect(lot).toMatchObject({ audio: 1, covers: 1, ignored: 0 });
+  });
 });

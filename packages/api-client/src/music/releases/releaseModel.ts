@@ -37,7 +37,12 @@ export const RELEASE_ACCEPT: readonly string[] = [
   ...RELEASE_FILE_EXTENSIONS.map((e) => `.${e}`),
   ...RELEASE_COVER_MIME_TYPES,
   ...RELEASE_COVER_EXTENSIONS.map((e) => `.${e}`),
+  "application/zip",
+  ".zip",
 ];
+
+/** Les types d'une archive ZIP (le téléchargement d'un achat Bandcamp), envoyée telle quelle : le serveur l'ouvre. */
+export const RELEASE_ARCHIVE_MIME_TYPES: readonly string[] = ["application/zip", "application/x-zip-compressed", "application/x-zip"];
 
 const extensionOf = (name: string) => name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? "";
 
@@ -53,26 +58,35 @@ export function isReleaseCover(name: string, type: string | null | undefined): b
   return RELEASE_COVER_EXTENSIONS.includes(extensionOf(name));
 }
 
-/** Ce qui part dans un lot : l'audio, et les images de pochette de 25 Mo au plus. */
+/** Une archive ZIP, par type ou par extension. */
+export function isReleaseArchive(name: string, type: string | null | undefined): boolean {
+  if (type && RELEASE_ARCHIVE_MIME_TYPES.includes(type)) return true;
+  return extensionOf(name) === "zip";
+}
+
+/** Ce qui porte des titres : un fichier audio, ou une archive (son audio est lu par le serveur). */
+const carriesTracks = (name: string, type: string | null | undefined) => isImportableAudio(name, type) || isReleaseArchive(name, type);
+
+/** Ce qui part dans un lot : l'audio, les archives ZIP, et les images de pochette de 25 Mo au plus. */
 export function isReleaseLotFile(name: string, type: string | null | undefined, size: number): boolean {
-  return isImportableAudio(name, type) || (isReleaseCover(name, type) && size <= RELEASE_COVER_MAX_BYTES);
+  return carriesTracks(name, type) || (isReleaseCover(name, type) && size <= RELEASE_COVER_MAX_BYTES);
 }
 
 /**
- * Le tri d'un choix de fichiers : ce qui part (audio et images de pochette, 100 au plus — l'audio d'abord, une image
+ * Le tri d'un choix de fichiers : ce qui part (audio, ZIP et images de pochette, 100 au plus — l'audio d'abord, une image
  * ne prend jamais la place d'un titre), ce qui est laissé de côté, et si la borne a coupé.
  */
 export function pickReleaseLot<F extends { name: string; type: string; size: number }>(all: readonly F[], max: number): { files: F[]; ignored: number; truncated: boolean; audio: number; covers: number } {
-  const audio = all.filter((f) => isImportableAudio(f.name, f.type));
-  const covers = all.filter((f) => !isImportableAudio(f.name, f.type) && isReleaseLotFile(f.name, f.type, f.size));
+  const audio = all.filter((f) => carriesTracks(f.name, f.type));
+  const covers = all.filter((f) => !carriesTracks(f.name, f.type) && isReleaseLotFile(f.name, f.type, f.size));
   const kept = [...audio, ...covers];
   const files = kept.slice(0, max);
   return {
     files,
     ignored: all.length - kept.length,
     truncated: kept.length > max,
-    audio: files.filter((f) => isImportableAudio(f.name, f.type)).length,
-    covers: files.filter((f) => !isImportableAudio(f.name, f.type)).length,
+    audio: files.filter((f) => carriesTracks(f.name, f.type)).length,
+    covers: files.filter((f) => !carriesTracks(f.name, f.type)).length,
   };
 }
 

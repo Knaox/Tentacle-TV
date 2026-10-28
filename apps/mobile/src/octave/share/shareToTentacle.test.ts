@@ -50,6 +50,7 @@ describe("partage système de FICHIERS audio (lot « sf »)", () => {
     for (const param of [SHARED_FILE_PARAM, SHARED_FILE_NAME_PARAM, SHARED_FILE_TYPE_PARAM]) expect(kotlin).toContain(`"${param}"`);
     expect(kotlin).toContain(`FILES_MAX = ${SHARED_FILES_MAX}`);
     expect(kotlin).toContain("ACTION_SEND_MULTIPLE");
+    expect(kotlin).toContain('"application/zip"');
   });
 
   it("Android : le filtre audio (SEND et SEND_MULTIPLE) s'ajoute une seule fois, et le manifeste commité l'a", () => {
@@ -65,7 +66,7 @@ describe("partage système de FICHIERS audio (lot « sf »)", () => {
     expect(plist).toMatch(/<key>LSItemContentTypes<\/key>\s*<array>\s*<string>public\.audio<\/string>/);
     expect(plist).toMatch(/<key>LSSupportsOpeningDocumentsInPlace<\/key>\s*<false\/>/);
     const info = JSON.parse(read("app.json")).expo.ios.infoPlist;
-    expect(info.CFBundleDocumentTypes[0].LSItemContentTypes).toEqual(["public.audio"]);
+    expect(info.CFBundleDocumentTypes[0].LSItemContentTypes).toEqual(["public.audio", "public.zip-archive"]);
     expect(info.LSSupportsOpeningDocumentsInPlace).toBe(false);
     expect(read("app/+native-intent.tsx")).toContain("releaseFileImportPath");
   });

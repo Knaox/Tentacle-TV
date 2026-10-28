@@ -37,12 +37,13 @@ function addSendFilter(manifest) {
     });
   }
   // Les fichiers audio : un ou plusieurs (lot « sf »), un filtre à part (jamais deux).
+  // Le ZIP d'un achat Bandcamp aussi, envoyé tel quel.
   const hasAudio = activity["intent-filter"].some((f) => f.data?.some((d) => d.$["android:mimeType"] === "audio/*"));
   if (!hasAudio) {
     activity["intent-filter"].push({
       action: [{ $: { "android:name": "android.intent.action.SEND" } }, { $: { "android:name": "android.intent.action.SEND_MULTIPLE" } }],
       category: [{ $: { "android:name": "android.intent.category.DEFAULT" } }],
-      data: [{ $: { "android:mimeType": "audio/*" } }],
+      data: ["audio/*", "application/zip", "application/x-zip-compressed"].map((mime) => ({ $: { "android:mimeType": mime } })),
     });
   }
   return manifest;

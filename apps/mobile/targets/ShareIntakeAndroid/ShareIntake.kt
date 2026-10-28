@@ -11,7 +11,7 @@ import android.provider.OpenableColumns
  * recopiée par le config plugin `withShareToTentacle` — jamais retouchée dans `android/`.
  * - `SEND` de TEXTE : le texte reçu, TEL QUEL, dans `tentacle://octave/import?shared=<texte>` ; le JavaScript y
  *   trouve le lien de playlist ou de page Bandcamp (`sharedImportLink`, `recognizeReleaseUrl`, shared).
- * - `SEND` / `SEND_MULTIPLE` d'AUDIO (lot « sf ») : chaque fichier nommé dans
+ * - `SEND` / `SEND_MULTIPLE` d'AUDIO ou d'un ZIP (lot « sf ») : chaque fichier nommé dans
  *   `…/import?file=<content://…>&fileName=<nom>&fileType=<type>` (`sharedReleaseFiles.ts`) ; le JavaScript les
  *   recopie dans le cache de l'app tant que le droit de lecture accordé à l'activité vaut.
  */
@@ -24,6 +24,8 @@ object ShareIntake {
   private const val FILE_NAME = "fileName"
   private const val FILE_TYPE = "fileType"
   private const val FILES_MAX = 100
+  // Le ZIP d'un achat Bandcamp, envoyé tel quel (le serveur l'ouvre).
+  private val ARCHIVES = setOf("application/zip", "application/x-zip-compressed")
 
   fun rewrite(intent: Intent?, resolver: android.content.ContentResolver? = null) {
     if (intent == null) return
@@ -34,7 +36,7 @@ object ShareIntake {
         intent.action = Intent.ACTION_VIEW
         intent.data = base().appendQueryParameter(PARAM, text).build()
       }
-      (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE) && type.startsWith("audio/") -> {
+      (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE) && (type.startsWith("audio/") || type in ARCHIVES) -> {
         val uris = streamsOf(intent).take(FILES_MAX)
         if (uris.isEmpty()) return
         val builder = base()
