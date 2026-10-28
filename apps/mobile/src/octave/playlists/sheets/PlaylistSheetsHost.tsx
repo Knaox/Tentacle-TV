@@ -13,7 +13,7 @@ export function PlaylistSheetsHost() {
   const sheet = usePlaylistSheet();
   return (
     <>
-      <ImportFlow open={sheet?.kind === "import"} prefill={sheet?.kind === "import" ? sheet.prefill : undefined} />
+      <ImportFlow open={sheet?.kind === "import"} prefill={sheet?.kind === "import" ? sheet.prefill : undefined} autoStart={sheet?.kind === "import" && !!sheet.autoStart} />
       {sheet?.kind === "manage" ? <ManageSheet key={sheet.playlist.jellyfinId} playlist={sheet.playlist} /> : null}
       {sheet?.kind === "rename" ? <NameSheet key={`rename:${sheet.playlist.jellyfinId}`} playlist={sheet.playlist} /> : null}
       {sheet?.kind === "create" ? <NameSheet key="create" /> : null}

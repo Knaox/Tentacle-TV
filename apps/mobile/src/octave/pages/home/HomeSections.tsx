@@ -63,7 +63,8 @@ export const HomeShelves = memo(function HomeShelves({ home, gap }: { home: Musi
         items={home.recentlyAdded}
         keyOf={(a) => a.key}
         render={(album, w) => <AlbumCard album={album} width={w} />}
-        onSeeAll={() => router.push(octavePaths.library as never)}
+        // Les nouveautés sont des albums : la bibliothèque du mobile s'ouvre sur les Playlists, on vise l'onglet.
+        onSeeAll={() => router.push(`${octavePaths.library}?tab=albums` as never)}
       />
       {forYou?.because.map((row) => (
         <Shelf key={row.artist.key} title={t("octaveHome.because", { artist: row.artist.name })} items={row.albums} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} />

@@ -59,7 +59,8 @@
         }
       ],
       "expo-sqlite",
-      "./plugins/withTransferLiveActivity"
+      "./plugins/withTransferLiveActivity",
+      "./plugins/withShareToTentacle"
     ],
     "extra": {
       "router": {

@@ -1,7 +1,8 @@
 /**
  * Octave (mobile) — le hub « Compte » (`/octave/account`), ouvert par l'avatar en tête des pages, à la manière
  * d'Apple Music : l'identité (photo, nom), le PROFIL (changer, code PIN, gérer la famille), OCTAVE (ses réglages,
- * la musique gardée hors ligne), l'APPARENCE d'Octave sur place, puis, à part, le retour à Tentacle TV.
+ * la musique gardée hors ligne), l'APPARENCE d'Octave sur place. La bascule vers Tentacle TV est en haut à
+ * droite (`LeaveOctavePill`), plus en bas de page.
  * Tablette : une colonne centrée, jamais un téléphone étiré.
  */
 
@@ -12,12 +13,12 @@ import { useTranslation } from "react-i18next";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { OctavePage, useOctaveLayout } from "../layout";
-import { useLeaveOctave } from "../mode/useOctaveSwitch";
 import { useOfflineSurface } from "../offline/musicOfflineContext";
 import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
 import { AppearanceRows } from "../settings/view/OctaveOnlySettings";
 import { AccountIdentity } from "./AccountIdentity";
 import { AccountProfileRows } from "./AccountProfileRows";
+import { LeaveOctavePill } from "./LeaveOctavePill";
 
 const MAX_WIDTH = 640;
 
@@ -25,7 +26,7 @@ export function OctaveAccountScreen(_props: OctaveScreenProps) {
   const { t } = useTranslation("octaveShell");
   const { gutter } = useOctaveLayout();
   return (
-    <OctavePage title={t("account.title")} subtitle={t("settings.kicker")} back>
+    <OctavePage title={t("account.title")} subtitle={t("settings.kicker")} right={<LeaveOctavePill />} back>
       <View style={[styles.column, { paddingHorizontal: gutter }]}>
         <AccountIdentity />
         <AccountProfileRows />
@@ -33,7 +34,6 @@ export function OctaveAccountScreen(_props: OctaveScreenProps) {
         <SettingsSection title={t("account.appearanceGroup")} caption={t("appearance.caption")}>
           <AppearanceRows />
         </SettingsSection>
-        <LeaveRow />
       </View>
     </OctavePage>
   );
@@ -61,17 +61,6 @@ const OctaveRows = memo(function OctaveRows() {
           onPress={() => router.push(octavePaths.device as Href)}
         />
       ) : null}
-    </SettingsSection>
-  );
-});
-
-/** Le retour aux films et séries : à part, en dernier, comme une sortie (la barre ne le porte plus). */
-const LeaveRow = memo(function LeaveRow() {
-  const { t } = useTranslation("octaveShell");
-  const leave = useLeaveOctave();
-  return (
-    <SettingsSection title={t("account.leaveGroup")}>
-      <SettingsRow icon="film" label={t("account.leave")} description={t("account.leaveHint")} accent last onPress={leave} />
     </SettingsSection>
   );
 });

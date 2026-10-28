@@ -4,6 +4,8 @@
  * `importFraction`) : ce qu'Octave comprend du collage sous le champ, l'avancée, puis le résultat et
  * « Ouvrir la playlist ». L'état vit dans l'hôte (monté une fois) : refermer la feuille laisse travailler, un
  * avis dit la fin. Sans la capacité `music.playlistImport`, aucune entrée n'est offerte.
+ * `autoStart` (partage système vers Tentacle TV : le partage EST le geste) : un lien lisible part aussitôt ;
+ * un lien que rien ne lit encore reste collé, en attente d'« Importer ».
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +21,7 @@ import { showNotice, useOctavePagesProvider } from "../../pages";
 import { closePlaylistSheet } from "./playlistSheetStore";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
-export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string }) {
+export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefill?: string; autoStart?: boolean }) {
   const { t } = useTranslation("musicImport");
   const theme = useTheme();
   const router = useRouter();
@@ -42,9 +44,10 @@ export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string 
     },
     [reset, router],
   );
-  const go = useCallback(async () => {
-    if (!input) return;
-    const final = await start(input);
+  const go = useCallback(async (override?: ImportUserInput) => {
+    const chosen = override ?? input;
+    if (!chosen) return;
+    const final = await start(chosen);
     const summary = final?.summary;
     if (summary) haptic("success");
     // Feuille refermée pendant le travail : l'avis dit la fin, et mène à la playlist.
@@ -57,6 +60,16 @@ export function ImportFlow({ open, prefill }: { open: boolean; prefill?: string 
       reset();
     }
   }, [input, openPlaylist, reset, start, t]);
+  // Un même lien partagé ne part qu'une fois, même si la feuille se rouvre avec lui.
+  const autoStarted = useRef<string | null>(null);
+  const { available, extensionSources, tentacleShare } = handle;
+  useEffect(() => {
+    if (!open || !autoStart || !prefill || !available || handle.state !== null || autoStarted.current === prefill) return;
+    const shared = classifyPasted(prefill, extensionSources, tentacleShare);
+    if (shared.kind !== "url" || !shared.readable) return;
+    autoStarted.current = prefill;
+    void go(shared.input);
+  }, [autoStart, available, extensionSources, go, handle.state, open, prefill, tentacleShare]);
 
   if (!handle.available) return null;
   const state = handle.state;

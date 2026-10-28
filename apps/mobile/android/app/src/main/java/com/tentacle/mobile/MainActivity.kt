@@ -1,6 +1,7 @@
 package com.tentacle.mobile
 import expo.modules.splashscreen.SplashScreenManager
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 
@@ -13,6 +14,8 @@ import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Partage système vers Tentacle TV (withShareToTentacle) : avant que React Native ne lise l'intent.
+    ShareIntake.rewrite(intent)
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
@@ -26,6 +29,12 @@ class MainActivity : ReactActivity() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       window.decorView.isForceDarkAllowed = false
     }
+  }
+
+  // Partage système vers Tentacle TV (withShareToTentacle) : l'app déjà ouverte reçoit le lien par `url`.
+  override fun onNewIntent(intent: Intent) {
+    ShareIntake.rewrite(intent)
+    super.onNewIntent(intent)
   }
 
   /**

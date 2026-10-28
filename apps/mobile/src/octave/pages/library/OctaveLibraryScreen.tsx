@@ -1,7 +1,7 @@
 /**
- * Octave mobile — la BIBLIOTHÈQUE, comme le bureau : Albums (triables, le tri
- * retenu sur l'appareil), Artistes, Playlists, par puces (dans l'adresse,
- * `?tab=`), en grilles virtualisées qui chargent la page suivante à l'approche
+ * Octave mobile — la BIBLIOTHÈQUE, comme le bureau : Playlists (l'onglet qui
+ * l'ouvre, avec « Importer » et « + »), Albums (triables, le tri retenu sur
+ * l'appareil), Artistes, par puces (dans l'adresse, `?tab=`), en grilles virtualisées qui chargent la page suivante à l'approche
  * du bas. En tête, l'accès aux Titres likés. Téléphone : 2 colonnes (3 pour
  * les artistes) ; tablette : autant que la largeur en tient.
  */
@@ -11,9 +11,9 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Heart, Library } from "lucide-react-native";
+import { ChevronRight, Heart, Library, ListMusic } from "lucide-react-native";
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists } from "@tentacle-tv/api-client";
-import { LIBRARY_ALBUM_SORT_KEY, parseAlbumSort, parseLibraryTab, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
+import { LIBRARY_ALBUM_SORT_KEY, MOBILE_LIBRARY_DEFAULT_TAB, mobileLibraryTabParam, parseAlbumSort, parseLibraryTab, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { OctaveTopBar } from "../../layout/OctaveTopBar";
@@ -26,6 +26,7 @@ import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
+import { LibraryPlaylistActions } from "./LibraryPlaylistActions";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 import { useFirstEnter } from "../../layout/enterMotion";
 import { useOfflineMode } from "@/offline/useOfflineMode";
@@ -58,8 +59,8 @@ export function OctaveLibraryScreen() {
   const router = useRouter();
   const store = useDeviceStore();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const tab = parseLibraryTab(Array.isArray(params.tab) ? params.tab[0] : params.tab);
-  const setTab = useCallback((next: LibraryTab) => router.setParams({ tab: next === "albums" ? undefined : next }), [router]);
+  const tab = parseLibraryTab(Array.isArray(params.tab) ? params.tab[0] : params.tab, MOBILE_LIBRARY_DEFAULT_TAB);
+  const setTab = useCallback((next: LibraryTab) => router.setParams({ tab: mobileLibraryTabParam(next) }), [router]);
   const [sort, setSortState] = useState<LibraryAlbumSort>(() => parseAlbumSort(store.getItem(LIBRARY_ALBUM_SORT_KEY)));
   const setSort = useCallback(
     (next: LibraryAlbumSort) => {
@@ -97,13 +98,24 @@ export function OctaveLibraryScreen() {
         <Text accessibilityRole="header" style={[typography.hero, styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
           {t("library.title")}
         </Text>
-        {tab === "albums" ? <LibrarySortControl sort={sort} onSort={setSort} /> : null}
+        {tab === "albums" ? <LibrarySortControl sort={sort} onSort={setSort} /> : tab === "playlists" && !offline ? <LibraryPlaylistActions /> : null}
       </View>
       <LikedEntry />
       <LibraryFilterBar tab={tab} onTab={setTab} />
     </View>
   );
-  const empty = items.length === 0 && offline ? <OfflineMissingState /> : pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
+  const empty = items.length === 0 && offline ? (
+    <OfflineMissingState />
+  ) : pending ? (
+    <ShelfSkeleton round={tab === "artists"} />
+  ) : failed ? (
+    <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} />
+  ) : tab === "playlists" ? (
+    // Aucune playlist : les mots de la page Playlists ; « Importer » et « + » restent à droite du titre.
+    <EmptyState icon={ListMusic} title={t("views.playlistsEmptyTitle")} hint={t("views.playlistsEmptyHint")} />
+  ) : (
+    <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />
+  );
 
   return (
     <View style={{ flex: 1 }}>

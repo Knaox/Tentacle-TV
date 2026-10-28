@@ -1,6 +1,6 @@
 /**
  * Octave mobile — les FILTRES de la bibliothèque, à la Apple Music : une rangée
- * de puces (Albums · Artistes · Playlists, qui défile si l'écran est étroit), et,
+ * de puces (Playlists · Albums · Artistes, qui défile si l'écran est étroit), et,
  * sur les albums, « Trier » à droite du grand titre, qui ouvre la feuille des
  * tris — le tri en cours dit en mots sur le bouton. Sur la ligne des puces, il
  * coupait la dernière sur un écran de 402 pt. Les puces et le bouton sont ceux de tout le
@@ -11,19 +11,19 @@ import { memo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react-native";
-import { LIBRARY_ALBUM_SORTS, LIBRARY_TABS, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
+import { LIBRARY_ALBUM_SORTS, MOBILE_LIBRARY_TABS, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { OctaveChip, OctaveSortButton } from "../../layout/OctaveChip";
 import { useOctaveColors } from "../../theme/octaveColors";
 
-/** La rangée des puces (Albums · Artistes · Playlists), seule sur sa ligne : rien ne la coupe. */
+/** La rangée des puces (Playlists · Albums · Artistes), seule sur sa ligne : rien ne la coupe. */
 export const LibraryFilterBar = memo(function LibraryFilterBar({ tab, onTab }: { tab: LibraryTab; onTab: (tab: LibraryTab) => void }) {
   const { t } = useTranslation("music");
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityRole="tablist">
-      {LIBRARY_TABS.map((value) => (
+      {MOBILE_LIBRARY_TABS.map((value) => (
         <OctaveChip key={value} role="tab" label={t(`library.${value}`)} selected={value === tab} onPress={() => onTab(value)} />
       ))}
     </ScrollView>
