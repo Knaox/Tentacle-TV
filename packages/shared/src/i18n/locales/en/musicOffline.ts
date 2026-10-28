@@ -23,6 +23,11 @@ export default {
   failed: "Couldn't be kept",
   retry: "Try again",
   kept: "Kept on this device",
+  state: {
+    library: "In the library",
+    cloud: "In the cloud, streamed from the internet",
+    unavailable: "Unavailable",
+  },
   keptCount_one: "{{count}} track kept",
   keptCount_other: "{{count}} tracks kept",
   queued_one: "{{count}} track is coming to this device",

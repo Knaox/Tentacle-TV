@@ -26,6 +26,11 @@ export default {
   failed: "N'a pas pu être gardé",
   retry: "Réessayer",
   kept: "Gardé sur cet appareil",
+  state: {
+    library: "Dans la bibliothèque",
+    cloud: "En cloud, lu depuis Internet",
+    unavailable: "Indisponible",
+  },
   keptCount_one: "{{count}} titre gardé",
   keptCount_other: "{{count}} titres gardés",
   queued_one: "{{count}} titre part sur cet appareil",

@@ -10,6 +10,7 @@ export * from "./keepItems";
 export * from "./keepActions";
 export * from "./keptMusicStore";
 export * from "./keptProgress";
+export * from "./trackState";
 export * from "./keptRenames";
 export * from "./keptSources";
 export * from "./deviceModel";

@@ -5,7 +5,7 @@
  * Toucher : lire depuis ce titre (la liste garde la suite) ; appui maintenu ou
  * « ⋯ » : la feuille d'actions ; balayée vers la droite : « Lire
  * ensuite » au balayage court, la file au balayage long (`SwipeableTrackRow`),
- * sur toute page qui la montre. En mode « Modifier » (`editing`), elle est inerte. Gardé sur l'appareil : sa marque (`KeptMark`,
+ * sur toute page qui la montre. En mode « Modifier » (`editing`), elle est inerte. Son état (gardé, bibliothèque, cloud) : la marque unique (`TrackStateMark`,
  * m5) ; hors ligne et pas gardé : atténué et inerte (`useTrackPlayable`). Hauteur FIXE (`TRACK_ROW_HEIGHT`) : les listes
  * virtualisées connaissent la place de chaque rangée.
  */
@@ -19,7 +19,7 @@ import { useLiked } from "@tentacle-tv/api-client";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { haptic as playHaptic } from "@/utils/haptics";
-import { KeptMark } from "../../offline/KeptMark";
+import { TrackStateMark } from "../../offline/TrackStateMark";
 import { useTrackPlayable } from "../../offline/useOfflineMusic";
 import { openTrackSheet } from "../actions/trackSheetStore";
 import { useTrackQueueGestures } from "../actions/useTrackQueueGestures";
@@ -100,7 +100,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
           {track.title}
         </Text>
         <View style={styles.sub}>
-          <KeptMark trackKey={track.key} size={11} />
+          <TrackStateMark track={track} size={11} />
           {liked ? <Heart size={11} color={accent} fill={accent} accessibilityLabel={t("track.unlike")} /> : null}
           <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
             {artists}
