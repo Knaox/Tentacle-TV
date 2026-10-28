@@ -1,0 +1,59 @@
+/**
+ * Octave mobile — l'AVIS des gestes, en pastille de verre au-dessus du
+ * mini-lecteur : arrivée en ressort par le bas, sortie plus rapide, une action
+ * possible (« Changer »), annoncé aux lecteurs d'écran sans voler le focus.
+ */
+
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CheckCircle2, Info, XCircle } from "lucide-react-native";
+import { GlassSurface } from "@/components/ui";
+import { typography, useTheme } from "@/theme";
+import { dismissNotice, useNotice } from "../env/notices";
+
+/** La place du mini-lecteur et de la barre d'onglets, sous l'avis. */
+const ABOVE_CHROME = 132;
+
+export function NoticeHost() {
+  const notice = useNotice();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  if (!notice) return null;
+  const Icon = notice.kind === "error" ? XCircle : notice.kind === "success" ? CheckCircle2 : Info;
+  const tone = notice.kind === "error" ? theme.colors.status.error : theme.colors.brand.accentLight;
+  return (
+    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer, { paddingBottom: insets.bottom + ABOVE_CHROME }]}>
+      <Animated.View key={notice.id} entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(160)} style={styles.wrap} accessibilityLiveRegion="polite">
+        <GlassSurface tier="dropdown" tint="strong" radius={18} style={styles.pill}>
+          <Icon size={18} color={tone} />
+          <View style={styles.text}>
+            {notice.title ? <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{notice.title}</Text> : null}
+            <Text style={[typography.caption, { color: theme.colors.text.secondary }]}>{notice.message}</Text>
+          </View>
+          {notice.action ? (
+            <Pressable
+              onPress={() => {
+                dismissNotice();
+                notice.action?.onPress();
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={styles.action}
+            >
+              <Text style={[typography.bodyBold, { color: theme.colors.brand.accentLight }]}>{notice.action.label}</Text>
+            </Pressable>
+          ) : null}
+        </GlassSurface>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  layer: { justifyContent: "flex-end", alignItems: "center", zIndex: 50 },
+  wrap: { maxWidth: 520, width: "92%" },
+  pill: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  text: { flex: 1, minWidth: 0, gap: 2 },
+  action: { minHeight: 36, justifyContent: "center", paddingHorizontal: 4 },
+});

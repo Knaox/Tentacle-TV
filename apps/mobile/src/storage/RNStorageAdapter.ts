@@ -69,6 +69,10 @@ const STORAGE_KEYS = [
   // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
   // une invitation refermée sans réponse reviendrait à chaque lancement.
   "tentacle_wt_invites_shown",
+  // Octave (pages) : la mémoire de l'appareil — recherches récentes, « déjà écouté », albums et artistes
+  // consultés, dernière playlist du « + », tri des albums (@tentacle-tv/shared/octave › pages, api-client).
+  "tentacle_octave_recent_searches", "tentacle_octave_search_listens", "tentacle_octave_recent_visits",
+  "tentacle_octave_last_playlist", "tentacle_octave_album_sort",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
