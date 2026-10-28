@@ -6,8 +6,8 @@
  * - remettre les entrées dans l'ordre CROISSANT de leur place reconstruit la liste telle qu'elle était.
  */
 
-import type { MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
-import type { ListRow } from "@tentacle-tv/shared/octave";
+import type { MusicTrack, PendingMusicItem } from "../../music";
+import type { ListRow } from "../pendingMerge";
 
 export interface EntryRemoval {
   entryId: string;

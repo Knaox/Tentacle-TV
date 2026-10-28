@@ -26,7 +26,7 @@ import { useToast } from "../../../contexts/ToastContext";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { octavePaths } from "../octavePaths";
-import { removeWaiting, waitingOf } from "./playlistCleanup";
+import { removeWaiting, waitingOf } from "@tentacle-tv/shared/octave";
 import { keptMusicState } from "../offline/keptMusicStore";
 import { removeKept } from "../offline/keepMusic";
 import { offlineReleaseOf } from "./offlineRelease";

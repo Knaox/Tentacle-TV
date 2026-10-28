@@ -18,8 +18,8 @@ import {
   type MusicListPrefs,
   type MusicListStats,
   type MusicListSubject,
-} from "@tentacle-tv/shared/music";
-import type { ListRow } from "@tentacle-tv/shared/octave";
+} from "../../music";
+import type { ListRow } from "../pendingMerge";
 
 export type ListFilter = "all" | "library" | "elsewhere" | "unplayed";
 export const LIST_FILTERS: readonly ListFilter[] = ["all", "library", "elsewhere", "unplayed"];

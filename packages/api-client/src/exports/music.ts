@@ -25,3 +25,6 @@ export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, t
 export {
   musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
 } from "../music/useMusicListOrder";
+// Octave — une liste affichée (playlist, « Titres likés ») : tri du compte, recherche, filtre, glisser.
+export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music/lists/useListOrder";
+export { useWholeLiked } from "../music/lists/useWholeLiked";

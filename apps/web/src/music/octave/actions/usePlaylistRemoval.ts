@@ -12,7 +12,7 @@ import type { ListRow } from "@tentacle-tv/shared/octave";
 import { useToast } from "../../../contexts/ToastContext";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { usePendingMusic } from "../pending/usePendingMusic";
-import { applyRemoval, applyRestore, removalCount, removalPlan, type RemovalDeps } from "./removalPlan";
+import { applyRemoval, applyRestore, removalCount, removalPlan, type RemovalDeps } from "@tentacle-tv/shared/octave";
 
 export interface PlaylistTarget {
   jellyfinId: string;

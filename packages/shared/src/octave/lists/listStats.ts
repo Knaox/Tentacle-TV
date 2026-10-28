@@ -10,9 +10,9 @@
  * c'est un ajout : sa demande, jamais avant l'entrée qui la précède.
  */
 
-import type { MusicListStats } from "@tentacle-tv/shared/music";
-import type { PendingMusicItem } from "@tentacle-tv/shared/music";
-import type { ListRow } from "@tentacle-tv/shared/octave";
+import type { MusicListStats } from "../../music";
+import type { PendingMusicItem } from "../../music";
+import type { ListRow } from "../pendingMerge";
 import type { StatsOf } from "./listView";
 
 export interface StatsSources {

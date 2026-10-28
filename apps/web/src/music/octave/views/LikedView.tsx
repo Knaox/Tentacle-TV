@@ -23,9 +23,9 @@ import { usePendingMusic } from "../pending/usePendingMusic";
 import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { LoadMore } from "./LoadMore";
-import { makeStatsOf } from "../listOrder/listStats";
-import { useListOrder } from "../listOrder/useListOrder";
-import { useWholeLiked } from "../listOrder/useWholeLiked";
+import { makeStatsOf } from "@tentacle-tv/shared/octave";
+import { useListOrder } from "@tentacle-tv/api-client";
+import { useWholeLiked } from "@tentacle-tv/api-client";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
 

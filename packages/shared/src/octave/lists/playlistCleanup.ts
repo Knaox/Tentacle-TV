@@ -5,7 +5,7 @@
  * `importRequests.entryRemoved`). Quatre à la fois au plus ; un échec n'arrête pas les autres.
  */
 
-import type { PendingMusicItem } from "@tentacle-tv/shared/music";
+import type { PendingMusicItem } from "../../music";
 
 const fold = (id: string) => id.replace(/-/g, "").toLowerCase();
 
