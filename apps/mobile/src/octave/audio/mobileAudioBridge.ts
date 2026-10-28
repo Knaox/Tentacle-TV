@@ -2,10 +2,12 @@
  * Octave (mobile) — le pont du module natif `octave-audio`, devant l'adaptateur PARTAGÉ : une source gardée
  * sur l'appareil devient son fichier local avant de partir (`keptAudioPort.ts`), et les commandes partent
  * DANS L'ORDRE où la page les donne (une résolution de copie ne fait jamais passer un « suivant » avant le
- * « lire » qui le précède).
+ * « lire » qui le précède). Une source que le téléphone a résolue lui-même part en flux DIRECT
+ * (`../clientFetch/directSource.ts`), le serveur en repli.
  */
 
 import type { NativeBridge } from "@tentacle-tv/shared/octave";
+import { withDirectSource, type DirectSourceDeps } from "../clientFetch/directSource";
 import { keptFileFor } from "./keptAudioPort";
 
 const SOURCE_COMMANDS = new Set(["audio_play", "audio_set_next", "audio_swap_source"]);
@@ -19,11 +21,15 @@ export async function withLocalSource(command: string, args: Record<string, unkn
   return local === null ? args : { ...args, source: { ...source, url: local, complete: true } };
 }
 
-export function orderedBridge(native: NativeBridge): NativeBridge {
+export function orderedBridge(native: NativeBridge, direct?: DirectSourceDeps): NativeBridge {
   let chain: Promise<unknown> = Promise.resolve();
+  const prepare = async (command: string, args: Record<string, unknown>) => {
+    const local = await withLocalSource(command, args);
+    return direct ? withDirectSource(command, local, direct) : local;
+  };
   return {
     invoke: <T>(command: string, args: Record<string, unknown> = {}): Promise<T> => {
-      const run = chain.then(async () => native.invoke<T>(command, await withLocalSource(command, args)));
+      const run = chain.then(async () => native.invoke<T>(command, await prepare(command, args)));
       chain = run.catch(() => undefined);
       return run;
     },
