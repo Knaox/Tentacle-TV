@@ -43,6 +43,11 @@ export interface KeptTransferSummary {
   estimated: boolean;
   /** Plus rien n'arrive depuis `STALL_MS` alors que des titres sont en cours (posé par le crochet, qui a l'horloge). */
   stalled: boolean;
+  /**
+   * Rien ne transfère et des titres attendent que le SERVEUR les prépare (sa file du hors ligne en masse, à son rythme,
+   * lot « sq » du 28/10) : l'arrêt n'est pas une coupure — la carte dit « la suite arrive », pas « la connexion ».
+   */
+  serverPacing: boolean;
   /** La file, dans l'ordre où elle se lit : ce qui arrive, se prépare, attend, en pause, en défaut. */
   queue: KeptMusicTrack[];
 }
@@ -78,7 +83,7 @@ export function transferSummary(
   const live = tracks.filter((k) => k.status !== "canceled");
   const pending = live.filter(isPending);
   if (pending.length === 0) {
-    return { active: false, done: 0, total: 0, running: 0, pausedByUser: 0, failed: 0, bytesDone: 0, bytesTotal: null, fraction: 1, rateBps: null, etaMs: null, estimated: false, stalled: false, queue: [] };
+    return { active: false, done: 0, total: 0, running: 0, pausedByUser: 0, failed: 0, bytesDone: 0, bytesTotal: null, fraction: 1, rateBps: null, etaMs: null, estimated: false, stalled: false, serverPacing: false, queue: [] };
   }
   const since = lotStart(live, Math.min(...pending.map((k) => k.createdAt)));
   const batch = live.filter((k) => k.createdAt >= since);
@@ -106,8 +111,10 @@ export function transferSummary(
   }, 0);
   const etaMs = running > 0 && rateBps !== null && bytesTotal !== null ? (remaining / rateBps) * 1_000 : null;
 
+  const stages = pending.map(trackStage);
+  const serverPacing = !stages.includes("transferring") && stages.includes("preparing");
   const queue = [...pending].sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt || a.fileId - b.fileId);
-  return { active: true, done, total: batch.length, running, pausedByUser, failed, bytesDone, bytesTotal, fraction, rateBps, etaMs, estimated, stalled: false, queue };
+  return { active: true, done, total: batch.length, running, pausedByUser, failed, bytesDone, bytesTotal, fraction, rateBps, etaMs, estimated, stalled: false, serverPacing, queue };
 }
 
 /** Combien de temps le dernier débit mesuré tient quand un titre s'achève et que le suivant n'a pas encore de mesure. */
