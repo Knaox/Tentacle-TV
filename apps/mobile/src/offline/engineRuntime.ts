@@ -34,7 +34,7 @@ import {
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { nowPlayingItemId } from "./nowPlaying";
-import { transferImmediateRetries, transferParallelLimit } from "./backgroundParallel";
+import { transferImmediateRetries, transferParallelLimit, transferMusicParallelLimit } from "./backgroundParallel";
 import { serverPrepareForEngine } from "./serverPrepare";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
@@ -137,6 +137,8 @@ export function offlineEngine(): DownloadEngine {
     // Un seul transfert à la fois quand l'application est là ; plusieurs le
     // temps d'une suspension iOS, où rien de neuf ne peut plus partir.
     parallelLimit: transferParallelLimit,
+    // Les titres d'Octave, plusieurs à la fois (beaucoup le temps d'une suspension iOS).
+    musicParallelLimit: transferMusicParallelLimit,
     // iPhone derrière : une coupure repart aussitôt, la session d'arrière-plan
     // attend le réseau à notre place (aucun minuteur n'y sonnerait).
     immediateNetworkRetries: transferImmediateRetries,

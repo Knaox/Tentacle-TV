@@ -31,11 +31,29 @@ let suspended = false;
 
 /** L'application passe derrière (ou revient) — sur iOS seulement. */
 export function setTransfersSuspended(next: boolean): void {
-  suspended = Platform.OS === "ios" && next;
+  const platform = Platform.OS;
+  suspended = platform === "ios" && next;
 }
 
 export function transferParallelLimit(): number {
   return suspended ? SUSPENDED_PARALLEL : MAX_PARALLEL;
+}
+
+/**
+ * Les places des titres d'OCTAVE (`EngineDeps.musicParallelLimit`). Au premier
+ * plan, trois, comme le bureau : leur temps part dans la préparation du
+ * serveur, qui se recouvre (`musicLane.ts`). Le temps d'une suspension iOS,
+ * bien plus : un titre pèse quelques mégaoctets, et ce qui n'est pas remis au
+ * système avant le verrouillage n'arrivera qu'à la réouverture — une playlist
+ * de 300 titres n'avançait que de trois. Vingt-quatre : un album ou un bon
+ * morceau de playlist, sans ouvrir des centaines de requêtes d'un coup chez le
+ * serveur (qui garde la main sur leur rythme).
+ */
+const MUSIC_PARALLEL = 3;
+const SUSPENDED_MUSIC_PARALLEL = 24;
+
+export function transferMusicParallelLimit(): number {
+  return suspended ? SUSPENDED_MUSIC_PARALLEL : MUSIC_PARALLEL;
 }
 
 /**
