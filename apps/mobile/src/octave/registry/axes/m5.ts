@@ -8,10 +8,18 @@
 import { MusicOfflineScope } from "../../offline/MusicOfflineScope";
 import { OctaveDeviceScreen } from "../../offline/OctaveDeviceScreen";
 import { OctaveOfflinePill } from "../../offline/OctaveOfflinePill";
+import { useOfflineProfileSession } from "../../../offline/rights/useOfflineOwner";
 import type { OctaveAxisContribution } from "../octaveRegistryTypes";
 
+/**
+ * « Sur cet appareil » est au COMPTE DE L'APPAREIL : une session de profil n'en voit rien, pas même par son adresse
+ * (elle renvoie à l'accueil d'Octave). Seul ce cas est CERTAIN au lancement : le droit `keepOffline` et la liste
+ * gardée se lisent après, et la page se tait d'elle-même sans eux (lancement hors ligne sur cette page compris).
+ */
+const useDeviceAllowed = (): boolean => !useOfflineProfileSession();
+
 export const m5Contribution: OctaveAxisContribution = {
-  screens: { device: OctaveDeviceScreen },
+  screens: { device: { component: OctaveDeviceScreen, requires: { useAllowed: useDeviceAllowed } } },
   providers: [MusicOfflineScope],
   overlays: [OctaveOfflinePill],
 };

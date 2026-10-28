@@ -5,6 +5,9 @@
  * titres · 84 Mo sur 210 Mo », le temps restant d'après le débit MESURÉ, puis les
  * gestes sur la file d'Octave et la file elle-même. Absente quand rien ne bouge.
  *
+ * Une coupure que le moteur relance seul se DIT (« Ça n'avance plus… ») au
+ * lieu de laisser le temps restant figé.
+ *
  * Le pourcentage n'est jamais seul : la barre a sa valeur pour les lecteurs
  * d'écran, l'état se dit en mots (« En pause », « 2 titres en défaut »).
  */
@@ -25,6 +28,7 @@ import { TransferQueue } from "./TransferQueue";
 /** Ce que la deuxième ligne dit : le temps restant, la mesure en cours, ou la pause. */
 function paceText(s: KeptTransferSummary, t: (key: string, o?: Record<string, unknown>) => string): string | null {
   if (s.running === 0) return s.pausedByUser > 0 ? t("transfers.pausedHint") : null;
+  if (s.stalled) return null;
   const time = formatTimeLeft(s.etaMs);
   if (time === null) return t("transfers.measuring");
   const rate = formatRate(s.rateBps);
@@ -63,6 +67,12 @@ export const DeviceTransferCard = memo(function DeviceTransferCard({ summary }: 
       </View>
       <Text style={[styles.line, { color: colors.textSecondary }]}>{bytes ? `${count} · ${bytes}` : count}</Text>
       {pace !== null && <Text style={[styles.line, { color: colors.textTertiary }]}>{pace}</Text>}
+      {summary.stalled && (
+        <View style={styles.failed} accessibilityLiveRegion="polite">
+          <Feather name="wifi-off" size={14} color={theme.statusPairs.warning.fg} />
+          <Text style={[styles.line, styles.flex, { color: theme.statusPairs.warning.fg }]}>{t("transfers.stalled")}</Text>
+        </View>
+      )}
       {summary.failed > 0 && (
         <View style={styles.failed}>
           <Feather name="alert-triangle" size={14} color={theme.statusPairs.error.fg} />
@@ -101,6 +111,7 @@ const styles = StyleSheet.create({
   percent: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5, fontVariant: ["tabular-nums"] },
   line: { fontSize: 14, lineHeight: 19, fontVariant: ["tabular-nums"] },
   failed: { flexDirection: "row", alignItems: "center", gap: 6 },
+  flex: { flex: 1 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   // 44 pt : la cible tactile minimale.
   chip: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, borderRadius: 22 },

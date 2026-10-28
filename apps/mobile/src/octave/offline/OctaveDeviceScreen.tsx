@@ -59,8 +59,9 @@ export function OctaveDeviceScreen({ params }: OctaveScreenProps) {
   const openCollection = useCallback((key: string) => router.push(`${octavePaths.device}?c=${encodeURIComponent(key)}` as Href), [router]);
   const model = useMemo(
     // `resolve` : un titre renommé depuis qu'il a été gardé reste à sa place dans sa playlist (comme le bureau).
-    () => deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }),
-    [kept.tracks, kept.collections, kept.byKey, offline],
+    // Hors de la porte (droit `keepOffline` refusé, rien d'Octave hors ligne ici) : rien de gardé ne se montre.
+    () => (surface.visible ? deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }) : { tracks: [], collections: [] }),
+    [surface.visible, kept.tracks, kept.collections, kept.byKey, offline],
   );
   const open: DeviceCollection | null = model.collections.find((c) => c.key === openKey) ?? null;
   const tracks = open?.tracks ?? model.tracks;
@@ -78,7 +79,7 @@ export function OctaveDeviceScreen({ params }: OctaveScreenProps) {
     <View>
       <OctaveLargeTitle
         title={title}
-        subtitle={open ? (open.subtitle ?? undefined) : t("view.kicker")}
+        subtitle={open ? (open.subtitle ?? undefined) : offline ? t("view.kicker") : t("view.kickerOnline")}
         scrollY={scrollY}
         accessory={open ? <KeepCollectionButton kind={open.kind} collectionKey={open.key.slice(open.key.indexOf(":") + 1)} title={open.title} subtitle={open.subtitle} tracks={open.tracks} /> : undefined}
       />

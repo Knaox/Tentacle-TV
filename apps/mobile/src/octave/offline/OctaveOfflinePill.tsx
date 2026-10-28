@@ -1,7 +1,8 @@
 /**
  * Octave (mobile) — le MODE HORS LIGNE visible partout dans Octave : une capsule
- * de verre discrète, centrée juste au-dessus du mini-lecteur et de la barre
- * d'onglets, tant que l'application est hors ligne (par choix ou subi). Toucher
+ * OPAQUE (surface relevée, filet, ombre — pas du verre : posée sur une mosaïque
+ * claire, un verre transparent rendait le texte illisible), centrée juste
+ * au-dessus du mini-lecteur et de la barre d'onglets, tant que l'application est hors ligne (par choix ou subi). Toucher
  * ouvre « Sur cet appareil », qui dit pourquoi et permet d'en sortir. Absente
  * sur cette page même (sa bascule le dit déjà) et pour une session de profil
  * (le hors ligne est au compte de l'appareil). Apparition en fondu (Reanimated,
@@ -17,7 +18,6 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { useOfflineMode } from "@/offline/useOfflineMode";
-import { OctaveGlass } from "../layout/OctaveGlass";
 import { OCTAVE_MINI_GAP, useOctaveChrome } from "../shell/octaveChrome";
 import { useOctaveColors } from "../theme/octaveColors";
 import { useOfflineSurface } from "./musicOfflineContext";
@@ -44,7 +44,7 @@ function Pill() {
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom, left: chrome.sidebarWidth }]}>
       <Animated.View entering={FadeIn.duration(200).reduceMotion(ReduceMotion.System)} exiting={FadeOut.duration(140).reduceMotion(ReduceMotion.System)}>
-        <OctaveGlass radius={22} interactive>
+        <View style={[styles.capsule, { backgroundColor: colors.raised, borderColor: colors.line }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("mode.pill")}
@@ -56,7 +56,7 @@ function Pill() {
             <Text style={[styles.label, { color: colors.text }]}>{t("mode.pill")}</Text>
             <Feather name="chevron-right" size={15} color={colors.textTertiary} />
           </Pressable>
-        </OctaveGlass>
+        </View>
       </Animated.View>
     </View>
   );
@@ -64,6 +64,15 @@ function Pill() {
 
 const styles = StyleSheet.create({
   wrap: { position: "absolute", right: 0, alignItems: "center" },
+  capsule: {
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
   pill: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16 },
   label: { fontSize: 15, fontWeight: "600" },
 });

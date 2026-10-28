@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
-import { LOT_GAP_MS, RATE_HOLD_MS, holdRate, transferSummary } from "./transferModel";
+import { LOT_GAP_MS, RATE_HOLD_MS, STALL_MS, holdRate, isStalled, trackAdvance, transferSummary } from "./transferModel";
 
 let nextId = 1;
 function kept(partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {
@@ -83,5 +83,19 @@ describe("holdRate", () => {
     expect(holdRate(first, null, RATE_HOLD_MS - 1).rateBps).toBe(1_000);
     expect(holdRate(first, null, RATE_HOLD_MS).rateBps).toBeNull();
     expect(holdRate(first, 2_000, 10).rateBps).toBe(2_000);
+  });
+});
+
+describe("trackAdvance / isStalled", () => {
+  it("bloqué après STALL_MS sans un octet de plus, débloqué au premier octet", () => {
+    const start = trackAdvance(null, 100, 0);
+    const same = trackAdvance(start, 100, STALL_MS);
+    expect(isStalled(same, 1, STALL_MS)).toBe(true);
+    expect(isStalled(same, 1, STALL_MS - 1)).toBe(false);
+    expect(isStalled(trackAdvance(same, 101, STALL_MS), 1, STALL_MS)).toBe(false);
+  });
+
+  it("rien en cours (tout en pause voulue, défauts) : jamais bloqué", () => {
+    expect(isStalled({ bytes: 0, atMs: 0 }, 0, STALL_MS * 10)).toBe(false);
   });
 });

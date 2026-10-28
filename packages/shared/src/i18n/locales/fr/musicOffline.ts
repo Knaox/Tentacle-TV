@@ -64,6 +64,8 @@ export default {
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",
+    summary: "{{tracks}} · {{size}}",
+    kickerOnline: "Musique gardée",
     used: "{{size}} occupés",
     free: "{{size}} libres",
     collections: "Albums et playlists",
@@ -88,6 +90,7 @@ export default {
     bytes: "{{done}} sur {{total}}",
     bytesAbout: "{{done}} sur environ {{total}}",
     timeAbout: "environ {{time}}",
+    stalled: "Ça n’avance plus : nouvel essai automatique dès que la connexion revient.",
     measuring: "Mesure du débit…",
     pausedHint: "En pause : rien ne part tant que vous ne reprenez pas.",
     failed_one: "{{count}} titre en défaut",

@@ -61,6 +61,8 @@ export default {
   view: {
     title: "On this device",
     kicker: "Offline",
+    summary: "{{tracks}} · {{size}}",
+    kickerOnline: "Kept music",
     used: "{{size}} used",
     free: "{{size}} free",
     collections: "Albums and playlists",
@@ -85,6 +87,7 @@ export default {
     bytes: "{{done}} of {{total}}",
     bytesAbout: "{{done}} of about {{total}}",
     timeAbout: "about {{time}}",
+    stalled: "Nothing is moving: it will retry automatically once the connection is back.",
     measuring: "Measuring speed…",
     pausedHint: "Paused: nothing moves until you resume.",
     failed_one: "{{count}} track failed",
