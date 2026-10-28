@@ -21,6 +21,7 @@ import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { useOctavePagesProvider } from "../env/pagesEnv";
 import { Artwork } from "./Artwork";
+import { LibraryPlaylistArtwork } from "./PlaylistArtwork";
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
@@ -103,7 +104,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist, width }: { pl
   const count = playlistTrackTotal(playlist.trackCount, useMusicPending(useOctavePagesProvider()).data.items, playlist.jellyfinId);
   return (
     <PressableCard onPress={() => nav.playlist(playlist.jellyfinId)} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.name}>
-      <Artwork url={playlist.artworkUrl} size={width} radius={10} />
+      <LibraryPlaylistArtwork playlist={playlist} size={width} radius={10} />
       <Caption title={playlist.name} subtitle={t("count.tracks", { count })} />
     </PressableCard>
   );

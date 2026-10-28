@@ -15,7 +15,7 @@ import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useMobileTrackActions } from "../env/useMobileActionsUi";
-import { Artwork } from "../ui/Artwork";
+import { LibraryPlaylistArtwork } from "../ui/PlaylistArtwork";
 import { accentTextOf } from "../ui/pageStyle";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 
@@ -80,7 +80,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
             accessibilityRole="button"
             style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
           >
-            <Artwork url={item.artworkUrl} size={44} radius={6} />
+            <LibraryPlaylistArtwork playlist={item} size={44} radius={6} />
             <View style={styles.rowText}>
               <Text numberOfLines={1} style={[typography.bodyBold, { color: theme.colors.text.primary }]}>
                 {item.name}

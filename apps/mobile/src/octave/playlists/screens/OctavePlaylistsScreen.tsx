@@ -17,7 +17,7 @@ import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { OctaveLargeTitle, OctaveTopBar, PressableScale, useOctaveColors, useOctaveLayout, useOctavePageScroll } from "../../layout";
-import { Artwork, OctavePagesHost, useOctavePagesProvider } from "../../pages";
+import { LibraryPlaylistArtwork, OctavePagesHost, useOctavePagesProvider } from "../../pages";
 import { useOctaveNav } from "../../pages/env/nav";
 import { EmptyState, ErrorState, PillButton, TrackRowsSkeleton } from "../../pages/ui/ViewStates";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
@@ -74,7 +74,7 @@ export function OctavePlaylistsScreen() {
           accessibilityHint={t("count.tracks", { count: totalOf(p) })}
           style={({ pressed }) => [styles.row, { paddingHorizontal: layout.gutter, backgroundColor: pressed ? colors.pressed : "transparent" }]}
         >
-          <Artwork url={p.artworkUrl} size={56} radius={8} />
+          <LibraryPlaylistArtwork playlist={p} size={56} radius={8} />
           <View style={styles.rowText}>
             <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text }]}>{p.name}</Text>
             <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(p) })}</Text>
@@ -107,7 +107,7 @@ export function OctavePlaylistsScreen() {
               <Heart size={Math.round(width * 0.3)} color="#fff" fill="#fff" />
             </LinearGradient>
           ) : (
-            <Artwork url={item.playlist.artworkUrl} size={width} radius={12} />
+            <LibraryPlaylistArtwork playlist={item.playlist} size={width} radius={12} />
           )}
           <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text, marginTop: 8 }]}>{name}</Text>
           {!isLiked ? <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(item.playlist) })}</Text> : null}

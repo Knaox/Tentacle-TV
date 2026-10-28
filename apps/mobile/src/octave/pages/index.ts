@@ -17,4 +17,5 @@ export { showNotice } from "./env/notices";
 export { useMobileActionsUi, useMobileTrackActions } from "./env/useMobileActionsUi";
 export { useOctavePagesProvider, useDeviceStore, useOctaveOwner, useArtworkResolver } from "./env/pagesEnv";
 export { Artwork } from "./ui/Artwork";
+export { LibraryPlaylistArtwork, PlaylistArtwork } from "./ui/PlaylistArtwork";
 export { TrackRow, TRACK_ROW_HEIGHT } from "./ui/TrackRow";

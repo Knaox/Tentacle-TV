@@ -21,6 +21,7 @@ import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useOctaveNav } from "../../pages/env/nav";
+import { LibraryPlaylistArtwork } from "../../pages/ui/PlaylistArtwork";
 import { CollectionHeader, MetaLine } from "../../pages/entity/CollectionHeader";
 import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
 import { EmptyState, ErrorState, PillButton } from "../../pages/ui/ViewStates";
@@ -61,6 +62,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
         kicker={t("playlist.kicker")}
         title={data?.name ?? ""}
         artworkUrl={data?.artworkUrl ?? null}
+        renderArt={data ? (size) => <LibraryPlaylistArtwork playlist={data} size={size} radius={14} /> : undefined}
         scrollY={scrollY}
         meta={<MetaLine parts={[loading ? null : meta]} />}
         canPlay={tracks.length > 0}
