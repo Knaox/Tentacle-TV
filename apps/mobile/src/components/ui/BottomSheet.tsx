@@ -6,6 +6,7 @@ import { RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type App
 import { GlassBackdrop } from "./GlassSurface";
 import { holdPresentedModal, type PresentedModalHold } from "./modalGate";
 import { useSheetGestures } from "./sheet/useSheetGestures";
+import { useSheetKeyboard } from "./sheet/useSheetKeyboard";
 import { SheetScrollContext } from "./sheet/sheetScroll";
 import type { SheetSnap } from "./sheet/sheetSnap";
 
@@ -23,6 +24,12 @@ interface BottomSheetProps {
    * prend le glissement comme elle — une cible bien plus grande qu'un trait.
    */
   header?: ReactNode;
+  /**
+   * La feuille porte un champ : elle MONTE avec le clavier, champ et bouton toujours visibles, et ses crans se
+   * bornent à la place au-dessus de lui (`sheet/sheetKeyboard.ts`). Jamais un `KeyboardAvoidingView` en plus
+   * dedans : il soulèverait une seconde fois.
+   */
+  avoidKeyboard?: boolean;
   children: ReactNode;
 }
 
@@ -35,7 +42,7 @@ interface BottomSheetProps {
  * a son équivalent accessible (toucher : agrandir / réduire). Voile flouté,
  * largeur bornée sur tablette (520), entrée en ressort.
  */
-export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header, children }: BottomSheetProps) {
+export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header, avoidKeyboard = false, children }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation("common");
   const theme = useTheme();
@@ -43,8 +50,15 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
   // Hauteur réactive (rotation iPad) — nommée SCREEN_H pour préserver toute la
   // logique de snap existante.
   const { height: SCREEN_H } = useWindowDimensions();
-  const snapHeights = snapPoints.map((p) => Math.round(SCREEN_H * p));
-  const [minH, maxH] = snapHeights;
+  const keyboard = useSheetKeyboard({
+    enabled: avoidKeyboard,
+    snapHeights: [Math.round(SCREEN_H * snapPoints[0]), Math.round(SCREEN_H * snapPoints[1])],
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+  });
+  const { minH, maxH } = keyboard;
+  // Posée sur le clavier, la feuille n'a plus de zone sûre en bas : il la couvre.
+  const bottomInset = keyboard.lifted ? 0 : insets.bottom;
   // Translation RELATIVE À LA FEUILLE (haute de maxH, ancrée en bas) : `maxH`
   // la cache entièrement, `maxH - minH` en montre `minH`, 0 la déplie. Une
   // translation calée sur la hauteur de l'ÉCRAN n'était juste que pour un
@@ -189,7 +203,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
     // lecteur en paysage). Elle suit l'orientation de l'écran qui l'ouvre.
     <Modal visible transparent animationType="none" onRequestClose={dismiss} onShow={onShow} statusBarTranslucent
       supportedOrientations={[...SUPPORTED_ORIENTATIONS]}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} onLayout={keyboard.onRootLayout}>
         {/* Backdrop: blur + scrim (intensity 28 = valeur pixel-perfect historique) */}
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <GlassBackdrop intensity={28} />
@@ -197,7 +211,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
         </Animated.View>
 
         {/* Sheet panel — centré + largeur bornée sur grand écran (form-sheet iPad) */}
-        <View style={styles.sheetWrap} pointerEvents="box-none">
+        <Animated.View style={[styles.sheetWrap, keyboard.liftStyle]} pointerEvents="box-none">
           <Animated.View
             style={[
               styles.sheet,
@@ -207,11 +221,12 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
                 height: maxH,
                 backgroundColor: theme.colors.glass.panel,
                 transform: [{ translateY }],
-                paddingBottom: insets.bottom,
+                paddingBottom: bottomInset,
               },
             ]}
           >
-            {isExpanded && <View style={{ height: insets.top }} />}
+            {/* Levée par le clavier, elle s'arrête déjà sous la zone sûre du haut. */}
+            {isExpanded && !keyboard.lifted && <View style={{ height: insets.top }} />}
 
             {/* Poignée et en-tête : la cible du glissement */}
             <View {...handleHandlers}>
@@ -232,12 +247,12 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
 
             <View
               {...contentHandlers}
-              style={{ flex: 1, maxHeight: isExpanded ? undefined : Math.max(0, minH - HANDLE_H - insets.bottom - headerH) }}
+              style={{ flex: 1, maxHeight: isExpanded ? undefined : Math.max(0, minH - HANDLE_H - bottomInset - headerH) }}
             >
               <SheetScrollContext.Provider value={bridge}>{children}</SheetScrollContext.Provider>
             </View>
           </Animated.View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

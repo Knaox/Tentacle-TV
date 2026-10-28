@@ -109,6 +109,7 @@ export function PlaylistChooserSheet() {
       visible={request !== null}
       onClose={closePlaylistChooser}
       snapPoints={[0.6, 0.92]}
+      avoidKeyboard
       header={<Text style={[typography.subtitle, styles.title, { color: theme.colors.text.primary }]} numberOfLines={2}>{title}</Text>}
     >
       {request ? <Chooser request={request} /> : null}

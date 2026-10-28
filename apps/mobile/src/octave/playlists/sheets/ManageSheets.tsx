@@ -95,6 +95,7 @@ export function NameSheet({ playlist }: { playlist?: MusicPlaylist }) {
       visible
       onClose={closePlaylistSheet}
       snapPoints={[0.5, 0.75]}
+      avoidKeyboard
       header={<Text style={[typography.subtitle, styles.title, { color: theme.colors.text.primary }]}>{playlist ? t("renameTitle") : t("newTitle")}</Text>}
     >
       <View style={styles.form}>
