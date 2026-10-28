@@ -187,6 +187,7 @@ final class OctaveAudioEngine {
 
   func setWantsPlay(_ play: Bool) {
     guard current != nil else { return }
+    if play { ensureSession() }
     wantsPlay = play
     frontDeck.setPaused(!play)
     if fade != nil { backDeck.setPaused(!play) }

@@ -78,9 +78,13 @@ final class AudioDeck {
   }
 
   /// Les options d'une instance AUDIO SEUL (celles du bureau, sortie audiounit d'iOS).
+  /// `audio-exclusive` : sans lui, `ao_audiounit` (mpv 0.41) repose la catégorie `.playback` AVEC
+  /// `MixWithOthers` à chaque ouverture de sa sortie — et une app « mixable » n'est jamais « À l'écoute »
+  /// pour iOS (ni écran verrouillé, ni Centre de contrôle, ni commandes du système). Il ne fait rien d'autre
+  /// sur iOS.
   private static let initOptions: [(String, String)] = [
     ("vo", "null"), ("vid", "no"), ("video", "no"), ("audio-display", "no"),
-    ("ao", "audiounit"), ("idle", "yes"), ("keep-open", "yes"),
+    ("ao", "audiounit"), ("audio-exclusive", "yes"), ("idle", "yes"), ("keep-open", "yes"),
     ("gapless-audio", "weak"), ("prefetch-playlist", "yes"),
     ("sid", "no"), ("audio-file-auto", "no"), ("cover-art-auto", "no"),
     ("cache", "yes"), ("demuxer-max-bytes", "48MiB"), ("demuxer-max-back-bytes", "8MiB"),

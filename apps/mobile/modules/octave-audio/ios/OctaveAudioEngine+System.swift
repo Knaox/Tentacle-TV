@@ -15,21 +15,26 @@ extension OctaveAudioEngine {
 
   // MARK: - Session et commandes
 
+  /// Le démarrage du moteur n'ACTIVE pas la session : ouvrir Octave (une session reprise en pause) ne coupe
+  /// jamais la musique d'une autre app. Elle s'active quand le son part (`ensureSession`).
   func activateSystem() {
     DispatchQueue.main.async { [weak self] in
       guard let self else { return }
-      Self.activateSession()
       self.observeSession()
       self.registerCommands()
       UIApplication.shared.beginReceivingRemoteControlEvents()
     }
   }
 
-  /// La session de la MUSIQUE (le lecteur vidéo pose la sienne, « film ») : reposée à chaque titre lancé.
+  /// La session de la MUSIQUE (le lecteur vidéo pose la sienne, « film ») : reposée chaque fois que le son
+  /// part. Jamais « mixable » : iOS ne donne « À l'écoute » (écran verrouillé, Centre de contrôle) et les
+  /// commandes du système qu'à une app qui ne se mélange pas aux autres — et mpv pose `MixWithOthers` à
+  /// chaque ouverture de sa sortie si on ne l'en empêche pas (`audio-exclusive`, `AudioDeck.swift`).
   static func activateSession() {
     let session = AVAudioSession.sharedInstance()
     do {
-      if session.category != .playback || session.mode != .default {
+      if session.category != .playback || session.mode != .default || !session.categoryOptions.isEmpty
+        || session.routeSharingPolicy != .longFormAudio {
         try session.setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
       }
       try session.setActive(true)
@@ -38,8 +43,12 @@ extension OctaveAudioEngine {
     }
   }
 
+  /// AVANT de lancer ou de reprendre le son, sur la file du moteur (AVAudioSession est sûre d'un fil à
+  /// l'autre) : la sortie de mpv ne démarre pas sur une session inactive. Elle l'est après une
+  /// interruption (appel, autre app), ou quand une platine se tait : mpv rend la session en fermant sa
+  /// sortie (`ao_audiounit`, `setActive:NO`) — ce que iOS accepte dès que plus rien ne joue (pause).
   func ensureSession() {
-    DispatchQueue.main.async { Self.activateSession() }
+    Self.activateSession()
   }
 
   func deactivateSystem() {
@@ -223,7 +232,11 @@ extension OctaveAudioEngine {
         "next": center.nextTrackCommand.isEnabled, "previous": center.previousTrackCommand.isEnabled,
         "seek": center.changePlaybackPositionCommand.isEnabled,
       ]
-      out["category"] = AVAudioSession.sharedInstance().category.rawValue
+      let session = AVAudioSession.sharedInstance()
+      out["category"] = session.category.rawValue
+      out["mode"] = session.mode.rawValue
+      out["mixable"] = session.categoryOptions.contains(.mixWithOthers)
+      out["longFormAudio"] = session.routeSharingPolicy == .longFormAudio
     }
     out["decks"] = decks.map { ["active": $0.isActive, "positionMs": $0.positionMs] }
     out["front"] = front
