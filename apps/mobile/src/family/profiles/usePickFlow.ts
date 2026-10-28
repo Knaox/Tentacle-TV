@@ -36,6 +36,8 @@ export interface PickFlow {
   pin: PickPin | null;
   opening: string | null;
   notice: string | null;
+  /** Le dernier choix a échoué faute de serveur : « Qui regarde ? » offre ses sorties (`pickerUnreachable`). */
+  unreachable: boolean;
   choose: (profileId: string) => void;
   digit: (digit: PinDigit) => void;
   erase: () => void;
@@ -62,6 +64,7 @@ export function usePickFlow({ profiles, opensWithoutPin, pick, onPicked, onStale
   const [pin, setPin] = useState<PickPin | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [unreachable, setUnreachable] = useState(false);
   const busy = useRef(false);
 
   const timeOf = useCallback(
@@ -74,6 +77,7 @@ export function usePickFlow({ profiles, opensWithoutPin, pick, onPicked, onStale
     busy.current = true;
     setNotice(null);
     setOpening(profile.userId);
+    setUnreachable(false);
     try {
       const picked = await pick(profile.userId, code);
       setOpening(null);
@@ -105,6 +109,7 @@ export function usePickFlow({ profiles, opensWithoutPin, pick, onPicked, onStale
           onStale();
           break;
         case "offline":
+          setUnreachable(true);
           if (code !== undefined) setPin({ profile, entry: PIN_ENTRY_START, message: t("refusal.offline") });
           else setNotice(t("refusal.offline"));
           break;
@@ -164,5 +169,5 @@ export function usePickFlow({ profiles, opensWithoutPin, pick, onPicked, onStale
     return () => clearTimeout(timer);
   }, [lockedEntry]);
 
-  return { pin, opening, notice, choose, digit, erase, back };
+  return { pin, opening, notice, unreachable, choose, digit, erase, back };
 }

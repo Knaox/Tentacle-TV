@@ -7,13 +7,14 @@
 
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useOctaveAvailability } from "@tentacle-tv/api-client";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing } from "@/theme";
 import { OctaveOnlySettings } from "./OctaveOnlySettings";
 import { SharedSettings } from "./SharedSettings";
 
 /** Au-delà, deux colonnes. */
-const TWO_COLUMNS_MIN_WIDTH = 768;
+export const TWO_COLUMNS_MIN_WIDTH = 768;
 
 export function OctaveSettingsScreen() {
   const { t } = useTranslation("octaveShell");
@@ -27,9 +28,12 @@ export function OctaveSettingsScreen() {
 }
 
 /** Le contenu seul : une coquille de tablette peut le poser dans sa colonne de détail. */
-export function OctaveSettingsPane({ wide = false }: { wide?: boolean }) {
+export function OctaveSettingsPane({ wide = false, gutter = 0 }: { wide?: boolean; gutter?: number }) {
+  // Sans Octave (serveur qui ne le déclare pas, compte sans musique ou sans le droit) : aucune trace.
+  const { available } = useOctaveAvailability();
+  if (!available) return null;
   return (
-    <View style={wide ? styles.columns : undefined}>
+    <View style={[styles.pane, wide ? styles.columns : undefined, { paddingHorizontal: gutter }]}>
       <View style={wide ? styles.column : undefined}>
         <OctaveOnlySettings />
       </View>
@@ -41,6 +45,7 @@ export function OctaveSettingsPane({ wide = false }: { wide?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  pane: { width: "100%", maxWidth: 1120, alignSelf: "center" },
   columns: { flexDirection: "row", alignItems: "flex-start", gap: spacing.xl },
   column: { flex: 1, minWidth: 0 },
   after: { marginTop: spacing.md },

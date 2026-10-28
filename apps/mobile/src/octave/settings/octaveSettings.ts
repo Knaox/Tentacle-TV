@@ -6,19 +6,16 @@
  * réécriture : une clé déjà écrite garde son choix.
  */
 
+import { DEFAULT_OCTAVE_STARTUP, OCTAVE_STARTUP_KEY, parseOctaveStartup, type OctaveStartupChoice } from "@tentacle-tv/shared/octave/mode";
 import {
-  DEFAULT_OCTAVE_STARTUP,
   OCTAVE_AUTOSYNC_KEY,
   OCTAVE_LIQUID_GLASS_KEY,
   OCTAVE_SKIP_LAUNCH_PIN_KEY,
-  OCTAVE_STARTUP_KEY,
   OCTAVE_THEME_KEY,
   octaveAutoSyncOn,
   octaveLiquidGlassOf,
   octaveSkipLaunchPinOn,
-  parseOctaveStartup,
   sanitizeOctaveTheme,
-  type OctaveStartupChoice,
   type OctaveTheme,
 } from "@tentacle-tv/shared/octave";
 import { LIQUID_GLASS_STORAGE_KEY } from "../../theme/liquidGlass";
