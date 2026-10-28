@@ -7,7 +7,7 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReleaseImportJob, ReleaseImportSource } from "@tentacle-tv/shared/music";
+import type { ReleaseImportJob, ReleaseSource } from "@tentacle-tv/shared/music";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import { runReleaseFiles, runReleaseLink, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePort } from "./releaseFlow";
 import { cancelReleaseJob, fetchImportedReleases, fetchReleaseJob, fetchReleaseUpload, putReleaseChunk, startFilesImport, startLinkImport } from "./releaseRequests";
@@ -34,17 +34,20 @@ export function releasePortFor(provider: MusicProvider): ReleasePort {
 }
 
 /** Les sources que l'extension déclare pour ce compte ; vide : aucune entrée « Importer ». */
-export function releaseSourcesOf(provider: MusicProvider | null): readonly ReleaseImportSource[] {
+export function releaseSourcesOf(provider: MusicProvider | null): readonly ReleaseSource[] {
   return provider?.music.releases ? (provider.music.releaseSources ?? []) : [];
 }
 
 export const importedReleasesKey = (pluginId: string) => ["music", "released", pluginId] as const;
+
+
 
 /* ── Le magasin du module : un import à la fois ── */
 
 interface Running {
   provider: MusicProvider;
   files: ReleaseLocalFile[] | null;
+  albumHint?: string;
   controller: AbortController;
 }
 
@@ -67,10 +70,11 @@ export const subscribeReleaseImport = subscribe;
 
 export interface ReleaseImportHandle {
   available: boolean;
-  sources: readonly ReleaseImportSource[];
+  sources: readonly ReleaseSource[];
   state: ReleaseFlowState | null;
   startLink: (url: string) => Promise<ReleaseFlowState | null>;
-  startFiles: (files: ReleaseLocalFile[]) => Promise<ReleaseFlowState | null>;
+  /** `albumHint` : le nom d'album des fichiers sans tag d'album (le dossier commun, `albumHintOf`). */
+  startFiles: (files: ReleaseLocalFile[], albumHint?: string) => Promise<ReleaseFlowState | null>;
   /** Un envoi en pause repart d'où le serveur s'est arrêté. */
   resume: () => Promise<ReleaseFlowState | null>;
   cancel: () => void;
@@ -83,10 +87,10 @@ export function useReleaseImport(provider: MusicProvider | null): ReleaseImportH
   const sources = useMemo(() => releaseSourcesOf(provider), [provider]);
 
   const launch = useCallback(
-    async (run: (port: ReleasePort, signal: AbortSignal) => Promise<ReleaseFlowState>, files: ReleaseLocalFile[] | null) => {
+    async (run: (port: ReleasePort, signal: AbortSignal) => Promise<ReleaseFlowState>, files: ReleaseLocalFile[] | null, albumHint?: string) => {
       if (!provider || (running && !running.controller.signal.aborted && current && (current.phase === "sending" || current.phase === "reading" || current.phase === "starting"))) return null;
       const controller = new AbortController();
-      running = { provider, files, controller };
+      running = { provider, files, albumHint, controller };
       try {
         const final = await run(releasePortFor(provider), controller.signal);
         if (final.phase === "done") {
@@ -103,13 +107,17 @@ export function useReleaseImport(provider: MusicProvider | null): ReleaseImportH
   );
 
   const startLink = useCallback((url: string) => launch((port, signal) => runReleaseLink(port, url, set, signal), null), [launch]);
-  const startFiles = useCallback((files: ReleaseLocalFile[]) => launch((port, signal) => runReleaseFiles(port, files, set, signal), files), [launch]);
+  const startFiles = useCallback(
+    (files: ReleaseLocalFile[], albumHint?: string) => launch((port, signal) => runReleaseFiles(port, files, set, signal, undefined, albumHint), files, albumHint),
+    [launch],
+  );
   const resume = useCallback(() => {
     const paused = current;
     const files = running?.files;
+    const hint = running?.albumHint;
     if (!paused || paused.phase !== "paused" || !paused.job || !files) return Promise.resolve(null);
     const job: ReleaseImportJob = paused.job;
-    return launch((port, signal) => runReleaseFiles(port, files, set, signal, job), files);
+    return launch((port, signal) => runReleaseFiles(port, files, set, signal, job, hint), files, hint);
   }, [launch]);
   const cancel = useCallback(() => {
     const jobId = current?.job?.jobId;

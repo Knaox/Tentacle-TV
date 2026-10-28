@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { RELEASE_CHUNK_BYTES, type MusicAlbum, type ReleaseImportJob } from "@tentacle-tv/shared/music";
+import type { MusicAlbum, ReleaseImportJob } from "@tentacle-tv/shared/music";
+import { RELEASE_DEFAULT_CHUNK_BYTES as RELEASE_CHUNK_BYTES } from "./releaseModel";
 import { TentacleApiError } from "../../hooks/usePreferences";
 import { runReleaseFiles, runReleaseLink, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePort } from "./releaseFlow";
 
@@ -15,10 +16,10 @@ function fakeServer(options: { failAt?: number; failTimes?: number; refuse?: str
   const puts: string[] = [];
   let polls = 0;
   let failures = 0;
-  let job: ReleaseImportJob = { jobId: "j1", source: "files", state: "receiving", files: [], albums: [] };
+  let job: ReleaseImportJob = { jobId: "j1", source: "files", state: "receiving", files: [], albums: [], focus: null, createdAt: 0, updatedAt: 0, chunkBytes: RELEASE_CHUNK_BYTES };
   const port: ReleasePort = {
-    startLink: async () => options.linkJob ?? { jobId: "l1", source: "bandcamp", state: "reading", albums: [] },
-    startFiles: async (files) => {
+    startLink: async () => options.linkJob ?? { jobId: "l1", source: "bandcamp", state: "reading", albums: [], focus: null, createdAt: 0, updatedAt: 0 },
+    startFiles: async ({ files }) => {
       job = { ...job, files: files.map((f, i) => ({ uploadId: `u${i}`, name: f.name, size: f.size, received: 0, state: "waiting" })) };
       return job;
     },
@@ -33,9 +34,9 @@ function fakeServer(options: { failAt?: number; failTimes?: number; refuse?: str
       const size = job.files!.find((f) => f.uploadId === uploadId)!.size;
       const next = Math.min(size, offset + RELEASE_CHUNK_BYTES);
       received.set(uploadId, next);
-      return next;
+      return { uploadId, size, received: next, done: false as const };
     },
-    uploaded: async (uploadId) => received.get(uploadId) ?? 0,
+    uploaded: async (uploadId) => ({ uploadId, size: 0, received: received.get(uploadId) ?? 0, done: false as const }),
     job: async (jobId) => {
       polls++;
       return polls < 2 ? { ...job, jobId, state: "reading" } : { ...job, jobId, state: "done", albums: [album] };
@@ -108,9 +109,39 @@ describe("import d'un lien", () => {
     expect(final).toMatchObject({ phase: "failed", refusal: "notFound" });
   });
 
-  it("un job fini sans album est un échec", async () => {
-    const server = fakeServer({ linkJob: { jobId: "l", source: "bandcamp", state: "done", albums: [] } });
+  it("un job en échec garde son refus", async () => {
+    const server = fakeServer({ linkJob: { jobId: "l", source: "bandcamp", state: "failed", albums: [], focus: null, createdAt: 0, updatedAt: 0, refusal: "notFound" } });
     const final = await runReleaseLink(server.port, "https://a.bandcamp.com/album/x", () => undefined, new AbortController().signal);
-    expect(final.phase).toBe("failed");
+    expect(final).toMatchObject({ phase: "failed", refusal: "notFound" });
+  });
+});
+
+describe("reprise par le serveur", () => {
+  it("409 à un mauvais offset : on repart de ce qu'il tient, sans attendre", async () => {
+    const server = fakeServer();
+    const putChunk = server.port.putChunk;
+    let first = true;
+    const port: ReleasePort = {
+      ...server.port,
+      putChunk: async (uploadId, offset, body, signal) => {
+        if (first) {
+          first = false;
+          server.received.set(uploadId, 4);
+          throw new TentacleApiError('{"error":"failed","received":4}', 409);
+        }
+        return putChunk(uploadId, offset, body, signal);
+      },
+    };
+    const final = await runReleaseFiles(port, [file("1.mp3", 10)], () => undefined, new AbortController().signal);
+    expect(server.puts).toEqual(["1.mp3:4-10"]);
+    expect(final.phase).toBe("done");
+  });
+
+  it("le dernier morceau porte le job : aucun suivi de plus", async () => {
+    const server = fakeServer();
+    const done: ReleaseImportJob = { jobId: "j1", source: "files", state: "done", albums: [album], focus: { albumId: "own:al:1", trackId: null }, createdAt: 0, updatedAt: 0 };
+    const port: ReleasePort = { ...server.port, putChunk: async (uploadId) => ({ uploadId, size: 10, received: 10, done: true, job: done }), job: async () => { throw new Error("pas de suivi"); } };
+    const final = await runReleaseFiles(port, [file("1.mp3", 10)], () => undefined, new AbortController().signal);
+    expect(final).toMatchObject({ phase: "done", job: { focus: { albumId: "own:al:1" } } });
   });
 });

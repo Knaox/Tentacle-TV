@@ -7,24 +7,24 @@
  * - puis on suit la lecture des tags jusqu'aux albums créés.
  */
 
-import {
-  remainingChunks,
-  type ReleaseFileAnnounce,
-  type ReleaseImportJob,
-  type ReleaseImportRefusal,
-} from "@tentacle-tv/shared/music";
+import type { ReleaseFilesRequest, ReleaseImportJob, ReleaseRefusal, ReleaseUploadProgress } from "@tentacle-tv/shared/music";
+import { RELEASE_DEFAULT_CHUNK_BYTES, remainingChunks } from "./releaseModel";
 import { ReleaseRequestError, toReleaseError } from "./releaseRequests";
 
 /** Un fichier choisi sur l'appareil : son nom, sa taille, et la lecture d'une tranche (web : `Blob.slice`). */
-export interface ReleaseLocalFile extends ReleaseFileAnnounce {
+export interface ReleaseLocalFile {
+  name: string;
+  size: number;
+  /** Type MIME connu de l'appareil, ou "". */
+  type: string;
   read: (start: number, end: number) => Promise<BodyInit>;
 }
 
 export interface ReleasePort {
   startLink: (url: string, signal: AbortSignal) => Promise<ReleaseImportJob>;
-  startFiles: (files: ReleaseFileAnnounce[], signal: AbortSignal) => Promise<ReleaseImportJob>;
-  putChunk: (uploadId: string, offset: number, body: BodyInit, signal: AbortSignal) => Promise<number>;
-  uploaded: (uploadId: string, signal: AbortSignal) => Promise<number>;
+  startFiles: (request: ReleaseFilesRequest, signal: AbortSignal) => Promise<ReleaseImportJob>;
+  putChunk: (uploadId: string, offset: number, body: BodyInit, signal: AbortSignal) => Promise<ReleaseUploadProgress>;
+  uploaded: (uploadId: string, signal: AbortSignal) => Promise<ReleaseUploadProgress>;
   job: (jobId: string, signal: AbortSignal) => Promise<ReleaseImportJob>;
   sleep: (ms: number, signal: AbortSignal) => Promise<void>;
 }
@@ -40,7 +40,7 @@ export interface ReleaseFlowState {
   totalBytes: number;
   /** Le fichier en cours d'envoi (son rang dans le lot), `null` hors envoi. */
   sending: number | null;
-  refusal: ReleaseImportRefusal | null;
+  refusal: ReleaseRefusal | null;
 }
 
 /** Réessais d'un morceau avant la pause (1 s, 3 s, 8 s). */
@@ -61,7 +61,8 @@ function base(source: ReleaseFlowState["source"]): ReleaseFlowState {
 const settled = (job: ReleaseImportJob) => job.state === "done" || job.state === "failed";
 
 function finalOf(state: ReleaseFlowState, job: ReleaseImportJob): ReleaseFlowState {
-  const failed = job.state === "failed" || job.albums.length === 0;
+  // Fini sans album (un lot de doublons) n'est pas un échec : l'interface dit « déjà là ».
+  const failed = job.state === "failed";
   return { ...state, job, phase: failed ? "failed" : "done", sending: null, refusal: failed ? (job.refusal ?? "failed") : null };
 }
 
@@ -101,31 +102,56 @@ export async function runReleaseLink(port: ReleasePort, url: string, emit: Emit,
   return final;
 }
 
-/** Un morceau, réessayé sur une coupure ; une coupure qui dure lève l'erreur (l'appelant met en pause). */
-async function sendChunk(port: ReleasePort, uploadId: string, start: number, body: () => Promise<BodyInit>, signal: AbortSignal): Promise<number> {
-  for (let attempt = 0; ; attempt++) {
+/**
+ * Un fichier, morceau après morceau, depuis `from` ; une coupure se réessaie (le serveur redit d'où repartir), une
+ * coupure qui dure lève l'erreur (l'appelant met en pause). Rend le job quand le dernier morceau l'a porté.
+ */
+async function sendFile(port: ReleasePort, file: ReleaseLocalFile, uploadId: string, from: number, chunk: number, onReceived: (n: number) => void, signal: AbortSignal): Promise<ReleaseImportJob | null> {
+  let received = from;
+  let attempt = 0;
+  let job: ReleaseImportJob | null = null;
+  while (received < file.size) {
+    const { start, end } = remainingChunks(file.size, received, chunk)[0];
     try {
-      return await port.putChunk(uploadId, start, await body(), signal);
+      const progress = await port.putChunk(uploadId, start, await file.read(start, end), signal);
+      received = Math.max(received, progress.received);
+      if (progress.done) {
+        job = progress.job;
+        received = file.size;
+      }
+      attempt = 0;
     } catch (error) {
       if (signal.aborted) throw error;
       const refusal = toReleaseError(error);
+      // Mauvais offset (409) : le serveur dit ce qu'il tient, on repart de là sans attendre.
+      if (refusal.received !== null) {
+        received = refusal.received;
+        onReceived(received);
+        continue;
+      }
       if (!refusal.transient || attempt >= RELEASE_RETRY_DELAYS_MS.length) throw refusal;
-      await port.sleep(RELEASE_RETRY_DELAYS_MS[attempt], signal);
+      await port.sleep(RELEASE_RETRY_DELAYS_MS[attempt++], signal);
+      // Après une coupure, ce qu'il a vraiment reçu (le morceau a pu arriver sans que la réponse revienne).
+      received = await port.uploaded(uploadId, signal).then((p) => (p.done ? file.size : p.received)).catch(() => received);
     }
+    onReceived(received);
   }
+  return job;
 }
 
 /**
  * Des fichiers. `resume` : le job d'un envoi mis en pause (mêmes fichiers, même ordre) — on demande au serveur ce
  * qu'il tient de chacun et on repart de là.
  */
-export async function runReleaseFiles(port: ReleasePort, files: ReleaseLocalFile[], emit: Emit, signal: AbortSignal, resume?: ReleaseImportJob): Promise<ReleaseFlowState> {
+export async function runReleaseFiles(port: ReleasePort, files: ReleaseLocalFile[], emit: Emit, signal: AbortSignal, resume?: ReleaseImportJob, albumHint?: string): Promise<ReleaseFlowState> {
   const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
   let state: ReleaseFlowState = { ...base("files"), totalBytes, job: resume ?? null, phase: resume ? "sending" : "starting" };
   emit(state);
   let job: ReleaseImportJob;
   try {
-    job = resume ?? (await port.startFiles(files.map(({ name, size, type }) => ({ name, size, type })), signal));
+    const request: ReleaseFilesRequest = { files: files.map(({ name, size, type }) => ({ name, size, type })) };
+    if (albumHint) request.albumHint = albumHint;
+    job = resume ?? (await port.startFiles(request, signal));
   } catch (error) {
     if (signal.aborted) throw error;
     state = { ...state, phase: "failed", refusal: toReleaseError(error).refusal };
@@ -133,23 +159,29 @@ export async function runReleaseFiles(port: ReleasePort, files: ReleaseLocalFile
     return state;
   }
   const entries = job.files ?? [];
-  const received = entries.map((f) => (f.state === "receiving" || f.state === "waiting" ? f.received : f.size));
+  const chunk = job.chunkBytes && job.chunkBytes > 0 ? job.chunkBytes : RELEASE_DEFAULT_CHUNK_BYTES;
+  const pending = (f: (typeof entries)[number]) => f.state === "waiting" || f.state === "receiving";
+  const received = entries.map((f) => (pending(f) ? f.received : f.size));
   const total = () => received.reduce((sum, n) => sum + n, 0);
   state = { ...state, job, phase: "sending", sentBytes: total() };
   emit(state);
 
   for (let i = 0; i < files.length && i < entries.length; i++) {
     const entry = entries[i];
-    if (entry.state !== "waiting" && entry.state !== "receiving") continue;
+    if (!pending(entry)) continue;
     state = { ...state, sending: i };
     emit(state);
     try {
-      if (resume) received[i] = await port.uploaded(entry.uploadId, signal);
-      for (const { start, end } of remainingChunks(files[i].size, received[i])) {
-        received[i] = await sendChunk(port, entry.uploadId, start, () => files[i].read(start, end), signal);
+      if (resume) {
+        const known = await port.uploaded(entry.uploadId, signal);
+        received[i] = known.done ? entry.size : known.received;
+      }
+      const after = await sendFile(port, files[i], entry.uploadId, received[i], chunk, (n) => {
+        received[i] = n;
         state = { ...state, sentBytes: total() };
         emit(state);
-      }
+      }, signal);
+      if (after) state = { ...state, job: after };
     } catch (error) {
       if (signal.aborted) throw error;
       const refusal = error instanceof ReleaseRequestError ? error : toReleaseError(error);
@@ -159,14 +191,15 @@ export async function runReleaseFiles(port: ReleasePort, files: ReleaseLocalFile
         emit(state);
         return state;
       }
-      // Ce fichier est refusé (trop gros, illisible) : les autres continuent.
+      // Ce fichier est refusé (trop gros, expiré, illisible) : les autres continuent.
       received[i] = entry.size;
-      const files2 = (state.job?.files ?? []).map((f, k) => (k === i ? { ...f, state: "refused" as const, refusal: refusal.refusal } : f));
-      state = { ...state, job: state.job ? { ...state.job, files: files2 } : null, sentBytes: total() };
+      const marked = (state.job?.files ?? []).map((f, k) => (k === i ? { ...f, state: "refused" as const, refusal: refusal.refusal } : f));
+      state = { ...state, job: state.job ? { ...state.job, files: marked } : null, sentBytes: total() };
       emit(state);
     }
   }
-  const final = await follow(port, { ...state, sentBytes: totalBytes }, emit, signal);
+  const last = state.job!;
+  const final = settled(last) ? finalOf(state, last) : await follow(port, { ...state, sentBytes: totalBytes }, emit, signal);
   emit(final);
   return final;
 }

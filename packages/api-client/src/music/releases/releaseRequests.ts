@@ -4,16 +4,19 @@
  * jamais un message brut.
  */
 
-import { readReleaseRefusal, type ReleaseFileAnnounce, type ReleaseImportJob, type ReleaseImportList, type ReleaseImportRefusal } from "@tentacle-tv/shared/music";
+import type { ReleaseFilesRequest, ReleaseImportJob, ReleaseRefusal, ReleaseUploadProgress, ReleasesResponse } from "@tentacle-tv/shared/music";
 import { TentacleApiError, tentacleApiFetch } from "../../hooks/usePreferences";
 import { musicRouteUrl, type MusicProvider } from "../../pluginMusic/musicProvider";
-import { refusalCode } from "../import/importRequests";
+import { readReleaseRefusal } from "./releaseModel";
 
 /** Un refus du serveur : son code (liste fermée), et s'il vaut la peine de réessayer (réseau, 5xx, 429). */
 export class ReleaseRequestError extends Error {
   constructor(
-    readonly refusal: ReleaseImportRefusal,
+    readonly refusal: ReleaseRefusal,
     readonly transient: boolean,
+    /** 409 à un mauvais offset : ce que le serveur tient déjà (reprendre de là). */
+    readonly received: number | null = null,
+    readonly retryAfterMs: number | null = null,
   ) {
     super(refusal);
     this.name = "ReleaseRequestError";
@@ -23,9 +26,13 @@ export class ReleaseRequestError extends Error {
 export function toReleaseError(error: unknown): ReleaseRequestError {
   if (error instanceof ReleaseRequestError) return error;
   if (error instanceof TentacleApiError) {
-    const code = refusalCode(error);
+    const body = parseBody(error.message);
     const transient = error.status === 0 || error.status === 429 || error.status >= 500;
-    if (code) return new ReleaseRequestError(readReleaseRefusal(code), transient);
+    const received = typeof body?.received === "number" ? body.received : null;
+    const retryAfterMs = typeof body?.retryAfterMs === "number" ? body.retryAfterMs : null;
+    // 409 : mauvais offset — rien de grave, on reprend de ce que le serveur tient.
+    if (error.status === 409 && received !== null) return new ReleaseRequestError("failed", true, received);
+    if (body?.error !== undefined) return new ReleaseRequestError(readReleaseRefusal(body.error), transient, received, retryAfterMs);
     if (error.status === 413) return new ReleaseRequestError("tooLarge", false);
     if (error.status === 404) return new ReleaseRequestError("notFound", false);
     if (error.status === 403) return new ReleaseRequestError("forbidden", false);
@@ -33,6 +40,15 @@ export function toReleaseError(error: unknown): ReleaseRequestError {
   }
   // `fetch` a échoué sans réponse : le réseau.
   return new ReleaseRequestError("failed", true);
+}
+
+function parseBody(text: string): { error?: unknown; received?: unknown; retryAfterMs?: unknown } | null {
+  try {
+    const body = JSON.parse(text) as unknown;
+    return body && typeof body === "object" ? (body as { error?: unknown }) : null;
+  } catch {
+    return null;
+  }
 }
 
 function route(provider: MusicProvider, tail = ""): string {
@@ -54,27 +70,25 @@ export function startLinkImport(provider: MusicProvider, url: string, signal?: A
   return call(() => tentacleApiFetch<ReleaseImportJob>(route(provider, "/link"), post({ url }, signal)));
 }
 
-export function startFilesImport(provider: MusicProvider, files: ReleaseFileAnnounce[], signal?: AbortSignal): Promise<ReleaseImportJob> {
-  return call(() => tentacleApiFetch<ReleaseImportJob>(route(provider, "/files"), post({ files }, signal)));
+export function startFilesImport(provider: MusicProvider, request: ReleaseFilesRequest, signal?: AbortSignal): Promise<ReleaseImportJob> {
+  return call(() => tentacleApiFetch<ReleaseImportJob>(route(provider, "/files"), post(request, signal)));
 }
 
-/** Un morceau d'un fichier, à sa place ; rend les octets que le serveur tient désormais. */
-export async function putReleaseChunk(provider: MusicProvider, uploadId: string, offset: number, body: BodyInit, signal?: AbortSignal): Promise<number> {
-  const answer = await call(() =>
-    tentacleApiFetch<{ received?: unknown }>(musicRouteUrl(provider, `${provider.music.releases}/files/${encodeURIComponent(uploadId)}`, { offset }), {
+/** Un morceau d'un fichier, à sa place ; le dernier rend le job à jour (`done: true`). */
+export function putReleaseChunk(provider: MusicProvider, uploadId: string, offset: number, body: BodyInit, signal?: AbortSignal): Promise<ReleaseUploadProgress> {
+  return call(() =>
+    tentacleApiFetch<ReleaseUploadProgress>(musicRouteUrl(provider, `${provider.music.releases}/files/${encodeURIComponent(uploadId)}`, { offset }), {
       method: "PUT",
       body,
       headers: { "Content-Type": "application/octet-stream" },
       signal,
     }),
   );
-  return typeof answer.received === "number" ? answer.received : offset;
 }
 
 /** Ce que le serveur a déjà reçu d'un fichier (reprise après une coupure). */
-export async function fetchReleaseUpload(provider: MusicProvider, uploadId: string, signal?: AbortSignal): Promise<number> {
-  const answer = await call(() => tentacleApiFetch<{ received?: unknown }>(route(provider, `/files/${encodeURIComponent(uploadId)}`), { signal }));
-  return typeof answer.received === "number" ? answer.received : 0;
+export function fetchReleaseUpload(provider: MusicProvider, uploadId: string, signal?: AbortSignal): Promise<ReleaseUploadProgress> {
+  return call(() => tentacleApiFetch<ReleaseUploadProgress>(route(provider, `/files/${encodeURIComponent(uploadId)}`), { signal }));
 }
 
 export function fetchReleaseJob(provider: MusicProvider, jobId: string, signal?: AbortSignal): Promise<ReleaseImportJob> {
@@ -87,7 +101,15 @@ export async function cancelReleaseJob(provider: MusicProvider, jobId: string): 
 }
 
 /** Les albums importés du compte ; une extension qui n'en tient pas la liste : aucun. */
-export async function fetchImportedReleases(provider: MusicProvider, signal?: AbortSignal): Promise<ReleaseImportList> {
-  const list = await tentacleApiFetch<ReleaseImportList>(route(provider), { signal });
-  return { albums: Array.isArray(list?.albums) ? list.albums : [] };
+export async function fetchImportedReleases(provider: MusicProvider, signal?: AbortSignal): Promise<ReleasesResponse> {
+  const list = await tentacleApiFetch<ReleasesResponse>(route(provider), { signal });
+  return { albums: Array.isArray(list?.albums) ? list.albums : [], artists: Array.isArray(list?.artists) ? list.artists : [] };
+}
+
+/** Retirer un album importé (avec ses titres) ou un titre importé. */
+export async function deleteImportedRelease(provider: MusicProvider, externalId: string): Promise<void> {
+  await tentacleApiFetch<unknown>(route(provider, `/${encodeURIComponent(externalId)}`), { method: "DELETE" }).catch((error: unknown) => {
+    // 204 sans corps : la lecture du JSON échoue, la réponse était bonne.
+    if (error instanceof TentacleApiError) throw toReleaseError(error);
+  });
 }
