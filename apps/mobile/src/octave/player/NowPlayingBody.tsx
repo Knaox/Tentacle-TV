@@ -63,9 +63,18 @@ export const NowPlayingBody = memo(function NowPlayingBody({ headerHandlers, onD
       <View style={styles.bottomRow}>
         <CrossfadeChip open={fadeOpen} onToggle={() => setFadeOpen((v) => !v)} />
       </View>
-      {fadeOpen && <CrossfadePanel onClose={() => setFadeOpen(false)} />}
     </View>
   );
+
+  // Le réglage du fondu se pose PAR-DESSUS le bas du lecteur (la mise en page ne bouge pas) ; le voile le referme.
+  const fadeLayer = fadeOpen ? (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Pressable style={[StyleSheet.absoluteFill, styles.fadeScrim]} onPress={() => setFadeOpen(false)} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+      <View style={[styles.fadeDock, { paddingBottom: Math.max(16, insets.bottom + 8), paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }, split && styles.fadeDockSplit]}>
+        <CrossfadePanel onClose={() => setFadeOpen(false)} />
+      </View>
+    </View>
+  ) : null;
 
   if (split) {
     return (
@@ -77,9 +86,10 @@ export const NowPlayingBody = memo(function NowPlayingBody({ headerHandlers, onD
           </View>
           <View style={styles.splitSide}>
             {controls}
-            {!fadeOpen && height >= 640 && <View style={styles.splitQueue}><QueueList /></View>}
+            {height >= 640 && <View style={styles.splitQueue}><QueueList /></View>}
           </View>
         </View>
+        {fadeLayer}
       </View>
     );
   }
@@ -99,6 +109,7 @@ export const NowPlayingBody = memo(function NowPlayingBody({ headerHandlers, onD
         )}
       </View>
       <View style={styles.columnControls}>{controls}</View>
+      {fadeLayer}
     </View>
   );
 });
@@ -152,4 +163,7 @@ const styles = StyleSheet.create({
   splitArt: { alignItems: "center", justifyContent: "center" },
   splitSide: { flex: 1, maxWidth: 520, alignSelf: "stretch", justifyContent: "center", gap: 20 },
   splitQueue: { flexShrink: 1, maxHeight: 320 },
+  fadeScrim: { backgroundColor: "rgba(0,0,0,0.45)" },
+  fadeDock: { position: "absolute", left: 0, right: 0, bottom: 0 },
+  fadeDockSplit: { left: undefined, width: 440 },
 });
