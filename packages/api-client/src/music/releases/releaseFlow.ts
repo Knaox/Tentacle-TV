@@ -27,6 +27,11 @@ export interface ReleasePort {
   uploaded: (uploadId: string, signal: AbortSignal) => Promise<ReleaseUploadProgress>;
   job: (jobId: string, signal: AbortSignal) => Promise<ReleaseImportJob>;
   sleep: (ms: number, signal: AbortSignal) => Promise<void>;
+  /**
+   * Un morceau au plus, côté APPAREIL (sous `chunkBytes` du job) : le mobile lit et encode chaque morceau sur son
+   * fil JavaScript — des morceaux plus petits n'y bloquent rien de visible.
+   */
+  chunkLimit?: number;
 }
 
 export type ReleasePhase = "starting" | "sending" | "reading" | "paused" | "done" | "failed";
@@ -159,7 +164,7 @@ export async function runReleaseFiles(port: ReleasePort, files: ReleaseLocalFile
     return state;
   }
   const entries = job.files ?? [];
-  const chunk = job.chunkBytes && job.chunkBytes > 0 ? job.chunkBytes : RELEASE_DEFAULT_CHUNK_BYTES;
+  const chunk = Math.min(job.chunkBytes && job.chunkBytes > 0 ? job.chunkBytes : RELEASE_DEFAULT_CHUNK_BYTES, port.chunkLimit ?? Number.POSITIVE_INFINITY);
   const pending = (f: (typeof entries)[number]) => f.state === "waiting" || f.state === "receiving";
   const received = entries.map((f) => (pending(f) ? f.received : f.size));
   const total = () => received.reduce((sum, n) => sum + n, 0);

@@ -29,6 +29,7 @@ import { PageTopBar } from "./PageTopBar";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
+import { ImportedBadge } from "../../releases/ImportedBadge";
 
 const NO_ALBUMS: MusicAlbum[] = [];
 const HIDE = { artist: true } as const;
@@ -76,7 +77,14 @@ export function OctaveArtistScreen({ id }: { id: string }) {
             canPlay={top.length > 0}
             onPlay={playAll}
             onShuffle={() => player && queueActions.playShuffled(player, top, contextId)}
-            meta={releases > 0 ? <MetaLine parts={[t("views.releases", { count: releases })]} /> : undefined}
+            meta={
+              releases > 0 || data.imported ? (
+                <>
+                  {releases > 0 ? <MetaLine parts={[t("views.releases", { count: releases })]} /> : null}
+                  {data.imported ? <ImportedBadge variant="inline" /> : null}
+                </>
+              ) : undefined
+            }
           />
         ) : (
           <View style={{ height: insets.top + 380 }} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { albumHintOf, isImportableAudio, readReleaseRefusal, releaseFraction, remainingChunks } from "./releaseModel";
+import { albumHintOf, releaseArtForPixels, isImportableAudio, readReleaseRefusal, releaseFraction, remainingChunks } from "./releaseModel";
 
 describe("modèle client de l'import de sorties", () => {
   it("propose l'audio par type ou par extension", () => {
@@ -25,5 +25,12 @@ describe("modèle client de l'import de sorties", () => {
     expect(albumHintOf(["Bastien Becker/Édition spéciale/01.flac", "Bastien Becker/Édition spéciale/02.flac"])).toBe("Édition spéciale");
     expect(albumHintOf(["a/01.flac", "b/02.flac"])).toBeUndefined();
     expect(albumHintOf(["01.flac"])).toBeUndefined();
+  });
+  it("une pochette importée prend la plus petite taille qui couvre sa place", () => {
+    const art = "/api/plugins/sillon/music/releases/art/a1/700";
+    expect(releaseArtForPixels(art, 120)).toBe("/api/plugins/sillon/music/releases/art/a1/300");
+    expect(releaseArtForPixels(art, 1000)).toBe("/api/plugins/sillon/music/releases/art/a1/1200");
+    expect(releaseArtForPixels(art, 2400)).toBe("/api/plugins/sillon/music/releases/art/a1/full");
+    expect(releaseArtForPixels("/api/music/artwork/x", 120)).toBe("/api/music/artwork/x");
   });
 });

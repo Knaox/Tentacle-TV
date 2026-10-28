@@ -22,8 +22,9 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-export function releasePortFor(provider: MusicProvider): ReleasePort {
+export function releasePortFor(provider: MusicProvider, chunkLimit?: number): ReleasePort {
   return {
+    chunkLimit,
     startLink: (url, signal) => startLinkImport(provider, url, signal),
     startFiles: (files, signal) => startFilesImport(provider, files, signal),
     putChunk: (uploadId, offset, body, signal) => putReleaseChunk(provider, uploadId, offset, body, signal),
@@ -81,7 +82,8 @@ export interface ReleaseImportHandle {
   reset: () => void;
 }
 
-export function useReleaseImport(provider: MusicProvider | null): ReleaseImportHandle {
+/** `chunkLimit` : le plus gros morceau que CET appareil envoie (le mobile : 2 Mo). */
+export function useReleaseImport(provider: MusicProvider | null, chunkLimit?: number): ReleaseImportHandle {
   const qc = useQueryClient();
   const state = useSyncExternalStore(subscribe, read, read);
   const sources = useMemo(() => releaseSourcesOf(provider), [provider]);
@@ -92,7 +94,7 @@ export function useReleaseImport(provider: MusicProvider | null): ReleaseImportH
       const controller = new AbortController();
       running = { provider, files, albumHint, controller };
       try {
-        const final = await run(releasePortFor(provider), controller.signal);
+        const final = await run(releasePortFor(provider, chunkLimit), controller.signal);
         if (final.phase === "done") {
           void qc.invalidateQueries({ queryKey: importedReleasesKey(provider.pluginId) });
           void qc.invalidateQueries({ queryKey: ["music", "search"] });
@@ -103,7 +105,7 @@ export function useReleaseImport(provider: MusicProvider | null): ReleaseImportH
         return null;
       }
     },
-    [provider, qc],
+    [chunkLimit, provider, qc],
   );
 
   const startLink = useCallback((url: string) => launch((port, signal) => runReleaseLink(port, url, set, signal), null), [launch]);

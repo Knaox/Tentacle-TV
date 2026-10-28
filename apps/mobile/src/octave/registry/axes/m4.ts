@@ -8,6 +8,7 @@
 import { createElement } from "react";
 import { OctaveEventsHost } from "../../events/OctaveEventsHost";
 import { OctaveLikedScreen, OctavePlaylistScreen, OctavePlaylistsScreen, PlaylistSheetsHost } from "../../playlists";
+import { ReleaseSheetHost } from "../../releases";
 import type { OctaveAxisContribution, OctaveScreenProps } from "../octaveRegistryTypes";
 
 function PlaylistRoute({ params }: OctaveScreenProps) {
@@ -21,5 +22,5 @@ export const m4Contribution: OctaveAxisContribution = {
     playlist: PlaylistRoute,
   },
   // Les évènements `music:*` (synchro entre appareils) : UNE souscription pour toute la coquille.
-  overlays: [OctaveEventsHost, PlaylistSheetsHost],
+  overlays: [OctaveEventsHost, PlaylistSheetsHost, ReleaseSheetHost],
 };

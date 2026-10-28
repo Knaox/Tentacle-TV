@@ -3,13 +3,15 @@
  * place RÉSERVÉE à sa taille (rien ne bouge à l'arrivée), un fond d'attente
  * calme puis un fondu court. Sans image : la note de musique dessinée, jamais
  * une case vide. Ronde pour un artiste. Le cache disque est rangé SANS jeton
- * et, hors ligne, la pochette gardée avec le titre passe d'abord (`artworkSource.ts`).
+ * et, hors ligne, la pochette gardée avec le titre passe d'abord (`artworkSource.ts`). Une pochette
+ * IMPORTÉE (lot « sf ») est demandée à la taille de sa place (`releaseArtForPixels`).
  */
 
 import { memo } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { PixelRatio, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import { Disc3, Mic2 } from "lucide-react-native";
+import { releaseArtForPixels } from "@tentacle-tv/api-client";
 import { useTheme } from "@/theme";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useArtworkResolver } from "../env/pagesEnv";
@@ -30,7 +32,9 @@ export const Artwork = memo(function Artwork({ url, size, round, radius = 8, kin
   const theme = useTheme();
   const resolve = useArtworkResolver();
   const offline = useOfflineMode();
-  const src = artworkSource(resolve(url), localUrl, offline);
+  // Une pochette importée a ses tailles : celle qui couvre la place (« fill » : la tête d'une page, en grand).
+  const sized = url ? releaseArtForPixels(url, size === "fill" ? 1200 : size * PixelRatio.get()) : url;
+  const src = artworkSource(resolve(sized), localUrl, offline);
   const box: ViewStyle = size === "fill" ? { width: "100%", aspectRatio: 1 } : { width: size, height: size };
   const r = round ? 9999 : radius;
   const Fallback = kind === "artist" ? Mic2 : Disc3;

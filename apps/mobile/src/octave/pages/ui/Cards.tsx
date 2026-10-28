@@ -5,7 +5,7 @@
  * bibliothèque s'affiche aussitôt avec ce que la carte montrait :
  * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut. Un album qui ne se LIT pas
  * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » sur sa pochette, et le toucher ouvre sa
- * feuille (aimer, ajouter à une playlist) au lieu de sa page.
+ * feuille (aimer, ajouter à une playlist) au lieu de sa page. Une sortie IMPORTÉE porte « Importé » au coin.
  */
 
 import { memo } from "react";
@@ -21,6 +21,7 @@ import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { useOctavePagesProvider } from "../env/pagesEnv";
 import { Artwork } from "./Artwork";
+import { ImportedBadge } from "../../releases/ImportedBadge";
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
@@ -59,7 +60,8 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
   const { t } = useTranslation("music");
   const unavailable = isUnavailableAlbum(album);
   const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
-  if (unavailable) {
+  // Une sortie importée sans écoute publique : grisée, mais sa page s'ouvre (ses titres, « Voir sur Bandcamp »).
+  if (unavailable && !album.imported) {
     return (
       <PressableCard onPress={() => openUnavailableAlbum(album)} style={{ width }} accessibilityRole="button" accessibilityLabel={t("unavailableAlbum.cardLabel", { title: album.title })}>
         <View>
@@ -79,8 +81,11 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
   };
   return (
     <PressableCard onPress={open} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
-      <Artwork url={album.artworkUrl} size={width} radius={10} />
-      <Caption title={album.title} subtitle={subtitle} />
+      <View style={unavailable ? styles.dimmed : undefined}>
+        <Artwork url={album.artworkUrl} size={width} radius={10} />
+        {album.imported ? <ImportedBadge variant="overlay" /> : null}
+      </View>
+      <Caption title={album.title} subtitle={subtitle} muted={unavailable} />
     </PressableCard>
   );
 });

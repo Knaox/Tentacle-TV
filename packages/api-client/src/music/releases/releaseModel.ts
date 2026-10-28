@@ -4,6 +4,7 @@
  */
 
 import {
+  releaseArtSized,
   RELEASE_FILE_EXTENSIONS,
   RELEASE_FILE_MIME_TYPES,
   type MusicAlbum,
@@ -62,4 +63,13 @@ export function albumHintOf(paths: readonly (string | null | undefined)[]): stri
 export function releaseArrival(job: Pick<ReleaseImportJob, "albums" | "focus"> | null): MusicAlbum | null {
   if (!job) return null;
   return job.albums.find((a) => a.external?.id === job.focus?.albumId) ?? job.albums[0] ?? null;
+}
+
+/**
+ * La taille d'une pochette IMPORTÉE pour une place de `pixels` pixels réels (taille × densité) : la plus petite
+ * qui la couvre (300, 700, 1200), sinon l'originale. Toute autre adresse : telle quelle.
+ */
+export function releaseArtForPixels(url: string, pixels: number): string {
+  const size = pixels <= 300 ? "300" : pixels <= 700 ? "700" : pixels <= 1200 ? "1200" : "full";
+  return releaseArtSized(url, size);
 }
