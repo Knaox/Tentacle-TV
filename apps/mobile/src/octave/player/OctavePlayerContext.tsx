@@ -18,6 +18,7 @@ import { createMobileAudioEngine } from "../audio/mobileAudioEngine";
 import { keepJsAliveWhilePlaying } from "../audio/musicKeepAlive";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
+import { keptPlaybackSource, withKeptSources } from "../offline/keptPlayback";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
@@ -38,7 +39,11 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     if (auth.baseUrl === "") return;
     const engine = createDeferredEngine(createMobileAudioEngine(auth, PREFS), PREFS);
-    const p = buildOctavePlayer(engine, qc, () => providerRef.current);
+    // La copie gardée d'abord (en ligne comme sans serveur), comme au bureau : rien à préparer chez l'extension.
+    const p = buildOctavePlayer(engine, qc, () => providerRef.current, {
+      wrapSources: withKeptSources,
+      isKept: (key) => keptPlaybackSource(key) !== null,
+    });
     // Après le premier son d'un titre de recherche, sa radio devient la suite (comme au bureau).
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
     // La transition douce suit le réglage de l'appareil, même pendant l'écoute (le fondu suivant la prend).
