@@ -1,35 +1,45 @@
 /**
- * Octave (mobile) — « Transition douce » : la durée du fondu en ms, « 0 » = coupée, ALLUMÉE à 3 s sur un appareil
- * qui n'a rien choisi (clé `tentacle_octave_crossfade`, la même que le bureau). La page « Réglages d'Octave » et le
- * contrôle du lecteur l'écrivent, le moteur la lit.
+ * Octave (mobile) — « Transition douce » : le magasin PARTAGÉ (`@tentacle-tv/shared/octave` ›
+ * `createCrossfadeSetting` : clé `tentacle_octave_crossfade`, ALLUMÉE à 3 s sur un appareil qui n'a rien choisi,
+ * « 0 » = coupée) sur le stockage préchargé de l'app. La page « Réglages d'Octave » et le contrôle du lecteur
+ * l'écrivent, le moteur le lit.
  *
- * ⚠️ À l'intégration du lot : m2-audio met la règle dans le partagé (`createCrossfadeSetting`,
- * `sanitizeCrossfadeMs` de `@tentacle-tv/shared/octave`) — ces bornes locales le cèdent alors à la sienne.
+ * ⚠️ Lot « Octave mobile » : m2-audio annonce son pendant (`src/octave/audio/crossfadeSetting.ts`) — à
+ * l'intégration, UN seul des deux reste, l'autre le réexporte.
  */
 
-import { deviceSetting } from "./deviceSetting";
+import { useSyncExternalStore } from "react";
+import { CROSSFADE_DEFAULT_MS, CROSSFADE_MAX_S, CROSSFADE_MIN_S, CROSSFADE_STORAGE_KEY, createCrossfadeSetting } from "@tentacle-tv/shared/octave";
+import { deviceStorage, onDeviceStorageReady } from "./deviceSetting";
 
-export const CROSSFADE_STORAGE_KEY = "tentacle_octave_crossfade";
-export const CROSSFADE_MIN_S = 2;
-export const CROSSFADE_MAX_S = 12;
-export const CROSSFADE_DEFAULT_MS = 3_000;
+export { CROSSFADE_DEFAULT_MS, CROSSFADE_MAX_S, CROSSFADE_MIN_S, CROSSFADE_STORAGE_KEY };
 
-/** 0, ou 2 000 à 12 000 par pas d'une seconde (la règle du bureau). */
-function sanitize(value: number): number {
-  if (!Number.isFinite(value) || value <= 0) return 0;
-  return Math.min(CROSSFADE_MAX_S, Math.max(CROSSFADE_MIN_S, Math.round(value / 1_000))) * 1_000;
-}
+let store = createCrossfadeSetting(deviceStorage);
+const listeners = new Set<() => void>();
+const notify = () => {
+  for (const listener of [...listeners]) listener();
+};
+let detach = store.subscribe(notify);
 
-const crossfade = deviceSetting<number>({
-  key: CROSSFADE_STORAGE_KEY,
-  read: (raw) => (raw === null || raw.trim() === "" ? CROSSFADE_DEFAULT_MS : sanitize(Number(raw))),
-  write: (ms) => String(ms),
+// Le stockage prêt (hydraté) : le magasin relit sa clé — lu avant, il n'aurait vu que le défaut.
+onDeviceStorageReady(() => {
+  const before = store.get();
+  detach();
+  store = createCrossfadeSetting(deviceStorage);
+  detach = store.subscribe(notify);
+  if (store.get() !== before) notify();
 });
 
-export const getCrossfadeMs = crossfade.get;
-export const subscribeCrossfade = crossfade.subscribe;
-export const useCrossfadeMs = crossfade.use;
+export const getCrossfadeMs = (): number => store.get();
+export const setCrossfadeMs = (next: number): void => store.set(next);
 
-export function setCrossfadeMs(next: number): void {
-  crossfade.set(sanitize(next));
+export function subscribeCrossfade(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useCrossfadeMs(): number {
+  return useSyncExternalStore(subscribeCrossfade, getCrossfadeMs, getCrossfadeMs);
 }

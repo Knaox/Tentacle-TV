@@ -70,6 +70,14 @@ export function deviceSetting<T>({ key, read, write }: Spec<T>): DeviceSetting<T
   };
 }
 
+/** Le stockage de l'appareil, une fois prêt ; null avant (le défaut vaut). */
+export const deviceStorage = (): StorageAdapter | null => storage;
+
+/** Un magasin d'ailleurs (le partagé) relit sa clé quand le stockage est prêt. */
+export function onDeviceStorageReady(reload: () => void): void {
+  reloads.push(reload);
+}
+
 /** Le stockage est prêt (hydraté) : chaque réglage relit sa clé. */
 export function configureOctaveSettings(adapter: StorageAdapter): void {
   storage = adapter;
