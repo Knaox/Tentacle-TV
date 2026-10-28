@@ -36,6 +36,8 @@ vi.mock("react-i18next", () => ({
 }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
 vi.mock("@tentacle-tv/api-client", () => ({
+  // Le cache gardé d'Octave se branche au chargement de son module (`octaveCacheBoot.ts`).
+  configureOctaveCacheBackend: () => undefined,
   useServerCapability: (key: string) => state.capable && key === state.capability,
   useAppConfig: () => ({ data: { features: { family: { v: 2, enabled: true, guests: true } } } }),
   useJellyfinClient: () => ({ getDeviceName: () => "Desktop", setAccessToken: () => undefined }),
