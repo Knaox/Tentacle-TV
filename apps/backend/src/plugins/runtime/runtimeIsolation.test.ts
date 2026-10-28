@@ -118,7 +118,9 @@ describe("isolation de l'invité (modèle de permissions de Node)", () => {
     expect(probe.spawnBinary).toMatch(/^DENIED/);
     expect(probe.worker).toMatch(/^DENIED/);
     expect(probe.jellyfinKey).toBe("absent");
-    expect(probe.envKeys).toBe("TENTACLE_LOCALE,TENTACLE_PLUGIN_DATA_DIR,TENTACLE_PLUGIN_ID,TENTACLE_PLUGIN_SOCKET");
+    // Fuseau et langue de l'hôte passent tels quels (`PASSTHROUGH_ENV`) quand il les a : la CI pose LANG, un poste non.
+    const ownKeys = String(probe.envKeys).split(",").filter((key) => !["TZ", "LANG", "LC_ALL"].includes(key)).join(",");
+    expect(ownKeys).toBe("TENTACLE_LOCALE,TENTACLE_PLUGIN_DATA_DIR,TENTACLE_PLUGIN_ID,TENTACLE_PLUGIN_SOCKET");
     expect(existsSync(join(DATA_ROOT, "evil.txt"))).toBe(false);
   });
 });
