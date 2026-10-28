@@ -18,6 +18,14 @@
  *   liste (`list-prefs`) : une playlist gardée s'ouvre hors ligne dans l'ordre
  *   où le compte la voit en ligne.
  *
+ * Les playlists sont ANCRÉES (`anchoredKey`) : une playlist, la liste des
+ * playlists, les titres likés, les attentes de l'extension (les titres importés
+ * pas encore dans la bibliothèque, qu'une playlist montre à leur place) et le
+ * tri d'une playlist gardent leur DERNIER affichage en ligne sans limite d'âge,
+ * et partent les derniers quand la place manque : une playlist s'ouvre hors
+ * ligne, dans son ordre, avec ses pochettes et ses titres, même des semaines
+ * après, même après avoir quitté l'application.
+ *
  * Rangées PAR IDENTITÉ (serveur + compte, profil compris) : jamais rendues à
  * une autre ; les `MAX_OWNERS` identités les plus récentes gardent chacune
  * leurs bornes (changer de profil dans Octave ne repart pas à froid), les
@@ -35,7 +43,15 @@ export const MAX_OWNERS = 4;
 export type PersistKind = "search" | "entity" | "library";
 
 /** Les pages de la bibliothèque qu'Octave rouvre sans réseau (clés de `musicKeys`). */
-const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked", "list-prefs"]);
+const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked", "list-prefs", "pending"]);
+
+/** Les débuts de clé (sérialisée) des pages ancrées : jamais expirées, évincées en dernier. */
+const ANCHORED_PREFIXES = ['["music","playlist",', '["music","playlists"]', '["music","liked",', '["music","pending",', '["music","list-prefs","playlist:', '["music","list-prefs","liked"'];
+
+/** Cette clé de requête sérialisée est-elle celle d'une page de playlist ancrée ? */
+export function anchoredKey(keyJson: string): boolean {
+  return ANCHORED_PREFIXES.some((prefix) => keyJson.startsWith(prefix));
+}
 
 export interface StoredEntry {
   /** L'identifiant de stockage : l'identité et la clé (`entryId`). Une entrée d'avant n'avait que la clé. */
@@ -95,12 +111,13 @@ export function maxAgeOf(kind: PersistKind): number {
   return kind === "search" ? SEARCH_MAX_AGE_MS : ENTITY_MAX_AGE_MS;
 }
 
-export function expired(entry: Pick<StoredEntry, "kind" | "savedAt">, now: number): boolean {
+export function expired(entry: Pick<StoredEntry, "kind" | "savedAt" | "id" | "key">, now: number): boolean {
+  if (entry.kind === "library" && anchoredKey(entryKey(entry))) return false;
   return now - entry.savedAt > maxAgeOf(entry.kind);
 }
 
 /**
- * Les identifiants à retirer pour tenir les bornes : d'abord les expirées,
+ * Les identifiants à retirer pour tenir les bornes : d'abord les expirées (jamais une page ancrée),
  * puis les identités au-delà des `maxOwners` plus récentes (celle en cours
  * toujours gardée), puis, identité par identité, les moins récemment
  * utilisées.
@@ -122,7 +139,9 @@ export function evictionPlan(
   const recency = (list: readonly StoredEntry[]) => Math.max(...list.map((e) => e.usedAt));
   const owners = [...byOwner.keys()].sort((a, b) => (a === owner ? -1 : b === owner ? 1 : recency(byOwner.get(b)!) - recency(byOwner.get(a)!)));
   owners.forEach((who, rank) => {
-    const kept = [...byOwner.get(who)!].sort((a, b) => b.usedAt - a.usedAt);
+    // Les pages ancrées d'abord : la place qui manque se prend sur les autres.
+    const anchored = (e: StoredEntry) => (e.kind === "library" && anchoredKey(entryKey(e)) ? 1 : 0);
+    const kept = [...byOwner.get(who)!].sort((a, b) => anchored(b) - anchored(a) || b.usedAt - a.usedAt);
     let bytes = 0;
     kept.forEach((e, i) => {
       bytes += e.bytes;
