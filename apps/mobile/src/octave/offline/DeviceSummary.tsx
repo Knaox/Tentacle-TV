@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { SwitchRow } from "../settings/view/SwitchRow";
 import { octaveAutoSync } from "../settings/octaveSettings";
 import { useOctaveColors } from "../theme/octaveColors";
+import { CellularWaitNotice } from "./CellularWaitNotice";
 import { DeviceTransferCard } from "./DeviceTransferCard";
 import { OfflineModeSwitch } from "./OfflineModeSwitch";
 import { useOfflineSurface } from "./musicOfflineContext";
@@ -38,6 +39,7 @@ export const DeviceSummary = memo(function DeviceSummary({ summary, free, offlin
       {surface.visible && (
         <View style={styles.block}>
           <DeviceTransferCard summary={transfers} />
+          <CellularWaitNotice />
           <OfflineModeSwitch />
         </View>
       )}
