@@ -44,6 +44,8 @@ vi.mock("../components/TrackList", () => ({ rowsOf: (tracks: unknown[]) => track
 vi.mock("../components/ViewStates", () => ({ EmptyState: () => <i data-empty /> }));
 vi.mock("../player/OctavePlayerProvider", () => ({ useOctavePlayer: () => ({}) }));
 vi.mock("./KeepCollectionButton", () => ({ KeepCollectionButton: () => <i data-keep /> }));
+vi.mock("./KeptCollectionArtwork", () => ({ KeptCollectionArtwork: () => <i data-cover /> }));
+vi.mock("../components/PlaylistArtwork", () => ({ HEADER_ARTWORK_CLASS: "" }));
 vi.mock("./OfflineSwitch", () => ({ OfflineNotice: () => <i data-notice />, OfflineSwitchButton: () => <i data-switch /> }));
 vi.mock("./autosync/AutoSyncSetting", () => ({ AutoSyncSetting: () => <i data-autosync /> }));
 vi.mock("../listOrder/ListToolbar", () => ({ ListToolbar: ({ shown, total }: { shown: number; total: number }) => <i data-toolbar={`${shown}/${total}`} /> }));

@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MusicPlaylist, MusicTrack } from "../contract/musicTypes";
 import type { JfPlaylist } from "../playlists/playlistJellyfin";
 import type { UserView } from "./viewContext";
+import { forgetMosaics, mosaicCandidatesFor, rememberMosaic, withMosaic } from "./playlistMosaic";
 
 const jf = vi.hoisted(() => ({
   entries: new Map<string, string[]>(),
@@ -52,7 +53,6 @@ function trackFor(id: string): MusicTrack {
   };
 }
 
-const { forgetMosaics, mosaicCandidatesFor, rememberMosaic, withMosaic } = await import("./playlistMosaic");
 
 const view = { userId: "u1", access: { mode: "all" } } as unknown as UserView;
 const NOW = Date.UTC(2026, 9, 28, 12);
