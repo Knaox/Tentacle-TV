@@ -81,7 +81,10 @@ fondu, les deux platines en pause). À mi-fondu : `advanced`, l'entrant passe de
 
 ### Système
 
-- iOS : `AVAudioSession` catégorie `.playback` (mode par défaut), `UIBackgroundModes: audio` (déjà posé),
+- iOS : `AVAudioSession` catégorie `.playback` (mode par défaut), JAMAIS mixable — une app mixable n'est jamais
+  « À l'écoute » ; mpv pose `MixWithOthers` à chaque ouverture de sa sortie sans `audio-exclusive=yes` (posé sur
+  les platines). Activée quand le son part ou REPREND (pas au démarrage du moteur : ouvrir Octave ne coupe pas
+  la musique d'une autre app) ; mpv la rend en fermant une sortie. `UIBackgroundModes: audio` (déjà posé),
   `MPNowPlayingInfoCenter` (titre, artiste, album, pochette, durée, position, vitesse) et
   `MPRemoteCommandCenter` (lecture, pause, bascule, suivant, précédent, position). Les commandes sont
   ÉTEINTES à l'arrêt du moteur.
