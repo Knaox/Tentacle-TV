@@ -108,9 +108,11 @@
 /* ══ Les tuiles de choix d'une feuille (« Original / Allégé », paliers) ════
  *
  * Du contenu de la feuille, pas un contrôle de verre : un remplissage, SANS
- * liseré (R11) ; la choisie à l'accent UNI (`--lg-row-highlight`, blanc
- * ≥ 4,5:1), jamais un contour violet ni le dégradé de marque. Marqueur
- * `.lg-choice-tile`, l'état par `aria-pressed`. */
+ * liseré (R11) ; la choisie SOULEVÉE, comme le segment choisi d'un
+ * segmenté (`.lg-seg`) : un remplissage NEUTRE plus franc que le survol, une
+ * ombre courte, le texte à sa couleur — jamais l'accent en aplat (28/10),
+ * ni un contour violet, ni le dégradé de marque. Marqueur `.lg-choice-tile`,
+ * l'état par `aria-pressed`. */
 :root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"]) .lg-choice-tile {
   background: var(--lgp-track);
   border-color: transparent;
@@ -122,11 +124,16 @@
 }
 
 :root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"]) .lg-choice-tile[aria-pressed="true"] {
-  --text-primary: #ffffff;
-  --text-secondary: #ffffff;
-  --text-tertiary: rgba(255, 255, 255, 0.9);
-  --text-quaternary: rgba(255, 255, 255, 0.9);
+  /* Le secondaire monte au principal du ton, comme sur la pastille d'un menu. */
+  --text-secondary: var(--text-primary);
+  --text-tertiary: var(--text-primary);
+  --text-quaternary: var(--text-primary);
   background: var(--lg-row-highlight);
-  color: #ffffff;
-  text-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Sur un verre clair, le segment choisi du Mac : blanc, soulevé. */
+:root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"])[data-lg-tone="light"] .lg-choice-tile[aria-pressed="true"] {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
