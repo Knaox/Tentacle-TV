@@ -13,10 +13,14 @@
 import { Directory, File, Paths } from "expo-file-system";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { parseStoredUser, profilePhotoUrl, STORED_USER_KEY } from "@/auth/storedUser";
+import { imageBytesComplete } from "@/avatars/imageCompleteness";
 
 const DIR_NAME = "offline-avatars";
-/** Au-delà, ce n'est pas la photo qu'on croit (l'envoi redimensionne à 512 px). */
-const MAX_BYTES = 512 * 1024;
+/**
+ * Au-delà, ce n'est pas la photo qu'on croit. Un personnage de la galerie part en PNG 512 × 512 (~550 Kio,
+ * relevé du banc mo2) : l'ancien plafond de 512 Kio refusait toute copie, et le hors ligne retombait sur l'initiale.
+ */
+const MAX_BYTES = 2 * 1024 * 1024;
 
 /** Nom de fichier sûr : caractères alphanumériques seulement, jamais vide. */
 function safeStem(userId: string): string | null {
@@ -50,7 +54,8 @@ export async function cacheAvatarFrom(userId: string, url: string, token: string
     const res = await fetch(url, { headers: { "X-Emby-Token": token } });
     if (!res.ok) return;
     const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES) return;
+    // Une réponse tronquée ne remplace jamais une copie entière.
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES || !imageBytesComplete(bytes)) return;
     // Écriture par fichier temporaire puis renommage : une coupure en cours
     // d'écriture laisserait sinon un JPEG tronqué.
     const tmp = new File(target.parentDirectory, `${target.name}.part`);
