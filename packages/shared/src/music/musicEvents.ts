@@ -7,6 +7,7 @@
  * `LibraryChanged`, `UserDataChanged`) — jamais d'un relevé.
  */
 
+import type { MusicListKey } from "./musicListOrder";
 import type { Mbid, MusicTrack } from "./musicTypes";
 
 export const MUSIC_EVENT_TYPES = [
@@ -16,6 +17,7 @@ export const MUSIC_EVENT_TYPES = [
   "music:resolved",
   "music:pending",
   "music:provider",
+  "music:listPrefs",
 ] as const;
 
 export type MusicEventType = (typeof MUSIC_EVENT_TYPES)[number];
@@ -66,13 +68,23 @@ export interface MusicProviderEvent {
   type: "music:provider";
 }
 
+/**
+ * Le tri ou l'ordre personnalisé d'une liste du compte a changé (un autre appareil l'a gardé) : relire sa
+ * préférence. Émis par le CŒUR à chaque `PUT /api/music/lists/:key/prefs`, à tous les appareils du compte.
+ */
+export interface MusicListPrefsEvent {
+  type: "music:listPrefs";
+  key: MusicListKey;
+}
+
 export type MusicEvent =
   | MusicLibraryEvent
   | MusicUserDataEvent
   | MusicPlaylistEvent
   | MusicResolvedEvent
   | MusicPendingEvent
-  | MusicProviderEvent;
+  | MusicProviderEvent
+  | MusicListPrefsEvent;
 
 /** Les seuls types qu'une EXTENSION peut émettre par l'API d'hôte (le reste est refusé). */
 export const PLUGIN_EMITTABLE_MUSIC_EVENTS = ["music:resolved", "music:pending"] as const;

@@ -7,6 +7,7 @@
  * - `music:userdata` : le cœur a changé ailleurs (un autre appareil, l'interface
  *   de Jellyfin) → posé dans tout le cache, « Titres likés » relu.
  * - `music:playlist` : cette playlist et la liste des playlists.
+ * - `music:listPrefs` : le tri d'une liste gardé par un AUTRE appareil du compte.
  * - `music:resolved` / `music:pending` (extensions) : un titre en attente a son
  *   élément → titres likés, playlists, accueil, et ce que la bibliothèque a
  *   parmi les titres montrés d'ailleurs (`match`).
@@ -22,6 +23,7 @@ import { acquireSocket, onSocketStatus, subscribeSocket, type SocketStatus } fro
 import { LIBRARY_SCOPES, MUSIC_KEY, musicKeys } from "./musicQueryKeys";
 import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
+import { isSavingListPrefs } from "./useMusicListOrder";
 
 function invalidateScopes(qc: QueryClient, scopes: readonly string[]): void {
   for (const scope of scopes) void qc.invalidateQueries({ queryKey: ["music", scope] });
@@ -47,6 +49,10 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
     case "music:resolved":
     case "music:pending":
       invalidateScopes(qc, ["liked", "playlists", "playlist", "home", "match"]);
+      return;
+    case "music:listPrefs":
+      // Un autre appareil du compte a trié ou glissé cette liste ; l'écho de NOTRE envoi ne relit rien.
+      if (!isSavingListPrefs(event.key)) void qc.invalidateQueries({ queryKey: musicKeys.listPrefs(event.key) });
       return;
     case "music:provider":
       // L'extension elle-même (`/api/plugins/active`) se relit ailleurs ; ici, ce qu'elle mêlait.

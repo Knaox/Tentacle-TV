@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MusicAccess } from "../access/musicAccess";
 import type { IncrementalResult } from "../index/indexSync";
 import type { IndexRow } from "../index/indexTypes";
-import { onJellyfinLibraryChanged, onJellyfinUserDataChanged, resetMusicLiveEventsForTests } from "./musicLiveEvents";
+import { onJellyfinLibraryChanged, onJellyfinUserDataChanged, resetMusicLiveEventsForTests, tellListPrefsChanged } from "./musicLiveEvents";
 
 const { sent, accessOf, apply, known, playlistsOf } = vi.hoisted(() => ({
   sent: [] as { userId: string; msg: unknown }[],
@@ -82,5 +82,13 @@ describe("évènements de données d'utilisateur", () => {
     known.add("t1");
     await onJellyfinUserDataChanged({ UserId: "U1", UserDataList: [{ ItemId: "T1", IsFavorite: true }, { ItemId: "movie", IsFavorite: true }] }, 1000);
     expect(sent).toEqual([{ userId: "u1", msg: { type: "music:userdata", changes: [{ jellyfinId: "t1", favorite: true }] } }]);
+  });
+});
+
+describe("tri d'une liste gardé", () => {
+  it("le compte qui l'a gardé l'apprend sur tous ses appareils, par la clé de la liste seule", () => {
+    sent.length = 0;
+    tellListPrefsChanged("u1", "playlist:p1");
+    expect(sent).toEqual([{ userId: "u1", msg: { type: "music:listPrefs", key: "playlist:p1" } }]);
   });
 });
