@@ -83,6 +83,14 @@ export interface AudioBridgeSource {
    */
   direct?: { url: string; expiresAt: number | null };
   /**
+   * MOBILE : `url` EST le flux direct, déjà jugé par la page (hôte déclaré, https) — le natif l'ouvre SANS les
+   * en-têtes du serveur et, à son premier échec, lit `fallbackUrl` (le serveur, `direct=failed`) à la même
+   * position. Jamais posé par le bureau, qui juge `direct` lui-même ; un natif qui ne le connaît pas refuse
+   * l'adresse (hors du serveur) : la page ne le pose que si le module déclare `directStreams`.
+   */
+  open?: "direct";
+  fallbackUrl?: string;
+  /**
    * Lire la copie de ce titre GARDÉE HORS LIGNE par ce compte (capacité `offline.music`) : la coquille cherche le
    * fichier dans SA base de transferts — la page ne désigne jamais un chemin — et, s'il manque, lit `url`.
    * `trackKey` : la clé sous laquelle la copie est gardée quand le titre a changé d'identité depuis (une entrée
