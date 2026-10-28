@@ -59,6 +59,9 @@ export default {
     openAlbum: "Open the album {{title}}",
     recentTitle: "Recent searches",
     preparing: "Searching",
+    /** Un lien Shazam collé ou partagé : la recherche de son titre (`useSharedTrackSearch`). */
+    sharedLinkReading: "Reading the Shazam link…",
+    sharedLinkFailed: "This Shazam link doesn't say which song to look for. Type its name.",
     nothingFound: "No results for “{{query}}”.",
     nothingFoundHint: "Check the spelling, or add the artist's name.",
     tracks: "Songs",
