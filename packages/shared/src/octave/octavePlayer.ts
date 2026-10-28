@@ -23,6 +23,7 @@ import { waitForSource } from "./sourceRetry";
 import { CHOSEN_BUDGET_TRIES, type StartCause } from "./startCause";
 import { queueActions } from "./octaveQueueActions";
 import { applyRemoteCommand } from "./remoteCommands";
+import { engineLostCurrent } from "./engineLoss";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -186,6 +187,8 @@ export class OctavePlayer {
     if (!snap.current) return;
     if (snap.phase === "error") return queueActions.retry(this);
     if (snap.phase === "ended" || this.restoredAtMs !== null) return this.startItem(snap.queue, this.restoredAtMs ?? 0);
+    // Le moteur a perdu le titre pendant l'absence de l'app (`engineLoss.ts`) : redonné à sa position.
+    if (engineLostCurrent(this)) return this.startItem(snap.queue, this.position.get().positionMs);
     this.snapshot.update({ wantsPlay: true });
     this.deps.engine.resume();
   }
