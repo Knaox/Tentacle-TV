@@ -14,6 +14,7 @@ import { useResponsive } from "@/theme";
 import { rememberOctavePath } from "../cache/octavePageStore";
 import { markOctaveReached } from "../launch/octaveLaunch";
 import { octaveOverlays, octaveProviders } from "../registry/octaveRegistry";
+import { OctaveRequires } from "../registry/OctaveRequires";
 import { useOctaveColors } from "../theme/octaveColors";
 import { OCTAVE_MINI_GAP, OCTAVE_SIDEBAR_WIDTH, OctaveChromeContext, type OctaveChrome } from "./octaveChrome";
 import { OctaveMiniPlayerSlot } from "./OctaveMiniPlayerSlot";
@@ -70,8 +71,10 @@ export function OctaveShell({ children }: { children: ReactNode }) {
           </View>
           {isTablet ? null : <OctaveTabBar />}
           <OctaveMiniPlayerSlot layout={layout} tabBarHeight={chrome.tabBarHeight} onHeight={setMiniPlayerHeight} />
-          {octaveOverlays.map((Overlay, i) => (
-            <Overlay key={i} />
+          {octaveOverlays.map(({ component: Overlay, requires }, i) => (
+            <OctaveRequires key={i} requires={requires}>
+              <Overlay />
+            </OctaveRequires>
           ))}
         </View>,
       )}

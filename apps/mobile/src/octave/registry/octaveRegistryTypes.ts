@@ -5,6 +5,7 @@
  */
 
 import type { ComponentType, ReactNode } from "react";
+import type { ServerCapability } from "@tentacle-tv/shared";
 
 /** Les écrans d'Octave, un par adresse (`octavePaths`, shared). */
 export type OctaveScreenName =
@@ -25,12 +26,33 @@ export interface OctaveMiniPlayerProps {
   layout: "phone" | "tablet";
 }
 
+/**
+ * Le DROIT d'une entrée du registre (règle 15 du brief) : une entrée dont le
+ * droit manque n'est PAS affichée — ni écran (son adresse renvoie à l'accueil
+ * d'Octave), ni raccourci, ni requête. Tout est déjà soumis à Octave lui-même
+ * (`music.library` + accès du compte, la porte de la coquille).
+ */
+export interface OctaveRequirement {
+  /** Capacités du serveur exigées, TOUTES (`serverCapabilities.ts`) — jamais une comparaison de version. */
+  capabilities?: readonly ServerCapability[];
+  /**
+   * Un droit lu aux MÊMES sources que le bureau (droits de l'extension, droit hors
+   * ligne du compte de l'appareil, invité de la Famille…) : un CROCHET, appelé à
+   * chaque rendu. `true` seul affiche ; `false` masque ; `null` : pas encore connu
+   * (rien d'affiché, rien qui clignote).
+   */
+  useAllowed?: () => boolean | null;
+}
+
+/** Une entrée du registre : le composant seul (aucun droit propre), ou avec son droit. */
+export type OctaveGated<T> = T | { component: T; requires?: OctaveRequirement };
+
 export interface OctaveAxisContribution {
-  screens?: Partial<Record<OctaveScreenName, ComponentType<OctaveScreenProps>>>;
+  screens?: Partial<Record<OctaveScreenName, OctaveGated<ComponentType<OctaveScreenProps>>>>;
   /** Le mini-lecteur (m2). La coquille le place et mesure sa hauteur : les pages s'écartent d'autant. */
-  miniPlayer?: ComponentType<OctaveMiniPlayerProps>;
+  miniPlayer?: OctaveGated<ComponentType<OctaveMiniPlayerProps>>;
   /** Montés au-dessus de toute la coquille (lecteur plein écran, feuilles d'actions…). */
-  overlays?: ComponentType[];
+  overlays?: OctaveGated<ComponentType>[];
   /** Enveloppent la coquille d'Octave (contextes propres au mode), dans l'ordre. */
   providers?: ComponentType<{ children: ReactNode }>[];
 }

@@ -10,6 +10,7 @@ import { memo } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { octaveMiniPlayer } from "../registry/octaveRegistry";
+import { OctaveRequires } from "../registry/OctaveRequires";
 import { OCTAVE_MINI_GAP, OCTAVE_SIDEBAR_WIDTH } from "./octaveChrome";
 
 interface Props {
@@ -20,8 +21,8 @@ interface Props {
 
 export const OctaveMiniPlayerSlot = memo(function OctaveMiniPlayerSlot({ layout, tabBarHeight, onHeight }: Props) {
   const insets = useSafeAreaInsets();
-  const MiniPlayer = octaveMiniPlayer;
-  if (!MiniPlayer) return null;
+  if (!octaveMiniPlayer) return null;
+  const { component: MiniPlayer, requires } = octaveMiniPlayer;
   const onLayout = (e: LayoutChangeEvent) => onHeight(Math.round(e.nativeEvent.layout.height));
   const position =
     layout === "phone"
@@ -29,7 +30,9 @@ export const OctaveMiniPlayerSlot = memo(function OctaveMiniPlayerSlot({ layout,
       : { left: OCTAVE_SIDEBAR_WIDTH + insets.left + 16, right: 16 + insets.right, bottom: Math.max(insets.bottom, 12) };
   return (
     <View pointerEvents="box-none" style={[styles.slot, position]} onLayout={onLayout}>
-      <MiniPlayer layout={layout} />
+      <OctaveRequires requires={requires}>
+        <MiniPlayer layout={layout} />
+      </OctaveRequires>
     </View>
   );
 });

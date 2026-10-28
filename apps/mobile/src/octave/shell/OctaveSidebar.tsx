@@ -5,7 +5,7 @@
  * même sur une page empilée ; l'onglet d'origine reste allumé.
  */
 
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname, useRouter, type Href } from "expo-router";
@@ -14,6 +14,9 @@ import { Clapperboard, Heart, ListMusic, type LucideIcon } from "lucide-react-na
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { useOctaveColors, type OctaveColors } from "../theme/octaveColors";
 import { useLeaveOctave } from "../mode/useOctaveSwitch";
+import { octaveScreen } from "../registry/octaveRegistry";
+import { OctaveRequires } from "../registry/OctaveRequires";
+import type { OctaveScreenName } from "../registry/octaveRegistryTypes";
 import { OCTAVE_SIDEBAR_WIDTH } from "./octaveChrome";
 import { OCTAVE_NAV_ITEMS } from "./octaveNavItems";
 import { useOctaveTab } from "./useOctaveTab";
@@ -46,6 +49,11 @@ const SidebarRow = memo(function SidebarRow({ label, Icon, selected, onPress, co
   );
 });
 
+/** Un raccourci n'existe que si l'écran qu'il ouvre a son droit. */
+function ScreenShortcut({ screen, children }: { screen: OctaveScreenName; children: ReactNode }) {
+  return <OctaveRequires requires={octaveScreen(screen)?.requires}>{children}</OctaveRequires>;
+}
+
 export const OctaveSidebar = memo(function OctaveSidebar() {
   const insets = useSafeAreaInsets();
   const colors = useOctaveColors();
@@ -74,8 +82,12 @@ export const OctaveSidebar = memo(function OctaveSidebar() {
       </View>
       <Text style={[styles.section, { color: colors.textTertiary }]}>{t("nav.yourPlaylists")}</Text>
       <View style={styles.group}>
-        <SidebarRow label={t("nav.liked")} Icon={Heart} selected={pathname === octavePaths.liked} onPress={() => open(octavePaths.liked)} colors={colors} />
-        <SidebarRow label={t("nav.playlists")} Icon={ListMusic} selected={pathname === octavePaths.playlists} onPress={() => open(octavePaths.playlists)} colors={colors} />
+        <ScreenShortcut screen="liked">
+          <SidebarRow label={t("nav.liked")} Icon={Heart} selected={pathname === octavePaths.liked} onPress={() => open(octavePaths.liked)} colors={colors} />
+        </ScreenShortcut>
+        <ScreenShortcut screen="playlists">
+          <SidebarRow label={t("nav.playlists")} Icon={ListMusic} selected={pathname === octavePaths.playlists} onPress={() => open(octavePaths.playlists)} colors={colors} />
+        </ScreenShortcut>
       </View>
       <View style={styles.spacer} />
       <SidebarRow label={ts("backToFilms.label")} hint={ts("backToFilms.hint")} Icon={Clapperboard} selected={false} onPress={leave} colors={colors} />
