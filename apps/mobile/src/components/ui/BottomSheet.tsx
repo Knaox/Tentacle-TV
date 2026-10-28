@@ -26,7 +26,7 @@ interface BottomSheetProps {
   header?: ReactNode;
   /**
    * La feuille porte un champ : elle MONTE avec le clavier, champ et bouton toujours visibles, et ses crans se
-   * bornent à la place au-dessus de lui (`sheet/sheetKeyboard.ts`). Jamais un `KeyboardAvoidingView` en plus
+   * bornent à la place au-dessus de lui (`sheet/sheetKeyboard.ts`). Jamais un second évitement du clavier (`KeyboardAvoidingArea`)
    * dedans : il soulèverait une seconde fois.
    */
   avoidKeyboard?: boolean;
