@@ -11,7 +11,7 @@ import type {
  *
  *   REGARDER   Lecture                — sauts et enchaînement · « encore là ? » · données · vidéo de l'ordinateur
  *              Langues et sous-titres — langue de l'interface · audio et sous-titres de chaque bibliothèque
- *              Téléchargements        — emplacement · espace (bureau)
+ *              Téléchargements        — emplacement · espace · continuer en arrière-plan (bureau)
  *   INTERFACE  Apparence              — thème · Liquid Glass · Octave
  *              Accueil et découverte  — démarrage · bandeau · rangées · aperçus au survol · recommandations
  *   VOUS       Famille                — profils · mon code PIN · « Qui regarde ? » · quitter
@@ -85,6 +85,8 @@ export const WIDE_SETTINGS_SECTIONS: readonly WideSettingsSection[] = [
       entry("downloadsLocation", "device", { requires: ["downloads"] }),
       entry("downloadsSpace", null, { requires: ["downloads"], keywords: false }),
     ]),
+    // Films et musique d'Octave : un seul moteur, une seule ligne (aussi dans les Réglages d'Octave).
+    group("downloads", "transfers", [entry("downloadsBackground", "device", { requires: ["downloads", "backgroundTransfers"] })]),
   ]),
   section("appearance", "interface", [
     group("appearance", "theme", [entry("theme", "device")]),

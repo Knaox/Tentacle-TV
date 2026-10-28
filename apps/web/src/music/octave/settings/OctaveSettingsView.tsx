@@ -9,7 +9,7 @@
  *   rien à Tentacle), la transition douce, la tenue à jour des playlists gardées ;
  * - **aussi dans Tentacle** — les réglages de Tentacle qui ont du sens dans la musique, et ceux-là seulement : la
  *   langue de l'interface et les profils (le COMPTE : tous ses appareils), « Au démarrage, ouvrir » (CET appareil,
- *   la pastille qu'il porte partout par défaut). Les films (lecture vidéo, sous-titres, accueil, recommandations…) n'y sont pas.
+ *   la pastille qu'il porte partout par défaut), « Continuer en arrière-plan » (CET appareil, bureau). Les films (lecture vidéo, sous-titres, accueil, recommandations…) n'y sont pas.
  *
  * Les MÊMES réglages que Réglages de Tentacle, jamais une copie : chaque groupe est le composant que Tentacle monte
  * (ou son geste unique : `useInterfaceLanguage`), branché sur la même source. Aucune donnée chargée ici, ni de films
@@ -25,9 +25,11 @@ import { OctaveAppearanceFields } from "./OctaveAppearanceFields";
 import { AutoSyncSetting } from "../offline/autosync/AutoSyncSetting";
 import { CrossfadeSetting } from "./CrossfadeSetting";
 import { LanguageSetting } from "./LanguageSetting";
+import { OctaveTransfersSetting } from "./OctaveTransfersSetting";
 
 const octaveOnly = <ScopeBadge scope="octave" />;
 const account = <ScopeBadge scope="account" />;
+const device = <ScopeBadge scope="device" />;
 
 export function OctaveSettingsView() {
   const { t } = useTranslation("octaveShell");
@@ -48,6 +50,7 @@ export function OctaveSettingsView() {
         <LanguageSetting badge={account} />
         <OctaveProfilesSettings badge={account} />
         <OctaveStartupSetting title={t("settings.startup")} />
+        <OctaveTransfersSetting badge={device} />
       </div>
     </div>
   );

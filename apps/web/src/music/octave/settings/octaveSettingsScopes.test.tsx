@@ -33,6 +33,7 @@ vi.mock("../../../components/settings/useInterfaceLanguage", () => ({
 vi.mock("../../../theme/useLiquidGlass", () => ({ useLiquidGlass: () => ({ toggleVisible: false }) }));
 vi.mock("../mode/useOctaveAvailability", () => ({ useOctaveAvailability: () => ({ available: true, settled: true }) }));
 vi.mock("../offline/offlineSurfaceContext", () => ({ useOfflineSurface: () => ({ library: true }) }));
+vi.mock("../../../downloads/backgroundTransfersStore", () => ({ useBackgroundTransfers: () => true, setBackgroundTransfers: async () => undefined }));
 vi.mock("../profiles", () => ({
   OctaveProfilesSettings: ({ badge }: { badge?: ReactNode }) => <section data-title="settings.profiles">{badge}</section>,
 }));
@@ -59,6 +60,8 @@ describe("Réglages d'Octave : la portée de chaque groupe", () => {
     expect(found["settings.language"]).toBe("account");
     expect(found["settings.profiles"]).toBe("account");
     expect(found["settings.startup"]).toBe("device");
+    // « Continuer en arrière-plan » : le réglage de Réglages › Téléchargements, sur CET appareil.
+    expect(found["groups.downloads.transfers"]).toBe("device");
     expect(html.indexOf("settings.shared")).toBeLessThan(html.indexOf('data-title="settings.language"'));
     expect(html.indexOf('data-title="autosync.section"')).toBeLessThan(html.indexOf("settings.shared"));
   });
