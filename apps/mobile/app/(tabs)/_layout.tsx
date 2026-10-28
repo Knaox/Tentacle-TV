@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs, type Href } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,7 @@ import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
+import { pendingOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
 
 /**
  * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
@@ -29,8 +30,18 @@ import { useResponsive, useTheme, RailWidthContext } from "@/theme";
  * Hors ligne, il n'en reste que deux : l'Accueil devient « Sur cet appareil »
  * (le catalogue local) et le Profil se réduit ; Pour vous, Bibliothèque et
  * extensions n'ont rien à montrer sans serveur.
+ *
+ * Lancement en Octave (l'app quittée en mode musique) : la coquille de
+ * Tentacle ne se peint pas, elle renvoie UNE fois à la page d'Octave gardée —
+ * ni accueil des films, ni ses requêtes, avant la musique.
  */
 export default function TabsLayout() {
+  const [octavePath] = useState(() => pendingOctaveLaunchRedirect());
+  if (octavePath) return <Redirect href={octavePath as Href} />;
+  return <TentacleTabs />;
+}
+
+function TentacleTabs() {
   const { t } = useTranslation("nav");
   const { t: to } = useTranslation("offline");
   const theme = useTheme();

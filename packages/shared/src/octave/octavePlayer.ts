@@ -22,6 +22,7 @@ import { refreshEngineSource } from "./octaveResolution";
 import { waitForSource } from "./sourceRetry";
 import { CHOSEN_BUDGET_TRIES, type StartCause } from "./startCause";
 import { queueActions } from "./octaveQueueActions";
+import { applyRemoteCommand } from "./remoteCommands";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -235,6 +236,7 @@ export class OctavePlayer {
     if (event.type === "state") this.onEngineState(event.state);
     else if (event.type === "advanced") this.onAdvanced(event.toKey);
     else if (event.type === "needSource") refreshEngineSource(this, event.trackKey);
+    else if (event.type === "remote") applyRemoteCommand(this, event.command);
     else this.snapshot.update({ origin: event.origin });
   }
 

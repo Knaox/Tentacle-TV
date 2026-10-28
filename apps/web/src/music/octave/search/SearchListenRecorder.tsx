@@ -7,28 +7,12 @@
  */
 
 import { useEffect } from "react";
-import { currentItem, type OctavePlayer } from "@tentacle-tv/shared/octave";
+import { recordSearchListensTo, type OctavePlayer } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
-import { albumTargetOf, queryOfContext, readSearchListens, withListen, writeSearchListens } from "./searchListens";
 
-/** Suit le lecteur ; rend sa désinscription. Exporté pour les tests. */
+/** Suit le lecteur ; rend sa désinscription (la règle est partagée avec le mobile). Exporté pour les tests. */
 export function recordSearchListens(player: OctavePlayer, now: () => number = Date.now): () => void {
-  let noted: string | null = null;
-  return player.snapshot.subscribe(() => {
-    const snap = player.snapshot.get();
-    const item = currentItem(snap.queue);
-    if (!item || snap.phase !== "playing" || item.uid === noted) return;
-    noted = item.uid;
-    const contextId = snap.queue.contextId;
-    writeSearchListens(
-      withListen(readSearchListens(), {
-        track: item.track,
-        query: queryOfContext(contextId),
-        albumTarget: albumTargetOf(item.track, contextId),
-        at: now(),
-      }),
-    );
-  });
+  return recordSearchListensTo(player, typeof localStorage === "undefined" ? null : localStorage, now);
 }
 
 export function SearchListenRecorder() {

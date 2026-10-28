@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo } from "react";
 import { AppState, Platform } from "react-native";
 import { QueryClient, QueryClientProvider, focusManager, useQueryClient } from "@tanstack/react-query";
+import { whenTentacleNeeded } from "@/octave/launch/tentacleHold";
 
 // Refetch les queries stale quand l'app revient au premier plan
 focusManager.setEventListener((handleFocus) => {
@@ -82,11 +83,17 @@ const mobilePersistStorage = {
 // une ou deux en pratique — AsyncStorage en offre 2 Mo) : les rangées reco se
 // rendent d'un coup au démarrage, comme sur le web.
 const MOBILE_PERSIST_WHITELIST = [...HOME_PERSIST_WHITELIST, RECO_PAGE_KEY] as const;
-void hydrateQueryClient(queryClient, mobilePersistStorage, {
-  whitelist: MOBILE_PERSIST_WHITELIST,
-});
-attachQueryPersister(queryClient, mobilePersistStorage, {
-  whitelist: MOBILE_PERSIST_WHITELIST,
+// Lancement en Octave : la relecture du cache des films attend qu'on quitte la
+// musique (ou le repos). Le persisteur ne s'attache qu'APRÈS elle : attaché
+// avant, sa première sauvegarde réécrirait un cache vide par-dessus le disque.
+whenTentacleNeeded(() => {
+  void hydrateQueryClient(queryClient, mobilePersistStorage, {
+    whitelist: MOBILE_PERSIST_WHITELIST,
+  }).finally(() => {
+    attachQueryPersister(queryClient, mobilePersistStorage, {
+      whitelist: MOBILE_PERSIST_WHITELIST,
+    });
+  });
 });
 
 export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {

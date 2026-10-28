@@ -5,10 +5,11 @@
 
 import { useCallback } from "react";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { moodContextId } from "@tentacle-tv/api-client";
 import { useMoodTracks } from "./useMoods";
 
-/** Le contexte de lecture d'une ambiance (la houle de sa carte, sa vue). */
-export const moodContextId = (moodId: string) => `mood:${moodId}`;
+/** Le contexte de lecture d'une ambiance (la houle de sa carte, sa vue) : partagé avec le mobile. */
+export { moodContextId };
 
 export function useMoodPlayback() {
   const player = useOctavePlayer();
