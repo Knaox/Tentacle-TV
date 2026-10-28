@@ -22,7 +22,7 @@ function track(album: string): MusicTrack {
   };
 }
 const albums = Array.from({ length: 9 }, (_, k) => track(`a${k}`));
-const collection = { key: "playlist:jf:p1", kind: "playlist" as const, title: "New", subtitle: null, artworkUrl: null, tracks: albums };
+const collection = { key: "playlist:jf:p1", kind: "playlist" as const, title: "New", subtitle: null, artworkUrl: null, tracks: albums, keys: albums.map((t) => t.key) };
 const srcs = (html: string) => [...html.matchAll(/<img src="([^"]+)"/g)].map((m) => m[1]!.replace(/&amp;/g, "&"));
 const render = (offline: boolean) => renderToStaticMarkup(<KeptCollectionArtwork collection={collection} kept={[]} offline={offline} />);
 
