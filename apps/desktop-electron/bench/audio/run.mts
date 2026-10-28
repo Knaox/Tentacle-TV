@@ -15,10 +15,8 @@
  * `BENCH_DIR` : dossier des fichiers témoins (défaut : un dossier temporaire).
  */
 
-import { mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
-import { generate } from "./fixtures.mjs";
+import { benchDir, generate } from "./fixtures.mjs";
 import { startBenchServer } from "./serve.mjs";
 import { PORT } from "./benchKit.mts";
 import { formats, gapless, growingHold, provisionalEnd, swapCurrent, swapNext, writerStall } from "./pcmScenarios.mts";
@@ -28,9 +26,7 @@ import { jfFormats, jfGaplessPcm, jfGaplessRealtime, jfLatency, jfReplayGain } f
 import { firstClick, jfClicks } from "./clickScenarios.mts";
 import { cutRealtime } from "./cutScenarios.mts";
 
-const dir = process.env["BENCH_DIR"] ?? path.join(tmpdir(), "tentacle-audio-bench");
-mkdirSync(dir, { recursive: true });
-const fx = generate(dir);
+const fx = generate(benchDir("audio"));
 // `BENCH_NO_SERVER=1` : le port est pris par un vrai backend (scénarios du Jellyfin seulement).
 const server = process.env["BENCH_NO_SERVER"] === "1" ? { requests: [], close: () => undefined } : await startBenchServer(fx, PORT);
 const out = (name: string): string => path.join(fx, `out-${name}.raw`);

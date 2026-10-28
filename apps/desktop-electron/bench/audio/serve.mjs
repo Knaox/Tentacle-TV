@@ -16,7 +16,7 @@
  * se lit là.
  */
 
-import { createReadStream, readFileSync, statSync } from "node:fs";
+import { closeSync, createReadStream, fstatSync, openSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 
@@ -27,7 +27,10 @@ export function startBenchServer(root, port, pages = null) {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://bench");
     requests.push({ at: performance.now(), path: url.pathname, range: req.headers.range ?? null });
-    if (process.env["BENCH_DEBUG"]) console.log(Math.round(performance.now()), "REQ", url.pathname, url.search, req.headers.range ?? "");
+    // Entre guillemets JSON : une requête ne glisse pas de fin de ligne dans le journal (CodeQL js/log-injection).
+    if (process.env["BENCH_DEBUG"]) {
+      console.log(Math.round(performance.now()), "REQ", JSON.stringify(url.pathname), JSON.stringify(url.search), JSON.stringify(req.headers.range ?? ""));
+    }
     const [, kind, ...rest] = url.pathname.split("/");
     // La page du banc web (moteur <audio>) : servie de la même origine que le
     // son, sans quoi `captureStream` rend du silence (média d'une autre origine).
@@ -42,14 +45,26 @@ export function startBenchServer(root, port, pages = null) {
       res.writeHead(401).end();
       return;
     }
-    const file = path.join(root, ...rest.map(decodeURIComponent));
-    if (!file.startsWith(root)) return void res.writeHead(403).end();
+    const file = path.resolve(root, ...rest.map(decodeURIComponent));
+    if (!file.startsWith(path.resolve(root) + path.sep)) return void res.writeHead(403).end();
+    // UN descripteur pour la taille et les octets : un témoin régénéré entre les deux ne mêle plus la taille de
+    // l'un aux octets de l'autre (CodeQL js/file-system-race).
+    let fd;
     let size;
     try {
-      size = statSync(file).size;
+      fd = openSync(file, "r");
+      size = fstatSync(fd).size;
     } catch {
+      if (fd !== undefined) closeSync(fd);
       return void res.writeHead(404).end();
     }
+    const readAll = () => {
+      try {
+        return readFileSync(fd);
+      } finally {
+        closeSync(fd);
+      }
+    };
     const range = /bytes=(\d+)-(\d*)/.exec(req.headers.range ?? "");
     const from = range ? Number(range[1]) : 0;
     if (kind === "files") {
@@ -61,10 +76,10 @@ export function startBenchServer(root, port, pages = null) {
         ...(range ? { "Content-Range": `bytes ${from}-${to}/${size}` } : {}),
       });
       const rate = Number(url.searchParams.get("rate") ?? "0");
-      if (rate <= 0) return void createReadStream(file, { start: from, end: to }).pipe(res);
+      if (rate <= 0) return void createReadStream("", { fd, start: from, end: to }).pipe(res);
       // Débit borné, taille connue : un fichier COMPLET servi à un rythme réaliste
       // (la sortie PCM du banc joue plus vite que le temps réel sinon).
-      const data = readFileSync(file).subarray(from, to + 1);
+      const data = readAll().subarray(from, to + 1);
       const t0 = performance.now();
       let sent = 0;
       const pace = () => {
@@ -78,7 +93,10 @@ export function startBenchServer(root, port, pages = null) {
       pace();
       return;
     }
-    if (kind !== "grow") return void res.writeHead(404).end();
+    if (kind !== "grow") {
+      closeSync(fd);
+      return void res.writeHead(404).end();
+    }
     const rate = Number(url.searchParams.get("rate") ?? "200000");
     const head = Number(url.searchParams.get("head") ?? "65536");
     const mode = url.searchParams.get("mode") ?? "hold";
@@ -95,7 +113,7 @@ export function startBenchServer(root, port, pages = null) {
       if (t < reached + stallMs / 1000) return stallBytes;
       return Math.min(size, head + Math.floor((t - stallMs / 1000) * rate));
     };
-    const data = readFileSync(file);
+    const data = readAll();
     if (from >= written() && mode === "close") {
       res.writeHead(416, { "Content-Range": `bytes */*` }).end();
       return;

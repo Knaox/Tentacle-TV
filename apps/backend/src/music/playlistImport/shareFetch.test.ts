@@ -4,9 +4,11 @@
  * local. Et le lecteur : un document revérifié, un lien de CE serveur lu sans réseau.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { LookupAddress } from "dns";
-import { guardedLookup, privateShareImportAllowed, shareAddressAllowed, shareDocumentTarget } from "./shareFetch";
+import http from "http";
+import type { AddressInfo } from "net";
+import { createShareFetcher, guardedLookup, privateShareImportAllowed, shareAddressAllowed, shareDocumentTarget } from "./shareFetch";
 import { readTentacleShare } from "./readers/tentacleReader";
 import { ImportReadFailure } from "./readers/readerKit";
 
@@ -47,6 +49,30 @@ describe("adresses permises pour un lien de partage", () => {
     expect(await run([{ address: "127.0.0.1", family: 4 }])).toMatchObject({ address: "" });
     expect((await run([{ address: "127.0.0.1", family: 4 }])).error).toBeTruthy();
     expect(await run([{ address: "10.1.1.1", family: 4 }, { address: "93.184.216.34", family: 4 }])).toEqual({ error: null, address: "93.184.216.34" });
+  });
+});
+
+describe("la requête elle-même", () => {
+  it("une durée totale bornée (un serveur qui égrène ses octets est coupé) et aucune socket du pool commun", async () => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      const drip = setInterval(() => res.write(" "), 20);
+      res.on("close", () => clearInterval(drip));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address() as AddressInfo;
+    const get = vi.spyOn(http, "get");
+    try {
+      const started = Date.now();
+      const outcome = await createShareFetcher(true, 200)(`http://127.0.0.1:${port}/octave/share/${TOKEN}`).catch((e: Error) => e);
+      expect(outcome).toMatchObject({ reason: "network" });
+      expect(Date.now() - started).toBeLessThan(5_000);
+      expect(get.mock.calls[0]?.[1]).toMatchObject({ agent: false });
+    } finally {
+      get.mockRestore();
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });
 

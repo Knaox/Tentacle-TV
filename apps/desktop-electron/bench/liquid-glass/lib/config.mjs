@@ -6,7 +6,9 @@ import { mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const STATE = process.env.BANC_STATE ?? path.join(os.tmpdir(), "tentacle-lg-banc");
+// Hors du dossier temporaire partagé : un nom fixe y serait préparé d'avance par un autre compte (CodeQL
+// js/insecure-temporary-file). Les recettes le donnent de toute façon (README : ~/Library/Caches).
+export const STATE = process.env.BANC_STATE ?? path.join(os.homedir(), "Library", "Caches", "tentacle-lg-banc");
 const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
 const ROOT_OUT = process.env.BANC_OUT ?? path.join(os.homedir(), "Pictures/tentacle-banc-liquid-glass");
 

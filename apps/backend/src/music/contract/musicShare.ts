@@ -65,7 +65,11 @@ export type MusicShareRefusal = "public_sharing_denied" | "not_found" | "unavail
 
 /** Le lien d'un partage, sur l'adresse publique du serveur (sans barre finale). */
 export function playlistShareUrl(publicOrigin: string, token: string): string {
-  return `${publicOrigin.replace(/\/+$/, "")}${TENTACLE_SHARE_PATH}${token}`;
+  // En remontant la chaîne, comme `trimTrailingSlashes` (utils, hors du miroir du backend) : `/\/+$/` y était
+  // quadratique sur une longue suite de « / » (js/polynomial-redos).
+  let end = publicOrigin.length;
+  while (end > 0 && publicOrigin[end - 1] === "/") end -= 1;
+  return `${publicOrigin.slice(0, end)}${TENTACLE_SHARE_PATH}${token}`;
 }
 
 /** L'adresse du DOCUMENT d'un lien de partage reconnu (même serveur, même préfixe) ; `null` sinon. */

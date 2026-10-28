@@ -64,7 +64,8 @@ async function cdp(port) {
         const pending = new Map();
         ws.onmessage = (e) => {
           const msg = JSON.parse(e.data);
-          pending.get(msg.id)?.(msg);
+          // Seules les réponses à NOS requêtes (identifiant numérique) : un évènement n'appelle rien.
+          if (typeof msg.id === "number") pending.get(msg.id)?.(msg);
           pending.delete(msg.id);
         };
         const send = (method, params = {}) =>

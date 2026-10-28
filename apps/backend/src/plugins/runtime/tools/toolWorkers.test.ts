@@ -3,7 +3,6 @@ import { execFileSync } from "child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { connect, type Socket } from "net";
 import { join } from "path";
-import { tmpdir } from "os";
 import { followActiveZipapp, spawnWorker, stopAllWorkers, stopWorker } from "./toolWorkers";
 
 /**
@@ -14,7 +13,6 @@ import { followActiveZipapp, spawnWorker, stopAllWorkers, stopWorker } from "./t
  * l'amorçage, la relance après une mort. Sans `python3` : sauté.
  */
 
-const root = join(tmpdir(), `tentacle-worker-test-${process.pid}`);
 const hasPython = (() => {
   try {
     execFileSync("python3", ["--version"]);
@@ -27,12 +25,14 @@ const hasPython = (() => {
 // Le faux zipapp existe AVANT le chargement de services/ytDlp.ts, qui choisit alors celui-ci (l'« épinglé »).
 // `vi.hoisted` passe avant les imports, mais SYNCHRONE (le backend est CommonJS : pas d'`await` de premier
 // niveau) : les modules de Node viennent donc de `process.getBuiltinModule`, sans `import`.
-vi.hoisted(() => {
+// Le dossier vient de `mkdtempSync` : un nom imprévisible, créé par ce seul processus (CodeQL
+// js/insecure-temporary-file — un nom tiré du pid se devine et se prépare d'avance).
+const root = vi.hoisted(() => {
   const { join: j } = process.getBuiltinModule("path");
   const { tmpdir: t } = process.getBuiltinModule("os");
-  const { mkdirSync: mk, writeFileSync: wr } = process.getBuiltinModule("fs");
+  const { mkdirSync: mk, mkdtempSync: mkt, writeFileSync: wr } = process.getBuiltinModule("fs");
   const { execFileSync: run } = process.getBuiltinModule("child_process");
-  const dir = j(t(), `tentacle-worker-test-${process.pid}`);
+  const dir = mkt(j(t(), "tentacle-worker-test-"));
   const src = j(dir, "zipsrc");
   process.env.TENTACLE_YTDLP_PINNED = j(dir, "yt-dlp");
   const secret = JSON.stringify(j(dir, "tentacle.db"));
@@ -90,6 +90,7 @@ vi.hoisted(() => {
   } catch {
     // Sans python3 : les tests sont sautés.
   }
+  return dir;
 });
 
 const dataDir = join(root, "plugins", "w-test", "data");

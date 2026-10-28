@@ -12,14 +12,13 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createServer, request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AudioBridgeEvent, AudioBridgeSource, AudioBridgeTrack } from "../../src/main/audio/audioBridgeContract.ts";
-import { generate } from "./fixtures.mjs";
+import { benchDir, generate } from "./fixtures.mjs";
 import { startBenchServer } from "./serve.mjs";
 
 // Les constantes du banc (`benchKit.mts`), recopiées : ce module se lance aussi seul (voir l'en-tête).
@@ -129,9 +128,7 @@ export async function cutRealtime(fx: string): Promise<Record<string, unknown>> 
 
 // Lancé seul (la base d'avant le correctif) : son propre serveur de banc.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  const dir = process.env["BENCH_DIR"] ?? path.join(tmpdir(), "tentacle-audio-bench");
-  mkdirSync(dir, { recursive: true });
-  const fx = generate(dir);
+  const fx = generate(benchDir("audio"));
   const server = await startBenchServer(fx, PORT);
   console.log(`\n## cutRealtime\n${JSON.stringify(await cutRealtime(fx), null, 1)}`);
   server.close();

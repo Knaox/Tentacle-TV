@@ -18,6 +18,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 export const RATE = 44100;
@@ -94,10 +95,33 @@ function writeDsf(file, seconds) {
   writeFileSync(file, Buffer.concat([head, data]));
 }
 
+/**
+ * Un témoin brut écrit s'il manque, sans « existe ? » puis « écris » (CodeQL js/file-system-race) : `wx` refuse
+ * un fichier déjà là, gardé tel quel. Le signal est recalculé à chaque passage (quelques millisecondes).
+ */
+function writeOnce(file, make) {
+  try {
+    writeFileSync(file, make(), { flag: "wx" });
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+  }
+}
+
+/**
+ * Le dossier GARDÉ d'un banc (ses témoins se réutilisent d'un passage à l'autre) : `BENCH_DIR`, sinon le cache
+ * de l'utilisateur — jamais un nom fixe dans le dossier temporaire, qu'un autre compte de la machine pourrait
+ * préparer d'avance (CodeQL js/insecure-temporary-file).
+ */
+export function benchDir(name) {
+  const dir = process.env.BENCH_DIR ?? path.join(os.homedir(), ".cache", "tentacle-bench", name);
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  return dir;
+}
+
 export function generate(dir) {
   mkdirSync(path.join(dir, "formats"), { recursive: true });
   const ref = path.join(dir, "album.ref.s16");
-  if (!existsSync(ref)) writeFileSync(ref, pcm(0, ALBUM_SAMPLES));
+  writeOnce(ref, () => pcm(0, ALBUM_SAMPLES));
   const bounds = [0, ...ALBUM_CUTS, ALBUM_SAMPLES];
   for (let k = 0; k < 3; k += 1) {
     const out = path.join(dir, `album-${k + 1}.flac`);
@@ -108,7 +132,7 @@ export function generate(dir) {
       "-metadata", "REPLAYGAIN_TRACK_GAIN=-3.00 dB", "-metadata", "REPLAYGAIN_ALBUM_GAIN=-6.00 dB"], out);
   }
   const three = path.join(dir, "three.s16");
-  if (!existsSync(three)) writeFileSync(three, pcm(0, RATE * 3));
+  writeOnce(three, () => pcm(0, RATE * 3));
   const formats = {
     "flac-24-96.flac": ["-c:a", "flac", "-sample_fmt", "s32", "-ar", "96000"],
     "alac.m4a": ["-c:a", "alac"],

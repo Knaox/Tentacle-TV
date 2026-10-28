@@ -15,11 +15,11 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AudioBridgeEvent, AudioBridgeSource, AudioBridgeTrack } from "../../src/main/audio/audioBridgeContract.ts";
 import { CrossfadeDecks } from "../../src/main/audio/crossfadeDecks.ts";
 import { LEVEL_PROPERTY, parseLevel } from "../../src/main/audio/audioLevel.ts";
+import { benchDir } from "./fixtures.mjs";
 import { startBenchServer } from "./serve.mjs";
 
 const PORT = Number(process.env["BENCH_PORT"] ?? 3722);
@@ -143,7 +143,7 @@ async function gesture() {
   return out;
 }
 
-const dir = process.env["BENCH_DIR"] ?? path.join(tmpdir(), "tentacle-crossfade-desktop");
+const dir = benchDir("crossfade-desktop");
 tones(dir);
 const server = await startBenchServer(dir, PORT);
 const wanted = process.argv.slice(2);

@@ -131,6 +131,18 @@ describe("en-têtes du relais", () => {
     ).toEqual({ "content-range": "bytes 0-9/100", "content-type": "audio/flac" });
   });
 
+  it("un en-tête nommé « __proto__ » ne touche le prototype d'aucun des deux objets", () => {
+    // JSON.parse crée une VRAIE propriété « __proto__ », comme le ferait un analyseur d'en-têtes.
+    const hostile = JSON.parse('{"__proto__": ["x"], "constructor": "y", "content-type": "audio/flac"}');
+    const response = clientResponseHeaders(hostile);
+    expect(Object.getPrototypeOf(response)).toBeNull();
+    expect(Object.keys(response)).toEqual(["content-type"]);
+    const request = guestRequestHeaders(hostile, null, "en", "r");
+    expect(Object.getPrototypeOf(request)).toBeNull();
+    expect(Object.keys(request)).not.toContain("__proto__");
+    expect(Object.keys(request)).not.toContain("constructor");
+  });
+
   it("seule une session personnelle administre", () => {
     expect(relaySessionOf("personal")).toBe("personal");
     expect(relaySessionOf("tvProfile")).toBe("profile");

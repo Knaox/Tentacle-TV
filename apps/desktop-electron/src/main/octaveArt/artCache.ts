@@ -12,7 +12,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { mkdir, open, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ART_MAX_BYTES, artEvictionPlan, artKey, isFreshArt, sniffImageType, type ArtFile } from "./artCachePolicy";
 
@@ -45,19 +45,25 @@ export function createArtCache(deps: ArtCacheDeps) {
   let writes = 0;
 
   async function readFresh(file: string, key: string): Promise<ServedArt | null> {
+    // UN descripteur pour la date, la lecture et l'heure d'accès : un fichier remplacé (écriture concurrente,
+    // éviction) entre deux appels par chemin ne mêle plus la date de l'un aux octets de l'autre.
+    const handle = await open(file, "r").catch(() => null);
+    if (!handle) return null;
     try {
-      const info = await stat(file);
+      const info = await handle.stat();
       const writtenAt = info.birthtimeMs > 0 ? info.birthtimeMs : info.mtimeMs;
       if (!isFreshArt(key, writtenAt, now())) return null;
-      const bytes = new Uint8Array(await readFile(file));
+      const bytes = new Uint8Array(await handle.readFile());
       const type = sniffImageType(bytes);
       if (!type) return null;
       // L'heure d'accès sert l'éviction (les moins récemment servies partent d'abord).
       const at = new Date(now());
-      void utimes(file, at, at).catch(() => undefined);
+      await handle.utimes(at, at).catch(() => undefined);
       return { bytes, type, fromDisk: true };
     } catch {
       return null;
+    } finally {
+      await handle.close().catch(() => undefined);
     }
   }
 

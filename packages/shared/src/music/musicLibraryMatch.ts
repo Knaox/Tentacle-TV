@@ -92,7 +92,9 @@ export function baseTitle(title: string): string {
   return matchText(stripTitleNoise(title));
 }
 
-const CREDIT_SPLIT = /\s*(?:,|;|\/|&|\+|\band\b|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b|\bx\b|\bvs\.?)\s*/i;
+// Sans « \s* » autour : une longue suite d'espaces y faisait reprendre le motif à chaque position (temps
+// quadratique, CodeQL js/polynomial-redos) ; `matchText` retire de toute façon les espaces de chaque part.
+const CREDIT_SPLIT = /,|;|\/|&|\+|\band\b|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b|\bx\b|\bvs\.?/i;
 
 /** Les noms d'un crédit : chaque nom entier, et chacun des artistes qu'il réunit (« A feat. B & C » → a, b, c). */
 export function creditNames(artists: readonly MatchArtist[]): Set<string> {
@@ -141,11 +143,40 @@ export function closeDuration(a: number | null, b: number | null): boolean | nul
 }
 
 // Ce qui ne change pas l'ALBUM : son édition (« Collector's Edition », « Deluxe », « Explicit », « 2016 Remaster »).
-const EDITION_GROUP = /\s*[([][^)\]]*\b(?:deluxe|edition|expanded|explicit|clean|bonus|anniversary|special|collectors?|remaster(?:ed)?)\b[^)\]]*[)\]]/gi;
+const EDITION_WORD = /\b(?:deluxe|edition|expanded|explicit|clean|bonus|anniversary|special|collectors?|remaster(?:ed)?)\b/i;
+
+/**
+ * Le titre sans ses groupes d'édition : chaque « (…) » ou « […] » (fermé par le premier « ) » ou « ] ») qui
+ * dit une édition. Parcours LINÉAIRE — l'ancienne expression, `[^)\]]*\b(?:…)\b[^)\]]*` derrière un `\s*`,
+ * reprenait chaque suite d'espaces ou de parenthèses (CodeQL js/polynomial-redos). Les espaces autour, que
+ * l'ancienne retirait devant le groupe, sont laissés à `matchText`.
+ */
+export function withoutEditionGroups(title: string): string {
+  let out = "";
+  let from = 0;
+  let open = 0;
+  while (open < title.length) {
+    const char = title[open];
+    if (char !== "(" && char !== "[") {
+      open += 1;
+      continue;
+    }
+    let close = open + 1;
+    while (close < title.length && title[close] !== ")" && title[close] !== "]") close += 1;
+    if (close >= title.length) break; // plus aucune fermeture : plus aucun groupe
+    // Une ouverture DANS ce groupe a la même fermeture et un contenu plus court : elle ne dit rien de plus.
+    if (EDITION_WORD.test(title.slice(open + 1, close))) {
+      out += `${title.slice(from, open)} `;
+      from = close + 1;
+    }
+    open = close + 1;
+  }
+  return out + title.slice(from);
+}
 
 /** Deux titres d'album : le même, édition mise de côté (une B.O. « Score » n'est pas la « Soundtrack »). */
 export function sameAlbumTitle(a: string, b: string): boolean {
-  return sameTitle(a, b) || matchText(a.replace(EDITION_GROUP, " ")) === matchText(b.replace(EDITION_GROUP, " "));
+  return sameTitle(a, b) || matchText(withoutEditionGroups(a)) === matchText(withoutEditionGroups(b));
 }
 
 /** Un titre d'un RECUEIL : crédité « Various Artists » (ou rien), ou dans un album de « Various Artists ». */

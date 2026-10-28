@@ -14,14 +14,21 @@ export type AlbumNoteLine = readonly AlbumNoteSegment[];
 
 const URL_PATTERN = /https?:\/\/[^\s<>"«»]+/g;
 /** Ponctuation qui termine une phrase, jamais une adresse. */
-const TRAILING = /[.,;:!?)\]]+$/;
+const TRAILING = ".,;:!?)]";
+
+/** L'adresse sans sa ponctuation finale — en remontant la chaîne : `/[…]+$/` y était quadratique (js/polynomial-redos). */
+function withoutTrailingPunctuation(raw: string): string {
+  let end = raw.length;
+  while (end > 0 && TRAILING.includes(raw[end - 1])) end -= 1;
+  return raw.slice(0, end);
+}
 
 function segmentsOf(line: string): AlbumNoteSegment[] {
   const out: AlbumNoteSegment[] = [];
   let last = 0;
   for (const match of line.matchAll(URL_PATTERN)) {
     const raw = match[0];
-    const url = raw.replace(TRAILING, "");
+    const url = withoutTrailingPunctuation(raw);
     const start = match.index ?? 0;
     if (start > last) out.push({ kind: "text", text: line.slice(last, start) });
     out.push({ kind: "link", text: url, url });
