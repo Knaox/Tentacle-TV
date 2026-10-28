@@ -34,3 +34,7 @@ export { classifyPasted, importFraction, type PastedImport } from "../music/impo
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, type OctaveAvailability } from "../music/useOctaveAvailability";
+export { useLibraryFirstRows } from "../music/lists/useLibraryFirstRows";
+// Octave — gérer une playlist et en retirer des titres, avec l'interface de l'application (web, mobile).
+export { usePlaylistRemoval, type PlaylistTarget } from "../music/octave/playlists/usePlaylistRemoval";
+export { usePlaylistManageGestures, type PlaylistManageHooks } from "../music/octave/playlists/usePlaylistManageGestures";

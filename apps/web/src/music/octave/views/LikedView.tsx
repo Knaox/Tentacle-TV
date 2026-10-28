@@ -20,7 +20,7 @@ import { octavePaths } from "../octavePaths";
 import { flattenPages } from "./LoadMore";
 import { mergeLiked, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
-import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
+import { useLibraryFirstRows } from "@tentacle-tv/api-client";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { LoadMore } from "./LoadMore";
 import { makeStatsOf } from "@tentacle-tv/shared/octave";
