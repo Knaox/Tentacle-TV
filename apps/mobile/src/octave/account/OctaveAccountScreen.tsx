@@ -13,8 +13,7 @@ import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { OctavePage, useOctaveLayout } from "../layout";
 import { useLeaveOctave } from "../mode/useOctaveSwitch";
-import { octaveScreen } from "../registry/octaveRegistry";
-import { OctaveRequires } from "../registry/OctaveRequires";
+import { useOfflineSurface } from "../offline/musicOfflineContext";
 import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
 import { AppearanceRows } from "../settings/view/OctaveOnlySettings";
 import { AccountIdentity } from "./AccountIdentity";
@@ -43,15 +42,16 @@ export function OctaveAccountScreen(_props: OctaveScreenProps) {
 const OctaveRows = memo(function OctaveRows() {
   const { t } = useTranslation("octaveShell");
   const router = useRouter();
+  const offlineShown = useOfflineSurface().visible;
   const openSettings = () => router.push(octavePaths.settings as Href);
   const settingsRow = (last: boolean) => (
     <SettingsRow icon="sliders" label={t("settings.title")} description={t("account.settingsHint")} chevron last={last} onPress={openSettings} />
   );
   return (
     <SettingsSection title={t("account.octaveGroup")}>
-      {/* La page « Hors ligne » n'existe que si son écran a son droit (compte de l'appareil, `keepOffline`…). */}
-      <OctaveRequires requires={octaveScreen("device")?.requires} unmet={settingsRow(true)} pending={settingsRow(true)}>
-        {settingsRow(false)}
+      {settingsRow(!offlineShown)}
+      {/* « Hors ligne » : la porte de la musique gardée (compte de l'appareil, droit `keepOffline`), jamais en session de profil. */}
+      {offlineShown ? (
         <SettingsRow
           icon="download-cloud"
           label={t("account.offline")}
@@ -60,7 +60,7 @@ const OctaveRows = memo(function OctaveRows() {
           last
           onPress={() => router.push(octavePaths.device as Href)}
         />
-      </OctaveRequires>
+      ) : null}
     </SettingsSection>
   );
 });
