@@ -12,11 +12,11 @@ import type { AmbientLayer } from "./ambientMotion";
 export const BLOB_ARTWORK_SIZE = 64;
 /**
  * Le côté (pt) auquel une tache est DESSINÉE, puis agrandie par le compositeur jusqu'à sa taille à l'écran. Le
- * flou du SVG se calcule sur le fil principal, et son coût suit le nombre de pixels : dessinée à sa taille
- * réelle (~650 pt, ~2 000 px), une tache gelait l'interface près d'une seconde à chaque titre (le balayage
- * « laggait », relevé du 28/10). La source fait 64 px et le flou efface tout détail : 96 pt suffisent.
+ * dessin SVG se fait sur le fil principal et son coût suit le nombre de pixels : à sa taille réelle (~650 pt,
+ * ~2 000 px), une tache gelait l'interface à chaque titre (le balayage « laggait », 28/10). La région montrée
+ * ne fait que ~27 px de la vignette (64 px) : 64 pt suffisent.
  */
-export const BLOB_RASTER_SIDE = 96;
+export const BLOB_RASTER_SIDE = 64;
 
 /** L'agrandissement à appliquer à une tache dessinée à `BLOB_RASTER_SIDE` pour couvrir `side` pt. */
 export function blobRasterScale(side: number): number {

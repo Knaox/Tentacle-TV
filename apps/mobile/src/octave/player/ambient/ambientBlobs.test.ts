@@ -52,12 +52,12 @@ describe("les taches de couleur du fond (plusieurs teintes de la pochette)", () 
   });
 
   it("le flou sans filtre : neuf copies empilées qui pèsent chacune autant (une moyenne)", () => {
-    const taps = blobBlurTaps(96);
+    const taps = blobBlurTaps(64);
     expect(taps).toHaveLength(9);
     // Poids réel de chaque copie une fois empilée (la dernière par-dessus) : a_k × Π (1 − a_j) pour j > k.
     const weights = taps.map((tap, k) => taps.slice(k + 1).reduce((w, next) => w * (1 - next.opacity), tap.opacity));
     for (const w of weights) expect(w).toBeCloseTo(1 / 9);
     expect(taps[0]).toMatchObject({ dx: 0, dy: 0, opacity: 1 });
-    for (const tap of taps.slice(1)) expect(Math.hypot(tap.dx, tap.dy)).toBeCloseTo(96 * 0.06);
+    for (const tap of taps.slice(1)) expect(Math.hypot(tap.dx, tap.dy)).toBeCloseTo(64 * 0.06);
   });
 });
