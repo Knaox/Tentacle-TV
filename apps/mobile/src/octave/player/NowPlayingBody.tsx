@@ -1,6 +1,7 @@
 /**
  * Octave (mobile) — le contenu du lecteur plein écran : l'en-tête (poignée, refermer, file), la pochette OU la
- * file, le titre, la position, les commandes, puis la transition douce (pastille → panneau). Téléphone en
+ * file, le titre et ses gestes (cœur, playlist, menu : `NowPlayingActions`), la position, les commandes, puis la
+ * transition douce (pastille → panneau). Téléphone en
  * colonne, tablette et paysage côte à côte (`nowPlayingLayout`).
  */
 
@@ -11,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronDown, ListMusic } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { CrossfadeChip, CrossfadePanel } from "./CrossfadeControl";
+import { NowPlayingActions } from "./NowPlayingActions";
 import { NowPlayingArtwork } from "./NowPlayingArtwork";
 import { QueueList } from "./QueueList";
 import { SeekBar } from "./SeekBar";
@@ -120,9 +122,12 @@ const TrackTitle = memo(function TrackTitle() {
   const artist = usePlayerSelector((s) => s.current?.artists.map((a) => a.name).join(", ") ?? "");
   const album = usePlayerSelector((s) => s.current?.album?.title ?? null);
   return (
-    <View style={styles.titles} accessible accessibilityRole="header">
-      <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{title}</Text>
-      <Text numberOfLines={1} style={[styles.artist, { color: colors.textSecondary }]}>{album ? `${artist} · ${album}` : artist}</Text>
+    <View style={styles.titleRow}>
+      <View style={styles.titles} accessible accessibilityRole="header">
+        <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <Text numberOfLines={1} style={[styles.artist, { color: colors.textSecondary }]}>{album ? `${artist} · ${album}` : artist}</Text>
+      </View>
+      <NowPlayingActions />
     </View>
   );
 });
@@ -155,7 +160,8 @@ const styles = StyleSheet.create({
   queueStage: { alignSelf: "stretch", flex: 1, paddingTop: 8 },
   columnControls: { paddingHorizontal: 24 },
   controls: { gap: 14 },
-  titles: { gap: 4 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  titles: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
   artist: { fontSize: 16 },
   bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 44 },

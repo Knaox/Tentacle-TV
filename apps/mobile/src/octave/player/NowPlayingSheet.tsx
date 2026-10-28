@@ -5,10 +5,11 @@
  * gauche, les commandes et la file à droite (`NowPlayingBody`). Monté seulement ouvert : fermé, il ne coûte rien.
  */
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackHandler, PanResponder, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { usePathname } from "expo-router";
 import { PlayerArtwork } from "./PlayerArtwork";
 import { NowPlayingBody } from "./NowPlayingBody";
 import { usePlayerSelector } from "./OctavePlayerContext";
@@ -23,6 +24,17 @@ export const NowPlayingSheet = memo(function NowPlayingSheet() {
   const open = useNowPlayingOpen();
   const hasTrack = usePlayerSelector((s) => s.current !== null);
   const [mounted, setMounted] = useState(false);
+  // Une page ouverte depuis le lecteur (« Voir l'album » du menu du titre) le referme, comme au bureau.
+  const pathname = usePathname();
+  const openedOn = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open) {
+      openedOn.current = null;
+      return;
+    }
+    if (openedOn.current === null) openedOn.current = pathname;
+    else if (pathname !== openedOn.current) closeNowPlaying();
+  }, [open, pathname]);
   useEffect(() => {
     if (open && hasTrack) setMounted(true);
     if (open && !hasTrack) closeNowPlaying();
