@@ -107,7 +107,7 @@ final class OctaveAudioEngine {
 
   private func play(_ args: [String: Any]) {
     guard let loaded = LoadedTrack.from(args) else { return }
-    guard isAllowed(loaded.source.url) else { return fail("source hors du serveur") }
+    guard isAllowed(loaded.source) else { return fail("source hors du serveur") }
     let startMs = (args["startMs"] as? NSNumber)?.doubleValue ?? 0
     cancelFade()
     // La platine arrière est GARÉE (sortie gardée ouverte), jamais arrêtée sous le titre qui part.
@@ -124,7 +124,7 @@ final class OctaveAudioEngine {
     playedDurationMs = nil
     pendingPositionMs = startMs
     ensureSession()
-    frontDeck.load(loaded.source.url, startMs: startMs, paused: false)
+    frontDeck.load(loaded.source.url, startMs: startMs, paused: false, bare: loaded.source.direct)
     applyGains()
     publishMeta()
     emitState()
@@ -136,13 +136,15 @@ final class OctaveAudioEngine {
     if nextPreloaded { backDeck.park() }
     nextAppended = false
     nextPreloaded = false
-    guard var loaded, isAllowed(loaded.source.url) else {
+    guard var loaded, isAllowed(loaded.source) else {
       next = nil
       return
     }
     loaded.crossfadeMs = max(0, crossfadeMs)
     next = loaded
-    if loaded.crossfadeMs > 0 {
+    // Un flux DIRECT ne s'ajoute jamais à la liste (son préchargement partirait avec le jeton du serveur) :
+    // il s'ouvre sur la platine arrière et passe devant, net, à la fin du courant (`beginFade(lengthMs: 0)`).
+    if loaded.opensOnBackDeck {
       // Pendant un fondu, la platine arrière est celle qui s'éteint : le suivant s'ouvrira à sa fin.
       if fade == nil { preloadNext() }
     } else {
@@ -152,22 +154,23 @@ final class OctaveAudioEngine {
   }
 
   func preloadNext() {
-    guard let next, next.crossfadeMs > 0 else { return }
-    backDeck.load(next.source.url, startMs: 0, paused: true)
+    guard let next, next.opensOnBackDeck else { return }
+    backDeck.load(next.source.url, startMs: 0, paused: true, bare: next.source.direct)
     backDeck.setGain(0)
     nextPreloaded = true
   }
 
   private func swapSource(_ args: [String: Any]) {
-    guard let key = args["trackKey"] as? String, let source = BridgeSource(args["source"]), isAllowed(source.url) else { return }
+    guard let key = args["trackKey"] as? String, let source = BridgeSource(args["source"]), isAllowed(source) else { return }
     if var playing = current, playing.track.key == key {
       let position = frontDeck.positionMs
       playing = LoadedTrack(track: playing.track, source: source, crossfadeMs: playing.crossfadeMs)
       current = playing
       pendingPositionMs = position
+      error = nil
       if nextAppended { nextAppended = false }
-      frontDeck.load(source.url, startMs: position, paused: !wantsPlay)
-      if let next, next.crossfadeMs == 0 { setNext(next, crossfadeMs: 0) }
+      frontDeck.load(source.url, startMs: position, paused: !wantsPlay, bare: source.direct)
+      if let next, !next.opensOnBackDeck { setNext(next, crossfadeMs: 0) }
       applyGains()
     } else if let pending = next, pending.track.key == key {
       setNext(LoadedTrack(track: pending.track, source: source), crossfadeMs: pending.crossfadeMs)
@@ -230,6 +233,14 @@ final class OctaveAudioEngine {
   func fail(_ message: String) {
     error = message
     emitState()
+  }
+
+  /// Une source que le moteur peut ouvrir : du serveur, un fichier local, ou un flux DIRECT en https dont le
+  /// repli est du serveur (aucun en-tête ne part chez son hôte : `AudioDeck.load(bare:)`).
+  func isAllowed(_ source: BridgeSource) -> Bool {
+    guard source.direct else { return isAllowed(source.url) }
+    guard let fallback = source.fallbackUrl else { return false }
+    return source.url.lowercased().hasPrefix("https://") && isAllowed(fallback)
   }
 
   private func isAllowed(_ url: String) -> Bool {

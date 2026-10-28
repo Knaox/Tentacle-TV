@@ -103,4 +103,25 @@ describe("requêtes déléguées — le courtier", () => {
     broker.accept(sent[0].job.id, "dev-A", { ok: false, reason: "network" });
     expect(await pending).toEqual({ ok: false, reason: "network" });
   });
+
+  it("le budget de l'adresse de sortie : refusé → `budget` sans rien envoyer ; la nature de la requête lui est dite", async () => {
+    const online = new Set(["dev-A"]);
+    const sent: ClientFetchJob[] = [];
+    const asked: { egress: string; kind: string }[] = [];
+    let open = true;
+    const broker = new ClientFetchBroker({
+      send: (_key, job) => (sent.push(job), true),
+      online: (key) => online.has(key),
+      admit: (egress, kind) => (asked.push({ egress, kind }), open ? { granted: true, waitMs: 0 } : { granted: false }),
+    });
+    const handle = broker.handleFor("sillon", "dev-A", "v4:203.0.113.9")!;
+    const pending = broker.run("sillon", manifest, handle, { ...request, kind: "prefetch" });
+    expect(sent).toHaveLength(1);
+    broker.accept(sent[0].id, "dev-A", okReply());
+    await pending;
+    open = false;
+    expect(await broker.run("sillon", manifest, handle, request)).toEqual({ ok: false, reason: "budget" });
+    expect(sent).toHaveLength(1);
+    expect(asked).toEqual([{ egress: "v4:203.0.113.9", kind: "prefetch" }, { egress: "v4:203.0.113.9", kind: "play" }]);
+  });
 });

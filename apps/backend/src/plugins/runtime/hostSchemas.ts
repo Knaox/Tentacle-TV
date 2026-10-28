@@ -93,6 +93,8 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
           body: z.string().max(256 * 1024).optional(),
           timeoutMs: z.number().int().min(1).max(8_000).optional(),
           maxBytes: z.number().int().min(1).max(2 * 1024 * 1024).optional(),
+          // Geste ou fond : le budget par adresse de sortie sert les gestes d'abord (`clientFetch/egressBudget.ts`).
+          kind: z.enum(["play", "prefetch"]).optional(),
         })
         .strict(),
     })

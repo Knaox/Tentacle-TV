@@ -69,3 +69,12 @@ describe("requêtes déléguées — la requête", () => {
     expect(checkClientFetchRequest({ ...ok, headers: many }, manifest)).toMatch(/trop/);
   });
 });
+
+describe("requêtes déléguées — la nature (geste ou fond)", () => {
+  it("accepte `play`, `prefetch` ou rien ; refuse le reste", () => {
+    expect(checkClientFetchRequest({ ...ok, kind: "play" }, manifest)).toBeNull();
+    expect(checkClientFetchRequest({ ...ok, kind: "prefetch" }, manifest)).toBeNull();
+    expect(checkClientFetchRequest(ok, manifest)).toBeNull();
+    expect(checkClientFetchRequest({ ...ok, kind: "urgent" }, manifest)).toBe("nature refusée");
+  });
+});

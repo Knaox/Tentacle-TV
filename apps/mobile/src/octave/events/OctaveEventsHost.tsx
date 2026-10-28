@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { applyOctaveEvent, useMusicCapability, useMusicEvents, useTentacleConfig } from "@tentacle-tv/api-client";
 import { signalMusicEvent } from "@tentacle-tv/offline-core/music";
 import type { MusicEvent } from "@tentacle-tv/shared/music";
+import { useMobileClientFetch } from "../clientFetch/useMobileClientFetch";
 import { useOptionalOctavePlayer } from "../player";
 
 export function OctaveEventsHost() {
@@ -28,5 +29,7 @@ export function OctaveEventsHost() {
     [player, qc],
   );
   useMusicEvents({ enabled: capable && !!token, token, onEvent });
+  // Les requêtes YouTube de l'extension partent de CE téléphone (requêtes déléguées), comme du bureau.
+  useMobileClientFetch(capable && !!token, token);
   return null;
 }

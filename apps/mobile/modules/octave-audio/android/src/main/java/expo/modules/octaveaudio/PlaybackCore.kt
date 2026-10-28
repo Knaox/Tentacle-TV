@@ -101,7 +101,7 @@ internal class PlaybackCore(context: Context, internal val host: Host) : AudioDe
     fun play(entry: DeckEntry, startMs: Long) {
         cancelTransitions()
         clearError()
-        if (!SourcePolicy.allows(entry.source.url)) {
+        if (!SourcePolicy.allows(entry.source)) {
             frontOrNull?.clear()
             fail("octave-audio: source refusée (origine inconnue)", entry.trackKey)
             return

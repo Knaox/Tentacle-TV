@@ -4,6 +4,7 @@ import { hashToken } from "../../../services/jwt";
 import { CLIENT_FETCH_ANNOUNCE_HEADER } from "../pluginClientFetch";
 import type { PluginRuntimeManifest } from "../pluginServerRuntime";
 import { ClientFetchBroker, type ClientFetchBrokerDeps } from "./clientFetchBroker";
+import { admitDeviceEgress, egressOfRequest } from "./deviceEgress";
 
 /**
  * Le courtier en service, branché au démarrage par `index.ts` sur les sockets
@@ -14,7 +15,8 @@ import { ClientFetchBroker, type ClientFetchBrokerDeps } from "./clientFetchBrok
 let broker: ClientFetchBroker | null = null;
 
 export function configureClientFetch(deps: ClientFetchBrokerDeps): ClientFetchBroker {
-  broker = new ClientFetchBroker(deps);
+  // Les appareils derrière la même adresse partagent UN budget YouTube (`deviceEgress.ts`).
+  broker = new ClientFetchBroker({ admit: admitDeviceEgress, ...deps });
   return broker;
 }
 
@@ -36,5 +38,5 @@ export function relayClientHandle(pluginId: string, manifest: PluginRuntimeManif
   if (!broker || request.headers[CLIENT_FETCH_ANNOUNCE_HEADER] !== "1") return null;
   if (!manifest.clientFetch || !(manifest.hostApi ?? []).includes("client")) return null;
   const token = getTokenFromRequest(request);
-  return token ? broker.handleFor(pluginId, hashToken(token)) : null;
+  return token ? broker.handleFor(pluginId, hashToken(token), egressOfRequest(request)) : null;
 }

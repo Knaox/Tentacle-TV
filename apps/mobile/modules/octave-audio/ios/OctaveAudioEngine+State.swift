@@ -45,14 +45,43 @@ extension OctaveAudioEngine: AudioDeckDelegate {
 
   func deck(_ deck: AudioDeck, didFail message: String) {
     if deck === frontDeck, current != nil, fade == nil {
+      // Un flux direct refusé (URL expirée, liée à une autre adresse) : le serveur, à la même position.
+      if fallBackFromDirect() { return }
       // Une trame illisible en plein titre : reprise plus loin plutôt qu'une erreur.
       if recoverFront() { return }
       fail(message)
     } else if deck === backDeck, nextPreloaded {
-      // Le suivant ne s'ouvre pas : la page le relancera à la fin du titre (« ended » → titre suivant).
       nextPreloaded = false
+      // Le suivant DIRECT ne s'ouvre pas : il sera lu par le serveur (ajouté à la liste, ou préchargé pour un fondu).
+      if let pending = next, let fallback = pending.source.serverFallback() {
+        NSLog("[octave-audio] flux direct du suivant refusé : le serveur le lira")
+        return setNext(LoadedTrack(track: pending.track, source: fallback), crossfadeMs: pending.crossfadeMs)
+      }
+      // Le suivant ne s'ouvre pas : la page le relancera à la fin du titre (« ended » → titre suivant).
       next = nil
     }
+  }
+
+  /// Le titre devant lisait un flux DIRECT qui a échoué : relu par le serveur (`fallbackUrl`, `direct=failed`),
+  /// à la position atteinte, une seule fois (la source du serveur n'a plus de repli). Faux : pas un flux direct.
+  func fallBackFromDirect() -> Bool {
+    guard fade == nil, let playing = current, let fallback = playing.source.serverFallback() else { return false }
+    let at = pendingPositionMs ?? frontDeck.positionMs
+    NSLog("[octave-audio] flux direct refusé : le serveur reprend à %.1f s", at / 1000)
+    current = LoadedTrack(track: playing.track, source: fallback, crossfadeMs: playing.crossfadeMs)
+    ended = false
+    error = nil
+    stalled = false
+    pendingPositionMs = at
+    if wantsPlay { ensureSession() }
+    frontDeck.load(fallback.url, startMs: at, paused: !wantsPlay)
+    if nextAppended, let pending = next {
+      nextAppended = false
+      setNext(pending, crossfadeMs: pending.crossfadeMs)
+    }
+    applyGains()
+    emitState()
+    return true
   }
 
   /// Le titre devant s'est arrêté AVANT sa fin : relu sur la même platine, à la position ou plus loin
@@ -66,7 +95,7 @@ extension OctaveAudioEngine: AudioDeckDelegate {
     stalled = false
     pendingPositionMs = at
     if wantsPlay { ensureSession() }
-    frontDeck.load(playing.source.url, startMs: at, paused: !wantsPlay)
+    frontDeck.load(playing.source.url, startMs: at, paused: !wantsPlay, bare: playing.source.direct)
     // Le suivant sans blanc vivait dans la liste de cette platine, que `load` vient de remplacer.
     if nextAppended, let pending = next {
       nextAppended = false

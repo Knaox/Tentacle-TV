@@ -4,4 +4,4 @@
 // Lecture en arrière-plan, écran verrouillé / notification média, interruptions,
 // enchaînement sans blanc et transition douce vivent dans le natif. Sans le
 // module (ancien build), `isOctaveAudioAvailable()` répond faux.
-export { isOctaveAudioAvailable, octaveAudioBridge } from "./src/OctaveAudioModule";
+export { isOctaveAudioAvailable, octaveAudioBridge, octaveAudioSupportsDirect } from "./src/OctaveAudioModule";
