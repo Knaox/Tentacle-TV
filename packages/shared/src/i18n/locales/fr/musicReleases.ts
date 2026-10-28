@@ -20,7 +20,7 @@ export default {
   dropHere: "Déposez vos fichiers ici",
   dropActive: "Lâchez pour importer",
   chooseFiles: "Choisir des fichiers",
-  chooseOnPhone: "Choisir sur le téléphone",
+  chooseOnPhone: "Choisir sur l'appareil",
   ignored_one: "{{count}} fichier n'est ni audio, ni un ZIP, ni une image : il est laissé de côté.",
   ignored_other: "{{count}} fichiers ne sont ni audio, ni des ZIP, ni des images : ils sont laissés de côté.",
   tooMany: "{{max}} fichiers au plus par import.",
