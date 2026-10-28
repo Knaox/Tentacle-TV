@@ -73,6 +73,35 @@ describe("garde de sortie", () => {
     expect(dialog.calls()).toBe(1);
   });
 
+  it("« Continuer en arrière-plan » : la fenêtre se ferme sans question, les transferts continuent", () => {
+    const window = fakeWindow();
+    const dialog = box(false);
+    installQuitGuard(window, () => 3, dialog.ask, () => true);
+
+    expect(window.closeWindow()).toBe(false);
+    expect(dialog.calls()).toBe(0);
+  });
+
+  it("réglage éteint, ou quitter pour de bon (Cmd+Q) : la question, comme avant", () => {
+    const window = fakeWindow();
+    const dialog = box(false);
+    installQuitGuard(window, () => 3, dialog.ask, () => false);
+
+    expect(window.closeWindow()).toBe(true);
+    expect(dialog.calls()).toBe(1);
+  });
+
+  it("un réglage illisible ne retient rien de plus : la question", () => {
+    const window = fakeWindow();
+    const dialog = box(false);
+    installQuitGuard(window, () => 3, dialog.ask, () => {
+      throw new Error("base");
+    });
+
+    expect(window.closeWindow()).toBe(true);
+    expect(dialog.calls()).toBe(1);
+  });
+
   // Sans le loquet, le `close()` qui suit l'accord repasserait par la garde,
   // reposerait la question, et la fenetre ne se fermerait jamais.
   it("ferme pour de bon apres l'accord", async () => {

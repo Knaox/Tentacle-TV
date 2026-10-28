@@ -38,7 +38,7 @@ export type WideSettingId =
   // Langues et sous-titres
   | "interfaceLanguage" | "libraryTracks"
   // Téléchargements
-  | "downloadsLocation" | "downloadsSpace"
+  | "downloadsLocation" | "downloadsSpace" | "downloadsBackground"
   // Apparence
   | "theme" | "liquidGlass" | "octaveAppearance"
   // Accueil et découverte
@@ -55,6 +55,7 @@ export type WideSettingId =
  * - `glassToggle` : le verre natif existe (bureau, macOS 26) ;
  * - `octave` : le mode musique est offert à ce compte ;
  * - `downloads` : le bureau, avec le droit de télécharger ou des titres déjà là ;
+ * - `backgroundTransfers` : la coquille sait finir les transferts fenêtre fermée ;
  * - `hardwareDecoding` : le lecteur natif (mpv) décode ici ;
  * - `hdrAuto` : un bureau Windows doté du lecteur natif ;
  * - `linuxSession` : la coquille Linux, qui sait choisir sa session graphique ;
@@ -62,7 +63,7 @@ export type WideSettingId =
  */
 export type WideSettingsRequirement =
   | SettingsRequirement
-  | "desktopApp" | "glassToggle" | "octave" | "downloads" | "hardwareDecoding" | "hdrAuto" | "linuxSession" | "vigieReco";
+  | "desktopApp" | "glassToggle" | "octave" | "downloads" | "backgroundTransfers" | "hardwareDecoding" | "hdrAuto" | "linuxSession" | "vigieReco";
 
 export interface WideSettingEntry {
   id: WideSettingId;
@@ -98,6 +99,8 @@ export interface WideSettingsContext extends SettingsCatalogContext {
   glassToggle: boolean;
   octave: boolean;
   downloads: boolean;
+  /** Absent : la coquille ne le dit pas (web, bureau d'avant) — la ligne n'existe pas. */
+  backgroundTransfers?: boolean;
   hardwareDecoding: boolean;
   hdrAuto: boolean;
   linuxSession: boolean;

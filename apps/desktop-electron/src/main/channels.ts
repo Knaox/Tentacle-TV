@@ -26,6 +26,8 @@ export const COMMANDS = [
   // Téléchargements — stockage
   "downloads_get_root",
   "downloads_set_root",
+  "downloads_background_get",
+  "downloads_background_set",
   "downloads_disk_free",
   "downloads_asset_base",
   "downloads_disk_usage",

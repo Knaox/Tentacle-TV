@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { WideSettingsContext } from "@tentacle-tv/shared";
 import { desktopPlatform, isDesktopApp, supportsMpv } from "../../../desktop/bridge";
-import { supportsLinuxSession } from "../../../desktop/capabilities";
+import { supportsBackgroundTransfers, supportsLinuxSession } from "../../../desktop/capabilities";
 import { useDownloadsVisibility } from "../../../downloads/useDownloadState";
 import { useOctaveAvailability } from "../../../music/octave/mode/useOctaveAvailability";
 import { useLiquidGlass } from "../../../theme/useLiquidGlass";
@@ -30,6 +30,7 @@ export function useWideSettingsContext(): WideSettingsContext {
     glassToggle: glass.toggleVisible,
     octave,
     downloads: desktopApp && downloads,
+    backgroundTransfers: supportsBackgroundTransfers(),
     hardwareDecoding: mpv && platform !== null,
     hdrAuto: mpv && platform === "windows",
     linuxSession: platform === "linux" && supportsLinuxSession(),

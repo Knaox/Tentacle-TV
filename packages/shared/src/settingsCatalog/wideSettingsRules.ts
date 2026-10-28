@@ -18,6 +18,7 @@ export function meetsWideRequirement(requirement: WideSettingsRequirement, ctx: 
     case "glassToggle": return ctx.glassToggle;
     case "octave": return ctx.octave;
     case "downloads": return ctx.downloads;
+    case "backgroundTransfers": return ctx.backgroundTransfers === true;
     case "hardwareDecoding": return ctx.hardwareDecoding;
     case "hdrAuto": return ctx.hdrAuto;
     case "linuxSession": return ctx.linuxSession;

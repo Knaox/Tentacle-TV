@@ -31,11 +31,25 @@ let suspended = false;
 
 /** L'application passe derrière (ou revient) — sur iOS seulement. */
 export function setTransfersSuspended(next: boolean): void {
-  suspended = Platform.OS === "ios" && next;
+  const platform = Platform.OS;
+  suspended = platform === "ios" && next;
 }
 
 export function transferParallelLimit(): number {
   return suspended ? SUSPENDED_PARALLEL : MAX_PARALLEL;
+}
+
+/**
+ * Les places des titres d'OCTAVE (`EngineDeps.musicParallelLimit`) : trois, comme le bureau — leur temps part
+ * dans la préparation du serveur, qui se recouvre (`musicLane.ts`). Trois AUSSI le temps d'une suspension iOS,
+ * jamais plus : l'extension prépare un titre à la fois, à son rythme (sa file du hors ligne en masse), et fait
+ * attendre la demande jusqu'à 45 s avant de répondre 503 + `Retry-After`. Remettre au système deux douzaines
+ * de demandes en attente, c'était les voir expirer chez iOS (60 s sans octet) ; la suite part à l'heure dite.
+ */
+const MUSIC_PARALLEL = 3;
+
+export function transferMusicParallelLimit(): number {
+  return MUSIC_PARALLEL;
 }
 
 /**

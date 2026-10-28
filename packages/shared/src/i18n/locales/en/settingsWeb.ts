@@ -32,7 +32,7 @@ export default {
     },
     downloads: {
       label: "Downloads",
-      intro: "Where movies and episodes downloaded to this computer are stored.",
+      intro: "Where titles downloaded to this computer are stored, and how they arrive.",
     },
     appearance: {
       label: "Appearance",
@@ -64,6 +64,7 @@ export default {
     },
     downloads: {
       storage: "Storage",
+      transfers: "Transfers",
     },
     appearance: {
       theme: "Theme",
@@ -149,6 +150,11 @@ export default {
     downloadsSpace: {
       label: "Disk space",
       description: "How much space your downloads take, and how much is left.",
+    },
+    downloadsBackground: {
+      label: "Continue in the background",
+      description: "Closing the window lets ongoing downloads finish, movies and music; Tentacle closes afterwards.",
+      keywords: "background, close, window, continue, downloads, music, Octave, transfer",
     },
     theme: {
       label: "Theme",

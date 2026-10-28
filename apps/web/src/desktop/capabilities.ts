@@ -38,6 +38,11 @@ export function supportsDownloads(): boolean {
   return hasNativeCommand("downloads_list");
 }
 
+/** « Continuer en arrière-plan » : la fenêtre fermée laisse finir les transferts (`backgroundTransfers.ts` du bureau). */
+export function supportsBackgroundTransfers(): boolean {
+  return hasNativeCommand("downloads_background_get");
+}
+
 /** La musique gardée hors ligne d'Octave, sur le même moteur (`ipc/downloadsMusic.ts`). */
 export function supportsMusicOffline(): boolean {
   return hasNativeCommand("downloads_music_list");

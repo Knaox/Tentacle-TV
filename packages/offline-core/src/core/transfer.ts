@@ -32,6 +32,7 @@ import type {
   TransferSignal,
   Volume,
 } from "./adapters";
+import { serverWaitMs } from "./retryAfter";
 
 /** Cadence de persistance de la progression : au plus tôt des deux. */
 const PERSIST_EVERY_BYTES = 4 * 1024 * 1024;
@@ -96,6 +97,8 @@ export type TransferEnd =
         | "audio"
         | "unexpected";
       bytesDone: number;
+      /** Le serveur a dit quand revenir (503 + `Retry-After`, `retryAfter.ts`) : la relance part à l'heure dite. */
+      retryAfterMs?: number;
     };
 
 export interface TransferJob {
@@ -329,13 +332,15 @@ export async function run(
         : outcome.status === 404
           ? "unavailable"
           : "network";
+    const wait = serverWaitMs(outcome.status, outcome.header, now());
+    const later = wait === undefined ? {} : { retryAfterMs: wait };
     // Un pilote natif peut avoir écrit le corps de l'erreur dans le `.part` :
     // ce qui dépasse la reprise n'est pas du média, on le jette.
     if ((files.size(part) ?? 0) !== resumeFrom) {
       discard(files, part);
-      return { kind: "failed", code, bytesDone: 0 };
+      return { kind: "failed", code, bytesDone: 0, ...later };
     }
-    return { kind: "failed", code, bytesDone: resumeFrom };
+    return { kind: "failed", code, bytesDone: resumeFrom, ...later };
   }
 
   await stopTranscode();

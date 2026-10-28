@@ -39,10 +39,17 @@ export interface ClosableWindow {
 /** Renvoie vrai si l'utilisateur veut quitter malgré tout. */
 export type ExitRequest = (inProgress: number) => Promise<boolean>;
 
+/**
+ * « Continuer en arrière-plan » : fermer la fenêtre ne coupe rien, le processus finit la file sans elle
+ * (`backgroundDrain.ts`, commencé à la dernière fenêtre fermée). Absente ou fausse : la question, comme avant.
+ */
+export type KeepsTransfers = () => boolean;
+
 export function installQuitGuard(
   window: ClosableWindow,
   inProgress: () => number,
   ask: ExitRequest,
+  keepsTransfers?: KeepsTransfers,
 ): void {
   let confirmed = false;
   let pending = false;
@@ -60,6 +67,13 @@ export function installQuitGuard(
       return;
     }
     if (left <= 0) return;
+
+    // La fenêtre se ferme sans question : les transferts continuent sans elle.
+    try {
+      if (keepsTransfers?.()) return;
+    } catch {
+      // Un réglage illisible ne change rien : la question, comme avant.
+    }
 
     event.preventDefault();
     // Deuxième Alt+F4 pendant que la boîte est ouverte : la fermeture est

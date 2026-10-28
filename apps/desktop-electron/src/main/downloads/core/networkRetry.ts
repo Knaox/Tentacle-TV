@@ -7,6 +7,10 @@
  * marche : le serveur répondait, le prochain essai a toutes les chances de
  * passer. Une pause système voulue (Wi-Fi perdu, conditions absentes) ne se
  * relance pas : c'est le retour des conditions qui la relève.
+ *
+ * Un serveur qui PRÉPARE et dit quand revenir (503 + `Retry-After`,
+ * `retryAfter.ts`) n'est pas une coupure : relance à l'heure dite, sans
+ * monter d'une marche — la prochaine vraie coupure repart de la première.
  */
 
 import { networkRetryDelay, NETWORK_RETRY_DELAYS_MS } from "./retry";
@@ -28,6 +32,10 @@ export class NetworkRetryLadder {
       return null;
     }
     if (opts.systemSuspended) return null;
+    if (end.retryAfterMs !== undefined) {
+      this.attempts.delete(fileId);
+      return opts.nowMs + end.retryAfterMs;
+    }
     const attempt = opts.moved ? 0 : (this.attempts.get(fileId) ?? 0);
     this.attempts.set(fileId, attempt + 1);
     const delay = networkRetryDelay(attempt, this.delays, this.immediate());

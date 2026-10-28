@@ -23,6 +23,7 @@ import { formatRate, formatTimeLeft } from "@/offline/formatTransfer";
 import { useTheme } from "@/theme";
 import { useOctaveColors } from "../theme/octaveColors";
 import { pauseQueue, queueHasMoving, queueHasUserPaused, resumeQueue, retryFailed } from "./transferGestures";
+import { readyInWords, serverPacingOf } from "@tentacle-tv/offline-core/music";
 import type { KeptTransferSummary } from "./transferModel";
 import { TransferQueue } from "./TransferQueue";
 
@@ -35,6 +36,14 @@ function paceText(s: KeptTransferSummary, t: (key: string, o?: Record<string, un
   const rate = formatRate(s.rateBps);
   const left = s.estimated ? t("transfers.timeAbout", { time }) : time;
   return rate ? `${left} · ${rate}` : left;
+}
+
+/** « La suite arrive… », et l'heure que la file du serveur a dite quand elle est connue (« Prêt dans ~2 h »). */
+function pacingText(s: KeptTransferSummary, t: (key: string, o?: Record<string, unknown>) => string): string {
+  const { readyInMs } = serverPacingOf(s.queue, Date.now());
+  if (readyInMs === null) return t("transfers.serverPacing");
+  const ready = readyInWords(readyInMs);
+  return `${t("transfers.serverPacing")} ${t(ready.key, { count: ready.count })}.`;
 }
 
 export const DeviceTransferCard = memo(function DeviceTransferCard({ summary }: { summary: KeptTransferSummary }) {
@@ -71,7 +80,7 @@ export const DeviceTransferCard = memo(function DeviceTransferCard({ summary }: 
       {summary.stalled && summary.serverPacing && (
         <View style={styles.failed} accessibilityLiveRegion="polite">
           <Feather name="clock" size={14} color={colors.textTertiary} />
-          <Text style={[styles.line, styles.flex, { color: colors.textTertiary }]}>{t("transfers.serverPacing")}</Text>
+          <Text style={[styles.line, styles.flex, { color: colors.textTertiary }]}>{pacingText(summary, t)}</Text>
         </View>
       )}
       {summary.stalled && !summary.serverPacing && (

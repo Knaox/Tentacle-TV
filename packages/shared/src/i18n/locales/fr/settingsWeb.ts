@@ -36,7 +36,7 @@ export default {
     },
     downloads: {
       label: "Téléchargements",
-      intro: "Où sont rangés les films et épisodes téléchargés sur cet ordinateur.",
+      intro: "Où sont rangés les titres téléchargés sur cet ordinateur, et comment ils arrivent.",
     },
     appearance: {
       label: "Apparence",
@@ -68,6 +68,7 @@ export default {
     },
     downloads: {
       storage: "Stockage",
+      transfers: "Transferts",
     },
     appearance: {
       theme: "Thème",
@@ -153,6 +154,11 @@ export default {
     downloadsSpace: {
       label: "Espace disque",
       description: "La place qu'occupent vos téléchargements, et celle qui reste.",
+    },
+    downloadsBackground: {
+      label: "Continuer en arrière-plan",
+      description: "Fermer la fenêtre laisse finir les téléchargements en cours, films et musique ; Tentacle se ferme ensuite.",
+      keywords: "arrière-plan, fermer, fenêtre, continuer, téléchargements, musique, Octave, transfert",
     },
     theme: {
       label: "Thème",

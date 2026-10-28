@@ -37,10 +37,15 @@ export function OfflineSpaceBlock() {
   );
 }
 
+/**
+ * « Transférer sur données cellulaires » : l'ENVERS de « Wi-Fi seulement » (clé `wifi_only`, allumée par défaut),
+ * qui reste la clé — un choix d'avant est gardé tel quel. Aussi posée dans les Réglages d'Octave.
+ */
 export function WifiOnlyRow({ scope, last }: RowProps) {
   const { t } = useTranslation("offline");
-  const value = useWifiOnly();
-  return <SwitchSettingRow icon="wifi" label={t("wifiOnly")} description={t("wifiOnlyDesc")} scope={scope} value={value} onChange={setWifiOnly} last={last} />;
+  const cellular = !useWifiOnly();
+  const onChange = useCallback((on: boolean) => setWifiOnly(!on), []);
+  return <SwitchSettingRow icon="bar-chart-2" label={t("wifiOnly")} description={t("wifiOnlyDesc")} scope={scope} value={cellular} onChange={onChange} last={last} />;
 }
 
 export function BackgroundTransfersRow({ scope, last }: RowProps) {

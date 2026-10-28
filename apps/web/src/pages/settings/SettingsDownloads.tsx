@@ -19,6 +19,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { SettingItem } from "../../components/settings/wide/SettingItem";
 import { WideGroup } from "../../components/settings/wide/WideGroup";
 import { SETTING_BUTTON } from "../../components/settings/wide/settingButtons";
+import { BackgroundTransfersSetting } from "../../components/settings/BackgroundTransfersSetting";
 
 export function SettingsDownloads() {
   const { t } = useTranslation("downloads");
@@ -100,6 +101,9 @@ export function SettingsDownloads() {
             <p>{t("freeSpace", { size: formatBytes(freeBytes) })}</p>
           </div>
         </SettingItem>
+      </WideGroup>
+      <WideGroup section="downloads" group="transfers">
+        <BackgroundTransfersSetting />
       </WideGroup>
     </div>
   );
