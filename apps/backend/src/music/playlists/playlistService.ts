@@ -12,6 +12,7 @@ import { forgetUserPlaylists, playlistEntries, playlistFor } from "./playlistJel
 import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
 import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
 import { forgetPlaylistSource } from "../playlistSource/sourceStore";
+import { forgetPlaylistShares } from "../playlistShare/shareStore";
 
 export type PlaylistFailure = "not_found" | "forbidden" | "invalid" | "unavailable";
 export type PlaylistResult<T> = { ok: true; value: T } | { ok: false; failure: PlaylistFailure };
@@ -119,6 +120,8 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
     if (!removed.ok) return { ok: false, failure: "unavailable" };
     await forgetPlaylistOrder(playlistId).catch(() => undefined);
     await forgetPlaylistSource(playlistId).catch(() => undefined);
+    // Le lien de partage d'une playlist supprimée ne sert plus rien : il part avec elle.
+    await forgetPlaylistShares(playlistId).catch(() => undefined);
     done(userId, playlistId);
     return { ok: true, value: true };
   });

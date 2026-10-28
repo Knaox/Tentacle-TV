@@ -6,7 +6,8 @@
  */
 
 import {
-  CORE_IMPORT_SOURCES,
+  coreReadsImport,
+  extensionImportSource,
   recognizeImportUrl,
   type ImportAbsentTrack,
   type ImportedPlaylist,
@@ -66,6 +67,8 @@ export interface ImportPort {
   core: (jobId: string, signal: AbortSignal) => Promise<MusicImportJob>;
   /** Le code d'un refus du cœur (`busy`, `unsupported_url`…), ou `null`. */
   refusal: (error: unknown) => string | null;
+  /** Le serveur lit-il les liens de partage d'un autre Tentacle (capacité `music.playlistShare`) ? */
+  tentacleShare?: boolean;
   /** L'extension lit-elle cette source (`importRead` + `importSources`) ? */
   canRead: (source: MusicImportSource) => boolean;
   read: (url: string, signal: AbortSignal) => Promise<{ ok: true; playlist: ImportedPlaylist } | { ok: false; refusal: ImportReadRefusal }>;
@@ -126,7 +129,7 @@ async function readThenImport(port: ImportPort, url: string, base: Omit<MusicImp
 
 /** Les absents confiés à l'extension ; rend ce qu'elle a pris et ce qu'elle n'a pas trouvé. */
 async function confide(port: ImportPort, playlistId: string, source: MusicImportSource, absent: ImportAbsentTrack[], signal: AbortSignal, emit: (patch: Partial<ImportFlowState>) => void) {
-  const accepted = await port.confide({ playlistId, source, tracks: absent }, signal).catch((error: unknown) => {
+  const accepted = await port.confide({ playlistId, source: extensionImportSource(source), tracks: absent }, signal).catch((error: unknown) => {
     if (signal.aborted) throw error;
     return null;
   });
@@ -167,7 +170,9 @@ export async function runImport(input: ImportUserInput, port: ImportPort, emit: 
       const url = recognizeImportUrl(input.url);
       if (!url) throw new FlowStop("unsupported");
       patch({ source: url.source });
-      if (!CORE_IMPORT_SOURCES.includes(url.source)) {
+      // Un lien Tentacle face à un serveur qui ne les lit pas : aucune extension ne le lirait mieux.
+      if (url.source === "tentacle" && !port.tentacleShare) throw new FlowStop("unsupported");
+      if (!coreReadsImport(url.source, port.tentacleShare === true)) {
         if (!port.canRead(url.source)) throw new FlowStop("needsExtension");
         job = await readThenImport(port, url.url, base, signal, patch);
       } else {

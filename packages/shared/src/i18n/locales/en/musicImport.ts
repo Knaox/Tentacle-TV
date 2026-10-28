@@ -28,6 +28,7 @@ export default {
     deezer: "Deezer",
     youtube: "YouTube Music",
     text: "Pasted list",
+    tentacle: "Tentacle",
   },
   step: {
     reading: "Reading the playlist",

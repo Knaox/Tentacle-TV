@@ -28,3 +28,5 @@ export {
 // Octave — une liste affichée (playlist, « Titres likés ») : tri du compte, recherche, filtre, glisser.
 export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music/lists/useListOrder";
 export { useWholeLiked } from "../music/lists/useWholeLiked";
+// Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
+export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";

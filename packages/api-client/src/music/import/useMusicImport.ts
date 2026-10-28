@@ -30,9 +30,10 @@ export function extensionImportSources(provider: MusicProvider | null): readonly
   return provider?.music.importRead ? (provider.music.importSources ?? []) : [];
 }
 
-export function importPortFor(provider: MusicProvider | null): ImportPort {
+export function importPortFor(provider: MusicProvider | null, tentacleShare = false): ImportPort {
   const readable = extensionImportSources(provider);
   return {
+    tentacleShare,
     startCore: startCoreImport,
     core: fetchCoreImport,
     refusal: refusalCode,
@@ -54,6 +55,8 @@ export interface MusicImportHandle {
   available: boolean;
   /** Les sources lues par l'extension en plus de celles du cœur (YouTube…). */
   extensionSources: readonly MusicImportSource[];
+  /** Le serveur lit-il un lien de partage d'un autre Tentacle (`music.playlistShare`) ? */
+  tentacleShare: boolean;
   /** L'extension prendra-t-elle les titres absents de la bibliothèque ? */
   outsideSupported: boolean;
   state: ImportFlowState | null;
@@ -67,7 +70,8 @@ export function useMusicImport(provider: MusicProvider | null): MusicImportHandl
   const qc = useQueryClient();
   const [state, setState] = useState<ImportFlowState | null>(null);
   const controller = useRef<AbortController | null>(null);
-  const port = useMemo(() => importPortFor(provider), [provider]);
+  const tentacleShare = useServerCapability("music.playlistShare");
+  const port = useMemo(() => importPortFor(provider, tentacleShare), [provider, tentacleShare]);
 
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -101,6 +105,7 @@ export function useMusicImport(provider: MusicProvider | null): MusicImportHandl
   return {
     available,
     extensionSources: extensionImportSources(provider),
+    tentacleShare,
     outsideSupported: port.canConfide,
     state,
     start,

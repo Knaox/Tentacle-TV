@@ -16,12 +16,15 @@ import type { ImportRequestParsed } from "./importInput";
 import { ImportReadFailure } from "./readers/readerKit";
 import { readSource } from "./readSource";
 import type { ImportFetcher } from "./importFetch";
+import type { ShareFetcher } from "./shareFetch";
 
 const KEEP_MS = 15 * 60_000;
 const MAX_RUNNING = 4;
 
 export interface ImportDeps {
   fetcher: ImportFetcher;
+  /** La porte des liens de partage Tentacle (`shareFetch.ts`) ; absente : la vraie. Tests : à remplacer. */
+  shareFetcher?: ShareFetcher;
   view: (userId: string) => Promise<UserView>;
   create: (userId: string, name: string, itemIds: string[]) => Promise<{ ok: true; value: string } | { ok: false }>;
   match?: MatchFn;
@@ -58,10 +61,10 @@ async function run(record: JobRecord, parsed: ImportRequestParsed, deps: ImportD
   const job = record.job;
   const fail = (failure: NonNullable<MusicImportJob["failure"]>) => Object.assign(job, { stage: "failed", failure });
   try {
-    const playlist = await readSource(deps.fetcher, parsed.input);
+    const playlist = await readSource(deps.fetcher, parsed.input, deps.shareFetcher);
     Object.assign(job, { stage: "matching", source: playlist.source, name: playlist.name || null, total: playlist.tracks.length });
     const view = await deps.view(record.userId);
-    const found = await matchImported(view, playlist.tracks, (matched, hits) => Object.assign(job, { matched, found: hits }), deps.match);
+    const found = await matchImported(view, playlist.tracks, (matched, hits) => Object.assign(job, { matched, found: hits }), deps.match, playlist.source === "tentacle");
     const indexes = new Set(found.keys());
     const places = absentPositions(playlist.tracks.length, indexes);
     const absent: ImportAbsentTrack[] = playlist.tracks.filter((t) => !indexes.has(t.index)).map((t) => ({ ...t, position: places.get(t.index) ?? 0 }));
