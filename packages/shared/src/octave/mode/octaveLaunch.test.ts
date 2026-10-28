@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
+import type { PickerProfileDto, PickerProfilesDto } from "../../family/familyPickerContract";
 import { launchAvailability, launchesInOctave, octaveGateOutcome, octaveGateStep, type OctaveLaunchMirror } from "./octaveLaunch";
 
 /**

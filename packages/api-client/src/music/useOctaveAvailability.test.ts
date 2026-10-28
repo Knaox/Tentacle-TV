@@ -9,11 +9,11 @@ const h = vi.hoisted(() => ({
   status: { data: undefined as Record<string, unknown> | undefined, isPending: false, isError: false },
 }));
 
-vi.mock("@tentacle-tv/api-client", () => ({
+vi.mock("../hooks/useServerCapabilities", () => ({
   useServerCapabilities: () => ({ capabilities: new Set(["music.library", "octave.rights"]), settled: true }),
-  useUserId: () => "u1",
-  useMusicStatus: () => h.status,
 }));
+vi.mock("../hooks/useUserId", () => ({ useUserId: () => "u1" }));
+vi.mock("./useMusicLibrary", () => ({ useMusicStatus: () => h.status }));
 
 const { useOctaveAvailability } = await import("./useOctaveAvailability");
 
