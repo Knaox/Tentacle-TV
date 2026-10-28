@@ -12,7 +12,6 @@ import { fetchMusicSource } from "../useMusicLibrary";
 import { reportMusicPlayback } from "../musicPlaybackReport";
 import { prefetchMusic, reportExternalPlayed, resolveMusicSource } from "../../pluginMusic/musicRequests";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
-import { isFromMusicProvider } from "../octave/useMusicEntities";
 
 export interface OctaveKeptPort {
   /** Enveloppe les résolveurs : la copie gardée d'abord (web : `withKeptSources`). */
@@ -21,8 +20,10 @@ export interface OctaveKeptPort {
   isKept?: (trackKey: string) => boolean;
 }
 
-// Ce titre vient-il de CETTE extension ? Une seule règle, celle des pages (`useMusicEntities`).
-export { isFromMusicProvider };
+/** Ce titre vient-il de CETTE extension (et donc ses gestes sont-ils possibles) ? */
+export function isFromMusicProvider(provider: MusicProvider | null, pluginId: string | null | undefined): provider is MusicProvider {
+  return provider !== null && !!pluginId && provider.pluginId === pluginId;
+}
 
 export function buildOctavePlayer(
   engine: AudioEnginePort,
