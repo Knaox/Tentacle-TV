@@ -33,7 +33,8 @@ export const AccountProfileRows = memo(function AccountProfileRows() {
   const { t } = useTranslation("octaveShell");
   const ctx = useProfileContext();
   const pin = useOwnPin();
-  const rows = useMemo(() => accountProfileRows({ catalogIds: accountCatalogIds(ctx), pin }), [ctx, pin]);
+  const online = !ctx.offline;
+  const rows = useMemo(() => accountProfileRows({ catalogIds: accountCatalogIds(ctx), pin, online }), [ctx, pin, online]);
   if (rows.length === 0) return null;
   return (
     <SettingsSection title={t("account.profileGroup")}>

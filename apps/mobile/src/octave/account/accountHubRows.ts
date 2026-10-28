@@ -15,13 +15,15 @@ export interface AccountHubInput {
   catalogIds: ReadonlySet<string>;
   /** Le code PIN : `null` tant que la Famille n'a pas répondu, ou si elle ne le propose pas. */
   pin: { shown: boolean } | null;
+  /** Le serveur répond : son code PIN ne s'enregistre pas sans lui (la ligne disparaît, comme « Changer de profil »). */
+  online: boolean;
 }
 
 /** Les lignes du groupe « Profil », dans l'ordre : changer, son code, gérer la famille. */
-export function accountProfileRows({ catalogIds, pin }: AccountHubInput): AccountProfileRow[] {
+export function accountProfileRows({ catalogIds, pin, online }: AccountHubInput): AccountProfileRow[] {
   const rows: AccountProfileRow[] = [];
   if (catalogIds.has("switchProfile")) rows.push("switchProfile");
-  if (pin?.shown) rows.push("pin");
+  if (online && pin?.shown) rows.push("pin");
   // « Famille » du catalogue (session personnelle, entrée utile) : la même page, DANS Octave.
   if (catalogIds.has("family")) rows.push("manageProfiles");
   return rows;

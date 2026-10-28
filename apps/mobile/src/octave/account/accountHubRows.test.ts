@@ -23,7 +23,7 @@ const base: SettingsCatalogContext = {
 };
 
 const rows = (ctx: Partial<SettingsCatalogContext>, pin: { shown: boolean } | null = { shown: true }) =>
-  accountProfileRows({ catalogIds: accountCatalogIds({ ...base, ...ctx }), pin });
+  accountProfileRows({ catalogIds: accountCatalogIds({ ...base, ...ctx }), pin, online: !(ctx.offline ?? false) });
 
 describe("hub Compte d'Octave — le groupe « Profil »", () => {
   it("session personnelle dans une famille : changer, son code, gérer", () => {
@@ -44,6 +44,11 @@ describe("hub Compte d'Octave — le groupe « Profil »", () => {
 
   it("la Famille n'a rien à montrer à ce compte : pas de « Gérer les profils »", () => {
     expect(rows({ familyEntry: false })).toEqual(["switchProfile", "pin"]);
+  });
+
+  it("hors ligne : ni « Code PIN » (il ne s'enregistrerait pas) ni rien de la Famille, même avec une vue d'ensemble en cache", () => {
+    expect(rows({ offline: true, canSwitchProfile: false, family: false })).toEqual([]);
+    expect(accountProfileRows({ catalogIds: new Set(), pin: { shown: true }, online: false })).toEqual([]);
   });
 
   it("hors ligne : la photo et le nom quittent le catalogue, le changement de profil suit sa règle", () => {
