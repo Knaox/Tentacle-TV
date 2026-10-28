@@ -28,6 +28,7 @@ import { OctaveAmbient } from "../glass/OctaveAmbient";
 import { OctaveGlassStageContext } from "../glass/glassStage";
 import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
+import { UnavailableAlbumHost } from "../actions/UnavailableAlbumDialog";
 import { ImportPlaylistHost } from "../import/ImportPlaylistHost";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
 import { useOctaveEvents } from "../events/useOctaveEvents";
@@ -124,6 +125,7 @@ function ShellHosts() {
     <>
       <DuplicateConfirmHost />
       <PlaylistChooserHost />
+      <UnavailableAlbumHost />
       <BulkDuplicateHost />
       <ImportPlaylistHost />
       <PlaylistManageHost />
