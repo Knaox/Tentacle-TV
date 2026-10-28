@@ -17,7 +17,7 @@ import { mkdirSync, mkdtempSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generate } from "./fixtures.mjs";
+import { benchDir, generate } from "./fixtures.mjs";
 import { startBenchServer } from "./serve.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -37,7 +37,7 @@ for (;;) {
   }
 }
 
-const fx = generate(process.env.BENCH_DIR ?? path.join(tmpdir(), "tentacle-audio-bench"));
+const fx = generate(benchDir("audio"));
 const server = await startBenchServer(fx, 3102);
 const home = mkdtempSync(path.join(tmpdir(), "tentacle-audio-home-"));
 mkdirSync(path.join(home, "Library/Application Support"), { recursive: true });
