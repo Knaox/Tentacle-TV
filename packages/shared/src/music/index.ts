@@ -14,3 +14,4 @@ export * from "./musicSourceOrder";
 export * from "./musicShare";
 export * from "./albumNotes";
 export * from "./musicMosaic";
+export * from "./shazamLink";
