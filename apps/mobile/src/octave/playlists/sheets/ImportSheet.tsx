@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { classifyPasted, importFraction, useMusicImport, type ImportUserInput } from "@tentacle-tv/api-client";
@@ -98,9 +98,11 @@ export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefil
       visible={open}
       onClose={close}
       snapPoints={[0.7, 0.94]}
+      avoidKeyboard
       header={<Text style={[typography.subtitle, styles.title, { color: theme.colors.text.primary }]}>{state?.name || t("title")}</Text>}
     >
-      <View style={styles.body}>
+      {/* Le clavier levé, tout ne tient plus : le contenu défile, et un toucher sur un bouton agit du premier coup. */}
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
         {state === null ? (
           <>
             <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("intro")}</Text>
@@ -147,7 +149,7 @@ export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefil
             <OctavePlayButton label={t("retry")} Icon={null} onPress={reset} style={styles.primary} />
           </>
         )}
-      </View>
+      </ScrollView>
     </BottomSheet>
   );
 }
