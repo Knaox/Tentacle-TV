@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from "react";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import type { KeptMusicState } from "@tentacle-tv/offline-core/music";
-import { keptMusicResourceUri } from "@/offline/engineMusicApi";
+import { keptMusicResourceUri } from "../../offline/engineMusicApi";
 import { keptMusicStore, subscribeKeptMusic } from "./keptMusic";
 
 export function useKeptMusic(): KeptMusicState {
