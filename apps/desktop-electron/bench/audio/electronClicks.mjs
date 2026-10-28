@@ -58,12 +58,13 @@ try {
   await new Promise((r) => ws.addEventListener("open", r, { once: true }));
   let id = 1;
   const pending = new Map();
-  ws.addEventListener("message", (m) => { const msg = JSON.parse(String(m.data)); pending.get(msg.id)?.(msg); });
+  // Seules les réponses à NOS requêtes (identifiant numérique) : un évènement n'appelle rien.
+  ws.addEventListener("message", (m) => { const msg = JSON.parse(String(m.data)); if (typeof msg.id === "number") pending.get(msg.id)?.(msg); });
   const run = (js) => new Promise((r) => { const n = id++; pending.set(n, r); ws.send(JSON.stringify({ id: n, method: "Runtime.evaluate", params: { expression: `(async () => { ${js} })()`, awaitPromise: true, returnByValue: true } })); })
     .then((r) => (r.result?.exceptionDetails ? { thrown: r.result.exceptionDetails.exception?.description?.split("\n")[0] } : r.result?.result?.value));
   await new Promise((r) => setTimeout(r, 1500));
   await run(`window.__ev = []; window.tentacle.on("audio://event", (e) => window.__ev.push([performance.now(), e]));
-    await window.tentacle.invoke("audio_engine_start", { serverOrigin: "${new URL(BASE).origin}", headers: { "X-Emby-Token": "${TOKEN}" },
+    await window.tentacle.invoke("audio_engine_start", { serverOrigin: ${JSON.stringify(new URL(BASE).origin)}, headers: { "X-Emby-Token": ${JSON.stringify(TOKEN)} },
       volume: 0.05, muted: false, replayGain: "auto", deviceId: null, exclusive: false }); return true;`);
   const bridge = async (itemId) => {
     const s = await (await fetch(`${BASE}/api/music/source/${itemId}`, { headers: { "X-Emby-Token": TOKEN } })).json();

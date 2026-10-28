@@ -4,7 +4,7 @@
 //   BANC_STATE=<état> node morning.mjs <dossier du clone> [--garder]
 // Le clone se fait depuis le dépôt local (branche `dev`, rien de poussé requis).
 import { execFileSync } from "node:child_process";
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { connectAndLogin, dismissOverlays, glassDom, glassToggle, go, sleep } from "./lib/app.mjs";
 import { STATE, SERVER, account, outDir } from "./lib/config.mjs";
@@ -27,7 +27,13 @@ if (existsSync(clone)) rmSync(clone, { recursive: true, force: true });
 }
 verdict.commit = execFileSync("git", ["-C", clone, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 const started = Date.now();
-execFileSync("sh", ["-c", `pnpm install --frozen-lockfile > "${log("install.log")}" 2>&1`], { cwd: clone });
+// Sans shell : le chemin du journal (BANC_OUT) n'est jamais relu comme une commande.
+const installLog = openSync(log("install.log"), "w");
+try {
+  execFileSync("pnpm", ["install", "--frozen-lockfile"], { cwd: clone, stdio: ["ignore", installLog, installLog] });
+} finally {
+  closeSync(installLog);
+}
 verdict.steps.push({ name: "pnpm install", seconds: Math.round((Date.now() - started) / 1000) });
 
 const app = await launchApp({

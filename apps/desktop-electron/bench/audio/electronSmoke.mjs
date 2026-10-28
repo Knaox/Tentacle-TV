@@ -69,7 +69,8 @@ try {
   const pending = new Map();
   ws.addEventListener("message", (m) => {
     const msg = JSON.parse(String(m.data));
-    pending.get(msg.id)?.(msg);
+    // Seules les réponses à NOS requêtes (identifiant numérique) : un évènement n'appelle rien.
+    if (typeof msg.id === "number") pending.get(msg.id)?.(msg);
   });
   const send = (method, params = {}) => new Promise((r) => { const n = id++; pending.set(n, r); ws.send(JSON.stringify({ id: n, method, params })); });
   const run = async (js) => {
