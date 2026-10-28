@@ -54,7 +54,10 @@
         {
           "android": {
             "usesCleartextTraffic": true,
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# Tentacle : règles R8 de l'app (le reste vient des bibliothèques elles-mêmes).\n# Le code natif maison est gardé ENTIER : peu de poids, et aucun nom qu'un\n# appel JNI, un manifeste ou une réflexion attend ne peut disparaître.\n-keep class com.tentacle.mobile.** { *; }\n-keep class com.tentacletv.boot.** { *; }\n-keep class expo.modules.mpvplayer.** { *; }\n-keep class expo.modules.octaveaudio.** { *; }\n-keep class expo.modules.offlinestorage.** { *; }\n-keep class expo.modules.playerpip.** { *; }\n-keep class expo.modules.tentaclecast.** { *; }\n# libmpv-android : son code natif rappelle les observateurs par leur nom (JNI) ;\n# la règle de l'AAR ne garde que MPVLib, pas ses interfaces imbriquées.\n-keep class dev.jdtech.mpv.** { *; }\n-keep interface dev.jdtech.mpv.** { *; }\n# Décodeur audio FFmpeg (Media3), chargé par réflexion par DefaultRenderersFactory.\n-keep class androidx.media3.decoder.ffmpeg.** { *; }\n# expo-notifications : son build.gradle ne déclare pas sa règle de consommateur.\n-keep class expo.modules.notifications.** { *; }\n# Numéros de ligne gardés : les piles des rapports Play se relisent par le mapping.\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile"
           }
         }
       ],
