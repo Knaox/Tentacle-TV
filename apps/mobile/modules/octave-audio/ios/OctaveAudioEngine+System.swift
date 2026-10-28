@@ -238,7 +238,10 @@ extension OctaveAudioEngine {
       out["mixable"] = session.categoryOptions.contains(.mixWithOthers)
       out["longFormAudio"] = session.routeSharingPolicy == .longFormAudio
     }
-    out["decks"] = decks.map { ["active": $0.isActive, "paused": $0.isPaused, "positionMs": $0.positionMs] }
+    out["decks"] = decks.map {
+      ["active": $0.isActive, "paused": $0.isPaused, "positionMs": $0.positionMs,
+       "path": String(($0.debugPath ?? "").prefix(80)), "output": $0.debugOutput ?? NSNull()] as [String: Any]
+    }
     out["front"] = front
     out["fading"] = fade != nil
     return out

@@ -77,7 +77,8 @@ final class AudioDeck {
     DispatchQueue.global(qos: .utility).async { mpv_terminate_destroy(mpv) }
   }
 
-  /// Les options d'une instance AUDIO SEUL (celles du bureau, sortie audiounit d'iOS).
+  /// Les options d'une instance AUDIO SEUL (celles du bureau, sortie audiounit d'iOS). Pas plus de 30 s
+  /// d'avance : à 120 s, une reprise au milieu d'un FLAC coûtait cinq requêtes au lieu d'une (mesuré, 28/10).
   /// `audio-exclusive` : sans lui, `ao_audiounit` (mpv 0.41) repose la catégorie `.playback` AVEC
   /// `MixWithOthers` à chaque ouverture de sa sortie — et une app « mixable » n'est jamais « À l'écoute »
   /// pour iOS (ni écran verrouillé, ni Centre de contrôle, ni commandes du système). Il ne fait rien d'autre
@@ -87,6 +88,12 @@ final class AudioDeck {
     ("ao", "audiounit"), ("audio-exclusive", "yes"), ("idle", "yes"), ("keep-open", "yes"),
     ("gapless-audio", "weak"), ("prefetch-playlist", "yes"),
     ("sid", "no"), ("audio-file-auto", "no"), ("cover-art-auto", "no"),
+    // Une sortie au format FIXE : mpv rééchantillonne, la sortie n'est jamais rouverte d'un titre à l'autre
+    // (`gapless-audio=weak` la garde tant que le format ne change pas). Chaque réouverture repose la
+    // catégorie et le mode de la session, et chaque fermeture la DÉSACTIVE (`ao_audiounit`, `setActive:NO`) —
+    // même pendant que l'autre platine joue : iOS coupe alors sa sortie (« Starting in iOS 8, … the session
+    // will be deactivated », AVAudioSession.h). D'où les pauses et les accrocs (lot mo3, 28/10).
+    ("audio-samplerate", "48000"), ("audio-channels", "stereo"), ("audio-format", "float"),
     ("cache", "yes"), ("demuxer-max-bytes", "48MiB"), ("demuxer-max-back-bytes", "8MiB"),
     ("demuxer-readahead-secs", "30"), ("network-timeout", "20"),
     ("tls-verify", "yes"), ("volume-max", "150"), ("input-default-bindings", "no"),
@@ -147,12 +154,33 @@ final class AudioDeck {
     command(mpv, ["seek", String(format: "%.3f", max(0, ms) / 1000), "absolute+exact"])
   }
 
+  /// Arrête TOUT : la platine passe au repos et ferme sa sortie — ce qui désactive la session audio.
+  /// Seulement quand plus rien ne doit sonner (arrêt du moteur, « stop ») ; sinon `park()`.
   func stop() {
     guard let mpv = handle else { return }
     loaded = false
     restarted = false
     command(mpv, ["stop"])
   }
+
+  /// Libère la platine SANS fermer sa sortie : un silence en mémoire, en pause, gain nul. Le flux du titre
+  /// d'avant est lâché (réseau, cache), la sortie reste ouverte — la session n'est jamais désactivée sous
+  /// l'autre platine, et le prochain titre préchargé ici ne la rouvre pas (pas d'accroc pendant la lecture).
+  func park() {
+    guard let mpv = handle else { return }
+    loaded = false
+    restarted = false
+    setFlag("pause", true)
+    setGain(0)
+    command(mpv, ["loadfile", Self.silence, "replace", "-1"])
+    setFlag("pause", true)
+  }
+
+  /// 20 ms de silence (WAV PCM 16 bits, mono, 48 kHz), lus par le flux `hex://` de mpv : rien sur le disque.
+  private static let silence: String = {
+    let header = "52494646a407000057415645666d7420100000000100010080bb000000770100020010006461746180070000"
+    return "hex://" + header + String(repeating: "0", count: 960 * 4)
+  }()
 
   /// Un gain LINÉAIRE (0…~3) : le `volume` de mpv est cubique (gain = (v/100)³).
   func setGain(_ gain: Double) {
@@ -166,6 +194,11 @@ final class AudioDeck {
   var isActive: Bool { handle != nil && loaded }
   /// La pause telle que mpv la tient (bancs : `audio_debug`).
   var isPaused: Bool { getFlag("pause") ?? true }
+  #if DEBUG
+  /// Bancs : d'où la platine lit (`file://…` pour une copie gardée), et sa sortie ouverte ou non.
+  var debugPath: String? { getString("path") }
+  var debugOutput: String? { getString("current-ao") }
+  #endif
 
   // MARK: - Évènements
 
@@ -228,6 +261,12 @@ final class AudioDeck {
     guard let mpv = handle else { return nil }
     var value: Int32 = 0
     return mpv_get_property(mpv, name, MPV_FORMAT_FLAG, &value) >= 0 ? value != 0 : nil
+  }
+
+  private func getString(_ name: String) -> String? {
+    guard let mpv = handle, let raw = mpv_get_property_string(mpv, name) else { return nil }
+    defer { mpv_free(raw) }
+    return String(cString: raw)
   }
 
   private func getDouble(_ name: String) -> Double? {
