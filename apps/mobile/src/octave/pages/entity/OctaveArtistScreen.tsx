@@ -29,6 +29,7 @@ import { PageTopBar } from "./PageTopBar";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
+import { AlbumWarmupProvider, useAlbumWarmupPage } from "../env/albumWarmupScope";
 
 const NO_ALBUMS: MusicAlbum[] = [];
 const HIDE = { artist: true } as const;
@@ -40,7 +41,8 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const player = usePagesPlayer();
   const { gutter, sectionGap, bottomInset } = usePageMetrics();
   // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
-  const { scrollY, scrollProps } = useOctavePageScroll();
+  const warm = useAlbumWarmupPage();
+  const { scrollY, scrollProps } = useOctavePageScroll(warm.motion);
   const artist = useMusicArtistEntity(useOctavePagesProvider(), id);
   useRecordMusicVisit(useDeviceStore(), useOctaveOwner(), "artist", artist.isPlaceholder ? undefined : artist.data);
   const [expanded, setExpanded] = useState(false);
@@ -64,6 +66,7 @@ export function OctaveArtistScreen({ id }: { id: string }) {
   const data = artist.data;
   const releases = data?.albums?.length ?? 0;
   return (
+    <AlbumWarmupProvider scope={warm.scope}>
     <View style={{ flex: 1 }}>
       <Animated.ScrollView onScroll={scrollProps.onScroll} scrollEventThrottle={16} contentOffset={scrollProps.contentOffset} contentContainerStyle={{ paddingBottom: bottomInset }}>
         {data ? (
@@ -96,12 +99,13 @@ export function OctaveArtistScreen({ id }: { id: string }) {
             </Animated.View>
           ) : null}
           {groups.map(({ group, albums: shown }) => (
-            <Shelf key={group} title={t(`artist.${group}`)} items={shown} keyOf={(a) => a.album.key} render={({ album }, w) => <AlbumCard album={album} width={w} />} />
+            <Shelf key={group} title={t(`artist.${group}`)} items={shown} keyOf={(a) => a.album.key} albumOf={(a) => a.album} render={({ album }, w) => <AlbumCard album={album} width={w} />} />
           ))}
         </View>
       </Animated.ScrollView>
       <PageTopBar title={data?.name ?? ""} scrollY={scrollY} threshold={320} />
       <OctavePagesHost />
     </View>
+    </AlbumWarmupProvider>
   );
 }

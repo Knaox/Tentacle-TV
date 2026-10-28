@@ -29,6 +29,7 @@ import { SearchHome } from "./SearchHome";
 import { SearchKindList } from "./SearchKindList";
 import { SuggestionList } from "./SuggestionList";
 import { useSearchRoute } from "./useSearchRoute";
+import { AlbumWarmupProvider, useAlbumWarmupPage } from "../env/albumWarmupScope";
 
 export function OctaveSearchScreen() {
   const { t, i18n } = useTranslation("music");
@@ -39,6 +40,7 @@ export function OctaveSearchScreen() {
   const { gutter, sectionGap, bottomInset } = usePageMetrics();
   const { query, filter, submit: route, clear: clearRoute, setFilter } = useSearchRoute();
   const input = useRef<TextInput>(null);
+  const warm = useAlbumWarmupPage();
   // Sans réseau : la recherche se fait dans la musique gardée sur l'appareil.
   const offline = useOfflineMode();
   const [draft, setDraft] = useState(query);
@@ -95,7 +97,7 @@ export function OctaveSearchScreen() {
     );
   } else if (!query.trim()) {
     body = (
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }}>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }} {...warm.scroll}>
         <SearchHome recents={recents} onSearch={submit} onForget={forget} />
       </ScrollView>
     );
@@ -119,7 +121,7 @@ export function OctaveSearchScreen() {
     );
   } else {
     body = (
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom, gap: sectionGap }}>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom, gap: sectionGap }} {...warm.scroll}>
         <MoodResults query={query} />
         {filters}
         {!results.library ? <TrackRowsSkeleton count={8} gutter={gutter} /> : null}
@@ -130,10 +132,12 @@ export function OctaveSearchScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      {bar}
-      <View style={{ flex: 1 }}>{body}</View>
-      <OctavePagesHost />
-    </View>
+    <AlbumWarmupProvider scope={warm.scope}>
+      <View style={{ flex: 1 }}>
+        {bar}
+        <View style={{ flex: 1 }}>{body}</View>
+        <OctavePagesHost />
+      </View>
+    </AlbumWarmupProvider>
   );
 }

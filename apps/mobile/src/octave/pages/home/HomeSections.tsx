@@ -14,7 +14,7 @@ import type { MusicHomeResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { useRouter } from "expo-router";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, PlaylistCard } from "../ui/Cards";
-import { SectionTitle, Shelf } from "../ui/Shelf";
+import { SectionTitle, Shelf, albumSelf } from "../ui/Shelf";
 import { TrackRow } from "../ui/TrackRow";
 import { usePageMetrics } from "../ui/pageStyle";
 import { MixCard } from "./MixCard";
@@ -47,7 +47,7 @@ export const ForYouTop = memo(function ForYouTop({ home }: { home: MusicHomeResp
   return (
     <>
       <Shelf title={t("octaveHome.mixes")} hint={t("octaveHome.mixesHint")} items={forYou.mixes} keyOf={(m) => m.id} render={(mix, w) => <MixCard mix={mix} width={w} />} width={card} />
-      <Shelf title={t("octaveHome.recentAlbums")} items={forYou.recentAlbums} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} />
+      <Shelf title={t("octaveHome.recentAlbums")} items={forYou.recentAlbums} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} width={w} />} />
     </>
   );
 });
@@ -67,7 +67,7 @@ export const HomeShelves = memo(function HomeShelves({ home, gap }: { home: Musi
         onSeeAll={() => router.push(`${octavePaths.library}?tab=albums` as never)}
       />
       {forYou?.because.map((row) => (
-        <Shelf key={row.artist.key} title={t("octaveHome.because", { artist: row.artist.name })} items={row.albums} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} />
+        <Shelf key={row.artist.key} title={t("octaveHome.because", { artist: row.artist.name })} items={row.albums} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} width={w} />} />
       ))}
       {forYou ? <Shelf title={t("octaveHome.recentArtists")} items={forYou.recentArtists} keyOf={(a) => a.key} render={(artist, w) => <ArtistCard artist={artist} width={w} />} /> : null}
       <MostPlayed tracks={home.mostPlayed.slice(0, 5)} />

@@ -29,16 +29,37 @@ export interface OctavePageScroll {
   };
 }
 
-export function useOctavePageScroll(): OctavePageScroll {
+/** Le doigt pose la page en mouvement (`onMove`), son arrêt (`onSettle`) : le préchargement des albums visibles. */
+export interface PageScrollMotion {
+  onMove(): void;
+  onSettle(): void;
+}
+
+const STILL: PageScrollMotion = { onMove: () => undefined, onSettle: () => undefined };
+
+export function useOctavePageScroll(motion: PageScrollMotion = STILL): OctavePageScroll {
   const scrollY = useSharedValue(0);
   const pathname = usePathname();
   const layout = useOctaveLayout();
   // Lu une fois au montage : le défilement gardé ne vaut que pour le premier rendu de la page gardée.
   const initial = useMemo(() => takeLaunchScroll(pathname), [pathname]);
-  const remember = useCallback((y: number) => rememberOctaveScroll(pathname, y), [pathname]);
+  const { onMove, onSettle } = motion;
+  const remember = useCallback(
+    (y: number) => {
+      rememberOctaveScroll(pathname, y);
+      onSettle();
+    },
+    [pathname, onSettle],
+  );
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       scrollY.value = e.contentOffset.y;
+    },
+    onBeginDrag: () => {
+      runOnJS(onMove)();
+    },
+    onMomentumBegin: () => {
+      runOnJS(onMove)();
     },
     onEndDrag: (e) => {
       runOnJS(remember)(e.contentOffset.y);

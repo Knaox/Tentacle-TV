@@ -14,7 +14,7 @@ import { useSearchHomeSnapshot } from "@tentacle-tv/api-client";
 import { typography, useTheme } from "@/theme";
 import { useDeviceStore, useOctaveOwner } from "../env/pagesEnv";
 import { AlbumCard, ArtistCard } from "../ui/Cards";
-import { SectionTitle, Shelf } from "../ui/Shelf";
+import { SectionTitle, Shelf, albumSelf } from "../ui/Shelf";
 import { usePageMetrics } from "../ui/pageStyle";
 import { ListenedCard } from "./ListenedCard";
 import { MoodChips } from "./MoodChips";
@@ -39,7 +39,7 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
           <Text style={[typography.title, { color: theme.colors.text.primary }]}>{t("search.emptyTitle")}</Text>
         </View>
       ) : null}
-      <Shelf title={t("octaveHome.viewedAlbums")} items={shelves.albums} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} />
+      <Shelf title={t("octaveHome.viewedAlbums")} items={shelves.albums} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} width={w} />} />
       <Shelf title={t("octaveHome.viewedArtists")} items={shelves.artists} keyOf={(a) => a.key} render={(artist, w) => <ArtistCard artist={artist} width={w} />} />
       {cards.length > 0 ? (
         <View>

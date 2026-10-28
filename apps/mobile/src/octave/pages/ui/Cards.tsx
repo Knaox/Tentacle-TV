@@ -12,7 +12,8 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CloudOff } from "lucide-react-native";
-import { openUnavailableAlbum, useMusicPending } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { openUnavailableAlbum, prefetchExternalEntity, useMusicPending } from "@tentacle-tv/api-client";
 import { isUnavailableAlbum, playlistTrackTotal, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
@@ -21,6 +22,13 @@ import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { useOctavePagesProvider } from "../env/pagesEnv";
 import { Artwork } from "./Artwork";
+
+/** La vue d'un album ou d'un artiste hors bibliothèque demandée au toucher, avant la navigation. */
+function useOpenWarmup() {
+  const qc = useQueryClient();
+  const provider = useOctavePagesProvider();
+  return (kind: "album" | "artist", target: string) => void prefetchExternalEntity(qc, provider, kind, target);
+}
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
@@ -58,6 +66,7 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
   const nav = useOctaveNav();
   const { t } = useTranslation("music");
   const unavailable = isUnavailableAlbum(album);
+  const warm = useOpenWarmup();
   const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
   if (unavailable) {
     return (
@@ -74,7 +83,12 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
   }
   const open = () => {
     const target = entityTarget(album);
-    if (target && !album.jellyfinId) rememberAlbumPreview(target, album);
+    if (target && !album.jellyfinId) {
+      rememberAlbumPreview(target, album);
+      // La vue part AVANT la navigation (pas au montage de l'écran) ; jamais à l'appui commencé : un doigt qui
+      // pose une rangée pour la faire défiler coûterait une requête YouTube au budget commun.
+      warm("album", target);
+    }
     nav.album(album);
   };
   return (
@@ -88,8 +102,14 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
 export const ArtistCard = memo(function ArtistCard({ artist, width }: { artist: MusicArtist; width: number }) {
   const nav = useOctaveNav();
   const { t } = useTranslation("music");
+  const warm = useOpenWarmup();
+  const open = () => {
+    const target = entityTarget(artist);
+    if (target && !artist.jellyfinId) warm("artist", target);
+    nav.artist(artist);
+  };
   return (
-    <PressableCard onPress={() => nav.artist(artist)} style={{ width }} accessibilityRole="button" accessibilityLabel={artist.name}>
+    <PressableCard onPress={open} style={{ width }} accessibilityRole="button" accessibilityLabel={artist.name}>
       <Artwork url={artist.imageUrl} size={width} round kind="artist" />
       <Caption title={artist.name} subtitle={t("search.kindArtist")} center />
     </PressableCard>
