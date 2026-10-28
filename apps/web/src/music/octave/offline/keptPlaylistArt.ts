@@ -19,7 +19,7 @@ import { keptToTrack } from "./deviceModel";
 const PLAYLIST_PREFIX = "playlist:jf:";
 
 /** La playlist Jellyfin d'une collection gardée (`playlist:jf:<id>`), `null` pour un album. */
-export function keptPlaylistId(collection: Pick<DeviceCollection, "key" | "kind">): string | null {
+export function keptPlaylistId(collection: { key: string; kind: string }): string | null {
   return collection.kind === "playlist" && collection.key.startsWith(PLAYLIST_PREFIX) ? collection.key.slice(PLAYLIST_PREFIX.length) : null;
 }
 

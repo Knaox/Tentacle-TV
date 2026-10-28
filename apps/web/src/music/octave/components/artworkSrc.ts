@@ -33,6 +33,8 @@ export interface ArtCacheTarget {
 
 export function artworkSrcOf(url: string | null, auth: MusicEngineAuth, artCache?: ArtCacheTarget): string | null {
   if (!url) return null;
+  // Une image gardée en mémoire par l'appareil (copie d'une jaquette, `keptCovers/`) : telle quelle.
+  if (/^(blob|data):/i.test(url)) return url;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url) && !/^https?:\/\//i.test(url)) return url;
   const direct = /^https?:\/\//i.test(url) ? url : elementSourceUrl(url, auth);
   if (!artCache || !/^https?:\/\//i.test(direct)) return direct;

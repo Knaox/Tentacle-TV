@@ -23,7 +23,8 @@ export function playlistCoverUrls(playlist: Pick<MusicPlaylist, "mosaic" | "artw
 }
 
 interface PlaylistArtworkProps {
-  urls: readonly string[];
+  /** `null` : une case dont l'image n'est pas là (hors ligne) — la teinte du repli, jamais une case vide. */
+  urls: readonly (string | null)[];
   /** Le nom de la playlist : la teinte du repli sans image. */
   label: string;
   className?: string;
@@ -38,8 +39,8 @@ export const PlaylistArtwork = memo(function PlaylistArtwork({ urls, label, clas
   return (
     // Des carreaux en flex, pas une grille à rangées : le client des téléviseurs LG (Chrome 53) compile ce fichier.
     <div aria-hidden className={`relative flex shrink-0 flex-wrap overflow-hidden bg-fill-soft ${className}`} style={{ borderRadius: ARTWORK_RADIUS[radius] }}>
-      {urls.slice(0, 4).map((url) => (
-        <Artwork key={url} url={url} label={label} radius="none" thumb={thumb} eager={eager} className="h-1/2 w-1/2" />
+      {urls.slice(0, 4).map((url, cell) => (
+        <Artwork key={`${cell}:${url ?? ""}`} url={url} label={label} radius="none" thumb={thumb} eager={eager} className="h-1/2 w-1/2" />
       ))}
     </div>
   );
