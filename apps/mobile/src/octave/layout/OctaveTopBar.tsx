@@ -3,7 +3,8 @@
  * titre est dans la page), il se pose en VERRE dès que le contenu passe dessous,
  * et le titre compact apparaît quand le grand titre est sorti. Retour (rond de
  * verre) sur une page empilée ; actions à droite. Seulement des opacités et des
- * translations, sur le fil d'interface.
+ * translations, sur le fil d'interface. Une page racine (sans retour) porte
+ * l'avatar du profil, à droite : le hub « Compte ».
  */
 
 import { memo, type ReactNode } from "react";
@@ -14,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react-native";
 import { useOctaveColors } from "../theme/octaveColors";
+import { OctaveAccountButton } from "../account/OctaveAccountButton";
 import { OctaveGlass } from "./OctaveGlass";
 import { OCTAVE_TOP_BAR_HEIGHT } from "./useOctavePageScroll";
 import { useOctaveLayout } from "./useOctaveLayout";
@@ -66,7 +68,11 @@ export const OctaveTopBar = memo(function OctaveTopBar({ scrollY, title, back, r
         ) : (
           <Text style={styles.title} />
         )}
-        <View style={[styles.side, styles.right]}>{right}</View>
+        <View style={[styles.side, styles.right]}>
+          {right}
+          {/* Une page racine (sans retour) porte l'avatar, à la Apple Music : il ouvre le hub « Compte ». */}
+          {showBack ? null : <OctaveAccountButton />}
+        </View>
       </View>
     </View>
   );

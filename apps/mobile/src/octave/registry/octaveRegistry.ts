@@ -10,6 +10,7 @@ import { m3Contribution } from "./axes/m3";
 import { m4Contribution } from "./axes/m4";
 import { m5Contribution } from "./axes/m5";
 import { m7Contribution } from "./axes/m7";
+import { o2Contribution } from "./axes/o2";
 import { gatedEntry } from "./octaveRequirement";
 import type { OctaveAxisContribution, OctaveMiniPlayerProps, OctaveRequirement, OctaveScreenName, OctaveScreenProps } from "./octaveRegistryTypes";
 
@@ -18,7 +19,7 @@ export interface OctaveEntry<T> {
   requires?: OctaveRequirement;
 }
 
-const AXES: readonly OctaveAxisContribution[] = [m2Contribution, m3Contribution, m4Contribution, m5Contribution, m7Contribution];
+const AXES: readonly OctaveAxisContribution[] = [m2Contribution, m3Contribution, m4Contribution, m5Contribution, m7Contribution, o2Contribution];
 
 const screens = new Map<OctaveScreenName, OctaveEntry<ComponentType<OctaveScreenProps>>>();
 for (const axis of AXES) {
