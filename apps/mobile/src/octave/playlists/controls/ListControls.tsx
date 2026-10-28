@@ -5,7 +5,7 @@
  * glisser attend (recherche, filtre). Absente sans `music.listOrder` (l'appelant ne la monte pas).
  */
 
-import { memo, useState, useTransition } from "react";
+import { memo, useEffect, useState, useTransition } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ArrowDownUp, Search, X } from "lucide-react-native";
@@ -37,6 +37,10 @@ export const ListControls = memo(function ListControls(props: Props) {
   const [sorting, setSorting] = useState(false);
   const [text, setText] = useState(query);
   const [, startTransition] = useTransition();
+  // « Tout afficher » (la liste remise à zéro ailleurs) vide aussi le champ.
+  useEffect(() => {
+    if (query === "") setText("");
+  }, [query]);
   // La frappe se voit tout de suite ; la liste se refiltre en transition (jamais une touche retenue).
   const type = (value: string) => {
     setText(value);
