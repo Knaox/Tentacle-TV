@@ -4,8 +4,9 @@
  * d'attente. Les fichiers de `app/octave/` ne font qu'appeler ceci.
  */
 
-import { memo, useMemo } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { memo, useEffect, useMemo } from "react";
+import { useLocalSearchParams, usePathname } from "expo-router";
+import { reportOctaveFirstPage } from "../launch/octaveBootReport";
 import { useTranslation } from "react-i18next";
 import { octaveScreen } from "../registry/octaveRegistry";
 import type { OctaveScreenName } from "../registry/octaveRegistryTypes";
@@ -32,6 +33,8 @@ export const OctaveRoute = memo(function OctaveRoute({ name }: { name: OctaveScr
   const raw = useLocalSearchParams();
   const { t } = useTranslation("music");
   const params = useMemo(() => Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, decode(value)])), [raw]);
+  const pathname = usePathname();
+  useEffect(() => reportOctaveFirstPage(pathname), [pathname]);
   const Screen = octaveScreen(name);
   return Screen ? <Screen params={params} /> : <OctavePlaceholder title={t(PLACEHOLDER_TITLE[name])} />;
 });

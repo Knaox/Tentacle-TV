@@ -12,12 +12,14 @@ import { useGlobalSearchParams, usePathname } from "expo-router";
 import { markBoot } from "@/bootIntro/bootTimeline";
 import { useResponsive } from "@/theme";
 import { rememberOctavePath } from "../cache/octavePageStore";
+import { markOctaveReached } from "../launch/octaveLaunch";
 import { octaveOverlays, octaveProviders } from "../registry/octaveRegistry";
 import { useOctaveColors } from "../theme/octaveColors";
 import { OCTAVE_MINI_GAP, OCTAVE_SIDEBAR_WIDTH, OctaveChromeContext, type OctaveChrome } from "./octaveChrome";
 import { OctaveMiniPlayerSlot } from "./OctaveMiniPlayerSlot";
 import { OctaveSidebar } from "./OctaveSidebar";
 import { OctaveTabBar, useOctaveTabBarHeight } from "./OctaveTabBar";
+import { useOctaveAndroidBack } from "./useOctaveAndroidBack";
 
 /** Garde l'adresse affichée (la question d'une recherche comprise, `?q=`). */
 function usePageMemory(): void {
@@ -39,7 +41,11 @@ export function OctaveShell({ children }: { children: ReactNode }) {
   const tabBar = useOctaveTabBarHeight();
   const [miniPlayerHeight, setMiniPlayerHeight] = useState(0);
   usePageMemory();
-  useEffect(() => markBoot("octaveShell"), []);
+  useOctaveAndroidBack();
+  useEffect(() => {
+    markOctaveReached();
+    markBoot("octaveShell");
+  }, []);
 
   const layout = isTablet ? "tablet" : "phone";
   const chrome = useMemo<OctaveChrome>(() => {

@@ -40,7 +40,7 @@ export function setOctaveMode(on: boolean): void {
   for (const listener of listeners) listener();
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeOctaveMode(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -48,7 +48,7 @@ function subscribe(listener: () => void): () => void {
 }
 
 export function useOctaveMode(): boolean {
-  return useSyncExternalStore(subscribe, isOctaveMode, isOctaveMode);
+  return useSyncExternalStore(subscribeOctaveMode, isOctaveMode, isOctaveMode);
 }
 
 /** Le stockage d'appareil branché (null avant l'hydratation). */

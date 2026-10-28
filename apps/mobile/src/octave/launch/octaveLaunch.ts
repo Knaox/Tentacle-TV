@@ -13,7 +13,12 @@ import { NOT_IN_OCTAVE, OCTAVE_LAUNCH_READ_KEYS, decideMobileOctaveLaunch, type 
 
 let decided: MobileOctaveLaunch | null = null;
 let decision: Promise<MobileOctaveLaunch> | null = null;
-let redirectTaken = false;
+let decidedAt = 0;
+/** La coquille d'Octave est montée (ou Tentacle a pris la main) : la redirection du lancement ne vaut plus. */
+let reached = false;
+
+/** Au-delà, la redirection du lancement ne vaut plus (lien profond ouvert ailleurs, puis retour aux films). */
+export const OCTAVE_REDIRECT_WINDOW_MS = 10_000;
 
 async function decide(): Promise<MobileOctaveLaunch> {
   try {
@@ -28,6 +33,7 @@ async function decide(): Promise<MobileOctaveLaunch> {
 export function octaveLaunchDecision(): Promise<MobileOctaveLaunch> {
   decision ??= decide().then((launch) => {
     decided = launch;
+    decidedAt = Date.now();
     if (launch.inOctave) void preloadOctaveCache();
     return launch;
   });
@@ -41,9 +47,17 @@ export function octaveLaunch(): MobileOctaveLaunch {
   return decided ?? NOT_IN_OCTAVE;
 }
 
-/** La page où arriver, UNE fois : la première coquille de Tentacle montée y renvoie au lieu de se peindre. */
-export function takeOctaveLaunchRedirect(): string | null {
-  if (redirectTaken || !decided?.inOctave || !decided.path) return null;
-  redirectTaken = true;
-  return decided.path;
+/**
+ * La page où arriver au lancement en Octave : la première coquille de Tentacle
+ * montée y renvoie au lieu de se peindre. Elle vaut jusqu'à ce qu'Octave soit
+ * atteint (`markOctaveReached`) — jamais consommée par une simple lecture : le
+ * mode strict de React rejoue les initialisations.
+ */
+export function pendingOctaveLaunchRedirect(now: number = Date.now()): string | null {
+  if (reached || !decided?.inOctave || !decided.path) return null;
+  return now - decidedAt <= OCTAVE_REDIRECT_WINDOW_MS ? decided.path : null;
+}
+
+export function markOctaveReached(): void {
+  reached = true;
 }

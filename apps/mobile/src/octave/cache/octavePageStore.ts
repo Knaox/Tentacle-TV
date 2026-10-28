@@ -37,7 +37,10 @@ export function rememberOctavePath(path: string): void {
   const owner = currentOctaveOwner();
   if (owner === null) return;
   if (page?.path === path && page.owner === owner) return;
-  page = { owner, path, scrollTop: 0, savedAt: Date.now() };
+  // La page gardée du lancement garde son défilement tant qu'aucun geste ne l'a changé.
+  const saved = octaveLaunch().savedPage;
+  const scrollTop = saved && saved.owner === owner && saved.path === path ? saved.scrollTop : 0;
+  page = { owner, path, scrollTop, savedAt: Date.now() };
   schedule();
 }
 

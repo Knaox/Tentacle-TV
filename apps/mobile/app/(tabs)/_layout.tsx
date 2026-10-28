@@ -16,7 +16,7 @@ import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
-import { takeOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
+import { pendingOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
 
 /**
  * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
@@ -36,7 +36,7 @@ import { takeOctaveLaunchRedirect } from "@/octave/launch/octaveLaunch";
  * ni accueil des films, ni ses requêtes, avant la musique.
  */
 export default function TabsLayout() {
-  const [octavePath] = useState(takeOctaveLaunchRedirect);
+  const [octavePath] = useState(() => pendingOctaveLaunchRedirect());
   if (octavePath) return <Redirect href={octavePath as Href} />;
   return <TentacleTabs />;
 }
