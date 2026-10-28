@@ -73,3 +73,12 @@ export function releaseArtForPixels(url: string, pixels: number): string {
   const size = pixels <= 300 ? "300" : pixels <= 700 ? "700" : pixels <= 1200 ? "1200" : "full";
   return releaseArtSized(url, size);
 }
+
+/** Ce qu'un lot a donné, fichier par fichier : lus, déjà là (même contenu), refusés — à dire en fin d'import. */
+export function releaseFileCounts(job: Pick<ReleaseImportJob, "files"> | null): { read: number; duplicate: number; refused: number } {
+  const out = { read: 0, duplicate: 0, refused: 0 };
+  for (const file of job?.files ?? []) {
+    if (file.state === "read" || file.state === "duplicate" || file.state === "refused") out[file.state]++;
+  }
+  return out;
+}

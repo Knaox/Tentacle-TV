@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MusicAlbum, ReleaseImportJob } from "@tentacle-tv/shared/music";
 import { RELEASE_DEFAULT_CHUNK_BYTES as RELEASE_CHUNK_BYTES } from "./releaseModel";
 import { TentacleApiError } from "../../hooks/usePreferences";
-import { runReleaseFiles, runReleaseLink, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePort } from "./releaseFlow";
+import { RELEASE_RETRY_DELAYS_MS, runReleaseFiles, runReleaseLink, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePort } from "./releaseFlow";
 
 const album = { key: "ext:sillon:own:a1", title: "Édition spéciale", imported: true } as unknown as MusicAlbum;
 
@@ -74,7 +74,7 @@ describe("import de fichiers", () => {
 
   it("une coupure qui dure met en pause, et « Reprendre » ne renvoie pas ce qui est reçu", async () => {
     const big = RELEASE_CHUNK_BYTES + 3;
-    const server = fakeServer({ failAt: RELEASE_CHUNK_BYTES, failTimes: 4 });
+    const server = fakeServer({ failAt: RELEASE_CHUNK_BYTES, failTimes: RELEASE_RETRY_DELAYS_MS.length + 1 });
     const files = [file("1.flac", big)];
     const paused = await runReleaseFiles(server.port, files, () => undefined, new AbortController().signal);
     expect(paused.phase).toBe("paused");

@@ -6,7 +6,7 @@
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { releaseArrival, releaseFraction, type ReleaseFlowState } from "@tentacle-tv/api-client";
+import { releaseArrival, releaseFileCounts, releaseFraction, type ReleaseFlowState } from "@tentacle-tv/api-client";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
 import { OctavePlayButton } from "../layout/OctavePlayButton";
@@ -49,6 +49,13 @@ export function ReleaseProgressView({ state, onHide, onCancel, onResume, onOpen,
   if (state.phase === "done") {
     const album = releaseArrival(state.job);
     const count = state.job?.albums.length ?? 0;
+    const files = releaseFileCounts(state.job);
+    const counts = (
+      <>
+        {files.duplicate > 0 ? <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{t("doneDuplicates", { count: files.duplicate })}</Text> : null}
+        {files.refused > 0 ? <Text style={[typography.caption, { color: warn }]}>{t("doneRefused", { count: files.refused })}</Text> : null}
+      </>
+    );
     return album ? (
       <>
         <View style={styles.arrival}>
@@ -59,12 +66,14 @@ export function ReleaseProgressView({ state, onHide, onCancel, onResume, onOpen,
             <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{t("doneAlbums", { count })}</Text>
           </View>
         </View>
+        {counts}
         <OctavePlayButton label={t("openAlbum")} Icon={null} onPress={() => onOpen(album)} style={styles.primary} />
         <Secondary label={t("another")} onPress={onAnother} />
       </>
     ) : (
       <>
         <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("doneNothingNew")}</Text>
+        {counts}
         <Secondary label={t("another")} onPress={onAnother} />
       </>
     );

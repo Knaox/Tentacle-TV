@@ -55,6 +55,10 @@ export default {
   },
   doneAlbums_one: "{{count}} album prêt à écouter",
   doneAlbums_other: "{{count}} albums prêts à écouter",
+  doneDuplicates_one: "{{count}} fichier était déjà dans Octave.",
+  doneDuplicates_other: "{{count}} fichiers étaient déjà dans Octave.",
+  doneRefused_one: "{{count}} fichier n'a pas pu être importé.",
+  doneRefused_other: "{{count}} fichiers n'ont pas pu être importés.",
   doneNothingNew: "Ces fichiers étaient déjà dans Octave.",
   toastDone: "{{name}} est dans Octave",
   refusal: {

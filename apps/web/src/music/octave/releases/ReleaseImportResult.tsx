@@ -5,7 +5,7 @@
 
 import { AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { releaseArrival, type ReleaseFlowState } from "@tentacle-tv/api-client";
+import { releaseArrival, releaseFileCounts, type ReleaseFlowState } from "@tentacle-tv/api-client";
 import { releaseArtSized, type MusicAlbum } from "@tentacle-tv/shared/music";
 import { Artwork } from "../components/Artwork";
 
@@ -17,6 +17,19 @@ interface Props {
   onOpen: (album: MusicAlbum) => void;
   onAnother: () => void;
   onClose: () => void;
+}
+
+/** Les doublons et les refus d'un lot, en mots (le détail par fichier était dans la progression). */
+function FileCounts({ state }: { state: ReleaseFlowState }) {
+  const { t } = useTranslation("musicReleases");
+  const counts = releaseFileCounts(state.job);
+  if (!counts.duplicate && !counts.refused) return null;
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      {counts.duplicate > 0 && <p className="text-content-tertiary">{t("doneDuplicates", { count: counts.duplicate })}</p>}
+      {counts.refused > 0 && <p className="text-amber-300">{t("doneRefused", { count: counts.refused })}</p>}
+    </div>
+  );
 }
 
 export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose }: Props) {
@@ -62,6 +75,7 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
       ) : (
         <p className="text-sm text-content-secondary">{t("doneNothingNew")}</p>
       )}
+      <FileCounts state={state} />
       {others.length > 0 && (
         <ul className="flex gap-3 overflow-x-auto pb-1">
           {others.map((other) => (

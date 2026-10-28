@@ -48,8 +48,12 @@ export interface ReleaseFlowState {
   refusal: ReleaseRefusal | null;
 }
 
-/** Réessais d'un morceau avant la pause (1 s, 3 s, 8 s). */
-export const RELEASE_RETRY_DELAYS_MS = [1000, 3000, 8000] as const;
+/**
+ * Réessais d'un morceau avant la pause (0,2 s, 1 s, 3 s, 8 s). Le premier, presque immédiat : mesuré au banc
+ * (29/10), le relais rend un 502 au PREMIER morceau d'un fichier qui suit un autre (une connexion vers l'invité
+ * réutilisée alors qu'il venait de la fermer) — la relance passe aussitôt.
+ */
+export const RELEASE_RETRY_DELAYS_MS = [200, 1000, 3000, 8000] as const;
 /** Suivi du job : une question par seconde, puis toutes les deux secondes. */
 const POLL_FAST_MS = 1000;
 const POLL_SLOW_MS = 2000;

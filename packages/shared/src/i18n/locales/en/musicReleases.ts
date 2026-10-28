@@ -55,6 +55,10 @@ export default {
   },
   doneAlbums_one: "{{count}} album ready to play",
   doneAlbums_other: "{{count}} albums ready to play",
+  doneDuplicates_one: "{{count}} file was already in Octave.",
+  doneDuplicates_other: "{{count}} files were already in Octave.",
+  doneRefused_one: "{{count}} file couldn't be imported.",
+  doneRefused_other: "{{count}} files couldn't be imported.",
   doneNothingNew: "These files were already in Octave.",
   toastDone: "{{name}} is in Octave",
   refusal: {
