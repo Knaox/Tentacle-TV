@@ -19,3 +19,4 @@ export * from "./recentShelves";
 export * from "./recentMusicSearches";
 export * from "./searchListens";
 export * from "./recentVisits";
+export * from "./albumPreview";

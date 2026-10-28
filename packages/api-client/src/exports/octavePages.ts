@@ -12,3 +12,15 @@ export {
   useMusicAlbumEntity, useMusicArtistEntity, externalEntityKey, externalEntityRef, isFromMusicProvider, type MusicEntityState,
 } from "../music/octave/useMusicEntities";
 export { useRecordMusicVisit, useSearchHomeSnapshot } from "../music/octave/useSearchMemory";
+// Octave — les GESTES sur un titre (cœur, playlists, droits d'ajout), et leurs magasins d'interface.
+export type { OctaveActionsUi, MusicTranslate, ActionNoticeKind, ActionNoticeOptions } from "../music/octave/actions/actionsUi";
+export { setLikeOverride, clearLikeOverride, likeOverrideOf, resetLikeOverrides, useLiked } from "../music/octave/actions/likeOverrides";
+export {
+  chooserSnapshot, subscribeChooser, openPlaylistChooser, openPlaylistChooserForMany, closePlaylistChooser, type ChooserRequest,
+} from "../music/octave/actions/playlistChooserStore";
+export { askDuplicate, answerDuplicate, useDuplicateAsk, type DuplicateAsk } from "../music/octave/actions/duplicateAsk";
+export { LAST_PLAYLIST_KEY, lastPlaylistIdFrom, rememberPlaylistIn, quickTarget } from "../music/octave/actions/lastPlaylist";
+export { mayOfferAcquire, quotaExhausted, remainingToTell } from "../music/octave/actions/acquireRules";
+export { useAcquireRights, type AcquireRights } from "../music/octave/actions/useAcquireRights";
+export { usePlaylistGestures, isLibraryTrack, type PlaylistGestures } from "../music/octave/actions/usePlaylistGestures";
+export { useTrackActions, type TrackActions } from "../music/octave/actions/useTrackActions";
