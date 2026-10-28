@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Camera } from "lucide-react";
+import { Camera, RefreshCw } from "lucide-react";
 import { useAvatarUpload } from "../../../hooks/useAvatarUpload";
 import { useAvatarGallery } from "../../../profiles/avatarGallery/useAvatarGallery";
 import { AVATAR_GRADIENT_BG } from "../../../components/userMenu/menuItems";
+import { openSwitchScreen } from "../../../profiles/switcher/switchScreenStore";
+import { useProfileSwitchOffered } from "../../shell/useProfileSwitchOffered";
 
 /** Le serveur tel qu'on le reconnaît : son hôte, sans schéma ni chemin. */
 export function serverHost(url: string): string {
@@ -17,7 +19,9 @@ const SIZE = 76;
  * extra-gras, hôte du serveur 13 tertiaire, badge « Administrateur ». Écart
  * 16, 20 sous l'en-tête. Toucher la photo ouvre la galerie des avatars du web
  * (`useAvatarGallery` : un personnage ou une photo importée, envoyés par
- * `useAvatarUpload` — Jellyfin, copie locale, repli en chaîne).
+ * `useAvatarUpload` — Jellyfin, copie locale, repli en chaîne). Famille de
+ * plusieurs profils : « Changer de profil » sous l'identité, en capsule neutre
+ * (`SwitchProfileButton` de l'app), la même règle que la puce de l'en-tête.
  */
 export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
   name: string;
@@ -75,7 +79,25 @@ export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
             {t("adminBadge")}
           </span>
         ) : null}
+        <SwitchProfileButton />
       </div>
     </header>
+  );
+}
+
+/** La capsule secondaire de l'app : une action, pas la principale de l'écran. */
+function SwitchProfileButton() {
+  const { t } = useTranslation("settingsMobile");
+  if (!useProfileSwitchOffered()) return null;
+  return (
+    <button
+      type="button"
+      onClick={(event) => openSwitchScreen(event.currentTarget)}
+      className="mt-1 flex min-h-[32px] items-center gap-1.5 self-start rounded-full bg-fill-subtle px-3 text-[13px] font-semibold text-content-primary active:opacity-70"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+    >
+      <RefreshCw size={13} aria-hidden />
+      {t("account.switchProfile")}
+    </button>
   );
 }
