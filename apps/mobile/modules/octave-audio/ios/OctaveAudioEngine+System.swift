@@ -18,17 +18,28 @@ extension OctaveAudioEngine {
   func activateSystem() {
     DispatchQueue.main.async { [weak self] in
       guard let self else { return }
-      let session = AVAudioSession.sharedInstance()
-      do {
-        try session.setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
-        try session.setActive(true)
-      } catch {
-        NSLog("[octave-audio] session audio : \(error.localizedDescription)")
-      }
+      Self.activateSession()
       self.observeSession()
       self.registerCommands()
       UIApplication.shared.beginReceivingRemoteControlEvents()
     }
+  }
+
+  /// La session de la MUSIQUE (le lecteur vidéo pose la sienne, « film ») : reposée à chaque titre lancé.
+  static func activateSession() {
+    let session = AVAudioSession.sharedInstance()
+    do {
+      if session.category != .playback || session.mode != .default {
+        try session.setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
+      }
+      try session.setActive(true)
+    } catch {
+      NSLog("[octave-audio] session audio : \(error.localizedDescription)")
+    }
+  }
+
+  func ensureSession() {
+    DispatchQueue.main.async { Self.activateSession() }
   }
 
   func deactivateSystem() {
@@ -162,28 +173,62 @@ extension OctaveAudioEngine {
     Self.artworkTask?.resume()
   }
 
-  /// Position, durée, vitesse : le système extrapole entre deux publications (à chaque changement d'état).
+  /// Position, durée, vitesse : le système EXTRAPOLE entre deux publications. On republie quand l'état change
+  /// ou quand la position réelle s'écarte de ce qu'il croit (saut, titre suivant, fondu) — pas quatre fois par seconde.
   func publishPlayback(status: String, positionMs: Double, durationMs: Double?) {
     guard current != nil else { return }
-    let changed = status != lastPublishedStatus
-    lastPublishedStatus = status
-    // En lecture continue, iOS avance seul : une publication par changement suffit, plus une de sûreté.
-    if !changed && status == "playing" && Int(positionMs / 1000) % 5 != 0 { return }
+    let now = Date()
     let rate = status == "playing" ? 1.0 : 0.0
+    let expected = Self.published.position + (Self.published.rate * now.timeIntervalSince(Self.published.at) * 1000)
+    let key = current?.track.key ?? ""
+    let drifted = abs(expected - positionMs) > 1_000
+    guard status != lastPublishedStatus || key != Self.published.key || drifted else { return }
+    lastPublishedStatus = status
+    Self.published = (key, positionMs, rate, now)
     DispatchQueue.main.async {
       var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
       info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = positionMs / 1000
       info[MPNowPlayingInfoPropertyPlaybackRate] = rate
       if let durationMs { info[MPMediaItemPropertyPlaybackDuration] = durationMs / 1000 }
       MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-      if #available(iOS 13.0, *) {
-        MPNowPlayingInfoCenter.default().playbackState = rate > 0 ? .playing : .paused
-      }
+      MPNowPlayingInfoCenter.default().playbackState = rate > 0 ? .playing : .paused
     }
   }
 
+  /// La dernière publication : le titre, la position, la vitesse et l'instant (pour l'extrapolation).
+  private static var published: (key: String, position: Double, rate: Double, at: Date) = ("", 0, 0, .distantPast)
+
   func clearNowPlaying() {
     lastPublishedStatus = ""
+    Self.published = ("", 0, 0, .distantPast)
     DispatchQueue.main.async { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil }
   }
+
+  #if DEBUG
+  /// Bancs : l'écran verrouillé tel que publié, et les commandes du système allumées.
+  func debugSnapshot() -> [String: Any] {
+    var out: [String: Any] = [:]
+    DispatchQueue.main.sync {
+      let info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+      out["title"] = info[MPMediaItemPropertyTitle] ?? NSNull()
+      out["artist"] = info[MPMediaItemPropertyArtist] ?? NSNull()
+      out["album"] = info[MPMediaItemPropertyAlbumTitle] ?? NSNull()
+      out["duration"] = info[MPMediaItemPropertyPlaybackDuration] ?? NSNull()
+      out["elapsed"] = info[MPNowPlayingInfoPropertyElapsedPlaybackTime] ?? NSNull()
+      out["rate"] = info[MPNowPlayingInfoPropertyPlaybackRate] ?? NSNull()
+      out["artwork"] = info[MPMediaItemPropertyArtwork] != nil
+      let center = MPRemoteCommandCenter.shared()
+      out["commands"] = [
+        "play": center.playCommand.isEnabled, "pause": center.pauseCommand.isEnabled,
+        "next": center.nextTrackCommand.isEnabled, "previous": center.previousTrackCommand.isEnabled,
+        "seek": center.changePlaybackPositionCommand.isEnabled,
+      ]
+      out["category"] = AVAudioSession.sharedInstance().category.rawValue
+    }
+    out["decks"] = decks.map { ["active": $0.isActive, "positionMs": $0.positionMs] }
+    out["front"] = front
+    out["fading"] = fade != nil
+    return out
+  }
+  #endif
 }

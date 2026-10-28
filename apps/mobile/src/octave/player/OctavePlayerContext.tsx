@@ -47,7 +47,7 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     // La session quittée revient en pause (dernier titre, file, position), comme au bureau.
     const offResume = attachPlayerResume(p, octaveOwnerOf(storage, auth.baseUrl), mobileResumeDeps(storage, auth.baseUrl));
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
-    if (__DEV__) (globalThis as { __octavePlayer?: OctavePlayer }).__octavePlayer = p;
+    if (__DEV__) Object.assign(globalThis, { __octavePlayer: p, __octaveAuth: auth });
     setPlayer(p);
     return () => {
       offResume();

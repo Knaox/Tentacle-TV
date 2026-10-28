@@ -58,6 +58,10 @@ final class OctaveAudioEngine {
     case "audio_list_outputs": return [["id": "default", "name": "", "exclusiveCapable": false]]
     case "audio_set_output": break
     case "audio_level": return NSNull()
+    #if DEBUG
+    // Bancs de développement : ce que le système affiche (écran verrouillé), relu tel quel.
+    case "audio_debug": return debugSnapshot()
+    #endif
     default: break
     }
     return nil
@@ -109,6 +113,7 @@ final class OctaveAudioEngine {
     stalled = false
     wantsPlay = true
     pendingPositionMs = startMs
+    ensureSession()
     frontDeck.load(loaded.source.url, startMs: startMs, paused: false)
     applyGains()
     publishMeta()
