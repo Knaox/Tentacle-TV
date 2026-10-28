@@ -15,6 +15,7 @@ import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentac
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { bindCrossfadeStorage, getCrossfadeMs, subscribeCrossfade } from "../audio/crossfadeSetting";
 import { createMobileAudioEngine } from "../audio/mobileAudioEngine";
+import { keepJsAliveWhilePlaying } from "../audio/musicKeepAlive";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
@@ -46,10 +47,13 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const offCrossfade = subscribeCrossfade(applyCrossfade);
     // La session quittée revient en pause (dernier titre, file, position), comme au bureau.
     const offResume = attachPlayerResume(p, octaveOwnerOf(storage, auth.baseUrl), mobileResumeDeps(storage, auth.baseUrl));
+    // Android : la file avance application derrière (minuteurs du JS gardés vivants pendant l'écoute).
+    const offAlive = keepJsAliveWhilePlaying(p);
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
     if (__DEV__) Object.assign(globalThis, { __octavePlayer: p, __octaveAuth: auth });
     setPlayer(p);
     return () => {
+      offAlive();
       offResume();
       offCrossfade();
       offRadio();
