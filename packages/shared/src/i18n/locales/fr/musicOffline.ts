@@ -113,6 +113,7 @@ export default {
     bytesAbout: "{{done}} sur environ {{total}}",
     timeAbout: "environ {{time}}",
     stalled: "Ça n’avance plus : nouvel essai automatique dès que la connexion revient.",
+    serverPacing: "La suite arrive : le serveur prépare les titres à son rythme.",
     measuring: "Mesure du débit…",
     pausedHint: "En pause : rien ne part tant que vous ne reprenez pas.",
     failed_one: "{{count}} titre en défaut",
