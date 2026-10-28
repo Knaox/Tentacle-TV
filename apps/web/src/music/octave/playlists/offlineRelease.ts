@@ -6,7 +6,7 @@
  */
 
 import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
-import { isHeld } from "../offline/autosync/syncPlan";
+import { isHeld } from "@tentacle-tv/offline-core/music";
 
 export interface OfflineRelease {
   /** La collection de l'appareil qui gardait la playlist. */

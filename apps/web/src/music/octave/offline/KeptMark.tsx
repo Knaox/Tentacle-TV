@@ -10,7 +10,7 @@ import { memo } from "react";
 import { AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
-import { trackPhase } from "./keptProgress";
+import { trackPhase } from "@tentacle-tv/offline-core/music";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 import { useKeptTrack } from "./useKeptMusic";
 import { ProgressRing } from "./ProgressRing";

@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import type { KeptMusicCollection, KeptMusicTrack } from "@tentacle-tv/offline-core";
+import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { mergePasses, SyncRunner, type RunnerDeps } from "./syncRunner";
 import type { SyncActions } from "./syncPlan";

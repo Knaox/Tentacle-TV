@@ -45,9 +45,10 @@ export interface PlaybackSource {
   /**
    * La copie GARDÉE HORS LIGNE de ce titre par ce compte (bureau, capacité `offline.music`) : le moteur natif la lit
    * depuis le disque (la coquille la cherche elle-même) et ne reprend `url` que si elle manque. Jamais posé par le
-   * serveur ni par une extension ; un moteur qui ne le connaît pas lit `url`.
+   * serveur ni par une extension ; un moteur qui ne le connaît pas lit `url`. Sur le MOBILE, `localUri` (`file://…`)
+   * désigne le fichier gardé : le moteur y vit dans le même processus que la base, rien à chercher.
    */
-  kept?: { userId: string };
+  kept?: { userId: string; localUri?: string };
 }
 
 export type ReplayGainMode = "off" | "track" | "album" | "auto";

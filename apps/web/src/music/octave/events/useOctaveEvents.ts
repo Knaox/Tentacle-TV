@@ -16,7 +16,7 @@ import { applyResolution, queueActions } from "@tentacle-tv/shared/octave";
 import { clearLikeOverride } from "../actions/likeOverrides";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { useDesktopClientFetch } from "../clientFetch/useDesktopClientFetch";
-import { signalMusicEvent } from "../offline/autosync/syncSignals";
+import { signalMusicEvent } from "@tentacle-tv/offline-core/music";
 
 export function useOctaveEvents(): void {
   const queryClient = useQueryClient();

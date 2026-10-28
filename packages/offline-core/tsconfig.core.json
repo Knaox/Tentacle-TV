@@ -7,6 +7,6 @@
     "types": [],
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["src/core", "src/catalog", "src/connectivity", "src/playback", "src/sync", "src/variants", "src/prefs", "src/rights"],
+  "include": ["src/core", "src/catalog", "src/connectivity", "src/playback", "src/sync", "src/variants", "src/prefs", "src/rights", "src/music"],
   "exclude": ["src/**/*.test.ts", "src/core/testkit.ts"]
 }

@@ -12,9 +12,8 @@
 import { useEffect } from "react";
 import { useMusicPending } from "@tentacle-tv/api-client";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
-import type { MusicOfflineSurface } from "./keepRules";
+import { type MusicOfflineSurface, renamesOf, shownToFormer } from "@tentacle-tv/offline-core/music";
 import { setKeptRenames } from "./keptMusicStore";
-import { renamesOf, shownToFormer } from "./keptRenames";
 
 export function useKeptRenames(surface: MusicOfflineSurface): void {
   const provider = useOctaveProvider();

@@ -14,7 +14,7 @@ import { supportsMusicOffline } from "../../../desktop/capabilities";
 import { useAccountKeepRight } from "../../../offline/offlineOwner";
 import { useConnectivity } from "../../../offline/useConnectivity";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
-import { canKeepTrack, musicOfflineSurface, type MusicOfflineSurface } from "./keepRules";
+import { canKeepTrack, musicOfflineSurface, type MusicOfflineSurface } from "@tentacle-tv/offline-core/music";
 import { useKeptMusic } from "./useKeptMusic";
 
 export function useMusicOfflineSurface(): MusicOfflineSurface {
