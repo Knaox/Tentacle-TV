@@ -105,6 +105,14 @@ export interface MusicTrack {
   explicit?: boolean;
 }
 
+/**
+ * Pourquoi un album ne se LIT pas (lot « Octave mobile 3 », 28/10) — liste FERMÉE, la valeur traverse le réseau :
+ * - `notStreamable` : connu ailleurs (Deezer, MusicBrainz…), absent de la source de lecture de l'extension
+ *   (YouTube) ; l'aimer ou l'ajouter à une playlist le fait RÉCUPÉRER par le serveur (Lidarr).
+ * Une valeur inconnue d'un client se lit comme « pas lisible », sans plus.
+ */
+export type MusicUnavailableReason = "notStreamable";
+
 export type AlbumKind = "album" | "single" | "ep" | "compilation" | "live" | "soundtrack" | "other";
 
 export interface MusicAlbum {
@@ -128,6 +136,12 @@ export interface MusicAlbum {
    * droit…), rendue par la vue album seulement ; `null` : aucune. Absente d'un serveur d'avant : rien à montrer.
    */
   description?: string | null;
+  /**
+   * L'album ne se lit pas (`MusicUnavailableReason`) : la carte est GRISÉE, et la toucher dit pourquoi et propose
+   * de l'aimer ou de l'ajouter à une playlist (le serveur le récupère). Absent ou `null` : lisible. Posé par une
+   * extension seulement (un serveur ou une extension d'avant ne l'envoie jamais : rien ne change).
+   */
+  unavailable?: MusicUnavailableReason | null;
   /** Rendu par la vue album seulement (pas par la recherche). */
   tracks?: MusicTrack[];
 }

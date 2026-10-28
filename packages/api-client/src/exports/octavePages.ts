@@ -18,6 +18,9 @@ export { setLikeOverride, clearLikeOverride, likeOverrideOf, resetLikeOverrides,
 export {
   chooserSnapshot, subscribeChooser, openPlaylistChooser, openPlaylistChooserForMany, closePlaylistChooser, type ChooserRequest,
 } from "../music/octave/actions/playlistChooserStore";
+export {
+  unavailableAlbumSnapshot, subscribeUnavailableAlbum, openUnavailableAlbum, closeUnavailableAlbum,
+} from "../music/octave/actions/unavailableAlbumStore";
 export { askDuplicate, answerDuplicate, useDuplicateAsk, type DuplicateAsk } from "../music/octave/actions/duplicateAsk";
 export { LAST_PLAYLIST_KEY, lastPlaylistIdFrom, rememberPlaylistIn, quickTarget } from "../music/octave/actions/lastPlaylist";
 export { mayOfferAcquire, quotaExhausted, remainingToTell } from "../music/octave/actions/acquireRules";

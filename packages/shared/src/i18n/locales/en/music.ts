@@ -293,6 +293,19 @@ export default {
     notFound: "Track not found.",
     failed: "The addition failed. Try again in a moment.",
   },
+  // Un album qui ne se lit pas (lot « Octave mobile 3 ») : carte grisée, feuille au toucher (`unavailableAlbum.ts`).
+  unavailableAlbum: {
+    badge: "Not playable",
+    cardLabel: "{{title}}, not playable yet",
+    title: "Not playable yet",
+    body: "No streaming source offers this album for now. Like it or add it to a playlist: the server will fetch it and it will join the library.",
+    like: "Like album",
+    addToPlaylist: "Add to playlist",
+    loading: "Getting the album ready…",
+    lost: "The server can't find this album anywhere, so it can't fetch it.",
+    failed: "The album couldn't be loaded.",
+    close: "Close",
+  },
   common: {
     playAll: "Play",
     shuffle: "Shuffle",

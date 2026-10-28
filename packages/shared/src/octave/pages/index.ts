@@ -23,3 +23,4 @@ export * from "./albumPreview";
 export * from "./albumModel";
 export * from "./artistModel";
 export * from "./libraryModel";
+export * from "./unavailableAlbum";
