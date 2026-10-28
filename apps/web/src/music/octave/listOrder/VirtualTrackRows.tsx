@@ -8,9 +8,9 @@
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { defaultRangeExtractor, useVirtualizer, type Range } from "@tanstack/react-virtual";
 import { useTranslation } from "react-i18next";
-import type { ReorderBlock } from "./useListOrder";
+import type { ReorderBlock } from "@tentacle-tv/api-client";
 import type { HandleSlot } from "./DragHandle";
-import { ROW_HEIGHT, rowShift } from "./dragGeometry";
+import { ROW_HEIGHT, rowShift } from "@tentacle-tv/shared/octave";
 import { useRowDrag } from "./useRowDrag";
 
 const SCROLL_ID = "octave-main";

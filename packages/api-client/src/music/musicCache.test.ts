@@ -9,6 +9,7 @@ import type { MusicPlaylistDetail, MusicSearchResponse, MusicTrack } from "@tent
 import { insertedEntries, likedAfter, movedEntries, removedEntry, withFavorites } from "./musicCachePatch";
 import { musicKeys } from "./musicQueryKeys";
 import { applyMusicEvent } from "./useMusicLive";
+import { markListPrefsSaving } from "./useMusicListOrder";
 
 const track = (id: string, favorite = false): MusicTrack => ({
   key: `jf:${id}`, jellyfinId: id, external: null, title: id, artists: [], album: null, durationMs: null, trackNumber: null,
@@ -84,6 +85,19 @@ describe("évènements music:* → cache", () => {
     const qc = client();
     applyMusicEvent(qc, { type: "music:resolved", pluginId: "x", externalId: "1", jellyfinId: "t9", recording: null, track: null });
     expect(invalidated(qc, musicKeys.match("ext:x:1@"))).toBe(true);
+  });
+
+  it("music:listPrefs : la préférence relue, sauf l'écho d'un envoi de CET appareil", () => {
+    const qc = client();
+    qc.setQueryData(musicKeys.listPrefs("liked"), { sort: "custom", direction: "asc", custom: null });
+    qc.setQueryData(musicKeys.listPrefs("playlist:p1"), { sort: "title", direction: "asc", custom: null });
+    const saved = markListPrefsSaving("liked");
+    applyMusicEvent(qc, { type: "music:listPrefs", key: "liked" });
+    expect(invalidated(qc, musicKeys.listPrefs("liked"))).toBe(false);
+    saved();
+    applyMusicEvent(qc, { type: "music:listPrefs", key: "liked" });
+    expect(invalidated(qc, musicKeys.listPrefs("liked"))).toBe(true);
+    expect(invalidated(qc, musicKeys.listPrefs("playlist:p1"))).toBe(false);
   });
 
   it("music:playlist : cette playlist-là seulement", () => {

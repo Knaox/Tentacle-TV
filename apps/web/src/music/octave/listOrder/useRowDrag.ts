@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { DRAG_THRESHOLD_PX, dragTarget, edgeScrollSpeed } from "./dragGeometry";
+import { DRAG_THRESHOLD_PX, dragTarget, edgeScrollSpeed } from "@tentacle-tv/shared/octave";
 
 export interface RowDragState {
   from: number;

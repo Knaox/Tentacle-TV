@@ -7,7 +7,8 @@
  */
 
 import { useEffect, useMemo } from "react";
-import { useMusicLiked, useMusicListOrderCapability } from "@tentacle-tv/api-client";
+import { useMusicLiked } from "../useMusicFavorite";
+import { useMusicListOrderCapability } from "../useMusicListOrder";
 import type { MusicListStats } from "@tentacle-tv/shared/music";
 
 const WHOLE_PAGE = 500;

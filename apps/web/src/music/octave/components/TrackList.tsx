@@ -19,7 +19,7 @@ import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
 import type { HandleSlot } from "../listOrder/DragHandle";
-import type { ReorderBlock } from "../listOrder/useListOrder";
+import type { ReorderBlock } from "@tentacle-tv/api-client";
 import { VirtualTrackRows } from "../listOrder/VirtualTrackRows";
 
 interface TrackListProps {

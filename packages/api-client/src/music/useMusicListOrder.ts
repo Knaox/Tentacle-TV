@@ -68,6 +68,27 @@ export function latestWinsQueue() {
 }
 
 const sendPrefs = latestWinsQueue();
+// Les listes dont CET appareil garde une préférence en ce moment : l'écho de `music:listPrefs` y est ignoré
+// (relu avant que le dernier envoi soit parti, il ramènerait un ordre intermédiaire sous les yeux).
+const savingPrefs = new Map<string, number>();
+
+/** Cet appareil est-il en train de garder la préférence de cette liste ? */
+export function isSavingListPrefs(key: string): boolean {
+  return (savingPrefs.get(key) ?? 0) > 0;
+}
+
+/** Un envoi de la préférence commence ; la fonction rendue le dit fini (une fois). */
+export function markListPrefsSaving(key: string): () => void {
+  savingPrefs.set(key, (savingPrefs.get(key) ?? 0) + 1);
+  let open = true;
+  return () => {
+    if (!open) return;
+    open = false;
+    const left = (savingPrefs.get(key) ?? 1) - 1;
+    if (left > 0) savingPrefs.set(key, left);
+    else savingPrefs.delete(key);
+  };
+}
 const sendOrder = latestWinsQueue();
 
 /** La préférence d'ordre d'une liste : celle du compte, la valeur par défaut tant qu'elle n'a pas répondu. */
@@ -94,7 +115,11 @@ export function useSaveMusicListPrefs(key: MusicListKey | null) {
     (prefs: MusicListPrefs) => {
       if (!key) return;
       qc.setQueryData(musicKeys.listPrefs(key), prefs);
-      void sendPrefs(key, () => musicListApi.savePrefs(key, prefs)).then(() => qc.invalidateQueries({ queryKey: musicKeys.listPrefs(key), refetchType: "none" }));
+      const saved = markListPrefsSaving(key);
+      void sendPrefs(key, () => musicListApi.savePrefs(key, prefs)).then(() => {
+        saved();
+        return qc.invalidateQueries({ queryKey: musicKeys.listPrefs(key), refetchType: "none" });
+      });
     },
     [key, qc],
   );

@@ -28,3 +28,8 @@ export {
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, type OctaveAvailability } from "../music/useOctaveAvailability";
+// Octave — une liste affichée (playlist, « Titres likés ») : tri du compte, recherche, filtre, glisser.
+export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music/lists/useListOrder";
+export { useWholeLiked } from "../music/lists/useWholeLiked";
+// Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
+export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";

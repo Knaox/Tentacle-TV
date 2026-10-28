@@ -11,7 +11,7 @@ import { memo, startTransition, useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicListDirection, MusicListPrefs, MusicListSortKey } from "@tentacle-tv/shared/music";
-import type { ListFilter } from "./listView";
+import type { ListFilter } from "@tentacle-tv/shared/octave";
 import { SortMenu } from "./SortMenu";
 
 interface ListToolbarProps {
