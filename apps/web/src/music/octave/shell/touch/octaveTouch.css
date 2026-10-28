@@ -67,3 +67,26 @@
 @media (prefers-reduced-motion: reduce) {
   .octave-sheet-rise { animation: none; }
 }
+
+/* Les marges des zones sûres (encoche, barre de geste) : ici, pas en style en ligne (garde du client LG). */
+.octave-phone-main {
+  padding-bottom: var(--oc-phone-room, 87px);
+}
+/* Le plancher en fin de page : la zone sûre du bas (un `max()` simple, que la passe du client LG traite). */
+.octave-phone-safe-floor {
+  padding-top: max(env(safe-area-inset-bottom, 0px), 10px);
+}
+.octave-phone-header {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+  padding-right: max(8px, env(safe-area-inset-right, 0px));
+}
+.octave-phone-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.octave-rail-compact {
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+}

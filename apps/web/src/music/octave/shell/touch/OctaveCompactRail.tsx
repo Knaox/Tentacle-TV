@@ -27,8 +27,7 @@ export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { o
     <nav
       aria-label={t("nav.main")}
       data-octave-rail="compact"
-      className="flex h-full w-[var(--oc-rail-compact-width)] shrink-0 flex-col items-center gap-3 px-2 pb-3"
-      style={{ paddingTop: "max(16px, env(safe-area-inset-top, 0px))", paddingLeft: "max(8px, env(safe-area-inset-left, 0px))" }}
+      className="octave-rail-compact flex h-full w-[var(--oc-rail-compact-width)] shrink-0 flex-col items-center gap-3 pb-3 pr-2"
     >
       <OctaveLogo size={34} />
       <OctaveModeSlot onExit={onExit} rail />

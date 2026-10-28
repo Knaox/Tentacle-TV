@@ -13,7 +13,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLiquidGlassSurface } from "../../../../theme/glass";
 import { useSlidingIndicator } from "../../../../mirror/shell/useSlidingIndicator";
-import { TAB_LABEL_GAP, TAB_PILL_H, TAB_PILL_W, TAB_ROW_PAD_V } from "../../../../mirror/shell/metrics";
+import { TAB_PILL_H, TAB_PILL_W, TAB_ROW_PAD_V } from "../../../../mirror/shell/metrics";
 import { OCTAVE_DESTINATIONS } from "../OctaveSidebar";
 import { activeDestinationIndex } from "./activeDestination";
 
@@ -34,14 +34,14 @@ export const OctaveFloatingTabs = memo(function OctaveFloatingTabs() {
       {glass.layers}
       <div ref={indicator.trackRef} className="relative flex items-center" style={{ padding: `${TAB_ROW_PAD_V}px 6px` }}>
         <span aria-hidden className="octave-float-tabs-pill pointer-events-none absolute left-0 top-0 rounded-full" style={indicator.style} />
+        {/* L'écart icône-libellé, 2 px : `gap-0.5` (= TAB_LABEL_GAP du miroir). */}
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }, i) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             data-tab-item
-            className="octave-touch relative flex min-w-0 flex-1 flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-            style={{ gap: TAB_LABEL_GAP }}
+            className="octave-touch relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             <span className="flex items-center justify-center" style={{ width: TAB_PILL_W, height: TAB_PILL_H }}>
               <Icon className={`h-[22px] w-[22px] ${i === active ? "text-octave-accent-text" : "text-content-tertiary"}`} strokeWidth={i === active ? 2.2 : 1.8} aria-hidden />

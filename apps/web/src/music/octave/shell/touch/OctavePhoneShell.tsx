@@ -7,7 +7,7 @@
  * rangées de titre y sont COMPACTES (`components/compactRows`).
  */
 
-import type { ReactNode, RefObject } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import { CompactRowsContext } from "../../components/compactRows";
 import { DeviceHeaderButton } from "../../offline/DeviceNavItem";
 import { usePlayerSelector } from "../../player/OctavePlayerProvider";
@@ -17,7 +17,7 @@ import { OctaveModeSlot } from "../OctaveModeSlot";
 import { OctaveWordmark } from "../OctaveWordmark";
 import { MiniPlayer } from "../PlayerBar";
 import { OctaveFloatingTabs } from "./OctaveFloatingTabs";
-import { phoneBottomRoom, PHONE_BOTTOM_INSET } from "./phoneMetrics";
+import { phoneBottomRoom } from "./phoneMetrics";
 
 interface OctavePhoneShellProps {
   children: ReactNode;
@@ -36,11 +36,10 @@ export function OctavePhoneShell({ children, main, onExit, onOpenNowPlaying, ove
         ref={main}
         id="octave-main"
         className="octave-phone-main h-full overflow-y-auto overscroll-contain"
-        style={{ paddingBottom: phoneBottomRoom(playing) }}
+        style={{ "--oc-phone-room": `${phoneBottomRoom(playing)}px` } as CSSProperties}
       >
         <header
-          className="octave-phone-header sticky top-0 z-20 flex items-center gap-1 px-2"
-          style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingLeft: "max(8px, env(safe-area-inset-left, 0px))", paddingRight: "max(8px, env(safe-area-inset-right, 0px))" }}
+          className="octave-phone-header sticky top-0 z-20 flex items-center gap-1"
         >
           <div className="flex h-14 min-w-0 flex-1 items-center gap-1">
             <HistoryButtons compact />
@@ -53,15 +52,9 @@ export function OctavePhoneShell({ children, main, onExit, onOpenNowPlaying, ove
           </div>
         </header>
         <CompactRowsContext.Provider value={true}>{children}</CompactRowsContext.Provider>
+        <div aria-hidden className="octave-phone-safe-floor" />
       </main>
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2 px-3"
-        style={{
-          paddingBottom: `max(env(safe-area-inset-bottom, 0px), ${PHONE_BOTTOM_INSET}px)`,
-          paddingLeft: "max(12px, env(safe-area-inset-left, 0px))",
-          paddingRight: "max(12px, env(safe-area-inset-right, 0px))",
-        }}
-      >
+      <div className="octave-phone-bottom pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2">
         <div className="pointer-events-auto">
           <MiniPlayer onOpen={onOpenNowPlaying} />
         </div>
