@@ -48,6 +48,8 @@ const PATHS: Record<MusicPlaybackEvent, string> = {
 };
 
 export async function reportPlayback(request: FastifyRequest, userId: string, report: MusicPlaybackReport): Promise<{ ok: boolean; via: "device" | "account" | "none" }> {
+  // Le jeton a DÉJÀ passé `requireAuth` (preHandler de `musicRoutes`), et le titre `playableRow` : la condition
+  // ne fait que choisir AU NOM DE QUI rapporter — l'appareil (son jeton Jellyfin) ou le compte de la session.
   const token = getTokenFromRequest(request);
   const auth = token ? await resolveDeviceAuth(token).catch(() => null) : null;
   if (auth) return { ok: await jellyfinCaller(auth).post(PATHS[report.event], bodyOf(report)), via: "device" };
