@@ -32,6 +32,28 @@
 -keep class androidx.media3.decoder.ffmpeg.** { *; }
 # expo-notifications : son build.gradle ne déclare pas sa règle de consommateur.
 -keep class expo.modules.notifications.** { *; }
+# react-native-reanimated : sa règle de consommateur garde com.swmansion.reanimated,
+# pas le paquet com.swmansion.worklets, qui appelle le contexte React par réflexion.
+-keep class com.swmansion.worklets.** { *; }
+# Champs et méthodes lus PAR LEUR NOM (réflexion) dans d’autres bibliothèques,
+# relevés dans le mapping.txt d’une release : sans ces règles, R8 les renomme ou
+# les retire et l’appel échoue en silence.
+#  - expo-modules-core (props des vues Expo) : ReactStylesDiffMap.backingMap ;
+#  - expo (délégué d’activité, hôte) : ReactActivity, ReactActivityDelegate, ReactNativeHost ;
+#  - reanimated : NativeViewHierarchyManager, UIManagerModule, contexte React,
+#    et react-native-screens tout entier (TabNavigatorObserver, ScreensHelper) ;
+#  - expo-image-picker (recadrage) : CropImageActivity.
+# (Reanimated cherche aussi MessageQueueThreadImpl.mIsFinished et
+# ReactImageView.mBorderRadius : ils n’existent plus dans RN 0.81, R8 ou pas.)
+-keepclassmembers class com.facebook.react.uimanager.ReactStylesDiffMap { *** backingMap; }
+-keepclassmembers class com.facebook.react.ReactActivity { *** mDelegate; }
+-keepclassmembers class com.facebook.react.ReactActivityDelegate { *** mReactDelegate; }
+-keepclassmembers class com.facebook.react.ReactNativeHost { *** mReactInstanceManager; }
+-keepclassmembers class com.facebook.react.uimanager.NativeViewHierarchyManager { *** mLayoutAnimator; *** mPendingDeletionsForTag; }
+-keepclassmembers class com.facebook.react.uimanager.UIManagerModule { *** mUIImplementation; }
+-keepclassmembers class * extends com.facebook.react.bridge.ReactContext { *** getJSCallInvokerHolder(); *** getCatalystInstance(); }
+-keep class com.swmansion.rnscreens.** { *; }
+-keep class com.canhub.cropper.CropImageActivity { *; }
 # Numéros de ligne gardés : les piles des rapports Play se relisent par le mapping.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

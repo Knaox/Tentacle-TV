@@ -39,11 +39,12 @@ function gradleProperty(name: string): string | undefined {
 describe("R8 sur la release Android", () => {
   const props = buildProperties();
 
-  it("est allumé, code ET ressources, dans app.json comme dans gradle.properties", () => {
+  it("est allumé sur le code, pas sur les ressources, dans app.json comme dans gradle.properties", () => {
     expect(props.enableMinifyInReleaseBuilds).toBe(true);
-    expect(props.enableShrinkResourcesInReleaseBuilds).toBe(true);
     expect(gradleProperty("android.enableMinifyInReleaseBuilds")).toBe("true");
-    expect(gradleProperty("android.enableShrinkResourcesInReleaseBuilds")).toBe("true");
+    // Réduction des ressources : aucun gain mesuré, un risque (voir gradle.properties).
+    expect(props.enableShrinkResourcesInReleaseBuilds).toBe(false);
+    expect(gradleProperty("android.enableShrinkResourcesInReleaseBuilds")).toBe("false");
   });
 
   it("le bloc généré de proguard-rules.pro est celui qu'un prebuild écrirait", () => {
@@ -70,6 +71,7 @@ describe("R8 sur la release Android", () => {
       "androidx.media3.decoder.ffmpeg.**",
       "com.tentacle.mobile.**",
       "com.tentacletv.boot.**",
+      "com.swmansion.worklets.**",
       "expo.modules.mpvplayer.**",
       "expo.modules.octaveaudio.**",
       "expo.modules.offlinestorage.**",
@@ -78,6 +80,8 @@ describe("R8 sur la release Android", () => {
     ]) {
       expect(rules).toContain(`-keep class ${kept} { *; }`);
     }
+    expect(rules).toContain("ReactStylesDiffMap { *** backingMap; }");
+    expect(rules).toContain("-keep class com.swmansion.rnscreens.** { *; }");
     expect(rules).toContain("-keepattributes SourceFile,LineNumberTable");
   });
 });
