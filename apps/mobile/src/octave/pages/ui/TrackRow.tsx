@@ -21,6 +21,7 @@ import { typography, useTheme } from "@/theme";
 import { haptic as playHaptic } from "@/utils/haptics";
 import { TrackStateMark } from "../../offline/TrackStateMark";
 import { useTrackPlayable } from "../../offline/useOfflineMusic";
+import { useKeptCover } from "../../offline/useKeptMusic";
 import { openTrackSheet } from "../actions/trackSheetStore";
 import { useTrackQueueGestures } from "../actions/useTrackQueueGestures";
 import { Artwork } from "./Artwork";
@@ -51,6 +52,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const { t } = useTranslation("music");
   const liked = useLiked(track.key, track.favorite);
   const playable = useTrackPlayable()(track.key);
+  const keptCover = useKeptCover(track.key);
   const sheet = useCallback(() => {
     playHaptic("longPress");
     openTrackSheet({ track, list, contextId, hide });
@@ -87,7 +89,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
         </View>
       ) : (
         <View>
-          <Artwork url={track.artworkUrl} size={44} radius={6} />
+          <Artwork url={track.artworkUrl} localUrl={keptCover} size={44} radius={6} />
           {playing ? (
             <View style={[StyleSheet.absoluteFill, styles.overlay]}>
               <NowPlayingBars color="#fff" />
