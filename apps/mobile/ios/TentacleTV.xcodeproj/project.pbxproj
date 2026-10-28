@@ -21,6 +21,8 @@
 		F495ED325C5C49BC81DE82C4 /* TransferLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 072450C50C6146A4B065799C /* TransferLiveActivity.appex */; };
 		F6543E95431449B6877AA653 /* TransferActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243179AA9649A089EDF344 /* TransferActivityAttributes.swift */; };
 		FC1019C406659A27CAED1231 /* libPods-TentacleTV.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */; };
+		3808343BD7434586BB0D9EC8 /* ShareToTentacle.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5FFA71DB0C9840EAB4FF19DA /* ShareToTentacle.appex */; };
+		8D987E863C1D4030B9289E86 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6BA7387D564A24A04D28C2 /* ShareViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,6 +32,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 940C726239B04F8395ABAF19;
 			remoteInfo = TransferLiveActivity;
+		};
+		137ACABE16774C2692EB22DE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8AE29DCA8D594C4CB9FB4C12;
+			remoteInfo = "ShareToTentacle";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -41,6 +50,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				F495ED325C5C49BC81DE82C4 /* TransferLiveActivity.appex in Embed Foundation Extensions */,
+				3808343BD7434586BB0D9EC8 /* ShareToTentacle.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -69,6 +79,8 @@
 		EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = TentacleTV/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
+		5FFA71DB0C9840EAB4FF19DA /* ShareToTentacle.appex */ = {isa = PBXFileReference; name = "ShareToTentacle.appex"; path = "ShareToTentacle.appex"; sourceTree = BUILT_PRODUCTS_DIR; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; };
+		0E6BA7387D564A24A04D28C2 /* ShareViewController.swift */ = {isa = PBXFileReference; name = "ShareViewController.swift"; path = "ShareViewController.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +93,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9DC113907D474AEE91564E06 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52D7FB037B744651AFE8A26B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -163,6 +182,7 @@
 				3CC615C0F37BB3E971F4A05F /* Pods */,
 				AE7C689690156DC55481F30C /* ExpoModulesProviders */,
 				3235D5FE48FF4BBE87A8583E /* TransferLiveActivity */,
+				52F3369CB38B49C39C195573 /* ShareToTentacle */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -174,6 +194,7 @@
 			children = (
 				13B07F961A680F5B00A75B9A /* TentacleTV.app */,
 				072450C50C6146A4B065799C /* TransferLiveActivity.appex */,
+				5FFA71DB0C9840EAB4FF19DA /* ShareToTentacle.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -193,6 +214,15 @@
 			);
 			name = Supporting;
 			path = TentacleTV/Supporting;
+			sourceTree = "<group>";
+		};
+		52F3369CB38B49C39C195573 /* ShareToTentacle */ = {
+			isa = PBXGroup;
+			children = (
+				0E6BA7387D564A24A04D28C2 /* ShareViewController.swift */,
+			);
+			name = ShareToTentacle;
+			path = ShareToTentacle;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -216,6 +246,7 @@
 			);
 			dependencies = (
 				9AC53DD3FFE3436A957BBF3E /* PBXTargetDependency */,
+				6BC9B24360394F8A8789A4A5 /* PBXTargetDependency */,
 			);
 			name = TentacleTV;
 			productName = TentacleTV;
@@ -238,6 +269,23 @@
 			productName = TransferLiveActivity;
 			productReference = 072450C50C6146A4B065799C /* TransferLiveActivity.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		8AE29DCA8D594C4CB9FB4C12 /* "ShareToTentacle" */ = {
+			isa = PBXNativeTarget;
+			name = "ShareToTentacle";
+			productName = "ShareToTentacle";
+			productReference = 5FFA71DB0C9840EAB4FF19DA;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = FF7036CA8BA14179846E161D;
+			buildPhases = (
+				F9FCA9B8B92B4424BA0C9F60 /* Sources */,
+				4C0098DDA1D440DC94472BD1 /* Resources */,
+				52D7FB037B744651AFE8A26B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
 		};
 /* End PBXNativeTarget section */
 
@@ -269,6 +317,7 @@
 			targets = (
 				13B07F861A680F5B00A75B9A /* TentacleTV */,
 				940C726239B04F8395ABAF19 /* TransferLiveActivity */,
+				8AE29DCA8D594C4CB9FB4C12 /* "ShareToTentacle" */,
 			);
 		};
 /* End PBXProject section */
@@ -290,6 +339,13 @@
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				0CC586631B812D1A40D3D265 /* PrivacyInfo.xcprivacy in Resources */,
 				B00750D0DE0000000000B003 /* boot-tadum.m4a in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C0098DDA1D440DC94472BD1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,6 +503,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F9FCA9B8B92B4424BA0C9F60 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D987E863C1D4030B9289E86 /* "ShareViewController.swift" in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -454,6 +518,11 @@
 			isa = PBXTargetDependency;
 			target = 940C726239B04F8395ABAF19 /* TransferLiveActivity */;
 			targetProxy = D4424B83E7AD4C3A91778A2E /* PBXContainerItemProxy */;
+		};
+		6BC9B24360394F8A8789A4A5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8AE29DCA8D594C4CB9FB4C12 /* "ShareToTentacle" */;
+			targetProxy = 137ACABE16774C2692EB22DE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -698,6 +767,46 @@
 			};
 			name = Release;
 		};
+		2498995DA05640F8A172F403 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = ShareToTentacle/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tentacle.mobile.ShareToTentacle";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_VERSION = 5.0;
+				CLANG_ENABLE_MODULES = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				DEVELOPMENT_TEAM = 96K3M57W49;
+			};
+			name = Debug;
+		};
+		DF48813C645E44F596275F07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = ShareToTentacle/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tentacle.mobile.ShareToTentacle";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_VERSION = 5.0;
+				CLANG_ENABLE_MODULES = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				DEVELOPMENT_TEAM = 96K3M57W49;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -724,6 +833,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FF7036CA8BA14179846E161D /* Build configuration list for PBXNativeTarget "ShareToTentacle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2498995DA05640F8A172F403 /* Debug */,
+				DF48813C645E44F596275F07 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

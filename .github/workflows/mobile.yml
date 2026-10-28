@@ -88,6 +88,11 @@ env:
   # l'app) : son propre identifiant, son propre profil.
   IOS_EXT_BUNDLE_ID: "com.tentacle.mobile.TransferLiveActivity"
   IOS_EXT_PROFILE_NAME: "Tentacle TV iOS Live Activity App Store CI"
+  # L'extension de PARTAGE (« Partager vers Tentacle TV », import d'une playlist) :
+  # son identifiant (créé au premier passage, comme celui de la Live Activity),
+  # son profil. Aucun App Group, aucune capacité.
+  IOS_SHARE_BUNDLE_ID: "com.tentacle.mobile.ShareToTentacle"
+  IOS_SHARE_PROFILE_NAME: "Tentacle TV iOS Share App Store CI"
   # Piste Play des TESTS INTERNES mobile (cran test, et source de la reprise
   # au cran store). « internal » = piste du téléphone, à ne pas confondre avec
   # « tv:internal » (piste TV préfixée par form factor, même fiche
@@ -566,14 +571,15 @@ jobs:
           }
           provision "$IOS_BUNDLE_ID" "$IOS_PROFILE_NAME" tentacle-ios-ci.mobileprovision
           provision "$IOS_EXT_BUNDLE_ID" "$IOS_EXT_PROFILE_NAME" tentacle-ios-ext-ci.mobileprovision "Tentacle TV Live Activity"
+          provision "$IOS_SHARE_BUNDLE_ID" "$IOS_SHARE_PROFILE_NAME" tentacle-ios-share-ci.mobileprovision "Tentacle TV Share"
 
       # L'Info.plist code la version EN DUR (pas de $(MARKETING_VERSION)) → on la
       # patche directement depuis le job `version` (versions.json + build auto).
       - name: Set version / build (Info.plist)
         run: |
           PLIST=apps/mobile/ios/TentacleTV/Info.plist
-          # L'extension de la Live Activity porte EXACTEMENT la version de l'app (App Store l'exige).
-          for PLIST in "$PLIST" apps/mobile/ios/TransferLiveActivity/Info.plist; do
+          # Les extensions (Live Activity, partage) portent EXACTEMENT la version de l'app (App Store l'exige).
+          for PLIST in "$PLIST" apps/mobile/ios/TransferLiveActivity/Info.plist apps/mobile/ios/ShareToTentacle/Info.plist; do
             plutil -replace CFBundleShortVersionString -string "${{ needs.prepare.outputs.version }}" "$PLIST"
             plutil -replace CFBundleVersion -string "${{ needs.prepare.outputs.build }}" "$PLIST"
             plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
@@ -590,10 +596,10 @@ jobs:
 
       # Un profil PAR CIBLE : passé en ligne de commande, PROVISIONING_PROFILE_SPECIFIER
       # vaudrait aussi pour l'extension, que le profil de l'app ne couvre pas.
-      - name: Profils par cible (app, extension Live Activity)
+      - name: Profils par cible (app, extensions Live Activity et partage)
         run: |
           node .github/scripts/ios-target-profiles.mjs apps/mobile/ios/TentacleTV.xcodeproj/project.pbxproj \
-            "TentacleTV=$IOS_PROFILE_NAME" "TransferLiveActivity=$IOS_EXT_PROFILE_NAME"
+            "TentacleTV=$IOS_PROFILE_NAME" "TransferLiveActivity=$IOS_EXT_PROFILE_NAME" "ShareToTentacle=$IOS_SHARE_PROFILE_NAME"
 
       - name: Archive (xcodebuild, signature manuelle Distribution)
         run: |
@@ -622,6 +628,7 @@ jobs:
             <dict>
               <key>${IOS_BUNDLE_ID}</key><string>${IOS_PROFILE_NAME}</string>
               <key>${IOS_EXT_BUNDLE_ID}</key><string>${IOS_EXT_PROFILE_NAME}</string>
+              <key>${IOS_SHARE_BUNDLE_ID}</key><string>${IOS_SHARE_PROFILE_NAME}</string>
             </dict>
             <key>destination</key><string>export</string>
             <key>uploadSymbols</key><true/>
