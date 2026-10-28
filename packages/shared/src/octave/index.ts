@@ -23,3 +23,5 @@ export * from "./declaredPlayback";
 export * from "./octaveResume";
 export * from "./octaveDeviceSettings";
 export * from "./octaveLaunchPin";
+export * from "./remoteCommands";
+export * from "./engine";
