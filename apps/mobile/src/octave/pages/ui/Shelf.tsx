@@ -2,7 +2,8 @@
  * Octave mobile — une ÉTAGÈRE : un titre (et « Tout afficher »), puis une rangée
  * horizontale de cartes, virtualisée (`FlatList` horizontale, fenêtre courte).
  * L'attente a la forme exacte de la rangée (`ShelfSkeleton`). Une étagère vide
- * ne s'écrit pas. Les premières cartes arrivent l'une après l'autre (`enterMotion`).
+ * ne s'écrit pas. Les premières cartes arrivent l'une après l'autre (`enterMotion`) ; un nouvel ordre remonte
+ * la rangée (`listOrder`).
  */
 
 import { memo, type ReactElement, type ReactNode } from "react";
@@ -14,6 +15,7 @@ import { typography, useTheme } from "@/theme";
 import { useFirstEnter } from "../../layout/enterMotion";
 import { usePageMetrics } from "./pageStyle";
 import { clipsOffscreenCells } from "../../layout/listClipping";
+import { listOrderIdentity } from "../../layout/listOrder";
 
 interface ShelfProps<T> {
   title: string;
@@ -48,6 +50,8 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
   const { gutter, card } = usePageMetrics();
   const w = width ?? card;
   const enterOnce = useFirstEnter();
+  // Un nouvel ordre (écoutes relues) = une rangée neuve : jamais une cellule déplacée en pleine entrée (`listOrder.ts`).
+  const order = listOrderIdentity(items.map((item) => keyOf(item)));
   if (items.length === 0) return null;
   const action = onSeeAll ? (
     <Pressable onPress={onSeeAll} hitSlop={10} accessibilityRole="button" style={styles.seeAll}>
@@ -58,6 +62,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
     <View>
       <SectionTitle title={title} hint={hint} action={action} />
       <FlatList
+        key={order}
         horizontal
         data={items as T[]}
         keyExtractor={keyOf}
