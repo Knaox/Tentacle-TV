@@ -69,6 +69,8 @@ const STORAGE_KEYS = [
   // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
   // une invitation refermée sans réponse reviendrait à chaque lancement.
   "tentacle_wt_invites_shown",
+  // Octave : la transition douce de l'appareil (`octave/audio/crossfadeSetting.ts`, magasin partagé).
+  "tentacle_octave_crossfade",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
