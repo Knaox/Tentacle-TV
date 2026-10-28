@@ -36,6 +36,7 @@ import { BootIntroShell } from "@/bootIntro/BootIntroShell";
 import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
 import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
+import { configureOctaveSettings } from "@/octave/settings/deviceSetting";
 import { markBoot } from "@/bootIntro/bootTimeline";
 
 // Prevent splash screen from auto-hiding
@@ -79,6 +80,7 @@ export default function RootLayout() {
       // l'app vit dans l'écran du poulpe.
       await bootDecision();
       configureBootIntroSettings(storage);
+      configureOctaveSettings(storage);
 
       if (!mounted) return;
 

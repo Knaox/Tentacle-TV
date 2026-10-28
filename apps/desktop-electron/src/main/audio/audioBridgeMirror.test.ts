@@ -1,6 +1,6 @@
 /**
  * Le contrat du pont audio est recopié OCTET POUR OCTET dans la page
- * (`apps/web/src/music/engine/mpv/audioBridgeContract.ts`) : la coquille est
+ * (`packages/shared/src/octave/engine/audioBridgeContract.ts`) : la coquille est
  * compilée sans dépendre d'elle. Ce test refuse qu'ils divergent, et que la
  * liste fermée des canaux oublie une commande ou l'évènement du moteur.
  */
@@ -25,7 +25,7 @@ describe("contrat du pont audio — la page et la coquille", () => {
   it("le miroir de la page est identique", () => {
     const root = repoRoot();
     const shell = readFileSync(join(root, "apps/desktop-electron/src/main/audio/audioBridgeContract.ts"), "utf8");
-    const page = readFileSync(join(root, "apps/web/src/music/engine/mpv/audioBridgeContract.ts"), "utf8");
+    const page = readFileSync(join(root, "packages/shared/src/octave/engine/audioBridgeContract.ts"), "utf8");
     expect(page).toBe(shell);
   });
 

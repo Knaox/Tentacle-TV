@@ -11,11 +11,10 @@
 
 import { LIQUID_GLASS_STORAGE_KEY } from "./liquidGlass";
 
-export const OCTAVE_LIQUID_GLASS_KEY = "tentacle_octave_liquid_glass";
-export const OCTAVE_THEME_KEY = "tentacle_octave_theme";
+import { OCTAVE_LIQUID_GLASS_KEY, OCTAVE_THEME_KEY, sanitizeOctaveTheme, type OctaveTheme } from "@tentacle-tv/shared/octave";
 
-export type OctaveTheme = "same" | "light" | "dark";
-const THEMES: readonly OctaveTheme[] = ["same", "light", "dark"];
+// Clés et lecture partagées avec le mobile (`@tentacle-tv/shared/octave` › `octaveDeviceSettings.ts`).
+export { OCTAVE_LIQUID_GLASS_KEY, OCTAVE_THEME_KEY, sanitizeOctaveTheme, type OctaveTheme };
 
 function storage(): Storage | null {
   try {
@@ -37,10 +36,6 @@ function readOctaveLiquidGlass(): boolean {
   } catch {
     return true;
   }
-}
-
-export function sanitizeOctaveTheme(raw: string | null | undefined): OctaveTheme {
-  return THEMES.includes(raw as OctaveTheme) ? (raw as OctaveTheme) : "same";
 }
 
 let octaveGlass = readOctaveLiquidGlass();

@@ -62,7 +62,7 @@ export interface AudioOutputDevice {
 
 /** Ce que CE moteur sait faire — l'interface n'affiche que ce qui est vrai. */
 export interface AudioEngineCapabilities {
-  engine: "mpv" | "html";
+  engine: "mpv" | "html" | "media3";
   gapless: boolean;
   exclusiveOutput: boolean;
   replayGain: boolean;
@@ -96,7 +96,12 @@ export type EngineEvent =
   | { type: "advanced"; fromKey: string | null; toKey: string | null }
   /** Le moteur a besoin de la source d'un titre (préchargement du suivant, expiration). */
   | { type: "needSource"; trackKey: string }
-  | { type: "swapped"; trackKey: string; origin: PlaybackSource["origin"] };
+  | { type: "swapped"; trackKey: string; origin: PlaybackSource["origin"] }
+  /**
+   * Une commande du SYSTÈME (écran verrouillé, notification média, casque, appel) : le lecteur l'applique comme
+   * un geste — l'intention « lecture » et la file sont les siennes. Un moteur sans contrôles système n'en émet pas.
+   */
+  | { type: "remote"; command: "play" | "pause" | "next" | "previous" };
 
 /**
  * Le moteur ne connaît que des titres et des sources : la FILE (ordre,

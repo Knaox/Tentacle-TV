@@ -52,6 +52,13 @@ export default {
     seconds_one: "{{count}} s",
     seconds_other: "{{count}} s",
   },
+  launchPin: {
+    label: "Don't ask for the PIN at launch",
+    hint: "When the app reopens in Octave, it resumes the open profile, without “Who's watching?” or a PIN. Switching profiles still asks for it.",
+  },
+  settingsMobile: {
+    switchProfileHint: "The same choice as in Tentacle, PIN included.",
+  },
   settings: {
     kicker: "Octave",
     title: "Octave settings",

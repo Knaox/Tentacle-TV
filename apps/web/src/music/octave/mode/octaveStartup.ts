@@ -14,14 +14,9 @@
  * Tentacle, sans erreur — la décision ne vaut que si Octave peut s'ouvrir.
  */
 
-export const OCTAVE_STARTUP_CHOICES = ["last", "octave", "tentacle"] as const;
-export type OctaveStartupChoice = (typeof OCTAVE_STARTUP_CHOICES)[number];
-export const DEFAULT_OCTAVE_STARTUP: OctaveStartupChoice = "last";
-
-/** Une valeur lue sur le disque : ce qui n'est pas un choix connu vaut le défaut. */
-export function parseOctaveStartup(raw: string | null | undefined): OctaveStartupChoice {
-  return (OCTAVE_STARTUP_CHOICES as readonly string[]).includes(raw ?? "") ? (raw as OctaveStartupChoice) : DEFAULT_OCTAVE_STARTUP;
-}
+// Les choix et leur lecture sont partagés avec le mobile (`@tentacle-tv/shared/octave` › `octaveDeviceSettings.ts`).
+export { DEFAULT_OCTAVE_STARTUP, OCTAVE_STARTUP_CHOICES, parseOctaveStartup, type OctaveStartupChoice } from "@tentacle-tv/shared/octave";
+import type { OctaveStartupChoice } from "@tentacle-tv/shared/octave";
 
 /** Le mode VOULU au lancement, avant de savoir si Octave peut s'ouvrir. */
 export function startupWantsOctave(choice: OctaveStartupChoice, lastWasOctave: boolean): boolean {
