@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { bindCrossfadeStorage, getCrossfadeMs, subscribeCrossfade } from "../audio/crossfadeSetting";
+import { followKeptCopies } from "../audio/keptCopySwap";
 import { createMobileAudioEngine } from "../audio/mobileAudioEngine";
 import { keepJsAliveWhilePlaying } from "../audio/musicKeepAlive";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
@@ -58,12 +59,15 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     // … et sa source se prépare tout de suite (en fond) : le premier « Lecture » n'attend rien.
     const resumed = p.snapshot.get().current;
     if (p.restoredAtMs !== null && resumed) p.prefetch([resumed], "next");
+    // Un titre gardé passe au fichier du téléphone dès que sa copie est connue, même en cours d'écoute.
+    const offKept = followKeptCopies(p);
     // Android : la file avance application derrière (minuteurs du JS gardés vivants pendant l'écoute).
     const offAlive = keepJsAliveWhilePlaying(p);
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
     if (__DEV__) Object.assign(globalThis, { __octavePlayer: p, __octaveAuth: auth });
     setPlayer(p);
     return () => {
+      offKept();
       offAlive();
       offResume();
       offCrossfade();
