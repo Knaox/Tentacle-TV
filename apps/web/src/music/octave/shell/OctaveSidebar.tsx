@@ -4,7 +4,7 @@
  * films (`OctaveModeSlot` : la première chose qu'on voit, jamais perdue en pied
  * de rail), puis les cinq destinations, vos playlists, et en pied les réglages
  * d'Octave (discrets) et le profil (`OctaveProfileButton`). Au téléphone, les mêmes destinations passent
- * dans une barre d'onglets.
+ * dans la barre d'onglets flottante (`touch/OctaveFloatingTabs`).
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
  * active prend la pastille de Tentacle, rose en tête, son icône rose
@@ -126,32 +126,6 @@ function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; c
     </li>
   );
 }
-
-/** La barre d'onglets du téléphone : les mêmes cinq destinations, l'active en rose. */
-export const OctaveTabBar = memo(function OctaveTabBar() {
-  const { t } = useTranslation("music");
-  return (
-    <nav aria-label={t("nav.main")} className="grid grid-cols-5 border-t border-octave-line bg-octave-ink pb-[env(safe-area-inset-bottom,0px)]">
-      {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) =>
-            `flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${isActive ? "text-content-primary" : "text-content-tertiary"}`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <Icon className={`h-5 w-5 ${isActive ? "text-octave-accent-text" : ""}`} aria-hidden />
-              <span className="truncate">{t(key)}</span>
-            </>
-          )}
-        </NavLink>
-      ))}
-    </nav>
-  );
-});
 
 /** Une playlist du rail : le lien, et — si le compte peut la modifier — « … » au survol et le clic droit. */
 function RailPlaylist({ playlist }: { playlist: MusicPlaylist }) {

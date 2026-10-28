@@ -20,7 +20,7 @@
  */
 
 import { memo } from "react";
-import { ListMusic, Pause, Play } from "lucide-react";
+import { ListMusic, Pause, Play, SkipForward } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLiquidGlassSurface } from "../../../theme/glass";
 import { AvailabilityMark } from "../components/AvailabilityMark";
@@ -100,7 +100,7 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
   );
 });
 
-/** Le mini-lecteur du téléphone : la capsule du dock en une ligne, la progression en filet dessous. */
+/** Le mini-lecteur du téléphone : la capsule du dock en une ligne (lecture, titre suivant), la progression en filet dessous. */
 export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => void }) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
@@ -112,7 +112,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
     tone: "dark",
     shape: "rounded",
     radius: "lg",
-    className: "octave-night relative mx-2 overflow-hidden",
+    className: "octave-night relative overflow-hidden",
     fallbackClassName: "octave-dock-fallback",
   });
   if (!track) return null;
@@ -135,6 +135,14 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
           className="octave-play flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {wantsPlay ? <Pause className="relative h-5 w-5" fill="currentColor" aria-hidden /> : <Play className="relative ml-0.5 h-5 w-5" fill="currentColor" aria-hidden />}
+        </button>
+        <button
+          type="button"
+          onClick={() => player.next()}
+          aria-label={t("player.next")}
+          className="octave-touch flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        >
+          <SkipForward className="h-5 w-5" fill="currentColor" aria-hidden />
         </button>
       </div>
       <div aria-hidden className="octave-mini-progress">

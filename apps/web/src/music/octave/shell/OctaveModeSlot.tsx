@@ -20,17 +20,19 @@ interface OctaveModeSlotProps {
   onExit: () => void;
   /** En-tête étroit : l'interrupteur seul. */
   compact?: boolean;
+  /** Rail de la tablette : l'interrupteur seul, le repère de première visite À CÔTÉ (pas dessous). */
+  rail?: boolean;
 }
 
-export function OctaveModeSlot({ onExit, compact = false }: OctaveModeSlotProps) {
+export function OctaveModeSlot({ onExit, compact = false, rail = false }: OctaveModeSlotProps) {
   const { t } = useTranslation("octaveShell");
   const anchor = useRef<HTMLDivElement>(null);
   const stage = useOctaveGlassStage();
-  if (compact) {
+  if (compact || rail) {
     return (
       <div ref={anchor}>
         <OctaveModeSwitch placement="octave" onExit={onExit} className="px-1" />
-        <OctaveFirstVisitHint anchor={anchor} compact />
+        <OctaveFirstVisitHint anchor={anchor} compact={!rail} />
       </div>
     );
   }
