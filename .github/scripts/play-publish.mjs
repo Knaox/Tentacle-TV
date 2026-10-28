@@ -32,6 +32,7 @@
 // commite.
 import fs from 'node:fs';
 import { createPlayClient } from './lib/play-api.mjs';
+import { explainPlayError } from './lib/play-errors.mjs';
 import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
 import { promotableVersionCodes, releaseVersion } from './lib/promote.mjs';
 import { describePlayReleases, playReleaseProblems, playReplacedReleases } from './lib/release-check.mjs';
@@ -204,6 +205,13 @@ async function publish(play) {
   }
 }
 
+// Un refus qui se règle dans la console : le dire en clair, puis échouer.
+function failPublish(e) {
+  console.error(`::error::publication Play impossible : ${e.message}`);
+  for (const line of explainPlayError(e.message, pkg) ?? []) console.error(`::error::${line}`);
+  process.exit(1);
+}
+
 /**
  * Ne vaut la peine d'être rejoué qu'en cas de collision d'édition ou de panne
  * passagère. Un compte de service invalide ne guérit pas en vingt secondes —
@@ -220,16 +228,10 @@ let result;
 try {
   result = await publish(play);
 } catch (e) {
-  if (!isTransient(e)) {
-    console.error(`::error::publication Play impossible : ${e.message}`);
-    process.exit(1);
-  }
+  if (!isTransient(e)) failPublish(e);
   console.error(`[play] édition perdue (${e.message}) — nouvel essai unique dans 20 s.`);
   await new Promise((r) => setTimeout(r, 20_000));
-  result = await publish(play).catch((e2) => {
-    console.error(`::error::publication Play impossible : ${e2.message}`);
-    process.exit(1);
-  });
+  result = await publish(play).catch(failPublish);
 }
 
 if (process.env.GITHUB_OUTPUT) {
