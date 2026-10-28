@@ -39,3 +39,11 @@ export function musicSectionLabel(provider: MusicProvider, lang: string, fallbac
   const labels = provider.music.labels ?? {};
   return labels[lang.slice(0, 2)] ?? labels.en ?? fallback;
 }
+
+/**
+ * Ce titre (album, artiste) vient-il de CETTE extension (et donc ses gestes sont-ils possibles) ? Une seule règle,
+ * ici, dans le module feuille : le lecteur (`buildOctavePlayer`) et les pages (`useMusicEntities`) la réexportent.
+ */
+export function isFromMusicProvider(provider: MusicProvider | null, pluginId: string | null | undefined): provider is MusicProvider {
+  return provider !== null && !!pluginId && provider.pluginId === pluginId;
+}

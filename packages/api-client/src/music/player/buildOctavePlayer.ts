@@ -11,8 +11,7 @@ import { OctavePlayer, PlaybackReporter, SourceCache, type SourceResolvers } fro
 import { fetchMusicSource } from "../useMusicLibrary";
 import { reportMusicPlayback } from "../musicPlaybackReport";
 import { prefetchMusic, reportExternalPlayed, resolveMusicSource } from "../../pluginMusic/musicRequests";
-import type { MusicProvider } from "../../pluginMusic/musicProvider";
-import { isFromMusicProvider } from "../octave/useMusicEntities";
+import { isFromMusicProvider, type MusicProvider } from "../../pluginMusic/musicProvider";
 
 export interface OctaveKeptPort {
   /** Enveloppe les résolveurs : la copie gardée d'abord (web : `withKeptSources`). */
@@ -21,7 +20,7 @@ export interface OctaveKeptPort {
   isKept?: (trackKey: string) => boolean;
 }
 
-// Ce titre vient-il de CETTE extension ? Une seule règle, celle des pages (`useMusicEntities`).
+// Ce titre vient-il de CETTE extension ? Une seule règle (`pluginMusic/musicProvider.ts`).
 export { isFromMusicProvider };
 
 export function buildOctavePlayer(

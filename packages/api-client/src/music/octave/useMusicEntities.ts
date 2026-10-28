@@ -13,9 +13,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { parseTrackKey, type ExternalMusicPlaylist, type MusicAlbum, type MusicArtist } from "@tentacle-tv/shared/music";
-import type { MusicProvider } from "../../pluginMusic/musicProvider";
+import { isFromMusicProvider, type MusicProvider } from "../../pluginMusic/musicProvider";
 import { fetchExternalAlbum, fetchExternalArtist, fetchExternalPlaylist } from "../../pluginMusic/musicRequests";
-import { isFromMusicProvider } from "../player/buildOctavePlayer";
 import { useMusicAlbum, useMusicArtist } from "../useMusicLibrary";
 
 export interface MusicEntityState<T> {
@@ -35,7 +34,7 @@ export function externalEntityRef(idOrKey: string | null | undefined): { pluginI
   return parsed?.kind === "external" ? { pluginId: parsed.ref.pluginId, id: parsed.ref.id } : null;
 }
 
-// Ce titre (album, artiste) vient-il de CETTE extension ? La règle du lecteur (`buildOctavePlayer`), une seule.
+// Ce titre (album, artiste) vient-il de CETTE extension ? Une seule règle (`pluginMusic/musicProvider.ts`).
 export { isFromMusicProvider };
 
 function useExternal<T>(
