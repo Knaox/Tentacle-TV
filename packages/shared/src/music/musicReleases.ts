@@ -33,6 +33,14 @@ export const RELEASE_FILE_MIME_TYPES: readonly string[] = [
   "audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/flac", "audio/x-flac", "audio/ogg", "audio/opus", "audio/wav", "audio/x-wav", "audio/wave",
 ];
 
+/**
+ * Une IMAGE envoyée dans un lot (le `cover.png` d'un téléchargement Bandcamp, un `folder.jpg`) : la pochette des albums
+ * du lot quand elle est plus GRANDE que la leur (25 Mo au plus) ; le fichier finit `read`, sans `trackId`. Le sélecteur
+ * peut donc proposer ces extensions avec les fichiers audio.
+ */
+export const RELEASE_COVER_EXTENSIONS: readonly string[] = ["jpg", "jpeg", "png", "webp"];
+export const RELEASE_COVER_MIME_TYPES: readonly string[] = ["image/jpeg", "image/png", "image/webp"];
+
 /** Au plus par lot (une requête `files`) ; au-delà : 400 `tooMany`. */
 export const RELEASE_FILES_PER_JOB = 100;
 
