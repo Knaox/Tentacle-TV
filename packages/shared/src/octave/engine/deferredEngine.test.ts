@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AudioEnginePort, PlaybackSource } from "@tentacle-tv/shared/music";
-import { OctavePlayer, PlaybackReporter, SourceCache } from "@tentacle-tv/shared/octave";
-import { createFakeEngine, libraryTrack, type FakeEngine } from "@tentacle-tv/shared/octave/testing";
+import type { AudioEnginePort, PlaybackSource } from "../../music";
+import { OctavePlayer } from "../octavePlayer";
+import { PlaybackReporter } from "../playbackReports";
+import { SourceCache } from "../sourceCache";
+import { createFakeEngine, type FakeEngine } from "../fakeEngine";
+import { libraryTrack } from "../fixtures";
 import { createDeferredEngine } from "./deferredEngine";
-import type { EnginePrefs } from "./mpv/mpvAudioEngine";
+import type { EnginePrefs } from "./bridgeAudioEngine";
 
 /**
  * Le moteur différé : la coquille d'Octave se peint sans attendre mpv. Les

@@ -24,8 +24,8 @@ import type {
   MusicTrack,
   PlaybackSource,
   ReplayGainMode,
-} from "@tentacle-tv/shared/music";
-import type { EnginePrefs } from "./mpv/mpvAudioEngine";
+} from "../../music";
+import type { EnginePrefs } from "./bridgeAudioEngine";
 
 type Order =
   | { kind: "play"; track: MusicTrack; source: PlaybackSource; startMs: number }

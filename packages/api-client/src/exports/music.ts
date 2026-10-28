@@ -25,3 +25,6 @@ export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, t
 export {
   musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
 } from "../music/useMusicListOrder";
+// Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
+export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
+export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
