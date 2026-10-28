@@ -1,24 +1,29 @@
 /**
- * Octave (mobile) — le LECTEUR PLEIN ÉCRAN, en recouvrement de la coquille : il monte du bas (ressort), se
- * tire vers le bas pour se refermer (poignée, en-tête ou pochette), et Retour (Android) le referme. Le décor
- * est la pochette floutée sous un voile d'encre. Téléphone : en colonne ; tablette ou paysage : la pochette à
+ * Octave (mobile) — le LECTEUR PLEIN ÉCRAN, en recouvrement de la coquille : il NAÎT du mini-lecteur (même
+ * place, même largeur, puis l'écran entier, `sheetTransition`) et y revient en se refermant ; il se tire vers
+ * le bas pour se refermer (poignée, en-tête ou pochette), et Retour (Android) le referme. Le décor est le fond
+ * vivant tiré de la pochette (`ambient/AmbientBackdrop`). Téléphone : en colonne ; tablette ou paysage : la pochette à
  * gauche, les commandes et la file à droite (`NowPlayingBody`). Monté seulement ouvert : fermé, il ne coûte rien.
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackHandler, PanResponder, StyleSheet, useWindowDimensions, View } from "react-native";
-import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
+import Animated, { Easing, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { usePathname } from "expo-router";
-import { PlayerArtwork } from "./PlayerArtwork";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AmbientBackdrop } from "./ambient/AmbientBackdrop";
 import { NowPlayingBody } from "./NowPlayingBody";
 import { usePlayerSelector } from "./OctavePlayerContext";
 import { closeNowPlaying, useNowPlayingOpen } from "./nowPlayingStore";
 import { decideDismiss, gestureAxis, sheetDragOffset } from "./playerGestures";
-import { useOctaveColors } from "../theme/octaveColors";
-import { withAlpha } from "@/theme";
+import {
+  CONTENT_FADE_RANGE, phoneMiniRect, rangeProgress, SHAPE_FADE_RANGE, SHEET_RADIUS, sheetFrame, sheetOrigin, tabletMiniRect, type SheetOrigin,
+} from "./sheetTransition";
+import { OCTAVE_MINI_GAP, useOctaveChrome } from "../shell/octaveChrome";
 
-const OPEN_SPRING = { damping: 24, stiffness: 210, mass: 1 } as const;
+const OPEN_SPRING = { damping: 26, stiffness: 220, mass: 1 } as const;
+/** La fermeture, plus brève que l'ouverture, sans rebond : la forme se pose sur la pastille. */
+const CLOSE_TIMING = { duration: 300, easing: Easing.bezier(0.3, 0, 0.2, 1) } as const;
 
 export const NowPlayingSheet = memo(function NowPlayingSheet() {
   const open = useNowPlayingOpen();
@@ -44,18 +49,24 @@ export const NowPlayingSheet = memo(function NowPlayingSheet() {
 });
 
 const SheetFrame = memo(function SheetFrame({ open, onClosed }: { open: boolean; onClosed: () => void }) {
-  const colors = useOctaveColors();
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const translateY = useSharedValue(height);
-  const url = usePlayerSelector((s) => s.current?.artworkUrl ?? null);
+  const origin = useMiniPlayerOrigin(width, height);
+  // 0 : posé sur le mini-lecteur ; 1 : plein écran. `drag` : le doigt qui tire le lecteur vers le bas.
+  const progress = useSharedValue(0);
+  const drag = useSharedValue(0);
 
   useEffect(() => {
-    if (open) translateY.value = reduceMotion ? withTiming(0, { duration: 160 }) : withSpring(0, OPEN_SPRING);
-    else translateY.value = withTiming(height, { duration: 230 }, (done) => {
+    if (open) {
+      progress.value = reduceMotion ? withTiming(1, { duration: 160 }) : withSpring(1, OPEN_SPRING);
+      return;
+    }
+    const close = reduceMotion ? { duration: 160 } : CLOSE_TIMING;
+    drag.value = withTiming(0, close);
+    progress.value = withTiming(0, close, (done) => {
       if (done) runOnJS(onClosed)();
     });
-  }, [open, height, reduceMotion, translateY, onClosed]);
+  }, [open, reduceMotion, progress, drag, onClosed]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,12 +78,12 @@ const SheetFrame = memo(function SheetFrame({ open, onClosed }: { open: boolean;
   }, [open]);
 
   const onDrag = useCallback((dy: number) => {
-    translateY.value = sheetDragOffset(dy);
-  }, [translateY]);
+    drag.value = sheetDragOffset(dy);
+  }, [drag]);
   const onDragEnd = useCallback((dy: number, vy: number) => {
     if (decideDismiss(dy, vy)) closeNowPlaying();
-    else translateY.value = withSpring(0, OPEN_SPRING);
-  }, [translateY]);
+    else drag.value = withSpring(0, OPEN_SPRING);
+  }, [drag]);
 
   // L'en-tête (poignée comprise) prend tout glissement vertical vers le bas.
   const headerResponder = useMemo(() => PanResponder.create({
@@ -82,29 +93,46 @@ const SheetFrame = memo(function SheetFrame({ open, onClosed }: { open: boolean;
     onPanResponderTerminate: () => onDragEnd(0, 0),
   }), [onDrag, onDragEnd]);
 
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    borderRadius: translateY.value > 1 ? 28 : 0,
-  }));
-  const scrimStyle = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - translateY.value / Math.max(1, height)) * 0.6 }));
+  const sheetStyle = useAnimatedStyle(() => {
+    const frame = sheetFrame(origin, progress.value);
+    return {
+      opacity: rangeProgress(progress.value, SHAPE_FADE_RANGE),
+      transform: [{ translateX: frame.translateX }, { translateY: frame.translateY + drag.value }, { scaleX: frame.scaleX }],
+      borderRadius: progress.value < 0.995 || drag.value > 1 ? SHEET_RADIUS : 0,
+    };
+  }, [origin]);
+  const contentStyle = useAnimatedStyle(() => ({ opacity: rangeProgress(progress.value, CONTENT_FADE_RANGE) }));
+  const scrimStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(0, Math.min(1, progress.value) - drag.value / Math.max(1, height)) * 0.6,
+  }), [height]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={open ? "auto" : "none"}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]} pointerEvents="none" />
-      <Animated.View style={[StyleSheet.absoluteFill, styles.sheet, { backgroundColor: colors.ink }, sheetStyle]} accessibilityViewIsModal>
-        <PlayerArtwork url={url} radius={0} style={StyleSheet.absoluteFill} blurRadius={50} />
-        <LinearGradient
-          colors={[withAlpha(colors.ink, 0.5, colors.ink), withAlpha(colors.ink, 0.78, colors.ink), colors.ink]}
-          locations={[0, 0.55, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <NowPlayingBody headerHandlers={headerResponder.panHandlers} onDrag={onDrag} onDragEnd={onDragEnd} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.sheet, sheetStyle]} accessibilityViewIsModal>
+        <AmbientBackdrop open={open} />
+        <Animated.View style={[styles.fill, contentStyle]}>
+          <NowPlayingBody headerHandlers={headerResponder.panHandlers} onDrag={onDrag} onDragEnd={onDragEnd} />
+        </Animated.View>
       </Animated.View>
     </View>
   );
 });
 
+/** Où se tient le mini-lecteur, d'après ce que la coquille publie : le lecteur en part et y revient. */
+function useMiniPlayerOrigin(width: number, height: number): SheetOrigin {
+  const chrome = useOctaveChrome();
+  const insets = useSafeAreaInsets();
+  return useMemo(() => {
+    const rect = chrome.layout === "phone"
+      ? phoneMiniRect(width, height, chrome.tabBarHeight, chrome.miniPlayerHeight, OCTAVE_MINI_GAP)
+      : tabletMiniRect(width, height, chrome.miniPlayerHeight, chrome.sidebarWidth, insets);
+    return sheetOrigin(rect, width, height);
+  }, [chrome.layout, chrome.tabBarHeight, chrome.miniPlayerHeight, chrome.sidebarWidth, insets, width, height]);
+}
+
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   scrim: { backgroundColor: "#000" },
   sheet: { overflow: "hidden" },
 });
