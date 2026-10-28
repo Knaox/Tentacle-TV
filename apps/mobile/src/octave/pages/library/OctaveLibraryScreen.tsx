@@ -11,7 +11,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Heart, Library } from "lucide-react-native";
+import { ChevronRight, Heart, Library, ListMusic } from "lucide-react-native";
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists } from "@tentacle-tv/api-client";
 import { LIBRARY_ALBUM_SORT_KEY, MOBILE_LIBRARY_DEFAULT_TAB, mobileLibraryTabParam, parseAlbumSort, parseLibraryTab, type LibraryAlbumSort, type LibraryTab } from "@tentacle-tv/shared/octave";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
@@ -101,7 +101,16 @@ export function OctaveLibraryScreen() {
       <LibraryFilterBar tab={tab} onTab={setTab} />
     </View>
   );
-  const empty = pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
+  const empty = pending ? (
+    <ShelfSkeleton round={tab === "artists"} />
+  ) : failed ? (
+    <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} />
+  ) : tab === "playlists" ? (
+    // Aucune playlist : les mots de la page Playlists ; « Importer » et « + » restent à droite du titre.
+    <EmptyState icon={ListMusic} title={t("views.playlistsEmptyTitle")} hint={t("views.playlistsEmptyHint")} />
+  ) : (
+    <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />
+  );
 
   return (
     <View style={{ flex: 1 }}>
