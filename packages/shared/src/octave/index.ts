@@ -21,3 +21,5 @@ export * from "./octaveResolution";
 export * from "./startCause";
 export * from "./declaredPlayback";
 export * from "./octaveResume";
+export * from "./remoteCommands";
+export * from "./engine";

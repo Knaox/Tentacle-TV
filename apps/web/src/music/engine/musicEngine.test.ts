@@ -3,7 +3,7 @@ import type { EngineEvent } from "@tentacle-tv/shared/music";
 import { absoluteSourceUrl, albumKeyOf, elementSourceUrl, EngineEmitter, engineHeaders, extrapolatedPosition, idleState } from "./engineShared";
 import { codecsFrom, crossfadeCurve, effectiveGainMode, elementVolume, nextLatencyEstimate, nextStartDelayMs, sourceGainDb } from "./html/htmlRules";
 import { createMpvAudioEngine, type NativeBridge } from "./mpv/mpvAudioEngine";
-import type { AudioBridgeEvent } from "./mpv/audioBridgeContract";
+import type { AudioBridgeEvent } from "@tentacle-tv/shared/octave";
 import { preferredEngine } from "./createAudioEngine";
 import { testSource, testTrack } from "./engineTestKit";
 

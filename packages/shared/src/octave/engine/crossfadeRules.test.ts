@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { albumKeyOf } from "./engineShared";
 import { continuesAlbum, fadeInGain, fadeOutGain, plannedCrossfadeMs, sanitizeCrossfadeMs } from "./crossfadeRules";
-import { testTrack } from "./engineTestKit";
+import type { MusicTrack } from "../../music";
+
+function testTrack(key: string, album = "A"): MusicTrack {
+  return {
+    key, jellyfinId: key, external: null, title: key, artists: [{ name: "Artiste", mbid: null, jellyfinId: null }],
+    album: { title: album, mbid: null, jellyfinId: album }, durationMs: 200_000, trackNumber: 1, discNumber: 1, year: null,
+    artworkUrl: null, mbids: { recording: null, release: null, releaseGroup: null, artists: [] }, availability: "library",
+    format: null, favorite: false,
+  };
+}
 
 const numbered = (key: string, album: string, track: number | null, disc: number | null = 1) => ({ ...testTrack(key, album), trackNumber: track, discNumber: disc });
 const pair = (current = numbered("a", "A", 3), next = numbered("b", "B", 1), currentMs: number | null = 200_000, nextMs: number | null = 180_000) => ({ current, next, currentMs, nextMs });
