@@ -37,6 +37,11 @@ export function decideSwipe(dx: number, vx: number, width: number): SwipeOutcome
   return dx < 0 ? "next" : "previous";
 }
 
+/** Où sort la pochette balayée (pt) : à gauche vers le suivant, à droite vers le précédent, hors de l'écran. */
+export function swipeExitOffset(outcome: "next" | "previous", width: number): number {
+  return (outcome === "next" ? -1 : 1) * width * 1.15;
+}
+
 /** Au lâcher du lecteur tiré vers le bas : refermer ? */
 export function decideDismiss(dy: number, vy: number): boolean {
   return dy > DISMISS_DISTANCE || (vy > DISMISS_VELOCITY && dy > GESTURE_SLOP * 2);

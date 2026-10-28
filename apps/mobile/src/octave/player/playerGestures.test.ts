@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { decideDismiss, decideOpen, decideSwipe, gestureAxis, rubberBand, sheetDragOffset } from "./playerGestures";
+import { decideDismiss, decideOpen, decideSwipe, gestureAxis, rubberBand, sheetDragOffset, swipeExitOffset } from "./playerGestures";
 
 describe("gestes du lecteur", () => {
   it("rien n'est pris sous le seuil, puis l'axe dominant", () => {
     expect(gestureAxis(4, 6)).toBeNull();
     expect(gestureAxis(30, 5)).toBe("horizontal");
     expect(gestureAxis(8, 30)).toBe("vertical");
+  });
+
+  it("la pochette balayée sort hors de la zone, du côté du geste", () => {
+    expect(swipeExitOffset("next", 360)).toBeLessThan(-360);
+    expect(swipeExitOffset("previous", 360)).toBeGreaterThan(360);
   });
 
   it("balayer : loin ou vif change de titre, gauche = suivant", () => {
