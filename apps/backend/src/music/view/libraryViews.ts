@@ -1,7 +1,8 @@
 /**
  * Octave — la bibliothèque musique vue par UN compte : état, recherche,
  * albums, artistes. L'index répond seul (aucune requête à Jellyfin), sauf les
- * titres phares d'un artiste, qui sont ceux que CE compte écoute le plus.
+ * titres phares d'un artiste, qui sont ceux que CE compte écoute le plus, et la
+ * description d'un album (`albumDescription.ts`), lue à son ouverture.
  */
 
 import type { MusicAlbumPage, MusicArtistPage, MusicArtistResponse, MusicSearchResponse, MusicStatus } from "../contract/musicCoreApi";
@@ -10,6 +11,7 @@ import { albumTracks, countsByKind, creditedTo, orderedIds, rowById, searchIndex
 import { syncState } from "../index/indexSync";
 import { ftsMatchExpression } from "../index/searchQuery";
 import { jfAdmin, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
+import { albumDescription } from "./albumDescription";
 import { searchPlaylists } from "./playlistViews";
 import { albumsOf, artistsOf, nextCursor, tracksOf, visibleIds, visibleInOrder, visibleRows, type UserView } from "./viewContext";
 
@@ -61,10 +63,13 @@ export async function albumView(view: UserView, albumId: string): Promise<MusicA
   const id = normalizeId(albumId);
   const row = await rowById(id);
   if (!row || row.kind !== "album" || visibleRows(view, [row]).length === 0) return null;
-  const [album] = await albumsOf(view, [row]);
-  const tracks = await tracksOf(view, visibleRows(view, await albumTracks(id)));
+  const [[album], tracks, description] = await Promise.all([
+    albumsOf(view, [row]),
+    albumTracks(id).then((rows) => tracksOf(view, visibleRows(view, rows))),
+    albumDescription(view.userId, id),
+  ]);
   const durationMs = tracks.reduce((sum, t) => sum + (t.durationMs ?? 0), 0) || album!.durationMs;
-  return { ...album!, trackCount: tracks.length, durationMs, tracks };
+  return { ...album!, trackCount: tracks.length, durationMs, description, tracks };
 }
 
 /** Les titres que CE compte écoute le plus chez cet artiste (Jellyfin juge : droits, écoutes). */

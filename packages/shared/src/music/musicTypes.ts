@@ -123,6 +123,11 @@ export interface MusicAlbum {
   mbids: { release: Mbid | null; releaseGroup: Mbid | null };
   /** Label, si connu (« Columbia »…). */
   label?: string | null;
+  /**
+   * La description de l'album dans Jellyfin (`Overview` : mentions, crédits, licence d'un contenu libre de
+   * droit…), rendue par la vue album seulement ; `null` : aucune. Absente d'un serveur d'avant : rien à montrer.
+   */
+  description?: string | null;
   /** Rendu par la vue album seulement (pas par la recherche). */
   tracks?: MusicTrack[];
 }

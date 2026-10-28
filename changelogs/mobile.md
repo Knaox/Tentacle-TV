@@ -5,6 +5,50 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.30.0]
+<!-- Bloc nu : Google Play (500 caractères). Octave exige le serveur 1.40.0 (capacités) : face à un serveur plus ancien, ou sans accès à la musique, rien d'Octave ne s'affiche. Octave = la bibliothèque musicale PERSONNELLE du serveur Jellyfin : jamais « gratuit », jamais un catalogue, ni YouTube, ni extension. Jamais le mot « téléchargement ». -->
+### FR
+- **Octave, le mode musique** : votre bibliothèque musicale personnelle, celle de votre serveur
+- Accueil, recherche, albums, artistes, titres aimés
+- **Playlists** à créer, réordonner du doigt et partager par un lien
+- Écoute en arrière-plan, commandes sur l'écran verrouillé
+- Transition douce réglable dans le lecteur
+- Playlists gardées hors ligne et tenues à jour
+- Demande un serveur Tentacle 1.40
+
+### EN
+- **Octave, the music mode**: your personal music library, the one on your server
+- Home, search, albums, artists, liked songs
+- **Playlists** to create, reorder with a finger and share with a link
+- Background listening, controls on the lock screen
+- Adjustable crossfade in the player
+- Playlists kept offline and kept up to date
+- Needs a Tentacle 1.40 server
+
+## [ios-1.30.0]
+<!-- Bloc iOS (App Store Connect, 4000 caractères). Même règle que le bloc nu : la bibliothèque PERSONNELLE, serveur 1.40 exigé, aucun catalogue. -->
+### FR
+- **Octave, le mode musique de Tentacle, arrive sur l'iPhone et l'iPad** : la musique de votre bibliothèque personnelle, celle de votre serveur Jellyfin, dans une app qui lui est dédiée. Une bascule l'ouvre aussitôt, et l'app peut s'y rouvrir directement
+- **Tout comme sur l'ordinateur** : un accueil selon vos envies (ambiances, albums et artistes récents, déjà écoutés), une recherche instantanée, vos albums, vos artistes et vos titres aimés, avec les mêmes données sur tous vos appareils
+- **Des playlists faites pour le doigt** : créez-les, renommez-les, ajoutez et retirez des titres, triez-les ou réordonnez-les en les faisant glisser ; une modification faite sur l'ordinateur se voit aussitôt sur l'iPhone, et inversement
+- **Partagez une playlist par un lien** : un ami qui a son propre serveur Tentacle l'importe chez lui, et ses titres sont retrouvés dans sa bibliothèque
+- **La musique continue** : écran verrouillé, autre app ouverte, le lecteur garde la main ; pochette et commandes sur l'écran verrouillé, dans le Centre de contrôle et sur les écouteurs
+- **Transition douce entre les titres**, allumée d'office et réglable directement dans le lecteur
+- **Hors ligne** : gardez une playlist ou vos titres aimés sur l'iPhone ; ils restent à jour d'eux-mêmes, et un titre qui arrive en meilleure qualité sur le serveur remplace l'ancien
+- **Liquid Glass sur iOS 26**, une vraie mise en page sur l'iPad, et des animations soignées
+- Octave demande un serveur Tentacle 1.40 et l'accès à la musique sur votre compte : sans eux, rien ne change dans l'application
+
+### EN
+- **Octave, Tentacle's music mode, comes to iPhone and iPad**: the music of your personal library, the one on your Jellyfin server, in an app of its own. A switch opens it at once, and the app can reopen straight into it
+- **Just like on the computer**: a home that follows your mood (moods, recent albums and artists, recently played), instant search, your albums, your artists and your liked songs, with the same data on all your devices
+- **Playlists made for your finger**: create and rename them, add and remove songs, sort them or reorder them by dragging; a change made on the computer shows up at once on the iPhone, and the other way round
+- **Share a playlist with a link**: a friend with their own Tentacle server imports it, and its songs are matched in their library
+- **The music keeps playing**: locked screen, another app open, the player stays in charge; artwork and controls on the Lock Screen, in Control Center and on your headphones
+- **Smooth transition between songs**, on by default and adjustable right in the player
+- **Offline**: keep a playlist or your liked songs on the iPhone; they stay up to date by themselves, and a song that arrives in better quality on the server replaces the old one
+- **Liquid Glass on iOS 26**, a real iPad layout, and polished animations
+- Octave needs a Tentacle 1.40 server and music access on your account: without them, nothing changes in the app
+
 ## [1.20.0]
 <!-- Bloc nu : Google Play (500 caractères). Le Watch Together, « Qui regarde ? » et la synchro des notifications exigent le serveur 1.31.1 (capacités) : face à un serveur plus ancien, rien ne s'affiche. -->
 ### FR

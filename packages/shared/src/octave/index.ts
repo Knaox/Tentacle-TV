@@ -21,6 +21,7 @@ export * from "./octaveResolution";
 export * from "./startCause";
 export * from "./declaredPlayback";
 export * from "./octaveResume";
+export * from "./pages";
 export * from "./octaveDeviceSettings";
 export * from "./octaveLaunchPin";
 export * from "./remoteCommands";
