@@ -38,6 +38,7 @@ import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { deviceModel, type DeviceCollection, bytesOnDisk, collectionBytes } from "@tentacle-tv/offline-core/music";
 import { KeepCollectionButton } from "./KeepCollectionButton";
 import { OfflineNotice, OfflineSwitchButton } from "./OfflineSwitch";
+import { ServerPacingNotice } from "./ServerPacingNotice";
 import { useKeptListRows } from "./useKeptListRows";
 import { KeptCollectionArtwork } from "./KeptCollectionArtwork";
 import { HEADER_ARTWORK_CLASS } from "../components/PlaylistArtwork";
@@ -130,6 +131,7 @@ export function DeviceView() {
       />
       <div className="flex flex-col gap-8 px-2 md:px-6">
         {offline && <OfflineNotice />}
+        {!open && !offline && <ServerPacingNotice tracks={kept.tracks} />}
         {!open && !offline && <AutoSyncSetting variant="inline" />}
         {kept.loaded && model.tracks.length === 0 && (
           <EmptyState icon={WifiOff} title={t("view.empty")}>
