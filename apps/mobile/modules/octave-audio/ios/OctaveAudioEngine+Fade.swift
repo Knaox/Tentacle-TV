@@ -55,6 +55,7 @@ extension OctaveAudioEngine {
     current = arriving
     next = nil
     nextPreloaded = false
+    playedDurationMs = nil
     front = 1 - state.outgoing
     pendingPositionMs = nil
     stalled = false
@@ -65,7 +66,8 @@ extension OctaveAudioEngine {
 
   private func endFade() {
     guard let state = fade else { return }
-    decks[state.outgoing].stop()
+    // Garée, jamais arrêtée : sa sortie reste ouverte sous l'entrant (`AudioDeck.park`).
+    decks[state.outgoing].park()
     fade = nil
     applyGains()
     // Un suivant donné pendant le fondu (à fondre lui aussi) s'ouvre maintenant sur la platine libérée.
@@ -86,11 +88,11 @@ extension OctaveAudioEngine {
     endFade()
   }
 
-  /// Un geste (titre choisi) coupe tout fondu net : les deux platines s'arrêtent.
+  /// Un geste (titre choisi) coupe tout fondu net : le sortant est garé, le titre choisi part devant.
   func cancelFade() {
     guard let state = fade else { return }
     fade = nil
-    decks[state.outgoing].stop()
+    decks[state.outgoing].park()
     ensureTicker()
   }
 }

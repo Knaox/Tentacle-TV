@@ -35,6 +35,10 @@ final class OctaveAudioEngine {
   var error: String?
   /// La position demandée tant que le son n'a pas redémarré (ouverture, saut).
   var pendingPositionMs: Double?
+  /// Un titre interrompu en plein milieu se reprend plus loin (`MidTrackRecovery.swift`).
+  var recovery = MidTrackRecovery()
+  /// La durée réelle du titre devant, relevée pendant qu'il joue (après un enchaînement, la platine dit déjà celle du suivant).
+  var playedDurationMs: Double?
   var ticker: DispatchSourceTimer?
   var tickInterval = 0.25
   var lastStateAt = Date.distantPast
@@ -77,13 +81,13 @@ final class OctaveAudioEngine {
     volume = (args["volume"] as? NSNumber)?.doubleValue ?? 1
     muted = args["muted"] as? Bool ?? false
     replayGainMode = args["replayGain"] as? String ?? "auto"
+    // Les instances survivent à l'arrêt du moteur (sortie d'Octave) : y revenir ne recrée rien. Un nouveau
+    // départ (autre jeton : changement de profil) n'en change que les en-têtes.
+    decks.forEach { $0.start(headers: headers) }
+    decks.forEach { $0.setHeaders(headers) }
     if !started {
       started = true
-      decks.forEach { $0.start(headers: headers) }
       activateSystem()
-    } else {
-      // Un nouveau départ (autre jeton : changement de profil) : les mêmes instances, les nouveaux en-têtes.
-      decks.forEach { $0.setHeaders(headers) }
     }
     return [
       "engine": "mpv", "gapless": true, "exclusiveOutput": false, "replayGain": true,
@@ -92,11 +96,10 @@ final class OctaveAudioEngine {
     ]
   }
 
+  /// Sortie d'Octave : tout s'arrête (les sorties se ferment, la session est rendue), mais les deux instances
+  /// mpv restent chaudes pour le retour.
   private func shutdown() {
     stopAll()
-    decks.forEach { $0.destroy() }
-    decks = [AudioDeck(queue: queue), AudioDeck(queue: queue)]
-    decks.forEach { $0.delegate = self }
     front = 0
     started = false
     deactivateSystem()
@@ -107,7 +110,8 @@ final class OctaveAudioEngine {
     guard isAllowed(loaded.source.url) else { return fail("source hors du serveur") }
     let startMs = (args["startMs"] as? NSNumber)?.doubleValue ?? 0
     cancelFade()
-    backDeck.stop()
+    // La platine arrière est GARÉE (sortie gardée ouverte), jamais arrêtée sous le titre qui part.
+    backDeck.park()
     next = nil
     nextAppended = false
     nextPreloaded = false
@@ -116,6 +120,8 @@ final class OctaveAudioEngine {
     error = nil
     stalled = false
     wantsPlay = true
+    recovery.reset()
+    playedDurationMs = nil
     pendingPositionMs = startMs
     ensureSession()
     frontDeck.load(loaded.source.url, startMs: startMs, paused: false)
@@ -127,7 +133,7 @@ final class OctaveAudioEngine {
 
   func setNext(_ loaded: LoadedTrack?, crossfadeMs: Double) {
     if nextAppended { frontDeck.clearAfterCurrent() }
-    if nextPreloaded { backDeck.stop() }
+    if nextPreloaded { backDeck.park() }
     nextAppended = false
     nextPreloaded = false
     guard var loaded, isAllowed(loaded.source.url) else {
@@ -199,6 +205,7 @@ final class OctaveAudioEngine {
     guard current != nil else { return }
     finishFadeNow()
     ended = false
+    recovery.reset()
     pendingPositionMs = max(0, ms)
     frontDeck.seek(ms)
     emitState()

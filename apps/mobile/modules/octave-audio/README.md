@@ -77,7 +77,7 @@ Deux lecteurs (« platines »). Au signal (`durée − crossfadeMs` atteint sur 
 suivant (déjà ouverte, en pause à 0) démarre ; les gains suivent des courbes à PUISSANCE CONSTANTE —
 `sortant = cos(x·π/2)`, `entrant = sin(x·π/2)`, `x` = temps de LECTURE écoulé / durée (une pause suspend le
 fondu, les deux platines en pause). À mi-fondu : `advanced`, l'entrant passe devant (état, écran verrouillé).
-À la fin : le sortant s'arrête. Un geste (Suivant, un titre choisi → `audio_play`) coupe tout fondu net.
+À la fin : le sortant est GARÉ (iOS : un silence en mémoire, en pause — jamais `stop`, voir « Système »). Un geste (Suivant, un titre choisi → `audio_play`) coupe tout fondu net.
 
 ### Système
 
@@ -88,6 +88,13 @@ fondu, les deux platines en pause). À mi-fondu : `advanced`, l'entrant passe de
   `MPNowPlayingInfoCenter` (titre, artiste, album, pochette, durée, position, vitesse) et
   `MPRemoteCommandCenter` (lecture, pause, bascule, suivant, précédent, position). Les commandes sont
   ÉTEINTES à l'arrêt du moteur.
+- iOS, les deux platines : chaque fermeture d'une sortie mpv DÉSACTIVE la session (`ao_audiounit`, `setActive:NO`) —
+  et depuis iOS 8 la session est désactivée même si l'autre platine joue (AVAudioSession.h) : son, puis l'app
+  derrière, s'arrêtaient (« pauses » sur « Lire ensuite », en quittant l'app ; accroc au préchargement du suivant,
+  qui rouvrait la sortie de la platine arrière). Donc : sortie au format FIXE (48 kHz, stéréo, flottant : mpv
+  rééchantillonne, la sortie n'est jamais rouverte d'un titre à l'autre) et une platine libérée est GARÉE (`park` :
+  20 ms de silence `hex://`, en pause), jamais arrêtée ; `stop` seulement quand plus rien ne doit sonner. Les deux
+  instances mpv survivent à `audio_engine_stop` (retour dans Octave sans rien recréer).
 - Android : `MediaSessionService` Media3 (`OctaveAudioService`, `foregroundServiceType="mediaPlayback"`),
   notification média par défaut de Media3 (pochette, titre, artiste, lecture/pause, précédent/suivant,
   barre). La session suit la platine DEVANT ; les commandes précédent/suivant sont toujours proposées.

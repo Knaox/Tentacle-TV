@@ -3,7 +3,7 @@ import type { AudioBridgeSource, AudioBridgeTrack } from "./audioBridgeContract"
 import { FileEnds, type EndsHost } from "./audioEngineEnds";
 import { freshFlags, NO_PROPS } from "./audioEngineState";
 import { AudioQueue, type QueueOp, type QueueResult } from "./audioQueue";
-import { CUT_MARGIN_MS, CutReloads, isCut, MAX_CUT_RELOADS } from "./cutRecovery";
+import { CUT_MARGIN_MS, CUT_PROGRESS_MS, CutReloads, isCut, MAX_CUT_RELOADS } from "./cutRecovery";
 
 const track = (key: string): AudioBridgeTrack => ({ trackKey: key, albumKey: "a", durationMs: 200_000, format: null });
 const src = (name: string, origin: AudioBridgeSource["origin"] = "plugin"): AudioBridgeSource => ({
@@ -47,7 +47,8 @@ describe("coupure en milieu de titre — la règle (S5)", () => {
     const at = (positionMs: number, extra: Partial<Parameters<typeof isCut>[0]> = {}) => isCut({ origin: "plugin", durationMs: 200_000, positionMs, reloads: 0, ...extra });
     expect(at(60_000)).toBe(true);
     expect(at(200_000 - CUT_MARGIN_MS + 1)).toBe(false);
-    expect(at(60_000, { origin: "library" }), "un fichier de la bibliothèque : jamais").toBe(false);
+    expect(at(60_000, { origin: "library" }), "la FIN d'un fichier de la bibliothèque : jamais").toBe(false);
+    expect(at(60_000, { origin: "library", error: true }), "son ERREUR de lecture en plein titre : reprise").toBe(true);
     expect(at(60_000, { durationMs: null }), "durée inconnue : on ne devine pas").toBe(false);
     expect(at(0), "rien joué : un échec de chargement, pas une coupure").toBe(false);
     expect(at(60_000, { reloads: MAX_CUT_RELOADS })).toBe(false);
@@ -57,12 +58,22 @@ describe("coupure en milieu de titre — la règle (S5)", () => {
     const cuts = new CutReloads();
     expect(cuts.take("t1", "plugin", 200_000), "aucune position jouée").toBeNull();
     cuts.played("t1", 61.5);
-    for (let i = 0; i < MAX_CUT_RELOADS; i += 1) expect(cuts.take("t1", "plugin", 200_000)).toBe(61.5);
+    // Au même endroit : la position, puis au-delà de la zone abîmée.
+    expect([0, 1, 2].map(() => cuts.take("t1", "plugin", 200_000))).toEqual([61.5, 62.5, 68.5]);
     expect(cuts.take("t1", "plugin", 200_000), "trois relectures au plus").toBeNull();
     cuts.played("t2", 30);
     expect(cuts.take("t2", "plugin", 200_000), "un autre titre repart de zéro").toBe(30);
     cuts.reset();
     expect(cuts.take("t2", "plugin", 200_000)).toBeNull();
+  });
+
+  it("une lecture qui a nettement repris redonne ses relectures à un défaut plus loin", () => {
+    const cuts = new CutReloads();
+    cuts.played("t1", 20);
+    cuts.take("t1", "plugin", 200_000);
+    cuts.take("t1", "plugin", 200_000);
+    cuts.played("t1", 21 + CUT_PROGRESS_MS / 1000);
+    expect(cuts.take("t1", "plugin", 200_000)).toBe(21 + CUT_PROGRESS_MS / 1000);
   });
 });
 
@@ -113,6 +124,10 @@ describe("coupure en milieu de titre — les fins de fichier du moteur", () => {
     cut.ends.endFile(1, "error", -13);
     expect(shape(cut.ran[0]?.ops ?? [])[0]).toBe("load:replace:1@3+42");
     expect(cut.failed).toEqual([]);
+    const library = rig({ origin: "library" });
+    library.playTo(42);
+    library.ends.endFile(1, "error", -13);
+    expect(shape(library.ran[0]?.ops ?? [])[0], "une trame illisible d'un fichier de la bibliothèque aussi").toBe("load:replace:1@3+42");
     const load = rig();
     load.ends.endFile(1, "error", -13);
     expect(load.ran).toEqual([]);

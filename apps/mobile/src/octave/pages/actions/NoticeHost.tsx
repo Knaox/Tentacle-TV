@@ -27,7 +27,8 @@ export function NoticeHost() {
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer, { paddingBottom: above }]}>
       <Animated.View key={notice.id} entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(160)} style={styles.wrap} accessibilityLiveRegion="polite">
-        <GlassSurface tier="dropdown" tint="strong" radius={18} style={styles.pill}>
+        {/* Voile + flou, jamais le verre natif d'iOS 26 : trop clair, l'avis se lisait par-dessus la liste. */}
+        <GlassSurface tier="dropdown" tint="strong" radius={18} liquid={false} style={styles.pill}>
           <Icon size={18} color={tone} />
           <View style={styles.text}>
             {notice.title ? <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{notice.title}</Text> : null}

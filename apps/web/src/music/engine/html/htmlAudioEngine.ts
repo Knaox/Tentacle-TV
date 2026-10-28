@@ -17,6 +17,7 @@
  */
 
 import type { AudioEnginePort, MusicTrack, PlaybackSource } from "@tentacle-tv/shared/music";
+import { MidTrackRecovery } from "@tentacle-tv/shared/octave";
 import { albumKeyOf, durationOfSource } from "../engineShared";
 import { nextLatencyEstimate, nextStartDelayMs } from "./htmlRules";
 import { releaseSlot, remainingS, whenReady, type Slot } from "./htmlSlot";
@@ -38,11 +39,14 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
   /** Le même pour un élément tout juste PLACÉ (bascule) : plus lent, ~30 ms au départ. */
   private swapLatencyMs = 30;
   private readonly overrides = new Map<string, PlaybackSource>();
+  /** Un titre interrompu en plein milieu (flux rompu, trame illisible) se reprend plus loin (`midTrackRecovery.ts`). */
+  private readonly recovery = new MidTrackRecovery();
   private crossfadeMs = 0;
   /** Le fondu prévu vers le suivant préchargé (ms), 0 : enchaînement ordinaire. */
   private nextFadeMs = 0;
 
   protected onTime(slot: Slot): void {
+    this.recovery.played(slot.track.key, slot.el.currentTime * 1000);
     const left = remainingS(slot);
     const fadeS = this.nextFadeMs / 1000;
     if (left === null || this.next === null || this.advanceTimer !== null || this.fade !== null || left > fadeS + ARM_BEFORE_END_S || slot.el.paused) return;
@@ -54,6 +58,7 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
 
   protected onEnded(): void {
     if (this.fade !== null) return this.fade.fromStopped();
+    if (this.recoverCurrent()) return;
     if (this.next !== null) return this.advance();
     this.patch({ status: "ended", positionMs: this.state.durationMs ?? this.state.positionMs });
   }
@@ -81,6 +86,33 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
       });
     }
     this.becomeCurrent(from, to);
+  }
+
+  protected fail(slot: Slot): void {
+    if (slot === this.current && this.recoverCurrent()) return;
+    super.fail(slot);
+  }
+
+  /** Le courant arrêté AVANT sa fin (flux rompu, trame illisible) : un élément neuf le reprend plus loin. */
+  private recoverCurrent(): boolean {
+    const slot = this.current;
+    if (slot === null || this.fade !== null || this.swap !== null) return false;
+    const at = this.recovery.take(slot.track.key, durationOfSource(slot.track, slot.source));
+    if (at === null) return false;
+    console.warn(`[music-engine] « ${slot.track.title} » interrompu : repris à ${(at / 1000).toFixed(1)} s`);
+    const resume = this.state.status !== "paused";
+    if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
+    this.advanceTimer = null;
+    const fresh = this.slot(slot.track, slot.source);
+    releaseSlot(slot);
+    this.adopt(fresh);
+    this.patch({ status: "buffering", positionMs: at, error: null });
+    whenReady(fresh, () => {
+      if (this.current !== fresh) return;
+      fresh.el.currentTime = at / 1000;
+      if (resume) void fresh.el.play().catch(() => this.current === fresh && this.fail(fresh));
+    });
+    return true;
   }
 
   /** `to` est désormais le titre courant : état, puis `advanced`. */
@@ -164,6 +196,7 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
 
   play(track: MusicTrack, source: PlaybackSource, startMs = 0): void {
     this.clearAll();
+    this.recovery.reset();
     const slot = this.slot(track, this.served(track, source));
     this.adopt(slot);
     this.patch({ status: "loading", trackKey: track.key, positionMs: startMs, durationMs: durationOfSource(track, source), format: source.format ?? track.format, error: null });
@@ -231,6 +264,7 @@ export class HtmlAudioEngine extends HtmlEngineBase implements AudioEnginePort {
     this.dropFade(true);
     if (this.advanceTimer !== null) this.deps.clearTimeout(this.advanceTimer);
     this.advanceTimer = null;
+    this.recovery.reset();
     this.current.el.currentTime = Math.max(0, positionMs) / 1000;
     this.patch({ positionMs: Math.max(0, positionMs) });
   }
