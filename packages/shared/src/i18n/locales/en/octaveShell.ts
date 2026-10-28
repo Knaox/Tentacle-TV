@@ -86,4 +86,13 @@ export default {
   track: {
     goToArtistNamed: "Go to {{artist}}",
   },
+  /** The mobile and tablet shell (native app, narrow web). */
+  mobile: {
+    enter: "Octave",
+    enterHint: "Switch to music mode",
+    back: "Back",
+    soon: "This page is coming soon.",
+    unavailable: "Octave is not available on this server.",
+    sidebar: "Music navigation",
+  },
 };

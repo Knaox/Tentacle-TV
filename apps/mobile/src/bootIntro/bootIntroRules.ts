@@ -105,6 +105,12 @@ export interface MobileBootInput {
   /** « Réduire les animations » du système (iOS, Android). */
   reducedMotion: boolean;
   settings: BootIntroSettings;
+  /**
+   * Le lancement se fait DANS Octave (l'app quittée en mode musique) : aucune
+   * animation d'ouverture, la page gardée d'emblée (`octave/launch/`). Quittée
+   * en Tentacle : l'ouverture, inchangée.
+   */
+  inOctave?: boolean;
 }
 
 export interface MobileBootPlan {
@@ -113,11 +119,11 @@ export interface MobileBootPlan {
   sound: boolean;
 }
 
-/** Le mobile a l'ouverture partout (iPhone, iPad, Android) : seuls le système et l'appareil la coupent. */
+/** Le mobile a l'ouverture partout (iPhone, iPad, Android) : seuls le système, l'appareil et un lancement en Octave la coupent. */
 export function mobileBootPlan(input: MobileBootInput): MobileBootPlan {
   const plan = decideBootIntro({
     supported: true,
-    enabled: input.settings.intro,
+    enabled: input.settings.intro && !input.inOctave,
     reducedMotion: input.reducedMotion,
     coldStart: input.coldStart,
   });

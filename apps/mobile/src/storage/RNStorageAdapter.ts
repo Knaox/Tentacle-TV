@@ -69,6 +69,9 @@ const STORAGE_KEYS = [
   // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
   // une invitation refermée sans réponse reviendrait à chaque lancement.
   "tentacle_wt_invites_shown",
+  // Octave — le mode musique (mêmes clés que le web et le bureau, `@tentacle-tv/shared/octave/mode`) :
+  // le mode, « Au démarrage, ouvrir », le miroir de sa disponibilité, la page où l'on était.
+  "tentacle_octave_mode", "tentacle_octave_startup", "tentacle_octave_launch", "tentacle_octave_page",
   // Octave : la transition douce de l'appareil (`octave/audio/crossfadeSetting.ts`, magasin partagé).
   "tentacle_octave_crossfade",
 ];

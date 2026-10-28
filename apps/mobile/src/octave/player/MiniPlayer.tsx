@@ -143,8 +143,8 @@ const MiniPlayerBar = memo(function MiniPlayerBar({ layout }: MiniPlayerProps) {
 });
 
 const styles = StyleSheet.create({
-  outer: { marginHorizontal: 10 },
-  tablet: { marginHorizontal: 16, maxWidth: 720, alignSelf: "center", width: "100%" },
+  outer: {},
+  tablet: { maxWidth: 720, alignSelf: "center", width: "100%" },
   glass: { height: HEIGHT, overflow: "hidden" },
   row: { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 10, paddingRight: 6, gap: 4 },
   open: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 },

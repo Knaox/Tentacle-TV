@@ -89,4 +89,13 @@ export default {
   track: {
     goToArtistNamed: "Voir {{artist}}",
   },
+  /** La coquille mobile et tablette (app native, web étroit). */
+  mobile: {
+    enter: "Octave",
+    enterHint: "Passer au mode musique",
+    back: "Retour",
+    soon: "Cette page arrive bientôt.",
+    unavailable: "Octave n'est pas disponible sur ce serveur.",
+    sidebar: "Navigation musique",
+  },
 };

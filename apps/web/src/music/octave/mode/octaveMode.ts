@@ -12,9 +12,9 @@
 import { useSyncExternalStore } from "react";
 import { startupWantsOctave } from "./octaveStartup";
 import { readOctaveStartup } from "./octaveStartupStore";
+import { OCTAVE_MODE_KEY } from "@tentacle-tv/shared/octave/mode";
 
-export const OCTAVE_MODE_KEY = "tentacle_octave_mode";
-export const OCTAVE_BASE_PATH = "/octave";
+export { OCTAVE_MODE_KEY, OCTAVE_BASE_PATH } from "@tentacle-tv/shared/octave/mode";
 
 const listeners = new Set<() => void>();
 
