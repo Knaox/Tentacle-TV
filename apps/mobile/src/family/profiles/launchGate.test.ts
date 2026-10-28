@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
+import { octaveLaunchAsked } from "@tentacle-tv/shared/octave";
 import { launchGateState, launchStayToForget, nextLaunchDecision, type LaunchGateInput } from "./launchGate";
 
 const NOW = Date.parse("2026-10-20T03:00:00Z");
@@ -66,5 +67,22 @@ describe("une décision par démarrage à froid", () => {
     const picked = { account: "damien", show: false };
     expect(nextLaunchDecision(picked, { state: "picker", account: "damien", request: "ended" })).toEqual({ account: "damien", show: true });
     expect(nextLaunchDecision(picked, { state: "none", account: "lea", request: null })).toEqual({ account: "lea", show: false });
+  });
+});
+
+describe("la porte, rouverte dans Octave — « Ne pas demander le code PIN au démarrage »", () => {
+  const inOctave = (skipPin: boolean, request: string | null = null) => octaveLaunchAsked(true, { inOctave: true, skipPin, request });
+  it("allumé : la session gardée (compte ou profil) se rouvre, sans « Qui regarde ? »", () => {
+    expect(launchGateState({ ...base, asked: inOctave(true) })).toBe("none");
+    const inLea = { ...FAMILY, currentProfileId: "lea" };
+    expect(launchGateState({ ...base, data: inLea, held: { profileId: "lea" }, asked: inOctave(true) })).toBe("none");
+  });
+  it("coupé, ou hors d'Octave : l'écran comme avant", () => {
+    expect(launchGateState({ ...base, asked: inOctave(false) })).toBe("picker");
+    expect(launchGateState({ ...base, asked: octaveLaunchAsked(true, { inOctave: false, skipPin: true, request: null }) })).toBe("picker");
+  });
+  it("la sécurité reste : un profil sans jeton, ou une session close par le serveur, ramènent l'écran", () => {
+    expect(launchGateState({ ...base, data: { ...FAMILY, currentProfileId: "lea" }, asked: inOctave(true) })).toBe("picker");
+    expect(launchGateState({ ...base, request: "ended", asked: inOctave(true, "ended") })).toBe("picker");
   });
 });
