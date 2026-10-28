@@ -30,3 +30,4 @@ export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music
 export { useWholeLiked } from "../music/lists/useWholeLiked";
 // Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
+export { classifyPasted, importFraction, type PastedImport } from "../music/import/importEntry";

@@ -14,6 +14,8 @@ export const octavePaths = {
   library: `${OCTAVE_BASE_PATH}/library`,
   liked: `${OCTAVE_BASE_PATH}/liked`,
   playlists: `${OCTAVE_BASE_PATH}/playlists`,
+  /** L'import d'un lien de partage d'un autre Tentacle (`?share=<lien>`), où mène la page du lien. */
+  import: `${OCTAVE_BASE_PATH}/import`,
   /** La musique gardée sur cet appareil (bureau, `offline/DeviceView.tsx`). */
   device: `${OCTAVE_BASE_PATH}/device`,
   /** Les réglages d'Octave, DANS Octave (apparence, démarrage). */
