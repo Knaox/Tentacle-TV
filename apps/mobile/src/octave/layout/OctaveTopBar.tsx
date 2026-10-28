@@ -1,6 +1,9 @@
 /**
  * Octave (mobile) — l'EN-TÊTE d'une page : transparent au repos (le grand
- * titre est dans la page), il se pose en VERRE dès que le contenu passe dessous,
+ * titre est dans la page), il se pose en VERRE dès que le contenu passe dessous
+ * — le fond flou de Tentacle (`GlassBackdrop`, celui de la barre d'une page
+ * poussée) : le verre natif d'iOS 26 ne se dessine pas sous une opacité animée,
+ * l'en-tête restait sans fond sur l'Accueil, le Compte et les Réglages —
  * et le titre compact apparaît quand le grand titre est sorti. Retour (rond de
  * verre) sur une page empilée ; actions à droite. Seulement des opacités et des
  * translations, sur le fil d'interface.
@@ -13,6 +16,7 @@ import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValu
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react-native";
+import { GlassBackdrop } from "@/components/ui";
 import { useOctaveColors } from "../theme/octaveColors";
 import { OctaveGlass } from "./OctaveGlass";
 import { OCTAVE_TOP_BAR_HEIGHT } from "./useOctavePageScroll";
@@ -46,7 +50,7 @@ export const OctaveTopBar = memo(function OctaveTopBar({ scrollY, title, back, r
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { height }]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, glass]}>
-        <OctaveGlass radius={0} bordered={false} style={StyleSheet.absoluteFill} />
+        <GlassBackdrop />
         <View style={[styles.hairline, { backgroundColor: colors.line }]} />
       </Animated.View>
       <View pointerEvents="box-none" style={[styles.row, { paddingTop: insets.top, paddingHorizontal: gutter - 4 }]}>
