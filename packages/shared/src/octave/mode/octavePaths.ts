@@ -31,6 +31,8 @@ export const octavePaths = {
   externalPlaylist: (key: string) => `${OCTAVE_BASE_PATH}/mix/${enc(key)}`,
   /** La playlist d'une AMBIANCE de l'extension, par sa clé stable. */
   mood: (id: string) => `${OCTAVE_BASE_PATH}/mood/${enc(id)}`,
+  /** Un MIX de l'accueil, consultable comme un album (`pages/homeMix.ts`), par son identifiant du jour. */
+  homeMix: (id: string) => `${OCTAVE_BASE_PATH}/home-mix/${enc(id)}`,
   album: (idOrKey: string) => `${OCTAVE_BASE_PATH}/album/${enc(idOrKey)}`,
   artist: (idOrKey: string) => `${OCTAVE_BASE_PATH}/artist/${enc(idOrKey)}`,
 };

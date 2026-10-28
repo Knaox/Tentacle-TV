@@ -6,6 +6,7 @@
  */
 export * from "./deviceStore";
 export * from "./homeModel";
+export * from "./homeMix";
 export * from "./greeting";
 export * from "./moodModel";
 export * from "./suggestionModel";

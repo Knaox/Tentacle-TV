@@ -18,7 +18,7 @@ import { OctavePlaceholder } from "./OctavePlaceholder";
 const PLACEHOLDER_TITLE: Record<OctaveScreenName, string> = {
   home: "nav.home", search: "nav.search", library: "nav.library", liked: "nav.liked", playlists: "nav.playlists",
   playlist: "nav.playlists", album: "nav.library", artist: "nav.library", externalPlaylist: "nav.playlists",
-  mood: "nav.home", device: "nav.library", settings: "nav.library", profiles: "nav.home", account: "nav.home",
+  mood: "nav.home", homeMix: "nav.home", device: "nav.library", settings: "nav.library", profiles: "nav.home", account: "nav.home",
 };
 
 function decode(value: string | string[] | undefined): string | undefined {
