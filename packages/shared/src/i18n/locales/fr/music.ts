@@ -284,6 +284,19 @@ export default {
     notFound: "Titre introuvable.",
     failed: "L'ajout a échoué. Réessayez dans un instant.",
   },
+  // Un album qui ne se lit pas (lot « Octave mobile 3 ») : carte grisée, feuille au toucher (`unavailableAlbum.ts`).
+  unavailableAlbum: {
+    badge: "Pas lisible",
+    cardLabel: "{{title}}, pas lisible pour l'instant",
+    title: "Pas encore écoutable",
+    body: "Aucune source d'écoute ne propose cet album pour l'instant. Aimez-le ou ajoutez-le à une playlist : le serveur le récupérera, et il rejoindra la bibliothèque.",
+    like: "Aimer l'album",
+    addToPlaylist: "Ajouter à une playlist",
+    loading: "Préparation de l'album…",
+    lost: "Le serveur ne trouve cet album nulle part : il ne peut pas le récupérer.",
+    failed: "L'album n'a pas pu être préparé.",
+    close: "Fermer",
+  },
   common: {
     playAll: "Lecture",
     shuffle: "Aléatoire",
