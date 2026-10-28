@@ -7,6 +7,7 @@
 
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useOctaveAvailability } from "@tentacle-tv/api-client";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing } from "@/theme";
 import { OctaveOnlySettings } from "./OctaveOnlySettings";
@@ -28,6 +29,9 @@ export function OctaveSettingsScreen() {
 
 /** Le contenu seul : une coquille de tablette peut le poser dans sa colonne de détail. */
 export function OctaveSettingsPane({ wide = false, gutter = 0 }: { wide?: boolean; gutter?: number }) {
+  // Sans Octave (serveur qui ne le déclare pas, compte sans musique ou sans le droit) : aucune trace.
+  const { available } = useOctaveAvailability();
+  if (!available) return null;
   return (
     <View style={[styles.pane, wide ? styles.columns : undefined, { paddingHorizontal: gutter }]}>
       <View style={wide ? styles.column : undefined}>

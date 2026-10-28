@@ -13,6 +13,7 @@ import { SettingsChoiceRow, SettingsSection } from "@/components/settings";
 import { useAccountKeepRight, useOfflineProfileSession } from "@/offline/rights/useOfflineOwner";
 import { useThemeMode } from "@/theme";
 import { octaveAutoSync, octaveLiquidGlass, octaveSkipLaunchPin, octaveTheme } from "../octaveSettings";
+import { autoSyncRowShown } from "../settingsRights";
 import { CrossfadeRows } from "./CrossfadeRows";
 import { SwitchRow } from "./SwitchRow";
 
@@ -75,7 +76,7 @@ function AppearanceRows() {
 
 /**
  * La tenue à jour : comme sur le bureau, seulement pour le compte de l'appareil qui peut garder de la musique
- * (capacité `offline.music`, jamais une session de profil, droit `keepOffline` du compte).
+ * (`settingsRights.ts` : capacité `offline.music`, jamais une session de profil, droit `keepOffline` du compte).
  */
 function AutoSyncSection() {
   const { t } = useTranslation("musicOffline");
@@ -83,7 +84,7 @@ function AutoSyncSection() {
   const profileSession = useOfflineProfileSession();
   const keepRight = useAccountKeepRight();
   const on = octaveAutoSync.use();
-  if (!capable || profileSession || keepRight === "refused") return null;
+  if (!autoSyncRowShown({ capable, profileSession, keepRight })) return null;
   return (
     <SettingsSection title={t("autosync.section")} caption={t("autosync.caption")}>
       <SwitchRow icon="refresh-cw" label={t("autosync.label")} description={t("autosync.hint")} value={on} onChange={octaveAutoSync.set} last />
