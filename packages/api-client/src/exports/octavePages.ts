@@ -12,7 +12,6 @@ export {
   useMusicAlbumEntity, useMusicArtistEntity, useMusicExternalPlaylist, externalEntityKey, externalEntityRef, type MusicEntityState,
 } from "../music/octave/useMusicEntities";
 export { prefetchExternalEntity, warmVisibleAlbums, warmModeOf, takeIntentSlot, INTENT_PER_MINUTE } from "../music/octave/entityWarmup";
-export { useAlbumWarmup, type AlbumWarmup } from "../music/octave/useAlbumWarmup";
 export { useRecordMusicVisit, useSearchHomeSnapshot } from "../music/octave/useSearchMemory";
 // Octave — les GESTES sur un titre (cœur, playlists, droits d'ajout), et leurs magasins d'interface.
 export type { OctaveActionsUi, MusicTranslate, ActionNoticeKind, ActionNoticeOptions } from "../music/octave/actions/actionsUi";
