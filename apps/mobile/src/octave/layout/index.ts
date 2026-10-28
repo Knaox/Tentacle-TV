@@ -6,6 +6,7 @@
 export { OctavePage, OctaveLargeTitle } from "./OctavePage";
 export { OctaveTopBar, LARGE_TITLE_SPAN } from "./OctaveTopBar";
 export { OctaveSection } from "./OctaveSection";
+export { OctaveShelf } from "./OctaveShelf";
 export { OctaveGlass, type OctaveGlassProps } from "./OctaveGlass";
 export { PressableScale } from "./PressableScale";
 export { useOctaveLayout, octaveLayoutOf, type OctaveLayout } from "./useOctaveLayout";

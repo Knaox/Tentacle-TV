@@ -7,8 +7,8 @@
  * l'onglet d'origine allumé. Libellés toujours visibles, cibles ≥ 44 pt.
  */
 
-import { memo, useEffect } from "react";
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { memo, useEffect, useState } from "react";
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,27 @@ import { useOctaveTab } from "./useOctaveTab";
 
 export const TAB_BAR_PILL_HEIGHT = 62;
 const MIN_BOTTOM = 10;
+const RIPPLE = { borderless: true, radius: 36, color: "rgba(255,255,255,0.12)" } as const;
 const SPRING = { damping: 22, stiffness: 260, mass: 0.9, reduceMotion: ReduceMotion.System } as const;
+
+/**
+ * Android redimensionne la fenêtre sous le clavier : la barre flotterait sur
+ * lui pendant une recherche. Elle s'efface le temps du clavier (iOS : le clavier
+ * la recouvre déjà).
+ */
+function useAndroidKeyboardShown(): boolean {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const show = Keyboard.addListener("keyboardDidShow", () => setShown(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setShown(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return shown;
+}
 
 /** Hauteur occupée par la barre, zone sûre comprise. */
 export function useOctaveTabBarHeight(): number {
@@ -46,6 +66,7 @@ export const OctaveTabBar = memo(function OctaveTabBar() {
   const onRowLayout = (e: LayoutChangeEvent) => {
     itemWidth.value = (e.nativeEvent.layout.width - 8) / OCTAVE_TABS.length;
   };
+  if (useAndroidKeyboardShown()) return null;
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, MIN_BOTTOM) }]}>
@@ -59,6 +80,7 @@ export const OctaveTabBar = memo(function OctaveTabBar() {
               <Pressable
                 key={tab}
                 onPress={() => go(tab)}
+                android_ripple={RIPPLE}
                 style={styles.item}
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
@@ -76,6 +98,7 @@ export const OctaveTabBar = memo(function OctaveTabBar() {
       <OctaveGlass radius={TAB_BAR_PILL_HEIGHT / 2} style={styles.exit} interactive>
         <Pressable
           onPress={leave}
+          android_ripple={RIPPLE}
           style={styles.exitHit}
           accessibilityRole="button"
           accessibilityLabel={ts("backToFilms.label")}
