@@ -6,14 +6,12 @@
 
 import { memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { SearchFilter } from "./searchLayout";
+import { SEARCH_FILTERS, parseSearchFilter, type SearchFilter } from "@tentacle-tv/shared/octave";
 import { useOctaveGlassStage } from "../glass/glassStage";
 
-export const SEARCH_FILTERS: readonly SearchFilter[] = ["all", "tracks", "albums", "artists", "playlists"];
+// Les filtres et leur lecture dans l'adresse sont partagés avec le mobile (`searchLayout`).
+export { SEARCH_FILTERS, parseSearchFilter };
 
-export function parseSearchFilter(raw: string | null): SearchFilter {
-  return SEARCH_FILTERS.includes(raw as SearchFilter) ? (raw as SearchFilter) : "all";
-}
 
 interface SearchFiltersProps {
   value: SearchFilter;

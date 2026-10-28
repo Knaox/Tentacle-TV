@@ -20,3 +20,6 @@ export * from "./recentMusicSearches";
 export * from "./searchListens";
 export * from "./recentVisits";
 export * from "./albumPreview";
+export * from "./albumModel";
+export * from "./artistModel";
+export * from "./libraryModel";

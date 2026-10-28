@@ -14,7 +14,6 @@ import { useMemo } from "react";
 import { Library } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { MusicAudioFormat, MusicTrack } from "@tentacle-tv/shared/music";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
 import { TrackList, rowsOf } from "../components/TrackList";
@@ -23,24 +22,13 @@ import { useAlbumEntity } from "../data/useEntityQueries";
 import { ownedCount } from "../library/ownedItems";
 import { useAlbumOwnership } from "../library/useAlbumOwnership";
 import { octavePaths } from "../octavePaths";
-import { queueActions } from "@tentacle-tv/shared/octave";
+import { bestFormat, inDiscOrder, longReleaseDate, queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { FormatBadge } from "../shell/FormatBadge";
 import { useRecordVisit } from "../search/recentVisits";
 
-/** La meilleure qualité de l'album (sans perte d'abord, puis profondeur et fréquence). */
-export function bestFormat(tracks: readonly MusicTrack[]): MusicAudioFormat | null {
-  let best: MusicAudioFormat | null = null;
-  const score = (f: MusicAudioFormat) => (f.lossless ? 1e9 : 0) + (f.bitDepth ?? 0) * 1e6 + (f.sampleRate ?? 0) + (f.bitrate ?? 0) / 1e3;
-  for (const t of tracks) if (t.format && (!best || score(t.format) > score(best))) best = t.format;
-  return best;
-}
-
-/** Les titres dans l'ordre disque puis piste, et les disques présents. */
-function inDiscOrder(tracks: readonly MusicTrack[]): { ordered: MusicTrack[]; discs: number[] } {
-  const ordered = [...tracks].sort((a, b) => (a.discNumber ?? 1) - (b.discNumber ?? 1) || (a.trackNumber ?? 0) - (b.trackNumber ?? 0));
-  return { ordered, discs: [...new Set(ordered.map((x) => x.discNumber ?? 1))] };
-}
+// Les règles de la page (qualité, ordre des disques, date longue) sont partagées avec le mobile.
+export { bestFormat, longReleaseDate } from "@tentacle-tv/shared/octave";
 
 export function AlbumView() {
   const { t } = useTranslation("music");
@@ -142,14 +130,6 @@ export function AlbumView() {
       </div>
     </div>
   );
-}
-
-/** Une date `AAAA-MM-JJ` en toutes lettres ; une date partielle (`AAAA`, `AAAA-MM`) n'en est pas une. */
-export function longReleaseDate(date: string | null, locale: string): string | null {
-  if (!date || !/^\d{4}-\d{2}-\d{2}/.test(date)) return null;
-  const parsed = new Date(`${date.slice(0, 10)}T12:00:00Z`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(parsed);
 }
 
 /** Le dos de la pochette : la date de sortie complète, puis le label. */

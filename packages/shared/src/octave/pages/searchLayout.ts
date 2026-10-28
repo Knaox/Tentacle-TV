@@ -93,3 +93,11 @@ export function layoutSearch(library: MusicSearchResponse | null, external: Show
 export function isEmptyLayout(layout: SearchLayout): boolean {
   return !layout.top && layout.tracks.length === 0 && layout.albums.length === 0 && layout.artists.length === 0 && layout.libraryPlaylists.length === 0 && layout.externalPlaylists.length === 0;
 }
+
+/** Les filtres d'une recherche, dans l'ordre des puces (l'adresse `?f=` les porte). */
+export const SEARCH_FILTERS: readonly SearchFilter[] = ["all", "tracks", "albums", "artists", "playlists"];
+
+/** Le filtre d'une adresse ; « Tout » pour une valeur absente ou inconnue. */
+export function parseSearchFilter(raw: unknown): SearchFilter {
+  return SEARCH_FILTERS.includes(raw as SearchFilter) ? (raw as SearchFilter) : "all";
+}
