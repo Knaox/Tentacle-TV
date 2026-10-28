@@ -194,3 +194,23 @@ describe("bascule à la résolution (music:resolved)", () => {
     expect(engine.calls.some((c) => c.method === "swapSource")).toBe(false);
   });
 });
+
+describe("les deux files, appliquées par le lecteur (o3)", () => {
+  it("« Ajouter à la file d'attente » : le moteur prépare ce titre-là ensuite, avant l'album", async () => {
+    const { player, engine } = setup();
+    player.playList(tracks, 0, "album:1");
+    await flush();
+    queueActions.enqueue(player, [libraryTrack("x")]);
+    await flush();
+    expect(engine.calls.filter((c) => c.method === "setNext").at(-1)).toMatchObject({ key: "jf:x" });
+  });
+
+  it("un autre album lancé garde la file d'attente, juste après son premier titre", () => {
+    const { player } = setup();
+    player.playList(tracks, 0, "album:1");
+    queueActions.playNext(player, [libraryTrack("x")]);
+    player.playList(["m", "n"].map((id) => libraryTrack(id)), 0, "album:2");
+    const keys = player.snapshot.get().queue.items.map((i) => i.track.key);
+    expect(keys.slice(player.snapshot.get().queue.cursor)).toEqual(["jf:m", "jf:x", "jf:n"]);
+  });
+});

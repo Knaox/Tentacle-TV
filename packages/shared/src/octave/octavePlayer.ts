@@ -13,7 +13,7 @@
  */
 
 import type { AudioEnginePort, EngineEvent, EngineState, MusicTrack, PrefetchIntent } from "../music";
-import { advance, createQueue, currentItem, peekNext, previous, type QueueItem, type QueueState, type Random } from "./queueModel";
+import { advance, carryUserQueue, createQueue, currentItem, peekNext, previous, type QueueItem, type QueueState, type Random } from "./queueModel";
 import { enginePhase, INITIAL_POSITION, INITIAL_SNAPSHOT, ValueStore, type PlayerSnapshot, type PositionState } from "./playerState";
 import type { PlaybackReporter } from "./playbackReports";
 import type { SourceCache, SourceIntent } from "./sourceCache";
@@ -71,11 +71,15 @@ export class OctavePlayer {
 
   /* ── Lancer ── */
 
-  /** Lit `tracks` à partir de `index` — la barre est à jour AVANT le retour de cette fonction. */
+  /**
+   * Lit `tracks` à partir de `index` — la barre est à jour AVANT le retour de cette fonction. La file d'attente encore
+   * à lire passe avant la suite de ce nouveau contexte (`carryUserQueue`).
+   */
   playList(tracks: readonly MusicTrack[], index: number, contextId: string | null = null): void {
     this.failures.reset();
-    const { shuffle, repeat } = this.snapshot.get().queue;
-    const queue = createQueue(tracks, index, { shuffle, repeat, contextId, random: this.random });
+    const before = this.snapshot.get().queue;
+    const { shuffle, repeat } = before;
+    const queue = carryUserQueue(before, createQueue(tracks, index, { shuffle, repeat, contextId, random: this.random }));
     this.startItem(queue, 0);
   }
 

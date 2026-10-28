@@ -67,8 +67,10 @@ export function revivePlayback(saved: unknown): { queue: QueueState; positionMs:
   const cursor = typeof s.cursor === "number" && Number.isInteger(s.cursor) ? s.cursor : -1;
   if (cursor < 0 || cursor >= s.tracks.length) return null;
   const items: QueueItem[] = s.tracks.map((track) => ({ uid: `r${(reviveSeq += 1).toString(36)}`, track }));
-  const indices = Array.isArray(s.original) ? s.original.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < items.length) : [];
-  const original = indices.length === items.length ? indices.map((i) => items[i]!.uid) : items.map((item) => item.uid);
+  // Les indices absents de `original` sont la FILE D'ATTENTE de l'utilisateur : elle revient telle quelle. Une
+  // sauvegarde sans `original` lisible refait un contexte entier.
+  const indices = Array.isArray(s.original) ? [...new Set(s.original.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < items.length))] : [];
+  const original = indices.length > 0 ? indices.map((i) => items[i]!.uid) : items.map((item) => item.uid);
   const repeat: RepeatMode = s.repeat === "all" || s.repeat === "one" ? s.repeat : "off";
   const queue: QueueState = { items, original, cursor, shuffle: s.shuffle === true, repeat, contextId: typeof s.contextId === "string" ? s.contextId : null };
   const positionMs = typeof s.positionMs === "number" && Number.isFinite(s.positionMs) ? Math.max(0, s.positionMs) : 0;

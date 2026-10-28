@@ -7,10 +7,14 @@
  * entrée se retire ou se déplace sans ambiguïté.
  *
  * `items` est l'ordre de LECTURE ; `original` garde l'ordre du contexte (album,
- * playlist) pour revenir de l'aléatoire au même endroit.
+ * playlist) pour revenir de l'aléatoire au même endroit. Une entrée absente de
+ * `original` est de la FILE D'ATTENTE de l'utilisateur : ses gestes et sa règle
+ * (toujours avant la suite du contexte) vivent dans `queueFiles.ts`.
  */
 
 import type { MusicTrack } from "../music";
+import { shuffled, wrapTracks } from "./queueEntries";
+import { userQueueFirst, wrapToStart } from "./queueFiles";
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -39,25 +43,22 @@ export const EMPTY_QUEUE: QueueState = { items: [], original: [], cursor: -1, sh
 /** Au-delà, « Précédent » revient au début du titre au lieu de changer de titre. */
 export const RESTART_THRESHOLD_MS = 3_000;
 
-let uidSeq = 0;
-function nextUid(): string {
-  uidSeq += 1;
-  return `q${uidSeq.toString(36)}`;
-}
-
-function wrap(tracks: readonly MusicTrack[]): QueueItem[] {
-  return tracks.map((track) => ({ uid: nextUid(), track }));
-}
-
-/** Fisher-Yates, sur une copie. */
-export function shuffled<T>(list: readonly T[], random: Random): T[] {
-  const out = [...list];
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    [out[i], out[j]] = [out[j] as T, out[i] as T];
-  }
-  return out;
-}
+/** Fisher-Yates (réexporté : `queueEntries`). */
+export { shuffled } from "./queueEntries";
+export {
+  carryUserQueue,
+  clearUserQueue,
+  enqueue,
+  followWith,
+  isUserEntry,
+  jumpTo,
+  moveUpcoming,
+  playNext,
+  queueSections,
+  setShuffle,
+  userQueueFirst,
+  type QueueSections,
+} from "./queueFiles";
 
 export interface CreateQueueOptions {
   shuffle?: boolean;
@@ -70,7 +71,7 @@ export interface CreateQueueOptions {
 export function createQueue(tracks: readonly MusicTrack[], startIndex: number, options: CreateQueueOptions = {}): QueueState {
   if (tracks.length === 0) return { ...EMPTY_QUEUE, repeat: options.repeat ?? "off", shuffle: options.shuffle ?? false };
   const start = Math.min(Math.max(0, startIndex), tracks.length - 1);
-  const items = wrap(tracks);
+  const items = wrapTracks(tracks);
   const original = items.map((item) => item.uid);
   const shuffle = options.shuffle ?? false;
   const base: Omit<QueueState, "items" | "cursor"> = {
@@ -98,7 +99,7 @@ export function peekNext(q: QueueState, auto: boolean): QueueItem | null {
   if (auto && q.repeat === "one") return currentItem(q);
   const after = q.items[q.cursor + 1];
   if (after) return after;
-  return q.repeat === "all" || (q.repeat === "one" && !auto) ? (q.items[0] ?? null) : null;
+  return q.repeat === "all" || (q.repeat === "one" && !auto) ? currentItem(wrapToStart(q)) : null;
 }
 
 /** Avance d'une entrée ; `null` à la fin de la file (rien à lire après). */
@@ -106,7 +107,7 @@ export function advance(q: QueueState, auto: boolean): QueueState | null {
   if (q.cursor < 0) return null;
   if (auto && q.repeat === "one") return q;
   if (q.cursor + 1 < q.items.length) return { ...q, cursor: q.cursor + 1 };
-  return q.repeat === "off" ? null : { ...q, cursor: 0 };
+  return q.repeat === "off" ? null : wrapToStart(q);
 }
 
 export type PreviousOutcome = { kind: "restart" } | { kind: "moved"; queue: QueueState };
@@ -114,7 +115,8 @@ export type PreviousOutcome = { kind: "restart" } | { kind: "moved"; queue: Queu
 /** « Précédent » : au début du titre s'il a déjà joué, sinon le titre d'avant. */
 export function previous(q: QueueState, positionMs: number): PreviousOutcome {
   if (q.cursor < 0 || positionMs > RESTART_THRESHOLD_MS) return { kind: "restart" };
-  if (q.cursor > 0) return { kind: "moved", queue: { ...q, cursor: q.cursor - 1 } };
+  // La file d'attente reste devant : revenu en arrière, elle se lit encore avant la suite du contexte.
+  if (q.cursor > 0) return { kind: "moved", queue: userQueueFirst({ ...q, cursor: q.cursor - 1 }) };
   if (q.repeat === "all" && q.items.length > 1) return { kind: "moved", queue: { ...q, cursor: q.items.length - 1 } };
   return { kind: "restart" };
 }
@@ -129,44 +131,8 @@ export function history(q: QueueState): readonly QueueItem[] {
   return q.cursor < 0 ? [] : q.items.slice(0, q.cursor);
 }
 
-/**
- * Aléatoire : allumé, le courant reste en tête et la suite est battue ;
- * éteint, l'ordre du contexte revient, au même titre.
- */
-export function setShuffle(q: QueueState, on: boolean, random: Random = Math.random): QueueState {
-  if (on === q.shuffle) return q;
-  const current = currentItem(q);
-  if (!current) return { ...q, shuffle: on };
-  if (on) {
-    // L'historique reste tel qu'il a été lu ; seule la suite est battue.
-    const rest = shuffled(q.items.slice(q.cursor + 1), random);
-    return { ...q, shuffle: true, items: [...q.items.slice(0, q.cursor + 1), ...rest] };
-  }
-  const byUid = new Map(q.items.map((item) => [item.uid, item]));
-  const ordered = q.original.map((uid) => byUid.get(uid)).filter((item): item is QueueItem => item !== undefined);
-  // Les entrées ajoutées hors contexte (« Lire ensuite ») gardent leur place relative, après.
-  const extras = q.items.filter((item) => !q.original.includes(item.uid));
-  const items = [...ordered, ...extras];
-  return { ...q, shuffle: false, items, cursor: Math.max(0, items.findIndex((item) => item.uid === current.uid)) };
-}
-
 export function cycleRepeat(mode: RepeatMode): RepeatMode {
   return mode === "off" ? "all" : mode === "all" ? "one" : "off";
-}
-
-/** « Lire ensuite » : juste après le courant. */
-export function playNext(q: QueueState, tracks: readonly MusicTrack[]): QueueState {
-  const added = wrap(tracks);
-  if (q.cursor < 0) return { ...q, items: added, original: added.map((i) => i.uid), cursor: added.length ? 0 : -1 };
-  const items = [...q.items.slice(0, q.cursor + 1), ...added, ...q.items.slice(q.cursor + 1)];
-  return { ...q, items };
-}
-
-/** « Ajouter à la file » : à la fin. */
-export function enqueue(q: QueueState, tracks: readonly MusicTrack[]): QueueState {
-  const added = wrap(tracks);
-  if (q.cursor < 0) return { ...q, items: added, original: added.map((i) => i.uid), cursor: added.length ? 0 : -1 };
-  return { ...q, items: [...q.items, ...added] };
 }
 
 /** Retire une entrée à venir (le courant ne se retire pas : on passe au suivant). */
@@ -175,31 +141,6 @@ export function removeItem(q: QueueState, uid: string): QueueState {
   if (index < 0 || index === q.cursor) return q;
   const items = q.items.filter((item) => item.uid !== uid);
   return { ...q, items, original: q.original.filter((u) => u !== uid), cursor: index < q.cursor ? q.cursor - 1 : q.cursor };
-}
-
-/** Déplace une entrée à venir à la place `toUpcomingIndex` de la suite (0 = juste après le courant). */
-export function moveUpcoming(q: QueueState, uid: string, toUpcomingIndex: number): QueueState {
-  const from = q.items.findIndex((item) => item.uid === uid);
-  if (from <= q.cursor) return q;
-  const items = [...q.items];
-  const [moved] = items.splice(from, 1);
-  const target = Math.min(Math.max(q.cursor + 1, q.cursor + 1 + toUpcomingIndex), items.length);
-  items.splice(target, 0, moved as QueueItem);
-  return { ...q, items };
-}
-
-/**
- * La SUITE d'un titre (S3 du plan de R8 : la radio de YouTube Music après un clic de recherche) : tout ce qui
- * suivait l'entrée `uid` est remplacé par `tracks` (le titre lui-même écarté), l'historique reste, la file prend
- * le contexte `contextId`. Sans effet si `uid` n'est plus le courant : l'utilisateur est passé à autre chose.
- */
-export function followWith(q: QueueState, uid: string, tracks: readonly MusicTrack[], contextId: string): QueueState {
-  const current = currentItem(q);
-  if (!current || current.uid !== uid) return q;
-  const added = wrap(tracks.filter((t) => t.key !== current.track.key));
-  if (added.length === 0) return q;
-  const head = q.items.slice(0, q.cursor + 1);
-  return { ...q, items: [...head, ...added], original: [...head.map((i) => i.uid), ...added.map((i) => i.uid)], contextId };
 }
 
 /**
@@ -216,14 +157,8 @@ export function extendWith(q: QueueState, contextId: string, tracks: readonly Mu
     return true;
   });
   if (fresh.length === 0) return q;
-  const added = wrap(fresh);
+  const added = wrapTracks(fresh);
   return { ...q, items: [...q.items, ...added], original: [...q.original, ...added.map((i) => i.uid)] };
-}
-
-/** Saute à une entrée (clic dans la file). */
-export function jumpTo(q: QueueState, uid: string): QueueState {
-  const index = q.items.findIndex((item) => item.uid === uid);
-  return index < 0 ? q : { ...q, cursor: index };
 }
 
 /**
