@@ -20,6 +20,8 @@ import { accountFallbackHappened } from "@/offline/rights/accountFallbackNotice"
 import { octaveLaunchAsked } from "@tentacle-tv/shared/octave";
 import { octaveLaunch } from "@/octave/launch/octaveLaunch";
 import { octaveSkipLaunchPin } from "@/octave/settings/octaveSettings";
+import { isOctaveMode } from "@/octave/mode/octaveModeStore";
+import { homeAfterProfileSwitch } from "@/octave/mode/profileSwitchPaths";
 
 const noop = () => undefined;
 
@@ -105,7 +107,7 @@ export function ProfileLaunchGate() {
     if (result === "failed") return;
     clearProfilePickerRequest();
     setDecided({ account: accountId, show: false });
-    if (result === "switched") router.replace("/(tabs)" as never);
+    if (result === "switched") router.replace(homeAfterProfileSwitch(isOctaveMode()) as never);
   }, [commit, accountId, router, asked]);
 
   // « Continuer hors ligne » (serveur muet) : l'écran se referme, au nom du compte.

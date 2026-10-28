@@ -3,6 +3,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { PickedProfileDto } from "@tentacle-tv/shared";
 import { showToast } from "@/notices/toastStore";
+import { isOctaveMode } from "@/octave/mode/octaveModeStore";
+import { homeAfterProfileSwitch, manageProfilesPath } from "@/octave/mode/profileSwitchPaths";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useCanSwitchProfile } from "../useCanSwitchProfile";
 import { useActiveProfile } from "./profileSessionState";
@@ -15,8 +17,8 @@ import { ProfileSwitcherSheet } from "./view/ProfileSwitcherSheet";
  * L'hôte de la feuille « Changer de profil », monté une fois à la racine :
  * `openProfileSwitcher()` l'ouvre d'où qu'on soit. Une demande sans objet
  * (serveur sans `family.mobileProfiles`, famille d'une personne, hors ligne)
- * se referme sans rien montrer. Après la bascule, l'app repart à l'accueil au
- * nom du profil choisi et le dit (« Vous regardez sur le profil de … »).
+ * se referme sans rien montrer. Après la bascule, l'app repart à l'accueil DU MODE
+ * en cours (Octave ou Tentacle) au nom du profil choisi et le dit (« Vous regardez sur le profil de … »).
  */
 export function ProfileSwitcherHost() {
   const { t } = useTranslation("familyMobile");
@@ -38,14 +40,15 @@ export function ProfileSwitcherHost() {
     if (result === "failed") return;
     closeProfileSwitcher();
     if (result === "switched") {
-      router.replace("/(tabs)" as never);
+      // Dans Octave, on y reste : l'accueil du mode en cours, au nom du profil choisi.
+      router.replace(homeAfterProfileSwitch(isOctaveMode()) as never);
       showToast({ title: t("switcher.switched", { name: picked.profile.name }), tone: "success" });
     }
   }, [commit, router, t]);
   const onManage = useCallback(() => {
     closeProfileSwitcher();
     // La page Famille s'ouvre une fois la feuille retirée : rien ne s'y présente par-dessus une sortie.
-    whenNoModal(() => router.push("/family" as never));
+    whenNoModal(() => router.push(manageProfilesPath(isOctaveMode()) as never));
   }, [router]);
 
   if (!open || !canSwitch) return null;
