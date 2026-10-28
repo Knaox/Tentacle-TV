@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { MusicPlaylist, PendingMusicItem } from "@tentacle-tv/shared/music";
-import { removeWaiting, waitingOf } from "./playlistCleanup";
+import { removeWaiting, waitingOf } from "@tentacle-tv/shared/octave";
 
 /**
  * Octave — gérer une playlist : seule une playlist que le serveur dit modifiable a son « … » ; la suppression

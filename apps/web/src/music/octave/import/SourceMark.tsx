@@ -13,6 +13,7 @@ const TINT: Record<MusicImportSource, string> = {
   deezer: "#A238FF",
   youtube: "#FF0033",
   text: "currentColor",
+  tentacle: "#8B5CF6",
 };
 
 function Glyph({ source }: { source: MusicImportSource }) {
@@ -37,6 +38,9 @@ function Glyph({ source }: { source: MusicImportSource }) {
       );
     case "youtube":
       return <path d="M10 8.6v6.8l5.6-3.4z" fill="#fff" />;
+    case "tentacle":
+      // Une playlist partagée par un autre serveur Tentacle : deux notes liées, au violet de la marque.
+      return <path d="M15.5 6.2v8.4a2.2 2.2 0 1 1-1.3-2V9.1l-4.4 1v5.6a2.2 2.2 0 1 1-1.3-2V8z" fill="#fff" />;
     default:
       return null;
   }

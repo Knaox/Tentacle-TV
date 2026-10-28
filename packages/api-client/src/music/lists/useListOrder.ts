@@ -5,10 +5,10 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { useMusicListPrefs, useSaveMusicListPrefs } from "@tentacle-tv/api-client";
+import { useMusicListPrefs, useSaveMusicListPrefs } from "../useMusicListOrder";
 import { MUSIC_LIST_SORT_KEYS, type MusicListDirection, type MusicListKey, type MusicListSortKey } from "@tentacle-tv/shared/music";
 import type { ListRow } from "@tentacle-tv/shared/octave";
-import { jellyfinEntryOrder, movedRows, prefsAfterMove, reorderBlock, usefulFilters, visibleListRows, type ListFilter, type StatsOf } from "./listView";
+import { jellyfinEntryOrder, movedRows, prefsAfterMove, reorderBlock, usefulFilters, visibleListRows, type ListFilter, type StatsOf } from "@tentacle-tv/shared/octave";
 
 export type ReorderBlock = "search" | "filter" | "loading";
 

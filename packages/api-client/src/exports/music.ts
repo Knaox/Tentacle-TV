@@ -26,10 +26,21 @@ export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, t
 export {
   musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
 } from "../music/useMusicListOrder";
-// Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
-export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
-export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
+// Octave — une liste affichée (playlist, « Titres likés ») : tri du compte, recherche, filtre, glisser.
+export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music/lists/useListOrder";
+export { useWholeLiked } from "../music/lists/useWholeLiked";
+// Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
+export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, useMusicShareLinkImport, playlistShareShown, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
+export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, octaveAvailabilityOf, type OctaveAvailability, type OctaveAvailabilityInput } from "../music/useOctaveAvailability";
+export { useLibraryFirstRows } from "../music/lists/useLibraryFirstRows";
+// Octave — gérer une playlist et en retirer des titres, avec l'interface de l'application (web, mobile).
+export { usePlaylistRemoval, type PlaylistTarget } from "../music/octave/playlists/usePlaylistRemoval";
+export { usePlaylistManageGestures, type PlaylistManageHooks } from "../music/octave/playlists/usePlaylistManageGestures";
+// Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
+export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
+export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";
+export { applyOctaveEvent } from "../music/octave/events/octaveEventEffects";

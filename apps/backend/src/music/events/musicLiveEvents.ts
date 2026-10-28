@@ -19,6 +19,7 @@ import { filterVisible, getMusicAccess } from "../access/musicAccess";
 import { applyFavoriteChanges, knownFavorite } from "../access/userFavorites";
 import { forgetUserPlaylists, listUserPlaylists } from "../playlists/playlistJellyfin";
 import type { MusicLibraryEvent } from "../contract/musicEvents";
+import type { MusicListKey } from "../contract/musicListOrder";
 import { rowsByIds } from "../index/indexQueries";
 import { applyLibraryChange, syncState, type IncrementalResult } from "../index/indexSync";
 import { scheduleOrphanReread } from "../index/orphanReread";
@@ -127,6 +128,11 @@ export function onJellyfinUserDataChanged(data: unknown, now = Date.now()): Prom
 /** Un geste du cœur sur une playlist : ses lecteurs relisent (le compte qui l'a fait compris). */
 export function tellPlaylistChanged(userId: string, playlistId: string): void {
   sendToUser(userId, musicMessage({ type: "music:playlist", playlistId: normalizeId(playlistId) }));
+}
+
+/** Le tri ou l'ordre personnalisé d'une liste du compte a changé : ses appareils relisent la préférence. */
+export function tellListPrefsChanged(userId: string, key: MusicListKey): void {
+  sendToUser(userId, musicMessage({ type: "music:listPrefs", key }));
 }
 
 export function resetMusicLiveEventsForTests(): void {

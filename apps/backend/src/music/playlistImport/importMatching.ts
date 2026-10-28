@@ -16,14 +16,17 @@ const BATCH = 50;
 
 export type MatchFn = (view: UserView, queries: readonly MusicMatchTrackQuery[]) => Promise<Map<string, IndexRow>>;
 
-export function importQuery(track: ImportedTrack): MusicMatchTrackQuery {
+const MBID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** `withRecording` : la source donne l'enregistrement MusicBrainz dans `sourceId` (un partage Tentacle). */
+export function importQuery(track: ImportedTrack, withRecording = false): MusicMatchTrackQuery {
   return {
     ref: String(track.index),
     title: track.title,
     artists: track.artists.map((name) => ({ name, mbid: null })),
     albumTitle: track.album,
     durationMs: track.durationMs,
-    recording: null,
+    recording: withRecording && track.sourceId && MBID.test(track.sourceId) ? track.sourceId : null,
   };
 }
 
@@ -33,11 +36,12 @@ export async function matchImported(
   tracks: readonly ImportedTrack[],
   progress: (matched: number, found: number) => void,
   match: MatchFn = matchTracks,
+  withRecording = false,
 ): Promise<Map<number, IndexRow>> {
   const found = new Map<number, IndexRow>();
   for (let at = 0; at < tracks.length; at += BATCH) {
     const batch = tracks.slice(at, at + BATCH);
-    const hits = await match(view, batch.map(importQuery));
+    const hits = await match(view, batch.map((t) => importQuery(t, withRecording)));
     for (const [ref, row] of hits) found.set(Number(ref), row);
     progress(Math.min(at + BATCH, tracks.length), found.size);
   }

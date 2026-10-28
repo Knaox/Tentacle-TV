@@ -139,3 +139,24 @@ describe("import — avec une extension", () => {
     expect(p.cancel).toHaveBeenCalledWith("op");
   });
 });
+
+describe("import — lien de partage d'un autre Tentacle", () => {
+  const link = "https://musique.ami.example/octave/share/AbCdEfGhIjKlMnOpQrStUv";
+
+  it("le cœur le lit lui-même ; les absents vont à l'extension sous la source `text`", async () => {
+    const confide = vi.fn(async () => ({ operationId: "op", accepted: 2 }));
+    const done = { ...doneJob({ source: "tentacle" }), source: "tentacle" as const };
+    const p = port({ tentacleShare: true, canConfide: true, confide, core: async () => done, progress: async (): Promise<ImportTracksProgress> => ({ operationId: "op", state: "done", total: 2, processed: 2, added: 2, notFound: [] }) });
+    const { final } = await run({ kind: "url", url: link }, p);
+    expect(p.started).toEqual([{ keepEmpty: true, url: link }]);
+    expect(confide).toHaveBeenCalledWith(expect.objectContaining({ playlistId: "pl", source: "text" }), expect.anything());
+    expect(final).toMatchObject({ phase: "done", summary: { source: "tentacle", inLibrary: 2, outside: 2 } });
+  });
+
+  it("face à un serveur qui ne les lit pas : « non pris en charge », rien n'est lancé", async () => {
+    const p = port({ canRead: () => true });
+    const { final } = await run({ kind: "url", url: link }, p);
+    expect(final).toMatchObject({ phase: "failed", failure: "unsupported" });
+    expect(p.started).toEqual([]);
+  });
+});

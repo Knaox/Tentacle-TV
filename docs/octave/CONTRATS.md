@@ -240,6 +240,29 @@ Le cœur écoute les sockets Jellyfin des comptes (`jellyfinUserEvents.ts`) et �
 trouvé pour un titre en attente) et `music:pending`. Le lecteur bascule la source
 du titre courant ET de la file (`swapSource`) sans action de l'utilisateur.
 
+Le cœur émet aussi `music:listPrefs` { key } à chaque `PUT /api/music/lists/:key/prefs` : les autres appareils
+du compte relisent CE tri (l'appareil qui l'envoie ignore son écho tant que ses envois partent,
+`isSavingListPrefs`). Chaque application monte UNE souscription (`useMusicEvents`) et applique l'effet commun
+`applyOctaveEvent` (api-client) : bureau `useOctaveEvents`, mobile `OctaveEventsHost` (overlay de la coquille).
+
+## Partage d'une playlist (capacité `music.playlistShare`, 1.40.0)
+
+Contrat `musicShare.ts` (recopié dans le backend). UN lien par playlist et par compte
+(`music_playlist_shares`, jeton de 16 octets en base64url), créé, lu et révoqué par
+`/api/music/playlists/:id/share` ; gardé par le droit « Partage public » (`EnablePublicSharing`, le même que
+Ma liste) — ni « voir en tant que », ni un invité de la Famille ; effacé avec sa playlist. Qui a le lien lit
+`/api/music/share/:token` (SANS compte : nom, description, nom du compte, et pour chaque titre titre, artistes,
+album, durée, enregistrement MusicBrainz — jamais un identifiant Jellyfin, un fichier, une image, un jeton),
+relu à chaque fois dans les droits du propriétaire. La page `/octave/share/:token` (servie interface web
+coupée comprise, sans script) propose « Importer dans mon Tentacle » (renvoi vers `<son serveur>/octave/import
+?share=<lien>`) et l'app (`tentacle://octave/import?share=<lien>`).
+
+Importer : le lien est une source d'import `tentacle` (`recognizeTentacleShare`). Le serveur qui importe lit le
+document par une porte gardée (`shareFetch.ts` : HTTPS, adresses internes refusées À LA RÉSOLUTION, aucune
+redirection, 2 Mio ; `TENTACLE_SHARE_IMPORT_PRIVATE=on` ouvre la maison), un jeton de CE serveur se lit sans
+réseau, puis la machine d'import habituelle : chaque titre rapproché de SA bibliothèque (MBID compris), les
+absents à son extension sous la source `text` (une extension d'avant refuserait `tentacle`).
+
 ## Flux « aimer hors bibliothèque »
 
 `like` → opération `queued` → cache complet (format natif, jamais ré-encodé, tags

@@ -20,11 +20,11 @@ import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleto
 import { octavePaths } from "../octavePaths";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
-import { useLibraryFirstRows } from "../library/useLibraryFirstRows";
+import { useLibraryFirstRows } from "@tentacle-tv/api-client";
 import { usePlaylistRemoval } from "../actions/usePlaylistRemoval";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
-import { makeStatsOf } from "../listOrder/listStats";
-import { useListOrder } from "../listOrder/useListOrder";
+import { makeStatsOf } from "@tentacle-tv/shared/octave";
+import { useListOrder } from "@tentacle-tv/api-client";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";

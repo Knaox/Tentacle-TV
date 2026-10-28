@@ -1037,3 +1037,19 @@ model MusicPlaylistSource {
 
   @@map("music_playlist_sources")
 }
+
+/// 1.40.0 : le PARTAGE d'une playlist d'Octave (`music/playlistShare/`, contrat `musicShare.ts`) : un lien par
+/// playlist et par compte, `token` = 16 octets au hasard en base64url. Révoquer = supprimer la ligne ; effacée
+/// avec sa playlist. Le document public est relu au nom de `ownerUserId`, dans SES droits du moment.
+model MusicPlaylistShare {
+  token       String   @id
+  playlistId  String
+  ownerUserId String
+  /// Le nom du compte au moment du partage (dit par la page du lien, comme Ma liste).
+  ownerName   String
+  createdAt   DateTime @default(now())
+
+  @@unique([ownerUserId, playlistId])
+  @@index([playlistId])
+  @@map("music_playlist_shares")
+}

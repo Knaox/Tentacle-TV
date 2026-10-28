@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { useMusicLibraryMatch } from "@tentacle-tv/api-client";
+import { useMusicLibraryMatch } from "../useMusicLibraryMatch";
 import { libraryFirst, type ListRow } from "@tentacle-tv/shared/octave";
 
 export function useLibraryFirstRows(rows: readonly ListRow[]): readonly ListRow[] {

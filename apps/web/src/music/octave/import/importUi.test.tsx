@@ -1,6 +1,6 @@
 /**
- * L'import dans Octave : ce que la boîte comprend d'un collage, la barre
- * d'avancée, l'entrée absente sans la capacité, et le résultat qui ne dit
+ * L'import dans Octave (les règles du collage et de la barre : api-client,
+ * `importEntry.test.ts`) : l'entrée absente sans la capacité, et le résultat qui ne dit
  * jamais « ajouté » d'un titre absent quand aucune extension ne l'a pris.
  */
 
@@ -13,48 +13,13 @@ const h = vi.hoisted(() => ({ capable: true }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string, vars?: Record<string, unknown>) => (vars ? `${key}:${JSON.stringify(vars)}` : key), i18n: { language: "fr" } }),
 }));
-vi.mock("@tentacle-tv/api-client", () => ({ useServerCapability: () => h.capable }));
+vi.mock("@tentacle-tv/api-client", async (original) => ({ ...(await original<object>()), useServerCapability: () => h.capable }));
 
-const { classifyPasted, importFraction } = await import("./importEntry");
 const { ImportEntryButton } = await import("./ImportEntryButton");
 const { ImportResult } = await import("./ImportResult");
 const { ImportForm } = await import("./ImportForm");
 
 const base: ImportFlowState = { phase: "reading", source: null, name: null, total: 0, matched: 0, found: 0, outside: null, failure: null, summary: null };
-
-describe("classifyPasted", () => {
-  it("un lien reconnu : sa source, lisible par le cœur", () => {
-    expect(classifyPasted("  https://www.deezer.com/fr/playlist/1109890291 ", [])).toMatchObject({ kind: "url", source: "deezer", album: false, readable: true });
-    expect(classifyPasted("https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy", [])).toMatchObject({ kind: "url", album: true });
-  });
-
-  it("YouTube : lisible seulement si l'extension le déclare", () => {
-    const yt = "https://music.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG";
-    expect(classifyPasted(yt, [])).toMatchObject({ kind: "url", source: "youtube", readable: false });
-    expect(classifyPasted(yt, ["youtube"])).toMatchObject({ readable: true });
-  });
-
-  it("un lien inconnu, une liste, rien", () => {
-    expect(classifyPasted("https://example.com/playlist/1", []).kind).toBe("unknownUrl");
-    expect(classifyPasted("Daft Punk - One More Time\n\nJustice - D.A.N.C.E.", [])).toMatchObject({ kind: "text", lines: 2 });
-    expect(classifyPasted("   ", []).kind).toBe("empty");
-  });
-});
-
-describe("importFraction", () => {
-  it("avance d'étape en étape, jamais à reculons", () => {
-    const steps = [
-      importFraction(base, true),
-      importFraction({ ...base, phase: "matching", total: 100, matched: 50 }, true),
-      importFraction({ ...base, phase: "matching", total: 100, matched: 100 }, true),
-      importFraction({ ...base, phase: "creating" }, true),
-      importFraction({ ...base, phase: "outside", outside: { total: 10, processed: 5, added: 5 } }, true),
-      importFraction({ ...base, phase: "done" }, true),
-    ];
-    for (let i = 1; i < steps.length; i += 1) expect(steps[i]).toBeGreaterThan(steps[i - 1] ?? 0);
-    expect(steps.at(-1)).toBe(1);
-  });
-});
 
 describe("entrées et résultat", () => {
   it("sans la capacité : aucune entrée", () => {
@@ -98,5 +63,12 @@ describe("entrées et résultat", () => {
     const html = renderToStaticMarkup(<ImportResult titleId="t" state={{ ...base, phase: "failed", failure: "private" }} onOpen={() => undefined} onAnother={() => undefined} onClose={() => undefined} />);
     expect(html).toContain("failure.private");
     expect(html).toContain("retry");
+  });
+});
+
+describe("lien de partage d'un autre Tentacle", () => {
+  it("la page du lien renvoie vers CETTE adresse d'Octave (apps/backend sharePage.ts : OCTAVE_IMPORT_PATH)", async () => {
+    const { octavePaths } = await import("../octavePaths");
+    expect(octavePaths.import).toBe("/octave/import");
   });
 });

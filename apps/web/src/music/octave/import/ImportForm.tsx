@@ -7,8 +7,7 @@
 import { useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CORE_IMPORT_SOURCES, type MusicImportSource } from "@tentacle-tv/shared/music";
-import type { ImportUserInput } from "@tentacle-tv/api-client";
-import { classifyPasted } from "./importEntry";
+import { classifyPasted, type ImportUserInput } from "@tentacle-tv/api-client";
 import { SourceMark, SourceRow } from "./SourceMark";
 
 interface Props {
@@ -16,23 +15,29 @@ interface Props {
   value: string;
   onChange: (value: string) => void;
   extensionSources: readonly MusicImportSource[];
+  /** Le serveur lit un lien de partage d'un autre Tentacle (`music.playlistShare`). */
+  tentacleShare?: boolean;
   outsideSupported: boolean;
   onStart: (input: ImportUserInput) => void;
   onCancel: () => void;
 }
 
-export function ImportForm({ titleId, value, onChange, extensionSources, outsideSupported, onStart, onCancel }: Props) {
+export function ImportForm({ titleId, value, onChange, extensionSources, tentacleShare = false, outsideSupported, onStart, onCancel }: Props) {
   const { t } = useTranslation("musicImport");
   const fieldId = useId();
   const hintId = useId();
-  const pasted = useMemo(() => classifyPasted(value, extensionSources), [value, extensionSources]);
-  const sources = useMemo(() => [...CORE_IMPORT_SOURCES, ...extensionSources.filter((s) => !CORE_IMPORT_SOURCES.includes(s))], [extensionSources]);
+  const pasted = useMemo(() => classifyPasted(value, extensionSources, tentacleShare), [value, extensionSources, tentacleShare]);
+  const sources = useMemo(
+    () => [...CORE_IMPORT_SOURCES, ...extensionSources.filter((s) => !CORE_IMPORT_SOURCES.includes(s) && s !== "tentacle"), ...(tentacleShare ? (["tentacle"] as const) : [])],
+    [extensionSources, tentacleShare],
+  );
   const input = (pasted.kind === "url" && pasted.readable) || pasted.kind === "text" ? pasted.input : null;
 
   let hint: { text: string; tone: "ok" | "warn" | "muted"; source?: MusicImportSource } = { text: t("sources"), tone: "muted" };
   if (pasted.kind === "url") {
     const source = t(`source.${pasted.source}`);
-    hint = pasted.readable ? { text: t(pasted.album ? "recognizedAlbum" : "recognized", { source }), tone: "ok", source: pasted.source } : { text: t("needsExtension"), tone: "warn", source: pasted.source };
+    const refusal = pasted.source === "tentacle" ? t("notRecognized") : t("needsExtension");
+    hint = pasted.readable ? { text: t(pasted.album ? "recognizedAlbum" : "recognized", { source }), tone: "ok", source: pasted.source } : { text: refusal, tone: "warn", source: pasted.source };
   } else if (pasted.kind === "unknownUrl") hint = { text: t("notRecognized"), tone: "warn" };
   else if (pasted.kind === "text") hint = { text: t("recognizedText", { count: pasted.lines }), tone: "ok", source: "text" };
 

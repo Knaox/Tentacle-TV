@@ -294,6 +294,12 @@ export const SERVER_CAPABILITIES = {
    *  sa place, « Date d'ajout » par le rang dans la source (`sourceIndex` des entrées), et la remise dans l'ordre
    *  de la source (`POST /api/music/playlists/:id/source-order`). Sans elle : aucune entrée « Remettre dans l'ordre ». */
   "music.playlistSourceOrder": "1.40.0",
+  /** Le PARTAGE d'une playlist (`musicShare.ts`) : un lien par playlist, non devinable et révocable
+   *  (`/api/music/playlists/:id/share`), gardé par le droit « Partage public » ; son document public
+   *  (`/api/music/share/:token` : métadonnées des titres seulement) et sa page (`/octave/share/:token`) ;
+   *  et l'import d'un lien d'un AUTRE serveur Tentacle (source `tentacle` de `POST /api/music/import`).
+   *  Sans elle : ni « Partager », ni lien Tentacle reconnu à l'import. */
+  "music.playlistShare": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

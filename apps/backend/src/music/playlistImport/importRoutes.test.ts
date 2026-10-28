@@ -7,7 +7,7 @@
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ userId: "u1", session: "personal", mode: "all", declared: true }));
+const state = vi.hoisted(() => ({ userId: "u1", session: "personal", mode: "all", declared: true, shareRight: true }));
 
 vi.mock("../routes/requestView", () => ({
   userOf: () => ({ userId: state.userId, username: "banc", isAdmin: false, session: state.session }),
@@ -31,6 +31,8 @@ async function call(method: "POST" | "GET", url: string, payload?: unknown) {
     view: async () => ({ userId: state.userId }) as never,
     create: async () => ({ ok: true, value: "pl" }),
     match: async () => new Map(),
+    mayImportShare: async () => state.shareRight,
+    shareFetcher: async () => ({ status: 404, body: "" }),
   });
   const res = await app.inject({ method, url, payload: payload as never });
   await app.close();
@@ -38,7 +40,7 @@ async function call(method: "POST" | "GET", url: string, payload?: unknown) {
 }
 
 beforeEach(() => {
-  Object.assign(state, { userId: "u1", session: "personal", mode: "all", declared: true });
+  Object.assign(state, { userId: "u1", session: "personal", mode: "all", declared: true, shareRight: true });
   fetcher.mockReset();
   resetImportsForTests();
 });
@@ -82,5 +84,20 @@ describe("POST /import — gardes", () => {
     expect((await call("GET", `/import/${jobId}`)).statusCode).toBe(200);
     state.userId = "u2";
     expect((await call("GET", `/import/${jobId}`)).statusCode).toBe(404);
+  });
+});
+
+describe("POST /import — le lien d'un autre Tentacle (règle 15 : sans le droit du partage, rien)", () => {
+  const link = "https://musique.ami.example/octave/share/AbCdEfGhIjKlMnOpQrStUv";
+
+  it("sans le droit « Partage public » (ou invité de la Famille) : refusé comme un lien inconnu, rien n'est lu", async () => {
+    state.shareRight = false;
+    const res = await call("POST", "/import", { url: link });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual({ error: "unsupported_url" });
+  });
+
+  it("avec le droit : accepté (202)", async () => {
+    expect((await call("POST", "/import", { url: link })).statusCode).toBe(202);
   });
 });

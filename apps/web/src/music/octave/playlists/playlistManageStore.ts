@@ -7,7 +7,11 @@
 import { useSyncExternalStore } from "react";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 
-export type PlaylistManageRequest = { kind: "edit"; playlist: MusicPlaylist } | { kind: "delete"; playlist: MusicPlaylist };
+export type PlaylistManageRequest =
+  | { kind: "edit"; playlist: MusicPlaylist }
+  | { kind: "delete"; playlist: MusicPlaylist }
+  /** Le lien de partage (capacité `music.playlistShare`, droit « Partage public »). */
+  | { kind: "share"; playlist: MusicPlaylist };
 
 let current: PlaylistManageRequest | null = null;
 const listeners = new Set<() => void>();

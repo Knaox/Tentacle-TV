@@ -11,6 +11,7 @@ import { isJellyfinId } from "../jellyfin/musicJellyfin";
 import { readListPrefs, writeListPrefs } from "../listOrder/listPrefsStore";
 import { playlistFor } from "../playlists/playlistJellyfin";
 import { reorderPlaylist } from "../playlists/playlistService";
+import { tellListPrefsChanged } from "../events/musicLiveEvents";
 import { userOf, viewOf } from "./requestView";
 
 const STATUS = { not_found: 404, forbidden: 403, invalid: 400, unavailable: 503 } as const;
@@ -38,6 +39,8 @@ export function musicListRoutes(app: FastifyInstance): void {
       if (view.access.mode === "none" || !(await playlistFor(view.userId, key.slice("playlist:".length)))) return reply.status(404).send({ error: "not_found" });
     }
     await writeListPrefs(userOf(request).userId, key, prefs);
+    // Les autres appareils du compte relisent ce tri (l'appareil qui l'a gardé ignore son propre écho).
+    tellListPrefsChanged(userOf(request).userId, key);
     return prefs;
   });
 
