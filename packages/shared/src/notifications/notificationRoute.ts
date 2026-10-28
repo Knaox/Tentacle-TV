@@ -1,4 +1,6 @@
 import { extensionSectionHref } from "./extensionSection";
+import { MUSIC_PLAYLIST_SHARED_NOTIFICATION } from "../music/musicPlaylistMembers";
+import { octavePaths } from "../octave/mode/octavePaths";
 
 /** L'écran de la Famille, le même chemin sur le web, le bureau et le mobile. */
 export const FAMILY_ROUTE = "/family";
@@ -66,6 +68,10 @@ export function resolveNotificationRoute(
       return platform === "mobile" && refId
         ? `/shared-watchlist/${refId}`
         : "/watchlist";
+
+    // Une playlist d'Octave partagée avec ce compte : sa page, le même chemin sur le web, le bureau et le mobile.
+    case MUSIC_PLAYLIST_SHARED_NOTIFICATION:
+      return refId ? octavePaths.playlist(refId) : null;
 
     default:
       return null;
