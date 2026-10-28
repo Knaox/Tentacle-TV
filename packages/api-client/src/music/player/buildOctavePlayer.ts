@@ -7,17 +7,23 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { AudioEnginePort, MusicTrack } from "@tentacle-tv/shared/music";
-import { OctavePlayer, PlaybackReporter, SourceCache, type SourceResolvers } from "@tentacle-tv/shared/octave";
+import { OctavePlayer, PlaybackReporter, type SourceResolvers } from "@tentacle-tv/shared/octave";
 import { fetchMusicSource } from "../useMusicLibrary";
 import { reportMusicPlayback } from "../musicPlaybackReport";
 import { prefetchMusic, reportExternalPlayed, resolveMusicSource } from "../../pluginMusic/musicRequests";
 import { isFromMusicProvider, type MusicProvider } from "../../pluginMusic/musicProvider";
+import { retainedSourceCache } from "./retainedSources";
 
 export interface OctaveKeptPort {
   /** Enveloppe les résolveurs : la copie gardée d'abord (web : `withKeptSources`). */
   wrapSources?: (resolvers: SourceResolvers) => SourceResolvers;
   /** Ce titre a-t-il une copie gardée (rien à préparer chez l'extension) ? */
   isKept?: (trackKey: string) => boolean;
+  /**
+   * Garder les sources résolues au-delà de CE lecteur, pour ce propriétaire (serveur + compte) : un lecteur
+   * remonté (retour dans Octave, mobile) les retrouve (`retainedSources.ts`). Absent : un cache à lui seul.
+   */
+  retainSourcesFor?: string | null;
 }
 
 // Ce titre vient-il de CETTE extension ? Une seule règle (`pluginMusic/musicProvider.ts`).
@@ -41,7 +47,7 @@ export function buildOctavePlayer(
     },
     now: () => Date.now(),
   };
-  const sources = new SourceCache(kept.wrapSources ? kept.wrapSources(resolvers) : resolvers);
+  const sources = retainedSourceCache(kept.retainSourcesFor ?? null, kept.wrapSources ? kept.wrapSources(resolvers) : resolvers);
   const reporter = new PlaybackReporter({
     library: (report) => void reportMusicPlayback(report),
     externalPlayed: (track, completed) => {
