@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import {
-  formatBitrateMbps, qualityDropText, type QualityDrop, type QualityKey, type QualityPreset, type SourceQuality,
+  describeTrack, formatBitrateMbps, qualityDropText, type QualityDrop, type QualityKey, type QualityPreset, type SourceQuality,
 } from "@tentacle-tv/shared";
 import type { TrackOption } from "../types";
 import { PopupMenu, type PopupBadge, type PopupSection } from "./PopupMenu";
@@ -40,12 +40,18 @@ export function SettingsMenus({
 }: Props) {
   const { t, i18n } = useTranslation("player");
   const dropText = qualityDrop ? qualityDropText(qualityDrop, i18n.language) : null;
+  // Une piste dite en mots, comme les panneaux de l'app : la langue, puis « SRT · Externe » (`describeTrack`, partagé).
+  const words = { default: t("panels.trackDefault"), forced: t("panels.trackForced"), external: t("panels.trackExternal") };
+  const trackOption = (tr: { index: number; label: string }, selected: number) => {
+    const { title, detail } = describeTrack(tr.label, words);
+    return { key: tr.index, label: title, suffix: detail, active: selected === tr.index };
+  };
 
   const settingsSections: PopupSection[] = [];
   if (audioTracks.length > 0) {
     settingsSections.push({
       title: t("audioLabel"),
-      options: audioTracks.map((tr) => ({ key: tr.index, label: tr.label, active: selectedAudio === tr.index })),
+      options: audioTracks.map((tr) => trackOption(tr, selectedAudio)),
       onSelect: (k) => { onSelectAudio(k as number); onCloseSettings(); },
     });
   }
@@ -82,7 +88,7 @@ export function SettingsMenus({
         title={t("subtitles")}
         sections={[{
           title: t("subtitlesLabel"),
-          options: subtitleTracks.map((tr) => ({ key: tr.index, label: tr.label, active: selectedSubtitle === tr.index })),
+          options: subtitleTracks.map((tr) => trackOption(tr, selectedSubtitle)),
           onSelect: (k) => { onSelectSubtitle(k as number); onCloseSubtitles(); },
           showDisabled: {
             label: t("disabled"),
