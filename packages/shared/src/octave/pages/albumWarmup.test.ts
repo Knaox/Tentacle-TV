@@ -19,12 +19,13 @@ describe("albums vus défiler : les candidats", () => {
 describe("albums vus défiler : le choix à l'arrêt", () => {
   const many = Array.from({ length: 30 }, (_, i) => ({ key: `ext:sillon:${i}`, id: String(i) }));
 
-  it("signal : au plus WARM_SIGNAL_MAX, jamais deux fois le même dans la fenêtre", () => {
+  it("signal : la liste ENTIÈRE visible (≤ WARM_SIGNAL_MAX), jamais la même deux fois dans la fenêtre", () => {
     const book = createWarmBook();
-    const first = pickAlbumsToWarm(book, many, "signal", 0, never);
-    expect(first).toHaveLength(WARM_SIGNAL_MAX);
-    expect(pickAlbumsToWarm(book, many.slice(0, WARM_SIGNAL_MAX), "signal", 1_000, never)).toEqual([]);
-    expect(pickAlbumsToWarm(book, many.slice(0, 2), "signal", WARM_DEDUP_MS, never)).toHaveLength(2);
+    expect(pickAlbumsToWarm(book, many, "signal", 0, never)).toHaveLength(WARM_SIGNAL_MAX);
+    expect(pickAlbumsToWarm(book, many, "signal", 1_000, never)).toEqual([]);
+    // Une liste qui change repart entière, déjà signalés compris (l'extension remplace la précédente).
+    expect(pickAlbumsToWarm(book, many.slice(1, 4), "signal", 2_000, never)).toEqual(many.slice(1, 4));
+    expect(pickAlbumsToWarm(book, many.slice(1, 4), "signal", 2_000 + WARM_DEDUP_MS, never)).toHaveLength(3);
   });
 
   it("n'envoie rien de ce qui est déjà en cache", () => {

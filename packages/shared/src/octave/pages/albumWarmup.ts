@@ -5,8 +5,9 @@
  * ouverture ensuite sort de son cache.
  *
  * Deux régimes, choisis par ce que l'extension déclare (jamais par son identifiant) :
- * - `signal` : le point `prefetch` sait préparer des albums (intention `albums`) — un seul envoi par arrêt,
- *   `WARM_SIGNAL_MAX` albums au plus, un album au plus une fois par `WARM_DEDUP_MS` ;
+ * - `signal` : le point `prefetch` sait préparer des albums (intention `albums`) — un seul envoi par arrêt, la
+ *   liste ENTIÈRE de ce qui est visible (`WARM_SIGNAL_MAX` au plus) : l'extension la prend à la place de la
+ *   précédente (contrat fixé avec Sillon, lot sf) ; la même liste ne se redit pas avant `WARM_DEDUP_MS` ;
  * - `fetch` (repli : l'extension ne le sait pas) : la vue de l'album est demandée comme au clic, ce qui coûte
  *   des requêtes YouTube au budget COMMUN de l'hôte (20 par minute) — donc `WARM_FETCH_PER_STOP` album par
  *   arrêt et `WARM_FETCH_PER_MINUTE` par minute, pas un de plus.
@@ -49,10 +50,13 @@ export function warmCandidates(albums: readonly Pick<MusicAlbum, "jellyfinId" | 
 export interface WarmBook {
   sent: Map<string, number>;
   fetches: number[];
+  /** La dernière liste signalée (clés jointes) et quand. */
+  lastSignal: string;
+  lastSignalAt: number;
 }
 
 export function createWarmBook(): WarmBook {
-  return { sent: new Map(), fetches: [] };
+  return { sent: new Map(), fetches: [], lastSignal: "", lastSignalAt: 0 };
 }
 
 /**
@@ -62,12 +66,20 @@ export function createWarmBook(): WarmBook {
 export function pickAlbumsToWarm(book: WarmBook, candidates: readonly WarmCandidate[], mode: WarmMode, now: number, cached: (key: string) => boolean): WarmCandidate[] {
   for (const [key, at] of book.sent) if (now - at >= WARM_DEDUP_MS) book.sent.delete(key);
   while (book.fetches.length > 0 && now - book.fetches[0]! >= 60_000) book.fetches.shift();
+  if (mode === "signal") {
+    const list = candidates.filter((c) => !cached(c.key)).slice(0, WARM_SIGNAL_MAX);
+    const joined = list.map((c) => c.key).join("\n");
+    if (list.length === 0 || (joined === book.lastSignal && now - book.lastSignalAt < WARM_DEDUP_MS)) return [];
+    book.lastSignal = joined;
+    book.lastSignalAt = now;
+    return list;
+  }
   const fresh = candidates.filter((c) => !book.sent.has(c.key) && !cached(c.key));
-  const room = mode === "signal" ? WARM_SIGNAL_MAX : Math.min(WARM_FETCH_PER_STOP, WARM_FETCH_PER_MINUTE - book.fetches.length);
+  const room = Math.min(WARM_FETCH_PER_STOP, WARM_FETCH_PER_MINUTE - book.fetches.length);
   const picked = fresh.slice(0, Math.max(0, room));
   for (const c of picked) {
     book.sent.set(c.key, now);
-    if (mode === "fetch") book.fetches.push(now);
+    book.fetches.push(now);
   }
   // Borne de la mémoire : les plus anciens partent d'abord (Map garde l'ordre d'insertion).
   while (book.sent.size > 2_000) {
