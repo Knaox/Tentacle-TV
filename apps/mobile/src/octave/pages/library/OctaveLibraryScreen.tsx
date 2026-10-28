@@ -25,7 +25,7 @@ import { AlbumCard, ArtistCard, PlaylistCard } from "../ui/Cards";
 import { ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
-import { LibraryFilterBar } from "./LibraryFilterBar";
+import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 
 type Item = { kind: "album"; album: MusicAlbum } | { kind: "artist"; artist: MusicArtist } | { kind: "playlist"; playlist: MusicPlaylist };
@@ -88,11 +88,14 @@ export function OctaveLibraryScreen() {
 
   const header = (
     <View style={{ paddingHorizontal: gutter, gap: 16, paddingBottom: 12 }}>
-      <Text accessibilityRole="header" style={[typography.hero, { color: theme.colors.text.primary }]}>
-        {t("library.title")}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text accessibilityRole="header" style={[typography.hero, styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
+          {t("library.title")}
+        </Text>
+        {tab === "albums" ? <LibrarySortControl sort={sort} onSort={setSort} /> : null}
+      </View>
       <LikedEntry />
-      <LibraryFilterBar tab={tab} onTab={setTab} sort={sort} onSort={setSort} />
+      <LibraryFilterBar tab={tab} onTab={setTab} />
     </View>
   );
   const empty = pending ? <ShelfSkeleton round={tab === "artists"} /> : failed ? <ErrorState onRetry={() => void (query ? query.refetch() : playlists.refetch())} /> : <EmptyState icon={Library} title={t("views.libraryEmptyTitle")} hint={t("views.libraryEmptyHint")} />;
@@ -128,6 +131,8 @@ export function OctaveLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  title: { flex: 1, minWidth: 0 },
   liked: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, borderRadius: 14, paddingHorizontal: 12 },
   likedIcon: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 });

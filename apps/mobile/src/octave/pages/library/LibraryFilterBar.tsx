@@ -1,8 +1,9 @@
 /**
  * Octave mobile — les FILTRES de la bibliothèque, à la Apple Music : une rangée
- * de puces (Albums · Artistes · Playlists, qui défile si l'écran est étroit) et,
- * à droite, sur les albums, « Trier » qui ouvre la feuille des tris — le tri en
- * cours dit en mots sur le bouton. Les puces et le bouton sont ceux de tout le
+ * de puces (Albums · Artistes · Playlists, qui défile si l'écran est étroit), et,
+ * sur les albums, « Trier » à droite du grand titre, qui ouvre la feuille des
+ * tris — le tri en cours dit en mots sur le bouton. Sur la ligne des puces, il
+ * coupait la dernière sur un écran de 402 pt. Les puces et le bouton sont ceux de tout le
  * mode (`OctaveChip`, `OctaveSortButton`). Cibles de 44 pt.
  */
 
@@ -17,29 +18,28 @@ import { haptic } from "@/utils/haptics";
 import { OctaveChip, OctaveSortButton } from "../../layout/OctaveChip";
 import { useOctaveColors } from "../../theme/octaveColors";
 
-interface Props {
-  tab: LibraryTab;
-  onTab: (tab: LibraryTab) => void;
-  sort: LibraryAlbumSort;
-  onSort: (sort: LibraryAlbumSort) => void;
-}
+/** La rangée des puces (Albums · Artistes · Playlists), seule sur sa ligne : rien ne la coupe. */
+export const LibraryFilterBar = memo(function LibraryFilterBar({ tab, onTab }: { tab: LibraryTab; onTab: (tab: LibraryTab) => void }) {
+  const { t } = useTranslation("music");
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityRole="tablist">
+      {LIBRARY_TABS.map((value) => (
+        <OctaveChip key={value} role="tab" label={t(`library.${value}`)} selected={value === tab} onPress={() => onTab(value)} />
+      ))}
+    </ScrollView>
+  );
+});
 
-export const LibraryFilterBar = memo(function LibraryFilterBar({ tab, onTab, sort, onSort }: Props) {
+/** « Trier » des albums, à droite du grand titre (à la Apple Music) : le tri en cours en mots, et sa feuille. */
+export const LibrarySortControl = memo(function LibrarySortControl({ sort, onSort }: { sort: LibraryAlbumSort; onSort: (sort: LibraryAlbumSort) => void }) {
   const { t } = useTranslation("music");
   const [sorting, setSorting] = useState(false);
   const sortKey = LIBRARY_ALBUM_SORTS.find((s) => s.value === sort)?.key ?? "library.sortAdded";
   return (
-    <View style={styles.bar}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chips} accessibilityRole="tablist">
-        {LIBRARY_TABS.map((value) => (
-          <OctaveChip key={value} role="tab" label={t(`library.${value}`)} selected={value === tab} onPress={() => onTab(value)} />
-        ))}
-      </ScrollView>
-      {tab === "albums" ? (
-        <OctaveSortButton label={t(sortKey)} accessibilityLabel={t("listOrder.sortButton", { sort: t(sortKey) })} onPress={() => setSorting(true)} />
-      ) : null}
+    <>
+      <OctaveSortButton label={t(sortKey)} accessibilityLabel={t("listOrder.sortButton", { sort: t(sortKey) })} onPress={() => setSorting(true)} />
       <LibrarySortSheet visible={sorting} onClose={() => setSorting(false)} value={sort} onChange={onSort} />
-    </View>
+    </>
   );
 });
 
@@ -81,8 +81,6 @@ function LibrarySortSheet({ visible, onClose, value, onChange }: { visible: bool
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: "row", alignItems: "center", gap: 8 },
-  chipsScroll: { flex: 1 },
   chips: { gap: 8, alignItems: "center", paddingVertical: 4 },
   title: { paddingHorizontal: 20, paddingBottom: 8 },
   body: { paddingHorizontal: 8, paddingBottom: 32 },
