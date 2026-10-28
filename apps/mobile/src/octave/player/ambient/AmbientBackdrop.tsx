@@ -28,8 +28,8 @@ import { BLOB_ARTWORK_SIZE } from "./ambientBlobs";
 import { trackTempo } from "./ambientBeat";
 import { useBeatClock, type BeatClock } from "./useBeatClock";
 import {
-  AMBIENT_BLUR, AMBIENT_BRAND_TINT, AMBIENT_CROSSFADE_MS, AMBIENT_CYCLE_S, AMBIENT_SCENE_DELAY_MS, ambientArtworkUrl,
-  ambientLayers, ambientSeed, ambientShouldRun, layerSide, layerTransform, type AmbientLayer,
+  AMBIENT_BLUR, AMBIENT_BRAND_TINT, AMBIENT_CROSSFADE_MS, AMBIENT_CYCLE_S, AMBIENT_GRADIENT_RASTER, AMBIENT_SCENE_DELAY_MS,
+  ambientArtworkUrl, ambientLayers, ambientSeed, ambientShouldRun, layerSide, layerTransform, type AmbientLayer,
 } from "./ambientMotion";
 
 const LINEAR = Easing.linear;
@@ -159,6 +159,7 @@ interface LayersProps {
 
 const AmbientLayers = memo(function AmbientLayers({ uri, clock, imageTransition, onLoad }: LayersProps) {
   const colors = useOctaveColors();
+  const { width, height } = useWindowDimensions();
   const layers = useMemo(() => ambientLayers(ambientSeed(uri)), [uri]);
   return (
     <>
@@ -166,7 +167,7 @@ const AmbientLayers = memo(function AmbientLayers({ uri, clock, imageTransition,
         <DriftingLayer key={i} layer={layer} clock={clock}>
           {uri === null ? (
             // Sans pochette : les couleurs de la marque, à la même place.
-            <LinearGradient colors={i % 2 === 0 ? [colors.gradient[0], colors.gradient[1]] : [colors.gradient[1], colors.gradient[2]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <RasterGradient side={layerSide(width, height, layer)} colors={i % 2 === 0 ? [colors.gradient[0], colors.gradient[1]] : [colors.gradient[1], colors.gradient[2]]} />
           ) : (
             <Image
               source={{ uri }}
@@ -183,11 +184,31 @@ const AmbientLayers = memo(function AmbientLayers({ uri, clock, imageTransition,
         </DriftingLayer>
       ))}
       <DriftingLayer layer={AMBIENT_BRAND_TINT} clock={clock}>
-        <LinearGradient colors={[colors.gradient[0], withAlpha(colors.gradient[1], 0, colors.ink), colors.gradient[1]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        <RasterGradient
+          side={layerSide(width, height, AMBIENT_BRAND_TINT)}
+          colors={[colors.gradient[0], withAlpha(colors.gradient[1], 0, colors.ink), colors.gradient[1]]}
+        />
       </DriftingLayer>
     </>
   );
 });
+
+/**
+ * Un dégradé diagonal qui couvre un calque de `side` pt, dessiné à `AMBIENT_GRADIENT_RASTER` pt puis agrandi par
+ * le compositeur : expo-linear-gradient le dessine sur le PROCESSEUR, sur le fil principal, et à la taille du
+ * calque (~1 400 pt) il coûtait ~30 ms à chaque titre. Un dégradé ne perd rien à l'agrandissement.
+ */
+function RasterGradient({ side, colors }: { side: number; colors: readonly [string, string, ...string[]] }) {
+  const offset = (side - AMBIENT_GRADIENT_RASTER) / 2;
+  return (
+    <LinearGradient
+      colors={colors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.raster, { left: offset, top: offset, transform: [{ scale: side / AMBIENT_GRADIENT_RASTER }] }]}
+    />
+  );
+}
 
 const DriftingLayer = memo(function DriftingLayer({ layer, clock, children }: { layer: AmbientLayer; clock: SharedValue<number>; children: ReactNode }) {
   const { width, height } = useWindowDimensions();
@@ -215,4 +236,5 @@ const DriftingLayer = memo(function DriftingLayer({ layer, clock, children }: { 
 
 const styles = StyleSheet.create({
   layer: { position: "absolute" },
+  raster: { position: "absolute", width: AMBIENT_GRADIENT_RASTER, height: AMBIENT_GRADIENT_RASTER },
 });

@@ -26,6 +26,8 @@ export const AMBIENT_CROSSFADE_MS = 900;
  * d'entrer (~170 + ~300 ms). Monter des vues pendant le geste lui volait des images.
  */
 export const AMBIENT_SCENE_DELAY_MS = 450;
+/** Le côté (pt) auquel les dégradés du fond sont dessinés avant d'être agrandis (`RasterGradient`). */
+export const AMBIENT_GRADIENT_RASTER = 64;
 
 export interface AmbientLayer {
   /** Opacité du calque (le premier est plein : il couvre l'écran). */
