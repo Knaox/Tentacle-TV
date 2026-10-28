@@ -15,3 +15,4 @@ export { useOctaveColors, type OctaveColors } from "../theme/octaveColors";
 export { useOctaveChrome, type OctaveChrome } from "../shell/octaveChrome";
 export { OctaveBrandFill } from "./OctaveBrandFill";
 export { OctavePlayButton } from "./OctavePlayButton";
+export { OctaveChip, OctaveSortButton } from "./OctaveChip";

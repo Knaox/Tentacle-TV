@@ -10,6 +10,7 @@ import { Check } from "lucide-react-native";
 import { defaultDirection, type MusicListDirection, type MusicListPrefs, type MusicListSortKey } from "@tentacle-tv/shared/music";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
+import { useOctaveColors } from "../../theme/octaveColors";
 import { haptic } from "@/utils/haptics";
 
 interface Props {
@@ -30,7 +31,8 @@ export function SortSheet({ visible, onClose, prefs, sorts, onSort }: Props) {
     onSort(sort, direction);
     onClose();
   };
-  const accent = theme.colors.brand.accentLight;
+  const colors = useOctaveColors();
+  const accent = colors.accentText;
   return (
     <BottomSheet
       visible={visible}
@@ -65,7 +67,7 @@ export function SortSheet({ visible, onClose, prefs, sorts, onSort }: Props) {
                         onPress={() => pick(sort, direction)}
                         accessibilityRole="radio"
                         accessibilityState={{ checked: on }}
-                        style={[styles.chip, { backgroundColor: on ? theme.colors.brand.soft : theme.colors.fill.subtle, borderColor: on ? accent : "transparent" }]}
+                        style={[styles.chip, { backgroundColor: on ? colors.accentSoft : theme.colors.fill.subtle, borderColor: on ? accent : "transparent" }]}
                       >
                         <Text style={[typography.caption, { color: on ? accent : theme.colors.text.secondary }]}>{t(`listOrder.direction.${sort}.${direction}`)}</Text>
                       </Pressable>
