@@ -144,6 +144,9 @@ PODS:
   - MpvPlayer (1.0.0):
     - ExpoModulesCore
     - MPVKit
+  - OctaveAudio (1.0.0):
+    - ExpoModulesCore
+    - MPVKit
   - OfflineStorage (1.0.0):
     - ExpoModulesCore
   - RCTDeprecation (0.81.5)
@@ -2209,6 +2212,7 @@ DEPENDENCIES:
   - hermes-engine (from `../../../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - MPVKit (from `MPVKit.podspec`)
   - MpvPlayer (from `../modules/mpv-player/ios`)
+  - OctaveAudio (from `../modules/octave-audio/ios`)
   - OfflineStorage (from `../modules/offline-storage/ios`)
   - RCTDeprecation (from `../../../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../../../node_modules/react-native/Libraries/Required`)
@@ -2352,6 +2356,8 @@ EXTERNAL SOURCES:
     :podspec: MPVKit.podspec
   MpvPlayer:
     :path: "../modules/mpv-player/ios"
+  OctaveAudio:
+    :path: "../modules/octave-audio/ios"
   OfflineStorage:
     :path: "../modules/offline-storage/ios"
   RCTDeprecation:
@@ -2531,6 +2537,7 @@ SPEC CHECKSUMS:
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   MPVKit: 5382ee89e84d909257b0d0f37bca5ef51c448fa0
   MpvPlayer: b4121bfa1bc159cbeae4acabd60061cdd1258293
+  OctaveAudio: 90a4e157e7f9aa8acea04cba5c28d1b3c6fc696e
   OfflineStorage: 7f40df7d70a3bd610706004527a9f279949519c0
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043

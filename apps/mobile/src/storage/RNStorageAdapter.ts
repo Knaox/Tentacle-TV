@@ -72,6 +72,10 @@ const STORAGE_KEYS = [
   // Octave — le mode musique (mêmes clés que le web et le bureau, `@tentacle-tv/shared/octave/mode`) :
   // le mode, « Au démarrage, ouvrir », le miroir de sa disponibilité, la page où l'on était.
   "tentacle_octave_mode", "tentacle_octave_startup", "tentacle_octave_launch", "tentacle_octave_page",
+  // Octave : la transition douce de l'appareil (`octave/audio/crossfadeSetting.ts`, magasin partagé).
+  "tentacle_octave_crossfade",
+  // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
+  "tentacle_octave_player",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

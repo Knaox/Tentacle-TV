@@ -25,6 +25,9 @@ export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, t
 export {
   musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
 } from "../music/useMusicListOrder";
+// Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
+export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
+export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, type OctaveAvailability } from "../music/useOctaveAvailability";
@@ -33,3 +36,4 @@ export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music
 export { useWholeLiked } from "../music/lists/useWholeLiked";
 // Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
+export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";

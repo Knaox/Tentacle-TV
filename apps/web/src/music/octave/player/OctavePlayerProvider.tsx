@@ -15,22 +15,13 @@
 
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import {
-  fetchMusicSource,
-  prefetchMusic,
-  reportExternalPlayed,
-  reportMusicPlayback,
-  resolveMusicSource,
-  useServerCapability,
-  type MusicProvider,
-} from "@tentacle-tv/api-client";
+import { buildOctavePlayer as buildSharedOctavePlayer, followSearchWithRadio, useServerCapability, type MusicProvider } from "@tentacle-tv/api-client";
 import type { AudioEnginePort } from "@tentacle-tv/shared/music";
-import { OctavePlayer, PlaybackReporter, SourceCache, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
+import type { OctavePlayer, PlayerSnapshot, PositionState } from "@tentacle-tv/shared/octave";
 import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../engine";
 import { attachPlayerResume } from "../cache/playerResume";
 import { octaveOwner } from "../cache/octaveOwner";
-import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
-import { followSearchWithRadio } from "./searchRadio";
+import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { keptFor, withKeptSources } from "../offline/keptSources";
 import { attachSessionRemote, type SessionRemote } from "./octaveSessionRemote";
 
@@ -48,39 +39,9 @@ function readVolume(): number {
   }
 }
 
+/** La file d'Octave sur ce moteur : la fabrique partagée (api-client), la copie gardée du bureau d'abord. */
 export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, provider: () => MusicProvider | null): OctavePlayer {
-  const sources = new SourceCache(withKeptSources({
-    library: (id) => fetchMusicSource(qc, id),
-    external: async (track, intent) => {
-      const p = provider();
-      if (!track.external || !isFromProvider(p, track.external.pluginId)) return null;
-      // Sans source parce que le budget de l'extension est atteint : le lecteur réessaiera (contrat `retry`).
-      // Le préchargement du suivant se dit (l'extension le fait passer après les gestes), « Réessayer » aussi.
-      const outcome = await resolveMusicSource(p, track.external.id, undefined, intent === "play" ? undefined : intent);
-      return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
-    },
-    now: () => Date.now(),
-  }));
-  const reporter = new PlaybackReporter({
-    library: (report) => void reportMusicPlayback(report),
-    externalPlayed: (track, completed) => {
-      const p = provider();
-      if (track.external && isFromProvider(p, track.external.pluginId)) reportExternalPlayed(p, track.external.id, completed);
-    },
-    now: () => Date.now(),
-  });
-  return new OctavePlayer({
-    engine,
-    sources,
-    reporter,
-    prefetchExternal: (tracks, intent) => {
-      const p = provider();
-      if (!p) return;
-      // Un titre gardé sur l'appareil se lit depuis le disque : rien à préparer chez l'extension.
-      const ids = tracks.filter((t) => t.availability !== "library" && t.external && isFromProvider(p, t.external.pluginId) && !keptFor(t.key)).map((t) => t.external!.id);
-      prefetchMusic(p, ids, intent);
-    },
-  });
+  return buildSharedOctavePlayer(engine, qc, provider, { wrapSources: withKeptSources, isKept: (key) => keptFor(key) !== null });
 }
 
 /** La file, sur le moteur démarré par A2 (un moteur neuf → une file neuve). */

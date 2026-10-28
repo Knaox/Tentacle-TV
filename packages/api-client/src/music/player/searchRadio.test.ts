@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MusicProvider } from "@tentacle-tv/api-client";
+import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import type { ExternalMusicRadio, MusicTrack, PlaybackSource } from "@tentacle-tv/shared/music";
 import { OctavePlayer, PlaybackReporter, SourceCache, currentItem, upcoming } from "@tentacle-tv/shared/octave";
 import { createFakeEngine, externalTrack } from "@tentacle-tv/shared/octave/testing";
