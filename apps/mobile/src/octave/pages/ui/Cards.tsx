@@ -12,13 +12,14 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CloudOff } from "lucide-react-native";
-import { openUnavailableAlbum } from "@tentacle-tv/api-client";
-import { isUnavailableAlbum, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
+import { openUnavailableAlbum, useMusicPending } from "@tentacle-tv/api-client";
+import { isUnavailableAlbum, playlistTrackTotal, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
+import { useOctavePagesProvider } from "../env/pagesEnv";
 import { Artwork } from "./Artwork";
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
@@ -98,10 +99,12 @@ export const ArtistCard = memo(function ArtistCard({ artist, width }: { artist: 
 export const PlaylistCard = memo(function PlaylistCard({ playlist, width }: { playlist: MusicPlaylist; width: number }) {
   const nav = useOctaveNav();
   const { t } = useTranslation("music");
+  // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
+  const count = playlistTrackTotal(playlist.trackCount, useMusicPending(useOctavePagesProvider()).data.items, playlist.jellyfinId);
   return (
     <PressableCard onPress={() => nav.playlist(playlist.jellyfinId)} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.name}>
       <Artwork url={playlist.artworkUrl} size={width} radius={10} />
-      <Caption title={playlist.name} subtitle={t("count.tracks", { count: playlist.trackCount })} />
+      <Caption title={playlist.name} subtitle={t("count.tracks", { count })} />
     </PressableCard>
   );
 });

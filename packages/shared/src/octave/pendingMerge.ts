@@ -115,3 +115,13 @@ export function playlistOccurrences(
       .map((i) => i.operationId),
   };
 }
+
+/**
+ * Le total d'une playlist pour sa CARTE (liste des playlists, étagères) : les titres de Jellyfin (`trackCount`)
+ * et ses ajouts encore en attente de l'extension (titres hors bibliothèque, YouTube) — ceux que sa page montre
+ * déjà à leur place (`mergePlaylist`). Sans eux, une playlist de 189 titres en annonçait 154 (28/10). La carte
+ * n'a pas les entrées : un ajout en attente dont le titre est déjà arrivé dans Jellyfin cesse d'attendre de lui-même.
+ */
+export function playlistTrackTotal(trackCount: number, pending: readonly PendingMusicItem[], playlistId: string): number {
+  return trackCount + pending.filter((i) => i.kind === "playlistAdd" && i.playlistId === playlistId).length;
+}

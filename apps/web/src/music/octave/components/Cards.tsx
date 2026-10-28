@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { openUnavailableAlbum } from "@tentacle-tv/api-client";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
-import { isUnavailableAlbum } from "@tentacle-tv/shared/octave";
+import { isUnavailableAlbum, playlistTrackTotal } from "@tentacle-tv/shared/octave";
 import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
 import { rememberAlbumPreview } from "../data/albumPreview";
 import { useEntityIntent } from "../data/entityIntent";
@@ -28,6 +28,7 @@ import { CollectionSwell } from "../motion/NowSwell";
 import { PlaylistArtwork, playlistCoverUrls } from "./PlaylistArtwork";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
 import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
+import { usePendingMusic } from "../pending/usePendingMusic";
 
 function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
   const { play, warm } = useCollectionPlayback();
@@ -148,6 +149,8 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
   const { t } = useTranslation("music");
   // Gérer la playlist (« … » au survol, ou clic droit) : seulement si le compte peut la modifier.
   const context = usePlaylistContextMenu(playlist);
+  // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
+  const pending = usePendingMusic();
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="group/playlist relative min-w-0">
@@ -161,7 +164,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
         <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={playlist.name}>
           {playlist.name}
         </p>
-        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlist.trackCount })}</p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlistTrackTotal(playlist.trackCount, pending, playlist.jellyfinId) })}</p>
       </div>
     </Link>
     <div className={`absolute bottom-2 right-1 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/playlist:opacity-100 [@media(hover:none)]:opacity-100"}`}>

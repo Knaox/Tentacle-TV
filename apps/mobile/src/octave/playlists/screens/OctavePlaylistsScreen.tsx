@@ -11,7 +11,8 @@ import Animated from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { Heart, ListMusic, MoreHorizontal, Plus } from "lucide-react-native";
-import { useMusicImport, useMusicPlaylists } from "@tentacle-tv/api-client";
+import { useMusicImport, useMusicPending, useMusicPlaylists } from "@tentacle-tv/api-client";
+import { playlistTrackTotal } from "@tentacle-tv/shared/octave";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography } from "@/theme";
 import { haptic } from "@/utils/haptics";
@@ -36,6 +37,9 @@ export function OctavePlaylistsScreen() {
   const playlists = useMusicPlaylists();
   const importable = useMusicImport(useOctavePagesProvider()).available;
   const offline = useOfflineMode();
+  // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
+  const pending = useMusicPending(useOctavePagesProvider()).data.items;
+  const totalOf = useCallback((p: MusicPlaylist) => playlistTrackTotal(p.trackCount, pending, p.jellyfinId), [pending]);
   const { scrollY, scrollProps } = useOctavePageScroll();
   const columns = layout.isTablet ? layout.columns(180) : 1;
   const items = useMemo<Item[]>(() => [{ kind: "liked" }, ...(playlists.data ?? []).map((playlist) => ({ kind: "playlist" as const, playlist }))], [playlists.data]);
@@ -67,13 +71,13 @@ export function OctavePlaylistsScreen() {
           onLongPress={() => manage(p)}
           delayLongPress={350}
           accessibilityRole="button"
-          accessibilityHint={t("count.tracks", { count: p.trackCount })}
+          accessibilityHint={t("count.tracks", { count: totalOf(p) })}
           style={({ pressed }) => [styles.row, { paddingHorizontal: layout.gutter, backgroundColor: pressed ? colors.pressed : "transparent" }]}
         >
           <Artwork url={p.artworkUrl} size={56} radius={8} />
           <View style={styles.rowText}>
             <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text }]}>{p.name}</Text>
-            <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: p.trackCount })}</Text>
+            <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(p) })}</Text>
           </View>
           {p.editable ? (
             <Pressable onPress={() => manage(p)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("playlistManage.more", { name: p.name })} style={styles.more}>
@@ -83,7 +87,7 @@ export function OctavePlaylistsScreen() {
         </Pressable>
       );
     },
-    [colors, layout.gutter, manage, nav, t],
+    [colors, layout.gutter, manage, nav, t, totalOf],
   );
 
   const renderCard = useCallback(
@@ -106,11 +110,11 @@ export function OctavePlaylistsScreen() {
             <Artwork url={item.playlist.artworkUrl} size={width} radius={12} />
           )}
           <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text, marginTop: 8 }]}>{name}</Text>
-          {!isLiked ? <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: item.playlist.trackCount })}</Text> : null}
+          {!isLiked ? <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(item.playlist) })}</Text> : null}
         </PressableScale>
       );
     },
-    [colors, columns, layout, manage, nav, t],
+    [colors, columns, layout, manage, nav, t, totalOf],
   );
 
   const actions = (

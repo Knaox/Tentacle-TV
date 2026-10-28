@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PendingMusicItem } from "../music";
 import { externalTrack, libraryTrack } from "./fixtures";
-import { mergeLiked, mergePlaylist, playlistHasTrack, playlistOccurrences } from "./pendingMerge";
+import { mergeLiked, mergePlaylist, playlistHasTrack, playlistOccurrences, playlistTrackTotal } from "./pendingMerge";
 
 function pendingItem(id: string, overrides: Partial<PendingMusicItem> = {}): PendingMusicItem {
   return {
@@ -132,5 +132,18 @@ describe("une entrée IMPORTÉE (importTracks)", () => {
   it("une entrée d'avant (sans `imported`) reste « en attente »", () => {
     const item = pendingItem("x", { kind: "playlistAdd", playlistId: "pl", position: 0 });
     expect(mergePlaylist([], [item], "pl")[0]?.track.availability).toBe("pending");
+  });
+});
+
+describe("playlistTrackTotal", () => {
+  const add = (playlistId: string, operationId: string) => ({ kind: "playlistAdd", playlistId, operationId }) as unknown as PendingMusicItem;
+  const like = { kind: "like", operationId: "l" } as unknown as PendingMusicItem;
+
+  it("compte les ajouts en attente de CETTE playlist en plus des titres de Jellyfin", () => {
+    expect(playlistTrackTotal(154, [add("p1", "a"), add("p1", "b"), add("p2", "c"), like], "p1")).toBe(156);
+  });
+
+  it("sans attente, le total est celui de Jellyfin", () => {
+    expect(playlistTrackTotal(154, [], "p1")).toBe(154);
   });
 });
