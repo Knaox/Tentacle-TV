@@ -33,6 +33,7 @@ export { useWholeLiked } from "../music/lists/useWholeLiked";
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, useMusicShareLinkImport, playlistShareShown, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
 export { useSharedTrackSearch, sharedTrackSearchState, sharedTrackApi, sharedTrackKey, type SharedTrackSearch } from "../music/sharedLinks/useSharedTrackSearch";
+export { useSharedLinkSearch, sharedLinkSearchSteps } from "../music/sharedLinks/useSharedLinkSearch";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, octaveAvailabilityOf, type OctaveAvailability, type OctaveAvailabilityInput } from "../music/useOctaveAvailability";

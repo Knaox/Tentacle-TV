@@ -1,12 +1,12 @@
 /**
- * Octave (web, bureau) — un lien SHAZAM collé dans la recherche : le coller VALIDE (le geste est le collage), la
- * recherche attend que le titre soit nommé (`useSharedTrackSearch`, la règle commune avec le mobile), puis
- * l'adresse prend le titre à la place du lien (`replace` : le retour arrière ne repasse pas par le lien). Les
- * recherches récentes gardent le titre, jamais le lien.
+ * Octave (web, bureau, mobile) — un lien SHAZAM dans la recherche : le coller VALIDE (le geste est le collage),
+ * la recherche attend que le titre soit nommé (`useSharedTrackSearch`), puis l'adresse prend le titre à la place
+ * du lien (`replace` : le retour arrière ne repasse pas par le lien). Les recherches récentes gardent le titre,
+ * jamais le lien. Le lien arrivé par la feuille de partage du téléphone entre directement dans `?q=`.
  */
 
 import { useEffect } from "react";
-import { useSharedTrackSearch, type SharedTrackSearch } from "@tentacle-tv/api-client";
+import { useSharedTrackSearch, type SharedTrackSearch } from "./useSharedTrackSearch";
 import { findShazamLink } from "@tentacle-tv/shared/music";
 
 /** Ce que la recherche doit faire, PUR : valider un lien collé, ou remplacer le lien par le titre nommé. */

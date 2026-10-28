@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useSharedLinkSearch } from "@tentacle-tv/api-client";
 import { OctaveSearchBox } from "../search/OctaveSearchBox";
 import { parseSearchFilter } from "../search/SearchFilters";
 import type { SearchFilter } from "../search/searchLayout";
@@ -19,7 +20,6 @@ import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
 import { SearchHome } from "../search/SearchHome";
 import { SearchMoodResultsSlot } from "../home/ambianceSlots";
-import { useSharedLinkSearch } from "../search/useSharedLinkSearch";
 
 /** La barre d'attente ne se montre que si l'attente se voit (une recherche en cache n'en a pas). */
 const PREPARING_VISIBLE_MS = 150;
