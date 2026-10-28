@@ -42,7 +42,4 @@ export { usePlaylistManageGestures, type PlaylistManageHooks } from "../music/oc
 // Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
 export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
 export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
-// Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
-export * from "../music/octaveCache";
-export { useOctaveAvailability, type OctaveAvailability } from "../music/useOctaveAvailability";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";

@@ -76,7 +76,7 @@ function playlistBody(input: MusicSharePageInput, doc: SharedMusicPlaylist): str
     return `<li><span class="n">${index + 1}</span><span><span class="t">${e(track.title)}</span>${artists ? `<br><span class="a">${e(artists)}</span>` : ""}</span></li>`;
   });
   const rest = doc.total - Math.min(doc.tracks.length, SHOWN_TRACKS);
-  const app = `tentacle://octave-share?link=${encodeURIComponent(input.link)}`;
+  const app = `tentacle://octave/import?share=${encodeURIComponent(input.link)}`;
   return `<p class="kicker">${e(t.kicker)}</p>
 <h1 id="t">${e(doc.name)}</h1>
 <p class="lead">${by}${e(count)}</p>

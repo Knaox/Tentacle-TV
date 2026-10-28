@@ -14,6 +14,8 @@ import { ListMusic, MoreHorizontal, Search } from "lucide-react-native";
 import { queueActions, type ListRow } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
 import { usePagesPlayer } from "../../pages";
+import { playFrom } from "../../pages/env/playFrom";
+import { KeepCollectionButton } from "../../offline/KeepCollectionButton";
 import { useOctaveNav } from "../../pages/env/nav";
 import { CollectionHeader, MetaLine } from "../../pages/entity/CollectionHeader";
 import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
@@ -39,6 +41,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const removeRows = useMobilePlaylistRemoval(target);
   const onRemove = useCallback((row: ListRow) => void removeRows(natural, new Set([row.rowKey])), [natural, removeRows]);
   const tracks = useMemo(() => order.rows.map((r) => r.track), [order.rows]);
+  const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const contextId = `playlist:${id}`;
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
 
@@ -56,8 +59,10 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
         meta={<MetaLine parts={[loading ? null : meta]} />}
         canPlay={tracks.length > 0}
         // La lecture suit l'ordre AFFICHÉ (trié, cherché) : « Lecture » joue ce qu'on voit.
-        onPlay={() => player?.playList(tracks, 0, contextId)}
+        onPlay={() => playFrom(player, tracks, 0, contextId)}
         onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
+        // Garder la playlist ENTIÈRE sur l'appareil (et la tenir à jour), comme le bureau.
+        extra={data && !loading ? <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} /> : undefined}
       />
       {data?.description ? <Text style={[typography.caption, { color: theme.colors.text.secondary, paddingHorizontal: gutter, paddingBottom: 8, textAlign: "center" }]}>{data.description}</Text> : null}
     </>

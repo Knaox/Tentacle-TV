@@ -14,7 +14,7 @@ import { SearchX } from "lucide-react-native";
 import type { useListOrder } from "@tentacle-tv/api-client";
 import type { ListRow } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
-import { OctavePagesHost, PAGE_BOTTOM_ROOM } from "../../pages";
+import { OctavePagesHost } from "../../pages";
 import { PageTopBar } from "../../pages/entity/PageTopBar";
 import { EmptyState, PillButton, TrackRowsSkeleton } from "../../pages/ui/ViewStates";
 import { usePageMetrics } from "../../pages/ui/pageStyle";
@@ -44,7 +44,7 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
   const { t } = useTranslation("music");
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { gutter } = usePageMetrics();
+  const { gutter, bottomInset } = usePageMetrics();
   const scrollY = useSharedValue(0);
   const rows = order.rows;
   const block = order.reorder?.block ?? null;
@@ -85,7 +85,7 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
         gutter={gutter}
         scrollY={scrollY}
         header={header}
-        bottomInset={insets.bottom + PAGE_BOTTOM_ROOM}
+        bottomInset={bottomInset}
         reorder={order.reorder}
         onRemove={onRemove}
       />

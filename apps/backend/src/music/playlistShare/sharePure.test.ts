@@ -61,7 +61,7 @@ describe("page du lien", () => {
     expect(html).toContain("Par &lt;b&gt;Damien&lt;/b&gt;");
     expect(html).not.toContain("<b>Damien");
     expect(html).toContain('action="/octave/share/AbCdEfGhIjKlMnOpQrStUv/import"');
-    expect(html).toContain(`href="tentacle://octave-share?link=${encodeURIComponent(link)}"`);
+    expect(html).toContain(`href="tentacle://octave/import?share=${encodeURIComponent(link)}"`);
     expect(html).not.toMatch(/<script/i);
   });
 

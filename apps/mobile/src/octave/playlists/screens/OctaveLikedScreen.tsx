@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import { Heart, Search } from "lucide-react-native";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { usePagesPlayer } from "../../pages";
+import { playFrom } from "../../pages/env/playFrom";
+import { KeepLikedButton } from "../../offline/KeepLikedButton";
 import { useOctaveNav } from "../../pages/env/nav";
 import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
 import { EmptyState, ErrorState, PillButton } from "../../pages/ui/ViewStates";
@@ -23,6 +25,7 @@ export function OctaveLikedScreen() {
   const nav = useOctaveNav();
   const { liked, natural, order, total, loading } = useLikedData();
   const tracks = useMemo(() => order.rows.map((r) => r.track), [order.rows]);
+  const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const meta = useCountAndDuration(total, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
 
   if (liked.isError && natural.length === 0) return <ErrorState onRetry={() => void liked.refetch()} />;
@@ -36,8 +39,9 @@ export function OctaveLikedScreen() {
           scrollY={scrollY}
           meta={liked.isPending ? null : meta}
           canPlay={tracks.length > 0}
-          onPlay={() => player?.playList(tracks, 0, "liked")}
+          onPlay={() => playFrom(player, tracks, 0, "liked")}
           onShuffle={() => player && queueActions.playShuffled(player, tracks, "liked")}
+          extra={!loading && natural.length > 0 ? <KeepLikedButton tracks={allTracks} /> : null}
         />
       )}
       natural={natural}

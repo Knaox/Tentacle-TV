@@ -5,7 +5,7 @@
  * montant (transformations seules, fil d'interface).
  */
 
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,9 +23,11 @@ interface Props {
   onPlay: () => void;
   onShuffle: () => void;
   scrollY: SharedValue<number>;
+  /** À côté d'Aléatoire (« Garder hors ligne »). */
+  extra?: ReactNode;
 }
 
-export const LikedHero = memo(function LikedHero({ meta, canPlay, onPlay, onShuffle, scrollY }: Props) {
+export const LikedHero = memo(function LikedHero({ meta, canPlay, onPlay, onShuffle, scrollY, extra }: Props) {
   const { t } = useTranslation("music");
   const theme = useTheme();
   const colors = useOctaveColors();
@@ -62,6 +64,7 @@ export const LikedHero = memo(function LikedHero({ meta, canPlay, onPlay, onShuf
                 <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{t("common.shuffle")}</Text>
               </GlassSurface>
             </Pressable>
+            {extra}
           </View>
         </View>
       </View>
