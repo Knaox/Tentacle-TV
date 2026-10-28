@@ -14,8 +14,8 @@ const MENU = read("components/ui/glass/lgMenu.css");
 
 /** Les déclarations d'un jeton local `--lgm-*` : le REPLI quand le socle ne le donne pas. */
 function fallbackOf(name: string): string {
-  const match = MENU.match(new RegExp(`${name}:\\s*var\\(--lg-[a-z-]+,\\s*(rgb\\([^)]*\\)|#[0-9a-f]+)\\)`, "i"))
-    ?? MENU.match(new RegExp(`${name}:\\s*(rgb\\([^)]*\\))`, "i"));
+  const match = MENU.match(new RegExp(`${name}:\\s*var\\(--lg-[a-z-]+,\\s*(rgba?\\([^)]*\\)|#[0-9a-f]+)\\)`, "i"))
+    ?? MENU.match(new RegExp(`${name}:\\s*(rgba?\\([^)]*\\))`, "i"));
   if (!match) throw new Error(`Repli introuvable : ${name}`);
   return match[1];
 }
@@ -58,13 +58,21 @@ describe("les menus en verre", () => {
     }
   });
 
-  it("la pastille : un accent UNI où le blanc tient 4,5:1 — jamais le dégradé de marque", () => {
-    for (const name of ["--lgm-highlight", "--lgm-danger-highlight"]) {
-      const color = parseColor(fallbackOf(name));
-      expect(color, name).not.toBeNull();
-      expect(contrastRatio(WHITE, color!), name).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
-    }
-    expect(MENU).not.toMatch(/gradient/);
+  it("la pastille : NEUTRE et translucide, le texte à sa couleur — jamais la marque", () => {
+    const pill = parseColor(fallbackOf("--lgm-highlight"));
+    expect(pill).not.toBeNull();
+    expect(pill!.r === pill!.g && pill!.g === pill!.b && pill!.a < 0.2).toBe(true);
+    expect(MENU).not.toMatch(/gradient|--lgm-glyph|--lg-row-highlight-glyph/);
+    expect(MENU).not.toMatch(/--lgm-highlight:[^;]*brand/);
+    // Le principal et les touches de marque gardent leur couleur sur la pastille.
+    const block = MENU.slice(MENU.indexOf("/* ── La pastille"), MENU.indexOf("/* La destruction, elle"));
+    expect(block).not.toMatch(/--text-primary:|--brand-[a-z]+:|\scolor:/);
+  });
+
+  it("la destruction garde sa pastille rouge PLEINE, où le blanc tient 4,5:1", () => {
+    const red = parseColor(fallbackOf("--lgm-danger-highlight"));
+    expect(contrastRatio(WHITE, red!)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    expect(MENU).toMatch(/\.lg-row-danger:is\(:hover, :focus-visible\)[^{]*\{[^}]*background: var\(--lgm-danger-highlight\);/);
   });
 
   it("des rayons concentriques : la rangée vaut le menu moins sa marge", () => {

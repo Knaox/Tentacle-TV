@@ -17,7 +17,7 @@ import { LiquidGlass } from "../../theme/glass";
 const row: CSSProperties = { display: "flex", alignItems: "center" };
 const ICON = 17;
 
-/** Une rangée de menu : la pastille insérée, l'accent uni et des glyphes blancs au survol. */
+/** Une rangée de menu : la pastille insérée, NEUTRE au ton du verre (le texte garde sa couleur) ; rouge pour la destruction. */
 function MenuRow({ icon, label, danger = false }: { icon: ReactNode; label: string; danger?: boolean }) {
   const [hover, setHover] = useState(false);
   return (
@@ -34,8 +34,8 @@ function MenuRow({ icon, label, danger = false }: { icon: ReactNode; label: stri
         border: 0,
         fontSize: 14,
         borderRadius: "var(--lg-row-radius)",
-        background: hover ? "var(--lg-row-highlight)" : "none",
-        color: hover ? "var(--lg-row-highlight-glyph)" : danger ? "var(--lg-danger)" : "inherit",
+        background: hover ? (danger ? "rgb(220, 38, 38)" : "var(--lg-row-highlight)") : "none",
+        color: hover && danger ? "#fff" : danger ? "var(--lg-danger)" : "inherit",
         textShadow: hover ? "none" : undefined,
       }}
     >
