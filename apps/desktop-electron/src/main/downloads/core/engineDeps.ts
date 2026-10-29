@@ -9,6 +9,7 @@
 
 import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
+import type { HoldState } from "./engineHold";
 import type { Creds, ServerPrepare } from "./worker";
 
 /** Ce que la plateforme rend d'une finalisation : voir `EngineDeps.finalizeMedia`. */
@@ -58,6 +59,13 @@ export interface EngineDeps {
    * l'anti-suspension du système (`downloadsRuntime.ts`).
    */
   onBusy?: (busy: boolean) => void;
+  /**
+   * Ce qui doit tenir la plateforme au-delà des transferts en vol : une relance
+   * programmée, une attente demandée par le serveur (`engineHold.ts`). Notifiée
+   * à chaque changement. Android y tient son service et ses minuteurs, le bureau
+   * sa fin de transferts fenêtre fermée.
+   */
+  onHeld?: (state: HoldState) => void;
   /**
    * Les transferts peuvent-ils PARTIR maintenant (réseau autorisé, serveur
    * tenu pour joignable) ? Consultée à chaque `pump`, jamais mise en cache.

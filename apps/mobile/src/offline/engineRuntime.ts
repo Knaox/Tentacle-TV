@@ -26,6 +26,7 @@ import { finalizeMp4, setExcludedFromBackup } from "../../modules/offline-storag
 import { publicLog } from "../../modules/offline-storage/publicLog";
 import {
   onEngineBusy,
+  onEngineHeld,
   onEngineProgress,
   onEngineQueueChanged,
   setPauseAllHandler,
@@ -151,6 +152,9 @@ export function offlineEngine(): DownloadEngine {
     // Service de premier plan Android, session d'arrière-plan iOS ou
     // anti-veille de l'écran : voir `backgroundTransfers.ts`.
     onBusy: onEngineBusy,
+    // …et ce qui la tient au-delà des transferts en vol : une relance programmée,
+    // une préparation du serveur qu'on attend (`engineHold.ts`).
+    onHeld: onEngineHeld,
     // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
     onUnexpected: (context, error) => {
       publicLog("transferts", `${context} : ${String(error)}`, "warn");

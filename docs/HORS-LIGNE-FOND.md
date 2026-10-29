@@ -16,6 +16,9 @@ arrière-plan ; sur l'iPhone, aucune Live Activity. Ce carnet dit pourquoi, ce q
 | 5 | iOS | Un minuteur ne sonne jamais sur un iPhone qui dort. | Trois relances SANS délai derrière (`immediateNetworkRetries`) : la tâche remise au système attend le réseau seule. |
 | 6 | Les deux | Le téléphone tirait le transcodage en direct (`/light`) : préparation liée à SA connexion, repartie de zéro à chaque coupure. | Préparation tenue par le serveur (`offline.serverPrepare`), ci-dessous. |
 | 7 | iOS | Une activité d'un lancement d'avant, terminée par nous, restée `dismissed`, passait pour balayée par la personne : aucune Live Activity pour le lot. | Seule une activité de CE lancement compte (`LiveActivityBridge.startedIds`). |
+| 8 | Les deux, bureau | Plus rien en vol = moteur « libre » (`onBusy`), même quand des titres attendaient une relance : Android rendait service et horloge, le bureau quittait sa fin de transferts. Une playlist d'Octave dont les titres attendent l'extension (503 + `Retry-After`) ne repartait jamais (29/10). | `EngineDeps.onHeld` (`engineHold.ts`) : en vol, relance programmée, attente demandée par le serveur ; `pending()` compte les relances. Android tient sur les deux premières, le bureau sur la dernière. |
+| 9 | iOS | expo-file-system rendait la main au système dès la fin des évènements de sa session, avant que le JavaScript remette la SUITE : seuls les titres déjà remis allaient au bout. | `OfflineSessionWakeSubscriber` retient le réveil ~25 s et passe par `wakeForPrepared`. |
+| 10 | iOS | Le minuteur d'un `Retry-After` d'extension ne sonne jamais derrière. | Le serveur voit le 503 de la route `offline` et envoie la push `offline:prepared` à l'heure dite (`extensionWaitWake.ts`). |
 
 ## La préparation tenue par le serveur (`offline.serverPrepare`, serveur 1.31.1)
 
@@ -35,6 +38,27 @@ arrière-plan ; sur l'iPhone, aucune Live Activity. Ce carnet dit pourquoi, ce q
   préparation s'achève SANS lecteur : l'iPhone dont le transfert a été coupé est réveillé
   (`PushWake.swift` → `wakeForPrepared`) et reprend par plage un fichier complet.
 - Sans la capacité : `/light`, comme avant.
+
+## La musique d'Octave (29/10)
+
+Un titre gardé passe par le MÊME moteur, la même file, les mêmes relances, la même remise au
+pilote avant les à-côtés (`worker.ts` : sa pochette part pendant) — mais pas par
+`offline.serverPrepare` : il dit lui-même d'où le tirer (`files.source_path`). La bibliothèque
+sert l'original ou l'Allégé audio en direct (`/api/downloads/original|light`, quelques secondes,
+rien à préparer) ; une extension prépare à son rythme et répond 503 + `Retry-After`. Pour celle-ci,
+le réveil ne peut pas venir de la fin d'une préparation que le cœur ne voit pas : il vient de
+l'heure que l'extension a dite.
+
+- Le serveur : réponse 503 + `Retry-After` à un GET de la route `offline` (manifeste) d'une
+  session personnelle → une push silencieuse par compte à l'heure dite + 10 s, au plus une par
+  minute, la plus proche échéance seulement, 6 h au plus, en mémoire.
+- L'iPhone : la push ou la fin des transferts remis réveillent `wakeForPrepared` (pauses
+  système relevées, relances échues, `pump`) ; les tâches remises vont au bout sans lui.
+- Android : le service et la tâche headless restent tant qu'une relance est programmée.
+- Le bureau : fenêtre fermée, le processus reste tant que le serveur prépare (pas pour une
+  coupure sans fin, qui garde ses dix minutes).
+- La LECTURE s'arrête quand l'app est balayée (`OctaveAudioService.onTaskRemoved`, lot fv) ;
+  les transferts, eux, ont leur service à part (`OfflineTransferService`) et continuent.
 
 ## Mesuré (banc, 20/10)
 

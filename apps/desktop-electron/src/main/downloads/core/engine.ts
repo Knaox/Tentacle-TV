@@ -21,17 +21,19 @@
 
 import type { EngineDeps } from "./engineDeps";
 import { applyEnd } from "./engineEnd";
+import { HoldTracker, type HoldState } from "./engineHold";
 import { cancelFile, pauseFile, resumeFile } from "./engineGestures";
 import { runAttempt } from "./engineWork";
 import { mayStart } from "./musicLane";
 import { NetworkRetryLadder } from "./networkRetry";
 import { enterPrepare, preparedByServer } from "./preparePhase";
-import { RETRY_DELAYS_MS, RetryScheduler } from "./retry";
+import { countAwaitingRetry, RETRY_DELAYS_MS, RetryScheduler } from "./retry";
 import { countQueued, nextQueued, normalizeOnEngineStart, requeueSystemPauses, setStatus, suspendQueued } from "./queue";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import type { Creds } from "./worker";
 
 export type { EngineDeps, FinalizeVerdict } from "./engineDeps";
+export type { HoldState } from "./engineHold";
 
 /**
  * Un seul transfert à la fois. Deux se disputaient la bande passante, le disque
@@ -58,8 +60,11 @@ export class DownloadEngine {
   private readonly retries: RetryScheduler;
   /** Coupures réseau d'affilée : la marche de leur relance (`networkRetry.ts`). */
   private readonly networkRetries: NetworkRetryLadder;
+  /** Ce qui tient la plateforme au-delà des transferts en vol (`engineHold.ts`). */
+  private readonly hold: HoldTracker;
 
   constructor(private readonly deps: EngineDeps) {
+    this.hold = new HoldTracker(deps.db, deps.onHeld);
     this.retries = new RetryScheduler(deps.db, deps.now, () => this.sweepRetries());
     this.networkRetries = new NetworkRetryLadder(deps.networkRetryDelaysMs, deps.immediateNetworkRetries);
   }
@@ -68,8 +73,14 @@ export class DownloadEngine {
     return this.active.has(fileId);
   }
 
+  /** Ce qui tient la plateforme en ce moment — voir `EngineDeps.onHeld`. */
+  held(): HoldState {
+    return this.hold.current();
+  }
+
   /**
-   * Transferts en cours ET en attente — ce qu'une fermeture interromprait.
+   * Transferts en cours, en file ET en attente d'une relance — ce qu'une
+   * fermeture interromprait.
    *
    * Sans identifiants, le moteur ne peut rien tirer : une file qui attend une
    * reconnexion n'est pas « en cours », et le dire ferait poser une question à
@@ -77,7 +88,7 @@ export class DownloadEngine {
    */
   pending(): number {
     if (this.creds === null) return 0;
-    return this.active.size + countQueued(this.deps.db);
+    return this.active.size + countQueued(this.deps.db) + countAwaitingRetry(this.deps.db);
   }
 
   /** « Quelque chose a changé » : l'interface invalide ses listes. */
@@ -123,8 +134,8 @@ export class DownloadEngine {
     } else {
       this.startWhatCanRun();
     }
-    this.updateActivity();
     this.retries.arm();
+    this.updateActivity();
   }
 
   /**
@@ -165,6 +176,7 @@ export class DownloadEngine {
       // Un titre de musique : « Préparation… » jusqu'à la première réponse (`preparePhase.ts`).
       enterPrepare(this.deps.db, file, this.deps.now());
       const flags = new TransferFlags();
+      this.hold.forget(file.id);
       this.active.set(file.id, flags);
       if (isMusic) this.activeMusic.add(file.id);
       void this.work(creds, file.id, flags);
@@ -174,9 +186,11 @@ export class DownloadEngine {
   /** Ne notifie qu'aux transitions — voir `EngineDeps.onBusy`. */
   private updateActivity(): void {
     const busy = this.active.size > 0;
-    if (busy === this.busy) return;
-    this.busy = busy;
-    this.deps.onBusy?.(busy);
+    if (busy !== this.busy) {
+      this.busy = busy;
+      this.deps.onBusy?.(busy);
+    }
+    this.hold.update(busy);
   }
 
   private async work(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
@@ -187,6 +201,7 @@ export class DownloadEngine {
   private finish(fileId: number, end: TransferEnd, moved: boolean): void {
     this.active.delete(fileId);
     this.activeMusic.delete(fileId);
+    this.hold.noteEnd(fileId, end);
     const now = this.deps.now();
     applyEnd(this.deps.db, fileId, end, {
       nowMs: now,
@@ -204,7 +219,10 @@ export class DownloadEngine {
 
   pause(fileId: number): void {
     pauseFile(this.deps.db, fileId, this.active.get(fileId), this.deps.now());
+    this.hold.forget(fileId);
     this.notifyChanged();
+    this.retries.arm();
+    this.updateActivity();
   }
 
   resume(fileId: number): void {
@@ -244,8 +262,13 @@ export class DownloadEngine {
   cancel(fileId: number): void {
     const flags = this.active.get(fileId);
     cancelFile(this.deps.db, this.deps.volume(), fileId, flags, this.deps.now());
+    this.hold.forget(fileId);
     // Un transfert en vol posera son statut lui-même en se terminant.
-    if (flags === undefined) this.notifyChanged();
+    if (flags === undefined) {
+      this.notifyChanged();
+      this.retries.arm();
+      this.updateActivity();
+    }
   }
 
   /**
