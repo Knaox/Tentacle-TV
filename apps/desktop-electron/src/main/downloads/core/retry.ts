@@ -134,6 +134,21 @@ export function nextRetryDueAt(db: DatabaseHandle): number | null {
 }
 
 /**
+ * Les fichiers qui attendent une relance programmée : rien en vol, rien de fini
+ * non plus — une fermeture les interromprait comme ceux de la file.
+ */
+export function countAwaitingRetry(db: DatabaseHandle): number {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM files
+       WHERE (status = 'error' OR (status = 'paused' AND paused_by_user = 0))
+         AND next_retry_at IS NOT NULL`,
+    )
+    .get();
+  return row === undefined ? 0 : integer(row, "n");
+}
+
+/**
  * Le minuteur des relances : un seul pour toute la file, toujours calé sur la
  * PROCHAINE échéance. Un minuteur par fichier en aurait armé autant que
  * d'erreurs, pour un seul réveil utile.
