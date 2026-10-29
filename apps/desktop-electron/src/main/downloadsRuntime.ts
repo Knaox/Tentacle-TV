@@ -41,6 +41,17 @@ let purgeTimer: ReturnType<typeof setInterval> | null = null;
 let wakeConnected = false;
 /** Un transfert tourne en ce moment (`onBusy`) : la fin des transferts fenêtre fermée le suit (`backgroundDrain.ts`). */
 let busyNow = false;
+/**
+ * Des titres attendent que le SERVEUR les prépare (503 + `Retry-After` d'une extension, `engineHold.ts`) :
+ * rien ne transfère, et pourtant la file avance — la fin des transferts fenêtre fermée ne l'abandonne pas,
+ * l'anti-suspension non plus. Une coupure réseau sans fin, elle, ne tient rien : la machine peut dormir.
+ */
+let awaitingServer = false;
+
+function syncWakeLock(): void {
+  if (busyNow || awaitingServer) systemWakeLock.prevent();
+  else systemWakeLock.release();
+}
 
 /**
  * Anti-suspension du système, posée tant qu'un transfert tourne.
@@ -84,8 +95,11 @@ export function downloadsEngine(): DownloadEngine {
     },
     onBusy: (busy) => {
       busyNow = busy;
-      if (busy) systemWakeLock.prevent();
-      else systemWakeLock.release();
+      syncWakeLock();
+    },
+    onHeld: (state) => {
+      awaitingServer = state.awaitingServer;
+      syncWakeLock();
     },
     onStarted: (creds) => {
       startPeriodicPurge();
@@ -112,8 +126,8 @@ export function transfersInFlight(): number {
   }
 }
 
-/** Au moins un transfert tourne. */
-export const transfersBusy = (): boolean => busyNow;
+/** Au moins un transfert tourne, ou le serveur prépare ce qu'on attend. */
+export const transfersBusy = (): boolean => busyNow || awaitingServer;
 
 /**
  * Reprise au réveil de veille.
