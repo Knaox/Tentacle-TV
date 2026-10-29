@@ -30,6 +30,9 @@ class OctaveAudioModule : Module() {
             OctaveAudioEngine.clearEmitter(this@OctaveAudioModule)
         }
 
+        // Le lancement en cours (processus, puis chaque balayage) : la reprise du lecteur ne vaut que dans le même.
+        Function("launchId") { OctaveAudioEngine.launchId() }
+
         AsyncFunction("invoke") { command: String, argsJson: String ->
             val context = appContext.reactContext ?: throw IllegalStateException("octave-audio: contexte Android absent")
             OctaveAudioEngine.invoke(context, command, argsJson)
