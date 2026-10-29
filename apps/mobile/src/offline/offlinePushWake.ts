@@ -1,5 +1,7 @@
 /**
- * L'iPhone réveillé par le serveur : une préparation tenue par le serveur
+ * L'iPhone réveillé derrière — par la session d'arrière-plan (des transferts
+ * remis au système viennent de finir, `ios/SessionWake.swift` : on remet la
+ * SUITE de la file) ou par le serveur : une préparation tenue par le serveur
  * (`offline.serverPrepare`) s'est achevée sans que le téléphone la lise — son
  * transfert avait été coupé pendant que l'application dormait. iOS rend la
  * main une trentaine de secondes (`PushWake.swift`) : on relance tout de suite
@@ -18,6 +20,9 @@ import { onOfflinePrepared } from "../../modules/offline-storage/pushWake";
 import { setTransfersSuspended } from "./backgroundParallel";
 import { offlineEngineIfStarted } from "./engineRuntime";
 
+/** Un réveil de la session d'arrière-plan (`SessionWake.itemPrefix`, Swift) plutôt qu'un titre prêt. */
+const SESSION_WAKE_PREFIX = "session:";
+
 export function wakeForPrepared(): void {
   // Réveillée derrière, l'application l'est encore : plusieurs transferts
   // partent ensemble, et une coupure repart sans délai.
@@ -34,7 +39,8 @@ export function useOfflinePushWake(): void {
   useEffect(
     () =>
       onOfflinePrepared((itemId) => {
-        publicLog("hors-ligne-fond", `réveil : préparation prête (${itemId}), relance des transferts`);
+        const cause = itemId.startsWith(SESSION_WAKE_PREFIX) ? "fin de transferts remis au système" : `préparation prête (${itemId})`;
+        publicLog("hors-ligne-fond", `réveil : ${cause}, relance des transferts`);
         wakeForPrepared();
       }),
     [],
