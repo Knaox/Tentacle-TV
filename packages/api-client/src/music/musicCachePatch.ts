@@ -34,13 +34,18 @@ export function withFavorites<T>(value: T, changes: ReadonlyMap<string, boolean>
     const favorite = changes.get(value.jellyfinId)!;
     return (value.favorite === favorite ? value : { ...value, favorite }) as T;
   }
-  let changed = false;
+  // Un album, un artiste, une playlist qui portent leur favori (`music.libraryFavorites`) : posé, puis on descend
+  // (un album porte ses titres). Un renvoi d'artiste (`MusicArtistRef`) n'a pas de favori : jamais touché.
+  const bearer = value as { jellyfinId?: unknown; favorite?: unknown };
+  const own = typeof bearer.jellyfinId === "string" && typeof bearer.favorite === "boolean" ? changes.get(bearer.jellyfinId) : undefined;
+  let changed = own !== undefined && own !== bearer.favorite;
   const next: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     const patched = withFavorites(item, changes, depth + 1);
     if (patched !== item) changed = true;
     next[key] = patched;
   }
+  if (own !== undefined) next.favorite = own;
   return (changed ? next : value) as T;
 }
 

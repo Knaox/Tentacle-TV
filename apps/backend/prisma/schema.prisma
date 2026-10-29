@@ -1069,3 +1069,18 @@ model MusicPlaylistMember {
   @@index([memberId])
   @@map("music_playlist_members")
 }
+
+/// 1.40.0 : un FAVORI de la bibliothèque d'Octave que Jellyfin ne peut pas tenir (`music/libraryShelves/`, contrat
+/// `musicLibraryShelves.ts`) : un élément d'une extension (`ext:<extension>:<id>`, avec l'INSTANTANÉ de sa carte), ou
+/// une playlist reçue d'un autre compte (`jf:<id>`, sans instantané : Jellyfin la refuse au membre). Compte sans
+/// tirets, en minuscules. Les favoris de la bibliothèque restent ceux de Jellyfin (`IsFavorite`).
+model MusicShelfFavorite {
+  userId       String
+  section      String
+  itemKey      String
+  snapshotJson String?
+  createdAt    DateTime @default(now())
+
+  @@id([userId, section, itemKey])
+  @@map("music_shelf_favorites")
+}

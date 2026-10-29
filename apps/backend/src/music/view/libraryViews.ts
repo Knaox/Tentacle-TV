@@ -42,7 +42,7 @@ export async function searchView(view: UserView, query: string, limits: SearchLi
   const rows = await visibleInOrder(view, hits.map((h) => h.id));
   const take = (kind: string, n: number) => rows.filter((r) => r.kind === kind).slice(0, n);
   const [tracks, albums] = await Promise.all([tracksOf(view, take("track", limits.tracks)), albumsOf(view, take("album", limits.albums))]);
-  return { query, tracks, albums, artists: artistsOf(take("artist", limits.artists)), playlists, tookMs: Date.now() - startedAt };
+  return { query, tracks, albums, artists: artistsOf(take("artist", limits.artists), view), playlists, tookMs: Date.now() - startedAt };
 }
 
 export async function albumsPageView(view: UserView, offset: number, limit: number, order: ListOrder): Promise<MusicAlbumPage> {
@@ -56,7 +56,7 @@ export async function artistsPageView(view: UserView, offset: number, limit: num
   if (view.access.mode === "none") return { items: [], total: 0, cursor: null };
   const visible = visibleIds(view, await orderedIds("artist", "name"));
   const rows = await visibleInOrder(view, visible.slice(offset, offset + limit));
-  return { items: artistsOf(rows), total: visible.length, cursor: nextCursor(offset, limit, visible.length) };
+  return { items: artistsOf(rows, view), total: visible.length, cursor: nextCursor(offset, limit, visible.length) };
 }
 
 export async function albumView(view: UserView, albumId: string): Promise<MusicAlbum | null> {
@@ -86,6 +86,6 @@ export async function artistView(view: UserView, artistId: string): Promise<Musi
   if (!row || row.kind !== "artist" || visibleRows(view, [row]).length === 0) return null;
   const [albumsRows, top] = await Promise.all([creditedTo(id, "album"), topTrackIds(view.userId, id)]);
   const topRows = top ? await visibleInOrder(view, top) : visibleRows(view, await creditedTo(id, "track")).slice(0, 10);
-  const [artist] = artistsOf([row]);
+  const [artist] = artistsOf([row], view);
   return { ...artist!, topTracks: await tracksOf(view, topRows), albums: await albumsOf(view, visibleRows(view, albumsRows)) };
 }

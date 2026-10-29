@@ -18,6 +18,7 @@ import { readPlaylistSource } from "../playlistSource/sourceStore";
 import { mosaicCandidatesFor, rememberMosaic, withMosaic } from "./playlistMosaic";
 import { playlistAccess } from "../playlistMembers/playlistAccess";
 import { playStatsFor, sharedListing, sharingFor } from "../playlistMembers/memberViews";
+import { receivedPlaylistFavorites } from "../libraryShelves/shelfFavoriteStore";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
   const ticks = item.CumulativeRunTimeTicks ?? item.RunTimeTicks;
@@ -30,6 +31,9 @@ export function toPlaylist(item: JfPlaylist): MusicPlaylist {
     artworkUrl: tag ? artworkUrl(`${normalizeId(item.Id)}/${tag}`) : null,
     // Lue au nom du propriétaire pour un membre : jamais « gérable » par lui.
     editable: item.CanDelete === true && !item.TentacleReaderId,
+    // Le favori Jellyfin du compte ; une playlist REÇUE (lue au nom du propriétaire) : celui que Tentacle garde,
+    // posé par `playlistsView` (`libraryShelves/`).
+    ...(!item.TentacleReaderId && { favorite: item.UserData?.IsFavorite === true }),
   };
 }
 
@@ -41,11 +45,12 @@ export async function playlistsView(view: UserView): Promise<MusicPlaylist[]> {
   const { received, sharing } = await sharedListing(view.userId, own);
   const receivedIds = new Set(received.map((p) => normalizeId(p.Id)));
   const items = [...own.filter((p) => !receivedIds.has(normalizeId(p.Id))), ...received];
-  const candidates = await mosaicCandidatesFor(view, items);
+  const [candidates, kept] = await Promise.all([mosaicCandidatesFor(view, items), received.length > 0 ? receivedPlaylistFavorites(view.userId) : new Set<string>()]);
   const now = Date.now();
   return items.map((item) => {
     const id = normalizeId(item.Id);
-    const playlist = withMosaic(toPlaylist(item), candidates.get(id), now);
+    const own = toPlaylist(item);
+    const playlist = withMosaic(item.TentacleReaderId ? { ...own, favorite: kept.has(id) } : own, candidates.get(id), now);
     const shared = sharing.get(id);
     return shared ? { ...playlist, sharing: shared } : playlist;
   });
@@ -92,5 +97,7 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   // La jaquette de l'en-tête est celle des cartes : mêmes titres, même jour (et la liste suivante n'a rien à relire).
   const place = await rememberMosaic(view, playlist, ordered);
   const sharing = await sharingFor(access, playlistId);
-  return { ...withMosaic(toPlaylist(playlist), place), ...(sharing ? { sharing } : {}), cover: place, description: playlist.Overview?.trim() || null, entries: out };
+  const base = toPlaylist(playlist);
+  const favorite = playlist.TentacleReaderId ? (await receivedPlaylistFavorites(view.userId)).has(normalizeId(playlistId)) : base.favorite;
+  return { ...withMosaic({ ...base, ...(favorite !== undefined && { favorite }) }, place), ...(sharing ? { sharing } : {}), cover: place, description: playlist.Overview?.trim() || null, entries: out };
 }

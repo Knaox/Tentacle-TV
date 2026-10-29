@@ -40,15 +40,19 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
       return;
     case "music:userdata":
       patchFavorites(qc, new Map(event.changes.map((c) => [c.jellyfinId, c.favorite])));
-      invalidateScopes(qc, ["liked"]);
+      invalidateScopes(qc, ["liked", "shelves"]);
       return;
     case "music:playlist":
       void qc.invalidateQueries({ queryKey: musicKeys.playlist(event.playlistId) });
-      invalidateScopes(qc, ["playlists", "home"]);
+      invalidateScopes(qc, ["playlists", "home", "shelves"]);
       return;
     case "music:resolved":
     case "music:pending":
       invalidateScopes(qc, ["liked", "playlists", "playlist", "home", "match"]);
+      return;
+    case "music:shelves":
+      // Un autre appareil du compte a posé un favori ou rangé une rubrique ; l'écho de NOTRE ordre ne relit rien.
+      if (!isSavingListPrefs(`library:${event.section}`)) void qc.invalidateQueries({ queryKey: musicKeys.shelves() });
       return;
     case "music:listPrefs":
       // Un autre appareil du compte a trié ou glissé cette liste ; l'écho de NOTRE envoi ne relit rien.
