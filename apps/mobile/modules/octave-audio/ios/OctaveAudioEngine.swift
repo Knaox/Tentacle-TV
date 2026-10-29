@@ -5,6 +5,8 @@ import Foundation
 /// affiche. Tout se passe sur `queue` ; le module Expo n'y fait qu'entrer.
 final class OctaveAudioEngine {
   static let shared = OctaveAudioEngine()
+  /// Le lancement : ce processus (iOS tue l'app balayée). La page ne reprend que la session de SON lancement.
+  static let launchId = UUID().uuidString
 
   let queue = DispatchQueue(label: "tentacle.octave.audio", qos: .userInitiated)
   /// Un évènement du pont, déjà sérialisé (posé par le module).
@@ -214,7 +216,7 @@ final class OctaveAudioEngine {
     emitState()
   }
 
-  private func stopAll() {
+  func stopAll() {
     cancelFade()
     decks.forEach { $0.stop() }
     current = nil
