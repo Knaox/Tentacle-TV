@@ -60,7 +60,8 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
       return;
     case "music:provider":
       // L'extension elle-même (`/api/plugins/active`) se relit ailleurs ; ici, ce qu'elle mêlait.
-      invalidateScopes(qc, ["liked", "playlist"]);
+      // Les favoris d'une extension coupée (ou rallumée) disparaissent (ou reviennent) de la bibliothèque.
+      invalidateScopes(qc, ["liked", "playlist", "shelves"]);
       return;
   }
 }

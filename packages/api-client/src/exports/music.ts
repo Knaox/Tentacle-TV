@@ -55,7 +55,7 @@ export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerRe
 export { applyOctaveEvent } from "../music/octave/events/octaveEventEffects";
 // Octave — les favoris de la bibliothèque (albums, artistes, playlists) et l'ordre de ses rubriques (`music.libraryFavorites`).
 export {
-  musicShelfApi, useMusicShelvesCapability, useMusicShelves, useToggleShelfFavorite, useSaveShelfOrder, shelfSubjectKey, shelfFavoriteOf, shelvesAfter,
+  musicShelfApi, useMusicShelvesCapability, useMusicShelves, useToggleShelfFavorite, useSaveShelfOrder, shelfSubjectKey, shelfSubjectFavoritable, shelfFavoriteOf, shelvesAfter,
   type MusicShelfSubject,
 } from "../music/useMusicShelves";
 export { useAlbumShelf, useArtistShelf, usePlaylistShelf, type LibraryShelf } from "../music/useLibraryShelf";

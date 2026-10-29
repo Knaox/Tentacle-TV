@@ -13,7 +13,20 @@
  * Rien ne s'offre que le serveur ne sait pas faire (capacités lues par l'appelant).
  */
 
+import { isValidExternalRef } from "../../music/musicKeys";
+import type { ExternalRef } from "../../music/musicTypes";
+
 export type CollectionKind = "album" | "artist" | "playlist";
+
+/**
+ * Un élément peut-il être mis en favori ? Celui de la bibliothèque (`jellyfinId`), ou celui d'une extension qui
+ * le désigne (`external` valide) — le serveur n'a rien d'autre à garder. Un album ou un artiste sans l'un ni
+ * l'autre (une carte d'ailleurs, sans référence) : aucun geste de favori, nulle part (menu, cœur).
+ */
+export function collectionFavoritable(item: { jellyfinId: string | null; external?: ExternalRef | null }): boolean {
+  if (item.jellyfinId) return true;
+  return !!item.external && isValidExternalRef(item.external);
+}
 
 export type CollectionActionId =
   | "favorite"

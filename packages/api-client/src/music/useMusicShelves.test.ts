@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MusicAlbum, MusicLibraryShelves, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { withFavorites } from "./musicCachePatch";
-import { shelfFavoriteOf, shelvesAfter } from "./useMusicShelves";
+import { shelfFavoriteOf, shelfSubjectFavoritable, shelvesAfter } from "./useMusicShelves";
 
 const album = (id: string, favorite?: boolean): MusicAlbum => ({
   key: `jf:${id}`, jellyfinId: id, external: null, title: id, artists: [], year: null, releaseDate: null, kind: "album", artworkUrl: null,
@@ -37,5 +37,19 @@ describe("favoris en cache", () => {
   it("un album d'un serveur d'avant (sans drapeau) n'est jamais marqué", () => {
     const data = [album("a")];
     expect(withFavorites(data, new Map([["a", true]]))).toBe(data);
+  });
+});
+
+describe("favori possible", () => {
+  const bare: MusicAlbum = { ...album("x"), key: "x", jellyfinId: null, external: null };
+  it("un album ou un artiste hors bibliothèque sans référence : aucun favori (ni état, ni geste)", () => {
+    expect(shelfSubjectFavoritable({ section: "albums", item: bare })).toBe(false);
+    expect(shelfFavoriteOf({ section: "albums", item: { ...bare, favorite: false } }, EMPTY, true)).toBeUndefined();
+    expect(shelfSubjectFavoritable({ section: "artists", item: { key: "a", jellyfinId: null, external: null, name: "A", mbid: null, imageUrl: null } })).toBe(false);
+  });
+  it("la bibliothèque, une extension qui le désigne, toute playlist : oui", () => {
+    expect(shelfSubjectFavoritable({ section: "albums", item: album("a") })).toBe(true);
+    expect(shelfSubjectFavoritable({ section: "albums", item: extAlbum })).toBe(true);
+    expect(shelfSubjectFavoritable({ section: "playlists", item: { kind: "library", playlist: playlist("p") } })).toBe(true);
   });
 });
