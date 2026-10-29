@@ -11,7 +11,8 @@ vi.mock("../pushService", () => ({ sendSilentToUser: vi.fn(async () => 1) }));
 vi.mock("./offlinePrepare", () => ({ PREPARED_PUSH_TYPE: "offline:prepared" }));
 vi.mock("../pluginServerModule", () => ({ readPluginManifest: () => null }));
 
-const { noteExtensionWait, offlineRequestOf, retryAfterMs, WAKE_MARGIN_MS, WAKE_MIN_GAP_MS, WaitWakes } = await import("./extensionWaitWake");
+// vi.mock est remonté par vitest au-dessus des imports : l'import statique voit déjà les doublures.
+import { noteExtensionWait, offlineRequestOf, retryAfterMs, WAKE_MARGIN_MS, WAKE_MIN_GAP_MS, WaitWakes } from "./extensionWaitWake";
 
 /** Des minuteurs à la main : on avance l'horloge, on déclenche ce qui est échu. */
 function fakeClock() {
