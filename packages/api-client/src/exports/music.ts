@@ -35,6 +35,7 @@ export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, useMusicShareLin
 export { useReleaseImport, useImportedReleases, releaseSourcesOf, releasePortFor, importedReleasesKey, releaseImportState, subscribeReleaseImport, type ReleaseImportHandle } from "../music/releases/useReleaseImport";
 export { runReleaseFiles, runReleaseLink, RELEASE_RETRY_DELAYS_MS, type ReleaseFlowState, type ReleaseLocalFile, type ReleasePhase, type ReleasePort } from "../music/releases/releaseFlow";
 export { ReleaseRequestError, toReleaseError, deleteImportedRelease } from "../music/releases/releaseRequests";
+export { useImportedLibraryAlbum } from "../music/releases/useImportedLibraryAlbum";
 export { RELEASE_ACCEPT, RELEASE_COVER_MAX_BYTES, RELEASE_DEFAULT_CHUNK_BYTES, isImportableAudio, isReleaseCover, isReleaseArchive, isReleaseLotFile, RELEASE_ARCHIVE_MIME_TYPES, pickReleaseLot, remainingChunks, releaseFraction, readReleaseRefusal, albumHintOf, releaseArrival, releaseArtForPixels, releaseFileCounts, importedLibraryState, RELEASE_LIBRARY_POLL_MS } from "../music/releases/releaseModel";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
 export { useSharedTrackSearch, sharedTrackSearchState, sharedTrackApi, sharedTrackKey, type SharedTrackSearch } from "../music/sharedLinks/useSharedTrackSearch";
