@@ -16,6 +16,8 @@ import { useMusicPlaylistShareAvailable } from "./useMusicPlaylistShare";
 const KIND: Record<MusicShelfSubject["section"], CollectionKind> = { albums: "album", artists: "artist", playlists: "playlist" };
 
 export interface CollectionMenu {
+  /** La clé de l'élément dans sa rubrique (`shelfKeyOf`). */
+  key: string;
   actions: CollectionAction[];
   favorite: boolean | undefined;
   /** Fait le geste s'il est du cœur (favori, « Mettre en haut ») et rend `true` ; `false` : à la vue de le faire. */
@@ -62,5 +64,5 @@ export function useCollectionMenu(subject: MusicShelfSubject, shelf?: Pick<Libra
     },
     [toggle, subject, shelf, key],
   );
-  return { actions, favorite, run };
+  return { key, actions, favorite, run };
 }

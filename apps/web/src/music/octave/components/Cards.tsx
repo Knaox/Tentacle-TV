@@ -11,7 +11,7 @@
  * au même coin (`ImportedBadge`).
  */
 
-import { memo, useState } from "react";
+import { memo, useMemo } from "react";
 import { CloudOff, Library, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -28,10 +28,10 @@ import { Artwork } from "./Artwork";
 import { CARD_GRID_CLASS } from "./cardGrid";
 import { CollectionSwell } from "../motion/NowSwell";
 import { PlaylistArtwork, playlistCoverUrls } from "./PlaylistArtwork";
-import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { usePlaylistSubject } from "../playlists/PlaylistMenu";
+import { CardMenuFrame } from "../collections/CardMenuFrame";
 import { ImportedBadge } from "../releases/ImportedBadge";
 import { SharedPlaylistBadge } from "../playlists/members/SharedPlaylistBadge";
-import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 import { usePendingMusic } from "../pending/usePendingMusic";
 
 function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
@@ -110,21 +110,27 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
       </div>
     </>
   );
-  // Une sortie importée sans écoute publique : grisée, mais sa vue s'ouvre (« Voir sur Bandcamp », ses titres).
-  if (unavailable && !album.imported) {
-    return (
-      <button type="button" className={`${cardClass} cursor-pointer text-left`} aria-label={t("unavailableAlbum.cardLabel", { title: album.title })} onClick={() => openUnavailableAlbum(album)}>
-        {content}
-      </button>
-    );
-  }
-  return target ? (
-    // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
-    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} ref={warmRef} {...intent}>
-      {content}
-    </Link>
-  ) : (
-    <div className={cardClass}>{content}</div>
+  const subject = useMemo(() => ({ section: "albums" as const, item: album }), [album]);
+  return (
+    <CardMenuFrame subject={subject}>
+      {(menu) =>
+        // Une sortie importée sans écoute publique : grisée, mais sa vue s'ouvre (« Voir sur Bandcamp », ses titres).
+        unavailable && !album.imported ? (
+          <button type="button" className={`${cardClass} w-full cursor-pointer text-left`} aria-label={t("unavailableAlbum.cardLabel", { title: album.title })} onClick={() => openUnavailableAlbum(album)} {...menu}>
+            {content}
+          </button>
+        ) : target ? (
+          // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
+          <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} ref={warmRef} {...intent} {...menu}>
+            {content}
+          </Link>
+        ) : (
+          <div className={cardClass} {...menu}>
+            {content}
+          </div>
+        )
+      }
+    </CardMenuFrame>
   );
 });
 
@@ -143,43 +149,49 @@ export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicAr
       </div>
     </>
   );
-  return target ? (
-    <Link to={octavePaths.artist(target)} className={cardClass} {...intent}>
-      {content}
-    </Link>
-  ) : (
-    <div className={cardClass}>{content}</div>
+  const subject = useMemo(() => ({ section: "artists" as const, item: artist }), [artist]);
+  return (
+    <CardMenuFrame subject={subject}>
+      {(menu) =>
+        target ? (
+          <Link to={octavePaths.artist(target)} className={cardClass} {...intent} {...menu}>
+            {content}
+          </Link>
+        ) : (
+          <div className={cardClass} {...menu}>
+            {content}
+          </div>
+        )
+      }
+    </CardMenuFrame>
   );
 });
 
 export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist: MusicPlaylist }) {
   const { t } = useTranslation("music");
-  // Gérer la playlist (« … » au survol, ou clic droit) : seulement si le compte peut la modifier.
-  const context = usePlaylistContextMenu(playlist);
   // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
   const pending = usePendingMusic();
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Son menu (« … » au survol, clic droit, appui long) : favori, ordre, gestion — ce que le compte peut faire.
+  const subject = usePlaylistSubject(playlist);
   return (
-    <div className="group/playlist relative min-w-0">
-    <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass} onContextMenu={context.onContextMenu}>
-      <div className="relative aspect-square w-full">
-        <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
-        <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
-        <SharedPlaylistBadge playlist={playlist} />
-        <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
-      </div>
-      <div className="min-w-0 px-0.5">
-        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={playlist.name}>
-          {playlist.name}
-        </p>
-        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlistTrackTotal(playlist.trackCount, pending, playlist.jellyfinId) })}</p>
-      </div>
-    </Link>
-    <div className={`absolute bottom-2 right-1 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/playlist:opacity-100 [@media(hover:none)]:opacity-100"}`}>
-      <PlaylistMenuButton playlist={playlist} open={menuOpen} onOpenChange={setMenuOpen} className="h-9 w-9" />
-    </div>
-    {context.menu}
-    </div>
+    <CardMenuFrame subject={subject}>
+      {(menu) => (
+        <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass} {...menu}>
+          <div className="relative aspect-square w-full">
+            <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+            <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
+            <SharedPlaylistBadge playlist={playlist} />
+            <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
+          </div>
+          <div className="min-w-0 px-0.5">
+            <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={playlist.name}>
+              {playlist.name}
+            </p>
+            <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlistTrackTotal(playlist.trackCount, pending, playlist.jellyfinId) })}</p>
+          </div>
+        </Link>
+      )}
+    </CardMenuFrame>
   );
 });
 

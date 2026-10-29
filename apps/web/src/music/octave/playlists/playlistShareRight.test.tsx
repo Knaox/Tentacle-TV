@@ -6,6 +6,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { collectionActions } from "@tentacle-tv/shared/octave";
 
 const h = vi.hoisted(() => ({ shareable: false, members: false }));
 vi.mock("react-i18next", () => ({ useTranslation: (ns?: string) => ({ t: (key: string) => `${ns ?? "music"}:${key}` }) }));
@@ -13,6 +14,16 @@ vi.mock("@tentacle-tv/api-client", () => ({
   useMusicPlaylistShareAvailable: () => h.shareable,
   useMusicPlaylistMembersAvailable: () => h.members,
   usePlaylistSharingRules: (p: MusicPlaylist) => ({ isMember: p.sharing?.role === "member" }),
+  // Le crochet du menu, sur le VRAI modèle partagé (serveur sans favoris : ni cœur, ni ordre).
+  useCollectionMenu: (subject: { item: { playlist: MusicPlaylist } }) => ({
+    key: "k",
+    favorite: undefined,
+    run: () => false,
+    actions: collectionActions({
+      kind: "playlist", favorite: undefined, canFavorite: false, ordered: false, atTop: true, canReorder: false,
+      playlist: { editable: subject.item.playlist.editable, isMember: subject.item.playlist.sharing?.role === "member", canShareWith: h.members, canShareLink: h.shareable },
+    }),
+  }),
 }));
 vi.mock("./usePlaylistManagement", () => ({ usePlaylistManagement: () => ({ duplicate: async () => true }) }));
 vi.mock("../../../components/floating/FloatingLayer", () => ({ FloatingLayer: ({ children }: { children: unknown }) => children }));

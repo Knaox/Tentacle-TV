@@ -30,7 +30,8 @@ import { HistoryButtons } from "./HistoryButtons";
 import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
 import { DeviceNavItem } from "../offline/DeviceNavItem";
-import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { PlaylistMenuButton, usePlaylistSubject } from "../playlists/PlaylistMenu";
+import { useCollectionMenuShown } from "../collections/CollectionMenuButton";
 import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 import { OctaveProfileButton } from "../profiles";
 import { ImportEntryButton } from "../import/ImportEntryButton";
@@ -132,10 +133,11 @@ function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; c
 /** Une playlist du rail : le lien, et — si le compte peut la modifier — « … » au survol et le clic droit. */
 function RailPlaylist({ playlist }: { playlist: MusicPlaylist }) {
   const context = usePlaylistContextMenu(playlist);
+  const menuShown = useCollectionMenuShown(usePlaylistSubject(playlist));
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="group/rail relative">
-      <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${playlist.editable || playlist.sharing ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
+      <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${menuShown ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
         <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="sm" thumb className="h-9 w-9" />
         <span className="truncate">{playlist.name}</span>
         <SharedRailMark playlist={playlist} />
