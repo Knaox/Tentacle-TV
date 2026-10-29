@@ -9,6 +9,7 @@ import { missingServerVersion, storageRefusal } from "./pluginStorage/gate";
 import { BACKEND_VERSION } from "./version";
 import { NOTIFICATION_EXTRA_FIELDS } from "../notifications/notificationTarget";
 import { repairInstalledConfigDefaults } from "./pluginConfigDefaults";
+import { watchExtensionWaits } from "./offlinePrepare/extensionWaitWake";
 
 /** Diagnostic info collected during loading (exposed via /api/health) */
 export const pluginBackendDiag: {
@@ -69,6 +70,8 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
   // Au démarrage, avant tout : les clés d'office des manifestes (`configDefaults`) qui manquent à une
   // extension déjà installée — sans elles, une extension installée depuis une source restait muette.
   repairInstalledConfigDefaults();
+  // Un titre gardé hors ligne qu'une extension prépare encore : l'iPhone est réveillé à l'heure qu'elle a dite.
+  watchExtensionWaits(app);
   const installed = getInstalled().filter((p) => p.enabled);
 
   pluginBackendDiag.dataDir = DATA_DIR;
