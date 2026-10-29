@@ -28,6 +28,7 @@ import { OctaveHomeGate, OctaveRoute } from "./music/octave/mode/OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
 import { LaunchWait, useTentacleRelease } from "./music/octave/mode/OctaveLaunchBackdrop";
 import { octaveOfflineAware } from "./music/octave/offline/OfflineOctave";
+import { useDesktopAppLinks } from "./desktop/useDesktopAppLinks";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -94,6 +95,7 @@ export function App() {
   const { pathname } = useLocation();
   const inOctave = pathname.startsWith(OCTAVE_BASE_PATH);
   useTentacleRelease(pathname); // une page de Tentacle relâche ce qu'un lancement en Octave retenait
+  useDesktopAppLinks(authed && !needsServerUrl); // bureau : les liens `tentacle://octave/…` du système
 
   // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
   useEffect(() => {

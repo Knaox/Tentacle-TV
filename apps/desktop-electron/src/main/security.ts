@@ -174,8 +174,8 @@ export function installContentSecurityPolicy(resolve: (url: string) => string | 
  *
  * Renvoie `false` si une instance tourne déjà — l'appelant doit alors quitter.
  */
-export function claimSingleInstance(onSecond: () => void): boolean {
+export function claimSingleInstance(onSecond: (argv: readonly string[]) => void): boolean {
   if (!app.requestSingleInstanceLock()) return false;
-  app.on("second-instance", onSecond);
+  app.on("second-instance", (_event, argv) => onSecond(argv));
   return true;
 }

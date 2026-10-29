@@ -56,6 +56,15 @@
           Square310x310Logo="Assets\Square310x310Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <!-- Les liens d'Octave (`tentacle://octave/…`) : Windows lance l'app avec le lien en argument
+           (src/main/appLinks.ts). Le schéma du mobile, le même : jamais renommé. -->
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="tentacle">
+            <uap:DisplayName>Tentacle TV</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

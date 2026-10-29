@@ -282,6 +282,9 @@ const paths = await packager({
   appCategoryType: "public.app-category.entertainment",
   appCopyright: "Damien ROUGE",
   darwinDarkModeSupport: true,
+  // Le schéma des liens d'Octave (`tentacle://octave/…`, page d'ouverture d'un serveur, playlist partagée) :
+  // macOS les remet par `open-url` (`src/main/appLinks.ts`). Le même que le mobile : traverse le système.
+  protocols: [{ name: "Tentacle TV", schemes: ["tentacle"] }],
   extendInfo: {
     // Évite la question « export compliance » à chaque envoi TestFlight : la
     // seule cryptographie en jeu est celle de HTTPS, exemptée.
