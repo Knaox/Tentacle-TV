@@ -7,7 +7,7 @@
 import { memo } from "react";
 import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { SelectGesture } from "../actions/selection/selectionRules";
+import type { SelectGesture } from "@tentacle-tv/shared/octave";
 
 const HOVER_CLASS = "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100";
 

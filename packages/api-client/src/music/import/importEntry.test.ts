@@ -58,3 +58,17 @@ describe("règle 15 : sans le droit du partage, rien", () => {
     expect(arrivingShareLink(null, true)).toBeNull();
   });
 });
+
+/*
+ * Diagnostic du lot fv (29/10) : la boîte « Importer » ne prend qu'un LIEN de service ou une LISTE collée. Un album
+ * de la bibliothèque ou des fichiers de l'appareil n'ont aucun chemin par elle — d'où les voies « Un album » et
+ * « Fichiers » (useImportInto). Ces cas restent la preuve de ce que le collage, lui, ne sait pas prendre.
+ */
+describe("classifyPasted — ce que le collage ne prend pas", () => {
+  it("un lien d'album Octave, une page Bandcamp, un chemin de fichier : jamais un import", () => {
+    expect(classifyPasted("https://tentacle.example/octave/album/0f1e2d3c4b5a69788796a5b4c3d2e1f0", []).kind).toBe("unknownUrl");
+    expect(classifyPasted("https://bastianbaker.bandcamp.com/album/truth-lies-in-between", []).kind).toBe("unknownUrl");
+    // Un chemin collé est lu comme UNE ligne « Artiste - Titre » : rapprochée de rien, « aucune playlist créée ».
+    expect(classifyPasted("/Users/moi/Musique/01 - Intro.flac", [])).toMatchObject({ kind: "text", lines: 1 });
+  });
+});

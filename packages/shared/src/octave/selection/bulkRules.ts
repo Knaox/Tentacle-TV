@@ -6,8 +6,8 @@
  * - un titre que le geste ne sait pas faire (`can…`) est laissé de côté, jamais une erreur.
  */
 
-import type { MusicPlaylistEntry, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
-import { playlistHasTrack } from "@tentacle-tv/shared/octave";
+import type { MusicPlaylistEntry, MusicTrack, PendingMusicItem } from "../../music";
+import { playlistHasTrack } from "../pendingMerge";
 
 export type DuplicateChoice = "all" | "skip" | "cancel";
 

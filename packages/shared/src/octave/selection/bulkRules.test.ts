@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MusicPlaylistEntry, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
+import type { MusicPlaylistEntry, MusicTrack, PendingMusicItem } from "../../music";
 import { bulkAddPlan, bulkLikePlan, tracksToAdd } from "./bulkRules";
 
 function track(key: string, recording: string, favorite = false, jellyfinId: string | null = `jf-${key}`): MusicTrack {

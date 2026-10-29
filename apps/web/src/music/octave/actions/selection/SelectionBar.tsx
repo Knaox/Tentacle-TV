@@ -1,18 +1,20 @@
 /**
- * Octave — la barre d'une sélection : combien de titres, puis les gestes groupés — ajouter à une playlist, aimer,
- * ajouter à la file, et (dans une playlist modifiable, ou dans la file) les retirer d'ici. Un îlot d'encre prune
+ * Octave — la barre d'une sélection : combien de titres, puis les gestes groupés, tels que les décrit le modèle
+ * partagé (`selectionActions`, le même que le mobile) — ajouter à une playlist, lire ensuite, ajouter à la file,
+ * aimer, et (dans une playlist modifiable, ou dans la file) les retirer d'ici. Un îlot d'encre prune
  * qui flotte au bas de la liste ; « × » ou Échap sortent de la sélection. Sous `sm`, les gestes ne gardent que
  * leur icône (nom accessible et bulle gardés).
  */
 
 import type { ComponentType } from "react";
-import { CheckCheck, CircleMinus, Heart, HeartOff, ListEnd, ListPlus, X } from "lucide-react";
+import { CheckCheck, CircleMinus, Heart, HeartOff, ListEnd, ListPlus, ListStart, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { openPlaylistChooserForMany } from "../playlistChooserStore";
 import { likeOverrideOf } from "../likeOverrides";
 import { useTrackActions } from "../useTrackActions";
-import { bulkLikePlan } from "./bulkRules";
+import { bulkLikePlan, SELECTION_ACTION_LABEL, selectionActions, type SelectionActionId } from "@tentacle-tv/shared/octave";
+import { useOctavePlayer } from "../../player/OctavePlayerProvider";
 import { useBulkTrackActions } from "./useBulkTrackActions";
 
 export interface SelectionBarProps {
@@ -32,7 +34,11 @@ export interface SelectionBarProps {
 const ACTION =
   "flex min-h-[44px] shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-function Action({ icon: Icon, label, onClick }: { icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>; label: string; onClick: () => void }) {
+type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+
+const ICONS: Record<SelectionActionId, Icon> = { addToPlaylist: ListPlus, playNext: ListStart, enqueue: ListEnd, like: Heart, unlike: HeartOff, remove: CircleMinus };
+
+function Action({ icon: Icon, label, onClick }: { icon: Icon; label: string; onClick: () => void }) {
   return (
     <button type="button" className={ACTION} onClick={onClick} title={label}>
       <Icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -45,7 +51,25 @@ export function SelectionBar({ count, total, tracks, onClear, onSelectAll, onRem
   const { t } = useTranslation("music");
   const actions = useTrackActions();
   const bulk = useBulkTrackActions();
-  const likePlan = bulkLikePlan(tracks(), (tr) => likeOverrideOf(tr.key) ?? tr.favorite, actions.canLike);
+  const player = useOctavePlayer();
+  const chosen = tracks();
+  const likePlan = bulkLikePlan(chosen, (tr) => likeOverrideOf(tr.key) ?? tr.favorite, actions.canLike);
+  const ids = selectionActions({
+    count,
+    canAddToPlaylist: chosen.some(actions.canAddToPlaylist),
+    canQueue: !!player,
+    inQueue,
+    like: likePlan.tracks.length > 0 ? { liked: likePlan.liked } : null,
+    canRemove: !!onRemove,
+  });
+  const run: Record<SelectionActionId, () => void> = {
+    addToPlaylist: () => openPlaylistChooserForMany(tracks()),
+    playNext: () => bulk.playNext(tracks()),
+    enqueue: () => bulk.enqueue(tracks()),
+    like: () => bulk.like(tracks()),
+    unlike: () => bulk.like(tracks()),
+    remove: () => onRemove?.(),
+  };
   const done = (fn: () => void) => () => {
     fn();
     onClear();
@@ -67,12 +91,10 @@ export function SelectionBar({ count, total, tracks, onClear, onSelectAll, onRem
         </span>
         {count < total && <Action icon={CheckCheck} label={t("selection.selectAll")} onClick={onSelectAll} />}
         <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-subtle" />
-        <Action icon={ListPlus} label={t("playlist.addTo")} onClick={done(() => openPlaylistChooserForMany(tracks()))} />
-        {likePlan.tracks.length > 0 && (
-          <Action icon={likePlan.liked ? Heart : HeartOff} label={t(likePlan.liked ? "selection.like" : "selection.unlike")} onClick={done(() => bulk.like(tracks()))} />
-        )}
-        {!inQueue && <Action icon={ListEnd} label={t("track.addToQueue")} onClick={done(() => bulk.enqueue(tracks()))} />}
-        {onRemove && <Action icon={CircleMinus} label={removeLabel ?? t("playlist.remove")} onClick={done(onRemove)} />}
+        {count === 0 && <span className="px-2 text-sm text-content-tertiary">{t("selection.none")}</span>}
+        {ids.map((id) => (
+          <Action key={id} icon={ICONS[id]} label={id === "remove" ? (removeLabel ?? t(SELECTION_ACTION_LABEL.remove)) : t(SELECTION_ACTION_LABEL[id])} onClick={done(run[id])} />
+        ))}
       </div>
     </div>
   );

@@ -163,6 +163,15 @@ export default {
     allDuplicates_one: "This track is already in “{{name}}”. Add it anyway?",
     allDuplicates_other: "All {{count}} tracks are already in “{{name}}”. Add them anyway?",
     skipDuplicates: "Add without duplicates",
+    /* Added 29/10 (fv batch): "Select" opens selection; grouped "Play next"; whole album / playlist. */
+    start: "Select",
+    done: "Done",
+    none: "Select tracks",
+    playNext_one: "{{count}} track will play next",
+    playNext_other: "{{count}} tracks will play next",
+    addAll: "Add all tracks to a playlist",
+    removed_one: "{{count}} track removed from “{{name}}”",
+    removed_other: "{{count}} tracks removed from “{{name}}”",
   },
   count: {
     tracks_one: "{{count}} song",

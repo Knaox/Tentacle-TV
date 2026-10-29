@@ -24,6 +24,11 @@ import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useDeviceStore, useOctaveOwner, useOctavePagesProvider } from "../env/pagesEnv";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { TrackRow } from "../ui/TrackRow";
+import { AddAllButton } from "../selection/AddAllButton";
+import { MobileSelectionBar } from "../selection/MobileSelectionBar";
+import { SelectableTrackRow } from "../selection/SelectableTrackRow";
+import { SelectionToggle } from "../selection/SelectionCorner";
+import { SELECTION_BAR_ROOM, selectionBarBottom, useTrackSelection } from "../selection/useTrackSelection";
 import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { AlbumNotes } from "./AlbumNotes";
@@ -40,6 +45,7 @@ import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteBu
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
+const TOP_RIGHT = { flexDirection: "row", alignItems: "center", gap: 8 } as const;
 
 export function OctaveAlbumScreen({ id }: { id: string }) {
   const { t, i18n } = useTranslation("music");
@@ -73,6 +79,13 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
     return out;
   }, [discs.length, tracks]);
   const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
+  // « Sélectionner » : cocher des titres, puis les gestes groupés (modèle partagé, le même que le bureau).
+  const order = useMemo(() => tracks.map((track) => track.key), [tracks]);
+  const selection = useTrackSelection(order);
+  const chosenTracks = useMemo(() => {
+    const byKey = new Map(tracks.map((track) => [track.key, track]));
+    return selection.chosen.flatMap((key) => byKey.get(key) ?? []);
+  }, [selection.chosen, tracks]);
   // L'album gardé sur l'appareil, sous sa clé de bibliothèque ou d'extension.
   const page = useOfflinePage(album, [`album:${id}`, `album:jf:${id}`]);
 
@@ -103,7 +116,14 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
           canPlay={tracks.length > 0}
           onPlay={() => playFrom(player, tracks, 0, contextId)}
           onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
-          extra={preview ? undefined : <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />}
+          extra={
+            preview ? undefined : (
+              <>
+                <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />
+                <AddAllButton tracks={tracks} />
+              </>
+            )
+          }
           meta={
             <>
               <MetaLine
@@ -140,21 +160,39 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
         renderItem={({ item }) =>
           item.kind === "disc" ? (
             <Text style={[typography.bodyBold, { color: theme.colors.text.secondary, paddingHorizontal: gutter, paddingTop: 16, paddingBottom: 6 }]}>{t("album.disc", { number: item.disc })}</Text>
+          ) : selection.selecting ? (
+            <SelectableTrackRow track={item.track} index={item.index} list={tracks} contextId={contextId} gutter={gutter} numbered hide={HIDE} rowKey={item.track.key} selected={selection.selected.has(item.track.key)} onToggle={selection.toggle} />
           ) : (
             <TrackRow track={item.track} index={item.index} list={tracks} contextId={contextId} playing={current === item.track.key} onPlay={play} numbered gutter={gutter} hide={HIDE} />
           )
         }
+        extraData={selection.selecting ? selection.selected : null}
         ListHeaderComponent={header}
         ListFooterComponent={footer}
         onScroll={scrollProps.onScroll}
         scrollEventThrottle={16}
         contentOffset={scrollProps.contentOffset}
-        contentContainerStyle={{ paddingBottom: bottomInset }}
+        contentContainerStyle={{ paddingBottom: bottomInset + (selection.selecting ? SELECTION_BAR_ROOM : 0) }}
         initialNumToRender={14}
         windowSize={9}
         removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       />
-      <PageTopBar title={data?.title ?? ""} scrollY={scrollY} threshold={320} right={data && !preview ? <CollectionFavoriteButton subject={{ section: "albums", item: data }} /> : null} />
+      <PageTopBar
+        title={data?.title ?? ""}
+        scrollY={scrollY}
+        threshold={320}
+        right={
+          data && !preview ? (
+            <View style={TOP_RIGHT}>
+              <SelectionToggle tracks={tracks} selecting={selection.selecting} onStart={selection.start} onDone={selection.clear} />
+              {selection.selecting ? null : <CollectionFavoriteButton subject={{ section: "albums", item: data }} />}
+            </View>
+          ) : null
+        }
+      />
+      {selection.selecting ? (
+        <MobileSelectionBar count={chosenTracks.length} total={tracks.length} tracks={chosenTracks} bottom={selectionBarBottom(bottomInset)} onSelectAll={selection.selectAll} onDone={selection.clear} />
+      ) : null}
       <OctavePagesHost />
     </View>
   );

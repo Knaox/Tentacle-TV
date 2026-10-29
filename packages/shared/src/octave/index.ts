@@ -29,3 +29,4 @@ export * from "./octaveDeviceSettings";
 export * from "./octaveLaunchPin";
 export * from "./remoteCommands";
 export * from "./engine";
+export * from "./selection";

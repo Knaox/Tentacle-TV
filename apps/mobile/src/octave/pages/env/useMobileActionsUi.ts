@@ -6,7 +6,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useTrackActions, type OctaveActionsUi, type TrackActions } from "@tentacle-tv/api-client";
+import { useBulkTrackGestures, useTrackActions, type BulkTrackGestures, type OctaveActionsUi, type TrackActions } from "@tentacle-tv/api-client";
 import { cancelKeptRemoval, scheduleKeptRemoval } from "../../offline/keptPlaylistRemoval";
 import { showNotice } from "./notices";
 import { useDeviceStore, useOctavePagesProvider } from "./pagesEnv";
@@ -25,4 +25,10 @@ export function useMobileActionsUi(): OctaveActionsUi {
 /** Les gestes sur un titre (cœur, playlists), branchés sur l'extension et le lecteur du mobile. */
 export function useMobileTrackActions(): TrackActions {
   return useTrackActions(useOctavePagesProvider(), usePagesPlayer(), useMobileActionsUi());
+}
+
+/** Les gestes GROUPÉS vers une playlist (sélection, tout un album) : ceux du bureau, règle de doublon groupée comprise. */
+export function useMobileBulkGestures(): BulkTrackGestures {
+  const actions = useMobileTrackActions();
+  return useBulkTrackGestures(useOctavePagesProvider(), useMobileActionsUi(), actions.canAddToPlaylist);
 }

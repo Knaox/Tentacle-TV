@@ -23,6 +23,9 @@ export {
   unavailableAlbumSnapshot, subscribeUnavailableAlbum, openUnavailableAlbum, closeUnavailableAlbum,
 } from "../music/octave/actions/unavailableAlbumStore";
 export { askDuplicate, answerDuplicate, useDuplicateAsk, type DuplicateAsk } from "../music/octave/actions/duplicateAsk";
+// Les gestes GROUPÉS (sélection, tout un album, toute une playlist) et leur règle de doublon, les mêmes partout.
+export { askBulkDuplicates, answerBulkDuplicates, useBulkDuplicateAsk, type BulkDuplicateAsk } from "../music/octave/actions/bulkDuplicateAsk";
+export { useBulkTrackGestures, type BulkTrackGestures } from "../music/octave/actions/useBulkTrackGestures";
 export { LAST_PLAYLIST_KEY, lastPlaylistIdFrom, rememberPlaylistIn, quickTarget } from "../music/octave/actions/lastPlaylist";
 export { mayOfferAcquire, quotaExhausted, remainingToTell } from "../music/octave/actions/acquireRules";
 export { useAcquireRights, type AcquireRights } from "../music/octave/actions/useAcquireRights";

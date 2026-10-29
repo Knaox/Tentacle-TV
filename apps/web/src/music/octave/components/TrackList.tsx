@@ -7,16 +7,17 @@
  */
 
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { ListChecks } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
 import { rowClickAction, type ListRow } from "@tentacle-tv/shared/octave";
-import type { SelectGesture } from "../actions/selection/selectionRules";
+import type { SelectGesture } from "@tentacle-tv/shared/octave";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { TrackRow, rowColumns } from "./TrackRow";
 import { useCompactRows } from "./compactRows";
 import { SelectionBar } from "../actions/selection/SelectionBar";
-import { orderedKeys } from "../actions/selection/selectionRules";
+import { orderedKeys } from "@tentacle-tv/shared/octave";
 import { useListSelection } from "../actions/selection/useListSelection";
 import type { HandleSlot } from "../listOrder/DragHandle";
 import type { ReorderBlock } from "@tentacle-tv/api-client";
@@ -125,10 +126,24 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   return (
     <div role="grid" aria-label={label} aria-rowcount={virtual ? rows.length : undefined} className="flex flex-col">
       {/* Au téléphone, les rangées compactes n'ont pas de colonnes à nommer. */}
+      {compact && showHeader && !selection.selecting && rows.length > 1 && (
+        <div className="flex justify-end px-2 pb-1">
+          <button type="button" onClick={selection.start} className="min-h-[44px] cursor-pointer rounded-full px-3 text-sm font-semibold text-octave-accent-text hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+            {t("selection.start")}
+          </button>
+        </div>
+      )}
       {showHeader && !compact && (
         <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum, reorder !== null)}`}>
           {reorder && <span role="columnheader" aria-hidden />}
-          <span role="columnheader" aria-label={t("selection.column")} />
+          <span role="columnheader" aria-label={t("selection.column")} className="flex justify-center">
+            {/* « Sélectionner » : les cases paraissent, un clic coche (Cmd/Maj-clic restent). */}
+            {!selection.selecting && rows.length > 1 && (
+              <button type="button" onClick={selection.start} aria-label={t("selection.start")} title={t("selection.start")} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+                <ListChecks className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </span>
           <span role="columnheader" className="text-center">{t("track.number")}</span>
           <span role="columnheader">{t("track.title")}</span>
           {showAlbum && <span role="columnheader" className="hidden lg:block">{t("track.album")}</span>}

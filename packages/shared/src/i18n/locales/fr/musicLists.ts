@@ -6,8 +6,8 @@
 export default {
   edit: "Modifier",
   done: "OK",
-  editHint: "Glissez la poignée pour changer l'ordre. Touchez « – » pour retirer un titre.",
-  reorderHint: "Glissez la poignée pour changer l'ordre.",
+  editHint: "Glissez la poignée pour changer l'ordre. Cochez des titres pour les retirer, les ajouter à une playlist ou à la file.",
+  reorderHint: "Glissez la poignée pour changer l'ordre. Cochez des titres pour les ajouter à une playlist ou à la file.",
   removeRow: "Retirer « {{title}} » de la playlist",
   moveUp: "Monter",
   moveDown: "Descendre",

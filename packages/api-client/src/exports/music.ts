@@ -39,6 +39,10 @@ export { useImportedLibraryAlbum } from "../music/releases/useImportedLibraryAlb
 export { RELEASE_ACCEPT, RELEASE_COVER_MAX_BYTES, RELEASE_DEFAULT_CHUNK_BYTES, isImportableAudio, isReleaseCover, isReleaseArchive, isReleaseLotFile, RELEASE_ARCHIVE_MIME_TYPES, pickReleaseLot, remainingChunks, releaseFraction, readReleaseRefusal, albumHintOf, releaseArrival, releaseArtForPixels, releaseFileCounts, importedLibraryState, RELEASE_LIBRARY_POLL_MS } from "../music/releases/releaseModel";
 export { useMusicPlaylistMembers, useMusicPlaylistMembersAvailable, useMusicShareCandidates, usePlaylistSharingRules, playlistSharingRules, musicMembersApi, musicMembersKey, type MembersBusy } from "../music/useMusicPlaylistMembers";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
+// Octave — importer un ALBUM ou des FICHIERS de l'appareil dans une playlist (neuve ou existante), dans l'ordre.
+export { useImportInto, type ImportIntoHandle, type ImportIntoState, type ImportIntoTarget, type ImportIntoFailure } from "../music/import/useImportInto";
+export { fillPlaylist, albumFillItems, type FillItem, type FillPort, type FillResult, type FillTarget } from "../music/import/playlistFill";
+export { releasePlaylistOrder, releaseTrackIds } from "../music/import/releaseOrder";
 export { useSharedTrackSearch, sharedTrackSearchState, sharedTrackApi, sharedTrackKey, type SharedTrackSearch } from "../music/sharedLinks/useSharedTrackSearch";
 export { useSharedLinkSearch, sharedLinkSearchSteps } from "../music/sharedLinks/useSharedLinkSearch";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).

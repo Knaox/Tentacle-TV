@@ -20,7 +20,7 @@ import { useTrackActions, type TrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { SelectCell } from "../components/SelectCell";
 import { SelectionBar } from "../actions/selection/SelectionBar";
-import { clickGesture, orderedKeys, type SelectGesture } from "../actions/selection/selectionRules";
+import { clickGesture, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
 import { useListSelection } from "../actions/selection/useListSelection";
 import { NowSwell } from "../motion/NowSwell";
 

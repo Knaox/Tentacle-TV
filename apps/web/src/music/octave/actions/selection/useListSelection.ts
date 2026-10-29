@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useSyncExternalStore } from "react";
-import { EMPTY_SELECTION, applyGesture, pruneSelection, selectAll as selectAllOf, type SelectGesture, type SelectionState } from "./selectionRules";
+import { EMPTY_SELECTION, applyGesture, isSelecting, openSelection, pruneSelection, selectAll as selectAllOf, type SelectGesture, type SelectionState } from "@tentacle-tv/shared/octave";
 
 let current: SelectionState = EMPTY_SELECTION;
 const listeners = new Set<() => void>();
@@ -35,6 +35,8 @@ export interface ListSelection {
   selecting: boolean;
   select: (key: string, gesture: SelectGesture) => void;
   selectAll: () => void;
+  /** « Sélectionner » : la sélection s'ouvre, vide (les cases paraissent, un clic coche). */
+  start: () => void;
   clear: () => void;
 }
 
@@ -60,9 +62,10 @@ export function useListSelection(order: readonly string[]): ListSelection {
   );
 
   const own = state.owner === owner;
-  const selecting = own && state.keys.size > 0;
+  const selecting = isSelecting(state, owner);
   const select = useCallback((key: string, gesture: SelectGesture) => set(applyGesture(current, owner, orderRef.current, key, gesture)), [owner]);
-  const selectAll = useCallback(() => set(selectAllOf(owner, orderRef.current)), [owner]);
+  const selectAll = useCallback(() => set(selectAllOf(owner, orderRef.current, current.owner === owner && current.open === true)), [owner]);
+  const start = useCallback(() => set(openSelection(owner)), [owner]);
   const clear = useCallback(() => {
     if (current.owner === owner) set(EMPTY_SELECTION);
   }, [owner]);
@@ -82,5 +85,5 @@ export function useListSelection(order: readonly string[]): ListSelection {
     return () => document.removeEventListener("keydown", onKey);
   }, [clear, selectAll, selecting]);
 
-  return { owner, selected: own ? state.keys : NONE, selecting, select, selectAll, clear };
+  return { owner, selected: own ? state.keys : NONE, selecting, select, selectAll, start, clear };
 }

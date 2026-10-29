@@ -9,12 +9,13 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { ListMusic, MoreHorizontal, Search } from "lucide-react-native";
+import { Import, ListMusic, MoreHorizontal, Search } from "lucide-react-native";
+import { useImportInto } from "@tentacle-tv/api-client";
 import { queueActions, type ListRow } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
-import { usePagesPlayer } from "../../pages";
+import { useOctavePagesProvider, usePagesPlayer } from "../../pages";
 import { playFrom } from "../../pages/env/playFrom";
 import { libraryPlaylistKey } from "@tentacle-tv/offline-core/music";
 import { KeepCollectionButton } from "../../offline/KeepCollectionButton";
@@ -28,8 +29,10 @@ import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
 import { EmptyState, ErrorState, PillButton } from "../../pages/ui/ViewStates";
 import { usePageMetrics } from "../../pages/ui/pageStyle";
 import { usePlaylistData } from "../data/useListData";
+import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { useMobilePlaylistRemoval } from "../sheets/useMobilePlaylistManage";
 import { GlassIconButton } from "./BarButtons";
+import { AddAllButton } from "../../pages/selection/AddAllButton";
 import { ListPage } from "./ListPage";
 import { SharedLine } from "../members/SharedLine";
 import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteButton";
@@ -37,6 +40,7 @@ import { useCollectionLongPress } from "../../collections/useCollectionLongPress
 
 export function OctavePlaylistScreen({ id }: { id: string }) {
   const { t } = useTranslation("music");
+  const { t: ti } = useTranslation("musicImport");
   const theme = useTheme();
   const player = usePagesPlayer();
   const nav = useOctaveNav();
@@ -46,6 +50,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const target = useMemo(() => (data ? { jellyfinId: id, name: data.name } : null), [data, id]);
   const removeRows = useMobilePlaylistRemoval(target);
   const onRemove = useCallback((row: ListRow) => void removeRows(natural, new Set([row.rowKey])), [natural, removeRows]);
+  const onRemoveRows = useCallback((rowKeys: readonly string[]) => void removeRows(natural, new Set(rowKeys)), [natural, removeRows]);
   const tracks = useMemo(() => order.rows.map((r) => r.track), [order.rows]);
   const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const contextId = `playlist:${id}`;
@@ -54,6 +59,8 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const offline = useOfflineMode();
   // Partagée : retirer suit le droit du compte (le serveur le tient) ; un membre a « ⋯ » pour voir et quitter.
   const canRemove = rules.canRemove && !offline;
+  // Un album, des fichiers du téléphone : à la fin de CETTE playlist (si le compte peut y ajouter).
+  const intoPaths = useImportInto(useOctavePagesProvider());
   const subject = useMemo(() => (data ? { section: "playlists" as const, item: { kind: "library" as const, playlist: data } } : null), [data]);
   const sheet = useCollectionLongPress(subject);
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
@@ -81,24 +88,44 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
         onPlay={() => playFrom(player, tracks, 0, contextId)}
         onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
         // Garder la playlist ENTIÈRE sur l'appareil (et la tenir à jour), comme le bureau.
-        extra={data && !loading ? <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} /> : undefined}
+        extra={
+          data && !loading ? (
+            <>
+              <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
+              {/* Tous ses titres, dans l'ordre, dans une AUTRE playlist (doublons : au choix). */}
+              <AddAllButton tracks={allTracks} />
+            </>
+          ) : undefined
+        }
       />
       {data?.description ? <Text style={[typography.caption, { color: theme.colors.text.secondary, paddingHorizontal: gutter, paddingBottom: 8, textAlign: "center" }]}>{data.description}</Text> : null}
     </>
   );
+
+  const importInto =
+    data && !offline && rules.canAdd && (intoPaths.albumAvailable || intoPaths.filesAvailable)
+      ? () => openPlaylistSheet({ kind: "import", into: { playlistId: id, name: data.name } })
+      : null;
 
   const empty = (
     <EmptyState
       icon={ListMusic}
       title={t("playlist.empty")}
       hint={rules.canAdd ? t("views.playlistEmptyHint") : undefined}
-      action={<PillButton label={t("views.findMusic")} icon={Search} onPress={() => nav.search()} />}
+      action={
+        <View style={{ alignItems: "center", gap: 8 }}>
+          <PillButton label={t("views.findMusic")} icon={Search} onPress={() => nav.search()} />
+          {importInto ? <PillButton label={ti("entryShort")} icon={Import} onPress={importInto} /> : null}
+        </View>
+      }
     />
   );
 
-  // Le cœur, puis « ⋯ » : la feuille d'actions partagée (favori, modifier, partager, supprimer ou quitter).
+  // « Importer » (un album, des fichiers), le cœur, puis « ⋯ » : la feuille d'actions partagée (favori, modifier,
+  // partager, supprimer ou quitter).
   const actions = data ? (
     <>
+      {importInto ? <GlassIconButton icon={Import} label={ti("intoTitle", { name: data.name })} onPress={importInto} /> : null}
       <CollectionFavoriteButton subject={subject!} />
       {!offline && sheet ? <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={sheet} /> : null}
     </>
@@ -114,6 +141,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
       loading={loading}
       empty={empty}
       onRemove={canRemove ? onRemove : undefined}
+      onRemoveRows={canRemove ? onRemoveRows : undefined}
       actions={actions}
     />
   );
