@@ -14,8 +14,9 @@ export type PlaylistSheet =
   /** Les personnes d'une playlist partagée entre comptes : la gérer (propriétaire), les voir et la quitter (membre). */
   | { kind: "members"; playlist: MusicPlaylist }
   | { kind: "create" }
+  /** `into` : verser un album ou des fichiers dans CETTE playlist (depuis sa page). */
   /** `autoStart` : un lien reçu par le partage système part sans attendre « Importer ». */
-  | { kind: "import"; prefill?: string; autoStart?: boolean };
+  | { kind: "import"; prefill?: string; autoStart?: boolean; into?: { playlistId: string; name: string } };
 
 let current: PlaylistSheet | null = null;
 const listeners = new Set<() => void>();

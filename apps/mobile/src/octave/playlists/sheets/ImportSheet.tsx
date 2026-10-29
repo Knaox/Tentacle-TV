@@ -1,5 +1,7 @@
 /**
- * Octave mobile — IMPORTER une playlist : un lien (Spotify, Apple Music, Deezer, ou celui d'un ami sur SON
+ * Octave mobile — IMPORTER une playlist. Trois voies : « Lien ou liste » (ci-dessous), « Un album » et « Fichiers »
+ * du téléphone (`importInto/`, `useImportInto`) ; ouverte depuis une playlist, la feuille y verse un album ou des
+ * fichiers. Le lien : (Spotify, Apple Music, Deezer, ou celui d'un ami sur SON
  * Tentacle) ou une liste collée. Le déroulé est celui du bureau (`useMusicImport`, `classifyPasted`,
  * `importFraction`) : ce qu'Octave comprend du collage sous le champ, l'avancée, puis le résultat et
  * « Ouvrir la playlist ». L'état vit dans l'hôte (monté une fois) : refermer la feuille laisse travailler, un
@@ -20,13 +22,19 @@ import { haptic } from "@/utils/haptics";
 import { showNotice, useOctavePagesProvider } from "../../pages";
 import { closePlaylistSheet } from "./playlistSheetStore";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
+import { AlbumChoice } from "./importInto/AlbumChoice";
+import { FilesChoice } from "./importInto/FilesChoice";
+import { IntoStatusView } from "./importInto/IntoStatusView";
+import { ModeSwitch, type ImportMode } from "./importInto/ModeSwitch";
+import { useIntoFlow, type IntoPlaylist } from "./importInto/useIntoFlow";
 
-export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefill?: string; autoStart?: boolean }) {
+export function ImportFlow({ open, prefill, autoStart, into = null }: { open: boolean; prefill?: string; autoStart?: boolean; into?: IntoPlaylist | null }) {
   const { t } = useTranslation("musicImport");
   const theme = useTheme();
   const router = useRouter();
   const handle = useMusicImport(useOctavePagesProvider());
   const [text, setText] = useState("");
+  const [mode, setMode] = useState<ImportMode>("link");
   const openRef = useRef(open);
   openRef.current = open;
   useEffect(() => {
@@ -44,6 +52,13 @@ export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefil
     },
     [reset, router],
   );
+  const intoFlow = useIntoFlow(openRef, openPlaylist, into);
+  const intoHandle = intoFlow.handle;
+  const modes = useMemo(
+    () => [...(handle.available && !into ? (["link"] as const) : []), ...(intoHandle.albumAvailable ? (["album"] as const) : []), ...(intoHandle.filesAvailable ? (["files"] as const) : [])],
+    [handle.available, into, intoHandle.albumAvailable, intoHandle.filesAvailable],
+  );
+  const shown: ImportMode | undefined = modes.includes(mode) ? mode : modes[0];
   const go = useCallback(async (override?: ImportUserInput) => {
     const chosen = override ?? input;
     if (!chosen) return;
@@ -71,15 +86,22 @@ export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefil
     void go(shared.input);
   }, [autoStart, available, extensionSources, go, handle.state, open, prefill, tentacleShare]);
 
-  if (!handle.available) return null;
+  if (!shown) return null;
   const state = handle.state;
+  const intoState = intoHandle.state;
   const running = state !== null && state.phase !== "done" && state.phase !== "failed";
+  const intoRunning = intoState !== null && intoState.phase !== "done" && intoState.phase !== "failed";
   const close = () => {
     if (state && !running) {
       reset();
       setText("");
     }
+    if (intoState && !intoRunning) intoHandle.reset();
     closePlaylistSheet();
+  };
+  const openInto = (id: string) => {
+    intoHandle.reset();
+    openPlaylist(id);
   };
 
   let hint = t("sources");
@@ -99,12 +121,20 @@ export function ImportFlow({ open, prefill, autoStart }: { open: boolean; prefil
       onClose={close}
       snapPoints={[0.7, 0.94]}
       avoidKeyboard
-      header={<Text style={[typography.subtitle, styles.title, { color: theme.colors.text.primary }]}>{state?.name || t("title")}</Text>}
+      header={<Text style={[typography.subtitle, styles.title, { color: theme.colors.text.primary }]}>{into ? t("intoTitle", { name: into.name }) : state?.name || t("title")}</Text>}
     >
       {/* Le clavier levé, tout ne tient plus : le contenu défile, et un toucher sur un bouton agit du premier coup. */}
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
-        {state === null ? (
+        {intoState ? (
+          <IntoStatusView state={intoState} release={intoHandle.release} onHide={closePlaylistSheet} onCancel={intoHandle.cancel} onResume={intoFlow.resumeNow} onOpen={openInto} onRetry={intoHandle.reset} />
+        ) : state === null && shown !== "link" ? (
           <>
+            <ModeSwitch modes={modes} value={shown} onChange={setMode} />
+            {shown === "album" ? <AlbumChoice into={!!into} onStart={intoFlow.startAlbum} /> : <FilesChoice into={!!into} onStart={intoFlow.startFiles} />}
+          </>
+        ) : state === null ? (
+          <>
+            <ModeSwitch modes={modes} value={shown} onChange={setMode} />
             <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("intro")}</Text>
             <TextInput
               value={text}
