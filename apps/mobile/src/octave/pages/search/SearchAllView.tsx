@@ -9,6 +9,7 @@
 import { memo, useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { searchAlbumOwnership, type AlbumOwnership } from "@tentacle-tv/api-client";
 import type { SearchFilter, SearchLayout } from "@tentacle-tv/shared/octave";
 import type { ExternalMusicPlaylist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
@@ -30,11 +31,13 @@ type AnyPlaylist = { lib: MusicPlaylist } | { ext: ExternalMusicPlaylist };
 interface SearchAllViewProps {
   query: string;
   layout: SearchLayout;
+  /** Ce que la bibliothèque a des albums d'ailleurs (pastille, jamais grisé s'il y est en partie), comme le bureau. */
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   externalPending: boolean;
   onFilter: (filter: SearchFilter) => void;
 }
 
-export const SearchAllView = memo(function SearchAllView({ query, layout, externalPending, onFilter }: SearchAllViewProps) {
+export const SearchAllView = memo(function SearchAllView({ query, layout, albumOwnership, externalPending, onFilter }: SearchAllViewProps) {
   const { t } = useTranslation("music");
   const theme = useTheme();
   const player = usePagesPlayer();
@@ -69,7 +72,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
           <TrackRowsSkeleton count={4} gutter={gutter} />
         </View>
       ) : null}
-      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
+      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} ownership={searchAlbumOwnership(album, albumOwnership)} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
       <Shelf title={t("search.artists")} items={layout.artists.slice(0, ARTISTS_SHOWN)} keyOf={(a) => a.key} render={(artist, w) => <ArtistCard artist={artist} width={w} />} onSeeAll={layout.artists.length > ARTISTS_SHOWN ? () => onFilter("artists") : undefined} />
       <Shelf
         title={t("search.playlists")}

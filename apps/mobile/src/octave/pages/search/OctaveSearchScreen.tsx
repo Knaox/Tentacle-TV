@@ -112,6 +112,7 @@ export function OctaveSearchScreen() {
         filter={filter}
         library={data}
         external={ownedKind.lists}
+        albumOwnership={ownedKind.albumOwnership}
         pending={kind.pending || results.externalPending}
         header={<View style={{ paddingVertical: 8 }}>{filters}</View>}
         bottom={bottom}
@@ -124,7 +125,7 @@ export function OctaveSearchScreen() {
         {filters}
         {!results.library ? <TrackRowsSkeleton count={8} gutter={gutter} /> : null}
         {nothing ? <EmptyState icon={SearchX} title={t("search.nothingFound", { query: shownQuery })} hint={t("search.nothingFoundHint")} /> : null}
-        {!nothing && results.library ? <SearchAllView query={shownQuery} layout={layout} externalPending={results.externalPending} onFilter={setFilter} /> : null}
+        {!nothing && results.library ? <SearchAllView query={shownQuery} layout={layout} albumOwnership={owned.albumOwnership} externalPending={results.externalPending} onFilter={setFilter} /> : null}
       </ScrollView>
     );
   }

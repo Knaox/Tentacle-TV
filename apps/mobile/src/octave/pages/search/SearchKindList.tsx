@@ -10,6 +10,7 @@ import { FlatList, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
 import { layoutSearch, type SearchFilter, type ShownExternalLists } from "@tentacle-tv/shared/octave";
+import { searchAlbumOwnership, type AlbumOwnership } from "@tentacle-tv/api-client";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
@@ -31,6 +32,7 @@ interface SearchKindListProps {
   filter: Exclude<SearchFilter, "all">;
   library: MusicSearchResponse | null;
   external: ShownExternalLists | null;
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   pending: boolean;
   header: ReactElement;
   bottom: number;
@@ -38,7 +40,7 @@ interface SearchKindListProps {
 
 const keyOf = (c: Cell) => (c.kind === "track" ? c.track.key : c.kind === "album" ? c.album.key : c.kind === "artist" ? c.artist.key : c.kind === "playlist" ? c.playlist.jellyfinId : c.playlist.key);
 
-export const SearchKindList = memo(function SearchKindList({ query, filter, library, external, pending, header, bottom }: SearchKindListProps) {
+export const SearchKindList = memo(function SearchKindList({ query, filter, library, external, albumOwnership, pending, header, bottom }: SearchKindListProps) {
   const { t } = useTranslation("music");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
@@ -61,7 +63,7 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
       case "track":
         return <TrackRow track={item.track} index={item.index} list={layout.tracks} contextId={contextId} playing={current === item.track.key} onPlay={play} gutter={gutter} />;
       case "album":
-        return <View style={{ flex: 1 / columns, padding: 6 }}><AlbumCard album={item.album} width={width} /></View>;
+        return <View style={{ flex: 1 / columns, padding: 6 }}><AlbumCard album={item.album} ownership={searchAlbumOwnership(item.album, albumOwnership)} width={width} /></View>;
       case "artist":
         return <View style={{ flex: 1 / columns, padding: 6 }}><ArtistCard artist={item.artist} width={width} /></View>;
       case "playlist":

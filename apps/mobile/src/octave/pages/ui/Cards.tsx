@@ -5,14 +5,15 @@
  * bibliothèque s'affiche aussitôt avec ce que la carte montrait :
  * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut. Un album qui ne se LIT pas
  * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » sur sa pochette, et le toucher ouvre sa
- * feuille (aimer, ajouter à une playlist) au lieu de sa page.
+ * feuille (aimer, ajouter à une playlist) au lieu de sa page. Un album d'ailleurs que la bibliothèque a (`ownership`,
+ * comme le bureau) porte « Dans la bibliothèque » ou « En partie » — et un album en partie présent n'est jamais grisé.
  */
 
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { CloudOff } from "lucide-react-native";
-import { openUnavailableAlbum, useMusicPending } from "@tentacle-tv/api-client";
+import { CloudOff, Library } from "lucide-react-native";
+import { openUnavailableAlbum, useMusicPending, type AlbumOwnership } from "@tentacle-tv/api-client";
 import { isUnavailableAlbum, playlistTrackTotal, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
@@ -55,10 +56,26 @@ function UnavailableBadge() {
   );
 }
 
-export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: { album: MusicAlbum; width: number; onLongPress?: () => void }) {
+/** La pastille « dans la bibliothèque » (bureau : `OwnershipBadge`) : icône ET mot, jamais la seule couleur. */
+function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
+  const { t } = useTranslation("music");
+  const theme = useTheme();
+  return (
+    <View style={styles.badge} pointerEvents="none" accessibilityLabel={t(ownership === "full" ? "availability.albumFull" : "availability.albumPartial")}>
+      <Library size={12} color={theme.colors.status.success} />
+      {ownership === "partial" ? (
+        <Text style={[typography.caption, styles.badgeText]} numberOfLines={1}>
+          {t("availability.partlyShort")}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ownership = null }: { album: MusicAlbum; width: number; onLongPress?: () => void; ownership?: AlbumOwnership | null }) {
   const nav = useOctaveNav();
   const { t } = useTranslation("music");
-  const unavailable = isUnavailableAlbum(album);
+  const unavailable = isUnavailableAlbum(album, ownership);
   const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
   if (unavailable) {
     return (
@@ -80,7 +97,10 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
   };
   return (
     <PressableCard onPress={open} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
-      <Artwork url={album.artworkUrl} size={width} radius={10} />
+      <View>
+        <Artwork url={album.artworkUrl} size={width} radius={10} />
+        {ownership ? <OwnershipBadge ownership={ownership} /> : null}
+      </View>
       <Caption title={album.title} subtitle={subtitle} />
     </PressableCard>
   );
