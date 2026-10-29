@@ -4,6 +4,10 @@
  * (`restorePlayback`, shared). Écrit au changement de titre ou de file, à la pause, toutes les 15 s pendant
  * l'écoute, et quand l'app passe en arrière-plan. Le même pour le web, le bureau et le mobile : chaque client
  * donne son stockage synchrone et son signal « l'app se cache » (`onHide`).
+ *
+ * La reprise ne vaut que DANS LE MÊME LANCEMENT (`launchId`, règle du 29/10) : quitter Octave puis y revenir, un
+ * rechargement de la page, un hôte JS rechargé la retrouvent ; l'application fermée pour de bon (balayée, quittée
+ * au bureau, onglet fermé) repart de zéro — une session gardée par un lancement précédent est ignorée.
  * Clé de stockage : elle ne se renomme jamais.
  */
 
@@ -17,7 +21,10 @@ const CHANGE_SAVE_MS = 800;
 /** Au plus tant d'identités gardées (les plus récentes), comme le cache des pages. */
 const MAX_OWNERS = 4;
 
-type StoredPlayers = Record<string, { playback: SavedPlayback | null; at: number }>;
+type StoredPlayers = Record<string, { playback: SavedPlayback | null; at: number; launch?: string }>;
+
+/** Le lancement de CE moteur JS : un repli pour qui n'a pas mieux (le mobile demande au natif, le web à l'onglet). */
+const JS_LAUNCH = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 export interface PlayerResumeDeps {
   storage: SyncStorage & { removeItem?: (key: string) => void };
@@ -25,6 +32,11 @@ export interface PlayerResumeDeps {
   ownerNow: () => string | null;
   /** Abonne `save` au passage de l'app en arrière-plan ; rend le désabonnement. */
   onHide: (save: () => void) => () => void;
+  /**
+   * Le lancement en cours : il change quand l'application est fermée pour de bon. Défaut : ce moteur JS (un
+   * rechargement compte comme un nouveau lancement).
+   */
+  launchId?: () => string;
   now?: () => number;
 }
 
@@ -37,12 +49,15 @@ function readAll(storage: SyncStorage): StoredPlayers {
   }
 }
 
-export function readSavedPlayback(storage: SyncStorage, owner: string): SavedPlayback | null {
-  return readAll(storage)[owner]?.playback ?? null;
+/** La session gardée de cette identité ; avec `launch`, seulement si elle a été gardée par CE lancement. */
+export function readSavedPlayback(storage: SyncStorage, owner: string, launch?: string): SavedPlayback | null {
+  const entry = readAll(storage)[owner];
+  if (!entry || (launch !== undefined && entry.launch !== launch)) return null;
+  return entry.playback ?? null;
 }
 
-function write(storage: SyncStorage, owner: string, playback: SavedPlayback | null, at: number): void {
-  const all = { ...readAll(storage), [owner]: { playback, at } };
+function write(storage: SyncStorage, owner: string, playback: SavedPlayback | null, at: number, launch: string): void {
+  const all = { ...readAll(storage), [owner]: { playback, at, launch } };
   const kept = Object.entries(all)
     .sort(([, a], [, b]) => (b?.at ?? 0) - (a?.at ?? 0))
     .slice(0, MAX_OWNERS);
@@ -60,10 +75,11 @@ function write(storage: SyncStorage, owner: string, playback: SavedPlayback | nu
 export function attachPlayerResume(player: OctavePlayer, owner: string | null, deps: PlayerResumeDeps): () => void {
   if (owner === null) return () => undefined;
   const now = deps.now ?? Date.now;
-  restorePlayback(player, readSavedPlayback(deps.storage, owner));
+  const launchId = deps.launchId ?? (() => JS_LAUNCH);
+  restorePlayback(player, readSavedPlayback(deps.storage, owner, launchId()));
 
   const save = () => {
-    if (deps.ownerNow() === owner) write(deps.storage, owner, savePlayback(player.snapshot.get(), player.position.get().positionMs), now());
+    if (deps.ownerNow() === owner) write(deps.storage, owner, savePlayback(player.snapshot.get(), player.position.get().positionMs), now(), launchId());
   };
   let changeTimer: ReturnType<typeof setTimeout> | null = null;
   let last = player.snapshot.get();

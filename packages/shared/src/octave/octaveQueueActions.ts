@@ -10,6 +10,7 @@ import {
   clearUserQueue,
   createQueue,
   cycleRepeat,
+  EMPTY_QUEUE,
   enqueue,
   extendWith,
   followWith,
@@ -31,6 +32,19 @@ function apply(player: OctavePlayer, queue: QueueState): void {
 }
 
 export const queueActions = {
+  /**
+   * « Arrêter » (bouton, notification, application balayée) : la lecture s'arrête, la file d'attente ET le
+   * contexte se vident — plus rien en cours, le mini-lecteur disparaît ; le moteur efface la notification et
+   * l'écran verrouillé (`stop`). La session gardée devient vide : rien ne se reprendra. Aléatoire et
+   * répétition, des réglages, restent.
+   */
+  stopAndClear(player: OctavePlayer): void {
+    const { shuffle, repeat } = player.snapshot.get().queue;
+    player.stop();
+    player.engineKeys.clear();
+    player.nextFromDevice = false;
+    player.snapshot.update({ queue: { ...EMPTY_QUEUE, shuffle, repeat }, durationMs: null, format: null });
+  },
   /** « Aléatoire » d'une tête de liste : l'aléatoire s'allume, un titre au hasard ouvre la file. */
   playShuffled(player: OctavePlayer, tracks: readonly MusicTrack[], contextId: string): void {
     if (tracks.length === 0) return;
