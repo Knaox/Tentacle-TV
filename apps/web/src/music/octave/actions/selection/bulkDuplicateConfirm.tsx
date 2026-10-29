@@ -4,42 +4,14 @@
  * reste que deux. Une seule boîte pour tout Octave, montée par la coquille (comme `DuplicateConfirmHost`).
  */
 
-import { useId, useSyncExternalStore } from "react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../../../../components/ui/Modal";
 import { GlassButton } from "../../../../components/ui/glass/GlassButton";
-import type { DuplicateChoice } from "./bulkRules";
+import { answerBulkDuplicates, askBulkDuplicates, useBulkDuplicateAsk } from "@tentacle-tv/api-client";
 
-interface Ask {
-  duplicates: number;
-  total: number;
-  playlist: string;
-  resolve: (choice: DuplicateChoice) => void;
-}
-
-let current: Ask | null = null;
-const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  return () => listeners.delete(l);
-};
-
-export function askBulkDuplicates(duplicates: number, total: number, playlist: string): Promise<DuplicateChoice> {
-  current?.resolve("cancel");
-  return new Promise((resolve) => {
-    current = { duplicates, total, playlist, resolve };
-    notify();
-  });
-}
-
-/** La réponse de l'utilisateur (la boîte, et les tests). */
-export function answerBulkDuplicates(choice: DuplicateChoice): void {
-  const ask = current;
-  current = null;
-  notify();
-  ask?.resolve(choice);
-}
+// La demande vit dans api-client (`askBulkDuplicates`, la même que le mobile rend en feuille) ; ici, la boîte.
+export { askBulkDuplicates, answerBulkDuplicates };
 
 const BUTTON = "inline-flex h-11 items-center justify-center px-5 text-sm font-semibold disabled:opacity-50";
 const QUIET_FALLBACK = "rounded-lg border border-line-subtle bg-fill-soft text-content-primary transition hover:bg-fill-medium";
@@ -48,7 +20,7 @@ export function BulkDuplicateHost() {
   const { t } = useTranslation("music");
   const titleId = useId();
   const descId = useId();
-  const ask = useSyncExternalStore(subscribe, () => current, () => null);
+  const ask = useBulkDuplicateAsk();
   const allThere = ask !== null && ask.duplicates >= ask.total;
   return (
     <Modal open={ask !== null} onClose={() => answerBulkDuplicates("cancel")} maxWidth={540} labelledBy={titleId} describedBy={descId}>

@@ -17,6 +17,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
+import { AddAllToPlaylistButton } from "../actions/AddAllToPlaylistButton";
 import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
@@ -130,7 +131,15 @@ export function AlbumView() {
         onPress={() => tracks[0] && player.prefetch([tracks[0]], "press")}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
-        extra={preview ? undefined : <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />}
+        extra={
+          preview ? undefined : (
+            <>
+              <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />
+              {/* Tous ses titres, dans l'ordre, dans une playlist (doublons : au choix). */}
+              <AddAllToPlaylistButton tracks={tracks} className="h-12 w-12" />
+            </>
+          )
+        }
       />
       <div className="px-2 md:px-6">
         {preview ? <RowsSkeleton rows={Math.min(12, data.trackCount ?? 8)} showArtwork={false} /> : <TrackList

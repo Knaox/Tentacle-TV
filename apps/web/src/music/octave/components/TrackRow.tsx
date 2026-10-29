@@ -23,7 +23,7 @@ import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
 import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
-import { clickGesture, type SelectGesture } from "../actions/selection/selectionRules";
+import { clickGesture, type SelectGesture } from "@tentacle-tv/shared/octave";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
 import { AlbumLink, ArtistLinks } from "./TrackLinks";

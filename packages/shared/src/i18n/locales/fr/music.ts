@@ -163,6 +163,15 @@ export default {
     allDuplicates_one: "Ce titre est déjà dans « {{name}} ». L'ajouter quand même ?",
     allDuplicates_other: "Les {{count}} titres sont déjà dans « {{name}} ». Les ajouter quand même ?",
     skipDuplicates: "Ajouter sans les doublons",
+    /* Ajout du 29/10 (lot fv) : « Sélectionner » ouvre la sélection ; « Lire ensuite » groupé ; tout l'album / la playlist. */
+    start: "Sélectionner",
+    done: "Terminé",
+    none: "Sélectionnez des titres",
+    playNext_one: "{{count}} titre sera lu ensuite",
+    playNext_other: "{{count}} titres seront lus ensuite",
+    addAll: "Ajouter tous les titres à une playlist",
+    removed_one: "{{count}} titre retiré de « {{name}} »",
+    removed_other: "{{count}} titres retirés de « {{name}} »",
   },
   count: {
     tracks_one: "{{count}} titre",
