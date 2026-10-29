@@ -16,6 +16,8 @@ import { useFirstEnter } from "../../layout/enterMotion";
 import { usePageMetrics } from "./pageStyle";
 import { clipsOffscreenCells } from "../../layout/listClipping";
 import { listOrderIdentity } from "../../layout/listOrder";
+import { useShelfWarmup } from "../env/albumWarmupScope";
+import type { MusicAlbum } from "@tentacle-tv/shared/music";
 
 interface ShelfProps<T> {
   title: string;
@@ -26,6 +28,8 @@ interface ShelfProps<T> {
   onSeeAll?: () => void;
   /** Largeur d'une carte (par défaut celle des pages). */
   width?: number;
+  /** L'album d'une carte, pour le préparer quand elle s'arrête à l'écran (`albumWarmupScope.tsx`). */
+  albumOf?: (item: T) => MusicAlbum | null;
 }
 
 export function SectionTitle({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
@@ -44,7 +48,7 @@ export function SectionTitle({ title, hint, action }: { title: string; hint?: st
   );
 }
 
-function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: ShelfProps<T>) {
+function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width, albumOf }: ShelfProps<T>) {
   const { t } = useTranslation("music");
   const theme = useTheme();
   const { gutter, card } = usePageMetrics();
@@ -52,6 +56,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
   const enterOnce = useFirstEnter();
   // Un nouvel ordre (écoutes relues) = une rangée neuve : jamais une cellule déplacée en pleine entrée (`listOrder.ts`).
   const order = listOrderIdentity(items.map((item) => keyOf(item)));
+  const { ref, ...warmup } = useShelfWarmup(albumOf);
   if (items.length === 0) return null;
   const action = onSeeAll ? (
     <Pressable onPress={onSeeAll} hitSlop={10} accessibilityRole="button" style={styles.seeAll}>
@@ -59,10 +64,11 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
     </Pressable>
   ) : undefined;
   return (
-    <View>
+    <View ref={ref} collapsable={false}>
       <SectionTitle title={title} hint={hint} action={action} />
       <FlatList
         key={order}
+        {...warmup}
         horizontal
         data={items as T[]}
         keyExtractor={keyOf}
@@ -82,6 +88,9 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width }: S
 }
 
 export const Shelf = memo(ShelfInner) as typeof ShelfInner;
+
+/** `albumOf` d'une étagère dont chaque carte EST un album. */
+export const albumSelf = (album: MusicAlbum): MusicAlbum => album;
 
 /** L'attente d'une étagère : un titre, et des cartes à leur place. */
 export function ShelfSkeleton({ round }: { round?: boolean }) {

@@ -29,6 +29,7 @@ import { HomeGreeting } from "./HomeGreeting";
 import { ForYouTop, HomeShelves } from "./HomeSections";
 import { MoodsShelf } from "./MoodsShelf";
 import { QuickPicks } from "./QuickPicks";
+import { AlbumWarmupProvider, useAlbumWarmupPage } from "../env/albumWarmupScope";
 
 /**
  * Hors ligne, l'accueil est la musique GARDÉE sur cet appareil (playlists, albums, titres) : la seule qu'il sait
@@ -58,7 +59,8 @@ const NO_PARAMS = {};
 function OnlineHome() {
   const { t } = useTranslation("music");
   const theme = useTheme();
-  const { scrollY, scrollProps } = useOctavePageScroll();
+  const warm = useAlbumWarmupPage();
+  const { scrollY, scrollProps } = useOctavePageScroll(warm.motion);
   const nav = useOctaveNav();
   const home = useMusicHome();
   const { sectionGap } = usePageMetrics();
@@ -73,6 +75,7 @@ function OnlineHome() {
   const empty = !!data && isHomeEmpty(data);
 
   return (
+    <AlbumWarmupProvider scope={warm.scope}>
     <View style={{ flex: 1 }}>
       <Animated.ScrollView
         {...scrollProps}
@@ -99,5 +102,6 @@ function OnlineHome() {
       <OctaveTopBar scrollY={scrollY} title={t("nav.home")} back={false} />
       <OctavePagesHost />
     </View>
+    </AlbumWarmupProvider>
   );
 }

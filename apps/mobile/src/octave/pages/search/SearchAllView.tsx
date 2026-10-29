@@ -14,7 +14,7 @@ import type { ExternalMusicPlaylist, MusicPlaylist } from "@tentacle-tv/shared/m
 import { typography, useTheme } from "@/theme";
 import { usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
-import { SectionTitle, Shelf } from "../ui/Shelf";
+import { SectionTitle, Shelf, albumSelf } from "../ui/Shelf";
 import { TrackList } from "../ui/TrackList";
 import { TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
@@ -69,7 +69,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
           <TrackRowsSkeleton count={4} gutter={gutter} />
         </View>
       ) : null}
-      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} render={(album, w) => <AlbumCard album={album} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
+      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
       <Shelf title={t("search.artists")} items={layout.artists.slice(0, ARTISTS_SHOWN)} keyOf={(a) => a.key} render={(artist, w) => <ArtistCard artist={artist} width={w} />} onSeeAll={layout.artists.length > ARTISTS_SHOWN ? () => onFilter("artists") : undefined} />
       <Shelf
         title={t("search.playlists")}

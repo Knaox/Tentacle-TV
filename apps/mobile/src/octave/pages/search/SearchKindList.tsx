@@ -18,6 +18,7 @@ import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { playFrom } from "../env/playFrom";
 import { clipsOffscreenCells } from "../../layout/listClipping";
+import { useShelfWarmup } from "../env/albumWarmupScope";
 
 type Cell =
   | { kind: "track"; track: MusicTrack; index: number }
@@ -35,6 +36,10 @@ interface SearchKindListProps {
   header: ReactElement;
   bottom: number;
 }
+
+const albumOfCell = (c: Cell): MusicAlbum | null => (c.kind === "album" ? c.album : null);
+// La grille EST la page : sa vue n'a pas à se mesurer (elle remplit la fenêtre), seuls ses gestes comptent.
+const warmupList = ({ ref: _ref, ...gestures }: ReturnType<typeof useShelfWarmup<Cell>>) => gestures;
 
 const keyOf = (c: Cell) => (c.kind === "track" ? c.track.key : c.kind === "album" ? c.album.key : c.kind === "artist" ? c.artist.key : c.kind === "playlist" ? c.playlist.jellyfinId : c.playlist.key);
 
@@ -70,10 +75,12 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
         return <View style={{ flex: 1 / columns, padding: 6 }}><ExternalPlaylistCard playlist={item.playlist} width={width} /></View>;
     }
   };
+  const warmup = useShelfWarmup<Cell>(filter === "albums" ? albumOfCell : undefined, true);
   const empty = !pending && cells.length === 0 ? <EmptyState icon={SearchX} title={t("search.kindEmpty", { query })} /> : null;
   return (
     <FlatList
       key={`${filter}:${columns}`}
+      {...warmupList(warmup)}
       data={cells}
       keyExtractor={keyOf}
       renderItem={render}

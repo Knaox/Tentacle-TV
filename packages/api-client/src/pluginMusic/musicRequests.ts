@@ -59,9 +59,10 @@ export function isSourceFresh(source: PlaybackSource, now = Date.now()): boolean
 /**
  * Le silence après un signal, par intention. Un survol se redit au bout de
  * 5 s : l'extension l'oublie après 8 s (sa politique d'anticipation), un
- * second survol plus tard doit donc arriver. `press` passe toujours.
+ * second survol plus tard doit donc arriver. `press` passe toujours ; `albums`
+ * aussi : chaque liste remplace la précédente, sa règle (`albumWarmup`) la dédouble.
  */
-const PREFETCH_DEDUP_MS: Record<PrefetchIntent, number> = { results: 30_000, hover: 5_000, press: 0, next: 30_000 };
+const PREFETCH_DEDUP_MS: Record<PrefetchIntent, number> = { results: 30_000, hover: 5_000, press: 0, next: 30_000, albums: 0 };
 const recentPrefetch = new Map<string, number>();
 
 /**

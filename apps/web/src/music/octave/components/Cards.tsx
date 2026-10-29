@@ -20,6 +20,7 @@ import { isUnavailableAlbum, playlistTrackTotal } from "@tentacle-tv/shared/octa
 import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
 import { rememberAlbumPreview } from "../data/albumPreview";
 import { useEntityIntent } from "../data/entityIntent";
+import { useAlbumCardWarmup } from "../data/albumWarmup";
 import type { AlbumOwnership } from "../library/ownedItems";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
@@ -84,6 +85,7 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
   const year = album.year ? `${album.year} · ` : "";
   const artists = album.artists.map((a) => a.name).join(", ");
   const unavailable = isUnavailableAlbum(album, ownership);
+  const warmRef = useAlbumCardWarmup(album.jellyfinId || unavailable ? null : album);
   const content = (
     <>
       <div className="relative aspect-square w-full">
@@ -113,7 +115,7 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
   }
   return target ? (
     // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
-    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} {...intent}>
+    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} ref={warmRef} {...intent}>
       {content}
     </Link>
   ) : (

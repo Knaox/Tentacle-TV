@@ -24,6 +24,8 @@ export interface PluginMusicManifest {
   resolve: string;
   /** 2 · Anticipation — POST `MusicPrefetchRequest` → 204. Jamais bloquant. */
   prefetch?: string;
+  /** `prefetch` sait aussi PRÉPARER des albums (intention `albums` : ceux vus défiler, sous son budget de fond). */
+  prefetchAlbums?: boolean;
   /** 3 · Cœur — POST { externalId, liked } → `ExternalActionOutcome`. */
   like?: string;
   /**
@@ -217,7 +219,9 @@ export type PrefetchIntent =
   /** Appui commencé (mousedown / touchstart) : le clic arrive. */
   | "press"
   /** Le titre suivant de la file. */
-  | "next";
+  | "next"
+  /** Des ALBUMS vus défiler (identifiants d'album) : leur vue préparée d'avance, seulement si `prefetchAlbums`. */
+  | "albums";
 
 export interface MusicPrefetchRequest {
   ids: string[];
@@ -295,6 +299,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
+  if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
