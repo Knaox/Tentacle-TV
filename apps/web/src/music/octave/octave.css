@@ -20,6 +20,11 @@
   color: var(--oc-on-gradient);
 }
 
+/* Le logo d'une playlist partagée, sur sa jaquette : l'encre des panneaux à 88 %. */
+.octave-shared-badge {
+  background: rgba(var(--oc-ink-raised-rgb), 0.88);
+}
+
 /* Le texte de marque (qualité « Hi-Res », mot « Octave ») : le dégradé. */
 .octave-brand-text {
   background-image: var(--oc-gradient);

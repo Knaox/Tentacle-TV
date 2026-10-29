@@ -22,9 +22,9 @@ export const SharedPlaylistBadge = memo(function SharedPlaylistBadge({ playlist 
       role="img"
       aria-label={label}
       title={label}
-      className="pointer-events-auto absolute bottom-2 left-2 z-[1] inline-flex items-center gap-1.5 rounded-full py-1 pl-1.5 pr-1"
-      // Une encre opaque : aucun flou derrière (règles « Coût GPU »), lisible sur toute pochette.
-      style={{ background: "color-mix(in srgb, var(--oc-ink, #0d0b13) 88%, transparent)" }}
+      // Une encre opaque (`.octave-shared-badge`, octave.css) : aucun flou derrière (règles « Coût GPU »), lisible sur
+      // toute pochette ; jamais en style en ligne, que la garde du client LG refuse.
+      className="octave-shared-badge pointer-events-auto absolute bottom-2 left-2 z-[1] inline-flex items-center gap-1.5 rounded-full py-1 pl-1.5 pr-1"
     >
       <span className="octave-brand-fill flex h-[22px] w-[22px] items-center justify-center rounded-full">
         <Users className="h-3 w-3" aria-hidden />
