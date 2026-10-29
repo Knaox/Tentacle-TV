@@ -9,6 +9,7 @@ export * from "./musicLibraryMatch";
 export * from "./musicRights";
 export * from "./musicMoods";
 export * from "./musicImport";
+export * from "./musicReleases";
 export * from "./musicListOrder";
 export * from "./musicSourceOrder";
 export * from "./musicShare";

@@ -103,15 +103,24 @@ export interface MusicTrack {
   favorite: boolean;
   /** Contenu explicite, si la source le dit. */
   explicit?: boolean;
+  /**
+   * Le titre ne se LIT pas (`MusicUnavailableReason`) : il est listé GRISÉ, sa lecture ne part pas. Absent ou `null` :
+   * lisible. Posé par une extension seulement (lot « sf », 28/10 : une piste Bandcamp sans écoute publique).
+   */
+  unavailable?: MusicUnavailableReason | null;
+  /** Une SORTIE IMPORTÉE par le compte (lien ou fichiers, musicReleases.ts) : pastille « Importé ». */
+  imported?: true;
 }
 
 /**
  * Pourquoi un album ne se LIT pas (lot « Octave mobile 3 », 28/10) — liste FERMÉE, la valeur traverse le réseau :
  * - `notStreamable` : connu ailleurs (Deezer, MusicBrainz…), absent de la source de lecture de l'extension
  *   (YouTube) ; l'aimer ou l'ajouter à une playlist le fait RÉCUPÉRER par le serveur (Lidarr).
+ * - `notPublic` : une sortie importée dont la source n'offre pas l'écoute publique de ce titre (Bandcamp : réservé à
+ *   l'achat) ; importer le fichier acheté le rend lisible (lot « sf », 28/10).
  * Une valeur inconnue d'un client se lit comme « pas lisible », sans plus.
  */
-export type MusicUnavailableReason = "notStreamable";
+export type MusicUnavailableReason = "notStreamable" | "notPublic";
 
 export type AlbumKind = "album" | "single" | "ep" | "compilation" | "live" | "soundtrack" | "other";
 
@@ -142,6 +151,10 @@ export interface MusicAlbum {
    * extension seulement (un serveur ou une extension d'avant ne l'envoie jamais : rien ne change).
    */
   unavailable?: MusicUnavailableReason | null;
+  /** Une SORTIE IMPORTÉE par le compte (musicReleases.ts) : pastille « Importé ». */
+  imported?: true;
+  /** La page d'où vient une sortie importée (Bandcamp : l'acheter, la voir) ; `null` : des fichiers seuls. */
+  sourceUrl?: string | null;
   /** Rendu par la vue album seulement (pas par la recherche). */
   tracks?: MusicTrack[];
 }
@@ -153,6 +166,8 @@ export interface MusicArtist {
   name: string;
   mbid: Mbid | null;
   imageUrl: string | null;
+  /** Un artiste qui n'existe que par des sorties importées du compte (musicReleases.ts). */
+  imported?: true;
   /** Rendus par la vue artiste seulement. */
   topTracks?: MusicTrack[];
   albums?: MusicAlbum[];
