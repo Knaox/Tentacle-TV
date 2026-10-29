@@ -71,11 +71,15 @@ export function toAlbum(row: IndexRow, ctx: ViewContext): MusicAlbum {
     trackCount: row.childCount,
     durationMs: row.durationMs,
     mbids: { release: row.releaseMbid, releaseGroup: row.releaseGroupMbid },
+    // Le favori Jellyfin de l'album (`music.libraryFavorites`).
+    favorite: ctx.favorites.has(row.id),
   };
 }
 
-export function toArtist(row: IndexRow): MusicArtist {
+/** `favorites` : le favori Jellyfin de l'artiste (`music.libraryFavorites`) ; absent, le champ ne part pas. */
+export function toArtist(row: IndexRow, favorites?: ReadonlySet<string>): MusicArtist {
   return {
+    ...(favorites && { favorite: favorites.has(row.id) }),
     key: `jf:${row.id}`,
     jellyfinId: row.id,
     external: null,

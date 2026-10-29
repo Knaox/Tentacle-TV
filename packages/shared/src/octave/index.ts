@@ -23,6 +23,7 @@ export * from "./startCause";
 export * from "./declaredPlayback";
 export * from "./octaveResume";
 export * from "./lists";
+export * from "./actions";
 export * from "./pages";
 export * from "./octaveDeviceSettings";
 export * from "./octaveLaunchPin";

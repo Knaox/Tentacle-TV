@@ -44,6 +44,7 @@ const NAMESPACES = [
   "musicReleases",
   "musicShare",
   "musicPlaylistMembers",
+  "musicFavorites",
   "musicLists",
   "octaveShell",
 ] as const;
