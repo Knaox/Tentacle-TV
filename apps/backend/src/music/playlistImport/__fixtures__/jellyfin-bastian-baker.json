@@ -1,0 +1,321 @@
+[
+ {
+  "Id": "59a244794f4fce03a311f1235aee9534",
+  "Type": "Audio",
+  "Name": "Amazonia",
+  "SortName": "0001 - Amazonia",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 1,
+  "RunTimeTicks": 220533330,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/01 - Amazonia.flac"
+ },
+ {
+  "Id": "46dd17eebde904faf0d8468c1a66d885",
+  "Type": "Audio",
+  "Name": "Black cloud",
+  "SortName": "0002 - Black cloud",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 2,
+  "RunTimeTicks": 1820800000,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/02 - Black cloud.flac"
+ },
+ {
+  "Id": "7607bffb8358374ed49ea0b7ceae946b",
+  "Type": "Audio",
+  "Name": "Easy as it comes",
+  "SortName": "0003 - Easy as it comes",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 3,
+  "RunTimeTicks": 1956266670,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/03 - Easy as it comes.flac"
+ },
+ {
+  "Id": "ba29fc06554366725c1773ddc9dc7922",
+  "Type": "Audio",
+  "Name": "Split in two",
+  "SortName": "0004 - Split in two",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 4,
+  "RunTimeTicks": 2501200000,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/04 - Split in two.flac"
+ },
+ {
+  "Id": "e30efc3c0662585c2fe592614e87def7",
+  "Type": "Audio",
+  "Name": "Guiding sign",
+  "SortName": "0005 - Guiding sign",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 5,
+  "RunTimeTicks": 2072933330,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/05 - Guiding sign.flac"
+ },
+ {
+  "Id": "46e314bfa2f705532fa7cfc95a5eea8d",
+  "Type": "Audio",
+  "Name": "In the name of the free",
+  "SortName": "0006 - In the name of the free",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 6,
+  "RunTimeTicks": 2051600000,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/06 - In the name of the free.flac"
+ },
+ {
+  "Id": "b7ca8cb434269be8138b8157904d9d9a",
+  "Type": "Audio",
+  "Name": "If you were me",
+  "SortName": "0007 - If you were me",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 7,
+  "RunTimeTicks": 1843733330,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/07 - If you were me.flac"
+ },
+ {
+  "Id": "ed8e7909bf75939cb42c0c7f7fbb93c1",
+  "Type": "Audio",
+  "Name": "Red flags",
+  "SortName": "0008 - Red flags",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 8,
+  "RunTimeTicks": 1734133560,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/08 - Red flags.flac"
+ },
+ {
+  "Id": "4090a1ca759e26f19acd92a428a1caa6",
+  "Type": "Audio",
+  "Name": "Eyes of gold",
+  "SortName": "0009 - Eyes of gold",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 9,
+  "RunTimeTicks": 748933330,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/09 - Eyes of gold.flac"
+ },
+ {
+  "Id": "05333f01d9c385b2372fd538901c295e",
+  "Type": "Audio",
+  "Name": "I have seen the lights",
+  "SortName": "0010 - I have seen the lights",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 10,
+  "RunTimeTicks": 1902933330,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/10 - I have seen the lights.flac"
+ },
+ {
+  "Id": "242b292e50f5f38da71a9d47967eb44f",
+  "Type": "Audio",
+  "Name": "Stories untold",
+  "SortName": "0011 - Stories untold",
+  "Album": "TRUTH LIES IN BETWEEN",
+  "AlbumId": "8b4b21a501e70b28c4c9d07e9659a089",
+  "AlbumArtist": "Bastian Baker",
+  "AlbumArtists": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "ArtistItems": [
+   {
+    "Name": "Bastian Baker",
+    "Id": "4a719c1746bbbd760df43191ccbb81f6"
+   }
+  ],
+  "Artists": [
+   "Bastian Baker"
+  ],
+  "IndexNumber": 11,
+  "RunTimeTicks": 2199066670,
+  "ProviderIds": {},
+  "ProductionYear": 2026,
+  "Path": "/tentacle-data/plugins/sillon/data/library/Bastian Baker/TRUTH LIES IN BETWEEN/11 - Stories untold.flac"
+ }
+]

@@ -14,6 +14,8 @@
  * (YouTube) passe par `importRead` d'une extension, ou n'est pas offerte.
  */
 
+import type { ImportSkipped } from "./musicImportSkip";
+
 /**
  * Sources d'import, liste FERMÉE (les clés traversent le réseau : jamais renommées). `tentacle` : le lien de
  * partage d'une playlist d'un AUTRE serveur Tentacle (`musicShare.ts`, capacité `music.playlistShare`).
@@ -63,6 +65,8 @@ export interface ImportedTrack {
   isrc: string | null;
   /** L'identifiant du titre CHEZ la source (information, jamais une clé du cœur). */
   sourceId: string | null;
+  /** La source ne le joue pas (1.40.0) : `region` (Deezer `readable: false`), `refused` (Spotify `isPlayable: false`). */
+  sourceBlocked?: "region" | "refused";
 }
 
 /** Une playlist lue (par le cœur ou par `importRead` d'une extension). */
@@ -298,4 +302,8 @@ export interface ImportTracksProgress {
   notFound: number[];
   /** Raison d'un `failed` ou d'un arrêt partiel (liste fermée `ExternalActionRefusal` du contrat `music`). */
   reason?: "quota" | "forbidden" | "unavailable" | "notFound" | "failed";
+  /** Les titres non posés et leur motif (1.40.0 ; une extension d'avant : `notFound` seul). */
+  skipped?: ImportSkipped[];
+  /** Parmi `added`, ceux que le COMPTE avait déjà importés (ses fichiers) : pas « en cloud ». */
+  own?: number;
 }

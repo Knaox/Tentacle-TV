@@ -11,6 +11,8 @@ import { fullSync, markIndexUsable, syncState } from "./index/indexSync";
 import { scheduleOrphanReread } from "./index/orphanReread";
 import { onJellyfinLibraryChanged, tellLibrary } from "./events/musicLiveEvents";
 import { onLibraryChanged } from "../services/jellyfinLibraryListeners";
+import { onAudioItems } from "./events/audioItemsFeed";
+import { sourceArrivalWatcher } from "./playlistSource/sourceArrivals";
 
 const START_DELAY_MS = 15_000;
 /** Un passage complet en échec (Jellyfin muet) se retente à la demande, pas plus d'une fois par minute. */
@@ -41,6 +43,8 @@ async function markUsableEarly(): Promise<void> {
 export function startMusicIndex(): void {
   if (started) return;
   started = true;
+  // Une arrivée se range à son rang dans les playlists importées qui l'attendaient (playlistSource/sourceArrivals.ts).
+  onAudioItems(sourceArrivalWatcher().onChange);
   // Les `LibraryChanged` des sockets de comptes tiennent l'index à jour.
   onLibraryChanged((change) =>
     void onJellyfinLibraryChanged({ ItemsAdded: change.added, ItemsUpdated: change.updated, ItemsRemoved: change.removed }),

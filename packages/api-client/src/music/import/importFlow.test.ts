@@ -61,7 +61,7 @@ describe("import — sans extension", () => {
     expect(p.started).toEqual([{ keepEmpty: false, url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M" }]);
     expect(seen.some((s) => s.phase === "matching" && s.matched === 2)).toBe(true);
     expect(final).toMatchObject({ phase: "done", summary: { playlistId: "pl", inLibrary: 2, outside: 0, outsideRefused: false } });
-    expect(final.summary?.missing.map((t) => t.index)).toEqual([1, 3]);
+    expect(final.summary?.missing.map((t) => [t.index, t.reason])).toEqual([[1, "noExtension"], [3, "noExtension"]]);
   });
 
   it("un lien YouTube sans extension qui le lit : « demande une extension », rien n'est lancé", async () => {
@@ -93,14 +93,29 @@ describe("import — avec une extension", () => {
     expect(confide).toHaveBeenCalledWith({ playlistId: "pl", source: "spotify", tracks: [absent(1, 1), absent(3, 2)] }, expect.anything());
     expect(seen.some((s) => s.phase === "outside" && s.outside?.processed === 1)).toBe(true);
     expect(final.summary).toMatchObject({ inLibrary: 2, outside: 1, outsideRefused: false });
-    expect(final.summary?.missing.map((t) => t.index)).toEqual([3]);
+    expect(final.summary?.missing.map((t) => [t.index, t.reason])).toEqual([[3, "notFound"]]);
+  });
+
+  it("l'extension dit le motif de chaque titre non posé et combien étaient déjà importés par le compte", async () => {
+    const progress = async (): Promise<ImportTracksProgress> => ({ operationId: "op", state: "done", total: 2, processed: 2, added: 1, own: 1, notFound: [], skipped: [{ index: 3, reason: "duplicate" }] });
+    const p = port({ canConfide: true, confide: async () => ({ operationId: "op", accepted: 2 }), progress });
+    const { final } = await run({ kind: "text", text: "x" }, p);
+    expect(final.summary).toMatchObject({ total: 4, inLibrary: 2, outside: 1, own: 1 });
+    expect(final.summary?.missing.map((t) => [t.index, t.reason])).toEqual([[3, "duplicate"]]);
+  });
+
+  it("l'extension s'arrête sur la limite du jour : chaque absent le dit", async () => {
+    const progress = async (): Promise<ImportTracksProgress> => ({ operationId: "op", state: "failed", total: 2, processed: 0, added: 0, notFound: [], reason: "quota" });
+    const p = port({ canConfide: true, confide: async () => ({ operationId: "op", accepted: 0 }), progress });
+    const { final } = await run({ kind: "text", text: "x" }, p);
+    expect(final.summary?.missing.map((t) => t.reason)).toEqual(["quota", "quota"]);
   });
 
   it("l'extension refuse (quota, panne) : les absents restent listés, la playlist de la bibliothèque est là", async () => {
     const p = port({ canConfide: true, confide: async () => Promise.reject(new Error("403")) });
     const { final } = await run({ kind: "text", text: "x" }, p);
     expect(final.summary).toMatchObject({ inLibrary: 2, outside: 0, outsideRefused: true });
-    expect(final.summary?.missing).toHaveLength(2);
+    expect(final.summary?.missing.map((t) => t.reason)).toEqual(["unavailable", "unavailable"]);
   });
 
   it("YouTube : l'extension lit la playlist, le cœur rapproche ce qu'elle a lu", async () => {

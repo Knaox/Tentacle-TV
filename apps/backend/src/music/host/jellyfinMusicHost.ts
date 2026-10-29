@@ -18,7 +18,7 @@ import { isJellyfinId, jfAdmin, jfWrite, normalizeId, q, type JfItemsPage } from
 import { getMusicLibrary } from "../jellyfin/musicLibrary";
 import { listUserPlaylists, playlistEntries as entriesOf } from "../playlists/playlistJellyfin";
 import { accessAllows, playlistAccess } from "../playlistMembers/playlistAccess";
-import { insertFromHost } from "../playlistSource/sourcePlacement";
+import { insertFromHost, markSourceRemoved } from "../playlistSource/sourcePlacement";
 import type { AudioItemRef } from "../events/audioItemsFeed";
 import { isAdminUser, listUserIds } from "./hostUsers";
 import { isLibraryPath, refreshContaining } from "./folderRefresh";
@@ -113,6 +113,18 @@ export async function playlistInsert(params: { userId: string; playlistId: strin
   const result = await insertFromHost(userId!, playlistId!, itemIds, params.position, params.sourceIndex);
   if (result.ok) return { ok: true, position: result.value };
   throw new HostMusicFailure(result.failure === "not_found" ? "notFound" : result.failure === "invalid" ? "invalid" : result.failure, "playlist");
+}
+
+/**
+ * L'utilisateur a retiré de sa playlist importée l'entrée de l'extension qui tenait le titre de rang `sourceIndex` :
+ * le relevé le garde retiré (`playlistSource/sourceArrivals.ts` ne l'y remet jamais). Le droit d'y ajouter est exigé.
+ */
+export async function playlistSourceRemoved(params: { userId: string; playlistId: string; sourceIndex: number }): Promise<{ ok: true; marked: boolean }> {
+  const [userId, playlistId] = ids([params.userId, params.playlistId]);
+  if (!Number.isInteger(params.sourceIndex) || params.sourceIndex < 0) throw new HostMusicFailure("invalid", "sourceIndex");
+  const access = await playlistAccess(userId!, playlistId!);
+  if (!access || !accessAllows(access.right, "add")) throw new HostMusicFailure("forbidden", "playlist");
+  return { ok: true, marked: await markSourceRemoved(playlistId!, params.sourceIndex) };
 }
 
 export async function playlistEntries(params: { userId: string; playlistId: string }): Promise<{ entryId: string; itemId: string; position: number }[]> {

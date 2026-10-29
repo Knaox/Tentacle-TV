@@ -143,6 +143,12 @@ export interface HostApi {
    * source, `position` n'étant qu'un repli ; il rend la place prise. Hôte d'avant : paramètre inconnu (`invalid`).
    */
   "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number }; result: { ok: true; position?: number } };
+  /**
+   * L'utilisateur a RETIRÉ de cette playlist importée le titre de rang `sourceIndex` de la source (l'entrée que
+   * l'extension tenait pour lui) : il n'y reviendra jamais, même arrivé dans la bibliothèque. `marked: false` : rien à
+   * marquer (playlist sans relevé, rang inconnu). Serveur 1.40.0 ; un hôte d'avant : méthode inconnue (`invalid`).
+   */
+  "jellyfin.playlistSourceRemoved": { params: { userId: string; playlistId: string; sourceIndex: number }; result: { ok: true; marked: boolean } };
   "jellyfin.playlistEntries": { params: { userId: string; playlistId: string }; result: { entryId: string; itemId: string; position: number }[] };
   /**
    * Ce compte peut-il MODIFIER cette playlist (Jellyfin : `CanDelete`, vu par lui) ? `false` aussi pour une playlist
@@ -229,6 +235,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "jellyfin.matchTracks",
   "jellyfin.setFavorite",
   "jellyfin.playlistInsert",
+  "jellyfin.playlistSourceRemoved",
   "jellyfin.playlistEntries",
   "jellyfin.playlistEditable",
   "jellyfin.usageOf",

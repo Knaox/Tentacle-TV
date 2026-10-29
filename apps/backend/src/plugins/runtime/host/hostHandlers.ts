@@ -40,6 +40,7 @@ export const HOST_HANDLERS: HostHandlers = {
   "jellyfin.matchTracks": (_ctx, params) => jellyfin().matchTracks(params),
   "jellyfin.setFavorite": (_ctx, params) => jellyfin().setFavorite(params),
   "jellyfin.playlistInsert": (_ctx, params) => jellyfin().playlistInsert(params),
+  "jellyfin.playlistSourceRemoved": (_ctx, params) => jellyfin().playlistSourceRemoved(params),
   "jellyfin.playlistEntries": (_ctx, params) => jellyfin().playlistEntries(params),
   "jellyfin.playlistEditable": (_ctx, params) => jellyfin().playlistEditable(params),
   "jellyfin.usageOf": (_ctx, params) => jellyfin().usageOf(params),

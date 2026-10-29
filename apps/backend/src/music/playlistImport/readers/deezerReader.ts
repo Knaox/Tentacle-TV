@@ -38,6 +38,8 @@ function trackOf(raw: Raw, album: string | null): Omit<ImportedTrack, "index"> {
     durationMs: durationOf(typeof raw.duration === "number" ? raw.duration * 1000 : null),
     isrc: isrcOf(raw.isrc),
     sourceId: raw.id == null ? null : String(raw.id),
+    // `readable: false` : Deezer le réserve à d'autres pays (le motif du bilan, s'il n'entre pas).
+    ...(raw.readable === false ? { sourceBlocked: "region" as const } : {}),
   };
 }
 

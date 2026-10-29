@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { classifyPasted, importFraction, useMusicImport, type ImportUserInput } from "@tentacle-tv/api-client";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
+import { importReport } from "@tentacle-tv/shared/octave";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
@@ -25,6 +26,7 @@ import { OctavePlayButton } from "../../layout/OctavePlayButton";
 import { AlbumChoice } from "./importInto/AlbumChoice";
 import { FilesChoice } from "./importInto/FilesChoice";
 import { IntoStatusView } from "./importInto/IntoStatusView";
+import { ImportReportView } from "./ImportReportView";
 import { ModeSwitch, type ImportMode } from "./importInto/ModeSwitch";
 import { useIntoFlow, type IntoPlaylist } from "./importInto/useIntoFlow";
 
@@ -67,7 +69,8 @@ export function ImportFlow({ open, prefill, autoStart, into = null }: { open: bo
     if (summary) haptic("success");
     // Feuille refermée pendant le travail : l'avis dit la fin, et mène à la playlist.
     if (summary && !openRef.current) {
-      showNotice("success", t("inLibrary", { count: summary.inLibrary }), { title: t("toastDone", { name: summary.name }), action: { label: t("open"), onPress: () => openPlaylist(summary.playlistId) } });
+      const report = importReport(summary);
+      showNotice("success", t("report.kept", { kept: report.kept, count: report.total }), { title: t("toastDone", { name: summary.name }), action: { label: t("open"), onPress: () => openPlaylist(summary.playlistId) } });
       reset();
       setText("");
     } else if (final?.phase === "failed" && !openRef.current) {
@@ -167,10 +170,7 @@ export function ImportFlow({ open, prefill, autoStart, into = null }: { open: bo
         ) : state.summary ? (
           <>
             <Text style={[typography.subtitle, { color: theme.colors.text.primary }]}>{t("doneTitle", { name: state.summary.name })}</Text>
-            <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("inLibrary", { count: state.summary.inLibrary })}</Text>
-            {state.summary.outside > 0 ? <Text style={[typography.body, { color: theme.colors.text.secondary }]}>{t("outside", { count: state.summary.outside })}</Text> : null}
-            {state.summary.missing.length > 0 ? <Text style={[typography.body, { color: theme.colors.text.tertiary }]}>{t("missing", { count: state.summary.missing.length })}</Text> : null}
-            {state.summary.truncated ? <Text style={[typography.small, { color: theme.colors.text.tertiary }]}>{t("truncated")}</Text> : null}
+            <ImportReportView summary={state.summary} />
             <OctavePlayButton label={t("open")} Icon={null} onPress={() => openPlaylist(state.summary!.playlistId)} style={styles.primary} />
           </>
         ) : (

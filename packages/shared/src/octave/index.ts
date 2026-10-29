@@ -11,6 +11,7 @@ export * from "./queueModel";
 export * from "./queueContextLabel";
 export * from "./audioFormat";
 export * from "./pendingMerge";
+export * from "./importReport";
 export * from "./libraryFirst";
 export * from "./trackTwins";
 export * from "./playerState";
