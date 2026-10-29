@@ -30,7 +30,7 @@
 import { Platform } from "react-native";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { i18n } from "@tentacle-tv/shared";
-import type { ProgressPayload } from "@tentacle-tv/offline-core";
+import type { HoldState, ProgressPayload } from "@tentacle-tv/offline-core";
 import {
   onTransferPause,
   startTransferService,
@@ -46,6 +46,7 @@ const KEEP_AWAKE_TAG = "offline-transfer";
 /** Au plus une mise à jour de la notification toutes les deux secondes. */
 const NOTICE_MIN_INTERVAL_MS = 2_000;
 
+/** L'application est tenue : transferts en vol ou relance programmée (`onEngineHeld`). */
 let busy = false;
 let serviceRunning = false;
 let keepAwakeHeld = false;
@@ -127,11 +128,33 @@ function notice(force: boolean): void {
   updateTransferService(noticeBody(), noticePercent());
 }
 
-/** La bascule « au moins un transfert tourne » du moteur (`EngineDeps.onBusy`). */
+/**
+ * La bascule « au moins un transfert tourne » du moteur (`EngineDeps.onBusy`) :
+ * l'anti-veille de l'écran, seulement quand « Continuer en arrière-plan » est
+ * désactivé — l'écran tient alors le transfert, jamais une attente.
+ */
 export function onEngineBusy(active: boolean): void {
-  busy = active;
   publicLog("transferts", active ? "moteur occupé" : "moteur libre");
+  if (isBackgroundTransfers()) return;
+  if (active) holdKeepAwake();
+  else releaseKeepAwake();
+}
+
+/**
+ * Ce qui tient l'application derrière (`EngineDeps.onHeld`) : des transferts en
+ * vol, OU une relance programmée — des titres d'Octave que l'extension prépare
+ * encore (503 + `Retry-After`), un film coupé qui attend sa relance. Le service
+ * et l'horloge suivaient `onBusy` seul : quand tous les titres attendaient le
+ * serveur, plus rien n'était « en vol », le service s'arrêtait, les minuteurs
+ * gelaient, et la relance ne partait jamais application quittée (29/10).
+ */
+export function onEngineHeld(state: HoldState): void {
+  const active = state.transferring || state.awaitingRetry;
+  if (active === busy) return;
+  busy = active;
   if (!active) {
+    publicLog("transferts", "plus rien ne tient l'application");
+    // Le repli d'un service refusé (`holdKeepAwake` plus bas) part avec lui.
     releaseKeepAwake();
     releaseService();
     releaseJsAlive();
@@ -139,11 +162,8 @@ export function onEngineBusy(active: boolean): void {
     lastNoticeAt = 0;
     return;
   }
-  if (!isBackgroundTransfers()) {
-    holdKeepAwake();
-    return;
-  }
-  if (Platform.OS !== "android") return;
+  if (!state.transferring) publicLog("transferts", "en attente d'une relance : l'application reste tenue");
+  if (!isBackgroundTransfers() || Platform.OS !== "android") return;
   // Les minuteurs survivent à l'activité en pause (`androidKeepAlive.ts`) :
   // sans eux, une coupure écran éteint ne se relançait jamais.
   holdJsAlive();
