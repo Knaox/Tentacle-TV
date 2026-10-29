@@ -20,6 +20,8 @@ import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { canAddToPlaylist } from "@tentacle-tv/shared/music";
+import { SharedRailMark } from "../playlists/members/SharedRailMark";
 import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
 import { PlaylistArtwork, playlistCoverUrls } from "../components/PlaylistArtwork";
@@ -103,7 +105,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
 function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; children: ReactNode }) {
   const actions = useTrackActions();
   const [over, setOver] = useState(false);
-  const accepts = (e: DragEvent) => playlist.editable && carriesTrack(e);
+  const accepts = (e: DragEvent) => canAddToPlaylist(playlist) && carriesTrack(e);
   return (
     <li
       className={`rounded-xl transition-shadow duration-150 ${over ? "ring-2 ring-octave-accent-text" : ""}`}
@@ -133,9 +135,10 @@ function RailPlaylist({ playlist }: { playlist: MusicPlaylist }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="group/rail relative">
-      <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${playlist.editable ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
+      <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${playlist.editable || playlist.sharing ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
         <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="sm" thumb className="h-9 w-9" />
         <span className="truncate">{playlist.name}</span>
+        <SharedRailMark playlist={playlist} />
       </NavLink>
       <div className={`absolute right-1 top-1/2 -translate-y-1/2 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/rail:opacity-100"}`}>
         <PlaylistMenuButton playlist={playlist} open={menuOpen} onOpenChange={setMenuOpen} className="h-8 w-8" />

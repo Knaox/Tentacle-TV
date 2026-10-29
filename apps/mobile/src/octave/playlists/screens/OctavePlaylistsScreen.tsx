@@ -24,6 +24,7 @@ import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { GlassIconButton, GlassTextButton } from "./BarButtons";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { OfflineMissingState } from "../../offline/OfflinePageFallback";
+import { SharedMark } from "../members/SharedMark";
 
 type Item = { kind: "liked" } | { kind: "playlist"; playlist: MusicPlaylist };
 
@@ -44,9 +45,11 @@ export function OctavePlaylistsScreen() {
   const columns = layout.isTablet ? layout.columns(180) : 1;
   const items = useMemo<Item[]>(() => [{ kind: "liked" }, ...(playlists.data ?? []).map((playlist) => ({ kind: "playlist" as const, playlist }))], [playlists.data]);
   const manage = useCallback((playlist: MusicPlaylist) => {
-    if (!playlist.editable) return;
+    // Une playlist qu'on m'a partagée : ses personnes (et « Quitter ») ; la mienne : la gérer.
+    const member = playlist.sharing?.role === "member";
+    if (!playlist.editable && !member) return;
     haptic("longPress");
-    openPlaylistSheet({ kind: "manage", playlist });
+    openPlaylistSheet(member ? { kind: "members", playlist } : { kind: "manage", playlist });
   }, []);
 
   const renderRow = useCallback(
@@ -79,7 +82,8 @@ export function OctavePlaylistsScreen() {
             <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text }]}>{p.name}</Text>
             <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(p) })}</Text>
           </View>
-          {p.editable ? (
+          <SharedMark playlist={p} />
+          {p.editable || p.sharing?.role === "member" ? (
             <Pressable onPress={() => manage(p)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("playlistManage.more", { name: p.name })} style={styles.more}>
               <MoreHorizontal size={20} color={colors.textSecondary} />
             </Pressable>
@@ -107,7 +111,10 @@ export function OctavePlaylistsScreen() {
               <Heart size={Math.round(width * 0.3)} color="#fff" fill="#fff" />
             </LinearGradient>
           ) : (
-            <Artwork url={item.playlist.artworkUrl} size={width} radius={12} />
+            <View>
+              <Artwork url={item.playlist.artworkUrl} size={width} radius={12} />
+              <SharedMark playlist={item.playlist} overlay />
+            </View>
           )}
           <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text, marginTop: 8 }]}>{name}</Text>
           {!isLiked ? <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(item.playlist) })}</Text> : null}

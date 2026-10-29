@@ -19,6 +19,7 @@ import { mosaicCandidates, pickMosaic, type MosaicCandidate, type MusicPlaylistC
 import type { MusicPlaylist, MusicTrack } from "../contract/musicTypes";
 import { normalizeId } from "../jellyfin/musicJellyfin";
 import { playlistEntries, playlistHasHandPlacedImage, type JfPlaylist } from "../playlists/playlistJellyfin";
+import { readerOf } from "../playlistMembers/playlistAccess";
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
 
 interface Kept {
@@ -80,7 +81,7 @@ function fresh(entry: Kept | undefined, item: JfPlaylist, now: number): entry is
 
 async function readCandidates(view: UserView, item: JfPlaylist, now: number): Promise<Kept | null> {
   const key = keyOf(view, item.Id);
-  const [entries, handPlaced] = await Promise.all([playlistEntries(view.userId, item.Id), handPlacedOf(item, kept.get(key))]);
+  const [entries, handPlaced] = await Promise.all([playlistEntries(readerOf(view.userId, item), item.Id), handPlacedOf(item, kept.get(key))]);
   if (!entries) return null;
   const rows = await visibleInOrder(view, entries.map((e) => e.itemId));
   return remember(key, { stamp: playlistStamp(item), candidates: mosaicCandidates(await tracksOf(view, rows)), handPlaced, at: now });

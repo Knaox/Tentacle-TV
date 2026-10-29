@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListMinus, ListPlus, ListSta
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicPlaylist, MusicTrack } from "@tentacle-tv/shared/music";
+import { canAddToPlaylist } from "@tentacle-tv/shared/music";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { TrackActions } from "../actions/useTrackActions";
@@ -78,7 +79,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
   // Bibliothèque ou ailleurs (la vue de l'extension) ; rien où aller : pas d'entrée.
   const albumPath = albumPathOf(track);
   const artists = linkedArtistsOf(track);
-  const editable = (playlists.data ?? []).filter((p) => p.editable);
+  const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p));
 
   return (
     <>

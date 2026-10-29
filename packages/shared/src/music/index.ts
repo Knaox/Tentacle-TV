@@ -13,6 +13,7 @@ export * from "./musicReleases";
 export * from "./musicListOrder";
 export * from "./musicSourceOrder";
 export * from "./musicShare";
+export * from "./musicPlaylistMembers";
 export * from "./albumNotes";
 export * from "./musicMosaic";
 export * from "./shazamLink";

@@ -1053,3 +1053,19 @@ model MusicPlaylistShare {
   @@index([playlistId])
   @@map("music_playlist_shares")
 }
+
+/// 1.40.0 : les MEMBRES d'une playlist d'Octave partagée entre comptes du même serveur (`music/playlistMembers/`,
+/// contrat `musicPlaylistMembers.ts`). Jellyfin ne sait pas « ajouter sans retirer » et refuse ses partages à la clé
+/// d'API : Tentacle tient la liste et le droit (`read` · `add` · `remove`), et lit/écrit la playlist au nom de
+/// `ownerUserId` après l'avoir vérifié. Identifiants sans tirets, en minuscules ; effacée avec sa playlist.
+model MusicPlaylistMember {
+  playlistId  String
+  memberId    String
+  ownerUserId String
+  right       String
+  createdAt   DateTime @default(now())
+
+  @@id([playlistId, memberId])
+  @@index([memberId])
+  @@map("music_playlist_members")
+}

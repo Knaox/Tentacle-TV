@@ -11,7 +11,11 @@ export type PlaylistManageRequest =
   | { kind: "edit"; playlist: MusicPlaylist }
   | { kind: "delete"; playlist: MusicPlaylist }
   /** Le lien de partage (capacité `music.playlistShare`, droit « Partage public »). */
-  | { kind: "share"; playlist: MusicPlaylist };
+  | { kind: "share"; playlist: MusicPlaylist }
+  /** Les personnes d'une playlist partagée entre comptes (capacité `music.playlistMembers`) : la gérer, ou les voir. */
+  | { kind: "members"; playlist: MusicPlaylist }
+  /** Un membre QUITTE une playlist qu'on lui a partagée (confirmation). */
+  | { kind: "leave"; playlist: MusicPlaylist };
 
 let current: PlaylistManageRequest | null = null;
 const listeners = new Set<() => void>();

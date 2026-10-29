@@ -26,6 +26,7 @@ const EXPECTED: Record<KnownNotificationType, { mobile: string; web: string }> =
   request_status: { mobile: "/extensions?section=seer%3A%2Frequests", web: "/requests" },
   library_added: { mobile: "/media/r1", web: "/media/r1" },
   watchlist_share: { mobile: "/shared-watchlist/r1", web: "/watchlist" },
+  music_playlist_shared: { mobile: "/octave/playlist/r1", web: "/octave/playlist/r1" },
   family_invite: { mobile: "/family", web: "/family" },
   family_invite_accepted: { mobile: "/family", web: "/family" },
   family_invite_declined: { mobile: "/family", web: "/family" },

@@ -36,6 +36,8 @@ export const KNOWN_NOTIFICATION_TYPES = [
   "request_status",
   "library_added",
   "watchlist_share",
+  // Octave : une playlist partagée avec ce compte (`musicPlaylistMembers.ts`).
+  "music_playlist_shared",
   ...FAMILY_NOTIFICATION_TYPES,
 ] as const;
 export type KnownNotificationType = (typeof KNOWN_NOTIFICATION_TYPES)[number];

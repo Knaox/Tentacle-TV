@@ -103,6 +103,9 @@ export function formatNotifTitle(
       const { username } = parseTicketNotifBody(n.body);
       return t("notifications:ticketUserClosedTitle", { username, subject: n.title });
     }
+    // Octave : `title` = la playlist, `body` = qui la partage (des données, `musicPlaylistMembers.ts`).
+    case "music_playlist_shared":
+      return t("notifications:musicPlaylistSharedTitle", { name: n.body ?? "", playlist: n.title });
     default:
       // La Famille : `title` garde le nom de l'autre (cf. FAMILY_NOTIFICATION_TYPES).
       if (isFamilyNotificationType(n.type)) return t(familyNotificationKey(n.type), { name: n.title });
@@ -119,6 +122,7 @@ export function notifBodyText(n: Pick<AppNotification, "type" | "body">): string
   if (!n.body) return null;
   switch (n.type) {
     case "ticket_status":
+    case "music_playlist_shared":
       return null;
     case "ticket_new":
     case "ticket_user_reply":

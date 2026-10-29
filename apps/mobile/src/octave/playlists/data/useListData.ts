@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { useLibraryFirstRows, useListOrder, useMusicPending, useMusicPlaylist, useReorderMusicPlaylist, useWholeLiked } from "@tentacle-tv/api-client";
+import { useLibraryFirstRows, useListOrder, useMusicPending, useMusicPlaylist, usePlaylistSharingRules, useReorderMusicPlaylist, useWholeLiked } from "@tentacle-tv/api-client";
 import { parseListKey, type MusicListStats } from "@tentacle-tv/shared/music";
 import { makeStatsOf, mergeLiked, mergePlaylist } from "@tentacle-tv/shared/octave";
 import { useOctavePagesProvider } from "../../pages";
@@ -37,8 +37,14 @@ export function usePlaylistData(id: string) {
     return makeStatsOf({ byEntry, pending, natural });
   }, [entries, natural, pending]);
   const editable = playlist.data?.editable === true;
+  // Partagée (`musicPlaylistMembers.ts`) : chacun son ordre, jamais celui de Jellyfin ; les ajouts des autres au bout.
+  const rules = usePlaylistSharingRules(playlist.data);
   const reorderPlaylist = useReorderMusicPlaylist();
   const onJellyfinOrder = useCallback((entryIds: string[]) => reorderPlaylist(id, entryIds), [id, reorderPlaylist]);
-  const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, { complete: true, onJellyfinOrder: editable ? onJellyfinOrder : undefined });
-  return { playlist, natural, order, editable, loading: playlist.isPending || !order.ready };
+  const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, {
+    complete: true,
+    onJellyfinOrder: editable && !rules.isShared ? onJellyfinOrder : undefined,
+    newcomers: rules.isShared ? "end" : undefined,
+  });
+  return { playlist, natural, order, editable, rules, loading: playlist.isPending || !order.ready };
 }

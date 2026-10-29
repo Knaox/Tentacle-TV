@@ -1,0 +1,42 @@
+/**
+ * Octave — une playlist PARTAGÉE entre comptes du même serveur (capacité `music.playlistMembers`). Lu par le web,
+ * le bureau et le mobile : jamais « téléchargement ».
+ */
+export default {
+  shareWith: "Partager avec…",
+  title: "Partager « {{name}} »",
+  intro: "Les personnes de ce serveur que vous ajoutez retrouvent la playlist dans leur Octave. Chacun l'écoute dans son propre ordre.",
+  rights: {
+    read: "Lire",
+    add: "Lire et ajouter",
+    remove: "Lire, ajouter et retirer",
+  },
+  rightOf: "Droit de {{name}}",
+  removeMember: "Retirer {{name}}",
+  addTitle: "Ajouter une personne",
+  addAs: "Avec le droit",
+  addPerson: "Ajouter {{name}}",
+  noCandidates: "Aucun autre compte de ce serveur ne peut recevoir de playlist.",
+  empty: "Personne d'autre n'a encore accès à cette playlist.",
+  members: "Ont accès",
+  owner: "Propriétaire",
+  sharedBy: "Partagée par {{name}}",
+  yourRight: {
+    read: "vous pouvez l'écouter",
+    add: "vous pouvez y ajouter des titres",
+    remove: "vous pouvez ajouter et retirer des titres",
+  },
+  sharedWith: "Partagée avec {{names}}",
+  shared: "Partagée",
+  people: "Personnes",
+  peopleTitle: "Personnes de « {{name}} »",
+  leave: "Quitter la playlist",
+  leaveTitle: "Quitter « {{name}} » ?",
+  leaveMessage: "Elle disparaît de vos playlists. Pour la retrouver, {{owner}} devra vous la partager à nouveau.",
+  leaveConfirm: "Quitter",
+  cancel: "Annuler",
+  close: "Fermer",
+  loading: "Chargement…",
+  failed: "Ce changement n'a pas pu être enregistré. Réessayez dans un instant.",
+  unavailable: "Le partage avec d'autres comptes n'est pas disponible pour ce profil.",
+};

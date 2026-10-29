@@ -7,15 +7,19 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 
-const h = vi.hoisted(() => ({ shareable: false }));
+const h = vi.hoisted(() => ({ shareable: false, members: false }));
 vi.mock("react-i18next", () => ({ useTranslation: (ns?: string) => ({ t: (key: string) => `${ns ?? "music"}:${key}` }) }));
-vi.mock("@tentacle-tv/api-client", () => ({ useMusicPlaylistShareAvailable: () => h.shareable }));
+vi.mock("@tentacle-tv/api-client", () => ({
+  useMusicPlaylistShareAvailable: () => h.shareable,
+  useMusicPlaylistMembersAvailable: () => h.members,
+  usePlaylistSharingRules: (p: MusicPlaylist) => ({ isMember: p.sharing?.role === "member" }),
+}));
 vi.mock("./usePlaylistManagement", () => ({ usePlaylistManagement: () => ({ duplicate: async () => true }) }));
 vi.mock("../../../components/floating/FloatingLayer", () => ({ FloatingLayer: ({ children }: { children: unknown }) => children }));
 
 const { PlaylistMenuPanel } = await import("./PlaylistMenu");
 const playlist: MusicPlaylist = { jellyfinId: "c".repeat(32), name: "Route", trackCount: 3, durationMs: null, artworkUrl: null, editable: true };
-const render = () => renderToStaticMarkup(<PlaylistMenuPanel playlist={playlist} anchor={{ current: null }} onClose={() => undefined} />);
+const render = (p: MusicPlaylist = playlist) => renderToStaticMarkup(<PlaylistMenuPanel playlist={p} anchor={{ current: null }} onClose={() => undefined} />);
 
 describe("le menu d'une playlist et le partage", () => {
   it("sans le droit : aucune entrée « Partager »", () => {
@@ -28,5 +32,23 @@ describe("le menu d'une playlist et le partage", () => {
   it("avec le droit : « Partager » est offert", () => {
     h.shareable = true;
     expect(render()).toContain("musicShare:action");
+  });
+
+  it("« Partager avec… » (comptes du serveur) seulement si le serveur le sait", () => {
+    h.members = false;
+    expect(render()).not.toContain("musicPlaylistMembers:shareWith");
+    h.members = true;
+    expect(render()).toContain("musicPlaylistMembers:shareWith");
+  });
+
+  it("une playlist qu'on m'a partagée : « Personnes » et « Quitter », jamais modifier, partager ni supprimer", () => {
+    h.shareable = true;
+    h.members = true;
+    const html = render({ ...playlist, editable: false, sharing: { role: "member", right: "add", owner: { userId: "a".repeat(32), name: "Knaoxtest", imageTag: null }, members: [] } });
+    expect(html).toContain("musicPlaylistMembers:people");
+    expect(html).toContain("musicPlaylistMembers:leave");
+    expect(html).not.toContain("music:playlistManage.delete");
+    expect(html).not.toContain("musicShare:action");
+    expect(html).not.toContain("music:playlistManage.editDetails");
   });
 });

@@ -18,6 +18,7 @@ import {
   type MusicListPrefs,
   type MusicListStats,
   type MusicListSubject,
+  type MusicListNewcomers,
 } from "../../music";
 import type { ListRow } from "../pendingMerge";
 
@@ -105,11 +106,13 @@ export interface ListViewState {
   prefs: MusicListPrefs;
   query: string;
   filter: ListFilter;
+  /** Une playlist partagée : un titre que mon ordre ne connaît pas va à la fin (`musicListOrder.ts`). */
+  newcomers?: MusicListNewcomers;
 }
 
 /** La liste affichée : triée (l'ordre naturel départage), puis filtrée et cherchée. */
 export function visibleListRows(natural: readonly ListRow[], statsOf: StatsOf, state: ListViewState): ListRow[] {
-  const sorted = sortListItems(natural, (row) => rowSubject(row, statsOf(row)), state.prefs);
+  const sorted = sortListItems(natural, (row) => rowSubject(row, statsOf(row)), state.prefs, state.newcomers);
   const tokens = searchTokens(state.query);
   if (tokens.length === 0 && state.filter === "all") return sorted;
   return sorted.filter((row) => rowInFilter(row, state.filter, statsOf(row)) && rowMatches(row, tokens));

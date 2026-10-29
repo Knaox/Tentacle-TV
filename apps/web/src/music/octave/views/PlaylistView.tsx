@@ -11,7 +11,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ListMusic, Search } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMusicPlaylist, useReorderMusicPlaylist } from "@tentacle-tv/api-client";
+import { useMusicPlaylist, usePlaylistSharingRules, useReorderMusicPlaylist } from "@tentacle-tv/api-client";
 import { parseListKey } from "@tentacle-tv/shared/music";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { HEADER_ARTWORK_CLASS, PlaylistArtwork, playlistCoverUrls } from "../components/PlaylistArtwork";
@@ -30,6 +30,7 @@ import { useListOrder } from "@tentacle-tv/api-client";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { SharedPlaylistLine } from "../playlists/members/SharedPlaylistLine";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
@@ -46,9 +47,15 @@ export function PlaylistView() {
     [natural, pending, playlist.data],
   );
   const editable = playlist.data?.editable === true;
+  // Partagée (`musicPlaylistMembers.ts`) : chacun son ordre, jamais celui de Jellyfin ; les ajouts des autres au bout.
+  const shared = usePlaylistSharingRules(playlist.data);
   const reorderPlaylist = useReorderMusicPlaylist();
   const onJellyfinOrder = useCallback((entryIds: string[]) => reorderPlaylist(id, entryIds), [id, reorderPlaylist]);
-  const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, { complete: true, onJellyfinOrder: editable ? onJellyfinOrder : undefined });
+  const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, {
+    complete: true,
+    onJellyfinOrder: editable && !shared.isShared ? onJellyfinOrder : undefined,
+    newcomers: shared.isShared ? "end" : undefined,
+  });
   const rows = order.rows;
   // La lecture suit l'ordre AFFICHÉ (trié, cherché) : « Lire » joue ce qu'on voit.
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
@@ -81,6 +88,7 @@ export function PlaylistView() {
         meta={
           <>
             <span>{meta}</span>
+            <SharedPlaylistLine playlist={data} />
             <KeptSizeMeta kind="playlist" collectionKey={`jf:${id}`} tracks={allTracks} />
           </>
         }
@@ -109,7 +117,7 @@ export function PlaylistView() {
               </Link>
             }
           >
-            {data.editable ? t("views.playlistEmptyHint") : null}
+            {shared.canAdd ? t("views.playlistEmptyHint") : null}
           </EmptyState>
         ) : (
           <>
@@ -130,7 +138,7 @@ export function PlaylistView() {
             {rows.length === 0 ? (
               <NoMatch onReset={order.reset} />
             ) : (
-              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveRows={editable ? onRemoveRows : undefined} virtual reorder={order.reorder} />
+              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveRows={shared.canRemove ? onRemoveRows : undefined} virtual reorder={order.reorder} />
             )}
           </>
         )}

@@ -133,3 +133,26 @@ describe("contrat de la préférence", () => {
     expect(parseListPrefs({ sort: "custom", direction: "asc", custom: Array.from({ length: 10_001 }, () => ({ k: "a" })) })).toBeNull();
   });
 });
+
+describe("ordre personnalisé d'une playlist partagée (nouveaux titres à la fin)", () => {
+  const keys = (list: MusicListSubject[]) => list.map((x) => x.key);
+
+  it("un titre ajouté par un autre entre à la FIN de mon ordre, pas après son prédécesseur", () => {
+    // Mon ordre : c, a, b ; un autre a ajouté x puis y (au bout de la playlist Jellyfin).
+    const natural = [s("a"), s("b"), s("c"), s("x"), s("y")];
+    const custom = [{ k: "c" }, { k: "a" }, { k: "b" }];
+    expect(keys(applyCustomOrder(natural, id, custom, "end"))).toEqual(["c", "a", "b", "x", "y"]);
+    // Le défaut d'avant : x suit c (son prédécesseur naturel), en plein milieu.
+    expect(keys(applyCustomOrder(natural, id, [{ k: "b" }, { k: "c" }, { k: "a" }]))).toEqual(["b", "c", "x", "y", "a"]);
+  });
+
+  it("sans ordre gardé, l'ordre naturel (ajouts au bout) fait foi", () => {
+    const natural = [s("a"), s("b"), s("x")];
+    expect(keys(sortListItems(natural, id, { sort: "custom", direction: "asc", custom: null }, "end"))).toEqual(["a", "b", "x"]);
+  });
+
+  it("un titre que j'ai placé garde sa place même s'il arrive tard dans l'ordre naturel", () => {
+    const natural = [s("a"), s("x"), s("b")];
+    expect(keys(sortListItems(natural, id, { sort: "custom", direction: "asc", custom: [{ k: "b" }, { k: "a" }] }, "end"))).toEqual(["b", "a", "x"]);
+  });
+});

@@ -9,7 +9,7 @@ import { isCapabilityDeclared } from "../../serverCapabilities/declaredCapabilit
 import { parseListKey, parseListPrefs } from "../contract/musicListOrder";
 import { isJellyfinId } from "../jellyfin/musicJellyfin";
 import { readListPrefs, writeListPrefs } from "../listOrder/listPrefsStore";
-import { playlistFor } from "../playlists/playlistJellyfin";
+import { playlistAccess } from "../playlistMembers/playlistAccess";
 import { reorderPlaylist } from "../playlists/playlistService";
 import { tellListPrefsChanged } from "../events/musicLiveEvents";
 import { userOf, viewOf } from "./requestView";
@@ -36,7 +36,7 @@ export function musicListRoutes(app: FastifyInstance): void {
     // Une playlist que le compte ne voit pas n'a pas de préférence (rien ne trahit son existence).
     if (key !== "liked") {
       const view = await viewOf(request);
-      if (view.access.mode === "none" || !(await playlistFor(view.userId, key.slice("playlist:".length)))) return reply.status(404).send({ error: "not_found" });
+      if (view.access.mode === "none" || !(await playlistAccess(view.userId, key.slice("playlist:".length)))) return reply.status(404).send({ error: "not_found" });
     }
     await writeListPrefs(userOf(request).userId, key, prefs);
     // Les autres appareils du compte relisent ce tri (l'appareil qui l'a gardé ignore son propre écho).

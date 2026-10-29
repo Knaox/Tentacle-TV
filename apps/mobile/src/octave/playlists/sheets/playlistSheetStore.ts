@@ -11,6 +11,8 @@ export type PlaylistSheet =
   | { kind: "manage"; playlist: MusicPlaylist }
   | { kind: "rename"; playlist: MusicPlaylist }
   | { kind: "share"; playlist: MusicPlaylist }
+  /** Les personnes d'une playlist partagée entre comptes : la gérer (propriétaire), les voir et la quitter (membre). */
+  | { kind: "members"; playlist: MusicPlaylist }
   | { kind: "create" }
   /** `autoStart` : un lien reçu par le partage système part sans attendre « Importer ». */
   | { kind: "import"; prefill?: string; autoStart?: boolean };

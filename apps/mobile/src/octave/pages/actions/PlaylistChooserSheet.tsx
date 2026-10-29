@@ -18,6 +18,7 @@ import { useMobileTrackActions } from "../env/useMobileActionsUi";
 import { Artwork } from "../ui/Artwork";
 import { accentTextOf } from "../ui/pageStyle";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
+import { canAddToPlaylist } from "@tentacle-tv/shared/music";
 
 function Chooser({ request }: { request: ChooserRequest }) {
   const { t } = useTranslation("music");
@@ -26,7 +27,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
   const actions = useMobileTrackActions();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const editable = (playlists.data ?? []).filter((p) => p.editable && p.jellyfinId !== request.moveFrom?.jellyfinId);
+  const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p) && p.jellyfinId !== request.moveFrom?.jellyfinId);
   const run = async (add: (track: ChooserRequest["tracks"][number]) => Promise<boolean>) => {
     if (busy || request.tracks.length === 0) return;
     setBusy(true);

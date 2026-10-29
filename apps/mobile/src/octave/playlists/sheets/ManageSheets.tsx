@@ -1,5 +1,6 @@
 /**
- * Octave mobile — gérer une playlist au doigt : la feuille « Gérer » (renommer, dupliquer, partager si le
+ * Octave mobile — gérer une playlist au doigt : la feuille « Gérer » (renommer, dupliquer, partager avec des
+ * comptes du serveur ou par un lien si le
  * serveur le sait et que le compte en a le droit, supprimer — en rouge, à part, confirmée) et la feuille d'un
  * NOM (créer une playlist, la renommer) : un champ libellé, « Créer » / « Enregistrer » au clavier aussi.
  * Créée, la playlist s'ouvre.
@@ -9,8 +10,8 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Copy, Link2, Pencil, Trash2 } from "lucide-react-native";
-import { useCreateMusicPlaylist, useMusicPlaylistShareAvailable } from "@tentacle-tv/api-client";
+import { Copy, Link2, Pencil, Trash2, Users } from "lucide-react-native";
+import { useCreateMusicPlaylist, useMusicPlaylistMembersAvailable, useMusicPlaylistShareAvailable } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { BottomSheet } from "@/components/ui";
@@ -30,7 +31,9 @@ export function ManageSheet({ playlist }: { playlist: MusicPlaylist }) {
   const { t: tm } = useTranslation("music");
   const { t: ts } = useTranslation("musicShare");
   const theme = useTheme();
+  const { t: tp } = useTranslation("musicPlaylistMembers");
   const shareable = useMusicPlaylistShareAvailable();
+  const members = useMusicPlaylistMembersAvailable();
   const manage = useMobilePlaylistManage();
   // La suivante (feuille, confirmation) une fois celle-ci retirée : `handOffSheet`.
   const then = (next: () => void) => () => handOffSheet(closePlaylistSheet, next);
@@ -44,6 +47,7 @@ export function ManageSheet({ playlist }: { playlist: MusicPlaylist }) {
       <View style={styles.body}>
         <SheetAction icon={Pencil} label={t("rename")} onPress={then(() => openPlaylistSheet({ kind: "rename", playlist }))} />
         <SheetAction icon={Copy} label={tm("playlistManage.duplicate")} onPress={then(() => void manage.duplicate(playlist))} />
+        {members ? <SheetAction icon={Users} label={tp("shareWith")} onPress={then(() => openPlaylistSheet({ kind: "members", playlist }))} /> : null}
         {shareable ? <SheetAction icon={Link2} label={ts("action")} onPress={then(() => openPlaylistSheet({ kind: "share", playlist }))} /> : null}
         <View style={[styles.separator, { backgroundColor: theme.colors.border.subtle }]} />
         <Pressable

@@ -65,6 +65,8 @@ export interface AppNotification {
     | "ticket_user_closed"
     | "request_status"
     | "watchlist_share"
+    /** Octave : `title` = la playlist partagée, `body` = qui la partage. */
+    | "music_playlist_shared"
     /** La Famille (`FAMILY_NOTIFICATION_TYPES`) : `title` = le nom de l'autre. */
     | FamilyNotificationType;
   title: string;

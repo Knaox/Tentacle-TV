@@ -17,6 +17,7 @@ export default {
   ticketUserReplyTitle: "{{username}} replied on \"{{subject}}\"",
   ticketUserClosedTitle: "{{username}} closed \"{{subject}}\"",
   watchlistShareTitle: "{{username}} invited you to \"{{listName}}\"",
+  musicPlaylistSharedTitle: "{{name}} shared the playlist “{{playlist}}” with you",
   requestStatusTitle: "Request update: {{title}}",
   autoRetry: "Automatic retry for \"{{title}}\" ({{count}}/{{max}})",
   autoRetryFailed: "Permanently failed for \"{{title}}\" after {{max}} attempts",
