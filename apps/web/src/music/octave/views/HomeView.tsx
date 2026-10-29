@@ -1,6 +1,6 @@
 /**
  * Octave — l'accueil : le mot d'accueil (`home/greeting.ts`), la reprise du
- * titre gardé, écoutés récemment (raccourcis), les ambiances (emplacement),
+ * titre gardé, l'accès rapide aux playlists favorites (`home/FavoritePlaylists`), écoutés récemment (raccourcis), les ambiances (emplacement),
  * les mixes du jour et les albums du moment, les nouveautés de la
  * bibliothèque, « parce que vous avez écouté », les artistes du moment, vos
  * titres les plus écoutés, vos playlists. Tout vient de l'accueil du cœur
@@ -25,6 +25,7 @@ import { QuickPicks, QuickPicksSkeleton } from "./QuickPicks";
 import { HomeMoodsSlot } from "../home/ambianceSlots";
 import { HomeGreeting } from "../home/HomeGreeting";
 import { ResumeCard } from "../home/ResumeCard";
+import { FavoritePlaylists } from "../home/FavoritePlaylists";
 import { ForYouMore, ForYouTop, hasForYou } from "../home/ForYouShelves";
 
 function SeeAll({ to }: { to: string }) {
@@ -65,6 +66,7 @@ export function HomeView() {
     <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
       <HomeGreeting />
       <ResumeCard />
+      <FavoritePlaylists />
       {home.isPending && <HomeSkeleton />}
       {empty && (
         <EmptyState

@@ -41,14 +41,16 @@ interface ReorderRowProps {
   editing: boolean;
   /**
    * Mode « Modifier » avec sélection (ajout du 29/10) : la case remplace le « – », toucher la rangée la coche ;
-   * « Retirer » passe dans la barre de sélection.
+   * « Retirer » passe dans la barre de sélection. La poignée reste : un seul mode coche ET réordonne.
    */
   selected?: boolean;
   onToggle?: (index: number) => void;
+  /** Hors « Modifier », là où on peut retirer : le balayage vers la gauche retire le titre. */
+  onSwipeRemove?: (index: number) => void;
 }
 
 export const ReorderRow = memo(function ReorderRow(props: ReorderRowProps) {
-  const { track, index, list, contextId, playing, onPlay, gutter, shift, dragging, active, lift, handle, onStep, onRemove, editing, selected = false, onToggle } = props;
+  const { track, index, list, contextId, playing, onPlay, gutter, shift, dragging, active, lift, handle, onStep, onRemove, editing, selected = false, onToggle, onSwipeRemove } = props;
   const toggling = editing && onToggle !== undefined;
   const { t } = useTranslation("musicLists");
   const { t: tm } = useTranslation("music");
@@ -103,7 +105,7 @@ export const ReorderRow = memo(function ReorderRow(props: ReorderRowProps) {
         </Pressable>
       ) : (
         <View style={styles.flex}>
-          <TrackRow track={track} index={index} list={list} contextId={contextId} playing={playing} onPlay={onPlay} gutter={onRemove ? 4 : gutter} editing={editing} />
+          <TrackRow track={track} index={index} list={list} contextId={contextId} playing={playing} onPlay={onPlay} gutter={onRemove ? 4 : gutter} editing={editing} onRemove={onSwipeRemove} />
         </View>
       )}
       {handle ? (

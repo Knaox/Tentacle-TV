@@ -48,3 +48,60 @@ describe("reprise de la session du lecteur", () => {
     expect(attachPlayerResume(player, null, { storage, ownerNow: () => null, onHide: () => () => undefined })).toBeTypeOf("function");
   });
 });
+
+describe("reprise : seulement dans le même lancement (fermeture complète = repartir de zéro)", () => {
+  const quiet = (storage: SyncStorage, launch: string) => ({ storage, ownerNow: () => "srv|u1", onHide: () => () => undefined, launchId: () => launch });
+
+  it("un nouveau lancement ne reprend rien, même avec une session gardée", () => {
+    const storage = memory();
+    const first = newPlayer();
+    const detach = attachPlayerResume(first, "srv|u1", quiet(storage, "L1"));
+    first.playList(["a", "b"].map((id) => libraryTrack(id)), 1);
+    detach();
+    expect(readSavedPlayback(storage, "srv|u1", "L1")).not.toBeNull();
+
+    const relaunched = newPlayer();
+    attachPlayerResume(relaunched, "srv|u1", quiet(storage, "L2"));
+    expect(relaunched.snapshot.get().current).toBeNull();
+    expect(relaunched.snapshot.get().queue.items).toEqual([]);
+    expect(readSavedPlayback(storage, "srv|u1", "L2")).toBeNull();
+  });
+
+  it("le même lancement (sortie d'Octave puis retour, rechargement) reprend en pause", () => {
+    const storage = memory();
+    const first = newPlayer();
+    const detach = attachPlayerResume(first, "srv|u1", quiet(storage, "L1"));
+    first.playList(["a", "b"].map((id) => libraryTrack(id)), 0);
+    detach();
+    const again = newPlayer();
+    attachPlayerResume(again, "srv|u1", quiet(storage, "L1"));
+    expect(again.snapshot.get().current?.key).toBe("jf:a");
+  });
+
+  it("une session gardée par un build d'avant (sans lancement) n'est jamais reprise", () => {
+    const storage = memory();
+    const first = newPlayer();
+    const detach = attachPlayerResume(first, "srv|u1", quiet(storage, "L1"));
+    first.playList([libraryTrack("a")], 0);
+    detach();
+    const raw = JSON.parse(storage.data[OCTAVE_PLAYER_KEY]!) as Record<string, { launch?: string }>;
+    delete raw["srv|u1"]!.launch;
+    storage.data[OCTAVE_PLAYER_KEY] = JSON.stringify(raw);
+    const next = newPlayer();
+    attachPlayerResume(next, "srv|u1", quiet(storage, "L1"));
+    expect(next.snapshot.get().current).toBeNull();
+  });
+
+  it("« Arrêter » efface la session gardée : un retour dans Octave ne reprend rien", () => {
+    const storage = memory();
+    const first = newPlayer();
+    const detach = attachPlayerResume(first, "srv|u1", quiet(storage, "L1"));
+    first.playList(["a", "b"].map((id) => libraryTrack(id)), 0);
+    first.clear();
+    detach();
+    expect(readSavedPlayback(storage, "srv|u1", "L1")).toBeNull();
+    const again = newPlayer();
+    attachPlayerResume(again, "srv|u1", quiet(storage, "L1"));
+    expect(again.snapshot.get().current).toBeNull();
+  });
+});

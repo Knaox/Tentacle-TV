@@ -10,7 +10,7 @@
  * virtualisées connaissent la place de chaque rangée.
  */
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import type { AccessibilityActionEvent } from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -45,11 +45,14 @@ interface TrackRowProps {
   /** Mode « Modifier » d'une liste : la rangée ne lit rien, ni appui long, ni « ⋯ », ni balayage ; seuls la
    *  poignée et « – » de la rangée qui l'entoure agissent (comme Apple Music). */
   editing?: boolean;
+  /** Retirer le titre de la liste (balayage vers la gauche, action du lecteur d'écran) : là seulement où on le peut. */
+  onRemove?: (index: number) => void;
 }
 
-export const TrackRow = memo(function TrackRow({ track, index, list, contextId, playing, onPlay, numbered, gutter, hide, editing = false }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, index, list, contextId, playing, onPlay, numbered, gutter, hide, editing = false, onRemove }: TrackRowProps) {
   const theme = useTheme();
   const { t } = useTranslation("music");
+  const { t: tl } = useTranslation("musicLists");
   const liked = useLiked(track.key, track.favorite);
   // Un titre que la source n'offre pas à l'écoute (`unavailable`, ex. Bandcamp sans écoute publique) : grisé.
   const locked = track.unavailable != null;
@@ -63,14 +66,20 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const accent = accentTextOf(theme);
   const queue = useTrackQueueGestures(track, playable);
   const gestures = editing ? null : queue;
+  const remove = useMemo(() => (editing || !onRemove ? undefined : () => onRemove(index)), [editing, index, onRemove]);
   // Le balayage a toujours son équivalent au lecteur d'écran : deux actions de la rangée.
   const onA11yAction = useCallback(
     (e: AccessibilityActionEvent) => {
       if (e.nativeEvent.actionName === "playNext") gestures?.playNext();
       if (e.nativeEvent.actionName === "addToQueue") gestures?.enqueue();
+      if (e.nativeEvent.actionName === "remove") remove?.();
     },
-    [gestures],
+    [gestures, remove],
   );
+  const a11yActions = [
+    ...(gestures ? [{ name: "playNext", label: t("track.playNext") }, { name: "addToQueue", label: t("track.addToQueue") }] : []),
+    ...(remove ? [{ name: "remove", label: tl("swipe.remove") }] : []),
+  ];
   const row = (
     <Pressable
       onPress={editing ? undefined : () => onPlay(index)}
@@ -82,8 +91,8 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
       accessibilityLabel={editing ? track.title : t("track.play", { title: track.title })}
       accessibilityHint={artists}
       accessibilityState={{ selected: playing, disabled: !playable && !editing }}
-      accessibilityActions={gestures ? [{ name: "playNext", label: t("track.playNext") }, { name: "addToQueue", label: t("track.addToQueue") }] : undefined}
-      onAccessibilityAction={gestures ? onA11yAction : undefined}
+      accessibilityActions={a11yActions.length > 0 ? a11yActions : undefined}
+      onAccessibilityAction={a11yActions.length > 0 ? onA11yAction : undefined}
     >
       {numbered ? (
         <View style={styles.number}>
@@ -119,7 +128,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
     </Pressable>
   );
   return (
-    <SwipeableTrackRow rowId={`${contextId ?? ""}|${index}|${track.key}`} title={track.title} gestures={gestures}>
+    <SwipeableTrackRow rowId={`${contextId ?? ""}|${index}|${track.key}`} title={track.title} gestures={gestures} onRemove={remove}>
       {row}
     </SwipeableTrackRow>
   );

@@ -1,6 +1,7 @@
 /**
  * Octave mobile — l'ACCUEIL, le même que le bureau : le mot d'accueil, écoutés
- * récemment, les ambiances, les mixes du jour et les albums du moment, les
+ * récemment, vos playlists favorites (rangée compacte, s'il y en a), les ambiances,
+ * les mixes du jour et les albums du moment, les
  * nouveautés de la bibliothèque, « parce que vous avez écouté », les artistes
  * du moment, vos titres les plus écoutés, vos playlists. Une requête (l'accueil
  * du cœur, gardée en cache), tirer pour rafraîchir ; l'attente a la forme de la
@@ -29,6 +30,7 @@ import { HomeGreeting } from "./HomeGreeting";
 import { ForYouTop, HomeShelves } from "./HomeSections";
 import { MoodsShelf } from "./MoodsShelf";
 import { QuickPicks } from "./QuickPicks";
+import { FavoritePlaylistsShelf } from "./FavoritePlaylistsShelf";
 import { AlbumWarmupProvider, useAlbumWarmupPage } from "../env/albumWarmupScope";
 
 /**
@@ -95,6 +97,7 @@ function OnlineHome() {
           <EmptyState icon={Music2} title={t("views.homeEmptyTitle")} hint={t("views.homeEmptyHint")} action={<PillButton icon={Search} label={t("views.findMusic")} onPress={() => nav.search()} />} />
         ) : null}
         {data && data.recentlyPlayed.length > 0 ? <QuickPicks tracks={data.recentlyPlayed} /> : null}
+        <FavoritePlaylistsShelf />
         <MoodsShelf />
         {data ? <ForYouTop home={data} /> : null}
         {data ? <HomeShelves home={data} gap={sectionGap} /> : null}

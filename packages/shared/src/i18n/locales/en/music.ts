@@ -277,6 +277,7 @@ export default {
     kbps: "{{count}} kbps",
     open: "Open player",
     close: "Close player",
+    stop: "Stop playback",
   },
   queue: {
     title: "Queue",

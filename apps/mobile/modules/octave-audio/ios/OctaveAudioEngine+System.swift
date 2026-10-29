@@ -13,6 +13,27 @@ extension OctaveAudioEngine {
   private static var artwork: (url: String, image: MPMediaItemArtwork)?
   private static var interruptedWhilePlaying = false
 
+  // MARK: - Fin de l'application
+
+  /// L'application fermée pour de bon (balayée pendant l'écoute : iOS prévient une app qui joue en fond, avant de
+  /// la tuer) : le son s'arrête et l'écran verrouillé est vidé TOUT DE SUITE — gardé, il montrerait encore le
+  /// titre, et son « Lecture » relancerait l'app. Sur le fil principal (`willTerminateNotification`) ; rien
+  /// d'asynchrone : le processus meurt juste après.
+  func terminate() {
+    queue.sync {
+      if current != nil { stopAll() }
+      started = false
+    }
+    for (command, target) in Self.commandTargets {
+      command.removeTarget(target)
+      command.isEnabled = false
+    }
+    Self.commandTargets = []
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    UIApplication.shared.endReceivingRemoteControlEvents()
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
+
   // MARK: - Session et commandes
 
   /// Le démarrage du moteur n'ACTIVE pas la session : ouvrir Octave (une session reprise en pause) ne coupe

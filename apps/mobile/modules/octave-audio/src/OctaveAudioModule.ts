@@ -15,6 +15,8 @@ type OctaveAudioModuleEvents = {
 declare class OctaveAudioNativeModule extends NativeModule<OctaveAudioModuleEvents> {
   /** Une commande du pont (`AUDIO_BRIDGE_COMMANDS`), arguments et réponse en JSON. */
   invoke(command: string, argsJson: string): Promise<string>;
+  /** Le lancement en cours (processus ; Android : chaque balayage en ouvre un autre). Absent : un build d'avant. */
+  launchId?: () => string;
   /** Le module lit un flux DIRECT (`open: "direct"`, sans les en-têtes du serveur, repli `fallbackUrl`). Absent : un build d'avant. */
   readonly directStreams?: boolean;
 }
@@ -28,6 +30,18 @@ export function isOctaveAudioAvailable(): boolean {
 /** Vrai si ce build sait lire un flux direct (requêtes déléguées) ; faux pour un module d'avant. */
 export function octaveAudioSupportsDirect(): boolean {
   return native?.directStreams === true;
+}
+
+/**
+ * Le lancement en cours, dit par le natif : il change quand l'application est fermée pour de bon (balayée), même
+ * si le JS survit (Android). `null` sans module, ou avec un module d'avant.
+ */
+export function octaveAudioLaunchId(): string | null {
+  try {
+    return typeof native?.launchId === "function" ? native.launchId() : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

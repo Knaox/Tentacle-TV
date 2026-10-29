@@ -12,6 +12,7 @@ vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string, vars
 vi.mock("./usePlaylistManagement", () => ({ usePlaylistManagement: () => ({ duplicate: async () => true }) }));
 vi.mock("@tentacle-tv/api-client", async (original) => ({
   ...(await original<typeof import("@tentacle-tv/api-client")>()),
+  useMusicShelvesCapability: () => false,
   usePlaylistSharingRules: (p: MusicPlaylist) => ({ isMember: p.sharing?.role === "member", isShared: !!p.sharing, people: [], sharing: p.sharing ?? null, canAdd: p.editable, canRemove: p.editable }),
 }));
 

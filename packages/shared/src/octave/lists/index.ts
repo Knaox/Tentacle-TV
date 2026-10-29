@@ -9,3 +9,4 @@ export * from "./listStats";
 export * from "./dragGeometry";
 export * from "./removalPlan";
 export * from "./playlistCleanup";
+export * from "./libraryShelves";

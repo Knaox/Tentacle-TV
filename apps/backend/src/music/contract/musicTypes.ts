@@ -156,6 +156,11 @@ export interface MusicAlbum {
   imported?: true;
   /** La page d'où vient une sortie importée (Bandcamp : l'acheter, la voir) ; `null` : des fichiers seuls. */
   sourceUrl?: string | null;
+  /**
+   * Favori du compte (capacité `music.libraryFavorites`, `musicLibraryShelves.ts`) : le favori Jellyfin pour la
+   * bibliothèque, celui que Tentacle garde hors bibliothèque. Absent : un serveur d'avant (ni cœur, ni rubrique).
+   */
+  favorite?: boolean;
   /** Rendu par la vue album seulement (pas par la recherche). */
   tracks?: MusicTrack[];
 }
@@ -169,6 +174,11 @@ export interface MusicArtist {
   imageUrl: string | null;
   /** Un artiste qui n'existe que par des sorties importées du compte (musicReleases.ts). */
   imported?: true;
+  /**
+   * Favori du compte (capacité `music.libraryFavorites`, `musicLibraryShelves.ts`) : le favori Jellyfin pour la
+   * bibliothèque, celui que Tentacle garde hors bibliothèque. Absent : un serveur d'avant (ni cœur, ni rubrique).
+   */
+  favorite?: boolean;
   /** Rendus par la vue artiste seulement. */
   topTracks?: MusicTrack[];
   albums?: MusicAlbum[];
@@ -208,6 +218,11 @@ export interface MusicPlaylist {
   sharing?: MusicPlaylistSharing;
   /** La description (Jellyfin `Overview`), rendue par le détail d'une playlist (`music.playlistManage`) ; `null` : aucune. */
   description?: string | null;
+  /**
+   * Favori du compte (capacité `music.libraryFavorites`, `musicLibraryShelves.ts`) : le favori Jellyfin pour la
+   * bibliothèque, celui que Tentacle garde hors bibliothèque. Absent : un serveur d'avant (ni cœur, ni rubrique).
+   */
+  favorite?: boolean;
   entries?: MusicPlaylistEntry[];
 }
 

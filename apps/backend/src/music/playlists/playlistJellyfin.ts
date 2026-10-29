@@ -29,7 +29,7 @@ export async function listUserPlaylists(userId: string): Promise<JfPlaylist[]> {
   const memo = listMemo.get(key);
   if (memo && Date.now() - memo.at < LIST_TTL_MS) return memo.items;
   const result = await jfAdmin<JfItemsPage>(
-    `/Items?userId=${q(userId)}&IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,CanDelete,CumulativeRunTimeTicks,Etag,Path&EnableImages=true&ImageTypeLimit=1&EnableUserData=false`,
+    `/Items?userId=${q(userId)}&IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,CanDelete,CumulativeRunTimeTicks,Etag,Path&EnableImages=true&ImageTypeLimit=1&EnableUserData=true`,
   );
   if (!result.ok) return memo?.items ?? [];
   const items = (result.data.Items ?? []).filter((p) => !p.MediaType || p.MediaType === "Audio");

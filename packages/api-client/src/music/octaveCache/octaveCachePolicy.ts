@@ -21,7 +21,8 @@
  * Les playlists sont ANCRÉES (`anchoredKey`) : une playlist, la liste des
  * playlists, les titres likés, les attentes de l'extension (les titres importés
  * pas encore dans la bibliothèque, qu'une playlist montre à leur place) et le
- * tri d'une playlist gardent leur DERNIER affichage en ligne sans limite d'âge,
+ * tri d'une playlist, et les FAVORIS de la bibliothèque avec l'ordre de ses rubriques (`shelves` : « Vos
+ * favoris » se montre hors ligne comme en ligne), gardent leur DERNIER affichage en ligne sans limite d'âge,
  * et partent les derniers quand la place manque : une playlist s'ouvre hors
  * ligne, dans son ordre, avec ses pochettes et ses titres, même des semaines
  * après, même après avoir quitté l'application.
@@ -43,10 +44,10 @@ export const MAX_OWNERS = 4;
 export type PersistKind = "search" | "entity" | "library";
 
 /** Les pages de la bibliothèque qu'Octave rouvre sans réseau (clés de `musicKeys`). */
-const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked", "list-prefs", "pending"]);
+const LIBRARY_SCOPES: ReadonlySet<unknown> = new Set(["home", "status", "playlists", "playlist", "album", "artist", "albums", "artists", "liked", "list-prefs", "pending", "shelves"]);
 
 /** Les débuts de clé (sérialisée) des pages ancrées : jamais expirées, évincées en dernier. */
-const ANCHORED_PREFIXES = ['["music","playlist",', '["music","playlists"]', '["music","liked",', '["music","pending",', '["music","list-prefs","playlist:', '["music","list-prefs","liked"'];
+const ANCHORED_PREFIXES = ['["music","playlist",', '["music","playlists"]', '["music","liked",', '["music","pending",', '["music","list-prefs","playlist:', '["music","list-prefs","liked"', '["music","shelves"]'];
 
 /** Cette clé de requête sérialisée est-elle celle d'une page de playlist ancrée ? */
 export function anchoredKey(keyJson: string): boolean {

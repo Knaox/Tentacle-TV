@@ -29,7 +29,8 @@ import { makeStatsOf } from "@tentacle-tv/shared/octave";
 import { useListOrder } from "@tentacle-tv/api-client";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
-import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { PlaylistMenuButton, playlistSubject } from "../playlists/PlaylistMenu";
+import { ShelfHeartButton } from "../collections/ShelfHeartButton";
 import { SharedPlaylistLine } from "../playlists/members/SharedPlaylistLine";
 import { ImportIntoButton } from "../import/into/ImportIntoButton";
 import { AddAllToPlaylistButton } from "../actions/AddAllToPlaylistButton";
@@ -101,6 +102,7 @@ export function PlaylistView() {
         description={data.description ?? null}
         extra={
           <>
+            <ShelfHeartButton subject={playlistSubject(data)} />
             <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
             {/* Un album, des fichiers de l'ordinateur : à la fin de CETTE playlist. */}
             <ImportIntoButton playlistId={id} name={data.name} canAdd={shared.canAdd} className="h-12 w-12" />

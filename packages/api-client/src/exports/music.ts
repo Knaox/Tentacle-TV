@@ -57,3 +57,10 @@ export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../
 export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";
 export { applyOctaveEvent } from "../music/octave/events/octaveEventEffects";
+// Octave — les favoris de la bibliothèque (albums, artistes, playlists) et l'ordre de ses rubriques (`music.libraryFavorites`).
+export {
+  musicShelfApi, useMusicShelvesCapability, useMusicShelves, useToggleShelfFavorite, useSaveShelfOrder, shelfSubjectKey, shelfFavoriteOf, shelvesAfter,
+  type MusicShelfSubject,
+} from "../music/useMusicShelves";
+export { useAlbumShelf, useArtistShelf, usePlaylistShelf, type LibraryShelf } from "../music/useLibraryShelf";
+export { useCollectionMenu, type CollectionMenu } from "../music/useCollectionMenu";

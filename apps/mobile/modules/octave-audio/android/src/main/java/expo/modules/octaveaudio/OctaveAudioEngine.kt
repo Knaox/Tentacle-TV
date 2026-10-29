@@ -19,6 +19,9 @@ import org.json.JSONObject
  * (`PlaybackCore`), renvoie les évènements au JS (`emit`), et tient la session
  * média : le service démarre au premier `audio_engine_start` / `audio_play`,
  * s'arrête à `audio_engine_stop`. Fil principal seulement.
+ *
+ * L'application fermée pour de bon (balayée) ARRÊTE la musique (règle du 29/10) : `onTaskRemoved` libère tout,
+ * change le LANCEMENT (`launchId` : la session gardée par le JS n'est plus reprise) et dit au JS `remote: stop`.
  */
 @OptIn(UnstableApi::class)
 internal object OctaveAudioEngine : PlaybackCore.Host {
@@ -36,6 +39,12 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
         private set
     private var service: OctaveAudioService? = null
     private var serviceRequested = false
+
+    /** Ce processus, puis chaque balayage de l'application : le JS ne reprend que la session de SON lancement. */
+    private val processLaunch = java.lang.Long.toString(System.currentTimeMillis(), 36)
+    private var taskRemovals = 0
+
+    fun launchId(): String = "$processLaunch-$taskRemovals"
 
     // ── Le pont ─────────────────────────────────────────────────────────────
 
@@ -142,17 +151,33 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
 
     // ── Le service de la session média ──────────────────────────────────────
 
-    /** Vrai si la musique joue (le service ne s'arrête pas quand l'application est balayée). */
     fun isPlaying(): Boolean = core?.isPlaying() == true
 
     /**
-     * L'application est balayée et rien ne joue : platines, focus et service libérés — mais le moteur reste
-     * DÉMARRÉ (origine, en-têtes, réglages). Le JS peut survivre au balayage (l'hôte React Native est à
-     * l'application, pas à l'activité) : il apprend par l'état « idle » que le titre est perdu, et sa
-     * « Lecture » suivante le rejoue à sa position. Arrêté comme `audio_engine_stop`, il refusait ensuite
-     * toute source (origine oubliée) sans que le JS le sache : la musique ne repartait plus.
+     * L'application balayée : la musique s'arrête, la notification part, un nouveau lancement commence (rien ne
+     * sera repris), et le JS — s'il survit au balayage — vide sa file (`remote: stop`). Les transferts hors
+     * ligne ont leur propre service : ils continuent.
      */
-    fun releaseIdle() {
+    fun onTaskRemoved() {
+        taskRemovals += 1
+        releaseIdle()
+        emit(BridgeJson.remoteEvent("stop"))
+    }
+
+    /** « Arrêter » de la notification : le son s'arrête et la notification part tout de suite, le JS vide sa file. */
+    private fun stopFromSystem() {
+        core?.stop()
+        stopService()
+        emit(BridgeJson.remoteEvent("stop"))
+    }
+
+    /**
+     * Platines, focus et service libérés — mais le moteur reste DÉMARRÉ (origine, en-têtes, réglages). Le JS
+     * peut survivre au balayage (l'hôte React Native est à l'application, pas à l'activité) : il apprend par
+     * `remote: stop` et l'état « idle » que tout est arrêté, et son prochain titre repart sur ce moteur. Arrêté
+     * comme `audio_engine_stop`, il refusait ensuite toute source (origine oubliée) sans que le JS le sache.
+     */
+    private fun releaseIdle() {
         stopService()
         core?.let {
             it.release()
@@ -183,6 +208,8 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
         val core = core()
         val current = session ?: MediaSession.Builder(created, SessionPlayer(core.front.player, core.remote))
             .setId(SESSION_ID)
+            .setCallback(StopCommand.callback(::stopFromSystem))
+            .setMediaButtonPreferences(listOf(StopCommand.button()))
             .also { builder -> launchIntent(created)?.let { builder.setSessionActivity(it) } }
             .build()
             .also { session = it }

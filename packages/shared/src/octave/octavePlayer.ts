@@ -239,6 +239,11 @@ export class OctavePlayer {
     this.position.set(INITIAL_POSITION);
   }
 
+  /** « Arrêter » : la lecture s'arrête, la file ET le contexte se vident (`queueActions.stopAndClear`). */
+  clear(): void {
+    queueActions.stopAndClear(this);
+  }
+
   /** Anticipation : prépare les sources (appui, suivant) et prévient l'extension. */
   prefetch(tracks: readonly MusicTrack[], intent: PrefetchIntent): void {
     if (tracks.length === 0) return;

@@ -175,8 +175,9 @@ export type AudioBridgeEvent =
   /**
    * Une commande du SYSTÈME (écran verrouillé, notification, casque, appel, sortie débranchée) : la file et
    * l'intention « lecture » sont dans la page, la coquille transmet. Une pause qui ne peut pas attendre (casque
-   * débranché, appel) est déjà faite quand elle arrive ; la position, la coquille l'applique seule.
+   * débranché, appel) est déjà faite quand elle arrive ; la position, la coquille l'applique seule. `stop` :
+   * « Arrêter » de la notification, ou l'application balayée — le son est déjà coupé, la page vide sa file.
    */
   | { type: "remote"; command: AudioBridgeRemoteCommand };
 
-export type AudioBridgeRemoteCommand = "play" | "pause" | "next" | "previous";
+export type AudioBridgeRemoteCommand = "play" | "pause" | "next" | "previous" | "stop";

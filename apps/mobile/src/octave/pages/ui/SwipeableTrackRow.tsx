@@ -3,20 +3,22 @@
  * rangée suit le doigt et découvre dessous, à gauche, « Lire ensuite » (violet de la marque) : lâchée court,
  * elle reste ouverte sur ce bouton, qu'on touche ; tirée au-delà du seuil long, le fond passe au rose,
  * l'icône et le mot deviennent « Ajouter à la file » (avec un léger retour haptique au franchissement), et au
- * lâcher le titre part dans la file, avec un retour haptique et un avis bref. Une seule rangée ouverte
- * (`swipeOpenStore`) ; toucher une rangée ouverte la referme sans lire. Au lecteur d'écran, les deux gestes
- * sont des actions de la rangée (`TrackRow`) : le bouton découvert lui est caché.
+ * lâcher le titre part dans la file, avec un retour haptique et un avis bref. Vers la GAUCHE, là seulement où
+ * l'on peut retirer le titre de la liste (`onRemove`), elle découvre à droite « Retirer » (rouge) : court, le
+ * bouton reste ; long, le titre est retiré au lâcher — retour haptique appuyé, l'avis porte « Annuler ». Une
+ * seule rangée ouverte (`swipeOpenStore`) ; toucher une rangée ouverte la referme sans lire. Au lecteur
+ * d'écran, ces gestes sont des actions de la rangée (`TrackRow`) : les boutons découverts lui sont cachés.
  */
 
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, PanResponder, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { ListEnd, ListStart } from "lucide-react-native";
+import { ListEnd, ListStart, Trash2 } from "lucide-react-native";
 import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { useOctaveColors } from "../../theme/octaveColors";
-import { closeSwipe, openSwipe, useIsSwipeOpen } from "../actions/swipeOpenStore";
+import { closeSwipe, openSwipe, useSwipeOpenSide } from "../actions/swipeOpenStore";
 import { TRACK_SWIPE_REVEAL, claimsTrackSwipe, decideTrackSwipe, trackSwipeArmed, trackSwipeOffset } from "../actions/trackSwipe";
 import type { TrackQueueGestures } from "../actions/useTrackQueueGestures";
 
@@ -25,25 +27,29 @@ const SPRING = { damping: 22, stiffness: 260, mass: 0.7, useNativeDriver: true }
 interface Props {
   rowId: string;
   title: string;
-  /** `null` : pas de balayage (pas de lecteur, titre illisible ici, mode « Modifier »). */
+  /** `null` : pas de balayage vers la droite (pas de lecteur, titre illisible ici, mode « Modifier »). */
   gestures: TrackQueueGestures | null;
+  /** Retirer le titre de la liste (balayage vers la gauche) : absent sans le droit, hors ligne, en « Modifier ». */
+  onRemove?: () => void;
   children: ReactNode;
 }
 
-export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title, gestures, children }: Props) {
+export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title, gestures, onRemove, children }: Props) {
   const theme = useTheme();
   const ink = useOctaveColors().ink;
   const { t } = useTranslation("music");
   const { t: tl } = useTranslation("musicLists");
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
-  const open = useIsSwipeOpen(rowId);
+  const open = useSwipeOpenSide(rowId);
   const [armed, setArmed] = useState(false);
+  const [side, setSide] = useState<"right" | "left">("right");
   const x = useRef(new Animated.Value(0)).current;
   const armedNow = useRef(false);
+  const removable = !!onRemove;
   // Le geste est créé UNE fois : il lit l'état courant par une référence.
-  const live = useRef({ open, width, gestures, reduced, rowId });
-  live.current = { open, width, gestures, reduced, rowId };
+  const live = useRef({ open, width, gestures, onRemove, reduced, rowId });
+  live.current = { open, width, gestures, onRemove, reduced, rowId };
 
   const settle = useRef((to: number, done?: () => void) => {
     if (live.current.reduced) {
@@ -53,6 +59,10 @@ export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title,
     }
     Animated.spring(x, { toValue: to, ...SPRING }).start(() => done?.());
   }).current;
+  const disarm = useRef(() => {
+    armedNow.current = false;
+    setArmed(false);
+  }).current;
 
   // Refermée d'ailleurs (une autre rangée ouverte, la liste qui défile, une action) : elle revient.
   useEffect(() => {
@@ -60,21 +70,29 @@ export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title,
   }, [open, settle]);
   // Plus de geste possible (mode « Modifier », hors ligne) : rien ne reste ouvert.
   useEffect(() => {
-    if (!gestures) closeSwipe(rowId);
-  }, [gestures, rowId]);
+    if (!gestures && !removable) closeSwipe(rowId);
+  }, [gestures, removable, rowId]);
 
   const pan = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_e, g) => live.current.gestures !== null && claimsTrackSwipe(g.dx, g.dy, live.current.open),
+      onMoveShouldSetPanResponder: (_e, g) => {
+        const { gestures: run, onRemove: remove, open: o } = live.current;
+        if (!run && !remove) return false;
+        // Sans « Lire ensuite », vers la droite seulement pour refermer « Retirer ».
+        if (!run && g.dx > 0 && o !== "left") return false;
+        return claimsTrackSwipe(g.dx, g.dy, o, !!remove);
+      },
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         x.stopAnimation();
         armedNow.current = false;
       },
       onPanResponderMove: (_e, g) => {
-        const { open: wasOpen, width: w } = live.current;
-        const offset = trackSwipeOffset(g.dx, wasOpen, w);
+        const { open: o, width: w, onRemove: remove, gestures: run } = live.current;
+        let offset = trackSwipeOffset(g.dx, o, w, !!remove);
+        if (!run && offset > 0) offset = 0;
         x.setValue(offset);
+        setSide(offset < 0 ? "left" : "right");
         const next = trackSwipeArmed(offset, w);
         if (next !== armedNow.current) {
           armedNow.current = next;
@@ -83,58 +101,83 @@ export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title,
         }
       },
       onPanResponderRelease: (_e, g) => {
-        const { open: wasOpen, width: w, gestures: run, rowId: id } = live.current;
-        const verdict = decideTrackSwipe({ offset: trackSwipeOffset(g.dx, wasOpen, w), vx: g.vx, width: w });
-        if (verdict === "enqueue") {
-          haptic("success");
-          run?.enqueue();
+        const { open: o, width: w, gestures: run, onRemove: remove, rowId: id } = live.current;
+        let offset = trackSwipeOffset(g.dx, o, w, !!remove);
+        if (!run && offset > 0) offset = 0;
+        const verdict = decideTrackSwipe({ offset, vx: g.vx, width: w });
+        if (verdict === "enqueue" || verdict === "remove") {
+          if (verdict === "enqueue") {
+            haptic("success");
+            run?.enqueue();
+          } else {
+            haptic("destructive");
+            remove?.();
+          }
           closeSwipe(id);
-          settle(0, () => {
-            armedNow.current = false;
-            setArmed(false);
-          });
+          settle(0, disarm);
           return;
         }
-        armedNow.current = false;
-        setArmed(false);
-        if (verdict === "reveal") {
-          openSwipe(id);
-          settle(TRACK_SWIPE_REVEAL);
+        disarm();
+        if (verdict === "reveal" || verdict === "revealRemove") {
+          const left = verdict === "revealRemove";
+          openSwipe(id, left ? "left" : "right");
+          settle(left ? -TRACK_SWIPE_REVEAL : TRACK_SWIPE_REVEAL);
         } else {
           closeSwipe(id);
           settle(0);
         }
       },
       onPanResponderTerminate: () => {
-        armedNow.current = false;
-        setArmed(false);
-        settle(live.current.open ? TRACK_SWIPE_REVEAL : 0);
+        disarm();
+        const o = live.current.open;
+        settle(o === "right" ? TRACK_SWIPE_REVEAL : o === "left" ? -TRACK_SWIPE_REVEAL : 0);
       },
     }),
   ).current;
 
-  if (!gestures) return <>{children}</>;
+  if (!gestures && !removable) return <>{children}</>;
 
   const Icon = armed ? ListEnd : ListStart;
   const playNext = () => {
     haptic("tap");
-    gestures.playNext();
+    gestures?.playNext();
     closeSwipe(rowId);
   };
+  const remove = () => {
+    haptic("destructive");
+    closeSwipe(rowId);
+    onRemove?.();
+  };
+  const showLeft = side === "left";
   return (
     <View style={styles.frame}>
-      <Animated.View
-        style={[StyleSheet.absoluteFill, styles.under, { backgroundColor: armed ? theme.colors.brand.accent : theme.colors.brand.violet, opacity: x.interpolate({ inputRange: [0, 6], outputRange: [0, 1], extrapolate: "clamp" }) }]}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        <Pressable onPress={playNext} disabled={armed} style={({ pressed }) => [styles.action, { minWidth: TRACK_SWIPE_REVEAL, opacity: pressed ? 0.7 : 1 }]}>
-          <Icon size={20} color="#fff" />
-          <Text numberOfLines={1} style={[typography.small, styles.label]}>
-            {t(armed ? "track.addToQueue" : "track.playNext")}
-          </Text>
-        </Pressable>
-      </Animated.View>
+      {showLeft ? (
+        <Animated.View
+          style={[StyleSheet.absoluteFill, styles.underRight, { backgroundColor: theme.colors.status.error, opacity: x.interpolate({ inputRange: [-6, 0], outputRange: [1, 0], extrapolate: "clamp" }) }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Pressable onPress={remove} disabled={armed} style={({ pressed }) => [styles.action, { minWidth: TRACK_SWIPE_REVEAL, opacity: pressed ? 0.7 : 1 }]}>
+            <Trash2 size={20} color="#fff" />
+            <Text numberOfLines={1} style={[typography.small, styles.label]}>
+              {tl("swipe.remove")}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      ) : (
+        <Animated.View
+          style={[StyleSheet.absoluteFill, styles.under, { backgroundColor: armed ? theme.colors.brand.accent : theme.colors.brand.violet, opacity: x.interpolate({ inputRange: [0, 6], outputRange: [0, 1], extrapolate: "clamp" }) }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Pressable onPress={playNext} disabled={armed} style={({ pressed }) => [styles.action, { minWidth: TRACK_SWIPE_REVEAL, opacity: pressed ? 0.7 : 1 }]}>
+            <Icon size={20} color="#fff" />
+            <Text numberOfLines={1} style={[typography.small, styles.label]}>
+              {t(armed ? "track.addToQueue" : "track.playNext")}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      )}
       <Animated.View style={{ backgroundColor: ink, transform: [{ translateX: x }] }} {...pan.panHandlers}>
         {children}
         {open ? <Pressable style={StyleSheet.absoluteFill} onPress={() => closeSwipe(rowId)} accessibilityRole="button" accessibilityLabel={tl("swipe.close", { title })} /> : null}
@@ -146,6 +189,7 @@ export const SwipeableTrackRow = memo(function SwipeableTrackRow({ rowId, title,
 const styles = StyleSheet.create({
   frame: { overflow: "hidden" },
   under: { flexDirection: "row", alignItems: "stretch" },
+  underRight: { flexDirection: "row", alignItems: "stretch", justifyContent: "flex-end" },
   action: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 14 },
   label: { color: "#fff", fontWeight: "600" },
 });

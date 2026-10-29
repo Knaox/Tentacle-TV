@@ -25,6 +25,7 @@ import { TrackList } from "../ui/TrackList";
 import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
+import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteButton";
 import { PageTopBar } from "./PageTopBar";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
@@ -111,7 +112,7 @@ export function OctaveArtistScreen({ id }: { id: string }) {
           ))}
         </View>
       </Animated.ScrollView>
-      <PageTopBar title={data?.name ?? ""} scrollY={scrollY} threshold={320} />
+      <PageTopBar title={data?.name ?? ""} scrollY={scrollY} threshold={320} right={data ? <CollectionFavoriteButton subject={{ section: "artists", item: data }} /> : null} />
       <OctavePagesHost />
     </View>
     </AlbumWarmupProvider>

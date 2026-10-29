@@ -39,6 +39,8 @@ Natif → JS : l'évènement Expo `onBridgeEvent` `{ json }`, où `json` est un 
 | `audio_set_output` | — | `""` | sans effet. |
 | `audio_level` | — | `null` | |
 
+Hors du pont : `launchId()` (synchrone) — voir « Fermeture complète ».
+
 ### Les sources
 
 - `source.url` est ABSOLUE. Adresse de l'origine `serverOrigin` → requêtes avec `headers` (`X-Emby-Token`).
@@ -68,8 +70,9 @@ Natif → JS : l'évènement Expo `onBridgeEvent` `{ json }`, où `json` est un 
 - `advanced` `{ fromKey, toKey }` : le suivant est devenu le courant — fin de titre sans blanc, ou MI-FONDU.
   Après lui, le natif n'a plus de suivant tant que le JS n'en redonne pas.
 - `swapped` `{ trackKey, origin }`.
-- `remote` `{ command: "play" | "pause" | "next" | "previous" }` : une commande du SYSTÈME (écran verrouillé,
-  Centre de contrôle, notification, casque, montre). `play` / `pause` : le natif les applique AUSSI tout de
+- `remote` `{ command: "play" | "pause" | "next" | "previous" | "stop" }` : une commande du SYSTÈME (écran verrouillé,
+  Centre de contrôle, notification, casque, montre). `stop` : « Arrêter la lecture » de la notification (Android)
+  ou l'application balayée — le son est déjà coupé, le JS vide sa file (`OctavePlayer.clear`). `play` / `pause` : le natif les applique AUSSI tout de
   suite (réactivité), puis les transmet (le JS tient l'intention « lecture »). `next` / `previous` :
   transmises seulement (la file est en JS). La position (barre de l'écran verrouillé) : appliquée par le
   natif, état `state` ensuite.
@@ -108,3 +111,20 @@ fondu, les deux platines en pause). À mi-fondu : `advanced`, l'entrant passe de
 - Android : `MediaSessionService` Media3 (`OctaveAudioService`, `foregroundServiceType="mediaPlayback"`),
   notification média par défaut de Media3 (pochette, titre, artiste, lecture/pause, précédent/suivant,
   barre). La session suit la platine DEVANT ; les commandes précédent/suivant sont toujours proposées.
+  Un bouton « Arrêter la lecture » (commande de session `StopCommand`) : son coupé, service et notification
+  arrêtés, `remote: stop`.
+
+### Fermeture complète (règle du 29/10)
+
+L'application fermée pour de bon ARRÊTE la musique, et au relancement rien n'est repris ; l'arrière-plan et
+l'écran verrouillé, eux, continuent de jouer.
+
+- La fonction SYNCHRONE `launchId()` rend le lancement en cours : la reprise du lecteur (`attachPlayerResume`,
+  api-client) ne reprend qu'une session gardée par CE lancement. iOS : un identifiant par processus (iOS tue
+  l'app balayée). Android : le processus, puis +1 à chaque balayage — le processus (et le JS) peut survivre au
+  balayage tant qu'un service tourne (transferts hors ligne).
+- Android : `OctaveAudioService.onTaskRemoved` arrête tout (platines, focus, service, notification), même en
+  pleine écoute, change le lancement et émet `remote: stop`. Les transferts hors ligne ont leur propre service :
+  ils continuent.
+- iOS : `UIApplication.willTerminateNotification` (une app qui joue en fond est prévenue avant d'être tuée) :
+  son coupé, commandes éteintes, écran verrouillé vidé tout de suite — sinon son « Lecture » relançait l'app.

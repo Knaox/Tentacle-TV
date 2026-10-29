@@ -27,7 +27,7 @@ import { TrackRow } from "../ui/TrackRow";
 import { AddAllButton } from "../selection/AddAllButton";
 import { MobileSelectionBar } from "../selection/MobileSelectionBar";
 import { SelectableTrackRow } from "../selection/SelectableTrackRow";
-import { SelectionCorner } from "../selection/SelectionCorner";
+import { SelectionToggle } from "../selection/SelectionCorner";
 import { SELECTION_BAR_ROOM, selectionBarBottom, useTrackSelection } from "../selection/useTrackSelection";
 import { ErrorState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
@@ -41,9 +41,11 @@ import { playFrom, playRow } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
 import { clipsOffscreenCells } from "../../layout/listClipping";
+import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteButton";
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
+const TOP_RIGHT = { flexDirection: "row", alignItems: "center", gap: 8 } as const;
 
 export function OctaveAlbumScreen({ id }: { id: string }) {
   const { t, i18n } = useTranslation("music");
@@ -175,8 +177,19 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
         windowSize={9}
         removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       />
-      <PageTopBar title={data?.title ?? ""} scrollY={scrollY} threshold={320} />
-      {!preview ? <SelectionCorner tracks={tracks} gutter={gutter} selecting={selection.selecting} onStart={selection.start} onDone={selection.clear} /> : null}
+      <PageTopBar
+        title={data?.title ?? ""}
+        scrollY={scrollY}
+        threshold={320}
+        right={
+          data && !preview ? (
+            <View style={TOP_RIGHT}>
+              <SelectionToggle tracks={tracks} selecting={selection.selecting} onStart={selection.start} onDone={selection.clear} />
+              {selection.selecting ? null : <CollectionFavoriteButton subject={{ section: "albums", item: data }} />}
+            </View>
+          ) : null
+        }
+      />
       {selection.selecting ? (
         <MobileSelectionBar count={chosenTracks.length} total={tracks.length} tracks={chosenTracks} bottom={selectionBarBottom(bottomInset)} onSelectAll={selection.selectAll} onDone={selection.clear} />
       ) : null}

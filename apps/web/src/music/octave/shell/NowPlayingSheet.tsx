@@ -30,6 +30,7 @@ import { SeekBar } from "./SeekBar";
 import { Transport } from "./Transport";
 import { VolumeControl } from "./VolumeControl";
 import { CrossfadeButton } from "./crossfade/CrossfadeButton";
+import { StopButton } from "./StopButton";
 import { OceanAmbience } from "../motion/OceanAmbience";
 import { QueuePanel } from "./QueuePanel";
 import { useOctaveLayout } from "./touch/useOctaveLayout";
@@ -145,6 +146,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
           <Transport size="lg" />
           <div className="flex items-center justify-center gap-3">
             <CrossfadeButton />
+            <StopButton shape="stop" className="h-11 w-11 text-content-secondary hover:bg-octave-hover hover:text-content-primary" />
             <div className="hidden md:flex">
               <VolumeControl className="w-40" />
             </div>

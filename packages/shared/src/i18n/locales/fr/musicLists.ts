@@ -21,6 +21,7 @@ export default {
   likedSubtitle_other: "{{count}} titres aimés",
   owner: "Par {{name}}",
   swipe: {
+    remove: "Retirer",
     nextNotice: "Sera lu ensuite",
     queuedNotice: "Ajouté à la file d'attente",
     close: "Refermer les actions de « {{title}} »",

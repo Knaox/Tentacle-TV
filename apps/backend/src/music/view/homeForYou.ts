@@ -58,7 +58,7 @@ async function artistMixes(view: UserView, ranked: readonly string[], neighbours
     mixes.push({
       id: `artist:${artist.id}`,
       kind: "artist",
-      artist: artistsOf([artist])[0] ?? null,
+      artist: artistsOf([artist], view)[0] ?? null,
       artistNames: mixArtistOrder(rows).slice(0, 3),
       tracks: await tracksOf(view, rows),
     });
@@ -72,7 +72,7 @@ async function becauseRows(view: UserView, recentArtists: readonly string[], rec
     if (out.length >= BECAUSE_MAX) break;
     const albums = visibleRows(view, await creditedTo(artist.id, "album")).filter((a) => !recentAlbumIds.has(a.id));
     if (albums.length < BECAUSE_MIN_ALBUMS) continue;
-    const [model] = artistsOf([artist]);
+    const [model] = artistsOf([artist], view);
     if (model) out.push({ artist: model, albums: await albumsOf(view, albums.slice(0, RECENT_SHOWN)) });
   }
   return out;
@@ -101,7 +101,7 @@ async function compute(view: UserView, input: ForYouInput): Promise<MusicHomeFor
   }
   return {
     recentAlbums: await albumsOf(view, albums),
-    recentArtists: artistsOf(artists),
+    recentArtists: artistsOf(artists, view),
     mixes,
     because,
   };

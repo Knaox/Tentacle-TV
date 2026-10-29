@@ -29,6 +29,8 @@ vi.mock("react-router-dom", () => ({
 vi.mock("../actions/useCollectionPlayback", () => ({ useCollectionPlayback: () => ({ play: () => undefined, warm: () => undefined }) }));
 vi.mock("../data/entityIntent", () => ({ useEntityIntent: () => ({}) }));
 vi.mock("./Artwork", () => ({ Artwork: () => null }));
+// Le menu d'une carte (favori, ordre, gestion) lit le serveur : ici, la carte seule — son modèle a ses tests.
+vi.mock("../collections/CardMenuFrame", () => ({ CardMenuFrame: ({ children }: { children: (h: object) => React.ReactNode }) => children({}) }));
 
 const { AvailabilityMark } = await import("./AvailabilityMark");
 const { AlbumCard } = await import("./Cards");

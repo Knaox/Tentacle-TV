@@ -37,11 +37,13 @@ interface Props {
   onToggle?: (rowKey: string) => void;
   /** Place en plus au bas de la liste (la barre de sélection). */
   extraBottom?: number;
+  /** Hors « Modifier », là où on peut retirer : le balayage vers la gauche d'une rangée la retire. */
+  onSwipeRemove?: (row: ListRow) => void;
 }
 
 const AnimatedList = Animated.createAnimatedComponent(FlatList<ListRow>);
 
-export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove, selected, onToggle, extraBottom = 0 }: Props) {
+export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove, selected, onToggle, extraBottom = 0, onSwipeRemove }: Props) {
   const { t } = useTranslation("musicLists");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
@@ -91,6 +93,10 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
     const row = rows[index];
     if (row) onRemove?.(row);
   }, [onRemove, rows]);
+  const swipeRemove = useCallback((index: number) => {
+    const row = rows[index];
+    if (row) onSwipeRemove?.(row);
+  }, [onSwipeRemove, rows]);
 
   const extraData = useMemo(() => (selected ? [drag, selected] : drag), [drag, selected]);
   const renderItem = useCallback<ListRenderItem<ListRow>>(
@@ -113,9 +119,10 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         editing={editing}
         selected={selected?.has(item.rowKey) ?? false}
         onToggle={onToggle ? toggle : undefined}
+        onSwipeRemove={onSwipeRemove && !editing ? swipeRemove : undefined}
       />
     ),
-    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, onToggle, play, remove, selected, step, toggle, tracks],
+    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, onSwipeRemove, onToggle, play, remove, selected, step, swipeRemove, toggle, tracks],
   );
 
   return (

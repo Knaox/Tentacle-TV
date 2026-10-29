@@ -8,17 +8,20 @@
  * Début, Fin (motif ARIA « tabs »).
  */
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import type { MusicAlbum, MusicArtist, MusicShelfPlaylist } from "@tentacle-tv/shared/music";
 import { Library } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlbumCard, ArtistCard, CardGrid, PlaylistCard } from "../components/Cards";
+import { AlbumCard, ArtistCard, PlaylistCard } from "../components/Cards";
 import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
-import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
+import { useAlbumShelf, useArtistShelf, useMusicAlbums, useMusicArtists, useMusicPlaylists, usePlaylistShelf, type MusicAlbumSort } from "@tentacle-tv/api-client";
 import { LoadMore, flattenPages } from "./LoadMore";
 import { useOctaveGlassStage } from "../glass/glassStage";
 import { ImportedShelf } from "../releases/ImportedShelf";
 import { ReleaseEntryButton } from "../releases/ReleaseEntryButton";
+import { ShelfSections } from "../collections/ShelfSections";
+import { albumRow, artistRow, ExternalPlaylistCard, playlistRow } from "./libraryShelfRows";
 import { LIBRARY_ALBUM_SORT_KEY, LIBRARY_ALBUM_SORTS, LIBRARY_TABS, parseAlbumSort, parseLibraryTab, type LibraryTab } from "@tentacle-tv/shared/octave";
 
 // Onglets, tris et clé du tri retenu : partagés avec le mobile (`@tentacle-tv/shared/octave` › libraryModel).
@@ -50,11 +53,10 @@ function Albums() {
   const [sort, setSort] = useState(readSort);
   const bead = useOctaveGlassStage() ? "lg-bead " : "";
   const albums = useMusicAlbums({ sort });
-  const list = flattenPages(albums.data?.pages);
-  return (
-    <div className="flex flex-col gap-4">
-      <ImportedShelf />
-      <div className="flex items-center gap-2 px-2">
+  const list = useMemo(() => flattenPages(albums.data?.pages), [albums.data]);
+  const shelf = useAlbumShelf(list);
+  const sortControl = (
+      <div className="flex items-center gap-2">
         <label htmlFor="octave-album-sort" className="text-sm text-content-tertiary">
           {t("library.sort")}
         </label>
@@ -78,48 +80,51 @@ function Albums() {
           ))}
         </select>
       </div>
+  );
+  const between = (
+    <>
+      <ImportedShelf />
       {albums.isPending && <CardsSkeleton count={12} />}
       {albums.isError && <ErrorState onRetry={() => void albums.refetch()} />}
-      {albums.isSuccess && list.length === 0 && <LibraryEmpty />}
-      <CardGrid>
-        {list.map((album) => (
-          <AlbumCard key={album.key} album={album} />
-        ))}
-      </CardGrid>
-      <LoadMore query={albums} />
+      {albums.isSuccess && list.length === 0 && shelf.favorites.length === 0 && <LibraryEmpty />}
+    </>
+  );
+  return (
+    <div className="flex flex-col gap-4">
+      <ShelfSections section="albums" shelf={shelf} renderCard={renderAlbum} describe={albumRow} between={between} restAction={sortControl} after={<LoadMore query={albums} />} />
     </div>
   );
 }
 
+const renderAlbum = (album: MusicAlbum) => <AlbumCard key={album.key} album={album} />;
+const renderArtist = (artist: MusicArtist) => <ArtistCard key={artist.key} artist={artist} />;
+const renderPlaylist = (entry: MusicShelfPlaylist) =>
+  entry.kind === "library" ? <PlaylistCard key={entry.playlist.jellyfinId} playlist={entry.playlist} /> : <ExternalPlaylistCard key={entry.playlist.key} playlist={entry.playlist} />;
+
 function Artists() {
   const artists = useMusicArtists();
-  const list = flattenPages(artists.data?.pages);
+  const list = useMemo(() => flattenPages(artists.data?.pages), [artists.data]);
+  const shelf = useArtistShelf(list);
   return (
     <div className="flex flex-col gap-4">
       {artists.isPending && <CardsSkeleton count={12} round />}
       {artists.isError && <ErrorState onRetry={() => void artists.refetch()} />}
-      {artists.isSuccess && list.length === 0 && <LibraryEmpty />}
-      <CardGrid>
-        {list.map((artist) => (
-          <ArtistCard key={artist.key} artist={artist} />
-        ))}
-      </CardGrid>
-      <LoadMore query={artists} />
+      {artists.isSuccess && list.length === 0 && shelf.favorites.length === 0 && <LibraryEmpty />}
+      <ShelfSections section="artists" shelf={shelf} renderCard={renderArtist} describe={artistRow} after={<LoadMore query={artists} />} />
     </div>
   );
 }
 
 function Playlists() {
   const playlists = useMusicPlaylists();
+  const shelf = usePlaylistShelf(playlists.data);
   if (playlists.isPending) return <CardsSkeleton />;
   if (playlists.isError) return <ErrorState onRetry={() => void playlists.refetch()} />;
-  if (!playlists.data.length) return <LibraryEmpty />;
+  if (!playlists.data.length && shelf.favorites.length === 0) return <LibraryEmpty />;
   return (
-    <CardGrid>
-      {playlists.data.map((p) => (
-        <PlaylistCard key={p.jellyfinId} playlist={p} />
-      ))}
-    </CardGrid>
+    <div className="flex flex-col gap-4">
+      <ShelfSections section="playlists" shelf={shelf} renderCard={renderPlaylist} describe={playlistRow} />
+    </div>
   );
 }
 

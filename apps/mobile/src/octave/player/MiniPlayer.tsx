@@ -2,7 +2,8 @@
  * Octave (mobile) — le MINI-LECTEUR, posé par la coquille au-dessus de la barre d'onglets (téléphone) ou en bas
  * du contenu (tablette) : pochette, titre, artiste, Lecture/Pause, Suivant, filet de progression, en verre.
  * Gestes : un appui ou un glissé vers le haut ouvre le lecteur ; un balayage de côté change de titre (gauche :
- * suivant, droite : précédent), le contenu suit le doigt. Les boutons restent là pour qui ne glisse pas.
+ * suivant, droite : précédent), le contenu suit le doigt. Les boutons restent là pour qui ne glisse pas. La croix
+ * arrête la lecture et vide la file (`StopButton`).
  * Rien en cours : rien du tout (la coquille ne garde aucune place).
  */
 
@@ -15,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { GlassSurface } from "@/components/ui";
 import { PlayerArtwork } from "./PlayerArtwork";
 import { ProgressLine } from "./ProgressLine";
+import { StopButton } from "./StopButton";
 import { useOctavePlayer, usePlayerSelector } from "./OctavePlayerContext";
 import { openNowPlaying } from "./nowPlayingStore";
 import { decideOpen, decideSwipe, gestureAxis, rubberBand } from "./playerGestures";
@@ -131,6 +133,7 @@ const MiniPlayerBar = memo(function MiniPlayerBar({ layout }: MiniPlayerProps) {
           >
             <SkipForward color={colors.text} fill={colors.text} size={20} />
           </Pressable>
+          <StopButton shape="close" />
         </Animated.View>
         {width > 0 && (
           <View style={styles.progress}>
@@ -146,7 +149,7 @@ const styles = StyleSheet.create({
   outer: {},
   tablet: { maxWidth: 720, alignSelf: "center", width: "100%" },
   glass: { height: HEIGHT, overflow: "hidden" },
-  row: { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 10, paddingRight: 6, gap: 4 },
+  row: { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 10, paddingRight: 4, gap: 2 },
   open: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 },
   texts: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, fontWeight: "600", letterSpacing: -0.2 },
