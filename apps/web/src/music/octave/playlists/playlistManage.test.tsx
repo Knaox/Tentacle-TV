@@ -10,6 +10,10 @@ import { removeWaiting, waitingOf } from "@tentacle-tv/shared/octave";
  */
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string, vars?: Record<string, unknown>) => (vars ? `${key}:${JSON.stringify(vars)}` : key) }) }));
 vi.mock("./usePlaylistManagement", () => ({ usePlaylistManagement: () => ({ duplicate: async () => true }) }));
+vi.mock("@tentacle-tv/api-client", async (original) => ({
+  ...(await original<typeof import("@tentacle-tv/api-client")>()),
+  usePlaylistSharingRules: (p: MusicPlaylist) => ({ isMember: p.sharing?.role === "member", isShared: !!p.sharing, people: [], sharing: p.sharing ?? null, canAdd: p.editable, canRemove: p.editable }),
+}));
 
 const { PlaylistMenuButton } = await import("./PlaylistMenu");
 const { detailsChange } = await import("./PlaylistDetailsDialog");
@@ -26,6 +30,11 @@ describe("le menu « … » d'une playlist", () => {
 
   it("une playlist d'un autre compte (non modifiable) : rien", () => {
     expect(renderToStaticMarkup(<PlaylistMenuButton playlist={playlist(false)} open={false} onOpenChange={() => undefined} />)).toBe("");
+  });
+
+  it("une playlist qu'un autre compte m'a partagée : un « … » (pour voir les personnes ou la quitter)", () => {
+    const shared: MusicPlaylist = { ...playlist(false), sharing: { role: "member", right: "read", owner: { userId: "a".repeat(32), name: "Knaoxtest", imageTag: null }, members: [] } };
+    expect(renderToStaticMarkup(<PlaylistMenuButton playlist={shared} open={false} onOpenChange={() => undefined} />)).toContain('aria-haspopup="menu"');
   });
 });
 

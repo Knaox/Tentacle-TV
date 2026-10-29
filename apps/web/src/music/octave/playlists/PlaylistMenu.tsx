@@ -1,13 +1,14 @@
 /**
  * Octave — le menu « … » d'une playlist (sa page, ses cartes, le rail ; au clic droit aussi) : modifier les
- * détails, dupliquer, partager (si le serveur le sait et le compte en a le droit), supprimer. Seulement sur une playlist que le compte peut modifier (`editable`, la règle
+ * détails, dupliquer, partager avec des comptes du serveur ou par un lien (si le serveur le sait et le compte en
+ * a le droit), supprimer. Une playlist qu'on m'a partagée : « Personnes » et « Quitter la playlist ». Seulement sur une playlist que le compte peut modifier (`editable`, la règle
  * du serveur) : ailleurs, ni bouton ni menu. La suppression est à part, en rouge, et demande confirmation.
  */
 
 import { useRef, type RefObject } from "react";
-import { Copy, Link2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, Link2, LogOut, MoreHorizontal, Pencil, Trash2, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useMusicPlaylistShareAvailable } from "@tentacle-tv/api-client";
+import { useMusicPlaylistMembersAvailable, useMusicPlaylistShareAvailable, usePlaylistSharingRules } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { FloatingAnchor } from "../../../components/floating/useFloatingPlacement";
@@ -20,8 +21,11 @@ const itemClass =
 export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: MusicPlaylist; anchor: FloatingAnchor; onClose: () => void }) {
   const { t } = useTranslation("music");
   const { t: ts } = useTranslation("musicShare");
+  const { t: tm } = useTranslation("musicPlaylistMembers");
   const { duplicate } = usePlaylistManagement();
   const shareable = useMusicPlaylistShareAvailable();
+  const members = useMusicPlaylistMembersAvailable();
+  const rules = usePlaylistSharingRules(playlist);
   const run = (fn: () => void) => () => {
     onClose();
     fn();
@@ -39,6 +43,21 @@ export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: Mus
       // Un îlot d'encre PRUNE, opaque, comme le menu d'un titre (IDENTITE.md).
       style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)" }}
     >
+      {rules.isMember ? (
+        <>
+          {/* Une playlist qu'on m'a partagée : voir qui y a accès, ou la quitter — jamais la gérer. */}
+          <button type="button" role="menuitem" className={itemClass} onClick={run(() => requestPlaylistManage({ kind: "members", playlist }))}>
+            <Users className="h-4 w-4 text-content-tertiary" aria-hidden />
+            {tm("people")}
+          </button>
+          <div role="separator" className="mx-2 my-1.5 h-px bg-line-subtle" />
+          <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(() => requestPlaylistManage({ kind: "leave", playlist }))}>
+            <LogOut className="h-4 w-4" aria-hidden />
+            {tm("leave")}
+          </button>
+        </>
+      ) : (
+      <>
       <button type="button" role="menuitem" className={itemClass} onClick={run(() => requestPlaylistManage({ kind: "edit", playlist }))}>
         <Pencil className="h-4 w-4 text-content-tertiary" aria-hidden />
         {t("playlistManage.editDetails")}
@@ -47,6 +66,12 @@ export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: Mus
         <Copy className="h-4 w-4 text-content-tertiary" aria-hidden />
         {t("playlistManage.duplicate")}
       </button>
+      {members && (
+        <button type="button" role="menuitem" className={itemClass} onClick={run(() => requestPlaylistManage({ kind: "members", playlist }))}>
+          <Users className="h-4 w-4 text-content-tertiary" aria-hidden />
+          {tm("shareWith")}
+        </button>
+      )}
       {shareable && (
         <button type="button" role="menuitem" className={itemClass} onClick={run(() => requestPlaylistManage({ kind: "share", playlist }))}>
           <Link2 className="h-4 w-4 text-content-tertiary" aria-hidden />
@@ -58,6 +83,8 @@ export function PlaylistMenuPanel({ playlist, anchor, onClose }: { playlist: Mus
         <Trash2 className="h-4 w-4" aria-hidden />
         {t("playlistManage.delete")}
       </button>
+      </>
+      )}
     </FloatingLayer>
   );
 }
@@ -69,11 +96,12 @@ interface PlaylistMenuButtonProps {
   className?: string;
 }
 
-/** Le bouton « … » ; rien pour une playlist que le compte ne peut pas modifier. */
+/** Le bouton « … » ; rien pour une playlist que le compte ne peut ni gérer ni quitter. */
 export function PlaylistMenuButton({ playlist, open, onOpenChange, className = "h-11 w-11" }: PlaylistMenuButtonProps) {
   const { t } = useTranslation("music");
   const anchor = useRef<HTMLButtonElement>(null);
-  if (!playlist.editable) return null;
+  const { isMember } = usePlaylistSharingRules(playlist);
+  if (!playlist.editable && !isMember) return null;
   return (
     <>
       <button

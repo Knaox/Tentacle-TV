@@ -9,6 +9,7 @@ import { ListMusic, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { canAddToPlaylist } from "@tentacle-tv/shared/music";
 import { Modal } from "../../../components/ui/Modal";
 import { useTrackActions } from "./useTrackActions";
 import { useBulkTrackActions } from "./selection/useBulkTrackActions";
@@ -31,7 +32,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
   const bulk = useBulkTrackActions();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const editable = (playlists.data ?? []).filter((p) => p.editable && p.jellyfinId !== request.moveFrom?.jellyfinId);
+  const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p) && p.jellyfinId !== request.moveFrom?.jellyfinId);
 
   const [first] = request.tracks;
   const many = request.tracks.length > 1;

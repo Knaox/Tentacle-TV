@@ -65,6 +65,7 @@ import music from "./music";
 import musicOffline from "./musicOffline";
 import musicImport from "./musicImport";
 import musicShare from "./musicShare";
+import musicPlaylistMembers from "./musicPlaylistMembers";
 import musicLists from "./musicLists";
 import octaveShell from "./octaveShell";
 
@@ -108,6 +109,7 @@ export default {
   musicOffline,
   musicImport,
   musicShare,
+  musicPlaylistMembers,
   musicLists,
   octaveShell,
 };

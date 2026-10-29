@@ -27,6 +27,7 @@ import { CARD_GRID_CLASS } from "./cardGrid";
 import { CollectionSwell } from "../motion/NowSwell";
 import { PlaylistArtwork, playlistCoverUrls } from "./PlaylistArtwork";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { SharedPlaylistBadge } from "../playlists/members/SharedPlaylistBadge";
 import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 import { usePendingMusic } from "../pending/usePendingMusic";
 
@@ -158,6 +159,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
       <div className="relative aspect-square w-full">
         <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
+        <SharedPlaylistBadge playlist={playlist} />
         <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
       </div>
       <div className="min-w-0 px-0.5">

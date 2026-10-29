@@ -6,10 +6,15 @@
  * Web large, web étroit et mobile lisent ceci.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MUSIC_PLAYLIST_MEMBER_ROUTES,
+  canAddToPlaylist,
+  canRemoveFromPlaylist,
+  isSharedPlaylist,
+  playlistPeople,
+  type MusicPlaylist,
   type MusicPlaylistMemberRight,
   type MusicPlaylistPerson,
   type MusicPlaylistSharing,
@@ -17,6 +22,7 @@ import {
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { useServerCapability } from "../hooks/useServerCapabilities";
 import { useMusicCapability } from "./useMusicLibrary";
+import { useUserId } from "../hooks/useUserId";
 import { musicKeys } from "./musicQueryKeys";
 
 const at = (route: string, values: Record<string, string>) =>
@@ -108,4 +114,24 @@ export function useMusicShareCandidates(enabled = true) {
     staleTime: 60_000,
   });
   return { candidates: query.data ?? null, loading: available && enabled && query.isPending, failed: query.isError };
+}
+
+/** Ce qu'une playlist permet à CE compte, partage compris (sans la capacité : la règle d'avant, `editable`). */
+export function usePlaylistSharingRules(playlist: Pick<MusicPlaylist, "editable" | "sharing"> | null | undefined) {
+  const available = useMusicPlaylistMembersAvailable();
+  const editable = playlist?.editable === true;
+  const sharing = available ? playlist?.sharing : undefined;
+  const me = useUserId() ?? "";
+  return useMemo(() => {
+    const view = { editable, sharing };
+    return {
+      sharing: sharing ?? null,
+      /** Les autres personnes qui y ont accès, propriétaire en tête (la pile d'avatars). */
+      people: sharing ? playlistPeople(sharing, me) : [],
+      isShared: isSharedPlaylist(view),
+      isMember: sharing?.role === "member",
+      canAdd: canAddToPlaylist(view),
+      canRemove: canRemoveFromPlaylist(view),
+    };
+  }, [editable, me, sharing]);
 }
