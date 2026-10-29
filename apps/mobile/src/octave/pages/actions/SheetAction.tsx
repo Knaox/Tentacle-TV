@@ -15,18 +15,23 @@ interface SheetActionProps {
   onPress: () => void;
   /** L'icône pleine (le cœur d'un titre aimé). */
   filled?: boolean;
-  tone?: "accent";
+  /** `danger` : un geste destructeur (supprimer, quitter), en rouge. */
+  tone?: "accent" | "danger";
+  /** Éteinte (hors ligne : le geste attend le serveur). */
+  disabled?: boolean;
 }
 
-export const SheetAction = memo(function SheetAction({ icon: Icon, label, onPress, filled, tone }: SheetActionProps) {
+export const SheetAction = memo(function SheetAction({ icon: Icon, label, onPress, filled, tone, disabled }: SheetActionProps) {
   const theme = useTheme();
-  const color = tone === "accent" ? accentTextOf(theme) : theme.colors.text.primary;
+  const color = tone === "accent" ? accentTextOf(theme) : tone === "danger" ? theme.colors.status.error : theme.colors.text.primary;
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => [styles.row, { opacity: disabled ? 0.4 : 1, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
     >
       <View style={styles.icon}>
         <Icon size={20} color={color} fill={filled ? color : "transparent"} />

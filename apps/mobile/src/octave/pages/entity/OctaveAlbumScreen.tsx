@@ -36,6 +36,7 @@ import { playFrom, playRow } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
 import { clipsOffscreenCells } from "../../layout/listClipping";
+import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteButton";
 
 type Row = { kind: "disc"; disc: number } | { kind: "track"; track: MusicTrack; index: number };
 const HIDE = { album: true } as const;
@@ -153,7 +154,7 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
         windowSize={9}
         removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
       />
-      <PageTopBar title={data?.title ?? ""} scrollY={scrollY} threshold={320} />
+      <PageTopBar title={data?.title ?? ""} scrollY={scrollY} threshold={320} right={data && !preview ? <CollectionFavoriteButton subject={{ section: "albums", item: data }} /> : null} />
       <OctavePagesHost />
     </View>
   );
