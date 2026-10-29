@@ -1,11 +1,13 @@
 /**
  * Octave — les gestes sur la file (aléatoire, répétition, « Lire ensuite »,
- * retrait, déplacement, saut, « Réessayer »). Chacun change la file, puis redit
+ * file d'attente, retrait, déplacement, saut, « Réessayer ») ; la règle des deux
+ * files est dans `queueFiles.ts`. Chacun change la file, puis redit
  * au moteur quel est le SUIVANT : le moteur ne connaît jamais que courant + suivant.
  */
 
 import type { MusicTrack } from "../music";
 import {
+  clearUserQueue,
   createQueue,
   cycleRepeat,
   enqueue,
@@ -65,12 +67,18 @@ export const queueActions = {
     apply(player, enqueue(q, tracks));
   },
 
+  /** « Effacer la file d'attente » : la suite du contexte reprend après le titre en cours. */
+  clearUserQueue(player: OctavePlayer): void {
+    apply(player, clearUserQueue(player.snapshot.get().queue));
+  },
+
   remove(player: OctavePlayer, uid: string): void {
     apply(player, removeItem(player.snapshot.get().queue, uid));
   },
 
-  move(player: OctavePlayer, uid: string, toUpcomingIndex: number): void {
-    apply(player, moveUpcoming(player.snapshot.get().queue, uid, toUpcomingIndex));
+  /** `toIndex` : la place dans SA file (file d'attente, ou suite du contexte). */
+  move(player: OctavePlayer, uid: string, toIndex: number): void {
+    apply(player, moveUpcoming(player.snapshot.get().queue, uid, toIndex));
   },
 
   /** La suite du titre `uid` devient `tracks` (la radio d'un clic de recherche), s'il est encore le courant. */

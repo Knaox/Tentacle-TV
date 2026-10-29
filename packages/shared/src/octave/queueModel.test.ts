@@ -83,22 +83,23 @@ describe("file Octave — aléatoire", () => {
 });
 
 describe("file Octave — gestes", () => {
-  it("« Lire ensuite » se pose juste après le courant, « Ajouter » à la fin", () => {
+  it("« Lire ensuite » se pose juste après le courant, « Ajouter » avant la suite du contexte", () => {
     const q = createQueue(tracks, 0);
     const x = libraryTrack("x");
     expect(keys(upcoming(playNext(q, [x])))[0]).toBe("jf:x");
-    expect(keys(upcoming(enqueue(q, [x]))).at(-1)).toBe("jf:x");
+    expect(keys(upcoming(enqueue(q, [x])))[0]).toBe("jf:x");
     const fresh = enqueue(createQueue([], 0), [x]);
     expect(currentItem(fresh)?.track.key).toBe("jf:x");
   });
 
   it("retire, déplace et saute par uid (doublons possibles)", () => {
     const q = enqueue(createQueue(tracks, 0), [libraryTrack("a")]);
-    const dupe = q.items[4]!;
+    const dupe = q.items[1]!;
     expect(keys(removeItem(q, dupe.uid).items)).toEqual(["jf:a", "jf:b", "jf:c", "jf:d"]);
     expect(removeItem(q, q.items[0]!.uid)).toBe(q);
-    const moved = moveUpcoming(q, q.items[3]!.uid, 0);
-    expect(keys(upcoming(moved))[0]).toBe("jf:d");
+    // La file d'attente (le doublon) reste devant ; dans la suite du contexte, « d » passe en tête.
+    const moved = moveUpcoming(q, q.items[4]!.uid, 0);
+    expect(keys(upcoming(moved))).toEqual(["jf:a", "jf:d", "jf:b", "jf:c"]);
     expect(currentItem(jumpTo(q, dupe.uid))?.uid).toBe(dupe.uid);
   });
 
