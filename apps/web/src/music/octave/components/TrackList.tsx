@@ -10,7 +10,7 @@ import { Fragment, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
-import type { ListRow } from "@tentacle-tv/shared/octave";
+import { rowClickAction, type ListRow } from "@tentacle-tv/shared/octave";
 import type { SelectGesture } from "../actions/selection/selectionRules";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { TrackRow, rowColumns } from "./TrackRow";
@@ -54,10 +54,8 @@ interface TrackListProps {
   reorder?: { block: ReorderBlock | null; onMove: (from: number, to: number) => void } | null;
 }
 
-/** Un clic sur une rangée : le titre en cours de CETTE liste se met en pause ou reprend ; tout autre se lit. */
-export function rowClickAction(clickedKey: string | undefined, currentKey: string | null, playingContext: string | null, contextId: string): "toggle" | "play" {
-  return clickedKey !== undefined && clickedKey === currentKey && playingContext === contextId ? "toggle" : "play";
-}
+/** Un clic sur une rangée : la règle partagée avec le mobile (`pages/rowClick.ts`). */
+export { rowClickAction };
 
 export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));

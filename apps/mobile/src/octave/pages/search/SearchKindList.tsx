@@ -16,7 +16,7 @@ import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui
 import { TrackRow } from "../ui/TrackRow";
 import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
-import { playFrom } from "../env/playFrom";
+import { playRow } from "../env/playFrom";
 import { clipsOffscreenCells } from "../../layout/listClipping";
 
 type Cell =
@@ -51,7 +51,7 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
     return [...layout.libraryPlaylists.map((playlist) => ({ kind: "playlist" as const, playlist })), ...layout.externalPlaylists.map((playlist) => ({ kind: "external" as const, playlist }))];
   }, [filter, layout]);
   const contextId = `search:${query}:tracks`;
-  const play = useCallback((index: number) => playFrom(player, layout.tracks, index, contextId), [contextId, layout.tracks, player]);
+  const play = useCallback((index: number) => playRow(player, layout.tracks, index, contextId), [contextId, layout.tracks, player]);
   const grid = filter !== "tracks";
   const columns = grid ? (isTablet ? Math.max(3, Math.floor(700 / card)) : 2) : 1;
   // La largeur d'une cellule de la grille, ses 6 pt de marge de chaque côté ôtés.

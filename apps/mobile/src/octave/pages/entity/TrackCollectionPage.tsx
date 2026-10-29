@@ -22,7 +22,7 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
-import { playFrom } from "../env/playFrom";
+import { playFrom, playRow } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
 import { clipsOffscreenCells } from "../../layout/listClipping";
@@ -64,7 +64,7 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
   // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
   const { scrollY, scrollProps } = useOctavePageScroll();
   const { tracks } = useOwnedTracks(raw ?? NO_TRACKS);
-  const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
+  const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
   const meta = useCountAndDuration(tracks.length, tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const owned = useMemo(() => ownedCount(tracks), [tracks]);
   const page = useOfflinePage({ data: head, isPending: pending, isError: failed }, keptKeys);

@@ -30,7 +30,7 @@ import { AlbumNotes } from "./AlbumNotes";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
 import { useCountAndDuration } from "./useCountAndDuration";
-import { playFrom } from "../env/playFrom";
+import { playFrom, playRow } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
 import { useOfflinePage } from "../../offline/useOfflinePage";
 import { clipsOffscreenCells } from "../../layout/listClipping";
@@ -67,7 +67,7 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
     });
     return out;
   }, [discs.length, tracks]);
-  const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
+  const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
   // L'album gardé sur l'appareil, sous sa clé de bibliothèque ou d'extension.
   const page = useOfflinePage(album, [`album:${id}`, `album:jf:${id}`]);
 
