@@ -286,6 +286,9 @@ function main(): void {
         // EN DERNIER : il lit `defaultPrevented`, que les deux gardes ci-dessus
         // posent. Quitter pendant le PiP le ferme avant la fenêtre (`pipQuit.ts`).
         closePipBeforeHost(window);
+        // La fenêtre fermée pour de bon : la musique d'Octave s'arrête avec elle, même si l'application reste
+        // ouverte pour finir un transfert (`backgroundTransfers.ts`) — plus aucune fenêtre ne la commanderait.
+        window.on("closed", stopAudio);
         void window.loadURL(`${APP_ORIGIN}/${startRoute()}`);
       };
 

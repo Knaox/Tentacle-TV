@@ -3,8 +3,8 @@
  * FLOTTE au-dessus des pages (la famille de la barre de navigation de
  * Tentacle), la page défilant dessous. Titre en cours à gauche (sa pochette
  * ouvre le lecteur « en cours »), transport et progression au centre, qualité
- * réelle (et, lu depuis la copie gardée, « Sur cet appareil »), état, transition douce (`CrossfadeButton`), file
- * et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
+ * réelle (et, lu depuis la copie gardée, « Sur cet appareil »), état, transition douce (`CrossfadeButton`),
+ * « Arrêter la lecture » (`StopButton`), file et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
  * la même capsule en une ligne.
  *
  * TOUJOURS SOMBRE, dans les deux thèmes (« jamais une barre blanche ») : la
@@ -32,6 +32,7 @@ import { CrossfadeButton } from "./crossfade/CrossfadeButton";
 import { FormatBadge } from "./FormatBadge";
 import { NowPlayingInfo } from "./NowPlayingInfo";
 import { SeekBar } from "./SeekBar";
+import { StopButton } from "./StopButton";
 import { Transport } from "./Transport";
 import { VolumeControl } from "./VolumeControl";
 
@@ -98,6 +99,7 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
             </span>
           </div>
           <CrossfadeButton />
+          <StopButton shape="stop" className="octave-dock-chip lg-bead h-9 w-9 text-content-secondary hover:text-content-primary" />
           <QueueButton open={queueOpen} onToggle={onToggleQueue} />
           <VolumeControl className="octave-dock-volume" />
         </div>
@@ -106,7 +108,7 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
   );
 });
 
-/** Le mini-lecteur du téléphone : la capsule du dock en une ligne (lecture, titre suivant), la progression en filet dessous. */
+/** Le mini-lecteur du téléphone : la capsule du dock en une ligne (lecture, titre suivant, arrêter), la progression en filet dessous. */
 export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => void }) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
@@ -150,6 +152,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
         >
           <SkipForward className="h-5 w-5" fill="currentColor" aria-hidden />
         </button>
+        <StopButton shape="close" className="octave-touch h-11 w-11 text-content-tertiary" />
       </div>
       <div aria-hidden className="octave-mini-progress">
         <div className="octave-range-fill" data-fill="progress" style={{ transform: `scaleX(${ratio})` }} />
