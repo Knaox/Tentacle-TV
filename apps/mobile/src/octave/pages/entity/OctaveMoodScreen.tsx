@@ -33,7 +33,8 @@ export function OctaveMoodScreen({ id }: { id: string }) {
       contextId={moodContextId(id)}
       pending={mix.isPending}
       failed={mix.isError}
-      notFound={t("moods.notFound")}
+      // Comme le bureau : l'extension momentanément indisponible (503) ne se dit pas « introuvable ».
+      notFound={t((mix.error as { status?: number } | null)?.status === 503 ? "moods.unavailable" : "moods.notFound")}
       onRetry={() => void mix.refetch()}
       footer={footer}
     />
