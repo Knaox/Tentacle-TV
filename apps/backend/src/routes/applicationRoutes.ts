@@ -77,6 +77,7 @@ import { recoRowRoutes } from "./recoRows";
 import { externalAccountRoutes } from "./externalAccounts";
 import { musicRoutes } from "../music/routes/musicRoutes";
 import { musicSharePublicRoutes } from "../music/playlistShare/shareRoutes";
+import { musicOpenPublicRoutes } from "../music/sharedLinks/sharedLinkRoutes";
 
 /** Enregistre, dans l'ordre, toutes les routes de l'application, puis le proxy de Jellyfin. */
 export async function registerApplicationRoutes(app: FastifyInstance): Promise<void> {
@@ -149,6 +150,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(musicRoutes, { prefix: "/api/music" });
   // Le document et la page d'un lien de playlist partagée : SANS compte, hors de la session de `/api/music`.
   await app.register(musicSharePublicRoutes);
+  // La page d'ouverture d'un lien d'Octave (`/octave/open/<page>`) : SANS compte, comme la précédente.
+  await app.register(musicOpenPublicRoutes);
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
   // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —

@@ -31,6 +31,7 @@ import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
+import { appLinkFromArgv, deliverAppLink, listenForAppLinks, registerAppLinkCommands } from "./appLinks";
 import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
 import { registerDownloadsMusicCommands } from "./ipc/downloadsMusic";
@@ -148,7 +149,9 @@ function declarePackagedMpv(): void {
 function main(): void {
   declarePackagedMpv();
 
-  const singleInstance = claimSingleInstance(() => {
+  const singleInstance = claimSingleInstance((argv) => {
+    // Un lien `tentacle://octave/…` ouvert pendant que l'app tourne (Windows, Linux) : la page l'ouvre.
+    deliverAppLink(appLinkFromArgv(argv));
     const win = getMainWindow();
     // Sans fenêtre, c'est que la file se finit en arrière-plan : on relance (`backgroundDrain.ts`).
     if (!win) return void backgroundDrain.reopen();
@@ -169,6 +172,10 @@ function main(): void {
   // Relance sur une autre plateforme d'affichage : ce processus ne fait plus rien.
   if (relaunchingForSession()) return;
   registerAppScheme();
+  // Avant `whenReady` : le lien qui a lancé l'app (macOS `open-url`, ligne de commande ailleurs).
+  listenForAppLinks(() => {
+    if (app.isReady() && !getMainWindow()) backgroundDrain.reopen();
+  });
   // Le recensement CoreAudio (jusqu'à ~2 s à froid) part dès le lancement, hors du fil principal :
   // il ne tombe plus sur le premier clic d'Octave (`audio/coreAudioScan.ts`).
   scanAudioComponents(process.platform as "darwin" | "win32" | "linux", (ms) => {
@@ -238,6 +245,7 @@ function main(): void {
       registerMediaWarmCommands(registry);
       registerLinuxSessionCommands(registry);
       registerPipCommands(registry);
+      registerAppLinkCommands(registry);
       // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
       // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
       // qu'elle répond, toute la section réapparaît et appelle les autres.

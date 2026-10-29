@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useSharedLinkSearch } from "@tentacle-tv/api-client";
 import { OctaveSearchBox } from "../search/OctaveSearchBox";
 import { parseSearchFilter } from "../search/SearchFilters";
 import type { SearchFilter } from "../search/searchLayout";
@@ -51,8 +52,16 @@ export function SearchView() {
   useEffect(() => {
     if (draft !== query) pause.note(draft);
   }, [draft, pause, query]);
-  const results = useRevealedResults(query);
-  const preparing = useDelayedFlag(results.preparing, PREPARING_VISIBLE_MS);
+  // Un lien Shazam collé : on cherche son titre, jamais le lien lui-même.
+  const goShared = useCallback((text: string, replace: boolean) => {
+    pause.cancel();
+    setDraft(text);
+    setParams({ q: text }, { replace });
+  }, [pause, setParams]);
+  const shared = useSharedLinkSearch({ query, draft, go: goShared, remember });
+  const searched = shared.isLink ? "" : query;
+  const results = useRevealedResults(searched);
+  const preparing = useDelayedFlag(results.preparing || shared.pending, PREPARING_VISIBLE_MS);
 
   const submit = useCallback(
     (text: string) => {
@@ -91,11 +100,17 @@ export function SearchView() {
         )}
       </div>
 
+      {shared.isLink && (
+        <p className="text-sm text-content-secondary" role="status">
+          {shared.failed ? t("search.sharedLinkFailed") : t("search.sharedLinkReading")}
+        </p>
+      )}
+
       {/* Avant la frappe : le « déjà écouté » et les recherches récentes, dans la page. */}
       {!query.trim() && <SearchHome recents={recents} onSearch={submit} onForget={forget} />}
 
-      {query.trim() && <SearchMoodResultsSlot query={query} onSearch={submit} />}
-      {query.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
+      {searched.trim() && <SearchMoodResultsSlot query={searched} onSearch={submit} />}
+      {searched.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
     </div>
   );
 }

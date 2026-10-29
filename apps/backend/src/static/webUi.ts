@@ -84,7 +84,7 @@ export function resetWebUiCache(): void {
   cached = null;
 }
 
-const ALWAYS_SERVED = ["/api/", "/tv/", "/.well-known/", "/tentacle-logo", "/avatars/", "/octave/share/"];
+const ALWAYS_SERVED = ["/api/", "/tv/", "/.well-known/", "/tentacle-logo", "/avatars/", "/octave/share/", "/octave/open/"];
 /** Chemins exacts, et non des préfixes : `/yt-embed.htmlx` tomberait sinon sur la page du web. */
 const ALWAYS_SERVED_FILES = ["/api", "/tv", "/yt-embed.html"];
 

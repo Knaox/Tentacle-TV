@@ -11,3 +11,5 @@ export * from "./octaveTabs";
 export * from "./octaveStay";
 export * from "./sharedImport";
 export * from "./sharedReleaseFiles";
+export * from "./sharedLinkReaders";
+export * from "./octaveOpenLink";

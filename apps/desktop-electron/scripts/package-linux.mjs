@@ -276,6 +276,9 @@ const results = await build({
     // repèrent les assets par leur extension, mais un nom pareil se retrouverait
     // tel quel sur la page de release.
     artifactName: "tentacle-tv_${version}_${arch}.${ext}",
+    // Le schéma des liens d'Octave (`tentacle://octave/…`) : `MimeType=x-scheme-handler/tentacle` et `%U` dans
+    // l'entrée de bureau ; le lien arrive en argument (src/main/appLinks.ts). Pas l'AppImage, qui n'installe rien.
+    protocols: [{ name: "Tentacle TV", schemes: ["tentacle"] }],
     linux: {
       executableName: EXECUTABLE_NAME,
       // Fait poser à Electron le même `app_id` Wayland / `WM_CLASS` X11 que le

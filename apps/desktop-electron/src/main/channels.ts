@@ -153,6 +153,9 @@ export const COMMANDS = [
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de
   // l'origine ne s'y pose pas de la même façon.
   "plugin_document_set",
+
+  // Liens `tentacle://octave/…` remis par le système (`appLinks.ts`)
+  "app_link_take",
 ] as const;
 
 /** Évènements que le processus principal peut pousser vers la page. */
@@ -166,6 +169,7 @@ export const EVENTS = [
   "msix-update-progress",
   "linux-update-progress",
   "audio://event",
+  "app-link",
 ] as const;
 
 /**

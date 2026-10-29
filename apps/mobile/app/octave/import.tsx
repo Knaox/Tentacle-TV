@@ -2,14 +2,14 @@ import { useEffect } from "react";
 import { Redirect, useLocalSearchParams } from "expo-router";
 import { arrivingShareLink, useMusicShareLinkImport } from "@tentacle-tv/api-client";
 import { recognizeReleaseUrl, recognizeTentacleShare } from "@tentacle-tv/shared/music";
-import { octavePaths, sharedAudioFiles, sharedImportLink } from "@tentacle-tv/shared/octave/mode";
+import { octavePaths, readSharedText, sharedAudioFiles, sharedImportLink } from "@tentacle-tv/shared/octave/mode";
 import { setOctaveMode } from "@/octave/mode/octaveModeStore";
 import { openPlaylistSheet } from "@/octave/playlists";
 import { openReleaseSheet } from "@/octave/releases";
 import { adoptSharedFiles } from "@/octave/releases/phoneReleaseFiles";
 
 /**
- * Octave — `tentacle://octave/import`, quatre arrivées :
+ * Octave — `tentacle://octave/import`, cinq arrivées :
  * - `?share=<lien>` : « Ouvrir dans l'app Tentacle » de la page d'un lien de playlist partagée (la même
  *   adresse que celle du web). La feuille d'import s'ouvre avec lui déjà collé ; rien ne part sans le geste
  *   « Importer ».
@@ -20,6 +20,9 @@ import { adoptSharedFiles } from "@/octave/releases/phoneReleaseFiles";
  *   sortie » s'ouvre et l'importe aussitôt.
  * - `?file=…` (répété) : des FICHIERS AUDIO partagés (`sharedReleaseFiles.ts`) : copiés dans le cache de l'app, ils
  *   arrivent dans la feuille « Importer une sortie », qui attend « Importer ».
+ * - `?shared=<texte>` avec un lien SHAZAM, ou la page d'ouverture d'un serveur (`/octave/open/…`, une playlist
+ *   partagée entre comptes) : le registre des lecteurs (`readSharedText`) mène à la recherche du titre
+ *   (`?q=`, que la recherche remplace par le titre nommé) ou à la page elle-même.
  * Dans tous les cas, l'app passe en mode Octave et s'ouvre sur la Bibliothèque. Un lien d'un autre Tentacle sans
  * le droit du partage (règle 15) : rien ne s'ouvre. Sans le point `releases` de l'extension, la feuille des sorties
  * ne se montre pas.
@@ -37,6 +40,12 @@ export default function OctaveImportRoute() {
   // Une page Bandcamp n'est jamais une playlist : elle va à l'import des sorties.
   const releaseUrl = !link && sharedText ? (recognizeReleaseUrl(sharedText)?.url ?? null) : null;
   const fileParams = JSON.stringify([params.file ?? null, params.fileName ?? null, params.fileType ?? null]);
+  // Registre des lecteurs : un titre à chercher, une page à ouvrir — l'adresse d'arrivée change, rien d'autre.
+  const read = sharedText && !link && !releaseUrl ? readSharedText(sharedText) : null;
+  const direct = read?.kind === "searchTrack" ? `${octavePaths.search}?q=${encodeURIComponent(sharedText as string)}` : read?.kind === "open" ? read.path : null;
+  useEffect(() => {
+    if (direct) setOctaveMode(true);
+  }, [direct]);
   useEffect(() => {
     if (!link) return;
     setOctaveMode(true);
@@ -56,5 +65,5 @@ export default function OctaveImportRoute() {
       if (adopted.length > 0) openReleaseSheet({ kind: "files", files: adopted });
     });
   }, [fileParams]);
-  return <Redirect href={octavePaths.library as never} />;
+  return <Redirect href={(direct ?? octavePaths.library) as never} />;
 }

@@ -12,7 +12,7 @@ import { Keyboard, ScrollView, View, type TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
-import { useKindResults, useOctaveSuggestions, useOwnedLists, useRevealedResults } from "@tentacle-tv/api-client";
+import { useKindResults, useOctaveSuggestions, useOwnedLists, useRevealedResults, useSharedLinkSearch } from "@tentacle-tv/api-client";
 import { isEmptyLayout, layoutSearch } from "@tentacle-tv/shared/octave";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
@@ -27,6 +27,7 @@ import { SearchAllView } from "./SearchAllView";
 import { SearchBar } from "./SearchBar";
 import { SearchHome } from "./SearchHome";
 import { SearchKindList } from "./SearchKindList";
+import { SharedLinkStatus } from "./SharedLinkStatus";
 import { SuggestionList } from "./SuggestionList";
 import { useSearchRoute } from "./useSearchRoute";
 import { AlbumWarmupProvider, useAlbumWarmupPage } from "../env/albumWarmupScope";
@@ -49,7 +50,15 @@ export function OctaveSearchScreen() {
   useEffect(() => setDraft(query), [query]);
 
   const { suggestions, recents, remember, forget } = useOctaveSuggestions(provider, typing ? draft : "", store);
-  const results = useRevealedResults(provider, query, { language: i18n.language, externalDefault: t("search.externalDefault"), preloadArtwork });
+  // Un lien Shazam (collé, ou arrivé par la feuille de partage) : on cherche son titre, jamais le lien.
+  const goShared = useCallback((text: string) => {
+    setTyping(false);
+    setDraft(text);
+    route(text);
+  }, [route]);
+  const shared = useSharedLinkSearch({ query, draft, go: goShared, remember });
+  const searched = shared.isLink ? "" : query;
+  const results = useRevealedResults(provider, searched, { language: i18n.language, externalDefault: t("search.externalDefault"), preloadArtwork });
   const owned = useOwnedLists(results.external);
   const data = results.library?.data ?? null;
   const shownQuery = results.library?.query ?? "";
@@ -83,7 +92,7 @@ export function OctaveSearchScreen() {
   const nothing = !!results.library && isEmptyLayout(layout) && !results.externalPending && (results.external?.complete ?? true);
   const bar = (
     <View style={{ paddingHorizontal: gutter, paddingTop: insets.top + 8, paddingBottom: 8 }}>
-      <SearchBar ref={input} value={draft} onChange={change} onSubmit={submit} onClear={clear} onFocus={() => setTyping(true)} preparing={!offline && results.preparing} />
+      <SearchBar ref={input} value={draft} onChange={change} onSubmit={submit} onClear={clear} onFocus={() => setTyping(true)} preparing={(!offline && results.preparing) || shared.pending} />
     </View>
   );
   const filters = !nothing && results.library ? <FilterChips value={filter} onChange={setFilter} gutter={gutter} /> : null;
@@ -95,6 +104,8 @@ export function OctaveSearchScreen() {
         <SuggestionList suggestions={suggestions} onPick={submit} onFill={change} onForget={forget} gutter={gutter} />
       </ScrollView>
     );
+  } else if (shared.isLink) {
+    body = <SharedLinkStatus failed={shared.failed} gutter={gutter} />;
   } else if (!query.trim()) {
     body = (
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }} {...warm.scroll}>

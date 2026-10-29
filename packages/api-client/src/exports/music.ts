@@ -37,6 +37,8 @@ export { runReleaseFiles, runReleaseLink, RELEASE_RETRY_DELAYS_MS, type ReleaseF
 export { ReleaseRequestError, toReleaseError, deleteImportedRelease } from "../music/releases/releaseRequests";
 export { RELEASE_ACCEPT, RELEASE_COVER_MAX_BYTES, RELEASE_DEFAULT_CHUNK_BYTES, isImportableAudio, isReleaseCover, isReleaseArchive, isReleaseLotFile, RELEASE_ARCHIVE_MIME_TYPES, pickReleaseLot, remainingChunks, releaseFraction, readReleaseRefusal, albumHintOf, releaseArrival, releaseArtForPixels, releaseFileCounts, importedLibraryState, RELEASE_LIBRARY_POLL_MS } from "../music/releases/releaseModel";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
+export { useSharedTrackSearch, sharedTrackSearchState, sharedTrackApi, sharedTrackKey, type SharedTrackSearch } from "../music/sharedLinks/useSharedTrackSearch";
+export { useSharedLinkSearch, sharedLinkSearchSteps } from "../music/sharedLinks/useSharedLinkSearch";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
 export { useOctaveAvailability, octaveAvailabilityOf, type OctaveAvailability, type OctaveAvailabilityInput } from "../music/useOctaveAvailability";
