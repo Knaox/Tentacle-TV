@@ -46,11 +46,13 @@ describe("modèle client de l'import de sorties", () => {
     expect(lot.files.map((x) => x.name)).toEqual(["Bastian Baker - TRUTH LIES IN BETWEEN.zip", "cover.png"]);
     expect(lot).toMatchObject({ audio: 1, covers: 1, ignored: 0 });
   });
-  it("le passage dans la bibliothèque : dedans, en route, ou rien (dossier non réglé)", () => {
-    const track = (availability: string) => ({ availability }) as never;
-    expect(importedLibraryState({ imported: true, jellyfinId: "jf1", tracks: [] })).toEqual({ kind: "library", jellyfinId: "jf1" });
-    expect(importedLibraryState({ imported: true, jellyfinId: null, tracks: [track("cache"), track("pending")] })).toEqual({ kind: "onTheWay" });
+  it("le passage dans la bibliothèque : par les TITRES (l'album garde jellyfinId nul), en route, ou rien", () => {
+    const track = (availability: string, jellyfinId: string | null = null, albumJf: string | null = null) => ({ availability, jellyfinId, album: { jellyfinId: albumJf } }) as never;
+    expect(importedLibraryState({ imported: true, jellyfinId: null, tracks: [track("library", "t1"), track("library", "t2", "al9")] })).toEqual({ kind: "library", albumId: "al9" });
+    expect(importedLibraryState({ imported: true, jellyfinId: null, tracks: [track("library", "t1"), track("library", "t2")] })).toEqual({ kind: "library", albumId: null });
+    expect(importedLibraryState({ imported: true, jellyfinId: null, tracks: [track("library", "t1"), track("pending")] })).toEqual({ kind: "onTheWay" });
     expect(importedLibraryState({ imported: true, jellyfinId: null, tracks: [track("cache")] })).toEqual({ kind: "none" });
     expect(importedLibraryState({ imported: undefined, jellyfinId: "jf1", tracks: [] })).toEqual({ kind: "none" });
   });
+
 });
