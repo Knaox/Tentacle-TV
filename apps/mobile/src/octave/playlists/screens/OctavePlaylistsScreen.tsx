@@ -1,128 +1,113 @@
 /**
  * Octave mobile — « Playlists » : « Titres likés » en tête, puis les playlists du compte (téléphone : des
  * rangées ; tablette : une grille de pochettes). « + » crée, « Importer » colle un lien (Spotify, Apple
- * Music, Deezer, ou le lien d'un ami sur SON Tentacle). Une playlist modifiable se gère au « ⋯ » ou à l'appui
- * maintenu. La liste suit les autres appareils en direct (`music:playlist`).
+ * Music, Deezer, ou le lien d'un ami sur SON Tentacle). « Vos favoris » en tête (celles d'une extension
+ * comprises), puis « Toutes les playlists », dans l'ordre personnel (socle partagé `usePlaylistShelf`) ;
+ * « ⋯ » et l'appui maintenu ouvrent la feuille d'actions partagée, « Réordonner » passe une section en rangées
+ * à poignée. La liste suit les autres appareils en direct (`music:playlist`, `music:shelves`).
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { Heart, ListMusic, MoreHorizontal, Plus } from "lucide-react-native";
-import { useMusicImport, useMusicPending, useMusicPlaylists } from "@tentacle-tv/api-client";
+import { ListMusic, Plus } from "lucide-react-native";
+import { useMusicImport, useMusicPending, useMusicPlaylists, useMusicShelvesCapability, usePlaylistShelf } from "@tentacle-tv/api-client";
 import { playlistTrackTotal } from "@tentacle-tv/shared/octave";
-import type { MusicPlaylist } from "@tentacle-tv/shared/music";
-import { typography } from "@/theme";
+import { shelfPlaylistKey, type MusicShelfPlaylist } from "@tentacle-tv/shared/music";
+import { typography, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
-import { OctaveLargeTitle, OctaveTopBar, PressableScale, useOctaveColors, useOctaveLayout, useOctavePageScroll } from "../../layout";
-import { LibraryPlaylistArtwork, OctavePagesHost, useOctavePagesProvider } from "../../pages";
+import { useOfflineMode } from "@/offline/useOfflineMode";
+import { OctaveLargeTitle, OctaveTopBar, useOctaveColors, useOctaveLayout, useOctavePageScroll } from "../../layout";
+import { OctavePagesHost, useOctavePagesProvider } from "../../pages";
 import { useOctaveNav } from "../../pages/env/nav";
+import { SectionTitle } from "../../pages/ui/Shelf";
+import { accentTextOf } from "../../pages/ui/pageStyle";
 import { EmptyState, ErrorState, PillButton, TrackRowsSkeleton } from "../../pages/ui/ViewStates";
+import { OfflineMissingState } from "../../offline/OfflinePageFallback";
+import { hasCollectionActions } from "../../collections/collectionEligibility";
+import { openCollectionSheet } from "../../collections/collectionSheetStore";
+import { ShelfReorderList } from "../../collections/reorder/ShelfReorderList";
+import { buildLibraryRows, type LibraryRow, type LibrarySectionId } from "../../pages/library/libraryRows";
+import { useReorderItemOf } from "../../pages/library/LibraryCard";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { GlassIconButton, GlassTextButton } from "./BarButtons";
-import { useOfflineMode } from "@/offline/useOfflineMode";
-import { OfflineMissingState } from "../../offline/OfflinePageFallback";
-import { SharedMark } from "../members/SharedMark";
+import { LikedCard, LikedRow, PlaylistEntryCard, PlaylistEntryRow } from "./PlaylistEntryViews";
 
-type Item = { kind: "liked" } | { kind: "playlist"; playlist: MusicPlaylist };
+type Row = { type: "liked"; key: string } | LibraryRow<MusicShelfPlaylist>;
+const LIKED: Row = { type: "liked", key: "liked" };
 
 export function OctavePlaylistsScreen() {
   const { t } = useTranslation("music");
   const { t: ti } = useTranslation("musicImport");
   const { t: tl } = useTranslation("musicLists");
+  const { t: tf } = useTranslation("musicFavorites");
   const colors = useOctaveColors();
+  const theme = useTheme();
   const layout = useOctaveLayout();
   const nav = useOctaveNav();
   const playlists = useMusicPlaylists();
+  const shelf = usePlaylistShelf(playlists.data);
+  const capable = useMusicShelvesCapability();
   const importable = useMusicImport(useOctavePagesProvider()).available;
   const offline = useOfflineMode();
   // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
   const pending = useMusicPending(useOctavePagesProvider()).data.items;
-  const totalOf = useCallback((p: MusicPlaylist) => playlistTrackTotal(p.trackCount, pending, p.jellyfinId), [pending]);
-  const { scrollY, scrollProps } = useOctavePageScroll();
+  const subtitleOf = useCallback(
+    (e: MusicShelfPlaylist) => (e.kind === "library" ? t("count.tracks", { count: playlistTrackTotal(e.playlist.trackCount, pending, e.playlist.jellyfinId) }) : e.playlist.owner),
+    [pending, t],
+  );
+  const pageScroll = useOctavePageScroll();
+  const { scrollY, scrollProps } = pageScroll;
   const columns = layout.isTablet ? layout.columns(180) : 1;
-  const items = useMemo<Item[]>(() => [{ kind: "liked" }, ...(playlists.data ?? []).map((playlist) => ({ kind: "playlist" as const, playlist }))], [playlists.data]);
-  const manage = useCallback((playlist: MusicPlaylist) => {
-    // Une playlist qu'on m'a partagée : ses personnes (et « Quitter ») ; la mienne : la gérer.
-    const member = playlist.sharing?.role === "member";
-    if (!playlist.editable && !member) return;
-    haptic("longPress");
-    openPlaylistSheet(member ? { kind: "members", playlist } : { kind: "manage", playlist });
-  }, []);
+  const [reordering, setReordering] = useState<LibrarySectionId | null>(null);
+  useEffect(() => setReordering(null), [offline]);
+  const { favorites, rest } = shelf;
+  const canReorder = (section: LibrarySectionId) => {
+    const list = section === "favorites" ? favorites : rest;
+    return !offline && list.length > 1 && shelf.ordered(shelfPlaylistKey(list[0]!));
+  };
+  const rows = useMemo<Row[]>(() => [LIKED, ...buildLibraryRows({ favorites, rest, columns, keyOf: shelfPlaylistKey })], [favorites, rest, columns]);
+  const reorderItemOf = useReorderItemOf();
 
-  const renderRow = useCallback(
-    ({ item }: { item: Item }) => {
-      if (item.kind === "liked") {
-        return (
-          <Pressable onPress={nav.liked} accessibilityRole="button" style={({ pressed }) => [styles.row, { paddingHorizontal: layout.gutter, backgroundColor: pressed ? colors.pressed : "transparent" }]}>
-            <LinearGradient colors={colors.gradient as unknown as [string, string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.likedTile}>
-              <Heart size={24} color="#fff" fill="#fff" />
-            </LinearGradient>
-            <View style={styles.rowText}>
-              <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text }]}>{t("liked.title")}</Text>
-              <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("liked.kicker")}</Text>
-            </View>
-          </Pressable>
-        );
-      }
-      const p = item.playlist;
+  const open = (e: MusicShelfPlaylist) => (e.kind === "library" ? nav.playlist(e.playlist.jellyfinId) : nav.externalPlaylist(e.playlist.key));
+  const menuOf = (e: MusicShelfPlaylist, section: LibrarySectionId) =>
+    hasCollectionActions({ section: "playlists", item: e }, capable)
+      ? () => {
+          haptic("longPress");
+          openCollectionSheet({ subject: { section: "playlists", item: e }, shelf, onReorder: canReorder(section) ? () => setReordering(section) : undefined });
+        }
+      : undefined;
+
+  const renderRow = ({ item: row }: { item: Row }) => {
+    if (row.type === "liked") {
+      if (columns === 1) return <LikedRow gutter={layout.gutter} onOpen={nav.liked} />;
       return (
-        <Pressable
-          onPress={() => nav.playlist(p.jellyfinId)}
-          onLongPress={() => manage(p)}
-          delayLongPress={350}
-          accessibilityRole="button"
-          accessibilityHint={t("count.tracks", { count: totalOf(p) })}
-          style={({ pressed }) => [styles.row, { paddingHorizontal: layout.gutter, backgroundColor: pressed ? colors.pressed : "transparent" }]}
-        >
-          <LibraryPlaylistArtwork playlist={p} size={56} radius={8} />
-          <View style={styles.rowText}>
-            <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text }]}>{p.name}</Text>
-            <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(p) })}</Text>
-          </View>
-          <SharedMark playlist={p} />
-          {p.editable || p.sharing?.role === "member" ? (
-            <Pressable onPress={() => manage(p)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("playlistManage.more", { name: p.name })} style={styles.more}>
-              <MoreHorizontal size={20} color={colors.textSecondary} />
-            </Pressable>
-          ) : null}
+        <View style={[styles.cards, { gap: layout.gap, paddingHorizontal: layout.gutter, marginBottom: layout.gap }]}>
+          <LikedCard width={layout.itemWidth(columns)} onOpen={nav.liked} />
+        </View>
+      );
+    }
+    if (row.type === "title") {
+      const reorder = canReorder(row.section) ? (
+        <Pressable onPress={() => setReordering(row.section)} hitSlop={8} accessibilityRole="button" style={styles.link}>
+          <Text style={[typography.bodyBold, { color: accentTextOf(theme) }]}>{tf("actions.reorder")}</Text>
         </Pressable>
-      );
-    },
-    [colors, layout.gutter, manage, nav, t, totalOf],
-  );
-
-  const renderCard = useCallback(
-    ({ item }: { item: Item }) => {
-      const width = layout.itemWidth(columns);
-      const isLiked = item.kind === "liked";
-      const name = isLiked ? t("liked.title") : item.playlist.name;
-      return (
-        <PressableScale
-          onPress={() => (isLiked ? nav.liked() : nav.playlist(item.playlist.jellyfinId))}
-          onLongPress={isLiked ? undefined : () => manage(item.playlist)}
-          accessibilityLabel={name}
-          style={[styles.card, { width }]}
-        >
-          {isLiked ? (
-            <LinearGradient colors={colors.gradient as unknown as [string, string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.cardTile, { width, height: width }]}>
-              <Heart size={Math.round(width * 0.3)} color="#fff" fill="#fff" />
-            </LinearGradient>
-          ) : (
-            <View>
-              <LibraryPlaylistArtwork playlist={item.playlist} size={width} radius={12} />
-              <SharedMark playlist={item.playlist} overlay />
-            </View>
-          )}
-          <Text numberOfLines={1} style={[typography.bodyBold, { color: colors.text, marginTop: 8 }]}>{name}</Text>
-          {!isLiked ? <Text numberOfLines={1} style={[typography.caption, { color: colors.textTertiary }]}>{t("count.tracks", { count: totalOf(item.playlist) })}</Text> : null}
-        </PressableScale>
-      );
-    },
-    [colors, columns, layout, manage, nav, t, totalOf],
-  );
+      ) : undefined;
+      return <SectionTitle title={row.section === "favorites" ? tf("shelfTitle") : tf("restTitle.playlists")} action={reorder} />;
+    }
+    if (columns === 1) {
+      const e = row.items[0]!;
+      return <PlaylistEntryRow entry={e} subtitle={subtitleOf(e)} onOpen={() => open(e)} onMenu={menuOf(e, row.section)} gutter={layout.gutter} />;
+    }
+    return (
+      <View style={[styles.cards, { gap: layout.gap, paddingHorizontal: layout.gutter, marginBottom: layout.gap }]}>
+        {row.items.map((e) => (
+          <PlaylistEntryCard key={shelfPlaylistKey(e)} entry={e} subtitle={subtitleOf(e)} onOpen={() => open(e)} onMenu={menuOf(e, row.section)} width={layout.itemWidth(columns)} />
+        ))}
+      </View>
+    );
+  };
 
   const actions = (
     <View style={styles.actions}>
@@ -132,14 +117,33 @@ export function OctavePlaylistsScreen() {
     </View>
   );
 
+  if (reordering) {
+    const list = reordering === "favorites" ? favorites : rest;
+    return (
+      <View style={[styles.page, { backgroundColor: colors.ink }]}>
+        <ShelfReorderList
+          items={list.map((e) => reorderItemOf({ kind: "playlist", entry: e }, shelfPlaylistKey(e)))}
+          title={reordering === "favorites" ? tf("shelfTitle") : tf("restTitle.playlists")}
+          gutter={layout.gutter}
+          scroll={pageScroll}
+          onMove={shelf.move}
+          onDone={() => setReordering(null)}
+        />
+        <OctaveTopBar scrollY={scrollY} title={t("nav.playlists")} />
+        <OctavePagesHost />
+      </View>
+    );
+  }
+
+  const count = favorites.length + rest.length;
   // Hors ligne sans liste gardée : le dire, jamais une attente ni un « Réessayer ».
-  const empty = offline && (playlists.data ?? []).length === 0 ? (
+  const empty = offline && count === 0 ? (
     <OfflineMissingState />
   ) : playlists.isPending ? (
     <TrackRowsSkeleton count={6} gutter={layout.gutter} />
   ) : playlists.isError ? (
     <ErrorState onRetry={() => void playlists.refetch()} />
-  ) : (playlists.data ?? []).length === 0 ? (
+  ) : count === 0 ? (
     <EmptyState icon={ListMusic} title={t("views.playlistsEmptyTitle")} hint={t("views.playlistsEmptyHint")} action={<PillButton label={tl("newTitle")} icon={Plus} onPress={() => openPlaylistSheet({ kind: "create" })} />} />
   ) : null;
 
@@ -148,11 +152,9 @@ export function OctavePlaylistsScreen() {
       <Animated.FlatList
         key={`cols-${columns}`}
         {...scrollProps}
-        data={items}
-        numColumns={columns}
-        keyExtractor={(item) => (item.kind === "liked" ? "liked" : item.playlist.jellyfinId)}
-        renderItem={columns > 1 ? renderCard : renderRow}
-        columnWrapperStyle={columns > 1 ? { gap: layout.gap, paddingHorizontal: layout.gutter, marginBottom: layout.gap } : undefined}
+        data={rows}
+        keyExtractor={(row) => row.key}
+        renderItem={renderRow}
         ListHeaderComponent={<OctaveLargeTitle title={t("nav.playlists")} scrollY={scrollY} />}
         ListFooterComponent={empty}
         showsVerticalScrollIndicator={false}
@@ -167,11 +169,7 @@ export function OctavePlaylistsScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  row: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: 14 },
-  rowText: { flex: 1, minWidth: 0, gap: 2 },
-  likedTile: { width: 56, height: 56, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  more: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -10 },
   actions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  card: {},
-  cardTile: { borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  cards: { flexDirection: "row" },
+  link: { minHeight: 44, justifyContent: "center" },
 });

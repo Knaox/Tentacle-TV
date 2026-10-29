@@ -25,7 +25,7 @@ import { useOctaveNav } from "../env/nav";
 import { useDeviceStore } from "../env/pagesEnv";
 import { SectionTitle, ShelfSkeleton } from "../ui/Shelf";
 import { EmptyState, ErrorState } from "../ui/ViewStates";
-import { usePageMetrics } from "../ui/pageStyle";
+import { accentTextOf, usePageMetrics } from "../ui/pageStyle";
 import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
 import { LibraryPlaylistActions } from "./LibraryPlaylistActions";
 import { ImportedShelf, ReleaseEntryButton } from "../../releases";
@@ -47,7 +47,7 @@ function ReorderLink({ onPress }: { onPress: () => void }) {
   const theme = useTheme();
   return (
     <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" style={styles.reorderLink}>
-      <Text style={[typography.bodyBold, { color: theme.colors.brand.accentLight }]}>{t("actions.reorder")}</Text>
+      <Text style={[typography.bodyBold, { color: accentTextOf(theme) }]}>{t("actions.reorder")}</Text>
     </Pressable>
   );
 }
