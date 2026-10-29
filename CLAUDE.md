@@ -1432,7 +1432,13 @@ Un titre gardé hors ligne va au bout application quittée ou téléphone verrou
   jamais une pause qui attend le premier plan.
 - **Android : service de premier plan gardé au balayage, et tâche headless
   `TentacleOfflineTransfers`** tant que le moteur s'occupe (sans elle, RN gèle tous les
-  minuteurs en arrière-plan).
+  minuteurs en arrière-plan) — « s'occupe » = `onHeld` (`engineHold.ts`) : en vol OU une
+  relance programmée, jamais `onBusy` seul (une playlist d'Octave qui attend l'extension n'a
+  rien en vol). Bureau : la fin des transferts fenêtre fermée tient sur `awaitingServer`.
+- **La musique d'Octave n'a pas `serverPrepare`** (son `source_path` dit d'où tirer) : un titre
+  d'extension qui se prépare répond 503 + `Retry-After`, et c'est le SERVEUR qui réveille l'iPhone
+  à l'heure dite (`services/offlinePrepare/extensionWaitWake.ts`, même push `offline:prepared`) ;
+  la fin des transferts remis réveille aussi la file (`ios/SessionWake.swift`).
 
 ## Coding Standards
 
