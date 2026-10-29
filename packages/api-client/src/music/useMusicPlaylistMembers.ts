@@ -116,22 +116,29 @@ export function useMusicShareCandidates(enabled = true) {
   return { candidates: query.data ?? null, loading: available && enabled && query.isPending, failed: query.isError };
 }
 
-/** Ce qu'une playlist permet à CE compte, partage compris (sans la capacité : la règle d'avant, `editable`). */
+/**
+ * Ce qu'une playlist permet à CE compte, partage compris — PUR. Sans la capacité, le partage est ignoré : la règle
+ * d'avant (`editable`), aucun badge, aucune personne.
+ */
+export function playlistSharingRules(playlist: Pick<MusicPlaylist, "editable" | "sharing"> | null | undefined, available: boolean, me: string) {
+  const sharing = available ? playlist?.sharing : undefined;
+  const view = { editable: playlist?.editable === true, sharing };
+  return {
+    sharing: sharing ?? null,
+    /** Les autres personnes qui y ont accès, propriétaire en tête (la pile d'avatars). */
+    people: sharing ? playlistPeople(sharing, me) : [],
+    isShared: isSharedPlaylist(view),
+    isMember: sharing?.role === "member",
+    canAdd: canAddToPlaylist(view),
+    canRemove: canRemoveFromPlaylist(view),
+  };
+}
+
+/** `playlistSharingRules` pour le compte de l'appareil, sur la capacité déclarée par son serveur. */
 export function usePlaylistSharingRules(playlist: Pick<MusicPlaylist, "editable" | "sharing"> | null | undefined) {
   const available = useMusicPlaylistMembersAvailable();
-  const editable = playlist?.editable === true;
-  const sharing = available ? playlist?.sharing : undefined;
   const me = useUserId() ?? "";
-  return useMemo(() => {
-    const view = { editable, sharing };
-    return {
-      sharing: sharing ?? null,
-      /** Les autres personnes qui y ont accès, propriétaire en tête (la pile d'avatars). */
-      people: sharing ? playlistPeople(sharing, me) : [],
-      isShared: isSharedPlaylist(view),
-      isMember: sharing?.role === "member",
-      canAdd: canAddToPlaylist(view),
-      canRemove: canRemoveFromPlaylist(view),
-    };
-  }, [editable, me, sharing]);
+  const editable = playlist?.editable;
+  const sharing = playlist?.sharing;
+  return useMemo(() => playlistSharingRules({ editable: editable === true, sharing }, available, me), [available, editable, me, sharing]);
 }

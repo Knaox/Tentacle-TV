@@ -31,7 +31,7 @@ export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music
 export { useWholeLiked } from "../music/lists/useWholeLiked";
 // Octave — partager une playlist par un lien (capacité `music.playlistShare`, droit « Partage public »).
 export { useMusicPlaylistShare, useMusicPlaylistShareAvailable, useMusicShareLinkImport, playlistShareShown, musicShareApi, musicShareKey } from "../music/useMusicPlaylistShare";
-export { useMusicPlaylistMembers, useMusicPlaylistMembersAvailable, useMusicShareCandidates, usePlaylistSharingRules, musicMembersApi, musicMembersKey, type MembersBusy } from "../music/useMusicPlaylistMembers";
+export { useMusicPlaylistMembers, useMusicPlaylistMembersAvailable, useMusicShareCandidates, usePlaylistSharingRules, playlistSharingRules, musicMembersApi, musicMembersKey, type MembersBusy } from "../music/useMusicPlaylistMembers";
 export { classifyPasted, importFraction, arrivingShareLink, type PastedImport } from "../music/import/importEntry";
 // Octave — les pages gardées sur l'appareil, communes au web et au mobile (le stockage est un port).
 export * from "../music/octaveCache";
