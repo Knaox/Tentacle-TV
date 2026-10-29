@@ -30,6 +30,7 @@ import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { useMobilePlaylistRemoval } from "../sheets/useMobilePlaylistManage";
 import { GlassIconButton } from "./BarButtons";
 import { ListPage } from "./ListPage";
+import { SharedLine } from "../members/SharedLine";
 
 export function OctavePlaylistScreen({ id }: { id: string }) {
   const { t } = useTranslation("music");
@@ -37,7 +38,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const player = usePagesPlayer();
   const nav = useOctaveNav();
   const { gutter } = usePageMetrics();
-  const { playlist, natural, order, editable, loading } = usePlaylistData(id);
+  const { playlist, natural, order, editable, rules, loading } = usePlaylistData(id);
   const data = playlist.data;
   const target = useMemo(() => (data ? { jellyfinId: id, name: data.name } : null), [data, id]);
   const removeRows = useMobilePlaylistRemoval(target);
@@ -49,6 +50,8 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   // Modifier, gérer : le serveur seul le sait faire — hors ligne, la playlist se lit, elle ne se modifie pas.
   const offline = useOfflineMode();
   const canEdit = editable && !offline;
+  // Partagée : retirer suit le droit du compte (le serveur le tient) ; un membre a « ⋯ » pour voir et quitter.
+  const canRemove = rules.canRemove && !offline;
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
 
   // Hors ligne, la page gardée (son dernier affichage en ligne) se montre ; sans elle, la playlist gardée sur l'appareil.
@@ -62,7 +65,12 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
         title={data?.name ?? ""}
         artworkUrl={data?.artworkUrl ?? null}
         scrollY={scrollY}
-        meta={<MetaLine parts={[loading ? null : meta]} />}
+        meta={
+          <>
+            <MetaLine parts={[loading ? null : meta]} />
+            {data ? <SharedLine playlist={data} /> : null}
+          </>
+        }
         canPlay={tracks.length > 0}
         // La lecture suit l'ordre AFFICHÉ (trié, cherché) : « Lecture » joue ce qu'on voit.
         onPlay={() => playFrom(player, tracks, 0, contextId)}
@@ -78,14 +86,14 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
     <EmptyState
       icon={ListMusic}
       title={t("playlist.empty")}
-      hint={editable ? t("views.playlistEmptyHint") : undefined}
+      hint={rules.canAdd ? t("views.playlistEmptyHint") : undefined}
       action={<PillButton label={t("views.findMusic")} icon={Search} onPress={() => nav.search()} />}
     />
   );
 
   const actions =
-    data && canEdit ? (
-      <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: "manage", playlist: data })} />
+    data && !offline && (canEdit || rules.isMember) ? (
+      <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: canEdit ? "manage" : "members", playlist: data })} />
     ) : null;
 
   return (
@@ -97,7 +105,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
       order={order}
       loading={loading}
       empty={empty}
-      onRemove={canEdit ? onRemove : undefined}
+      onRemove={canRemove ? onRemove : undefined}
       actions={actions}
     />
   );
