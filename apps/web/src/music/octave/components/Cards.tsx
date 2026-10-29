@@ -7,7 +7,8 @@
  * dans le coin haut gauche (`ownership` : en entier, ou « En partie ») —
  * jamais au centre de l'image, le bouton lecture garde le bas droit. Un album qui ne se LIT pas
  * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » au même coin, et le clic ouvre sa
- * boîte (aimer, ajouter à une playlist) au lieu de sa vue.
+ * boîte (aimer, ajouter à une playlist) au lieu de sa vue. Une sortie IMPORTÉE par le compte porte « Importé »
+ * au même coin (`ImportedBadge`).
  */
 
 import { memo, useState } from "react";
@@ -28,6 +29,7 @@ import { CARD_GRID_CLASS } from "./cardGrid";
 import { CollectionSwell } from "../motion/NowSwell";
 import { PlaylistArtwork, playlistCoverUrls } from "./PlaylistArtwork";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { ImportedBadge } from "../releases/ImportedBadge";
 import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 import { usePendingMusic } from "../pending/usePendingMusic";
 
@@ -92,6 +94,7 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
         <Artwork url={album.artworkUrl} label={album.title} radius="art" className={`h-full w-full shadow-[var(--oc-shadow-art)] ${unavailable ? "opacity-50 grayscale" : ""}`} />
         {unavailable && <UnavailableBadge />}
         {ownership && <OwnershipBadge ownership={ownership} />}
+        {album.imported && !unavailable && !ownership && <ImportedBadge variant="overlay" />}
         <CollectionSwell contextId={target ? `album:${target}` : null} />
         {album.jellyfinId && <PlayOverlay refOf={{ kind: "album", id: album.jellyfinId }} label={t("track.play", { title: album.title })} />}
       </div>
@@ -106,7 +109,8 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
       </div>
     </>
   );
-  if (unavailable) {
+  // Une sortie importée sans écoute publique : grisée, mais sa vue s'ouvre (« Voir sur Bandcamp », ses titres).
+  if (unavailable && !album.imported) {
     return (
       <button type="button" className={`${cardClass} cursor-pointer text-left`} aria-label={t("unavailableAlbum.cardLabel", { title: album.title })} onClick={() => openUnavailableAlbum(album)}>
         {content}

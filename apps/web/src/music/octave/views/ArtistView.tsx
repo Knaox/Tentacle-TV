@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { AlbumCard, CardGrid, Shelf } from "../components/Cards";
 import { CollectionHeader } from "../components/CollectionHeader";
+import { ImportedBadge } from "../releases/ImportedBadge";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useArtistEntity } from "../data/useEntityQueries";
@@ -67,7 +68,12 @@ export function ArtistView() {
         title={data.name}
         artworkUrl={data.imageUrl}
         round
-        meta={releases > 0 ? <span>{t("views.releases", { count: releases })}</span> : <span />}
+        meta={
+          <>
+            {releases > 0 ? <span>{t("views.releases", { count: releases })}</span> : <span />}
+            {data.imported && <ImportedBadge variant="inline" />}
+          </>
+        }
         canPlay={top.length > 0}
         onPress={() => top[0] && player.prefetch([top[0]], "press")}
         onPlay={() => player.playList(top, 0, contextId)}

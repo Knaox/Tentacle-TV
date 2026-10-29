@@ -27,6 +27,7 @@ import { EmptyState, ErrorState } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { LibraryFilterBar, LibrarySortControl } from "./LibraryFilterBar";
 import { LibraryPlaylistActions } from "./LibraryPlaylistActions";
+import { ImportedShelf, ReleaseEntryButton } from "../../releases";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
 import { useFirstEnter } from "../../layout/enterMotion";
 import { useOfflineMode } from "@/offline/useOfflineMode";
@@ -99,10 +100,18 @@ export function OctaveLibraryScreen() {
         <Text accessibilityRole="header" style={[typography.hero, styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
           {t("library.title")}
         </Text>
-        {tab === "albums" ? <LibrarySortControl sort={sort} onSort={setSort} /> : tab === "playlists" && !offline ? <LibraryPlaylistActions /> : null}
+        {tab === "albums" ? (
+          <>
+            {!offline ? <ReleaseEntryButton /> : null}
+            <LibrarySortControl sort={sort} onSort={setSort} />
+          </>
+        ) : tab === "playlists" && !offline ? (
+          <LibraryPlaylistActions />
+        ) : null}
       </View>
       <LikedEntry />
       <LibraryFilterBar tab={tab} onTab={setTab} />
+      {tab === "albums" && !offline ? <ImportedShelf inset={gutter} /> : null}
     </View>
   );
   const empty = items.length === 0 && offline ? (

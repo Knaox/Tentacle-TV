@@ -29,6 +29,8 @@ import { usePageMetrics } from "../ui/pageStyle";
 import { AlbumNotes } from "./AlbumNotes";
 import { CollectionHeader, MetaLine } from "./CollectionHeader";
 import { PageTopBar } from "./PageTopBar";
+import { ImportedAlbumMeta } from "../../releases/ImportedAlbumMeta";
+import { useImportedLibraryFollow } from "../../releases/useImportedLibraryFollow";
 import { useCountAndDuration } from "./useCountAndDuration";
 import { playFrom } from "../env/playFrom";
 import { OfflinePageFallback } from "../../offline/OfflinePageFallback";
@@ -59,6 +61,8 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
   useEffect(() => {
     if (ownership.libraryAlbumId) router.replace(octavePaths.album(ownership.libraryAlbumId) as never);
   }, [ownership.libraryAlbumId, router]);
+  // Une sortie importée entrée dans la bibliothèque Jellyfin : sa page à elle ; en route : relue (useImportedLibraryFollow).
+  useImportedLibraryFollow(album.data, album.refetch);
   const rows = useMemo<Row[]>(() => {
     const out: Row[] = [];
     tracks.forEach((track, index) => {
@@ -100,9 +104,12 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
           onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
           extra={preview ? undefined : <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />}
           meta={
-            <MetaLine
-              parts={[data.artists.map((a) => a.name).join(", "), year, !preview && meta, !preview && owned > 0 && t("availability.albumCoverage", { count: owned, total: tracks.length })]}
-            />
+            <>
+              <MetaLine
+                parts={[data.artists.map((a) => a.name).join(", "), year, !preview && meta, !preview && owned > 0 && t("availability.albumCoverage", { count: owned, total: tracks.length })]}
+              />
+              {data.imported ? <ImportedAlbumMeta sourceUrl={data.sourceUrl ?? null} /> : null}
+            </>
           }
         />
       ) : (

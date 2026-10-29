@@ -51,7 +51,9 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const theme = useTheme();
   const { t } = useTranslation("music");
   const liked = useLiked(track.key, track.favorite);
-  const playable = useTrackPlayable()(track.key);
+  // Un titre que la source n'offre pas à l'écoute (`unavailable`, ex. Bandcamp sans écoute publique) : grisé.
+  const locked = track.unavailable != null;
+  const playable = useTrackPlayable()(track.key) && !locked;
   const keptCover = useKeptCover(track.key);
   const sheet = useCallback(() => {
     playHaptic("longPress");
@@ -105,7 +107,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
           <TrackStateMark track={track} size={11} />
           {liked ? <Heart size={11} color={accent} fill={accent} accessibilityLabel={t("track.unlike")} /> : null}
           <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
-            {artists}
+            {locked ? `${artists} · ${track.unavailable === "notPublic" ? t("notPublic", { ns: "musicReleases" }) : t("unavailableAlbum.badge")}` : artists}
           </Text>
         </View>
       </View>

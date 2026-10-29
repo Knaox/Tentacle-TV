@@ -100,12 +100,16 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
 export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect, handle = null }: TrackRowProps) {
   const { t } = useTranslation("music");
   const stage = useOctaveGlassStage();
-  const onPlay = () => onPlayIndex(index);
+  // Un titre que la source n'offre pas à l'écoute (`unavailable`, ex. Bandcamp sans écoute publique) : grisé, il ne se lit pas.
+  const locked = track.unavailable != null;
+  const onPlay = () => {
+    if (!locked) onPlayIndex(index);
+  };
   const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
   const onRemove = rowKey !== undefined && onRemoveRow ? () => onRemoveRow(rowKey) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
-  const muted = track.availability === "pending" || failed;
+  const muted = track.availability === "pending" || failed || locked;
   const compact = useCompactRows();
   // Au doigt, l'appui long choisit la rangée (et ouvre la sélection) ; un clic simple lit, toujours.
   const longPress = useLongPress(compact && onSelect ? () => select("toggle") : undefined);
@@ -119,6 +123,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       role="row"
       tabIndex={0}
       aria-current={current ? "true" : undefined}
+      aria-disabled={locked || undefined}
       aria-selected={onSelect ? selected : undefined}
       // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic simple coche aussi (il ne lit plus).
       onClick={(e) => {
@@ -140,7 +145,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 ${locked ? "cursor-default opacity-60" : "cursor-pointer"} select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
       } ${columns}`}
     >
@@ -172,6 +177,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
               )}
               {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
               {failed && note && <span className="text-status-error-fg"> · {note}</span>}
+              {locked && <span> · {track.unavailable === "notPublic" ? t("notPublic", { ns: "musicReleases" }) : t("unavailableAlbum.badge")}</span>}
             </span>
           </div>
         </div>

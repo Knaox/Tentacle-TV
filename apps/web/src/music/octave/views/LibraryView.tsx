@@ -17,6 +17,8 @@ import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates"
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
 import { LoadMore, flattenPages } from "./LoadMore";
 import { useOctaveGlassStage } from "../glass/glassStage";
+import { ImportedShelf } from "../releases/ImportedShelf";
+import { ReleaseEntryButton } from "../releases/ReleaseEntryButton";
 import { LIBRARY_ALBUM_SORT_KEY, LIBRARY_ALBUM_SORTS, LIBRARY_TABS, parseAlbumSort, parseLibraryTab, type LibraryTab } from "@tentacle-tv/shared/octave";
 
 // Onglets, tris et clé du tri retenu : partagés avec le mobile (`@tentacle-tv/shared/octave` › libraryModel).
@@ -51,6 +53,7 @@ function Albums() {
   const list = flattenPages(albums.data?.pages);
   return (
     <div className="flex flex-col gap-4">
+      <ImportedShelf />
       <div className="flex items-center gap-2 px-2">
         <label htmlFor="octave-album-sort" className="text-sm text-content-tertiary">
           {t("library.sort")}
@@ -139,7 +142,10 @@ export function LibraryView() {
   };
   return (
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
-      <h1 className="px-2 oc-display text-3xl text-content-primary">{t("library.title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-2">
+        <h1 className="oc-display text-3xl text-content-primary">{t("library.title")}</h1>
+        <ReleaseEntryButton />
+      </div>
       <div role="tablist" aria-label={t("library.title")} className="flex gap-2 px-2" onKeyDown={onKeyDown}>
         {TABS.map((id) => (
           <button

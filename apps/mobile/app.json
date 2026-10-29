@@ -28,7 +28,19 @@
           "NSAllowsArbitraryLoads": true
         },
         "NSCameraUsageDescription": "Tentacle TV does not use the camera. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called.",
-        "NSMicrophoneUsageDescription": "Tentacle TV does not use the microphone. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called."
+        "NSMicrophoneUsageDescription": "Tentacle TV does not use the microphone. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called.",
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Audio",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "public.audio",
+              "public.zip-archive"
+            ]
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": false
       }
     },
     "android": {
