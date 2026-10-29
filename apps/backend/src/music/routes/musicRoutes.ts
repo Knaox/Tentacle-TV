@@ -16,6 +16,7 @@ import { clampLimit, parseCursor } from "../view/viewContext";
 import { musicMediaRoutes } from "./musicMediaRoutes";
 import { musicUserRoutes } from "./musicUserRoutes";
 import { musicListRoutes } from "./musicListRoutes";
+import { musicShelfRoutes } from "../libraryShelves/shelfRoutes";
 import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { musicImportRoutes } from "../playlistImport/importRoutes";
 import { musicSourceOrderRoutes } from "../playlistSource/sourceRoutes";
@@ -89,4 +90,6 @@ export const musicRoutes: FastifyPluginAsync = async (app) => {
   musicPlaylistMemberRoutes(app);
   // Encapsulé : le garde de `music.listOrder` ne touche que ses routes.
   await app.register(async (scope) => musicListRoutes(scope));
+  // Idem pour `music.libraryFavorites`.
+  await app.register(async (scope) => musicShelfRoutes(scope));
 };

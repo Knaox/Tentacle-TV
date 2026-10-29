@@ -310,6 +310,12 @@ export const SERVER_CAPABILITIES = {
    *  serveur (`/api/music/playlists/:id/members`) ; chacun garde SON ordre ; un membre peut la quitter. Sans elle :
    *  ni « Partager avec… », ni badge, ni playlist d'un autre compte. Rien à voir avec `music.playlistShare`. */
   "music.playlistMembers": "1.40.0",
+  /** Les FAVORIS de la bibliothèque d'Octave (`musicLibraryShelves.ts`) : un album, un artiste, une playlist en
+   *  favori (le favori Jellyfin ; gardé par Tentacle pour une playlist reçue et tout élément hors bibliothèque),
+   *  servis en tête de chaque rubrique (`/api/music/library/shelves`), et l'ORDRE PERSONNEL de chaque rubrique
+   *  (`/api/music/library/order/:section` : glisser, « Mettre en haut »). Sans elle : ni cœur sur une carte, ni
+   *  « Vos favoris », la bibliothèque dans l'ordre d'avant. */
+  "music.libraryFavorites": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

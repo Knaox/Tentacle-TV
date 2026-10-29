@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { KeepCollectionButton } from "../offline/KeepCollectionButton";
+import { ShelfHeartButton } from "../collections/ShelfHeartButton";
 import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
@@ -59,7 +60,12 @@ export function ExternalPlaylistView() {
         onPress={() => tracks[0] && player.prefetch([tracks[0]], "press")}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
-        extra={<KeepCollectionButton kind="playlist" collectionKey={id} title={data.title} subtitle={data.owner ?? null} tracks={tracks} />}
+        extra={
+          <>
+            <ShelfHeartButton subject={{ section: "playlists", item: { kind: "external", playlist: data } }} />
+            <KeepCollectionButton kind="playlist" collectionKey={id} title={data.title} subtitle={data.owner ?? null} tracks={tracks} />
+          </>
+        }
       />
       <div className="px-2 md:px-6">
         {rows.length === 0 ? (

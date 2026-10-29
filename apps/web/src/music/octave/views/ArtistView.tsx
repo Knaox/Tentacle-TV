@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { AlbumCard, CardGrid, Shelf } from "../components/Cards";
 import { CollectionHeader } from "../components/CollectionHeader";
+import { ShelfHeartButton } from "../collections/ShelfHeartButton";
 import { ImportedBadge } from "../releases/ImportedBadge";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
@@ -78,6 +79,7 @@ export function ArtistView() {
         onPress={() => top[0] && player.prefetch([top[0]], "press")}
         onPlay={() => player.playList(top, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, top, contextId)}
+        extra={<ShelfHeartButton subject={{ section: "artists", item: data }} />}
       />
       <div className="flex flex-col gap-10 px-2 md:px-6">
         {top.length > 0 && (

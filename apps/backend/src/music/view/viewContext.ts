@@ -52,8 +52,8 @@ export async function albumsOf(view: UserView, rows: readonly IndexRow[]): Promi
   return rows.filter((r) => r.kind === "album").map((r) => toAlbum(r, ctx));
 }
 
-export function artistsOf(rows: readonly IndexRow[]): MusicArtist[] {
-  return rows.filter((r) => r.kind === "artist").map(toArtist);
+export function artistsOf(rows: readonly IndexRow[], view?: UserView): MusicArtist[] {
+  return rows.filter((r) => r.kind === "artist").map((r) => toArtist(r, view?.favorites));
 }
 
 /** Des identifiants de l'index → ceux que ce compte voit (sans lire les lignes). */

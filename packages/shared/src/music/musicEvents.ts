@@ -7,6 +7,7 @@
  * `LibraryChanged`, `UserDataChanged`) — jamais d'un relevé.
  */
 
+import type { MusicShelfSection } from "./musicLibraryShelves";
 import type { MusicListKey } from "./musicListOrder";
 import type { Mbid, MusicTrack } from "./musicTypes";
 
@@ -18,6 +19,7 @@ export const MUSIC_EVENT_TYPES = [
   "music:pending",
   "music:provider",
   "music:listPrefs",
+  "music:shelves",
 ] as const;
 
 export type MusicEventType = (typeof MUSIC_EVENT_TYPES)[number];
@@ -77,6 +79,15 @@ export interface MusicListPrefsEvent {
   key: MusicListKey;
 }
 
+/**
+ * Les favoris ou l'ordre personnel d'une rubrique de la bibliothèque ont changé (un autre appareil du compte, ou un
+ * favori hors bibliothèque) : relire `/api/music/library/shelves`. Émis par le CŒUR (`musicLibraryShelves.ts`).
+ */
+export interface MusicShelvesEvent {
+  type: "music:shelves";
+  section: MusicShelfSection;
+}
+
 export type MusicEvent =
   | MusicLibraryEvent
   | MusicUserDataEvent
@@ -84,7 +95,8 @@ export type MusicEvent =
   | MusicResolvedEvent
   | MusicPendingEvent
   | MusicProviderEvent
-  | MusicListPrefsEvent;
+  | MusicListPrefsEvent
+  | MusicShelvesEvent;
 
 /** Les seuls types qu'une EXTENSION peut émettre par l'API d'hôte (le reste est refusé). */
 export const PLUGIN_EMITTABLE_MUSIC_EVENTS = ["music:resolved", "music:pending"] as const;

@@ -29,7 +29,8 @@ import { makeStatsOf } from "@tentacle-tv/shared/octave";
 import { useListOrder } from "@tentacle-tv/api-client";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
-import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { PlaylistMenuButton, playlistSubject } from "../playlists/PlaylistMenu";
+import { ShelfHeartButton } from "../collections/ShelfHeartButton";
 import { SharedPlaylistLine } from "../playlists/members/SharedPlaylistLine";
 
 export function PlaylistView() {
@@ -99,6 +100,7 @@ export function PlaylistView() {
         description={data.description ?? null}
         extra={
           <>
+            <ShelfHeartButton subject={playlistSubject(data)} />
             <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
             {/* Gérer la playlist : seulement si le serveur dit que ce compte peut la modifier. */}
             <PlaylistMenuButton playlist={data} open={menuOpen} onOpenChange={setMenuOpen} className="h-12 w-12" />

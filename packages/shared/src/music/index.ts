@@ -11,6 +11,7 @@ export * from "./musicMoods";
 export * from "./musicImport";
 export * from "./musicReleases";
 export * from "./musicListOrder";
+export * from "./musicLibraryShelves";
 export * from "./musicSourceOrder";
 export * from "./musicShare";
 export * from "./musicPlaylistMembers";

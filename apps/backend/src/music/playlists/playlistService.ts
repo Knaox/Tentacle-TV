@@ -11,6 +11,7 @@ import { tellPlaylistChanged } from "../events/musicLiveEvents";
 import { forgetUserPlaylists, playlistEntries } from "./playlistJellyfin";
 import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
 import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
+import { forgetShelfPlaylist } from "../libraryShelves/shelfFavoriteStore";
 import { forgetPlaylistSource } from "../playlistSource/sourceStore";
 import { forgetPlaylistShares } from "../playlistShare/shareStore";
 import { accessAllows, isShared, playlistAccess, type PlaylistGesture } from "../playlistMembers/playlistAccess";
@@ -133,6 +134,7 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
     const removed = await jfWrite(`/Items/${q(playlistId)}`, "DELETE");
     if (!removed.ok) return { ok: false, failure: "unavailable" };
     await forgetPlaylistOrder(playlistId).catch(() => undefined);
+    await forgetShelfPlaylist(playlistId).catch(() => undefined);
     await forgetPlaylistSource(playlistId).catch(() => undefined);
     // Le lien de partage d'une playlist supprimée ne sert plus rien : il part avec elle.
     await forgetPlaylistShares(playlistId).catch(() => undefined);
