@@ -53,9 +53,11 @@ interface TrackCollectionPageProps {
   extra?: (tracks: readonly MusicTrack[]) => ReactElement | null;
   /** Hors ligne sans la page : ses clés de collection gardée possibles (`offlinePageRule.ts`). */
   keptKeys?: readonly string[];
+  /** À droite de la barre du haut (le cœur d'une playlist d'extension). */
+  barRight?: ReactElement | null;
 }
 
-export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer, extra, keptKeys }: TrackCollectionPageProps) {
+export function TrackCollectionPage({ head, tracks: raw, contextId, pending, failed, notFound, onRetry, footer, extra, keptKeys, barRight }: TrackCollectionPageProps) {
   const { t } = useTranslation("music");
   const insets = useSafeAreaInsets();
   const player = usePagesPlayer();
@@ -117,7 +119,7 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
         removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
         accessibilityLabel={head?.title ?? t("common.playAll")}
       />
-      <PageTopBar title={head?.title ?? ""} scrollY={scrollY} threshold={320} />
+      <PageTopBar title={head?.title ?? ""} scrollY={scrollY} threshold={320} right={barRight} />
       <OctavePagesHost />
     </View>
   );

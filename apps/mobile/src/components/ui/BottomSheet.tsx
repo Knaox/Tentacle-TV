@@ -1,17 +1,16 @@
 import { useRef, useEffect, useCallback, useState, type ReactNode } from "react";
-import { AccessibilityInfo, Animated, Modal, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Modal, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "./GlassSurface";
+import { SHEET_EXIT_GUARD_MS, SHEET_EXIT_MS } from "./sheet/sheetExit";
 import { holdPresentedModal, type PresentedModalHold } from "./modalGate";
 import { useSheetGestures } from "./sheet/useSheetGestures";
 import { useSheetKeyboard } from "./sheet/useSheetKeyboard";
 import { SheetScrollContext } from "./sheet/sheetScroll";
 import type { SheetSnap } from "./sheet/sheetSnap";
 
-/** Au-delà, la sortie est tenue pour finie : un ressort interrompu n'appelle jamais son rappel. */
-const EXIT_GUARD_MS = 600;
 const HANDLE_H = 34; // paddingTop(14) + paddingBottom(16) + trait(4)
 const SUPPORTED_ORIENTATIONS = ["portrait", "landscape"] as const;
 
@@ -86,27 +85,33 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
     } as Animated.SpringAnimationConfig).start(onDone);
   }, [translateY]);
 
-  // La fermeture DOIT aboutir : une animation interrompue (re-rendu, seconde
-  // animation) n'appelle jamais son rappel, et la feuille resterait montée —
-  // voile invisible compris. D'où le garde-fou temporel, et le verrou qui
-  // empêche de fermer deux fois.
+  // Fermée DEPUIS la feuille : une sortie COURTE, puis le parent ; la retombée de `visible` démonte
+  // aussitôt, sans seconde sortie (`sheet/sheetExit.ts` : la modale invisible avalait ~0,8 s de gestes).
+  const playExit = useCallback((done: () => void) => {
+    Animated.parallel([
+      Animated.timing(translateY, { toValue: ref.current.maxH, duration: SHEET_EXIT_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(overlayOpacity, { toValue: 0, duration: SHEET_EXIT_MS, useNativeDriver: true }),
+    ]).start(() => done());
+  }, [translateY, overlayOpacity]);
+  const closingRef = useRef(false);
+  const exitedRef = useRef(false);
   const dismiss = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     setIsExpanded(false);
     ref.current.currentSnap = 0;
     let done = false;
     const finish = (): void => {
       if (done) return;
       done = true;
+      exitedRef.current = true;
+      // Un parent qui garderait la feuille ouverte : elle redevient fermable.
+      closingRef.current = false;
       ref.current.onClose();
     };
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: ref.current.maxH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
-      } as Animated.SpringAnimationConfig),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]).start(finish);
-    setTimeout(finish, EXIT_GUARD_MS);
-  }, [translateY, overlayOpacity]);
+    playExit(finish);
+    setTimeout(finish, SHEET_EXIT_GUARD_MS);
+  }, [playExit]);
 
   const prevVisibleRef = useRef(false);
   // Chaque changement de `visible` ouvre une génération : la sortie d'une
@@ -121,6 +126,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
     prevVisibleRef.current = visible;
     const generation = ++generationRef.current;
 
+    if (visible) exitedRef.current = false;
     if (visible && !wasVisible) {
       setMounted(true);
       ref.current.currentSnap = 0;
@@ -143,19 +149,18 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
         gone = true;
         setMounted(false);
       };
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: maxH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
-        } as Animated.SpringAnimationConfig),
-        Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-      ]).start(unmount);
-      // Même garde-fou que `dismiss` : une animation interrompue ne rappelle
-      // jamais, et la modale resterait montée — voile invisible compris.
-      const guard = setTimeout(unmount, EXIT_GUARD_MS);
+      // Déjà sortie par `dismiss` : rien à rejouer, la modale part tout de suite.
+      if (exitedRef.current) {
+        unmount();
+        return undefined;
+      }
+      playExit(unmount);
+      // Garde-fou : une animation interrompue ne rappelle jamais — la modale resterait montée, voile invisible compris.
+      const guard = setTimeout(unmount, SHEET_EXIT_GUARD_MS);
       return () => clearTimeout(guard);
     }
     return undefined;
-  }, [visible, translateY, overlayOpacity, minH, maxH, animateTo]);
+  }, [visible, translateY, overlayOpacity, minH, maxH, animateTo, playExit]);
 
   // Déclarée au portier tant qu'elle est à l'écran : rien d'autre ne se
   // présentera par-dessus, et ce qui attend s'ouvrira à sa fermeture.

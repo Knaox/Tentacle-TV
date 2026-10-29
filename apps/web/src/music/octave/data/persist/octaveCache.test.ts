@@ -36,6 +36,9 @@ describe("politique du cache gardé d'Octave", () => {
       expect(anchoredKey(JSON.stringify(key))).toBe(true);
     }
     for (const key of [["music", "home"], ["music", "album", "a"], ["music", "list-prefs", "album:a"]]) expect(anchoredKey(JSON.stringify(key))).toBe(false);
+    // Les favoris de la bibliothèque et l'ordre de ses rubriques : « Vos favoris » hors ligne (lot fv).
+    expect(persistKindOf(["music", "shelves"])).toBe("library");
+    expect(anchoredKey(JSON.stringify(["music", "shelves"]))).toBe(true);
     const old = 1_000 + 365 * 24 * 3_600_000;
     expect(expired(entry(["music", "playlist", "p"], { kind: "library" }), old)).toBe(false);
     expect(expired(entry(["music", "album", "a"], { kind: "library" }), old)).toBe(true);

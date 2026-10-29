@@ -98,6 +98,7 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
         reorder={order.reorder}
         editing={editing}
         onRemove={editing ? onRemove : undefined}
+        onSwipeRemove={editing ? undefined : onRemove}
       />
       <PageTopBar title={title} scrollY={scrollY} threshold={320} />
       {canEdit || actions ? (

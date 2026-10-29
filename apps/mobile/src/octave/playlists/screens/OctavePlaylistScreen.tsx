@@ -3,7 +3,8 @@
  * durée, Lecture, Aléatoire), puis ses titres — chercher, filtrer, trier, et, en mode « Modifier » seulement,
  * glisser un titre à sa place par sa poignée (l'ordre glissé devient celui de la playlist Jellyfin ; les attentes gardent la leur dans la
  * préférence du compte). Une playlist modifiable a « Modifier » (le « – » de chaque titre, avec « Annuler »
- * dans l'avis) et « ⋯ » (renommer, dupliquer, partager, supprimer). Tout se voit en direct sur les autres
+ * dans l'avis), le cœur (favori) et « ⋯ » : la feuille d'actions partagée (favori, renommer, dupliquer,
+ * partager, supprimer ou quitter). Tout se voit en direct sur les autres
  * appareils du compte (`music:playlist`, `music:listPrefs`).
  */
 
@@ -27,11 +28,12 @@ import { useCountAndDuration } from "../../pages/entity/useCountAndDuration";
 import { EmptyState, ErrorState, PillButton } from "../../pages/ui/ViewStates";
 import { usePageMetrics } from "../../pages/ui/pageStyle";
 import { usePlaylistData } from "../data/useListData";
-import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { useMobilePlaylistRemoval } from "../sheets/useMobilePlaylistManage";
 import { GlassIconButton } from "./BarButtons";
 import { ListPage } from "./ListPage";
 import { SharedLine } from "../members/SharedLine";
+import { CollectionFavoriteButton } from "../../collections/CollectionFavoriteButton";
+import { useCollectionLongPress } from "../../collections/useCollectionLongPress";
 
 export function OctavePlaylistScreen({ id }: { id: string }) {
   const { t } = useTranslation("music");
@@ -39,7 +41,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const player = usePagesPlayer();
   const nav = useOctaveNav();
   const { gutter } = usePageMetrics();
-  const { playlist, natural, order, editable, rules, loading } = usePlaylistData(id);
+  const { playlist, natural, order, rules, loading } = usePlaylistData(id);
   const data = playlist.data;
   const target = useMemo(() => (data ? { jellyfinId: id, name: data.name } : null), [data, id]);
   const removeRows = useMobilePlaylistRemoval(target);
@@ -50,9 +52,10 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const page = useOfflinePage(playlist, [libraryPlaylistKey(id)]);
   // Modifier, gérer : le serveur seul le sait faire — hors ligne, la playlist se lit, elle ne se modifie pas.
   const offline = useOfflineMode();
-  const canEdit = editable && !offline;
   // Partagée : retirer suit le droit du compte (le serveur le tient) ; un membre a « ⋯ » pour voir et quitter.
   const canRemove = rules.canRemove && !offline;
+  const subject = useMemo(() => (data ? { section: "playlists" as const, item: { kind: "library" as const, playlist: data } } : null), [data]);
+  const sheet = useCollectionLongPress(subject);
   const meta = useCountAndDuration(natural.length, natural.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
 
   // Hors ligne, la page gardée (son dernier affichage en ligne) se montre ; sans elle, la playlist gardée sur l'appareil.
@@ -93,10 +96,13 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
     />
   );
 
-  const actions =
-    data && !offline && (canEdit || rules.isMember) ? (
-      <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={() => openPlaylistSheet({ kind: canEdit ? "manage" : "members", playlist: data })} />
-    ) : null;
+  // Le cœur, puis « ⋯ » : la feuille d'actions partagée (favori, modifier, partager, supprimer ou quitter).
+  const actions = data ? (
+    <>
+      <CollectionFavoriteButton subject={subject!} />
+      {!offline && sheet ? <GlassIconButton icon={MoreHorizontal} label={t("playlistManage.more", { name: data.name })} onPress={sheet} /> : null}
+    </>
+  ) : null;
 
   return (
     <ListPage

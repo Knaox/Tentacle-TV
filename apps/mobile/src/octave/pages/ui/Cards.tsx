@@ -3,14 +3,15 @@
  * artistes ou année), artiste (portrait rond, nom), playlist (de la
  * bibliothèque ou d'une extension). Un toucher ouvre la page (un album hors
  * bibliothèque s'affiche aussitôt avec ce que la carte montrait :
- * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut. Un album qui ne se LIT pas
+ * `rememberAlbumPreview`) ; un appui maintenu ouvre sa feuille d'actions (favori, ordre de la rubrique,
+ * gestion d'une playlist : `collections/`), quand elle en a. Un album qui ne se LIT pas
  * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » sur sa pochette, et le toucher ouvre sa
  * feuille (aimer, ajouter à une playlist) au lieu de sa page. Une sortie IMPORTÉE porte « Importé » au coin. Un album
  * d'ailleurs que la bibliothèque a (`ownership`, comme le bureau) porte « Dans la bibliothèque » ou « En partie » — et
  * un album en partie présent n'est jamais grisé.
  */
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CloudOff, Library } from "lucide-react-native";
@@ -33,6 +34,14 @@ export function useOpenWarmup() {
   return (kind: "album" | "artist", target: string) => void prefetchExternalEntity(qc, provider, kind, target);
 }
 import { LibraryPlaylistArtwork } from "./PlaylistArtwork";
+import { useCollectionLongPress } from "../../collections/useCollectionLongPress";
+import type { CollectionSheetShelf } from "../../collections/collectionSheetStore";
+
+/** Une carte montrée dans une rubrique de la bibliothèque : l'ordre s'y règle (« Mettre en haut », « Réordonner »). */
+export interface CardShelfContext {
+  shelf?: CollectionSheetShelf;
+  onReorder?: () => void;
+}
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
@@ -82,8 +91,11 @@ function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
   );
 }
 
-export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ownership = null }: { album: MusicAlbum; width: number; onLongPress?: () => void; ownership?: AlbumOwnership | null }) {
+export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ownership = null, menu }: { album: MusicAlbum; width: number; onLongPress?: () => void; ownership?: AlbumOwnership | null; menu?: CardShelfContext }) {
   const nav = useOctaveNav();
+  // Appui maintenu : la feuille d'actions (favori, ordre) — un geste explicite de l'appelant passe avant.
+  const subject = useMemo(() => ({ section: "albums" as const, item: album }), [album]);
+  const sheet = useCollectionLongPress(subject, menu?.shelf, menu?.onReorder);
   const { t } = useTranslation("music");
   const unavailable = isUnavailableAlbum(album, ownership);
   const warm = useOpenWarmup();
@@ -113,7 +125,7 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ow
     nav.album(album);
   };
   return (
-    <PressableCard onPress={open} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
+    <PressableCard onPress={open} onLongPress={onLongPress ?? sheet} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
       <View style={unavailable ? styles.dimmed : undefined}>
         <Artwork url={album.artworkUrl} size={width} radius={10} />
         {album.imported ? <ImportedBadge variant="overlay" /> : ownership ? <OwnershipBadge ownership={ownership} /> : null}
@@ -123,8 +135,10 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ow
   );
 });
 
-export const ArtistCard = memo(function ArtistCard({ artist, width }: { artist: MusicArtist; width: number }) {
+export const ArtistCard = memo(function ArtistCard({ artist, width, menu }: { artist: MusicArtist; width: number; menu?: CardShelfContext }) {
   const nav = useOctaveNav();
+  const subject = useMemo(() => ({ section: "artists" as const, item: artist }), [artist]);
+  const sheet = useCollectionLongPress(subject, menu?.shelf, menu?.onReorder);
   const { t } = useTranslation("music");
   const warm = useOpenWarmup();
   const open = () => {
@@ -133,30 +147,38 @@ export const ArtistCard = memo(function ArtistCard({ artist, width }: { artist: 
     nav.artist(artist);
   };
   return (
-    <PressableCard onPress={open} style={{ width }} accessibilityRole="button" accessibilityLabel={artist.name}>
+    <PressableCard onPress={open} onLongPress={sheet} style={{ width }} accessibilityRole="button" accessibilityLabel={artist.name}>
       <Artwork url={artist.imageUrl} size={width} round kind="artist" />
       <Caption title={artist.name} subtitle={t("search.kindArtist")} center />
     </PressableCard>
   );
 });
 
-export const PlaylistCard = memo(function PlaylistCard({ playlist, width }: { playlist: MusicPlaylist; width: number }) {
+export const PlaylistCard = memo(function PlaylistCard({ playlist, width, menu }: { playlist: MusicPlaylist; width: number; menu?: CardShelfContext }) {
   const nav = useOctaveNav();
+  const subject = useMemo(() => ({ section: "playlists" as const, item: { kind: "library" as const, playlist } }), [playlist]);
+  const sheet = useCollectionLongPress(subject, menu?.shelf, menu?.onReorder);
   const { t } = useTranslation("music");
   // Les ajouts hors bibliothèque en attente comptent, comme sur la page de la playlist.
   const count = playlistTrackTotal(playlist.trackCount, useMusicPending(useOctavePagesProvider()).data.items, playlist.jellyfinId);
   return (
-    <PressableCard onPress={() => nav.playlist(playlist.jellyfinId)} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.name}>
+    <PressableCard onPress={() => nav.playlist(playlist.jellyfinId)} onLongPress={sheet} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.name}>
       <LibraryPlaylistArtwork playlist={playlist} size={width} radius={10} />
       <Caption title={playlist.name} subtitle={t("count.tracks", { count })} />
     </PressableCard>
   );
 });
 
-export const ExternalPlaylistCard = memo(function ExternalPlaylistCard({ playlist, width }: { playlist: ExternalMusicPlaylist; width: number }) {
+export const ExternalPlaylistCard = memo(function ExternalPlaylistCard({ playlist, width, menu }: { playlist: ExternalMusicPlaylist; width: number; menu?: CardShelfContext }) {
   const nav = useOctaveNav();
+  // L'instantané gardé avec le favori : la forme de la carte, sans ses titres.
+  const subject = useMemo(
+    () => ({ section: "playlists" as const, item: { kind: "external" as const, playlist: { key: playlist.key, external: playlist.external, title: playlist.title, owner: playlist.owner, trackCount: playlist.trackCount, artworkUrl: playlist.artworkUrl } } }),
+    [playlist],
+  );
+  const sheet = useCollectionLongPress(subject, menu?.shelf, menu?.onReorder);
   return (
-    <PressableCard onPress={() => nav.externalPlaylist(playlist.key)} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.title}>
+    <PressableCard onPress={() => nav.externalPlaylist(playlist.key)} onLongPress={sheet} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.title}>
       <Artwork url={playlist.artworkUrl} size={width} radius={10} />
       <Caption title={playlist.title} subtitle={playlist.owner} />
     </PressableCard>

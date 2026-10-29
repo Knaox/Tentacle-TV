@@ -32,11 +32,13 @@ interface Props {
   editing: boolean;
   /** Mode « Modifier » d'une playlist modifiable : le « – » de chaque rangée. */
   onRemove?: (row: ListRow) => void;
+  /** Hors « Modifier », là où on peut retirer : le balayage vers la gauche d'une rangée la retire. */
+  onSwipeRemove?: (row: ListRow) => void;
 }
 
 const AnimatedList = Animated.createAnimatedComponent(FlatList<ListRow>);
 
-export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove }: Props) {
+export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove, onSwipeRemove }: Props) {
   const { t } = useTranslation("musicLists");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
@@ -82,6 +84,10 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
     const row = rows[index];
     if (row) onRemove?.(row);
   }, [onRemove, rows]);
+  const swipeRemove = useCallback((index: number) => {
+    const row = rows[index];
+    if (row) onSwipeRemove?.(row);
+  }, [onSwipeRemove, rows]);
 
   const renderItem = useCallback<ListRenderItem<ListRow>>(
     ({ item, index }) => (
@@ -101,9 +107,10 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         onStep={step}
         onRemove={onRemove ? remove : undefined}
         editing={editing}
+        onSwipeRemove={onSwipeRemove && !editing ? swipeRemove : undefined}
       />
     ),
-    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, play, remove, step, tracks],
+    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, onSwipeRemove, play, remove, step, swipeRemove, tracks],
   );
 
   return (

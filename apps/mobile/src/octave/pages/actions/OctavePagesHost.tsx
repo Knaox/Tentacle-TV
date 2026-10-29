@@ -1,12 +1,13 @@
 /**
- * Octave mobile — l'HÔTE des pages : la feuille d'actions d'un titre, celle d'un
- * album qui ne se lit pas, le choix de playlist, la confirmation d'un doublon, les avis, et l'enregistreur du
+ * Octave mobile — l'HÔTE des pages : la feuille d'actions d'un titre, celle d'un album, d'un artiste ou
+ * d'une playlist (appui maintenu), celle d'un album qui ne se lit pas, le choix de playlist, la confirmation d'un doublon, les avis, et l'enregistreur du
  * « déjà écouté » (chaque titre dont le premier son est sorti, la règle du
  * bureau `recordSearchListensTo`). La coquille le monte une
  * fois (m1) ; chaque écran des pages le monte aussi, et seul le premier monté
  * rend (`useSingleHost`) — jamais deux feuilles l'une sur l'autre.
  */
 
+import { CollectionActionSheet } from "../../collections/CollectionActionSheet";
 import { DuplicateSheet } from "./DuplicateSheet";
 import { NoticeHost } from "./NoticeHost";
 import { PlaylistChooserSheet } from "./PlaylistChooserSheet";
@@ -32,6 +33,7 @@ export function OctavePagesHost({ primary = false }: { primary?: boolean }) {
   return (
     <>
       <TrackActionSheet />
+      <CollectionActionSheet />
       <UnavailableAlbumSheet />
       <PlaylistChooserSheet />
       <DuplicateSheet />
