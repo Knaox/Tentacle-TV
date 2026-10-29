@@ -197,7 +197,11 @@ jobs:
           # Clé Klipy niveau application (GIFs du chat WT) — secret facultatif :
           # absent, les GIFs sont simplement désactivés dans l'image produite.
           # Le mode webos ne reconstruit pas le serveur : la clé n'y sert pas.
-          build-args: ${{ inputs.mode == 'server' && format('KLIPY_API_KEY={0}', secrets.KLIPY_API_KEY) || '' }}
+          # APK_REFRESH change à chaque run ET à chaque relance : la couche des
+          # paquets Alpine ne sort jamais du cache (voir le Dockerfile).
+          build-args: |
+            ${{ inputs.mode == 'server' && format('KLIPY_API_KEY={0}', secrets.KLIPY_API_KEY) || '' }}
+            ${{ inputs.mode == 'server' && format('APK_REFRESH={0}-{1}', github.run_id, github.run_attempt) || '' }}
           # Le cache ne sert qu'au build du serveur. Le mode webos ne l'écrit
           # pas : sous la même portée, il remplacerait celui du serveur.
           cache-from: ${{ inputs.mode == 'server' && format('type=gha,scope={0}', matrix.arch) || '' }}

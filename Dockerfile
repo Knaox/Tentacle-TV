@@ -193,7 +193,16 @@ ENV NODE_ENV=production \
 # serveur après la préparation du volume. tini : un vrai PID 1, qui transmet
 # les signaux et récolte les processus orphelins. Plus de ffmpeg ni de fpcalc :
 # ils ne servaient qu'à l'analyse audio, retirée.
-RUN apk add --no-cache python3 su-exec tini
+# L'index Alpine est RELU à chaque livraison (APK_REFRESH, posé par
+# server-image.yml), et les paquets de la base mis à jour : sans lui, le cache
+# de buildx (type=gha) resservait la couche d'un ancien build — python3 3.14.8
+# et sa CVE CRITICAL arrêtaient la livraison 1.40.0 à la garde Trivy (29/10)
+# alors qu'Alpine servait déjà le correctif. Un build local, sans l'argument,
+# garde son cache.
+ARG APK_REFRESH=
+RUN echo "index Alpine relu : ${APK_REFRESH:-build local}" \
+  && apk upgrade --no-cache \
+  && apk add --no-cache python3 su-exec tini
 # Ni npm, ni npx, ni corepack, ni yarn à l'exécution : le serveur n'en lance
 # aucun (Prisma est généré au build, les extensions s'ouvrent par tar). Ils ne
 # feraient qu'offrir un installeur de paquets à qui prendrait la main dans le
