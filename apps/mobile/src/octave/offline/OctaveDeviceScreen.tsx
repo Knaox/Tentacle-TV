@@ -31,9 +31,11 @@ import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { useKeptMusic } from "./useKeptMusic";
 import { DeviceEmpty } from "./DeviceEmpty";
+import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import { clipsOffscreenCells } from "../layout/listClipping";
 
 const DEVICE_CONTEXT = "device";
+const NO_KEPT: readonly KeptMusicTrack[] = [];
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<MusicTrack>);
 
 /** Une taille lisible, ou rien quand le disque ne répond pas. */
@@ -95,7 +97,7 @@ export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps
             keyExtractor={(c) => c.key}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: layout.gap }}
-            renderItem={({ item }) => <DeviceCollectionCard collection={item} width={cardWidth} onOpen={openCollection} />}
+            renderItem={({ item }) => <DeviceCollectionCard collection={item} width={cardWidth} kept={kept.tracks ?? NO_KEPT} offline={offline} onOpen={openCollection} />}
           />
         </OctaveSection>
       )}

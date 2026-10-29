@@ -10,17 +10,14 @@
  */
 
 import { memo } from "react";
-import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { playlistCoverLayout } from "@tentacle-tv/shared/music";
 import { ARTWORK_RADIUS, Artwork, type ArtworkRadius } from "./Artwork";
 
 /** La taille de la pochette d'en-tête (`CollectionHeader`). */
 export const HEADER_ARTWORK_CLASS = "h-44 w-44 shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56";
 
-/** Les images à montrer pour une playlist : sa mosaïque, sinon son image (peut-être aucune). */
-export function playlistCoverUrls(playlist: Pick<MusicPlaylist, "mosaic" | "artworkUrl">): string[] {
-  if (playlist.mosaic && playlist.mosaic.length > 0) return playlist.mosaic;
-  return playlist.artworkUrl ? [playlist.artworkUrl] : [];
-}
+/** La règle est partagée avec le mobile (`playlistCover.ts`) : la même jaquette partout. */
+export { playlistCoverUrls } from "@tentacle-tv/shared/music";
 
 interface PlaylistArtworkProps {
   /** `null` : une case dont l'image n'est pas là (hors ligne) — la teinte du repli, jamais une case vide. */
@@ -35,11 +32,12 @@ interface PlaylistArtworkProps {
 }
 
 export const PlaylistArtwork = memo(function PlaylistArtwork({ urls, label, className = "", radius = "art", thumb = false, eager = false }: PlaylistArtworkProps) {
-  if (urls.length < 4) return <Artwork url={urls[0] ?? null} label={label} radius={radius} className={className} thumb={thumb} eager={eager} />;
+  const layout = playlistCoverLayout(urls);
+  if (layout.kind === "single") return <Artwork url={layout.url} label={label} radius={radius} className={className} thumb={thumb} eager={eager} />;
   return (
     // Des carreaux en flex, pas une grille à rangées : le client des téléviseurs LG (Chrome 53) compile ce fichier.
     <div aria-hidden className={`relative flex shrink-0 flex-wrap overflow-hidden bg-fill-soft ${className}`} style={{ borderRadius: ARTWORK_RADIUS[radius] }}>
-      {urls.slice(0, 4).map((url, cell) => (
+      {layout.cells.map((url, cell) => (
         <Artwork key={`${cell}:${url ?? ""}`} url={url} label={label} radius="none" thumb={thumb} eager={eager} className="h-1/2 w-1/2" />
       ))}
     </div>

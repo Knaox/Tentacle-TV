@@ -5,15 +5,17 @@
  * bibliothèque s'affiche aussitôt avec ce que la carte montrait :
  * `rememberAlbumPreview`) ; un appui maintenu lit la collection, quand on peut. Un album qui ne se LIT pas
  * (`isUnavailableAlbum` : absent de YouTube) est GRISÉ, dit « Pas lisible » sur sa pochette, et le toucher ouvre sa
- * feuille (aimer, ajouter à une playlist) au lieu de sa page. Une sortie IMPORTÉE porte « Importé » au coin.
+ * feuille (aimer, ajouter à une playlist) au lieu de sa page. Une sortie IMPORTÉE porte « Importé » au coin. Un album
+ * d'ailleurs que la bibliothèque a (`ownership`, comme le bureau) porte « Dans la bibliothèque » ou « En partie » — et
+ * un album en partie présent n'est jamais grisé.
  */
 
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { CloudOff } from "lucide-react-native";
+import { CloudOff, Library } from "lucide-react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { openUnavailableAlbum, prefetchExternalEntity, useMusicPending } from "@tentacle-tv/api-client";
+import { openUnavailableAlbum, prefetchExternalEntity, useMusicPending, type AlbumOwnership } from "@tentacle-tv/api-client";
 import { isUnavailableAlbum, playlistTrackTotal, rememberAlbumPreview } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
@@ -30,6 +32,7 @@ export function useOpenWarmup() {
   const provider = useOctavePagesProvider();
   return (kind: "album" | "artist", target: string) => void prefetchExternalEntity(qc, provider, kind, target);
 }
+import { LibraryPlaylistArtwork } from "./PlaylistArtwork";
 
 const artistsOf = (album: MusicAlbum) => album.artists.map((a) => a.name).join(", ");
 
@@ -63,10 +66,26 @@ function UnavailableBadge() {
   );
 }
 
-export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: { album: MusicAlbum; width: number; onLongPress?: () => void }) {
+/** La pastille « dans la bibliothèque » (bureau : `OwnershipBadge`) : icône ET mot, jamais la seule couleur. */
+function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
+  const { t } = useTranslation("music");
+  const theme = useTheme();
+  return (
+    <View style={styles.badge} pointerEvents="none" accessibilityLabel={t(ownership === "full" ? "availability.albumFull" : "availability.albumPartial")}>
+      <Library size={12} color={theme.colors.status.success} />
+      {ownership === "partial" ? (
+        <Text style={[typography.caption, styles.badgeText]} numberOfLines={1}>
+          {t("availability.partlyShort")}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress, ownership = null }: { album: MusicAlbum; width: number; onLongPress?: () => void; ownership?: AlbumOwnership | null }) {
   const nav = useOctaveNav();
   const { t } = useTranslation("music");
-  const unavailable = isUnavailableAlbum(album);
+  const unavailable = isUnavailableAlbum(album, ownership);
   const warm = useOpenWarmup();
   const subtitle = artistsOf(album) || (album.year ? String(album.year) : null);
   // Une sortie importée sans écoute publique : grisée, mais sa page s'ouvre (ses titres, « Voir sur Bandcamp »).
@@ -97,7 +116,7 @@ export const AlbumCard = memo(function AlbumCard({ album, width, onLongPress }: 
     <PressableCard onPress={open} onLongPress={onLongPress} style={{ width }} accessibilityRole="button" accessibilityLabel={`${album.title}, ${subtitle ?? ""}`}>
       <View style={unavailable ? styles.dimmed : undefined}>
         <Artwork url={album.artworkUrl} size={width} radius={10} />
-        {album.imported ? <ImportedBadge variant="overlay" /> : null}
+        {album.imported ? <ImportedBadge variant="overlay" /> : ownership ? <OwnershipBadge ownership={ownership} /> : null}
       </View>
       <Caption title={album.title} subtitle={subtitle} muted={unavailable} />
     </PressableCard>
@@ -128,7 +147,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist, width }: { pl
   const count = playlistTrackTotal(playlist.trackCount, useMusicPending(useOctavePagesProvider()).data.items, playlist.jellyfinId);
   return (
     <PressableCard onPress={() => nav.playlist(playlist.jellyfinId)} style={{ width }} accessibilityRole="button" accessibilityLabel={playlist.name}>
-      <Artwork url={playlist.artworkUrl} size={width} radius={10} />
+      <LibraryPlaylistArtwork playlist={playlist} size={width} radius={10} />
       <Caption title={playlist.name} subtitle={t("count.tracks", { count })} />
     </PressableCard>
   );

@@ -107,7 +107,7 @@ export function OctaveArtistScreen({ id }: { id: string }) {
             </Animated.View>
           ) : null}
           {groups.map(({ group, albums: shown }) => (
-            <Shelf key={group} title={t(`artist.${group}`)} items={shown} keyOf={(a) => a.album.key} albumOf={(a) => a.album} render={({ album }, w) => <AlbumCard album={album} width={w} />} />
+            <Shelf key={group} title={t(`artist.${group}`)} items={shown} keyOf={(a) => a.album.key} albumOf={(a) => a.album} render={({ album, ownership }, w) => <AlbumCard album={album} ownership={ownership} width={w} />} />
           ))}
         </View>
       </Animated.ScrollView>

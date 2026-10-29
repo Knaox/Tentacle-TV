@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import type { ReorderBlock } from "@tentacle-tv/api-client";
 import { rowShift, type ListRow } from "@tentacle-tv/shared/octave";
 import { TRACK_ROW_HEIGHT, usePagesCurrentKey, usePagesPlayer } from "../../pages";
-import { playFrom } from "../../pages/env/playFrom";
+import { playRow } from "../../pages/env/playFrom";
 import { closeSwipe } from "../../pages/actions/swipeOpenStore";
 import { ReorderRow } from "./ReorderRow";
 import { useRowReorder } from "./useRowReorder";
@@ -67,7 +67,7 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
     rowsVersion: rows,
   });
   // Hors ligne, seuls les titres gardés sur l'appareil partent (la règle de m5, `playFrom`).
-  const play = useCallback((index: number) => playFrom(player, tracks, index, contextId), [contextId, player, tracks]);
+  const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
   const step = useCallback(
     (index: number, delta: -1 | 1) => {
       const to = index + delta;

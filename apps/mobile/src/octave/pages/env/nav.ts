@@ -16,6 +16,8 @@ export interface OctaveNav {
   artist: (artist: Pick<MusicArtist, "jellyfinId" | "external" | "key">) => void;
   artistTarget: (target: string) => void;
   mood: (moodId: string) => void;
+  /** Un mix de l'accueil, consultable comme un album (`pages/homeMix.ts`). */
+  homeMix: (mixId: string) => void;
   playlist: (jellyfinId: string) => void;
   externalPlaylist: (key: string) => void;
   liked: () => void;
@@ -40,6 +42,7 @@ export function useOctaveNav(): OctaveNav {
       },
       artistTarget: (target) => go(octavePaths.artist(target)),
       mood: (id) => go(octavePaths.mood(id)),
+      homeMix: (id) => go(octavePaths.homeMix(id)),
       playlist: (id) => go(octavePaths.playlist(id)),
       externalPlaylist: (key) => go(octavePaths.externalPlaylist(key)),
       liked: () => go(octavePaths.liked),

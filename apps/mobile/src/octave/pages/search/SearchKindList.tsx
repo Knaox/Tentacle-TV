@@ -10,13 +10,14 @@ import { FlatList, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
 import { layoutSearch, type SearchFilter, type ShownExternalLists } from "@tentacle-tv/shared/octave";
+import { searchAlbumOwnership, type AlbumOwnership } from "@tentacle-tv/api-client";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
 import { TrackRow } from "../ui/TrackRow";
 import { EmptyState, TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
-import { playFrom } from "../env/playFrom";
+import { playRow } from "../env/playFrom";
 import { clipsOffscreenCells } from "../../layout/listClipping";
 import { useShelfWarmup } from "../env/albumWarmupScope";
 
@@ -32,6 +33,7 @@ interface SearchKindListProps {
   filter: Exclude<SearchFilter, "all">;
   library: MusicSearchResponse | null;
   external: ShownExternalLists | null;
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   pending: boolean;
   header: ReactElement;
   bottom: number;
@@ -43,7 +45,7 @@ const warmupList = ({ ref: _ref, ...gestures }: ReturnType<typeof useShelfWarmup
 
 const keyOf = (c: Cell) => (c.kind === "track" ? c.track.key : c.kind === "album" ? c.album.key : c.kind === "artist" ? c.artist.key : c.kind === "playlist" ? c.playlist.jellyfinId : c.playlist.key);
 
-export const SearchKindList = memo(function SearchKindList({ query, filter, library, external, pending, header, bottom }: SearchKindListProps) {
+export const SearchKindList = memo(function SearchKindList({ query, filter, library, external, albumOwnership, pending, header, bottom }: SearchKindListProps) {
   const { t } = useTranslation("music");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
@@ -56,7 +58,7 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
     return [...layout.libraryPlaylists.map((playlist) => ({ kind: "playlist" as const, playlist })), ...layout.externalPlaylists.map((playlist) => ({ kind: "external" as const, playlist }))];
   }, [filter, layout]);
   const contextId = `search:${query}:tracks`;
-  const play = useCallback((index: number) => playFrom(player, layout.tracks, index, contextId), [contextId, layout.tracks, player]);
+  const play = useCallback((index: number) => playRow(player, layout.tracks, index, contextId), [contextId, layout.tracks, player]);
   const grid = filter !== "tracks";
   const columns = grid ? (isTablet ? Math.max(3, Math.floor(700 / card)) : 2) : 1;
   // La largeur d'une cellule de la grille, ses 6 pt de marge de chaque côté ôtés.
@@ -66,7 +68,7 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
       case "track":
         return <TrackRow track={item.track} index={item.index} list={layout.tracks} contextId={contextId} playing={current === item.track.key} onPlay={play} gutter={gutter} />;
       case "album":
-        return <View style={{ flex: 1 / columns, padding: 6 }}><AlbumCard album={item.album} width={width} /></View>;
+        return <View style={{ flex: 1 / columns, padding: 6 }}><AlbumCard album={item.album} ownership={searchAlbumOwnership(item.album, albumOwnership)} width={width} /></View>;
       case "artist":
         return <View style={{ flex: 1 / columns, padding: 6 }}><ArtistCard artist={item.artist} width={width} /></View>;
       case "playlist":

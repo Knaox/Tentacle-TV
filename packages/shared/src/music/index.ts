@@ -17,3 +17,4 @@ export * from "./musicPlaylistMembers";
 export * from "./albumNotes";
 export * from "./musicMosaic";
 export * from "./shazamLink";
+export * from "./playlistCover";

@@ -6,20 +6,20 @@
  * montré (`layoutSearch` sur ce que `useRevealedResults` a révélé).
  */
 
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { searchAlbumOwnership, type AlbumOwnership } from "@tentacle-tv/api-client";
+import { useTopPlayback } from "./topPlayback";
 import type { SearchFilter, SearchLayout } from "@tentacle-tv/shared/octave";
 import type { ExternalMusicPlaylist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { typography, useTheme } from "@/theme";
-import { usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
 import { SectionTitle, Shelf, albumSelf } from "../ui/Shelf";
 import { TrackList } from "../ui/TrackList";
 import { TrackRowsSkeleton } from "../ui/ViewStates";
 import { usePageMetrics } from "../ui/pageStyle";
 import { TopResultCard } from "./TopResultCard";
-import { playFrom } from "../env/playFrom";
 
 const TRACKS_WITHOUT_TOP = 8;
 const ALBUMS_SHOWN = 12;
@@ -30,18 +30,20 @@ type AnyPlaylist = { lib: MusicPlaylist } | { ext: ExternalMusicPlaylist };
 interface SearchAllViewProps {
   query: string;
   layout: SearchLayout;
+  /** Ce que la bibliothèque a des albums d'ailleurs (pastille, jamais grisé s'il y est en partie), comme le bureau. */
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   externalPending: boolean;
   onFilter: (filter: SearchFilter) => void;
 }
 
-export const SearchAllView = memo(function SearchAllView({ query, layout, externalPending, onFilter }: SearchAllViewProps) {
+export const SearchAllView = memo(function SearchAllView({ query, layout, albumOwnership, externalPending, onFilter }: SearchAllViewProps) {
   const { t } = useTranslation("music");
   const theme = useTheme();
-  const player = usePagesPlayer();
   const { gutter, sectionGap } = usePageMetrics();
   const contextId = `search:${query}`;
   const top = layout.top;
-  const playTop = useCallback(() => playFrom(player, layout.sideTracks, 0, `${contextId}:top`), [contextId, layout.sideTracks, player]);
+  // La règle du bureau : un album lit l'album, une playlist la playlist (`topPlayback.ts`).
+  const playTop = useTopPlayback(layout.sideTracks, `${contextId}:top`);
   const tracks = top ? layout.sideTracks : layout.tracks.slice(0, TRACKS_WITHOUT_TOP);
   const more = top ? layout.tracks.length > layout.sideTracks.length : layout.tracks.length > TRACKS_WITHOUT_TOP;
   const seeAll = (filter: SearchFilter) => (
@@ -54,7 +56,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
     <View style={{ gap: sectionGap }}>
       {top ? (
         <View style={{ paddingHorizontal: gutter }}>
-          <TopResultCard top={top} onPlay={playTop} />
+          <TopResultCard top={top} onPlay={() => playTop(top)} />
         </View>
       ) : null}
       {tracks.length > 0 ? (
@@ -69,7 +71,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
           <TrackRowsSkeleton count={4} gutter={gutter} />
         </View>
       ) : null}
-      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
+      <Shelf title={t("search.albums")} items={layout.albums.slice(0, ALBUMS_SHOWN)} keyOf={(a) => a.key} albumOf={albumSelf} render={(album, w) => <AlbumCard album={album} ownership={searchAlbumOwnership(album, albumOwnership)} width={w} />} onSeeAll={layout.albums.length > ALBUMS_SHOWN ? () => onFilter("albums") : undefined} />
       <Shelf title={t("search.artists")} items={layout.artists.slice(0, ARTISTS_SHOWN)} keyOf={(a) => a.key} render={(artist, w) => <ArtistCard artist={artist} width={w} />} onSeeAll={layout.artists.length > ARTISTS_SHOWN ? () => onFilter("artists") : undefined} />
       <Shelf
         title={t("search.playlists")}

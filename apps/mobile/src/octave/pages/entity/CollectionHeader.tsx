@@ -33,10 +33,12 @@ interface CollectionHeaderProps {
   /** Une teinte de fond (ambiance) ; par défaut, la marque. */
   tint?: string;
   extra?: ReactNode;
+  /** Une image composée (la jaquette d'une playlist, d'un mix) à la place d'`artworkUrl`, à la taille donnée. */
+  renderArt?: (size: number) => ReactNode;
 }
 
 export const CollectionHeader = memo(function CollectionHeader(props: CollectionHeaderProps) {
-  const { kicker, title, artworkUrl, round, meta, canPlay, onPlay, onShuffle, scrollY, tint, extra } = props;
+  const { kicker, title, artworkUrl, round, meta, canPlay, onPlay, onShuffle, scrollY, tint, extra, renderArt } = props;
   const { t } = useTranslation("music");
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -52,7 +54,7 @@ export const CollectionHeader = memo(function CollectionHeader(props: Collection
       <LinearGradient colors={[withAlpha(veil, 0.32, theme.colors.brand.soft), withAlpha(veil, 0, "transparent")]} style={[StyleSheet.absoluteFill, { height: art + insets.top + 160 }]} />
       <View style={[isTablet ? styles.rowTablet : styles.colPhone, { paddingHorizontal: gutter }]}>
         <Animated.View style={[styles.shadow, artStyle]}>
-          <Artwork url={artworkUrl} size={art} round={round} radius={14} kind={round ? "artist" : "album"} />
+          {renderArt ? renderArt(art) : <Artwork url={artworkUrl} size={art} round={round} radius={14} kind={round ? "artist" : "album"} />}
         </Animated.View>
         <View style={[styles.text, isTablet ? styles.textTablet : styles.textPhone]}>
           <Text style={[typography.small, { color: theme.colors.text.secondary, textTransform: "uppercase", letterSpacing: 1 }]}>{kicker}</Text>
