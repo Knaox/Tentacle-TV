@@ -12,7 +12,7 @@ import type { JfItem } from "../jellyfin/musicJellyfin";
 import type { UserView } from "../view/viewContext";
 import { arrivalBindings, hasFreeSlot } from "./arrivalPlan";
 import { placeArrivals, sourceArrivalWatcher, type SourceArrivalDeps } from "./sourceArrivals";
-import type { PlaylistSourceRecord, SourceSlot } from "./sourceRecord";
+import { parseSlots, removedAt, type PlaylistSourceRecord, type SourceSlot } from "./sourceRecord";
 
 vi.mock("../../services/db", () => ({ getPrisma: () => null }));
 
@@ -76,6 +76,28 @@ describe("arrivalBindings : quel titre libre de la source chaque arrivée tient"
     expect(arrivalBindings(slots(), [{ ...row("Amazonia"), kind: "album" }])).toEqual([]);
     expect(hasFreeSlot(slots())).toBe(true);
     expect(hasFreeSlot(slots().map((s) => ({ ...s, itemIds: ["x"] })))).toBe(false);
+  });
+});
+
+describe("un titre RETIRÉ par l'utilisateur ne revient jamais (Damien, 29/10)", () => {
+  it("retiré avant son arrivée : l'album entier arrive, ce titre-là reste dehors, les autres entrent à leur rang", async () => {
+    const withdrawn = removedAt(record(), 3)!;
+    const { d, inserted } = deps([withdrawn]);
+    await placeArrivals(ROWS.map((r) => r.id), d);
+    expect(inserted.map((i) => i[2])).toEqual([1, 4]);
+    expect(arrivalBindings(withdrawn.slots, [row("Black cloud")])).toEqual([]);
+  });
+
+  it("tous les titres libres retirés : la playlist n'attend plus rien, elle n'est même pas relue", () => {
+    const all = [1, 2, 3, 4].reduce((r, rank) => removedAt(r, rank)!, record());
+    expect(hasFreeSlot(all.slots)).toBe(false);
+  });
+
+  it("la marque survit à l'écriture du relevé ; un rang inconnu ne marque rien", () => {
+    const kept = parseSlots(JSON.stringify(removedAt(record(), 3)!.slots));
+    expect(kept.find((s) => s.rank === 3)?.removed).toBe(true);
+    expect(kept.find((s) => s.rank === 1)).not.toHaveProperty("removed");
+    expect(removedAt(record(), 99)).toBeNull();
   });
 });
 

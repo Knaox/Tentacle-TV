@@ -12,9 +12,9 @@
 import { sourcePlace } from "../contract/musicSourceOrder";
 import { rowsByIds } from "../index/indexQueries";
 import { normalizeId } from "../jellyfin/musicJellyfin";
-import { insertAt, type PlaylistResult } from "../playlists/playlistService";
+import { insertAt, underPlaylistLock, type PlaylistResult } from "../playlists/playlistService";
 import { rankForInsert } from "./sourceBinding";
-import { bound, ranksByItem } from "./sourceRecord";
+import { bound, ranksByItem, removedAt } from "./sourceRecord";
 import { readPlaylistSource, savePlaylistSource } from "./sourceStore";
 
 /** Insère pour l'extension ; `sourceIndex` : le rang du titre dans la source de l'import. Rend la place prise. */
@@ -40,4 +40,19 @@ export function insertFromHost(userId: string, playlistId: string, itemIds: stri
       await keep?.().catch((error: unknown) => console.warn("[music] liaison à l'ordre de la source non gardée :", (error as Error).message));
     },
   );
+}
+
+/**
+ * L'utilisateur a retiré de la playlist l'entrée qui tenait le titre de rang `rank` (une extension le dit,
+ * `jellyfin.playlistSourceRemoved`) : le relevé le garde RETIRÉ, son arrivée ne l'y remet jamais. Sous le verrou de la
+ * playlist (une insertion relit et réécrit le même relevé). Rend `false` sans relevé ou sans titre de ce rang.
+ */
+export function markSourceRemoved(playlistId: string, rank: number): Promise<boolean> {
+  return underPlaylistLock(playlistId, async () => {
+    const record = await readPlaylistSource(playlistId);
+    const next = record ? removedAt(record, rank) : null;
+    if (!next) return false;
+    await savePlaylistSource(next);
+    return true;
+  });
 }

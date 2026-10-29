@@ -7,7 +7,8 @@
  * d'un autre master au plus). Jamais le monde clos (`sourceLooseMatch.ts`) : n'importe quelle arrivée de la
  * bibliothèque n'est pas un titre de CETTE playlist, et une durée proche ne suffit pas à le dire.
  *
- * Chaque titre libre, dans l'ordre de la source, prend sa meilleure arrivée ; une arrivée ne tient qu'un titre.
+ * Chaque titre libre, dans l'ordre de la source, prend sa meilleure arrivée ; une arrivée ne tient qu'un titre. Un titre
+ * que l'utilisateur a RETIRÉ de la playlist (`removed`) n'est jamais libre : il n'y revient pas.
  */
 
 import { bestTrackMatch } from "../contract/musicLibraryMatch";
@@ -26,7 +27,7 @@ export function arrivalBindings(slots: readonly SourceSlot[], arrivals: readonly
   const free = arrivals.filter((row) => row.kind === "track" && !held.has(row.id));
   const out: ArrivalBinding[] = [];
   for (const slot of [...slots].sort((a, b) => a.rank - b.rank)) {
-    if (slot.itemIds.length > 0 || free.length === 0) continue;
+    if (!isFree(slot) || free.length === 0) continue;
     const best = bestTrackMatch(slotQuery(slot), free, trackMatchable);
     if (!best) continue;
     out.push({ rank: slot.rank, itemId: best.id });
@@ -35,7 +36,9 @@ export function arrivalBindings(slots: readonly SourceSlot[], arrivals: readonly
   return out;
 }
 
-/** Un relevé a-t-il encore un titre que rien ne tient ? */
+const isFree = (slot: SourceSlot) => slot.itemIds.length === 0 && slot.removed !== true;
+
+/** Un relevé a-t-il encore un titre que rien ne tient (et que l'utilisateur n'a pas retiré) ? */
 export function hasFreeSlot(slots: readonly SourceSlot[]): boolean {
-  return slots.some((s) => s.itemIds.length === 0);
+  return slots.some(isFree);
 }

@@ -34,6 +34,11 @@ function locked<T>(playlistId: string, task: () => Promise<T>): Promise<T> {
   return next;
 }
 
+/** Une écriture LIÉE à la playlist (son relevé de source) sous son verrou : aucune insertion ne s'y croise. */
+export function underPlaylistLock<T>(playlistId: string, task: () => Promise<T>): Promise<T> {
+  return locked(playlistId, task);
+}
+
 interface Authorized {
   /** Le compte au nom duquel Jellyfin est lu et écrit (le propriétaire, pour un membre). */
   actor: string;

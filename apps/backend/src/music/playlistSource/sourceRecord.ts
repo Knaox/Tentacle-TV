@@ -22,6 +22,8 @@ export interface SourceSlot {
   durationMs: number | null;
   /** Les éléments Jellyfin (normalisés) qui tiennent ce titre dans la playlist : deux pour un doublon, une autre version. */
   itemIds: string[];
+  /** L'utilisateur l'a RETIRÉ de la playlist (l'entrée de l'extension) : son arrivée ne l'y remet jamais. */
+  removed?: true;
 }
 
 export interface PlaylistSourceRecord {
@@ -55,6 +57,12 @@ export function bound(record: PlaylistSourceRecord, rank: number, itemIds: reado
     ...record,
     slots: record.slots.map((slot) => (slot.rank === rank ? { ...slot, itemIds: [...new Set([...slot.itemIds, ...itemIds])] } : slot)),
   };
+}
+
+/** Le même relevé, le titre de rang `rank` RETIRÉ par l'utilisateur ; `null` : aucun titre de ce rang. */
+export function removedAt(record: PlaylistSourceRecord, rank: number): PlaylistSourceRecord | null {
+  if (!record.slots.some((slot) => slot.rank === rank)) return null;
+  return { ...record, slots: record.slots.map((slot) => (slot.rank === rank ? { ...slot, removed: true as const } : slot)) };
 }
 
 /** La fiche d'un titre de la source, pour LA règle du cœur (`musicLibraryMatch.ts`). */
@@ -107,6 +115,7 @@ export function parseSlots(json: string): SourceSlot[] {
       album: text(r.album, 500),
       durationMs: typeof r.durationMs === "number" && Number.isFinite(r.durationMs) ? r.durationMs : null,
       itemIds: Array.isArray(r.itemIds) ? r.itemIds.filter((i): i is string => typeof i === "string" && /^[0-9a-f]{32}$/.test(i)) : [],
+      ...(r.removed === true ? { removed: true as const } : {}),
     });
   }
   return out.sort((a, b) => a.rank - b.rank);
