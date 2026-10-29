@@ -36,27 +36,36 @@ describe("entrées et résultat", () => {
     expect(html).not.toContain("withOutside");
   });
 
-  it("le résultat compte la bibliothèque et les absents, sans rien dire d'« ajouté » hors bibliothèque", () => {
-    const state: ImportFlowState = {
-      ...base,
-      phase: "done",
-      summary: {
-        playlistId: "pl",
-        name: "Mix",
-        source: "spotify",
-        total: 3,
-        inLibrary: 2,
-        outside: 0,
-        missing: [{ index: 1, position: 1, title: "Absent", artists: ["X"], album: null, durationMs: null, isrc: null, sourceId: null }],
-        truncated: true,
-        outsideRefused: false,
-      },
-    };
-    const html = renderToStaticMarkup(<ImportResult titleId="t" state={state} onOpen={() => undefined} onAnother={() => undefined} onClose={() => undefined} />).replaceAll("&quot;", '"');
-    expect(html).toContain('inLibrary:{"count":2}');
-    expect(html).toContain('missing:{"count":1}');
-    expect(html).not.toContain("outside:");
+  const done = (summary: Partial<NonNullable<ImportFlowState["summary"]>>): ImportFlowState => ({
+    ...base,
+    phase: "done",
+    summary: { playlistId: "pl", name: "Mix", source: "spotify", total: 3, inLibrary: 2, outside: 0, own: 0, missing: [], truncated: false, outsideRefused: false, ...summary },
+  });
+  const absentTrack = (index: number, reason: "notFound" | "region" | "duplicate" | "noExtension") => ({ index, position: 1, title: `Absent ${index}`, artists: ["X"], album: null, durationMs: null, isrc: null, sourceId: null, reason });
+  const render = (state: ImportFlowState) =>
+    renderToStaticMarkup(<ImportResult titleId="t" state={state} onOpen={() => undefined} onAnother={() => undefined} onClose={() => undefined} />).replaceAll("&quot;", '"');
+
+  it("« X sur N titres », les parts non vides, et chaque titre non importé avec son motif (liste courte : montrée)", () => {
+    const html = render(done({ total: 30, inLibrary: 18, outside: 9, own: 3, missing: [absentTrack(4, "region"), absentTrack(12, "duplicate"), absentTrack(29, "notFound")], truncated: true }));
+    expect(html).toContain('report.kept:{"kept":27,"count":30}');
+    expect(html).toContain('report.part.library:{"count":18}');
+    expect(html).toContain('report.part.imported:{"count":3}');
+    expect(html).toContain('report.part.cloud:{"count":6}');
+    expect(html).toContain('report.skipped:{"count":3}');
+    expect(html).toContain("report.reason.region");
+    expect(html).toContain("report.reason.duplicate");
+    expect(html).not.toContain("report.show");
     expect(html).toContain("truncated");
+  });
+
+  it("sans extension : ni « vos imports » ni « en cloud » ; une longue liste se replie sous le bilan", () => {
+    const missing = Array.from({ length: 8 }, (_, i) => absentTrack(i + 2, "noExtension"));
+    const html = render(done({ total: 10, inLibrary: 2, missing }));
+    expect(html).not.toContain("report.part.imported");
+    expect(html).not.toContain("report.part.cloud");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("report.show");
+    expect(html).not.toContain("report.reason.noExtension");
   });
 
   it("un échec se dit en mots, avec « Réessayer »", () => {

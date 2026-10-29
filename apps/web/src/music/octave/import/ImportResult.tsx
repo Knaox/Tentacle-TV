@@ -1,13 +1,14 @@
 /**
- * Octave — la fin d'un import : ce qui est entré (bibliothèque, hors
- * bibliothèque), ce qui manque (liste repliée), une source lue en partie, et
- * « Ouvrir la playlist ». Ou l'échec, en mots, avec « Réessayer ».
+ * Octave — la fin d'un import : « X sur N titres », ce qui est entré (bibliothèque, vos imports, en cloud), chaque
+ * titre non importé avec son motif (règle partagée `importReport` : liste fermée, jamais un message brut — repliée
+ * quand elle est longue), une source lue en partie, et « Ouvrir la playlist ». Ou l'échec, en mots, avec « Réessayer ».
  */
 
-import { useState } from "react";
-import { AlertCircle, ChevronDown, CloudCheck, Library, SearchX } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, ChevronDown, CloudCheck, FolderDown, Library, SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ImportFlowState } from "@tentacle-tv/api-client";
+import { importReport, type ImportReportPart } from "@tentacle-tv/shared/octave";
 
 const BUTTON = "min-h-[44px] cursor-pointer rounded-full px-5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
@@ -19,6 +20,8 @@ interface Props {
   onClose: () => void;
 }
 
+const PART_ICON: Record<ImportReportPart, typeof Library> = { library: Library, imported: FolderDown, cloud: CloudCheck };
+
 function Line({ icon: Icon, text, muted = false }: { icon: typeof Library; text: string; muted?: boolean }) {
   return (
     <li className={`flex items-center gap-3 text-sm ${muted ? "text-content-tertiary" : "text-content-primary"}`}>
@@ -28,9 +31,62 @@ function Line({ icon: Icon, text, muted = false }: { icon: typeof Library; text:
   );
 }
 
+type Summary = NonNullable<ImportFlowState["summary"]>;
+
+/** Le bilan lui-même : « X sur N », ses parts, les titres non importés et leurs motifs. */
+function ReportBody({ summary }: { summary: Summary }) {
+  const { t } = useTranslation("musicImport");
+  const report = useMemo(() => importReport(summary), [summary]);
+  const [open, setOpen] = useState(false);
+  const listed = !report.folded || open;
+  return (
+    <>
+      <p className="text-base font-semibold tabular-nums text-content-primary">{t("report.kept", { kept: report.kept, count: report.total })}</p>
+      <ul className="flex flex-col gap-2">
+        {report.parts.map(({ part, count }) => (
+          <Line key={part} icon={PART_ICON[part]} text={t(`report.part.${part}`, { count })} />
+        ))}
+        {report.missing.length > 0 && <Line icon={SearchX} text={t("report.skipped", { count: report.missing.length })} muted />}
+      </ul>
+      {summary.truncated && <p className="text-xs text-content-tertiary">{t("truncated")}</p>}
+      {report.missing.length > 0 && (
+        <div className="flex min-h-0 flex-col gap-2">
+          {report.folded && (
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls="octave-import-skipped"
+              onClick={() => setOpen((v) => !v)}
+              className="flex min-h-[44px] cursor-pointer items-center gap-1.5 self-start rounded-lg px-1 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${open ? "rotate-180" : ""}`} aria-hidden />
+              {t(open ? "report.hide" : "report.show")}
+            </button>
+          )}
+          {listed && (
+            <ol id="octave-import-skipped" className="min-h-0 overflow-y-auto overscroll-contain rounded-xl bg-fill-subtle px-3 py-2 text-sm">
+              {report.missing.map((track) => (
+                <li key={track.index} className="flex gap-2 py-1.5">
+                  <span className="w-8 shrink-0 text-right tabular-nums text-content-quaternary">{track.index + 1}</span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-content-primary">
+                      {track.title}
+                      {track.artists.length > 0 && <span className="text-content-tertiary"> · {track.artists.join(", ")}</span>}
+                    </span>
+                    <span className="text-xs text-content-tertiary">{t(`report.reason.${track.reason}`)}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Props) {
   const { t } = useTranslation("musicImport");
-  const [showMissing, setShowMissing] = useState(false);
   const summary = state.summary;
 
   if (!summary) {
@@ -55,48 +111,12 @@ export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Pro
     );
   }
 
-  const missing = summary.missing;
   return (
     <div className="flex max-h-[70vh] flex-col gap-4">
       <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
         {t("doneTitle", { name: summary.name })}
       </h2>
-      <ul className="flex flex-col gap-2">
-        <Line icon={Library} text={t("inLibrary", { count: summary.inLibrary })} />
-        {summary.outside > 0 && <Line icon={CloudCheck} text={t("outside", { count: summary.outside })} />}
-        {missing.length > 0 && <Line icon={SearchX} text={t("missing", { count: missing.length })} muted />}
-      </ul>
-      {summary.outsideRefused && <p className="text-xs text-amber-300">{t("outsideRefused")}</p>}
-      {summary.truncated && <p className="text-xs text-content-tertiary">{t("truncated")}</p>}
-      {missing.length > 0 && (
-        <div className="flex min-h-0 flex-col gap-2">
-          <button
-            type="button"
-            aria-expanded={showMissing}
-            onClick={() => setShowMissing((v) => !v)}
-            className="flex min-h-[36px] cursor-pointer items-center gap-1.5 self-start rounded-lg px-1 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${showMissing ? "rotate-180" : ""}`} aria-hidden />
-            {t(showMissing ? "missingHide" : "missingShow")}
-          </button>
-          {showMissing && (
-            <>
-              {summary.outside === 0 && <p className="text-xs text-content-tertiary">{t("missingNotAdded")}</p>}
-              <ol className="min-h-0 overflow-y-auto overscroll-contain rounded-xl bg-fill-subtle px-3 py-2 text-sm">
-                {missing.map((track) => (
-                  <li key={track.index} className="flex gap-2 py-1">
-                    <span className="w-8 shrink-0 text-right tabular-nums text-content-quaternary">{track.index + 1}</span>
-                    <span className="min-w-0 truncate text-content-primary">
-                      {track.title}
-                      {track.artists.length > 0 && <span className="text-content-tertiary"> · {track.artists.join(", ")}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </>
-          )}
-        </div>
-      )}
+      <ReportBody summary={summary} />
       <div className="flex flex-wrap justify-end gap-2">
         <button type="button" onClick={onAnother} className={`${BUTTON} text-content-tertiary hover:text-content-primary`}>
           {t("another")}
