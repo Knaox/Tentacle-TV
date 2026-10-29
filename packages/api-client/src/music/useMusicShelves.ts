@@ -74,13 +74,23 @@ function jellyfinIdOf(subject: MusicShelfSubject): string | null {
   return subject.item.jellyfinId;
 }
 
+/** La requête d'un geste ; l'instantané d'un élément d'extension sans ses titres (une vue en porte des centaines). */
 function requestOf(subject: MusicShelfSubject, favorite: boolean): MusicShelfFavoriteRequest | null {
   const jellyfinId = jellyfinIdOf(subject);
   if (jellyfinId) return { section: subject.section, jellyfinId, favorite };
-  if (subject.section === "playlists") return subject.item.kind === "external" ? { section: "playlists", external: subject.item.playlist.external, playlist: subject.item.playlist, favorite } : null;
+  if (subject.section === "playlists") {
+    if (subject.item.kind !== "external") return null;
+    const { key, external, title, owner, trackCount, artworkUrl } = subject.item.playlist;
+    return { section: "playlists", external, playlist: { key, external, title, owner, trackCount, artworkUrl }, favorite };
+  }
   const external = subject.item.external;
   if (!external) return null;
-  return subject.section === "albums" ? { section: "albums", external, album: subject.item, favorite } : { section: "artists", external, artist: subject.item, favorite };
+  if (subject.section === "albums") {
+    const { tracks: _tracks, description: _description, ...album } = subject.item;
+    return { section: "albums", external, album, favorite };
+  }
+  const { topTracks: _top, albums: _albums, ...artist } = subject.item;
+  return { section: "artists", external, artist, favorite };
 }
 
 /** Les favoris en cache après un geste (retiré, ou ajouté s'il n'y était pas). Exportée pour les tests. */
