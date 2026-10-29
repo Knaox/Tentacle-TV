@@ -20,6 +20,7 @@ import {
   type MusicImportRequest,
   type MusicImportSource,
 } from "@tentacle-tv/shared/music";
+import { missingOf, skippedOf, type ImportMissingTrack, type ImportOutsideOutcome } from "@tentacle-tv/shared/octave";
 
 export const CORE_POLL_MS = 400;
 export const OUTSIDE_POLL_MS = 700;
@@ -43,8 +44,10 @@ export interface ImportSummary {
   inLibrary: number;
   /** Titres hors bibliothèque entrés par l'extension (jouables). */
   outside: number;
-  /** Ce qui n'est PAS dans la playlist (sans extension : tous les absents). */
-  missing: ImportAbsentTrack[];
+  /** Parmi eux, ceux que le compte avait déjà importés (ses fichiers) : le reste est « en cloud ». */
+  own: number;
+  /** Ce qui n'est PAS dans la playlist (sans extension : tous les absents), chacun avec son motif. */
+  missing: ImportMissingTrack[];
   truncated: boolean;
   /** L'extension n'a pas pu prendre les absents (refus, panne) : ils sont dans `missing`. */
   outsideRefused: boolean;
@@ -133,7 +136,7 @@ async function confide(port: ImportPort, playlistId: string, source: MusicImport
     if (signal.aborted) throw error;
     return null;
   });
-  if (!accepted) return { added: 0, missing: absent, refused: true };
+  if (!accepted) return { added: 0, own: 0, outcome: { kind: "refused", reason: null } as ImportOutsideOutcome };
   const deadline = port.now() + OUTSIDE_WAIT_MS;
   let last: ImportTracksProgress | null = null;
   try {
@@ -150,9 +153,9 @@ async function confide(port: ImportPort, playlistId: string, source: MusicImport
     port.cancel(accepted.operationId);
     throw error;
   }
-  const notFound = new Set(last?.notFound ?? []);
   const failed = last?.state === "failed" && (last?.added ?? 0) === 0;
-  return { added: last?.added ?? 0, missing: failed ? absent : absent.filter((t) => notFound.has(t.index)), refused: failed };
+  const outcome: ImportOutsideOutcome = failed ? { kind: "refused", reason: last?.reason ?? null } : { kind: "done", skipped: skippedOf(last) };
+  return { added: last?.added ?? 0, own: last?.own ?? 0, outcome };
 }
 
 /** Le déroulé ENTIER ; chaque étape se dit par `emit` (état complet). Rejette seulement si `signal` est annulé. */
@@ -183,14 +186,18 @@ export async function runImport(input: ImportUserInput, port: ImportPort, emit: 
     }
     if (job.stage === "failed" || !job.result) throw new FlowStop(job.failure ?? "failed");
     const result = job.result;
-    let outside = { added: 0, missing: result.absent, refused: false };
+    let outside: { added: number; own: number; outcome: ImportOutsideOutcome } = { added: 0, own: 0, outcome: { kind: "none" } };
     if (result.absent.length > 0 && port.canConfide) {
       patch({ phase: "outside", outside: { total: result.absent.length, processed: 0, added: 0 } });
       outside = await confide(port, result.playlistId, result.source, result.absent, signal, patch);
     }
     patch({
       phase: "done",
-      summary: { playlistId: result.playlistId, name: result.name, source: result.source, total: result.total, inLibrary: result.added, outside: outside.added, missing: outside.missing, truncated: result.truncated, outsideRefused: outside.refused },
+      summary: {
+        playlistId: result.playlistId, name: result.name, source: result.source, total: result.total, inLibrary: result.added,
+        outside: outside.added, own: outside.own, missing: missingOf(result.absent, outside.outcome), truncated: result.truncated,
+        outsideRefused: outside.outcome.kind === "refused",
+      },
     });
   } catch (error) {
     if (signal.aborted) throw error;
