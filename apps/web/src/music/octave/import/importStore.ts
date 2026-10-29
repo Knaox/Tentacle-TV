@@ -4,6 +4,12 @@
  */
 
 let open = false;
+/** La playlist EXISTANTE où l'import verse ses titres (ouverte depuis sa page) ; `null` : une playlist neuve. */
+export interface ImportTargetPlaylist {
+  playlistId: string;
+  name: string;
+}
+let target: ImportTargetPlaylist | null = null;
 /** Ce que la boîte doit montrer collé à son ouverture (un lien de partage ouvert depuis sa page), une fois. */
 let prefill: string | null = null;
 const listeners = new Set<() => void>();
@@ -16,7 +22,10 @@ export function subscribeImportDialog(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+export const importDialogTarget = (): ImportTargetPlaylist | null => target;
+
 export function openImportDialog(): void {
+  target = null;
   open = true;
   notify();
 }
@@ -25,6 +34,13 @@ export function openImportDialog(): void {
 export function openImportDialogWith(text: string): void {
   prefill = text;
   openImportDialog();
+}
+
+/** Ouvrir la boîte pour verser un album ou des fichiers dans CETTE playlist (depuis sa page). */
+export function openImportDialogInto(playlist: ImportTargetPlaylist): void {
+  openImportDialog();
+  target = playlist;
+  notify();
 }
 
 /** Le texte à coller à l'ouverture, pris une seule fois. */

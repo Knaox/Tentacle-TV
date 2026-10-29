@@ -4,7 +4,7 @@
  * marque, ou le nombre de titres), et ce qui entrera dans la playlist.
  */
 
-import { useId, useMemo } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CORE_IMPORT_SOURCES, type MusicImportSource } from "@tentacle-tv/shared/music";
 import { classifyPasted, type ImportUserInput } from "@tentacle-tv/api-client";
@@ -20,9 +20,11 @@ interface Props {
   outsideSupported: boolean;
   onStart: (input: ImportUserInput) => void;
   onCancel: () => void;
+  /** Le choix « Lien ou liste · Un album · Fichiers », sous le titre. */
+  tabs?: ReactNode;
 }
 
-export function ImportForm({ titleId, value, onChange, extensionSources, tentacleShare = false, outsideSupported, onStart, onCancel }: Props) {
+export function ImportForm({ titleId, value, onChange, extensionSources, tentacleShare = false, outsideSupported, onStart, onCancel, tabs }: Props) {
   const { t } = useTranslation("musicImport");
   const fieldId = useId();
   const hintId = useId();
@@ -62,6 +64,7 @@ export function ImportForm({ titleId, value, onChange, extensionSources, tentacl
         </div>
         <SourceRow sources={sources} />
       </div>
+      {tabs}
       <label htmlFor={fieldId} className="sr-only">
         {t("fieldLabel")}
       </label>

@@ -31,6 +31,7 @@ import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
 import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
 import { SharedPlaylistLine } from "../playlists/members/SharedPlaylistLine";
+import { ImportIntoButton } from "../import/into/ImportIntoButton";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
@@ -100,6 +101,8 @@ export function PlaylistView() {
         extra={
           <>
             <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
+            {/* Un album, des fichiers de l'ordinateur : à la fin de CETTE playlist. */}
+            <ImportIntoButton playlistId={id} name={data.name} canAdd={shared.canAdd} className="h-12 w-12" />
             {/* Gérer la playlist : seulement si le serveur dit que ce compte peut la modifier. */}
             <PlaylistMenuButton playlist={data} open={menuOpen} onOpenChange={setMenuOpen} className="h-12 w-12" />
           </>
@@ -111,10 +114,13 @@ export function PlaylistView() {
             icon={ListMusic}
             title={t("playlist.empty")}
             action={
-              <Link to={octavePaths.search} className={EMPTY_ACTION_CLASS}>
-                <Search className="h-4 w-4" aria-hidden />
-                {t("views.findMusic")}
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link to={octavePaths.search} className={EMPTY_ACTION_CLASS}>
+                  <Search className="h-4 w-4" aria-hidden />
+                  {t("views.findMusic")}
+                </Link>
+                <ImportIntoButton playlistId={id} name={data.name} canAdd={shared.canAdd} variant="pill" />
+              </div>
             }
           >
             {shared.canAdd ? t("views.playlistEmptyHint") : null}
