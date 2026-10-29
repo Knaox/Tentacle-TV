@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.31.2",
-    "tag": "desktop-v1.31.2",
+    "version": "1.40.0",
+    "tag": "desktop-v1.40.0",
     "notes": {
-      "fr": "• Linux : la lecture fonctionne sur toutes les sessions : sous GNOME et wlroots sans écran HDR, l'application passe d'elle-même par XWayland, où le plein écran fonctionne, et la fenêtre réapparaît après ce changement ; si le plein écran est imposé, le bouton propose X11 au lieu d'échouer\n• Linux, X11 : la vidéo n'est plus rognée au format du film, et le clavier reste à l'interface au démarrage d'une lecture\n• Linux, GNOME : quitter une bande-annonce rend la fenêtre\n• Linux, KDE : la mise en veille n'est plus bloquée une fois l'application fermée\n• Paquets .deb, .rpm et Arch : ils déclarent ce dont la lecture a besoin (plus de lecteur muet au premier lancement), apt ne choisit plus l'émulation OSS d'ALSA, et le dossier d'installation est lisible par tous\n• Mises à jour sur openSUSE (par zypper) et sur les systèmes à racine immuable (Bazzite, Silverblue…), qui proposent l'AppImage\n• Sécurité : une mise à jour ne s'installe qu'après vérification de son empreinte par l'application elle-même, dans un dossier privé ; la navigation et les liens externes sont mieux bornés ; Electron 43.7",
-      "en": "• Linux: playback works on every session: on GNOME and wlroots without an HDR display, the app goes through XWayland on its own, where full screen works, and the window comes back after that switch; when full screen is forced, the button offers X11 instead of failing\n• Linux, X11: the video is no longer cropped to the movie's shape, and the keyboard stays with the interface when playback starts\n• Linux, GNOME: leaving a trailer gives the window back\n• Linux, KDE: sleep is no longer blocked once the app is closed\n• .deb, .rpm and Arch packages: they declare what playback needs (no more silent player on first launch), apt no longer picks ALSA's OSS emulation, and the install folder is readable by everyone\n• Updates on openSUSE (through zypper) and on immutable systems (Bazzite, Silverblue…), which offer the AppImage\n• Security: an update is only installed after the app itself checks its fingerprint, in a private folder; navigation and external links are more tightly bounded; Electron 43.7"
+      "fr": "• Octave, le nouveau mode musique : un lecteur de musique intégré à Tentacle pour écouter les albums, les artistes et les playlists de votre bibliothèque personnelle. Une bascule « Mode musique » dans la barre l'ouvre aussitôt ; il a son apparence, sa file d'attente, un « en cours » en plein écran et une houle animée qui suit la musique. Octave demande un serveur Tentacle 1.40, aujourd'hui en aperçu restreint, réservé aux testeurs autorisés : il s'activera de lui-même dès la sortie officielle du serveur 1.40 — d'ici là, rien ne change dans l'application\n• Octave : partager une playlist par un lien — un ami qui a son propre serveur Tentacle l'importe chez lui, ses titres retrouvés dans sa bibliothèque ; et la transition douce entre les titres se règle directement dans le lecteur\n• Plein écran sous Linux (GNOME, Fedora…) : sans écran HDR branché, le lecteur s'ouvre en fenêtre et le bouton plein écran fonctionne de nouveau ; avec un écran HDR, il propose de passer en X11 au lieu d'échouer. Quitter une bande-annonce rend aussi la fenêtre\n• Plus léger pour la carte graphique : les bannières de l'accueil et de « Pour vous » ne tournent plus quand elles sont sorties de l'écran, et leur mouvement coûte bien moins",
+      "en": "• Octave, the new music mode: a music player built into Tentacle to listen to the albums, artists and playlists of your personal library. A \"Music mode\" switch in the bar opens it at once; it has its own look, its queue, a full-screen \"now playing\" and an animated swell that follows the music. Octave needs a Tentacle 1.40 server, currently in a limited preview reserved for authorized testers: it will turn on by itself as soon as the 1.40 server is officially released — until then, nothing changes in the app\n• Octave: share a playlist with a link — a friend with their own Tentacle server imports it, its songs matched in their library; and the crossfade between songs is adjusted right in the player\n• Full screen on Linux (GNOME, Fedora…): without an HDR display plugged in, the player opens in a window and the full-screen button works again; with an HDR display, it offers to switch to X11 instead of failing. Leaving a trailer also gives the window back\n• Lighter on the graphics card: the Home and \"For you\" banners no longer rotate once scrolled off screen, and their motion costs far less"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.31.2_x86_64.AppImage",
-        "sha256": "22d8df60c845b6059fb2975f1540e1be41b9fb6d6d2e8e0f4f053fc311d13e9b"
+        "name": "tentacle-tv_1.40.0_x86_64.AppImage",
+        "sha256": "f72c37a9d713b857fada559f2de9a8cfa35d859e49691ad8d86a58736dfcf02f"
       },
       "deb": {
-        "name": "tentacle-tv_1.31.2_amd64.deb",
-        "sha256": "5034089caaf0e6730d171404a5e161d23b630a901c133162b961071333fa5e08"
+        "name": "tentacle-tv_1.40.0_amd64.deb",
+        "sha256": "8d62265a2bb46bdfc29612a5c0ea8eb3e169ea0365dd54ec66efb4ff602395f0"
       },
       "rpm": {
-        "name": "tentacle-tv_1.31.2_x86_64.rpm",
-        "sha256": "df81f9d07dec710f510cecbaeb4d1d5f32ecf54dc3990fbf89f34cbc4fb2ec4f"
+        "name": "tentacle-tv_1.40.0_x86_64.rpm",
+        "sha256": "b30e1e2cac40b487971fea65d93e850172d3be8398f60e8a13a861bdbb856f7f"
       },
       "pacman": {
-        "name": "tentacle-tv_1.31.2_x64.pkg.tar.zst",
-        "sha256": "841b65f53614c03230585062c4c2d37742dbdecfd27c4c60100f958d9086eae8"
+        "name": "tentacle-tv_1.40.0_x64.pkg.tar.zst",
+        "sha256": "871f926f95b93452f60cbd5953ed3ad9864e96749f0fe82133af68f420680ba5"
       }
     }
   }
