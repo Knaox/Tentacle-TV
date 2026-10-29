@@ -28,10 +28,19 @@ export type ReleaseSource = "bandcamp" | "files";
 export const RELEASE_SOURCES: readonly ReleaseSource[] = ["bandcamp", "files"];
 
 /** Les extensions de fichiers que le sélecteur propose (le serveur juge sur le CONTENU, jamais sur le nom). */
-export const RELEASE_FILE_EXTENSIONS: readonly string[] = ["mp3", "m4a", "aac", "flac", "ogg", "oga", "opus", "wav"];
+export const RELEASE_FILE_EXTENSIONS: readonly string[] = ["mp3", "m4a", "aac", "flac", "ogg", "oga", "opus", "wav", "aif", "aiff", "zip"];
 export const RELEASE_FILE_MIME_TYPES: readonly string[] = [
   "audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/flac", "audio/x-flac", "audio/ogg", "audio/opus", "audio/wav", "audio/x-wav", "audio/wave",
+  "audio/aiff", "audio/x-aiff", "application/zip", "application/x-zip-compressed",
 ];
+
+/**
+ * Le ZIP d'un téléchargement Bandcamp (tous ses formats : MP3 V0 / 320, FLAC, AAC, Ogg Vorbis, ALAC, WAV, AIFF) s'envoie
+ * TEL QUEL comme un fichier du lot : le serveur l'ouvre, chaque piste et image y entre comme si elle avait été envoyée,
+ * et le fichier ZIP finit `read` (ou `refused` s'il n'en sort rien). Le même album dans un autre format reste UN album :
+ * la meilleure qualité est gardée (sans perte, puis profondeur, puis débit).
+ */
+export const RELEASE_ARCHIVE_EXTENSIONS: readonly string[] = ["zip"];
 
 /**
  * Une IMAGE envoyée dans un lot (le `cover.png` d'un téléchargement Bandcamp, un `folder.jpg`) : la pochette des albums
