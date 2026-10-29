@@ -8,8 +8,17 @@
 import { useQuery } from "@tanstack/react-query";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";
 import { musicApi } from "../musicApi";
-import { libraryMatchRequest } from "../useMusicLibraryMatch";
+import { albumMatchQuery } from "../useMusicLibraryMatch";
 import { importedLibraryState } from "./releaseModel";
+
+/**
+ * La demande au cœur : l'album SANS sa liste de titres (ils ont tous leur `jellyfinId` : la règle commune
+ * `libraryMatchRequest` les écarterait et la couverture serait nulle) — titre, artistes, nombre de titres.
+ */
+export async function findImportedLibraryAlbum(album: MusicAlbum, signal?: AbortSignal): Promise<string | null> {
+  const answer = await musicApi.match({ tracks: [], albums: [albumMatchQuery(album)] }, signal);
+  return answer.albums.find((a) => a.ref === album.key && a.album.jellyfinId)?.album.jellyfinId ?? null;
+}
 
 export function useImportedLibraryAlbum(album: MusicAlbum | null | undefined): string | null {
   const state = importedLibraryState(album);
@@ -17,12 +26,7 @@ export function useImportedLibraryAlbum(album: MusicAlbum | null | undefined): s
   const lookup = state.kind === "library" && !known && !!album;
   const query = useQuery({
     queryKey: ["music", "imported-library", album?.key ?? ""],
-    queryFn: async ({ signal }) => {
-      const request = libraryMatchRequest([], [{ album: album!, tracks: album!.tracks ?? [] }]);
-      if (!request) return null;
-      const answer = await musicApi.match(request, signal);
-      return answer.albums.find((a) => a.album.jellyfinId)?.album.jellyfinId ?? null;
-    },
+    queryFn: ({ signal }) => findImportedLibraryAlbum(album!, signal),
     enabled: lookup,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
