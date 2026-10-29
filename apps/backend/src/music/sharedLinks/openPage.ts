@@ -76,3 +76,12 @@ export function sendOctaveOpenPage(request: FastifyRequest, reply: FastifyReply)
   const html = octaveOpenPageHtml({ lang, kind: target.kind, route: target.route, path, prefix: path.slice(0, at), webUi: isWebUiEnabled(), nonce });
   return reply.status(200).type("text/html; charset=utf-8").send(html);
 }
+
+/**
+ * Le lien à ENVOYER pour une page d'Octave (o2 : la notification et « Copier le lien » d'une playlist partagée
+ * entre comptes) : `<origine>/octave/open/<page>/<id>`. L'origine est celle du lien public du serveur quand il
+ * en a un (`publishedPublicUrl`), sinon celle par laquelle le client le joint — comme un lien de partage.
+ */
+export function octaveOpenLink(origin: string, kind: Exclude<OpenPageKind, "search">, id: string): string {
+  return `${origin.replace(/\/+$/, "")}/octave/open/${kind}/${encodeURIComponent(id)}`;
+}

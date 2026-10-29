@@ -5,7 +5,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogTrackOf, resetShazamCache, resolveShazamLink, type ShazamFetch } from "./shazamResolve";
-import { octaveOpenPageHtml, openPageTarget } from "./openPage";
+import { octaveOpenLink, octaveOpenPageHtml, openPageTarget } from "./openPage";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const shazamBody = (title: string, subtitle: string) => json({ type: "MUSIC", key: "1", title, subtitle });
@@ -83,5 +83,11 @@ describe("page d'ouverture d'un lien", () => {
     expect(open).toContain('href="/octave/playlist/abc"');
     expect(open).toContain("Une playlist pour vous");
     expect(octaveOpenPageHtml({ ...base, webUi: false })).not.toContain('href="/octave/playlist/abc"');
+  });
+
+  it("le lien à envoyer se rouvre sur la même page", () => {
+    const link = octaveOpenLink("https://exemple.fr/", "playlist", "a b");
+    expect(link).toBe("https://exemple.fr/octave/open/playlist/a%20b");
+    expect(openPageTarget(new URL(link).pathname.slice("/octave/open".length), undefined)?.route).toBe("/octave/playlist/a%20b");
   });
 });
