@@ -2,7 +2,8 @@
  * Octave — les FAVORIS de la bibliothèque d'un compte, par rubrique, et l'ordre personnel de chacune
  * (`GET /api/music/library/shelves`, contrat `musicLibraryShelves.ts`). Les favoris de la bibliothèque sont ceux de
  * Jellyfin (déjà relevés pour le cœur : `userFavorites.ts`, aucune requête de plus) ; ceux qu'il ne peut pas tenir
- * viennent de Tentacle. L'ordre n'est PAS appliqué ici : les clients le font (règle pure partagée `libraryShelves`).
+ * viennent de Tentacle — ceux d'une extension coupée ou retirée ne sont pas montrés, mais restent gardés : ils
+ * reviennent avec elle (`usablePlugins`). L'ordre n'est PAS appliqué ici : les clients le font (règle pure partagée `libraryShelves`).
  */
 
 import { MUSIC_SHELF_SECTIONS, type MusicLibraryShelves, type MusicShelfExternalPlaylist, type MusicShelfPlaylist } from "../contract/musicLibraryShelves";
@@ -12,6 +13,7 @@ import { playlistsView } from "../view/playlistViews";
 import { albumsOf, artistsOf, visibleInOrder, type UserView } from "../view/viewContext";
 import { readSnapshot } from "./shelfSnapshot";
 import { listShelfFavorites } from "./shelfFavoriteStore";
+import { usablePlugins } from "../../services/pluginStorage/gate";
 
 const EMPTY: MusicLibraryShelves = { albums: [], artists: [], playlists: [], order: { albums: [], artists: [], playlists: [] } };
 
@@ -27,10 +29,11 @@ export async function shelvesView(view: UserView): Promise<MusicLibraryShelves> 
   const albums: MusicAlbum[] = await albumsOf(view, rows.filter((r) => r.kind === "album"));
   const artists: MusicArtist[] = artistsOf(rows.filter((r) => r.kind === "artist"), view);
   const shelfPlaylists: MusicShelfPlaylist[] = playlists.filter((p) => p.favorite === true).map((playlist) => ({ kind: "library", playlist }));
+  const serving = new Set(usablePlugins().map((p) => p.pluginId));
   for (const row of stored) {
     if (!row.itemKey.startsWith("ext:")) continue;
     const snapshot = readSnapshot(row.section, row.snapshotJson);
-    if (!snapshot) continue;
+    if (!snapshot || !serving.has(snapshot.external?.pluginId ?? "")) continue;
     if (row.section === "albums") albums.push(snapshot as MusicAlbum);
     else if (row.section === "artists") artists.push(snapshot as MusicArtist);
     else shelfPlaylists.push({ kind: "external", playlist: snapshot as MusicShelfExternalPlaylist });
