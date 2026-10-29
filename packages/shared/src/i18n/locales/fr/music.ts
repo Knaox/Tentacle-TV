@@ -268,6 +268,7 @@ export default {
     kbps: "{{count}} kb/s",
     open: "Ouvrir le lecteur",
     close: "Fermer le lecteur",
+    stop: "Arrêter la lecture",
   },
   queue: {
     title: "File d'attente",

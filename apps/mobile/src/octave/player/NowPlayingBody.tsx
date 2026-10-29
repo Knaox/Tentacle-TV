@@ -1,7 +1,7 @@
 /**
  * Octave (mobile) — le contenu du lecteur plein écran : l'en-tête (poignée, refermer, file), la pochette OU la
  * file, le titre et ses gestes (cœur, playlist, menu : `NowPlayingActions`), la position, les commandes, puis la
- * transition douce (pastille → panneau). Téléphone en
+ * transition douce (pastille → panneau) et « Arrêter la lecture ». Téléphone en
  * colonne, tablette et paysage côte à côte (`nowPlayingLayout`).
  */
 
@@ -17,6 +17,7 @@ import { NowPlayingArtwork } from "./NowPlayingArtwork";
 import { QueueList } from "./QueueList";
 import { NowPlayingSourceButton } from "./source/NowPlayingSourceButton";
 import { SeekBar } from "./SeekBar";
+import { StopButton } from "./StopButton";
 import { TransportControls } from "./TransportControls";
 import { usePlayerSelector } from "./OctavePlayerContext";
 import { closeNowPlaying } from "./nowPlayingStore";
@@ -63,8 +64,11 @@ export const NowPlayingBody = memo(function NowPlayingBody({ headerHandlers, onD
       <TrackTitle />
       <SeekBar />
       <TransportControls compact={split && height < 500} />
+      {/* La transition douce au centre, « Arrêter la lecture » à droite (une place égale à gauche la centre). */}
       <View style={styles.bottomRow}>
+        <View style={styles.iconSpace} />
         <CrossfadeChip open={fadeOpen} onToggle={() => setFadeOpen((v) => !v)} />
+        <StopButton shape="stop" />
       </View>
     </View>
   );
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
   titles: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
   artist: { fontSize: 16 },
-  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 44 },
+  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
   splitRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 40 },
   splitArt: { alignItems: "center", justifyContent: "center" },
   splitSide: { flex: 1, maxWidth: 520, alignSelf: "stretch", justifyContent: "center", gap: 20 },

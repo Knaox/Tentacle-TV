@@ -24,10 +24,12 @@ class OctaveAudioService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = OctaveAudioEngine.session
 
-    /** L'application balayée : on n'arrête que si rien ne joue (la musique continue sinon). */
+    /**
+     * L'application balayée : la musique S'ARRÊTE, même en pleine écoute (règle du 29/10 — avant, elle continuait
+     * et plus rien ne permettait de la quitter), la notification part, et au retour on repart de zéro.
+     */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (OctaveAudioEngine.isPlaying()) return
-        OctaveAudioEngine.releaseIdle()
+        OctaveAudioEngine.onTaskRemoved()
         stopSelf()
     }
 

@@ -100,8 +100,10 @@ export type EngineEvent =
   /**
    * Une commande du SYSTÈME (écran verrouillé, notification média, casque, appel) : le lecteur l'applique comme
    * un geste — l'intention « lecture » et la file sont les siennes. Un moteur sans contrôles système n'en émet pas.
+   * `stop` : « Arrêter » de la notification, ou l'application fermée pour de bon (balayée) — le lecteur s'arrête
+   * et VIDE sa file, comme le bouton « Arrêter ».
    */
-  | { type: "remote"; command: "play" | "pause" | "next" | "previous" };
+  | { type: "remote"; command: "play" | "pause" | "next" | "previous" | "stop" };
 
 /**
  * Le moteur ne connaît que des titres et des sources : la FILE (ordre,
