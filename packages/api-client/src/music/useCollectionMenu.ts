@@ -9,7 +9,7 @@ import { useCallback, useMemo } from "react";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { collectionActions, type CollectionAction, type CollectionActionId, type CollectionKind } from "@tentacle-tv/shared/octave";
 import type { LibraryShelf } from "./useLibraryShelf";
-import { shelfFavoriteOf, shelfSubjectKey, useMusicShelves, useToggleShelfFavorite, type MusicShelfSubject } from "./useMusicShelves";
+import { shelfFavoriteOf, shelfSubjectFavoritable, shelfSubjectKey, useMusicShelves, useToggleShelfFavorite, type MusicShelfSubject } from "./useMusicShelves";
 import { useMusicPlaylistMembersAvailable, usePlaylistSharingRules } from "./useMusicPlaylistMembers";
 import { useMusicPlaylistShareAvailable } from "./useMusicPlaylistShare";
 
@@ -40,7 +40,7 @@ export function useCollectionMenu(subject: MusicShelfSubject, shelf?: Pick<Libra
       collectionActions({
         kind: KIND[subject.section],
         favorite,
-        canFavorite: capable,
+        canFavorite: capable && shelfSubjectFavoritable(subject),
         ordered,
         atTop: shelf?.atTop(key) ?? true,
         canReorder: shelf?.canReorder(key) ?? false,
@@ -48,7 +48,7 @@ export function useCollectionMenu(subject: MusicShelfSubject, shelf?: Pick<Libra
           playlist: { editable: playlist?.editable === true, isMember: rules.isMember, canShareWith: members, canShareLink: shareLink },
         }),
       }),
-    [subject.section, favorite, capable, ordered, shelf, key, playlist, rules.isMember, members, shareLink],
+    [subject, favorite, capable, ordered, shelf, key, playlist, rules.isMember, members, shareLink],
   );
   const run = useCallback(
     (id: CollectionActionId) => {

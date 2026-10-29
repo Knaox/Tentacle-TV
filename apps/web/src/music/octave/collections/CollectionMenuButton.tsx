@@ -7,16 +7,17 @@
 import { useCallback, useRef, useState, type MouseEvent, type ReactElement, type RefObject } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useMusicShelvesCapability, usePlaylistSharingRules, type MusicShelfSubject } from "@tentacle-tv/api-client";
+import { shelfSubjectFavoritable, useMusicShelvesCapability, usePlaylistSharingRules, type MusicShelfSubject } from "@tentacle-tv/api-client";
 import { CollectionMenuPanel, subjectName } from "./CollectionMenu";
 import { useLongPress } from "./useLongPress";
 
-/** Le menu a-t-il quelque chose à offrir ? (le favori dès que le serveur le garde ; sinon la gestion d'une playlist) */
+/** Le menu a-t-il quelque chose à offrir ? (le favori dès que le serveur le garde ET que l'élément le permet ; sinon la gestion d'une playlist) */
 export function useCollectionMenuShown(subject: MusicShelfSubject): boolean {
   const capable = useMusicShelvesCapability();
   const playlist = subject.section === "playlists" && subject.item.kind === "library" ? subject.item.playlist : null;
   const { isMember } = usePlaylistSharingRules(playlist);
-  return capable || playlist?.editable === true || isMember;
+  // Une playlist de la bibliothèque a aussi l'ordre de sa rubrique : elle est toujours « favorisable ».
+  return (capable && shelfSubjectFavoritable(subject)) || playlist?.editable === true || isMember;
 }
 
 export type CollectionMenuHandlers = Partial<ReturnType<typeof useLongPress> & { onContextMenu: (e: MouseEvent) => void }>;

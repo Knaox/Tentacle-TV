@@ -22,6 +22,7 @@ import {
   type MusicShelfPlaylist,
   type MusicShelfSection,
 } from "@tentacle-tv/shared/music";
+import { collectionFavoritable } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { useServerCapability } from "../hooks/useServerCapabilities";
 import { musicKeys } from "./musicQueryKeys";
@@ -69,6 +70,12 @@ export function shelfSubjectKey(subject: MusicShelfSubject): string {
   return subject.section === "playlists" ? shelfPlaylistKey(subject.item) : shelfKeyOf(subject.item);
 }
 
+/** Le favori de cet élément peut-il partir au serveur ? (`collectionFavoritable` : exactement quand `requestOf` a quoi envoyer.) */
+export function shelfSubjectFavoritable(subject: MusicShelfSubject): boolean {
+  if (subject.section === "playlists") return subject.item.kind === "library" || collectionFavoritable({ jellyfinId: null, external: subject.item.playlist.external });
+  return collectionFavoritable(subject.item);
+}
+
 function jellyfinIdOf(subject: MusicShelfSubject): string | null {
   if (subject.section === "playlists") return subject.item.kind === "library" ? subject.item.playlist.jellyfinId : null;
   return subject.item.jellyfinId;
@@ -76,6 +83,7 @@ function jellyfinIdOf(subject: MusicShelfSubject): string | null {
 
 /** La requête d'un geste ; l'instantané d'un élément d'extension sans ses titres (une vue en porte des centaines). */
 function requestOf(subject: MusicShelfSubject, favorite: boolean): MusicShelfFavoriteRequest | null {
+  if (!shelfSubjectFavoritable(subject)) return null;
   const jellyfinId = jellyfinIdOf(subject);
   if (jellyfinId) return { section: subject.section, jellyfinId, favorite };
   if (subject.section === "playlists") {
@@ -109,9 +117,9 @@ export function shelvesAfter(shelves: MusicLibraryShelves, subject: MusicShelfSu
   return { ...shelves, artists: favorite ? [{ ...subject.item, favorite: true }, ...list] : list };
 }
 
-/** L'état du favori d'un élément : son drapeau, sinon sa présence parmi les favoris ; `undefined` sans la capacité. */
+/** L'état du favori d'un élément : son drapeau, sinon sa présence parmi les favoris ; `undefined` sans la capacité ou sans favori possible. */
 export function shelfFavoriteOf(subject: MusicShelfSubject, shelves: MusicLibraryShelves, capable: boolean): boolean | undefined {
-  if (!capable) return undefined;
+  if (!capable || !shelfSubjectFavoritable(subject)) return undefined;
   const flag = subject.section === "playlists" ? (subject.item.kind === "library" ? subject.item.playlist.favorite : undefined) : subject.item.favorite;
   if (flag !== undefined) return flag;
   const key = shelfSubjectKey(subject);
