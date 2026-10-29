@@ -6,8 +6,8 @@
 export default {
   edit: "Edit",
   done: "Done",
-  editHint: "Drag the handle to change the order. Tap “–” to remove a track.",
-  reorderHint: "Drag the handle to change the order.",
+  editHint: "Drag the handle to change the order. Check tracks to remove them, add them to a playlist or to the queue.",
+  reorderHint: "Drag the handle to change the order. Check tracks to add them to a playlist or to the queue.",
   removeRow: "Remove “{{title}}” from the playlist",
   moveUp: "Move up",
   moveDown: "Move down",

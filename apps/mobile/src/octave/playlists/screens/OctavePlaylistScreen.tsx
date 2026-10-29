@@ -31,6 +31,7 @@ import { usePlaylistData } from "../data/useListData";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { useMobilePlaylistRemoval } from "../sheets/useMobilePlaylistManage";
 import { GlassIconButton } from "./BarButtons";
+import { AddAllButton } from "../../pages/selection/AddAllButton";
 import { ListPage } from "./ListPage";
 import { SharedLine } from "../members/SharedLine";
 
@@ -46,6 +47,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
   const target = useMemo(() => (data ? { jellyfinId: id, name: data.name } : null), [data, id]);
   const removeRows = useMobilePlaylistRemoval(target);
   const onRemove = useCallback((row: ListRow) => void removeRows(natural, new Set([row.rowKey])), [natural, removeRows]);
+  const onRemoveRows = useCallback((rowKeys: readonly string[]) => void removeRows(natural, new Set(rowKeys)), [natural, removeRows]);
   const tracks = useMemo(() => order.rows.map((r) => r.track), [order.rows]);
   const allTracks = useMemo(() => natural.map((r) => r.track), [natural]);
   const contextId = `playlist:${id}`;
@@ -82,7 +84,15 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
         onPlay={() => playFrom(player, tracks, 0, contextId)}
         onShuffle={() => player && queueActions.playShuffled(player, tracks, contextId)}
         // Garder la playlist ENTIÈRE sur l'appareil (et la tenir à jour), comme le bureau.
-        extra={data && !loading ? <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} /> : undefined}
+        extra={
+          data && !loading ? (
+            <>
+              <KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={allTracks} />
+              {/* Tous ses titres, dans l'ordre, dans une AUTRE playlist (doublons : au choix). */}
+              <AddAllButton tracks={allTracks} />
+            </>
+          ) : undefined
+        }
       />
       {data?.description ? <Text style={[typography.caption, { color: theme.colors.text.secondary, paddingHorizontal: gutter, paddingBottom: 8, textAlign: "center" }]}>{data.description}</Text> : null}
     </>
@@ -131,6 +141,7 @@ export function OctavePlaylistScreen({ id }: { id: string }) {
       loading={loading}
       empty={empty}
       onRemove={canRemove ? onRemove : undefined}
+      onRemoveRows={canRemove ? onRemoveRows : undefined}
       actions={actions}
     />
   );

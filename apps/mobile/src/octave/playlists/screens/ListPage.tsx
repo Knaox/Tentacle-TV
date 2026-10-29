@@ -3,11 +3,13 @@
  * la liste (chercher, trier, filtrer), les titres, et ses états (attente à la place des rangées, vide, « aucun
  * titre ne correspond »). La barre du haut garde le retour (verre) et, à droite, « Modifier » puis les actions
  * de la page. L'ordre ne se change QU'EN MODE « MODIFIER » (poignées, et « – » sur une playlist modifiable) :
- * hors de ce mode, aucune poignée, et la rangée se balaie (« Lire ensuite », file). Les feuilles et avis des
- * pages (m3) sont montés ici comme sur toute page d'Octave.
+ * hors de ce mode, aucune poignée, et la rangée se balaie (« Lire ensuite », file). « Modifier » est aussi la
+ * SÉLECTION (ajout du 29/10) : une case par rangée, toucher coche, et la barre des gestes groupés (modèle partagé,
+ * comme le bureau) — « Retirer » y remplace le « – » des rangées. Les feuilles et avis des pages (m3) sont montés
+ * ici comme sur toute page d'Octave.
  */
 
-import { useState, type ReactElement, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +25,8 @@ import { usePageMetrics } from "../../pages/ui/pageStyle";
 import { ListControls } from "../controls/ListControls";
 import { ReorderableTrackList } from "../reorder/ReorderableTrackList";
 import { GlassTextButton } from "./BarButtons";
+import { MobileSelectionBar } from "../../pages/selection/MobileSelectionBar";
+import { SELECTION_BAR_ROOM, selectionBarBottom, useTrackSelection } from "../../pages/selection/useTrackSelection";
 
 type ListOrder = ReturnType<typeof useListOrder>;
 
@@ -38,11 +42,13 @@ interface Props {
   empty: ReactElement;
   /** Le « – » de chaque rangée en mode « Modifier » (playlist modifiable seulement). */
   onRemove?: (row: ListRow) => void;
+  /** « Retirer » de la barre de sélection (playlist modifiable) : les rangées cochées, d'un geste. */
+  onRemoveRows?: (rowKeys: readonly string[]) => void;
   /** À droite de la barre du haut, après « Modifier ». */
   actions?: ReactNode;
 }
 
-export function ListPage({ title, contextId, hero, natural, order, loading, empty, onRemove, actions }: Props) {
+export function ListPage({ title, contextId, hero, natural, order, loading, empty, onRemove, onRemoveRows, actions }: Props) {
   const { t } = useTranslation("music");
   const { t: tl } = useTranslation("musicLists");
   const theme = useTheme();
@@ -52,11 +58,24 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
   const rows = order.rows;
   const block = order.reorder?.block ?? null;
   // « Modifier » existe dès qu'il y a quelque chose à modifier : l'ordre (liste du compte) ou les titres.
-  const canEdit = !loading && natural.length > 0 && (order.reorder !== null || onRemove !== undefined);
+  // (et la sélection : dès qu'il y a des titres, ajout du 29/10).
+  const canEdit = !loading && natural.length > 0;
   const [editRequested, setEditing] = useState(false);
   const editing = canEdit && editRequested;
+  // « Modifier » ouvre la sélection (vide) ; « OK » la ferme.
+  const keys = useMemo(() => rows.map((r) => r.rowKey), [rows]);
+  const selection = useTrackSelection(keys);
+  const { start, clear } = selection;
+  useEffect(() => {
+    if (editing) start();
+    else clear();
+  }, [clear, editing, start]);
+  const chosenTracks = useMemo(() => {
+    const byKey = new Map(rows.map((r) => [r.rowKey, r.track]));
+    return selection.chosen.flatMap((k) => byKey.get(k) ?? []);
+  }, [rows, selection.chosen]);
   // Ordre bloqué (recherche, filtre, tri) : pas de poignée, la barre dit seule pourquoi.
-  const editHint = editing && block === null ? tl(onRemove ? "editHint" : "reorderHint") : null;
+  const editHint = editing && block === null && order.reorder !== null ? tl(onRemove ? "editHint" : "reorderHint") : null;
 
   const header = (
     <View>
@@ -98,6 +117,9 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
         reorder={order.reorder}
         editing={editing}
         onRemove={editing ? onRemove : undefined}
+        selected={editing ? selection.selected : undefined}
+        onToggle={editing ? selection.toggle : undefined}
+        extraBottom={editing ? SELECTION_BAR_ROOM : 0}
       />
       <PageTopBar title={title} scrollY={scrollY} threshold={320} />
       {canEdit || actions ? (
@@ -105,6 +127,17 @@ export function ListPage({ title, contextId, hero, natural, order, loading, empt
           {canEdit ? <GlassTextButton label={editing ? tl("done") : tl("edit")} strong={editing} onPress={() => setEditing(!editing)} /> : null}
           {actions}
         </View>
+      ) : null}
+      {editing ? (
+        <MobileSelectionBar
+          count={chosenTracks.length}
+          total={rows.length}
+          tracks={chosenTracks}
+          bottom={selectionBarBottom(bottomInset)}
+          onSelectAll={selection.selectAll}
+          onDone={() => setEditing(false)}
+          onRemove={onRemoveRows ? () => onRemoveRows(selection.chosen) : undefined}
+        />
       ) : null}
       <OctavePagesHost />
     </View>

@@ -32,11 +32,16 @@ interface Props {
   editing: boolean;
   /** Mode « Modifier » d'une playlist modifiable : le « – » de chaque rangée. */
   onRemove?: (row: ListRow) => void;
+  /** Mode « Modifier » avec sélection : les rangées cochées (`rowKey`) et le toucher qui coche. */
+  selected?: ReadonlySet<string>;
+  onToggle?: (rowKey: string) => void;
+  /** Place en plus au bas de la liste (la barre de sélection). */
+  extraBottom?: number;
 }
 
 const AnimatedList = Animated.createAnimatedComponent(FlatList<ListRow>);
 
-export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove }: Props) {
+export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove, selected, onToggle, extraBottom = 0 }: Props) {
   const { t } = useTranslation("musicLists");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
@@ -78,11 +83,16 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
     },
     [canDrag, onMove, rows, t],
   );
+  const toggle = useCallback((index: number) => {
+    const row = rows[index];
+    if (row) onToggle?.(row.rowKey);
+  }, [onToggle, rows]);
   const remove = useCallback((index: number) => {
     const row = rows[index];
     if (row) onRemove?.(row);
   }, [onRemove, rows]);
 
+  const extraData = useMemo(() => (selected ? [drag, selected] : drag), [drag, selected]);
   const renderItem = useCallback<ListRenderItem<ListRow>>(
     ({ item, index }) => (
       <ReorderRow
@@ -101,9 +111,11 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         onStep={step}
         onRemove={onRemove ? remove : undefined}
         editing={editing}
+        selected={selected?.has(item.rowKey) ?? false}
+        onToggle={onToggle ? toggle : undefined}
       />
     ),
-    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, play, remove, step, tracks],
+    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, onToggle, play, remove, selected, step, toggle, tracks],
   );
 
   return (
@@ -113,13 +125,13 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         data={rows as ListRow[]}
         keyExtractor={(r) => r.rowKey}
         renderItem={renderItem}
-        extraData={drag}
+        extraData={extraData}
         ListHeaderComponent={header}
         ListFooterComponent={footer ?? null}
         onScroll={onScroll}
         scrollEventThrottle={16}
         scrollEnabled={drag === null}
-        contentContainerStyle={{ paddingBottom: bottomInset }}
+        contentContainerStyle={{ paddingBottom: bottomInset + extraBottom }}
         initialNumToRender={14}
         maxToRenderPerBatch={12}
         windowSize={9}

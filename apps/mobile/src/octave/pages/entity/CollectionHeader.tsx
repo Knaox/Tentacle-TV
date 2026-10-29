@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
   textPhone: { alignItems: "center", alignSelf: "stretch" },
   textTablet: { flex: 1, minWidth: 0 },
   meta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
-  buttons: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, marginBottom: 8 },
+  // Assez de boutons pour dépasser un téléphone (garder, ajouter tout, cœur…) : ils passent à la ligne, jamais hors écran.
+  buttons: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 12, marginBottom: 8 },
   shuffle: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48, paddingHorizontal: 22 },
 });

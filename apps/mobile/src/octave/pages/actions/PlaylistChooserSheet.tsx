@@ -14,7 +14,7 @@ import { chooserSnapshot, closePlaylistChooser, subscribeChooser, useMusicPlayli
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { BottomSheet } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
-import { useMobileTrackActions } from "../env/useMobileActionsUi";
+import { useMobileBulkGestures, useMobileTrackActions } from "../env/useMobileActionsUi";
 import { LibraryPlaylistArtwork } from "../ui/PlaylistArtwork";
 import { accentTextOf } from "../ui/pageStyle";
 import { OctaveBrandFill } from "../../layout/OctaveBrandFill";
@@ -25,6 +25,9 @@ function Chooser({ request }: { request: ChooserRequest }) {
   const theme = useTheme();
   const playlists = useMusicPlaylists();
   const actions = useMobileTrackActions();
+  // Plusieurs titres (sélection, tout un album) : UN geste groupé — ordre gardé, doublons au choix, une seule playlist créée.
+  const bulk = useMobileBulkGestures();
+  const many = request.tracks.length > 1 && !request.moveFrom;
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p) && p.jellyfinId !== request.moveFrom?.jellyfinId);
@@ -38,10 +41,19 @@ function Chooser({ request }: { request: ChooserRequest }) {
     setBusy(false);
     if (added) closePlaylistChooser();
   };
-  const pick = (playlist: MusicPlaylist) => void run((track) => actions.addToPlaylist(track, playlist));
+  const runMany = async (go: () => Promise<boolean>) => {
+    if (busy) return;
+    setBusy(true);
+    const added = await go();
+    setBusy(false);
+    if (added) closePlaylistChooser();
+  };
+  const pick = (playlist: MusicPlaylist) =>
+    void (many ? runMany(() => bulk.addToPlaylist(request.tracks, playlist)) : run((track) => actions.addToPlaylist(track, playlist)));
   const create = () => {
     const trimmed = name.trim();
-    if (trimmed) void run((track) => actions.createPlaylistAndAdd(track, trimmed));
+    if (!trimmed) return;
+    void (many ? runMany(() => bulk.createPlaylistAndAdd(request.tracks, trimmed)) : run((track) => actions.createPlaylistAndAdd(track, trimmed)));
   };
   return (
     <View style={styles.body}>
