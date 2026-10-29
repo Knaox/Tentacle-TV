@@ -747,6 +747,10 @@ jobs:
 
       # PRÉ-VERSION au cran test : le paquet est téléchargeable, mais le
       # manifeste n'est pas patché — l'auto-updater ne propose rien.
+      # SHA256SUMS part AVEC les paquets, dès le cran test : la promotion
+      # relit les sommes dans la Release (job « manifest »). Sans lui, la
+      # promotion de 1.40.0 (29/10) publiait la Release sans pouvoir patcher
+      # le manifeste.
       - name: Créer la Release GitHub
         if: needs.prepare.outputs.channel != 'build'
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
@@ -761,6 +765,7 @@ jobs:
             dist-linux/*.rpm
             dist-linux/*.AppImage
             dist-linux/*.pkg.tar.zst
+            dist-linux/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -821,23 +826,18 @@ jobs:
           TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           if [ "${{ needs.prepare.outputs.linux }}" = "promote" ]; then
-            gh release download "$TAG" --pattern SHA256SUMS --clobber
+            if ! gh release download "$TAG" --pattern SHA256SUMS --clobber; then
+              echo "::error::la Release ${TAG} n'a pas de SHA256SUMS (pré-version d'avant le 29/10). Dépose celui de l'artefact « tentacle-sums-main » du run de test (ses sommes doivent égaler les empreintes des paquets de la Release), puis relance ce job."
+              exit 1
+            fi
           fi
 
+      # Au cran store construit, la Release porte déjà SHA256SUMS (job linux).
       - name: Récupérer SHA256SUMS (artefact du build)
         if: needs.prepare.outputs.linux == 'build'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: tentacle-sums-main
-
-      - name: Ajouter SHA256SUMS à la Release
-        if: needs.prepare.outputs.linux == 'build'
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
-        with:
-          tag_name: ${{ needs.prepare.outputs.tag }}
-          files: SHA256SUMS
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Le manifeste est repris de `main` : c'est un fichier que d'autres jobs
       # écrivent aussi, et repartir d'une copie périmée effacerait leur bloc.
