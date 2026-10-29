@@ -72,6 +72,27 @@ describe("Spotify (page d'intégration publique)", () => {
   });
 });
 
+describe("un titre que la SOURCE ne joue pas (le motif du bilan d'import)", () => {
+  it("Spotify `isPlayable: false` : refusé par la source ; un titre jouable ne dit rien", async () => {
+    const html = fixture("spotify-playlist.html");
+    const data = JSON.parse(html.slice(html.indexOf(">", html.indexOf("__NEXT_DATA__")) + 1, html.indexOf("</script>")));
+    data.props.pageProps.state.data.entity.trackList[1].isPlayable = false;
+    const page: ImportFetcher = async (url) => ({ status: 200, url, body: `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(data)}</script>` });
+    const pl = await readSpotify(page, "playlist", "x");
+    expect(pl.tracks[1]?.sourceBlocked).toBe("refused");
+    expect(pl.tracks[0]).not.toHaveProperty("sourceBlocked");
+  });
+
+  it("Deezer `readable: false` : réservé à d'autres pays", async () => {
+    const head = JSON.parse(fixture("deezer-playlist.json"));
+    head.tracks.data[2].readable = false;
+    const fetcher: ImportFetcher = async (url) => ({ status: 200, url, body: url.includes("index=") ? '{"data":[]}' : JSON.stringify(head) });
+    const pl = await readDeezer(fetcher, "playlist", "1109890291");
+    expect(pl.tracks[2]?.sourceBlocked).toBe("region");
+    expect(pl.tracks[0]).not.toHaveProperty("sourceBlocked");
+  });
+});
+
 describe("Apple Music (page publique)", () => {
   const URL_PL = "https://music.apple.com/us/playlist/todays-hits/pl.f4d106fed2bd41149aaacabb233eb5eb";
 

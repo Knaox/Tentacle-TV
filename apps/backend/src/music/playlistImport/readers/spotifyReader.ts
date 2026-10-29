@@ -43,6 +43,8 @@ export function parseSpotifyEmbed(html: string, kind: "playlist" | "album"): Imp
       durationMs: durationOf(t.duration),
       isrc: null,
       sourceId: field(t.uri),
+      // `isPlayable: false` : Spotify ne le joue pas, sans dire pourquoi (le motif du bilan, s'il n'entre pas).
+      ...(t.isPlayable === false ? { sourceBlocked: "refused" as const } : {}),
     })),
   );
   if (tracks.length === 0) throw new ImportReadFailure("empty");
