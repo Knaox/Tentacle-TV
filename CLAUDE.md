@@ -1585,8 +1585,10 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
 
 - **Une seule porte : `<html data-liquid-glass="native">`** (`theme/liquidGlassMode.ts`, posée
   avant le premier rendu) — le pont de la coquille dit le système capable
-  (`window.tentacle.liquidGlass.supported`) ET le réglage est allumé (Réglages › Apparence, allumé
-  d'office, `tentacle_liquid_glass`). Toute règle qui lit `var(--lg-…)` ou `.lg-…` est portée par
+  (`window.tentacle.liquidGlass.supported`) ET le réglage DE LA SURFACE AFFICHÉE est allumé — deux
+  réglages de l'appareil, Réglages › Apparence : Tentacle (`tentacle_liquid_glass`) COUPÉ d'office,
+  Octave (`tentacle_octave_liquid_glass`) ALLUMÉ d'office (lot « fl », 30/10) ; rien n'est écrit tant que
+  l'utilisateur ne choisit pas, une valeur gardée reste la sienne. Toute règle qui lit `var(--lg-…)` ou `.lg-…` est portée par
   `:root[data-liquid-glass="native"]` (`liquidGlassTokens.test.ts`) : web, Windows, Linux, macOS < 26,
   réglage coupé gardent le RENDU D'AVANT au pixel près. L'option n'existe pas sur un macOS < 26.
   Fonction purement client : aucune capacité serveur.

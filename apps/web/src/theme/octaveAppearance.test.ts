@@ -3,7 +3,7 @@ import { effectiveThemeMode } from "./colorScheme";
 
 /**
  * L'apparence d'Octave, à part de celle de Tentacle (Damien, 26/10) : le thème d'Octave ne vaut que quand Octave
- * est affiché ; « Liquid Glass dans Octave » part de la valeur de Tentacle, puis vit sa vie.
+ * est affiché ; « Liquid Glass dans Octave » est allumé d'office (lot « fl »), quel que soit celui de Tentacle.
  */
 
 describe("thème d'Octave seul", () => {
@@ -30,11 +30,17 @@ describe("Liquid Glass dans Octave : réglage de l'appareil", () => {
     vi.resetModules();
   });
 
-  it("au premier lancement, la valeur de Tentacle, recopiée une fois", async () => {
+  it("au premier lancement : allumé, même Tentacle coupé, sans rien écrire", async () => {
     localStorage.setItem("tentacle_liquid_glass", "false");
     const store = await import("./octaveAppearance");
+    expect(store.getOctaveLiquidGlass()).toBe(true);
+    expect(localStorage.getItem("tentacle_octave_liquid_glass")).toBeNull();
+  });
+
+  it("un choix déjà gardé (coupé) reste le sien", async () => {
+    localStorage.setItem("tentacle_octave_liquid_glass", "false");
+    const store = await import("./octaveAppearance");
     expect(store.getOctaveLiquidGlass()).toBe(false);
-    expect(localStorage.getItem("tentacle_octave_liquid_glass")).toBe("false");
   });
 
   it("ensuite indépendant : Tentacle change, Octave garde le sien (et l'inverse)", async () => {

@@ -4,9 +4,11 @@
  * Même clé de stockage que le mobile (`tentacle_liquid_glass`), pour que le
  * vocabulaire reste identique d'une plateforme à l'autre.
  *
- * Défaut ACTIVÉ quand le moteur le supporte : c'est une fonctionnalité vitrine,
- * on l'offre en opt-out. Coupée, la surface retombe sur le flou enrichi
- * (liseré + spéculaire + saturation) — jamais sur une surface opaque nue.
+ * Défaut COUPÉ dans Tentacle (Damien, lot « fl » du 30/10 ; allumé jusque-là) :
+ * le verre se choisit, Octave l'a d'office (`octaveAppearance.ts`). Seul
+ * l'interrupteur écrit la clé : une valeur gardée est donc un choix de
+ * l'utilisateur, et reste la sienne. Coupée, la surface retombe sur le rendu
+ * d'avant.
  */
 
 export const LIQUID_GLASS_STORAGE_KEY = "tentacle_liquid_glass";
@@ -14,9 +16,9 @@ export const LIQUID_GLASS_STORAGE_KEY = "tentacle_liquid_glass";
 const read = (): boolean => {
   try {
     const raw = localStorage.getItem(LIQUID_GLASS_STORAGE_KEY);
-    return raw === null ? true : raw === "true";
+    return raw === "true";
   } catch {
-    return true;
+    return false;
   }
 };
 
