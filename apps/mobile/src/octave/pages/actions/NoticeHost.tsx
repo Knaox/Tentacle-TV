@@ -2,6 +2,9 @@
  * Octave mobile — l'AVIS des gestes, en pastille de verre au-dessus du
  * mini-lecteur : arrivée en ressort par le bas, sortie plus rapide, une action
  * possible (« Changer »), annoncé aux lecteurs d'écran sans voler le focus.
+ * L'avis ne BLOQUE JAMAIS un geste (30/10 : il tombait sur les poignées et les rangées au bas d'une
+ * playlist, juste là où le glisser fait défiler) : seul son bouton d'action reçoit le toucher, tout le
+ * reste le laisse passer à la page dessous. Il ne remet rien en page (couche à part, au-dessus).
  */
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -26,13 +29,15 @@ export function NoticeHost() {
   const tone = notice.kind === "error" ? theme.colors.status.error : accentTextOf(theme);
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer, { paddingBottom: above }]}>
-      <Animated.View key={notice.id} entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(160)} style={styles.wrap} accessibilityLiveRegion="polite">
+      <Animated.View key={notice.id} pointerEvents="box-none" entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(160)} style={styles.wrap} accessibilityLiveRegion="polite">
         {/* Voile + flou, jamais le verre natif d'iOS 26 : trop clair, l'avis se lisait par-dessus la liste. */}
         <GlassSurface tier="dropdown" tint="strong" radius={18} liquid={false} style={styles.pill}>
-          <Icon size={18} color={tone} />
-          <View style={styles.text}>
-            {notice.title ? <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{notice.title}</Text> : null}
-            <Text style={[typography.caption, { color: theme.colors.text.secondary }]}>{notice.message}</Text>
+          <View pointerEvents="none" style={styles.info}>
+            <Icon size={18} color={tone} />
+            <View style={styles.text}>
+              {notice.title ? <Text style={[typography.bodyBold, { color: theme.colors.text.primary }]}>{notice.title}</Text> : null}
+              <Text style={[typography.caption, { color: theme.colors.text.secondary }]}>{notice.message}</Text>
+            </View>
           </View>
           {notice.action ? (
             <Pressable
@@ -56,7 +61,9 @@ export function NoticeHost() {
 const styles = StyleSheet.create({
   layer: { justifyContent: "flex-end", alignItems: "center", zIndex: 50 },
   wrap: { maxWidth: 520, width: "92%" },
-  pill: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  // `pointerEvents` en style : le verre (et son flou) laisse passer le toucher, seul le bouton le prend.
+  pill: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, pointerEvents: "box-none" },
+  info: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 },
   text: { flex: 1, minWidth: 0, gap: 2 },
   action: { minHeight: 36, justifyContent: "center", paddingHorizontal: 4 },
 });

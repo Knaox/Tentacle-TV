@@ -125,7 +125,9 @@ export function GlassSurface({
         applyShadow ? null : style,
       ]}
     >
+      {/* Le flou n'est qu'un fond : il ne prend jamais le toucher (une surface « box-none » le laisse passer). */}
       <BlurView
+        pointerEvents="none"
         intensity={resolvedIntensity}
         tint={theme.blurTint}
         style={StyleSheet.absoluteFillObject}

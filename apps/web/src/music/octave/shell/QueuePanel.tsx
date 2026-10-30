@@ -3,12 +3,14 @@
  * réel de lecture — la file d'attente de l'utilisateur (« Lire ensuite »,
  * « Ajouter à la file d'attente »), puis la suite du contexte (« Suite de
  * l'album »…), règle partagée `queueFiles.ts`. Chaque entrée se lit, monte,
- * descend ou se retire au clavier comme à la souris — jamais un glisser seul.
+ * descend ou se retire au clavier comme à la souris, et se GLISSE par sa poignée
+ * à sa place DANS sa file (`useRowDrag`, le glisser des playlists) — jamais un
+ * glisser seul : les flèches restent.
  * Le panneau n'est MONTÉ qu'ouvert (rien à composer fermé) ; c'est un îlot
  * d'encre prune, le titre en cours en rose.
  */
 
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo, useRef, type CSSProperties, type RefObject } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type QueueItem, queueActions, queueContextTitleKey, queueSections } from "@tentacle-tv/shared/octave";
@@ -23,6 +25,12 @@ import { SelectionBar } from "../actions/selection/SelectionBar";
 import { clickGesture, isTrackUnavailable, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
 import { useListSelection } from "../actions/selection/useListSelection";
 import { NowSwell } from "../motion/NowSwell";
+import { DragHandle, type HandleSlot } from "../listOrder/DragHandle";
+import { useRowDrag } from "../listOrder/useRowDrag";
+import { rowShift } from "@tentacle-tv/shared/octave";
+
+/** La hauteur FIXE d'une entrée (pochette 40 + marges) : le glisser sait où tombe chacune. */
+const ENTRY_HEIGHT = 52;
 
 const small =
   "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
@@ -33,15 +41,47 @@ interface EntrySelection {
   onSelect: (uid: string, gesture: SelectGesture) => void;
 }
 
-function QueueEntry({ item, index, count, current, actions, selection }: { item: QueueItem; index: number; count: number; current: boolean; actions: TrackActions; selection?: EntrySelection }) {
+interface QueueEntryProps {
+  item: QueueItem;
+  index: number;
+  count: number;
+  current: boolean;
+  actions: TrackActions;
+  selection?: EntrySelection;
+  handle?: HandleSlot;
+  style?: CSSProperties;
+}
+
+/** Pendant un glisser, seules les entrées qui bougent se redessinent (les gestes de la poignée suivent le rang). */
+const sameEntry = (a: QueueEntryProps, b: QueueEntryProps) =>
+  a.item === b.item &&
+  a.index === b.index &&
+  a.count === b.count &&
+  a.current === b.current &&
+  a.actions === b.actions &&
+  a.selection?.selected === b.selection?.selected &&
+  a.selection?.selecting === b.selection?.selecting &&
+  a.selection?.onSelect === b.selection?.onSelect &&
+  a.handle?.lifted === b.handle?.lifted &&
+  a.style?.transform === b.style?.transform &&
+  a.style?.transition === b.style?.transition;
+
+const QueueEntry = memo(function QueueEntry({ item, index, count, current, actions, selection, handle, style }: QueueEntryProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const track = item.track;
-  const tone = current ? "bg-octave-accent-soft" : selection?.selected ? "bg-octave-selected" : "hover:bg-octave-hover";
+  const tone = handle?.lifted
+    ? "relative z-10 bg-[var(--oc-ink-raised)] shadow-[var(--oc-shadow-panel)]"
+    : current
+      ? "bg-octave-accent-soft"
+      : selection?.selected
+        ? "bg-octave-selected"
+        : "hover:bg-octave-hover";
   // Un titre indisponible reste dans la file, grisé : la file le saute, le cliquer le dit (`unavailableTrack.ts`).
   const locked = isTrackUnavailable(track);
   return (
-    <li className={`group flex items-center gap-2 rounded-xl px-1.5 py-1.5 ${tone}${locked ? " opacity-60" : ""}`}>
+    <li className={`group flex shrink-0 items-center gap-2 rounded-xl px-1.5 ${tone}${locked ? " opacity-60" : ""}`} style={{ height: ENTRY_HEIGHT, ...style }}>
+      {handle && <DragHandle slot={handle} />}
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
       )}
@@ -96,18 +136,26 @@ function QueueEntry({ item, index, count, current, actions, selection }: { item:
       )}
     </li>
   );
-}
+}, sameEntry);
 
 const sectionTitle = "px-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.14em]";
 
 /** Une des deux files : son titre (et son geste), puis ses entrées ; les déplacements restent dans SA file. */
-function QueueSection({ title, items, actions, selection, action }: {
+function QueueSection({ title, items, actions, selection, action, scroller }: {
   title: string;
   items: readonly QueueItem[];
   actions: TrackActions;
   selection: { selected: ReadonlySet<string>; selecting: boolean; onSelect: (uid: string, gesture: SelectGesture) => void };
   action?: { label: string; aria: string; run: () => void };
+  scroller: RefObject<HTMLDivElement | null>;
 }) {
+  const player = useOctavePlayer();
+  const onMove = useCallback((from: number, to: number) => {
+    const item = items[from];
+    if (item) queueActions.move(player, item.uid, to);
+  }, [items, player]);
+  const scrollElement = useCallback(() => scroller.current, [scroller]);
+  const { drag, handleProps } = useRowDrag(items.length, onMove, scrollElement, ENTRY_HEIGHT);
   if (items.length === 0) return null;
   return (
     <section className="pt-5">
@@ -119,18 +167,24 @@ function QueueSection({ title, items, actions, selection, action }: {
           </button>
         )}
       </div>
-      <ul className="flex flex-col gap-0.5">
-        {items.map((item, i) => (
-          <QueueEntry
-            key={item.uid}
-            item={item}
-            index={i}
-            count={items.length}
-            current={false}
-            actions={actions}
-            selection={{ selected: selection.selected.has(item.uid), selecting: selection.selecting, onSelect: selection.onSelect }}
-          />
-        ))}
+      <ul className="flex flex-col">
+        {items.map((item, i) => {
+          const lifted = drag !== null && drag.from === i;
+          const shift = drag === null ? 0 : lifted ? drag.offset : rowShift(i, drag.from, drag.over, ENTRY_HEIGHT);
+          return (
+            <QueueEntry
+              key={item.uid}
+              item={item}
+              index={i}
+              count={items.length}
+              current={false}
+              actions={actions}
+              selection={{ selected: selection.selected.has(item.uid), selecting: selection.selecting, onSelect: selection.onSelect }}
+              handle={{ index: i, title: item.track.title, blocked: null, lifted, props: handleProps(i) }}
+              style={drag ? { transform: `translateY(${shift}px)`, transition: lifted ? "none" : "transform 150ms ease-out" } : undefined}
+            />
+          );
+        })}
       </ul>
     </section>
   );
@@ -148,6 +202,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
   const selection = useListSelection(order);
   const chosen = orderedKeys(order, selection.selected);
   const sectionSelection = { selected: selection.selected, selecting: selection.selecting, onSelect: selection.select };
+  const scroller = useRef<HTMLDivElement>(null);
   return (
     <aside aria-label={t("queue.title")} className="flex h-full flex-col">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
@@ -156,7 +211,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto overscroll-contain px-2 pb-4">
+      <div ref={scroller} className="flex-1 overflow-y-auto overscroll-contain px-2 pb-4">
         {current && (
           <>
             <h3 className={`${sectionTitle} pt-2 text-octave-accent-text`}>{t("queue.nowPlaying")}</h3>
@@ -171,8 +226,9 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
           actions={actions}
           selection={sectionSelection}
           action={{ label: t("queue.clear"), aria: t("queue.clearLabel"), run: () => queueActions.clearUserQueue(player) }}
+          scroller={scroller}
         />
-        <QueueSection title={t(queueContextTitleKey(queue.contextId))} items={contextQueue} actions={actions} selection={sectionSelection} />
+        <QueueSection title={t(queueContextTitleKey(queue.contextId))} items={contextQueue} actions={actions} selection={sectionSelection} scroller={scroller} />
         {next.length === 0 && <p className="px-2 pt-5 text-sm text-content-tertiary">{t("queue.empty")}</p>}
       </div>
       {selection.selecting && (
