@@ -4,6 +4,13 @@
  * stockage (`OCTAVE_PAGE_KEY`, aucun secret : une adresse d'Octave et un
  * nombre de pixels) est celui de chaque plateforme ; une valeur illisible
  * vaut l'accueil d'Octave.
+ *
+ * ⚠️ Lot « fl » (30/10, Damien) : une app fermée COMPLÈTEMENT qui se rouvre en
+ * Octave arrive sur l'ACCUEIL d'Octave, en haut — jamais sur la dernière page.
+ * La page gardée ne décide donc plus de l'arrivée (`resumePath`) ni d'un
+ * défilement rejoué (`resumeScroll`) ; elle reste écrite et lue (forme, clé)
+ * pour qu'un retour à l'ancienne règle ne soit qu'une ligne. Un retour depuis
+ * l'arrière-plan n'est pas un lancement : l'app garde sa page.
  */
 
 /** Au-delà, la page gardée ne vaut plus : on rouvre l'accueil d'Octave. */
@@ -28,15 +35,19 @@ function valid(saved: SavedOctavePage | null, owner: string | null, now: number,
   return isOctavePath(saved.path, basePath);
 }
 
-/** Où arriver au lancement : la page gardée de CETTE identité, sinon l'accueil d'Octave. */
-export function resumePath(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string): string {
-  return valid(saved, owner, now, basePath) ? saved.path : basePath;
+/** La page gardée vaut-elle encore pour CETTE identité (même compte, récente, dans Octave) ? */
+export function savedPageValid(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string): saved is SavedOctavePage {
+  return valid(saved, owner, now, basePath);
 }
 
-/** Le défilement à rejouer, seulement sur la page gardée elle-même. */
-export function resumeScroll(saved: SavedOctavePage | null, owner: string | null, now: number, basePath: string, path: string): number | null {
-  if (!valid(saved, owner, now, basePath) || saved.path !== path) return null;
-  return saved.scrollTop > 0 ? saved.scrollTop : null;
+/** Où arriver au lancement : TOUJOURS l'accueil d'Octave (lot « fl ») — la page gardée n'y change rien. */
+export function resumePath(_saved: SavedOctavePage | null, _owner: string | null, _now: number, basePath: string): string {
+  return basePath;
+}
+
+/** Le défilement à rejouer au lancement : aucun (l'accueil s'ouvre en haut, lot « fl »). */
+export function resumeScroll(_saved: SavedOctavePage | null, _owner: string | null, _now: number, _basePath: string, _path: string): number | null {
+  return null;
 }
 
 /** La valeur brute du stockage, lue sans jamais lever : `null` si elle ne décrit pas une page. */

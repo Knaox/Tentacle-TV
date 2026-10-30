@@ -95,9 +95,16 @@ describe("le mode posé au chargement", () => {
     vi.unstubAllGlobals();
   });
 
-  it("macOS 26 : native par défaut, et le réglage est dit à la coquille", async () => {
+  it("macOS 26, Tentacle : coupé d'office (lot « fl »), la coquille l'apprend", async () => {
     const bridge = fakeBridge(true);
-    const { mode, attribute } = await boot({ platform: "darwin", bridge });
+    const { attribute } = await boot({ platform: "darwin", bridge });
+    expect(attribute()).toBe("off");
+    expect(bridge.setEnabled).toHaveBeenCalledWith(false);
+  });
+
+  it("macOS 26, allumé par l'utilisateur : native, et le réglage est dit à la coquille", async () => {
+    const bridge = fakeBridge(true);
+    const { mode, attribute } = await boot({ platform: "darwin", bridge, stored: "true" });
     expect(attribute()).toBe("native");
     expect(mode.getLiquidGlassMode()).toBe("native");
     expect(mode.nativeGlassBridge()).toBe(bridge);
@@ -106,7 +113,7 @@ describe("le mode posé au chargement", () => {
 
   it("couper le réglage : off, la coquille retire son verre, les abonnés l'apprennent", async () => {
     const bridge = fakeBridge(true);
-    const { mode, store, attribute } = await boot({ platform: "darwin", bridge });
+    const { mode, store, attribute } = await boot({ platform: "darwin", bridge, stored: "true" });
     const listener = vi.fn();
     mode.subscribeLiquidGlassMode(listener);
     store.setLiquidGlass(false);
@@ -136,7 +143,7 @@ describe("le mode posé au chargement", () => {
 
   it("macOS d'avant 26 (pont non supporté) : refraction, aucun appel natif", async () => {
     const bridge = fakeBridge(false);
-    const { mode, attribute } = await boot({ platform: "darwin", bridge });
+    const { mode, attribute } = await boot({ platform: "darwin", bridge, stored: "true" });
     expect(attribute()).toBe("refraction");
     expect(mode.nativeGlassBridge()).toBeNull();
     expect(bridge.setEnabled).not.toHaveBeenCalled();
@@ -145,14 +152,14 @@ describe("le mode posé au chargement", () => {
   it("Windows, Linux : refraction, même si un pont s'annonçait", async () => {
     for (const platform of ["win32", "linux"] as const) {
       const bridge = fakeBridge(true);
-      const { attribute } = await boot({ platform, bridge });
+      const { attribute } = await boot({ platform, bridge, stored: "true" });
       expect(attribute()).toBe("refraction");
       expect(bridge.setEnabled).not.toHaveBeenCalled();
     }
   });
 
   it("le web : refraction, sans pont", async () => {
-    const { mode, attribute } = await boot({});
+    const { mode, attribute } = await boot({ stored: "true" });
     expect(attribute()).toBe("refraction");
     expect(mode.nativeGlassBridge()).toBeNull();
   });
@@ -162,7 +169,7 @@ describe("le mode posé au chargement", () => {
     bridge.setEnabled.mockImplementation(() => {
       throw new Error("pont perdu");
     });
-    const { attribute } = await boot({ platform: "darwin", bridge });
+    const { attribute } = await boot({ platform: "darwin", bridge, stored: "true" });
     expect(attribute()).toBe("native");
   });
 });

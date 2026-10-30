@@ -1,15 +1,14 @@
 /**
  * L'apparence d'OCTAVE, réglée à part de celle de Tentacle, sur l'APPAREIL (Damien, 26/10) :
  *
- * - « Liquid Glass dans Octave » (`tentacle_octave_liquid_glass`) : au premier lancement, la valeur de Tentacle
- *   (`tentacle_liquid_glass`, jamais renommée), recopiée une fois — puis indépendante dans les deux sens ;
+ * - « Liquid Glass dans Octave » (`tentacle_octave_liquid_glass`) : ALLUMÉ d'office (lot « fl » du 30/10), quel
+ *   que soit celui de Tentacle (coupé d'office). Une valeur déjà gardée reste la sienne — y compris celle que
+ *   l'ancienne règle avait recopiée de Tentacle une fois : un « coupé » venait d'un choix de l'utilisateur ;
  * - « Apparence d'Octave » (`tentacle_octave_theme`) : `same` (comme Tentacle, le défaut), `light` ou `dark`.
  *
  * Lues par la porte du verre et par le thème quand Octave est affiché (`displayedSurface.ts`) ; aucune capacité
  * serveur. ⚠️ Clés traversées par une chaîne : jamais renommées.
  */
-
-import { LIQUID_GLASS_STORAGE_KEY } from "./liquidGlass";
 
 import { OCTAVE_LIQUID_GLASS_KEY, OCTAVE_THEME_KEY, sanitizeOctaveTheme, type OctaveTheme } from "@tentacle-tv/shared/octave";
 
@@ -24,15 +23,11 @@ function storage(): Storage | null {
   }
 }
 
-/** Le réglage d'Octave ; absent, celui de Tentacle recopié (une fois) — le défaut de Tentacle est allumé. */
+/** Le réglage d'Octave ; rien de gardé = allumé (rien n'est écrit tant que l'utilisateur ne choisit pas). */
 function readOctaveLiquidGlass(): boolean {
-  const store = storage();
   try {
-    const own = store?.getItem(OCTAVE_LIQUID_GLASS_KEY) ?? null;
-    if (own !== null) return own === "true";
-    const inherited = (store?.getItem(LIQUID_GLASS_STORAGE_KEY) ?? "true") === "true";
-    store?.setItem(OCTAVE_LIQUID_GLASS_KEY, String(inherited));
-    return inherited;
+    const own = storage()?.getItem(OCTAVE_LIQUID_GLASS_KEY) ?? null;
+    return own === null ? true : own === "true";
   } catch {
     return true;
   }

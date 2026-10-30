@@ -21,9 +21,11 @@ export const CROSSFADE_MIN_S = 2;
 export const CROSSFADE_MAX_S = 12;
 /**
  * La durée proposée quand on allume la transition, et celle d'un appareil qui n'a jamais rien choisi : la
- * transition est ALLUMÉE d'office, à 3 s (décision de Damien, lot « Octave mobile » du 28/10).
+ * transition est ALLUMÉE d'office, à 5 s (décision de Damien, lot « fl » du 30/10 ; 3 s depuis le 28/10). Rien
+ * n'est écrit tant que l'utilisateur ne choisit pas : un appareil qui n'a jamais touché au réglage passe à 5 s, une
+ * valeur choisie (3 s comprise) reste la sienne.
  */
-export const CROSSFADE_DEFAULT_S = 3;
+export const CROSSFADE_DEFAULT_S = 5;
 /** Le réglage d'un appareil qui n'a rien choisi (ms). */
 export const CROSSFADE_DEFAULT_MS = CROSSFADE_DEFAULT_S * 1_000;
 /** En deçà, un fondu ne s'entend plus comme tel : enchaînement ordinaire. */

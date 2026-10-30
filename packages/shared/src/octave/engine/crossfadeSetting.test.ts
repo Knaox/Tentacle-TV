@@ -7,10 +7,10 @@ function memory(initial: Record<string, string> = {}): SyncStorage & { data: Rec
 }
 
 describe("transition douce — le réglage de l'appareil", () => {
-  it("un appareil qui n'a rien choisi l'a allumée, à 3 s", () => {
-    expect(storedCrossfadeMs(null)).toBe(3_000);
-    expect(storedCrossfadeMs("")).toBe(3_000);
-    expect(storedCrossfadeMs("abc")).toBe(3_000);
+  it("un appareil qui n'a rien choisi l'a allumée, à 5 s", () => {
+    expect(storedCrossfadeMs(null)).toBe(5_000);
+    expect(storedCrossfadeMs("")).toBe(5_000);
+    expect(storedCrossfadeMs("abc")).toBe(5_000);
   });
 
   it("« 0 » gardé = coupée par l'utilisateur ; une durée gardée est bornée", () => {
@@ -24,8 +24,8 @@ describe("transition douce — le réglage de l'appareil", () => {
     const store = createCrossfadeSetting(() => storage);
     let calls = 0;
     store.subscribe(() => calls++);
-    expect(store.get()).toBe(3_000);
-    store.set(3_000);
+    expect(store.get()).toBe(5_000);
+    store.set(5_000);
     expect(calls).toBe(0);
     store.set(0);
     expect(storage.data[CROSSFADE_STORAGE_KEY]).toBe("0");
@@ -37,8 +37,13 @@ describe("transition douce — le réglage de l'appareil", () => {
 
   it("un stockage qui lève ne casse rien", () => {
     const store = createCrossfadeSetting(() => ({ getItem: () => { throw new Error("x"); }, setItem: () => { throw new Error("y"); } }));
-    expect(store.get()).toBe(3_000);
-    store.set(5_000);
     expect(store.get()).toBe(5_000);
+    store.set(8_000);
+    expect(store.get()).toBe(8_000);
+  });
+
+  it("une valeur déjà choisie (3 s, l'ancien défaut) reste la sienne", () => {
+    const storage = memory({ [CROSSFADE_STORAGE_KEY]: "3000" });
+    expect(createCrossfadeSetting(() => storage).get()).toBe(3_000);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Le réglage « Transition douce » d'Octave : une préférence de l'APPAREIL (`tentacle_octave_crossfade`, la durée
- * du fondu en ms, « 0 » = coupée). Un appareil qui n'a jamais rien choisi l'a ALLUMÉE, à 3 s
+ * du fondu en ms, « 0 » = coupée). Un appareil qui n'a jamais rien choisi l'a ALLUMÉE, à 5 s
  * (`CROSSFADE_DEFAULT_MS`). Le même magasin pour le web, le bureau et le mobile : chaque client lui donne son
  * stockage synchrone (`localStorage`, `RNStorageAdapter` préchargé) ; le fournisseur du moteur le passe au port
  * (`setCrossfade`), le contrôle du lecteur et la ligne des Réglages d'Octave l'écrivent. Aucune capacité serveur.

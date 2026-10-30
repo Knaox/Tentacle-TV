@@ -38,6 +38,7 @@ export const VolumeControl = memo(function VolumeControl({ className = "w-24" }:
         aria-label={t("player.volume")}
         aria-valuetext={`${Math.round(shown * 100)} %`}
         onChange={(e) => player.setVolume(Number(e.target.value) / 100)}
+        onScrub={(value) => player.setVolume(value / 100)}
       />
     </div>
   );

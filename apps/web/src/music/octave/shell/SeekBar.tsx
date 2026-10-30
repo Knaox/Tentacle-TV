@@ -2,7 +2,9 @@
  * Octave — la barre de progression. Seule à suivre la position (sélecteur à
  * part) ; le dégradé violet → rose, rose en tête (`RangeSlider`). Pendant le
  * glissé, la position suit le doigt ; le moteur ne reçoit le saut qu'au
- * relâcher.
+ * relâcher — à la valeur EXACTE du point lâché (`RangeSlider` › `onScrub`,
+ * sans arrondi au pas du clavier). La position et la durée sont celles du
+ * moteur (`usePlayerPosition`, durée réelle du fichier quand il la connaît).
  */
 
 import { memo, useState } from "react";
@@ -40,7 +42,11 @@ export const SeekBar = memo(function SeekBar({ compact = false }: { compact?: bo
         aria-label={t("player.seek")}
         aria-valuetext={`${durationLabel(shown)} / ${durationLabel(durationMs)}`}
         onChange={(e) => setDrag(Number(e.target.value))}
-        onPointerUp={commit}
+        onScrub={setDrag}
+        onScrubEnd={(value) => {
+          if (value !== null) player.seek(Math.round(value));
+          setDrag(null);
+        }}
         onKeyUp={commit}
         onBlur={commit}
       />

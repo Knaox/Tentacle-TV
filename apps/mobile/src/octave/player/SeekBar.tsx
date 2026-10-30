@@ -37,13 +37,19 @@ export const SeekBar = memo(function SeekBar() {
       const { width: w, durationMs: d } = live.current;
       return w > 0 && d ? Math.min(1, Math.max(0, x / w)) * d : 0;
     };
+    // Le point d'appui (dans la piste), puis le DÉPLACEMENT du doigt : `locationX` d'un mouvement se rapporte à la
+    // vue sous le doigt du moment et saute quand il quitte la piste — la barre partait à côté du doigt (lot « fl »).
+    let startX = 0;
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: (e) => setScrub(at(e.nativeEvent.locationX)),
-      onPanResponderMove: (e) => setScrub(at(e.nativeEvent.locationX)),
-      onPanResponderRelease: (e) => {
-        player.seek(at(e.nativeEvent.locationX));
+      onPanResponderGrant: (e) => {
+        startX = e.nativeEvent.locationX;
+        setScrub(at(startX));
+      },
+      onPanResponderMove: (_e, g) => setScrub(at(startX + g.dx)),
+      onPanResponderRelease: (_e, g) => {
+        player.seek(at(startX + g.dx));
         setScrub(null);
       },
       onPanResponderTerminate: () => setScrub(null),

@@ -2,7 +2,8 @@
  * Octave — la PAGE où l'on était en quittant (adresse et défilement), gardée
  * sur l'appareil par identité (`tentacle_octave_page`, stockage local, aucun
  * secret : une adresse d'Octave et un nombre de pixels). Au lancement en
- * Octave, on y retombe littéralement ; la règle est pure
+ * Octave, on arrive sur l'ACCUEIL, en haut (lot « fl », 30/10 : la page gardée
+ * ne décide plus de l'arrivée — `octavePageResume.ts`) ; la règle est pure
  * (`pageResume.test.ts`), le stockage protégé (illisible = l'accueil).
  * Clé de stockage : elle ne se renomme jamais.
  */

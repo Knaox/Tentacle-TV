@@ -7,11 +7,11 @@ const OWNER = "https://srv|u1";
 const base = { tentacle_server_url: "https://srv", tentacle_user: USER };
 
 describe("lancement du mobile en Octave", () => {
-  it("quitté en Octave : lancement dans Octave, sur la page gardée", () => {
+  it("quitté en Octave : lancement dans Octave, sur l'ACCUEIL d'Octave — jamais la page gardée (lot « fl »)", () => {
     const page = JSON.stringify({ owner: OWNER, path: "/octave/album/a1", scrollTop: 320, savedAt: NOW - 1000 });
     const launch = decideMobileOctaveLaunch({ ...base, tentacle_octave_mode: "1", tentacle_octave_page: page }, NOW);
     expect(launch.inOctave).toBe(true);
-    expect(launch.path).toBe("/octave/album/a1");
+    expect(launch.path).toBe("/octave");
     expect(launch.owner).toBe(OWNER);
   });
 

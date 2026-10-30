@@ -1,5 +1,5 @@
 /**
- * Octave — la pastille « Fondu 3 s » du dock (bureau, web large) : l'état d'un coup d'œil, et au clic le
+ * Octave — la pastille « Fondu 5 s » du dock (bureau, web large) : l'état d'un coup d'œil, et au clic le
  * réglage de la transition douce (`CrossfadeDial`) dans une bulle au-dessus du dock. Un PORTAIL : sous le verre
  * du dock, un `fixed` prendrait son parent pour cadre (`modalPortal.test.ts`). Échap ou un clic ailleurs la
  * referme, le focus revient à la pastille.

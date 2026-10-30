@@ -1,6 +1,6 @@
 /**
  * Octave (mobile) — le réglage « Transition douce » de l'appareil : le magasin PARTAGÉ avec le web et le bureau
- * (`createCrossfadeSetting`, allumé à 3 s d'office), sur le stockage préchargé de l'app (`RNStorageAdapter`,
+ * (`createCrossfadeSetting`, allumé à 5 s d'office), sur le stockage préchargé de l'app (`RNStorageAdapter`,
  * clé `tentacle_octave_crossfade` dans sa liste). Le fournisseur du moteur y branche le stockage au montage ;
  * le contrôle du lecteur et la page Réglages d'Octave (`m7`) lisent et écrivent par `useCrossfadeMs` /
  * `setCrossfadeMs`.

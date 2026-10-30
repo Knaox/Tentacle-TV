@@ -37,6 +37,8 @@ const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");
 const { MATERIALIZE, MATERIALIZE_REDUCED } = await import("./playerGlassMaterialize");
 const { PictureInPictureContext } = await import("../../../pictureInPicture/pictureInPictureContext");
+// Le verre de Tentacle est coupé d'office (lot « fl ») : ces cas sont ceux d'un utilisateur qui l'a allumé.
+(await import("../../../theme/liquidGlass")).setLiquidGlass(true);
 
 const pip = (active: boolean) => ({ supported: true, active }) as never;
 

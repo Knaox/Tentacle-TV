@@ -12,6 +12,7 @@ import {
   type StorageAdapter,
 } from "@tentacle-tv/api-client";
 import { setSessionExpired } from "@/auth/sessionState";
+import { tokenRenewed } from "@/auth/tokenRenewal";
 import { attemptReAuth, loginIdentity } from "@/auth/credentialManager";
 import { endMobileProfileSession } from "@/family/profiles/switchSession";
 
@@ -145,11 +146,14 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
 
         if (res.ok) {
           const data = await res.json();
-          client.setAccessToken(data.AccessToken);
-          setPreferencesToken(data.AccessToken);
-          setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken); setPushToken(data.AccessToken);
           client.resetAuthState();
-          queryClient.invalidateQueries();
+          // Le même jeton que celui du client (le cas ordinaire) : rien à relire ni à reposer — `tokenRenewal.ts`.
+          if (tokenRenewed(client.getToken(), data.AccessToken)) {
+            client.setAccessToken(data.AccessToken);
+            setPreferencesToken(data.AccessToken);
+            setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken); setPushToken(data.AccessToken);
+            queryClient.invalidateQueries();
+          }
         } else if (res.status === 401) {
           if (endedProfile()) return;
           const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));

@@ -65,14 +65,18 @@ export function deriveStatus(current: QueueEntry | null, props: LiveProps, flags
   return flags.wantPaused ? "paused" : "playing";
 }
 
-/** La durée : celle de la source, du titre, puis celle de mpv si le fichier est complet. */
+/**
+ * La durée : celle que mpv MESURE quand le fichier est complet (hors EDL), sinon celle de la source, du titre.
+ * La mesure l'emporte (lot « fl », 30/10) : la durée annoncée (métadonnées) d'une source tierce diffère souvent du
+ * fichier lu de quelques secondes — la barre finissait avant le son, et un clic tombait à côté. Comme le fondu
+ * (`deckTimeline`) et le mobile (`frontDeck.durationMs ?? annoncée`).
+ */
 export function durationOf(current: QueueEntry | null, props: LiveProps): number | null {
   if (current === null) return null;
-  const announced = current.source.durationMs ?? current.track.durationMs;
-  if (announced !== null) return announced;
   // La durée d'une entrée EDL (bascule) est celle du segment, pas du titre.
   const own = current.source.complete && offsetOf(current) === 0 ? props.mpvDuration : null;
-  return own === null ? null : Math.round(own * 1000);
+  if (own !== null && own > 0) return Math.round(own * 1000);
+  return current.source.durationMs ?? current.track.durationMs;
 }
 
 export function buildState(current: QueueEntry | null, props: LiveProps, flags: EngineFlags, settings: Settings): AudioBridgeState {

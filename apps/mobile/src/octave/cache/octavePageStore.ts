@@ -2,8 +2,9 @@
  * Octave (mobile) — la PAGE où l'on est, gardée pour le prochain lancement
  * (`tentacle_octave_page`, même clé et même forme que le bureau) : l'adresse
  * dès qu'elle change, le défilement à la fin d'un geste (au plus une écriture
- * par 400 ms). Au lancement en Octave, le défilement gardé se rejoue une fois,
- * sur la page gardée elle-même. Rien d'écrit sans identité.
+ * par 400 ms). Au lancement en Octave, on arrive sur l'ACCUEIL, en haut (lot
+ * « fl », 30/10 : la règle partagée `octavePageResume.ts` ne rejoue plus la
+ * page gardée). Rien d'écrit sans identité.
  */
 
 import { OCTAVE_BASE_PATH, OCTAVE_PAGE_KEY, resumeScroll, type SavedOctavePage } from "@tentacle-tv/shared/octave/mode";
