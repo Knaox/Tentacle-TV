@@ -81,4 +81,12 @@ describe("dates d'entrée d'une playlist", () => {
     const later = await addedDatesFor(scope, ["a", "b", "x"], undefined, options);
     expect(later.get("x")).toBe(first.get("b"));
   });
+
+  it("un ajout de l'utilisateur EN TÊTE d'une playlist jamais datée : le plus récent, les autres estimés d'après l'ordre", async () => {
+    const scope = playlistScope(PLAYLIST);
+    await noteArrival(PLAYLIST, ["a", "b"], ["n"], 0, Date.now());
+    const dates = await addedDatesFor(scope, ["n", "a", "b"], undefined, options);
+    expect(dates.get("a")!).toBeLessThan(dates.get("b")!);
+    expect(dates.get("b")!).toBeLessThanOrEqual(dates.get("n")!);
+  });
 });

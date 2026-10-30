@@ -19,17 +19,18 @@ import { rankForInsert } from "./sourceBinding";
 import { bound, ranksByItem, removedAt } from "./sourceRecord";
 import { readPlaylistSource, savePlaylistSource } from "./sourceStore";
 
-/** Insère pour l'extension ; `sourceIndex` : le rang du titre dans la source de l'import. Rend la place prise. */
-export function insertFromHost(userId: string, playlistId: string, itemIds: string[], position: number, sourceIndex?: number): Promise<PlaylistResult<number>> {
+/**
+ * Insère pour l'extension ; `sourceIndex` : le rang du titre dans la source de l'import ; `addedAt` : quand l'ajout a
+ * été demandé (l'attente qui arrive). Rend la place prise.
+ */
+export function insertFromHost(userId: string, playlistId: string, itemIds: string[], position: number, sourceIndex?: number, addedAt?: number): Promise<PlaylistResult<number>> {
   const ids = itemIds.map(normalizeId);
   let keep: (() => Promise<void>) | null = null;
-  let present: string[] = [];
   return insertAt(
     userId,
     playlistId,
     ids,
     async (before) => {
-      present = before.map((e) => e.itemId);
       const record = await readPlaylistSource(playlistId).catch(() => null);
       if (!record || ids.length === 0) return position;
       const row = (await rowsByIds(ids.slice(0, 1)).catch(() => new Map())).get(ids[0]!) ?? null;
@@ -40,10 +41,10 @@ export function insertFromHost(userId: string, playlistId: string, itemIds: stri
       const ranks = ranksByItem(record);
       return sourcePlace(before.map((e) => ranks.get(e.itemId) ?? null), found.rank) ?? position;
     },
-    async (at) => {
+    async (at, before) => {
       await keep?.().catch((error: unknown) => console.warn("[music] liaison à l'ordre de la source non gardée :", (error as Error).message));
       // Une arrivée ou un fichier remplacé : daté par sa place, jamais « maintenant » (`listOrder/arrivalPlan.ts`).
-      await noteArrival(playlistId, present, ids, at);
+      await noteArrival(playlistId, before.map((e) => e.itemId), ids, at, addedAt);
     },
   );
 }

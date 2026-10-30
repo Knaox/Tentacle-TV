@@ -11,6 +11,7 @@ import { tellPlaylistChanged } from "../events/musicLiveEvents";
 import { forgetUserPlaylists, playlistEntries } from "./playlistJellyfin";
 import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
 import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
+import { noteArrival } from "../listOrder/addedDates";
 import { forgetShelfPlaylist } from "../libraryShelves/shelfFavoriteStore";
 import { forgetPlaylistSource } from "../playlistSource/sourceStore";
 import { forgetPlaylistShares } from "../playlistShare/shareStore";
@@ -151,7 +152,11 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
 }
 
 export function insertIntoPlaylist(userId: string, playlistId: string, itemIds: string[], position?: number): Promise<PlaylistResult<true>> {
-  return insertAt(userId, playlistId, itemIds, () => position).then((result) => (result.ok ? { ok: true, value: true } : result));
+  // Un AJOUT de l'utilisateur : daté maintenant, où qu'il entre (en tête : `music.addOnTop`) — jamais pris pour une
+  // arrivée posée à sa place (`listOrder/addedPlan.ts`).
+  const ids = itemIds.map(normalizeId);
+  const settled = (at: number, before: readonly PlaylistEntryRef[]) => noteArrival(playlistId, before.map((e) => e.itemId), ids, at, Date.now());
+  return insertAt(userId, playlistId, itemIds, () => position, settled).then((result) => (result.ok ? { ok: true, value: true } : result));
 }
 
 /**
@@ -164,7 +169,7 @@ export function insertAt(
   playlistId: string,
   itemIds: string[],
   place: (before: readonly PlaylistEntryRef[]) => Promise<number | undefined> | number | undefined,
-  settled?: (position: number) => Promise<void>,
+  settled?: (position: number, before: readonly PlaylistEntryRef[]) => Promise<void>,
 ): Promise<PlaylistResult<number>> {
   return locked(playlistId, async () => {
     const auth = await authorize(userId, playlistId, "add");
@@ -182,7 +187,7 @@ export function insertAt(
     const after = await playlistEntries(actor, playlistId);
     if (!after || (desired && !(await rewriteTo(actor, playlistId, after, desired)))) return { ok: false, failure: "unavailable" };
     const at = Math.max(0, (desired ?? after.map((e) => e.itemId)).indexOf(ids[0]!));
-    await settled?.(at);
+    await settled?.(at, before);
     done(userId, playlistId);
     return { ok: true, value: at };
   });

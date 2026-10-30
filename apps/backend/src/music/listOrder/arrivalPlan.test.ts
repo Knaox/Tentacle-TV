@@ -30,4 +30,9 @@ describe("date d'une arrivée posée par l'extension", () => {
     expect(planArrivalDates({ known: new Map([["x", 5]]), before: ["x"], inserted: ["x"], at: 0, identity }).size).toBe(0);
     expect(planArrivalDates({ known: new Map(), before: ["a"], inserted: ["x"], at: 1, identity }).size).toBe(0);
   });
+
+  it("la date de la demande, quand l'extension la dit, l'emporte sur tout", () => {
+    const known = new Map([["a", 100], ["x", 150]]);
+    expect(planArrivalDates({ known, before: ["a", "x"], inserted: ["x2"], at: 0, identity, addedAt: 999 }).get("x2")).toBe(999);
+  });
 });

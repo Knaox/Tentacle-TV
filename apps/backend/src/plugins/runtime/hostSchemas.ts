@@ -41,6 +41,7 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
       itemIds: z.array(jellyfinId).min(1).max(200),
       position: z.number().int().min(0).max(1_000_000),
       sourceIndex: z.number().int().min(0).max(1_000_000).optional(),
+      addedAt: z.number().int().min(0).max(8_640_000_000_000_000).optional(),
     })
     .strict(),
   "jellyfin.playlistSourceRemoved": z.object({ userId: jellyfinId, playlistId: jellyfinId, sourceIndex: z.number().int().min(0).max(1_000_000) }).strict(),

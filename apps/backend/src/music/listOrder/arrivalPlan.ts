@@ -8,6 +8,7 @@
  * sautait en tête, au-dessus des titres ajoutés APRÈS lui. Une insertion de l'extension n'est jamais un ajout de
  * l'utilisateur : c'est une attente qui arrive, ou un élément qui en remplace un autre.
  *
+ * - L'extension dit QUAND l'ajout a été demandé (`addedAt`, hôte 1.41.0) : cette date, toujours.
  * - Un élément qui en REMPLACE un autre de la playlist (même enregistrement, ou même « titre | artiste » :
  *   `listAlias`) hérite de sa date — la mise à niveau d'un fichier.
  * - Sinon il prend la date de l'entrée datée qui le PRÉCÈDE à sa place (celle qui suit s'il n'y en a pas) : le
@@ -25,10 +26,12 @@ export interface ArrivalInput {
   at: number;
   /** L'identité d'un élément (`listAlias`) ; `null` si l'index ne le connaît pas. */
   identity: (itemId: string) => string | null;
+  /** Quand l'ajout a été demandé (ms) : la date, sans autre règle. */
+  addedAt?: number;
 }
 
 /** La date à garder pour chaque élément posé qui n'en a pas encore. */
-export function planArrivalDates({ known, before, inserted, at, identity }: ArrivalInput): Map<string, number> {
+export function planArrivalDates({ known, before, inserted, at, identity, addedAt }: ArrivalInput): Map<string, number> {
   const out = new Map<string, number>();
   if (known.size === 0) return out;
   const place = Math.max(0, Math.min(at, before.length));
@@ -45,6 +48,10 @@ export function planArrivalDates({ known, before, inserted, at, identity }: Arri
   };
   for (const id of inserted) {
     if (known.has(id) || out.has(id)) continue;
+    if (addedAt !== undefined) {
+      out.set(id, addedAt);
+      continue;
+    }
     const own = identity(id);
     const twin = own ? before.find((other) => other !== id && known.has(other) && identity(other) === own) : undefined;
     const date = twin !== undefined ? known.get(twin) : neighbour();

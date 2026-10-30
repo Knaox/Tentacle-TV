@@ -141,8 +141,10 @@ export interface HostApi {
    * Insère à `position` (0 = tête ; au-delà de la fin = à la fin). `sourceIndex` (serveur 1.40.0, un titre d'une playlist
    * IMPORTÉE : son rang dans la source, `ImportedTrack.index`) : l'hôte le pose juste après celui qui le précède dans la
    * source, `position` n'étant qu'un repli ; il rend la place prise. Hôte d'avant : paramètre inconnu (`invalid`).
+   * `addedAt` (serveur 1.41.0, ms) : QUAND l'utilisateur a demandé cet ajout (l'attente qui arrive) — la date de
+   * « Derniers ajouts », jamais celle de l'arrivée. Hôte d'avant : paramètre inconnu (`invalid`).
    */
-  "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number }; result: { ok: true; position?: number } };
+  "jellyfin.playlistInsert": { params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number; addedAt?: number }; result: { ok: true; position?: number } };
   /**
    * L'utilisateur a RETIRÉ de cette playlist importée le titre de rang `sourceIndex` de la source (l'entrée que
    * l'extension tenait pour lui) : il n'y reviendra jamais, même arrivé dans la bibliothèque. `marked: false` : rien à

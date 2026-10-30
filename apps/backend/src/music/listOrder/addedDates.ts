@@ -88,26 +88,33 @@ export async function noteLiked(userId: string, itemId: string, favorite: boolea
 }
 
 /**
- * Des éléments que l'EXTENSION vient de poser dans une playlist (une arrivée, un fichier remplacé) : datés tout de
- * suite par leur place ou par l'élément qu'ils remplacent (`arrivalPlan.ts`), jamais « maintenant ».
+ * Des éléments POSÉS dans une playlist, datés tout de suite (`arrivalPlan.ts`) : par l'extension (une arrivée, un
+ * fichier remplacé — par leur place, l'élément qu'ils remplacent, ou la date de la demande `addedAt`), ou par
+ * l'utilisateur (`addedAt` = maintenant : un ajout en TÊTE n'est pas une arrivée posée à sa place). Une playlist
+ * jamais datée l'est d'abord d'après son ordre d'avant l'insertion (sinon sa première lecture estimerait le titre
+ * posé en tête comme le plus ancien).
  */
-export async function noteArrival(playlistId: string, before: readonly string[], inserted: readonly string[], at: number): Promise<void> {
+export async function noteArrival(playlistId: string, before: readonly string[], inserted: readonly string[], at: number, addedAt?: number): Promise<void> {
   const scope = playlistScope(playlistId);
   try {
     const prisma = getPrisma();
     const rows = await prisma.musicListAdded.findMany({ where: { scope }, select: { itemId: true, addedAt: true } });
-    if (rows.length === 0) return;
-    const known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
+    let known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
+    if (known.size === 0) {
+      if (addedAt === undefined || before.length === 0) return;
+      known = await addedDatesFor(scope, before, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
+    }
     const index = await rowsByIds([...new Set([...before, ...inserted])]);
     const identity = (id: string): string | null => {
       const row = index.get(id);
       return row ? listAlias(row.recordingMbid, row.name, row.artists[0]?.name ?? row.albumArtist ?? "") : null;
     };
-    const dates = planArrivalDates({ known, before, inserted, at, identity });
+    const when = addedAt === undefined ? undefined : Math.min(addedAt, Date.now());
+    const dates = planArrivalDates({ known, before, inserted, at, identity, addedAt: when });
     if (dates.size === 0) return;
     await prisma.$transaction(
-      [...dates].map(([itemId, addedAt]) =>
-        prisma.musicListAdded.upsert({ where: { scope_itemId: { scope, itemId } }, create: { scope, itemId, addedAt: new Date(addedAt) }, update: {} }),
+      [...dates].map(([itemId, date]) =>
+        prisma.musicListAdded.upsert({ where: { scope_itemId: { scope, itemId } }, create: { scope, itemId, addedAt: new Date(date) }, update: {} }),
       ),
     );
   } catch (error) {
