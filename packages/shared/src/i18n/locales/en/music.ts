@@ -8,6 +8,7 @@ import octaveHome from "./musicHome";
 import moods from "./musicMoods";
 import listOrder from "./musicListOrder";
 import playlistManage from "./musicPlaylistManage";
+import searchHistory from "./musicSearchHistory";
 
 export default {
   mode: {
@@ -349,4 +350,5 @@ export default {
   moods,
   listOrder,
   playlistManage,
+  searchHistory,
 };

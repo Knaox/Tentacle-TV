@@ -20,6 +20,8 @@ export * from "./libraryTwins";
 export * from "./recentShelves";
 export * from "./recentMusicSearches";
 export * from "./searchListens";
+export * from "./searchHistoryDevice";
+export * from "./searchPicks";
 export * from "./recentVisits";
 export * from "./albumPreview";
 export * from "./albumWarmup";

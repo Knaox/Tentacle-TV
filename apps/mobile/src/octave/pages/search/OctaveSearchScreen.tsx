@@ -12,8 +12,10 @@ import { Keyboard, ScrollView, View, type TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
-import { useKindResults, useOctaveSuggestions, useOwnedLists, useRevealedResults, useSharedLinkSearch } from "@tentacle-tv/api-client";
-import { isEmptyLayout, layoutSearch } from "@tentacle-tv/shared/octave";
+import {
+  useKindResults, useOctaveSearchHistory, useOctaveSuggestions, useOwnedLists, useRevealedResults, useSharedLinkSearch,
+} from "@tentacle-tv/api-client";
+import { isEmptyLayout, layoutSearch, recentQueriesOf } from "@tentacle-tv/shared/octave";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
 import { OctavePagesHost } from "../actions/OctavePagesHost";
 import { useMobileArtworkPreloader } from "../env/artworkPreload";
@@ -49,7 +51,11 @@ export function OctaveSearchScreen() {
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
   useEffect(() => setDraft(query), [query]);
 
-  const { suggestions, recents, remember, forget } = useOctaveSuggestions(provider, typing ? draft : "", store);
+  // L'historique : celui du compte quand le serveur le garde (le même que le bureau), sinon celui de l'appareil.
+  const history = useOctaveSearchHistory(store);
+  const recents = useMemo(() => recentQueriesOf(history.history), [history.history]);
+  const { rememberQuery: remember, forgetQuery: forget } = history;
+  const { suggestions } = useOctaveSuggestions(provider, typing ? draft : "", recents);
   // Un lien Shazam (collé, ou arrivé par la feuille de partage) : on cherche son titre, jamais le lien.
   const goShared = useCallback((text: string) => {
     setTyping(false);
@@ -109,7 +115,7 @@ export function OctaveSearchScreen() {
   } else if (!query.trim()) {
     body = (
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 8, paddingBottom: bottom }} {...warm.scroll}>
-        <SearchHome recents={recents} onSearch={submit} onForget={forget} />
+        <SearchHome recents={recents} history={history} onSearch={submit} />
       </ScrollView>
     );
   } else if (offline) {
