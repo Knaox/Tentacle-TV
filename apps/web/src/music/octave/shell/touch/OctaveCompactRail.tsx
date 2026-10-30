@@ -2,7 +2,7 @@
  * Octave — le RAIL de la tablette en portrait : la barre latérale du bureau
  * resserrée en une colonne d'icônes LIBELLÉES (le rail du miroir sur l'iPad),
  * pour laisser sa largeur à la page. En tête la note d'Octave et la bascule du
- * mode ; les cinq destinations, « Sur cet appareil » s'il y a lieu ; en pied
+ * mode ; les cinq destinations, « Hors ligne » s'il y a lieu ; en pied
  * les réglages d'Octave et le profil. Les playlists vivent dans leur onglet.
  * Cibles de 56 px au moins : on y vise au doigt.
  */
@@ -40,7 +40,7 @@ export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { o
             </NavLink>
           </li>
         ))}
-        <DeviceNavItem className={`${itemClass} [&>svg]:h-6 [&>svg]:w-6`} />
+        <DeviceNavItem className={itemClass} iconClassName="h-6 w-6" />
       </ul>
       <div className="flex-1" />
       <NavLink to={octavePaths.settings} className={itemClass} aria-label={t("octaveShell:settings.nav")}>
