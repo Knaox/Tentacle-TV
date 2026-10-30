@@ -27,7 +27,6 @@ import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
 import { OctaveHomeGate, OctaveRoute } from "./music/octave/mode/OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
 import { LaunchWait, useTentacleRelease } from "./music/octave/mode/OctaveLaunchBackdrop";
-import { octaveOfflineAware } from "./music/octave/offline/OfflineOctave";
 import { useDesktopAppLinks } from "./desktop/useDesktopAppLinks";
 
 /* -- Lazy-loaded pages (code-split) -- */
@@ -162,12 +161,12 @@ export function App() {
           <Route path="/offline/item/:itemId" element={guard(<OfflineMediaDetail />)} />
           <Route path="/offline/series/:seriesKey" element={guard(<OfflineSeriesView />)} />
           {/* Le mode musique : sa coquille, chargée à la demande ; il se garde lui-même (`music.library`). */}
-          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(octaveOfflineAware(offlineMode, <OctaveRoute />))} />
+          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(<OctaveRoute />)} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           {/* Mode musique allumé : l'accueil EST Octave (comme le hors ligne remplace
               l'accueil), décidé AVANT la mise en page — rien de Tentacle ne clignote. */}
-          <Route element={guard(<OctaveHomeGate enabled={!offlineMode}><AppLayout /></OctaveHomeGate>)}>
+          <Route element={guard(<OctaveHomeGate><AppLayout /></OctaveHomeGate>)}>
             {/* Hors ligne : l'accueil devient le catalogue local. */}
             <Route index element={offlineMode ? <OfflineCatalog /> : <ByFormFactor desktop={<Home />} mirror={<MirrorHome />} />} />
             <Route path="library/:libraryId" element={onlineOnly(<ByFormFactor desktop={<Library />} mirror={<MirrorLibraryCatalog />} />)} />

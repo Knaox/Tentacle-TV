@@ -67,7 +67,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
 
           <div className="flex flex-shrink-0 items-center gap-2">
             {showSearch && <SearchLauncher variant="icon" />}
-            {!offline && <OctaveModeSwitch placement="tentacle" />}
+            <OctaveModeSwitch placement="tentacle" />
             {!offline && <WatchTogetherButton />}
             <NotificationBell />
             <button

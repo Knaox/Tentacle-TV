@@ -5,7 +5,9 @@
  * Le mode reste tel quel quand on quitte l'application (`octaveMode.ts`).
  *
  * - `placement="tentacle"` (barre de Tentacle) : n'existe qu'avec la musique
- *   (`useOctaveAvailability`) ; toujours ÉTEINT — on est dans Tentacle (une page
+ *   (`useOctaveAvailability`) — hors ligne, d'après le miroir du dernier passage
+ *   en ligne (`octaveSwitchShown`, règle partagée : la musique gardée vit sur
+ *   l'appareil), jamais dans la session d'un profil (le hors ligne est au compte) ; toujours ÉTEINT — on est dans Tentacle (une page
  *   de Tentacle éteint le mode, `tentaclePageEndsMode`). Un clic passe dans
  *   Octave, toujours.
  * - `placement="octave"` (coquille d'Octave) : toujours allumé ; l'éteindre,
@@ -21,8 +23,10 @@
  * plus de glissement (`octaveModeSwitch.css`).
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMusicStatus, useServerCapabilities } from "@tentacle-tv/api-client";
+import { octaveSwitchShown } from "@tentacle-tv/shared/octave/mode";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./octaveModeSwitch.css";
@@ -32,6 +36,10 @@ import { loadOctaveApp } from "./OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./octaveMode";
 import { useOctaveAvailability } from "./useOctaveAvailability";
 import { useOctaveAccessLive } from "./useOctaveAccessLive";
+import { useActiveProfile } from "../../../auth/profileSession";
+import { useOfflineMode } from "../../../offline/useOfflineMode";
+import { octaveOwner } from "../cache/octaveOwner";
+import { launchOctaveMirror } from "./octaveLaunchStore";
 
 type OctaveModeSwitchProps =
   | { placement: "tentacle"; showLabel?: boolean; className?: string }
@@ -47,11 +55,12 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
   const engineAuth = useMusicEngineAuth();
   const inOctave = props.placement === "octave";
   // Dans Octave, la disponibilité est déjà acquise (sa porte l'a vérifiée).
-  const { available } = useOctaveAvailability(!inOctave);
+  const fresh = useOctaveAvailability(!inOctave);
+  const shown = useTentacleSwitchShown(fresh);
   // Dans Tentacle : l'accès coupé ou rendu par l'administration se voit sans recharger.
   useOctaveAccessLive(!inOctave);
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
-  if (!inOctave && !available) return null;
+  if (!inOctave && !shown) return null;
 
   const checked = optimistic ?? inOctave;
 
@@ -106,4 +115,17 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
       </span>
     </button>
   );
+}
+
+/** Côté Tentacle : la règle partagée, hors ligne d'après le miroir ; jamais hors ligne dans la session d'un profil. */
+function useTentacleSwitchShown(fresh: { available: boolean; settled: boolean }): boolean {
+  const failed = useMusicStatus().isError;
+  const configKnown = useServerCapabilities().known;
+  const offline = useOfflineMode();
+  const profileSession = useActiveProfile() !== null;
+  const owner = useMemo(octaveOwner, []);
+  const mirror = launchOctaveMirror();
+  const mirrorAvailable = owner !== null && mirror?.owner === owner && mirror.available;
+  if (offline && profileSession) return false;
+  return octaveSwitchShown({ fresh, failed, configKnown, offline, mirrorAvailable });
 }

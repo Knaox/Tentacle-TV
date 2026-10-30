@@ -11,14 +11,13 @@ const h = vi.hoisted(() => ({ offline: true }));
 
 vi.mock("../../../offline/useOfflineMode", () => ({ useOfflineMode: () => h.offline }));
 vi.mock("./DeviceView", () => ({ DeviceView: () => null }));
-vi.mock("./useKeptMusic", () => ({ useKeptMusic: () => ({ loaded: true, tracks: [] }) }));
 vi.mock("react-router-dom", () => ({
   Navigate: (props: { to: string }) => props,
   Route: (props: { path: string; element: ReactNode }) => props,
   Routes: (props: { children: ReactNode }) => props,
 }));
 
-import { OfflineOctaveRoutes, octaveOfflineAware } from "./OfflineOctave";
+import { OfflineOctaveRoutes } from "./OfflineOctave";
 
 type Props = { children?: ReactNode; path?: string; element?: ReactElement<{ to?: string }> };
 
@@ -40,14 +39,5 @@ describe("OfflineOctaveRoutes", () => {
     h.offline = false;
     const tree = OfflineOctaveRoutes({ children: "en ligne" });
     expect(isValidElement<Props>(tree) && tree.props.children).toBe("en ligne");
-  });
-});
-
-describe("octaveOfflineAware", () => {
-  it("la même enveloppe en ligne et hors ligne : la coupure du serveur ne remonte pas Octave (ni son lecteur)", () => {
-    const app = <i />;
-    const online = octaveOfflineAware(false, app);
-    const offline = octaveOfflineAware(true, app);
-    expect(isValidElement(online) && isValidElement(offline) && online.type === offline.type).toBe(true);
   });
 });

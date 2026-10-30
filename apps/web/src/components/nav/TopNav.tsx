@@ -114,7 +114,8 @@ export function TopNav() {
           {showFieldLauncher && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
           <div className="contents">
             {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
-            {!offline && <OctaveModeSwitch placement="tentacle" />}
+            {/* Hors ligne aussi (lot « fl ») : la bascule décide seule (`octaveSwitchShown`). */}
+            <OctaveModeSwitch placement="tentacle" />
             <DownloadsNavButton />
             {!offline && <WatchTogetherButton />}
             {!offline && <NotificationBell />}

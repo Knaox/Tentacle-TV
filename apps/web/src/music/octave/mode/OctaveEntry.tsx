@@ -82,11 +82,12 @@ export function bootOctave(qc: OctaveQueryClientLike): Promise<void> {
  * musique, l'accueil d'avant, sans erreur. Toute autre adresse (un lien
  * profond) est servie telle quelle — et éteint le mode (`tentaclePageEndsMode`).
  */
-export function OctaveHomeGate({ children, enabled }: { children: ReactElement; enabled: boolean }) {
+export function OctaveHomeGate({ children }: { children: ReactElement }) {
   const on = useOctaveMode();
   const { pathname } = useLocation();
   const atHome = pathname === "/";
-  const wants = on && enabled && atHome;
+  // Hors ligne compris : le mode est celui de l'appareil (`useOctaveLaunchAvailability` : une panne n'est pas une absence).
+  const wants = on && atHome;
   const landing = octaveLanding(wants, useOctaveLaunchAvailability(wants));
   // La première image de Tentacle : ce que le lancement en Octave retenait part.
   useEffect(() => {

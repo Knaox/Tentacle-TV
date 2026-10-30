@@ -36,12 +36,12 @@ import { DeviceView } from "./offline/DeviceView";
 import { OctaveSettingsView } from "./settings/OctaveSettingsView";
 import { OctaveProfilesView } from "./profiles/OctaveProfilesView";
 import { MusicOfflineScope } from "./offline/MusicOfflineScope";
-import { OfflineOctaveRoutes, useKeptAwareAvailability } from "./offline/OfflineOctave";
+import { OfflineOctaveRoutes } from "./offline/OfflineOctave";
 
 export function OctaveApp() {
   // Au lancement, le miroir de la dernière réponse peint Octave sans attendre ; le serveur corrige ensuite.
-  // Hors ligne, la musique gardée sur l'appareil suffit (`offline/OfflineOctave.tsx`).
-  const { available, settled } = useKeptAwareAvailability(useOctaveLaunchAvailability());
+  // Hors ligne (une panne, jamais une absence) : Octave reste, « Sur cet appareil » (`offline/OfflineOctave.tsx`).
+  const { available, settled } = useOctaveLaunchAvailability();
   useOctaveCacheWarmStart();
   const navigate = useNavigate();
 

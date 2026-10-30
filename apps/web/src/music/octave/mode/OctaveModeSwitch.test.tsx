@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
  * absente sans musique, allumée dans Octave ; et le réglage du démarrage,
  * absent sans musique, ses trois choix visibles sinon.
  */
-const h = vi.hoisted(() => ({ available: true, mode: false, live: [] as boolean[] }));
+const h = vi.hoisted(() => ({ available: true, mode: false, live: [] as boolean[], offline: false, profile: false, mirror: false }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
@@ -15,6 +15,15 @@ vi.mock("../../engine/engineAuth", () => ({ useMusicEngineAuth: () => ({ baseUrl
 vi.mock("./useOctaveAvailability", () => ({
   useOctaveAvailability: (enabled = true) => ({ available: enabled && h.available, settled: true }),
 }));
+vi.mock("@tentacle-tv/api-client", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useMusicStatus: () => ({ isError: false }),
+  useServerCapabilities: () => ({ known: !h.offline }),
+}));
+vi.mock("../../../offline/useOfflineMode", () => ({ useOfflineMode: () => h.offline }));
+vi.mock("../../../auth/profileSession", () => ({ useActiveProfile: () => (h.profile ? { id: "p" } : null) }));
+vi.mock("../cache/octaveOwner", () => ({ octaveOwner: () => "srv|u1" }));
+vi.mock("./octaveLaunchStore", async (importOriginal) => ({ ...(await importOriginal<object>()), launchOctaveMirror: () => (h.mirror ? { owner: "srv|u1", available: true } : null) }));
 vi.mock("./useOctaveAccessLive", () => ({ useOctaveAccessLive: (enabled: boolean) => void h.live.push(enabled) }));
 vi.mock("./octaveMode", () => ({
   OCTAVE_BASE_PATH: "/octave",
@@ -31,6 +40,9 @@ beforeEach(() => {
   h.available = true;
   h.mode = false;
   h.live = [];
+  h.offline = false;
+  h.profile = false;
+  h.mirror = false;
 });
 
 describe("bascule du mode", () => {
@@ -45,6 +57,17 @@ describe("bascule du mode", () => {
       for (const d of OCTAVE_GLYPH_PATHS) expect(thumb).toContain(`d="${d}"`);
       expect(thumb).not.toMatch(/<img|data:image/);
     }
+  });
+
+  // Lot « fl » (30/10) : hors ligne, la bascule mène à la musique gardée — d'après le dernier passage en ligne.
+  it("barre de Tentacle HORS LIGNE : la bascule reste si Octave était disponible (miroir), jamais pour un profil", () => {
+    h.available = false;
+    h.offline = true;
+    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toBe("");
+    h.mirror = true;
+    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toContain('role="switch"');
+    h.profile = true;
+    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toBe("");
   });
 
   it("barre de Tentacle, sans musique : aucune trace", () => {

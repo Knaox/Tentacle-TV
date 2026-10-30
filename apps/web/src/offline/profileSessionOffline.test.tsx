@@ -77,6 +77,7 @@ vi.mock("../components/UserAvatarMenu", () => ({ UserAvatarMenu: () => <i data-a
 vi.mock("../watchTogether/WatchTogetherButton", () => ({ WatchTogetherButton: () => null }));
 vi.mock("./ConnectivityChip", () => ({ ConnectivityChip: () => <i data-chip /> }));
 vi.mock("./DataSaverChip", () => ({ DataSaverChip: () => null }));
+vi.mock("../music/octave/mode/OctaveModeSwitch", () => ({ OctaveModeSwitch: () => null }));
 vi.mock("./OfflineNavLinks", () => ({ OfflineNavLinks: () => <i data-offline-links /> }));
 // Le message de bascule : ses lignes, à plat.
 vi.mock("../components/notices/NoticeCard", () => ({
