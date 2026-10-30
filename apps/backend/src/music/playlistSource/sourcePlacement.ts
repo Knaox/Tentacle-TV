@@ -7,11 +7,13 @@
  * rien ne relie à la source.
  *
  * L'élément posé est lié à son titre dans le relevé : il sert de repère aux suivants et date « Date d'ajout ».
+ * Toute insertion de l'extension est datée par sa place (`listOrder/arrivalPlan.ts`), jamais « maintenant ».
  */
 
 import { sourcePlace } from "../contract/musicSourceOrder";
 import { rowsByIds } from "../index/indexQueries";
 import { normalizeId } from "../jellyfin/musicJellyfin";
+import { noteArrival } from "../listOrder/addedDates";
 import { insertAt, underPlaylistLock, type PlaylistResult } from "../playlists/playlistService";
 import { rankForInsert } from "./sourceBinding";
 import { bound, ranksByItem, removedAt } from "./sourceRecord";
@@ -21,11 +23,13 @@ import { readPlaylistSource, savePlaylistSource } from "./sourceStore";
 export function insertFromHost(userId: string, playlistId: string, itemIds: string[], position: number, sourceIndex?: number): Promise<PlaylistResult<number>> {
   const ids = itemIds.map(normalizeId);
   let keep: (() => Promise<void>) | null = null;
+  let present: string[] = [];
   return insertAt(
     userId,
     playlistId,
     ids,
     async (before) => {
+      present = before.map((e) => e.itemId);
       const record = await readPlaylistSource(playlistId).catch(() => null);
       if (!record || ids.length === 0) return position;
       const row = (await rowsByIds(ids.slice(0, 1)).catch(() => new Map())).get(ids[0]!) ?? null;
@@ -36,8 +40,10 @@ export function insertFromHost(userId: string, playlistId: string, itemIds: stri
       const ranks = ranksByItem(record);
       return sourcePlace(before.map((e) => ranks.get(e.itemId) ?? null), found.rank) ?? position;
     },
-    async () => {
+    async (at) => {
       await keep?.().catch((error: unknown) => console.warn("[music] liaison à l'ordre de la source non gardée :", (error as Error).message));
+      // Une arrivée ou un fichier remplacé : daté par sa place, jamais « maintenant » (`listOrder/arrivalPlan.ts`).
+      await noteArrival(playlistId, present, ids, at);
     },
   );
 }

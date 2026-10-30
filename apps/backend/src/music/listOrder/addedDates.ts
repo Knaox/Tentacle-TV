@@ -10,7 +10,10 @@
  */
 
 import { getPrisma } from "../../services/db";
+import { listAlias } from "../contract/musicListOrder";
+import { rowsByIds } from "../index/indexQueries";
 import { planAddedDates, type AddedPlanOptions } from "./addedPlan";
+import { planArrivalDates } from "./arrivalPlan";
 
 export function likedScope(userId: string): string {
   return `liked:${userId.replace(/-/g, "").toLowerCase()}`;
@@ -81,5 +84,33 @@ export async function noteLiked(userId: string, itemId: string, favorite: boolea
       await prisma.musicListAdded.upsert({ where: { scope_itemId: { scope, itemId: id } }, create: { scope, itemId: id, addedAt: new Date() }, update: {} });
   } catch (error) {
     console.warn("[music] date du like non gardée :", (error as Error).message);
+  }
+}
+
+/**
+ * Des éléments que l'EXTENSION vient de poser dans une playlist (une arrivée, un fichier remplacé) : datés tout de
+ * suite par leur place ou par l'élément qu'ils remplacent (`arrivalPlan.ts`), jamais « maintenant ».
+ */
+export async function noteArrival(playlistId: string, before: readonly string[], inserted: readonly string[], at: number): Promise<void> {
+  const scope = playlistScope(playlistId);
+  try {
+    const prisma = getPrisma();
+    const rows = await prisma.musicListAdded.findMany({ where: { scope }, select: { itemId: true, addedAt: true } });
+    if (rows.length === 0) return;
+    const known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
+    const index = await rowsByIds([...new Set([...before, ...inserted])]);
+    const identity = (id: string): string | null => {
+      const row = index.get(id);
+      return row ? listAlias(row.recordingMbid, row.name, row.artists[0]?.name ?? row.albumArtist ?? "") : null;
+    };
+    const dates = planArrivalDates({ known, before, inserted, at, identity });
+    if (dates.size === 0) return;
+    await prisma.$transaction(
+      [...dates].map(([itemId, addedAt]) =>
+        prisma.musicListAdded.upsert({ where: { scope_itemId: { scope, itemId } }, create: { scope, itemId, addedAt: new Date(addedAt) }, update: {} }),
+      ),
+    );
+  } catch (error) {
+    console.warn("[music] date d'une arrivée non gardée :", (error as Error).message);
   }
 }
