@@ -3,7 +3,7 @@
  * et fondue en disque doux. Le dessin (SVG : la vignette, un flou en copies décalées, un masque radial) est fait
  * UNE fois par pochette, PETIT puis agrandi (`BLOB_RASTER_SIDE`) ; à chaque image ne changent que la
  * transformation et l'opacité de sa vue, sur le fil d'interface — la dérive de l'horloge du fond, et le
- * battement (`ambientBeat`). Jamais un filtre SVG ici : react-native-svg le calcule par Core Image, de façon
+ * battement : la crête du son mesuré (`useEngineWave`), sinon le tempo de `ambientBeat`. Jamais un filtre SVG ici : react-native-svg le calcule par Core Image, de façon
  * synchrone, sur le fil principal (le balayage du lecteur « laggait », 28/10).
  */
 
@@ -15,6 +15,7 @@ import { ambientSeed, layerTransform } from "./ambientMotion";
 import { ambientBlobs, blobBlurTaps, blobImageFrame, blobRasterScale, BLOB_RASTER_SIDE, type AmbientBlob } from "./ambientBlobs";
 import { beatPulse } from "./ambientBeat";
 import type { BeatClock } from "./useBeatClock";
+import type { EngineWave } from "./useEngineWave";
 
 interface Props {
   /** La vignette des taches (déjà résolue : jeton, copie de l'appareil). */
@@ -24,14 +25,15 @@ interface Props {
   clock: SharedValue<number>;
   beat: BeatClock;
   bpm: number;
+  wave: EngineWave;
 }
 
-export const AmbientBlobs = memo(function AmbientBlobs({ uri, seedKey, clock, beat, bpm }: Props) {
+export const AmbientBlobs = memo(function AmbientBlobs({ uri, seedKey, clock, beat, bpm, wave }: Props) {
   const blobs = useMemo(() => ambientBlobs(ambientSeed(seedKey)), [seedKey]);
   return (
     <>
       {blobs.map((blob, i) => (
-        <BlobView key={i} id={i} blob={blob} uri={uri} clock={clock} beat={beat} bpm={bpm} />
+        <BlobView key={i} id={i} blob={blob} uri={uri} clock={clock} beat={beat} bpm={bpm} wave={wave} />
       ))}
     </>
   );
@@ -44,15 +46,19 @@ interface BlobProps {
   clock: SharedValue<number>;
   beat: BeatClock;
   bpm: number;
+  wave: EngineWave;
 }
 
-const BlobView = memo(function BlobView({ id, blob, uri, clock, beat, bpm }: BlobProps) {
+const BlobView = memo(function BlobView({ id, blob, uri, clock, beat, bpm, wave }: BlobProps) {
   const { width, height } = useWindowDimensions();
   const side = Math.round(blob.size * Math.max(width, height));
   const { time, on } = beat;
+  const { punch, measured } = wave;
   const style = useAnimatedStyle(() => {
     const t = layerTransform(blob.drift, clock.value, width, height);
-    const pulse = beatPulse(time.value, bpm) * on.value;
+    // Le son mesuré l'emporte ; sans lui (iOS), le tempo d'avant.
+    const real = measured.value;
+    const pulse = real * punch.value * on.value + (1 - real) * beatPulse(time.value, bpm) * on.value;
     return {
       opacity: blob.opacity * (0.82 + 0.18 * pulse),
       transform: [

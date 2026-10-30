@@ -1,9 +1,9 @@
 /**
  * Octave (mobile) — la PULSATION du fond du lecteur plein écran (`ambientBeat.test.ts`).
  *
- * Pourquoi un tempo et pas le son : le moteur natif ne mesure aucun niveau (`audio_level` rend `null` sur iOS
- * comme sur Android), et lire le son sur Android exigerait la permission du micro (Visualizer) ; ni Jellyfin, ni
- * MusicBrainz, ni l'extension ne donnent le BPM d'un titre. Le fond bat donc une PULSATION posée sur la POSITION
+ * Le REPLI quand le moteur ne mesure pas le son : Android le mesure (`LevelMeter`, la crête de `useEngineWave`
+ * l'emporte alors), mais le mpv embarqué sur iOS n'a pas de filtre de mesure (`audio_level` y rend `null`), et ni
+ * Jellyfin, ni MusicBrainz, ni l'extension ne donnent le BPM d'un titre. Le fond bat donc une PULSATION posée sur la POSITION
  * DE LECTURE : un temps fort tous les quatre, à un tempo propre à chaque titre (stable, tiré de sa clé, dans la
  * plage où vit l'essentiel de la pop et du rock), qui part du début du titre, suit le saut dans la barre, se fige
  * en pause et pendant une attente du réseau. Discrète exprès : elle donne le mouvement de la musique sans
