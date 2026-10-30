@@ -32,7 +32,7 @@ const toolbar = (over: Partial<Parameters<typeof ListToolbar>[0]> = {}) =>
   );
 const slot = (blocked: string | null): HandleSlot => ({
   index: 0, title: "Halo", blocked, lifted: false,
-  props: { onPointerDown: noop, onPointerMove: noop, onPointerUp: noop, onPointerCancel: noop, onClick: noop },
+  props: { onPointerDown: noop, onPointerMove: noop, onPointerUp: noop, onPointerCancel: noop, onLostPointerCapture: noop, onClick: noop },
 });
 
 describe("barre d'une liste", () => {

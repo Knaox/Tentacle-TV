@@ -1,20 +1,19 @@
 /**
  * Octave mobile — le mode « RÉORDONNER » d'une section de la bibliothèque (« Vos favoris », ou toutes les
  * playlists) : la grille cède la place à une liste de rangées à poignée, comme Apple Music. On glisse par la
- * poignée (le glisser des listes de titres, `useRowReorder` : retour haptique à chaque place franchie et au
+ * poignée (la liste de tri partagée, `ReorderList` : retour haptique à chaque place franchie et au
  * lâcher, défilement près des bords), ou par « Monter / Descendre » au lecteur d'écran. Chaque lâcher part
  * au serveur (le geste partagé `shelf.move`, optimiste, le dernier gagne) : « Terminé » ne fait que refermer.
  */
 
-import { useCallback, useRef, type ReactElement } from "react";
-import { AccessibilityInfo, FlatList, StyleSheet, Text, View, type ListRenderItem } from "react-native";
-import Animated from "react-native-reanimated";
+import { useCallback, useMemo, type ReactElement } from "react";
+import { AccessibilityInfo, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { rowShift } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
-import type { OctavePageScroll } from "../../layout/useOctavePageScroll";
+import { OCTAVE_TOP_BAR_HEIGHT, type OctavePageScroll } from "../../layout/useOctavePageScroll";
+import { useOctaveLayout } from "../../layout/useOctaveLayout";
 import { GlassTextButton } from "../../playlists/screens/BarButtons";
-import { useRowReorder } from "../../playlists/reorder/useRowReorder";
+import { ReorderList, type ReorderSlot } from "../../reorder/ReorderList";
 import { SHELF_REORDER_ROW_HEIGHT, ShelfReorderRow } from "./ShelfReorderRow";
 
 export interface ShelfReorderItem {
@@ -33,15 +32,14 @@ interface Props {
   onDone: () => void;
 }
 
-const AnimatedList = Animated.createAnimatedComponent(FlatList<ShelfReorderItem>);
+const keyOf = (item: ShelfReorderItem) => item.key;
 
 export function ShelfReorderList({ items, title, gutter, scroll, onMove, onDone }: Props) {
   const { t } = useTranslation("musicFavorites");
   const theme = useTheme();
-  const listRef = useRef<FlatList<ShelfReorderItem>>(null);
-  const viewport = useRef<View>(null);
+  const layout = useOctaveLayout();
   const { scrollY, scrollProps } = scroll;
-  const readOffset = useCallback(() => scrollY.value, [scrollY]);
+  const { onScroll, ...rest } = scrollProps;
   const move = useCallback(
     (from: number, to: number) => {
       const item = items[from];
@@ -49,43 +47,17 @@ export function ShelfReorderList({ items, title, gutter, scroll, onMove, onDone 
     },
     [items, onMove],
   );
-  const { drag, lift, handlers } = useRowReorder({
-    count: items.length,
-    rowHeight: SHELF_REORDER_ROW_HEIGHT,
-    enabled: true,
-    onMove: move,
-    listRef: listRef as never,
-    readOffset,
-    viewport,
-    rowsVersion: items,
-  });
-  const step = useCallback(
-    (index: number, delta: -1 | 1) => {
-      const to = index + delta;
-      if (to < 0 || to >= items.length) return;
-      move(index, to);
-      AccessibilityInfo.announceForAccessibility(t("reorder.moved", { name: items[index]?.name ?? "", position: to + 1, total: items.length }));
+  const announce = useCallback(
+    (from: number, to: number) => {
+      AccessibilityInfo.announceForAccessibility(t("reorder.moved", { name: items[from]?.name ?? "", position: to + 1, total: items.length }));
     },
-    [items, move, t],
+    [items, t],
   );
-  const renderItem = useCallback<ListRenderItem<ShelfReorderItem>>(
-    ({ item, index }) => (
-      <ShelfReorderRow
-        index={index}
-        name={item.name}
-        subtitle={item.subtitle}
-        art={item.art}
-        gutter={gutter}
-        shift={drag ? rowShift(index, drag.from, drag.over, SHELF_REORDER_ROW_HEIGHT) : 0}
-        dragging={drag !== null}
-        active={drag?.from === index}
-        lift={lift}
-        handle={handlers(index)}
-        onStep={step}
-      />
-    ),
-    [drag, gutter, handlers, lift, step],
+  const renderRow = useCallback(
+    (item: ShelfReorderItem, _index: number, slot: ReorderSlot) => <ShelfReorderRow name={item.name} subtitle={item.subtitle} art={item.art} gutter={gutter} slot={slot} />,
+    [gutter],
   );
+  const edgeInsets = useMemo(() => ({ top: layout.topInset + OCTAVE_TOP_BAR_HEIGHT, bottom: Math.max(0, layout.bottomInset - 24) }), [layout.bottomInset, layout.topInset]);
   const header = (
     <View style={[styles.header, { paddingHorizontal: gutter }]}>
       <View style={styles.titleRow}>
@@ -98,25 +70,23 @@ export function ShelfReorderList({ items, title, gutter, scroll, onMove, onDone 
     </View>
   );
   return (
-    <View ref={viewport} style={styles.fill} collapsable={false}>
-      <AnimatedList
-        ref={listRef}
-        {...scrollProps}
-        data={items as ShelfReorderItem[]}
-        keyExtractor={(i) => i.key}
-        renderItem={renderItem}
-        extraData={drag}
-        ListHeaderComponent={header}
-        scrollEnabled={drag === null}
-        initialNumToRender={14}
-        windowSize={9}
-      />
-    </View>
+    <ReorderList
+      data={items}
+      keyOf={keyOf}
+      rowHeight={SHELF_REORDER_ROW_HEIGHT}
+      renderRow={renderRow}
+      onMove={move}
+      scrollY={scrollY}
+      onScroll={onScroll}
+      scrollProps={rest}
+      header={header}
+      edgeInsets={edgeInsets}
+      onStepped={announce}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
   header: { gap: 6, paddingBottom: 12 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   title: { flex: 1, minWidth: 0 },
