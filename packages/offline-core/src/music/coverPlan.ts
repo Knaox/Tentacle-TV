@@ -90,3 +90,13 @@ export function imagePlan(covers: Iterable<KeptCover>, local: ReadonlyMap<string
 export function shownCoverUrls(urls: readonly string[], local: ReadonlyMap<string, string>, copies: ReadonlyMap<string, string>, remote: boolean): (string | null)[] {
   return urls.map((url) => local.get(url) ?? copies.get(url) ?? (remote ? url : null));
 }
+
+/**
+ * La pochette à MONTRER pour une adresse du serveur, partout dans Octave (listes, lecteur, écran verrouillé) :
+ * hors ligne, la pochette gardée avec un titre quand c'est la MÊME adresse (même image — un album et ses titres
+ * partagent la leur) ; en ligne, ou sans pochette gardée, l'adresse telle quelle.
+ */
+export function shownArtworkUrl(url: string | null | undefined, local: ReadonlyMap<string, string>, offline: boolean): string | null {
+  if (!url) return null;
+  return offline ? (local.get(url) ?? url) : url;
+}

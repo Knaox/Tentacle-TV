@@ -22,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { withAlpha } from "@/theme";
 import { usePlayerSelector } from "../OctavePlayerContext";
 import { useArtworkUri } from "../PlayerArtwork";
+import { useShownArtworkUrl } from "../../offline/useKeptMusic";
 import { useOctaveColors } from "../../theme/octaveColors";
 import { useAppActive } from "./useAppActive";
 import { AmbientBlobs } from "./AmbientBlobLayer";
@@ -73,7 +74,8 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ open }: { open: b
   const reduceMotion = useReducedMotion();
   const appActive = useAppActive();
   const playing = usePlayerSelector((s) => s.wantsPlay);
-  const url = usePlayerSelector((s) => s.current?.artworkUrl ?? null);
+  // Hors ligne, la pochette gardée (un fichier : `ambientArtworkUrl` le laisse tel quel).
+  const url = useShownArtworkUrl(usePlayerSelector((s) => s.current?.artworkUrl ?? null));
   const uri = useArtworkUri(ambientArtworkUrl(url));
   const blobUri = useArtworkUri(ambientArtworkUrl(url, BLOB_ARTWORK_SIZE));
   const running = ambientShouldRun({ open, appActive, playing, reduceMotion });
