@@ -5,6 +5,7 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { offlineOwnerOf, offlineSessionFallback } from "@tentacle-tv/offline-core";
 import { returnToAccountOffline } from "@/family/profiles/switchSession";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { modeHomePath } from "@/octave/mode/octaveModeStore";
 import { setManualOffline } from "../connectivityStore";
 import { useConnectivity } from "../useConnectivity";
 import { clearAccountFallbackNotice, noteAccountFallback } from "./accountFallbackNotice";
@@ -16,7 +17,8 @@ import { useOfflineProfileSession } from "./useOfflineOwner";
  * compte (aucun code PIN ne se vérifie sans serveur), l'accueil devient son
  * catalogue local, et le message de passage hors ligne le dit
  * (`accountFallbackNotice`). Le hors ligne MANUEL n'existe pas pour un profil.
- * Au retour du réseau, rien n'est rouvert d'office. Règle : `offline-core` ›
+ * Au retour du réseau, rien n'est rouvert d'office. L'accueil rendu est celui du
+ * MODE en cours (Octave reste Octave : `modeHomePath`). Règle : `offline-core` ›
  * `offlineSessionFallback`. Ne rend rien ; monté une fois dans `OfflineShell`.
  */
 export function OfflineAccountFallback() {
@@ -42,7 +44,7 @@ export function OfflineAccountFallback() {
     if (name === null) return;
     noteAccountFallback(name);
     if (router.canDismiss()) router.dismissAll();
-    router.replace("/(tabs)" as never);
+    router.replace(modeHomePath() as never);
   }, [fallback, storage, serverUrl, queryClient, router]);
 
   // Le réseau revenu : la ligne n'a plus rien à dire.

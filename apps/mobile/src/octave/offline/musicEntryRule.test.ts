@@ -5,7 +5,7 @@ import { musicOfflineSurface } from "@tentacle-tv/offline-core/music";
 import { musicEntryVisible, type MusicEntryInput } from "./musicEntryRule";
 
 const OCTAVE = { available: true, settled: true };
-const BASE: MusicEntryInput = { surfaceVisible: true, playable: 3, online: true, octave: OCTAVE, statusFailed: false };
+const BASE: MusicEntryInput = { surfaceVisible: true, playable: 3, online: true, octave: OCTAVE, statusFailed: false, configKnown: true };
 const surface = (keepRight: "granted" | "refused" | "unknown", profileSession = false, capability = true) =>
   musicOfflineSurface({ native: true, capability, profileSession, keepRight, hasContent: true, providerId: null, providerKeep: null });
 
@@ -29,6 +29,10 @@ describe("entrée de la musique gardée (mobile)", () => {
   it("hors ligne ou serveur en panne : la musique gardée reste écoutable", () => {
     expect(musicEntryVisible({ ...BASE, online: false, octave: { available: false, settled: true } })).toBe(true);
     expect(musicEntryVisible({ ...BASE, statusFailed: true, octave: { available: false, settled: true } })).toBe(true);
+  });
+
+  it("démarrage à froid sans réseau, appareil pas encore dit hors ligne : /api/config sans réponse n'est pas une absence", () => {
+    expect(musicEntryVisible({ ...BASE, configKnown: false, octave: { available: false, settled: true } })).toBe(true);
   });
 
   it("rien de gardé en entier → absente", () => {
