@@ -13,6 +13,7 @@ export * from "./musicImportSkip";
 export * from "./musicReleases";
 export * from "./musicListOrder";
 export * from "./musicLibraryShelves";
+export * from "./musicSearchHistory";
 export * from "./musicSourceOrder";
 export * from "./musicShare";
 export * from "./musicPlaylistMembers";

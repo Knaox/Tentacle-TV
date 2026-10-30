@@ -343,6 +343,11 @@ export const SERVER_CAPABILITIES = {
    *  `users.rights` dit `keepOffline` à une extension (titre hors bibliothèque, route `offline` du
    *  contrat `music`). Sans elle : aucun bouton « Garder hors ligne » dans Octave. */
   "offline.music": "1.40.0",
+  /** L'HISTORIQUE de la recherche d'Octave, par COMPTE (`musicSearchHistory.ts`) : les recherches récentes et les
+   *  titres récemment recherchés (lancés depuis les résultats), gardés par le serveur
+   *  (`/api/music/search-history`) et partagés entre le bureau, le web et le mobile ; effacer un élément ou tout.
+   *  Sans elle : l'historique de l'appareil seul, comme avant. */
+  "music.searchHistory": "1.41.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
