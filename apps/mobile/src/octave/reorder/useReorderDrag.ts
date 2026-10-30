@@ -1,20 +1,17 @@
 /**
- * Octave mobile — le GLISSER d'une rangée par sa poignée, tout sur le FIL D'INTERFACE : la rangée tenue suit
- * le pouce, les autres s'écartent (chacune lit `from` / `over`, valeurs partagées), la page défile d'elle-même
- * près d'un bord (`useFrameCallback` + `scrollTo`, vitesse selon la proximité du bord, accélérée) — aucun
- * rendu React pendant le geste : un au début (la rangée tenue, le défilement coupé), un à la fin.
- *
- * Le geste se TERMINE TOUJOURS (bug du 30/10 : remonter un titre, le doigt sur un bouton du haut, et la page
- * défilait à l'infini, doigt levé). Cause : la liste virtualisée DÉMONTAIT la rangée tenue une fois le
- * défilement automatique parti loin ; démontée, la vue qui avait reçu le toucher ne recevait plus sa fin
- * (Fabric remet les évènements tactiles à la vue touchée), et la boucle de défilement tournait sans fin.
- * Désormais : la rangée tenue reste montée (`ReorderList`), la fin arrive aussi par le conteneur
- * (`onTouchEnd`, filet), un démontage ou une poignée coupée annule, et la boucle s'arrête d'elle-même dès
- * que le geste n'est plus là ou que la page bute.
+ * Octave mobile — le GLISSER d'une rangée par sa poignée, sur le FIL D'INTERFACE : la rangée tenue suit le
+ * pouce, les autres s'écartent (valeurs partagées `from` / `over`), la page défile près d'un bord
+ * (`useFrameCallback` + `scrollTo`, vitesse selon la proximité du bord, accélérée). Aucun rendu React pendant
+ * le geste, hors la fenêtre de la liste : un au début, un à la fin.
+ * Le geste se TERMINE TOUJOURS (bug du 30/10, défilement sans fin doigt levé) — mesuré au banc : l'ancien
+ * défilement tournait sur le fil JS, saturé par le rendu de toute la liste à chaque place franchie (~14 i/s),
+ * qui traitait le lâcher en retard ; et une poignée retirée en plein geste (liste rechargée, « Modifier »
+ * refermé) perdait la fin du toucher et, refusant de céder, bloquait tout toucher. Désormais : la poignée
+ * tenue reste montée jusqu'au lâcher, un geste fini cède toujours (`handleResponder`), filet du conteneur.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { PanResponder, type GestureResponderEvent, type GestureResponderHandlers, type View } from "react-native";
+import type { GestureResponderEvent, GestureResponderHandlers, View } from "react-native";
 import Animated, {
   runOnJS,
   runOnUI,
@@ -27,9 +24,9 @@ import Animated, {
   type AnimatedRef,
   type SharedValue,
 } from "react-native-reanimated";
-import { DRAG_THRESHOLD_PX } from "@tentacle-tv/shared/octave";
 import { haptic } from "@/utils/haptics";
 import { edgeVelocity, stepOf, targetOf } from "./reorderWorklets";
+import { handleResponder } from "./handleResponder";
 
 /** Ce que les rangées lisent (fil d'interface). `from` vaut -1 hors geste. */
 export interface ReorderDragValues {
@@ -249,33 +246,37 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
     [alive, bottom, count, dragVersion, dy, edgeSince, frame, from, lift, maxOver, minOver, over, pointerY, scrollY, startScroll, top, viewport],
   );
 
-  const handlers = useMemo(() => {
-    const cache = new Map<number, { key: string; handlers: GestureResponderHandlers }>();
-    return (index: number, key: string) => {
-      if (!enabled) return undefined;
-      const known = cache.get(index);
+  // Les gestes de chaque poignée, créés une fois et gardés (par rang ET clé) : une poignée tenue garde les
+  // MÊMES gestes jusqu'au lâcher, même si la liste ou la porte (« Modifier ») change pendant le geste.
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+  const grantRef = useRef(grant);
+  grantRef.current = grant;
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
+  const cache = useRef(new Map<number, { key: string; handlers: GestureResponderHandlers }>());
+  const heldKey = held?.key ?? null;
+  const handlers = useCallback(
+    (index: number, key: string) => {
+      // Poignées coupées : plus de poignée… sauf celle qu'on tient (démontée, la fin du toucher serait perdue).
+      if (!enabled && key !== heldKey) return undefined;
+      const known = cache.current.get(index);
       if (known && known.key === key) return known.handlers;
-      const responder = PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_e, s) => Math.abs(s.dy) > DRAG_THRESHOLD_PX,
-        // Jamais rendu : ni la page, ni un bouton survolé (la barre du haut) ne prend le geste.
-        onPanResponderTerminationRequest: () => false,
-        onShouldBlockNativeResponder: () => true,
-        onPanResponderGrant: (e) => {
-          grant(index, key, e.nativeEvent.pageY);
+      const made = handleResponder({
+        enabled: () => enabledRef.current,
+        live: () => live.current,
+        grant: (pageY) => grantRef.current(index, key, pageY),
+        move: (moved, pageY) => {
+          dy.value = moved;
+          pointerY.value = pageY;
         },
-        onPanResponderMove: (e, s) => {
-          if (!live.current) return;
-          dy.value = s.dy;
-          pointerY.value = e.nativeEvent.pageY;
-        },
-        onPanResponderRelease: () => finish(true),
-        onPanResponderTerminate: () => finish(false),
+        finish: (commit) => finishRef.current(commit),
       });
-      cache.set(index, { key, handlers: responder.panHandlers });
-      return responder.panHandlers;
-    };
-  }, [dy, enabled, finish, grant, pointerY]);
+      cache.current.set(index, { key, handlers: made });
+      return made;
+    },
+    [dy, enabled, heldKey, pointerY],
+  );
 
   const onTouchEnd = useCallback(
     (e: GestureResponderEvent) => {
@@ -289,7 +290,7 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
   return {
     values,
     // Gardée par sa CLÉ, même si la liste change en plein geste : la vue touchée n'est jamais démontée.
-    heldKey: held?.key ?? null,
+    heldKey,
     active: held !== null,
     handlers,
     onTouchEnd,
