@@ -31,3 +31,4 @@ export * from "./octaveLaunchPin";
 export * from "./remoteCommands";
 export * from "./engine";
 export * from "./selection";
+export * from "./motion";

@@ -15,7 +15,7 @@ import androidx.media3.exoplayer.ExoPlayer
  * (`Listener`). Son `fadeGain` est le gain de la courbe du fondu (1 hors fondu),
  * que le moteur multiplie au volume et au ReplayGain. Fil principal seulement.
  */
-internal class AudioDeck(val player: ExoPlayer, private val listener: Listener) : Player.Listener {
+internal class AudioDeck(val player: ExoPlayer, private val listener: Listener, val meter: LevelMeter) : Player.Listener {
     interface Listener {
         fun onDeckChanged(deck: AudioDeck)
         fun onDeckEnded(deck: AudioDeck)

@@ -74,7 +74,8 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
             "audio_list_outputs" -> BridgeJson.outputs()
             // Une seule sortie sur Android : celle que choisit le système (haut-parleur, casque, Bluetooth).
             "audio_set_output" -> ""
-            "audio_level" -> "null"
+            // Le niveau de la platine qu'on entend (`LevelMeter`) : la vague du lecteur plein écran.
+            "audio_level" -> core?.frontOrNull?.meter?.levelJson() ?: "null"
             else -> throw IllegalArgumentException("octave-audio: commande inconnue « $command »")
         }
     }
