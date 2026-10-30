@@ -16,6 +16,9 @@ import { WAVE_START, stepWave, waveNewTrack, type WaveState } from "./waveDrive"
 export const WAVE_POLL_MS = 100;
 /** Tant de mesures vides d'affilée : la mesure est dite absente (fondu vers le calme). */
 const MISSING_AFTER = 5;
+/** Au-delà (2 s sans mesure : iOS, ancien build), une question par seconde seulement, au cas où le son revient. */
+const IDLE_AFTER = 20;
+const IDLE_EVERY = 10;
 const FADE_MS = 400;
 
 export interface EngineWave {
@@ -47,9 +50,11 @@ export function useEngineWave(active: boolean): EngineWave {
     let alive = true;
     let inFlight = false;
     let missing = 0;
+    let tick = 0;
     let last = Date.now();
     const read = async () => {
       if (inFlight) return;
+      if (missing >= IDLE_AFTER && tick++ % IDLE_EVERY !== 0) return;
       inFlight = true;
       const level = await octaveAudioBridge.invoke<number | null>("audio_level").catch(() => null);
       inFlight = false;
@@ -58,7 +63,8 @@ export function useEngineWave(active: boolean): EngineWave {
       const dt = now - last;
       last = now;
       if (typeof level !== "number") {
-        if (++missing === MISSING_AFTER) {
+        missing++;
+        if (missing === MISSING_AFTER) {
           measured.value = withTiming(0, { duration: FADE_MS });
           punch.value = withTiming(0, { duration: FADE_MS });
         }
@@ -66,6 +72,7 @@ export function useEngineWave(active: boolean): EngineWave {
       }
       if (missing >= MISSING_AFTER || measured.value === 0) measured.value = withTiming(1, { duration: FADE_MS });
       missing = 0;
+      tick = 0;
       state.current = stepWave(state.current, level, dt);
       energy.value = withTiming(state.current.energy.energy, STEP);
       punch.value = withTiming(state.current.punch, STEP);
