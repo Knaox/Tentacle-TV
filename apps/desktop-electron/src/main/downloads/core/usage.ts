@@ -83,6 +83,13 @@ export function repairUsage(
     }
   }
 
+  // La pochette d'un titre de musique gardé (`media/<id>/cover.<ext>`) n'a pas de ligne dans `files` : sans
+  // elle, le balayage la prenait pour un orphelin et l'effaçait à chaque démarrage — « Sur cet appareil », le
+  // lecteur et l'écran verrouillé restaient sans pochette hors ligne (lot « fl », 30/10).
+  for (const row of db.prepare("SELECT cover_rel FROM music_meta WHERE cover_rel IS NOT NULL").all()) {
+    known.set(text(row, "cover_rel"), "cover");
+  }
+
   report.removed = sweepMediaDirs(db, volume, known, busyItems, options.removeOrphans);
   return report;
 }

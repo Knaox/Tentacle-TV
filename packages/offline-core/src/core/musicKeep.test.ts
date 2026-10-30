@@ -15,6 +15,7 @@ import { listForUser } from "./listing";
 import { enqueueMusicBatch, isPublicArtUrl, isServerPath, musicItemId, musicRelPath, type MusicKeepItem } from "./musicKeep";
 import { isMusicItem, listMusicCollections, listMusicForUser, musicItemOfKey, saveMusicCollection } from "./musicLibrary";
 import { getFile } from "./queue";
+import { repairUsage } from "./usage";
 import { deleteClaim } from "./store";
 import type { TransferNet } from "./transferNet";
 import { CREDS, makeEngine, preparedRoot } from "./testkit";
@@ -207,6 +208,14 @@ describe("transfert", () => {
     fetched.length = 0;
     await heal(async (url) => (fetched.push(url), null), db, CREDS.serverUrl, nodeVolume(root), 10);
     expect(fetched).toEqual([]);
+    // Le balayage des orphelins (chaque démarrage du mobile) garde la pochette : elle a son propriétaire.
+    repairUsage(db, nodeVolume(root), 11, { skipFileIds: new Set(), removeOrphans: true });
+    expect(fs.existsSync(path.join(root, kept.coverRel!))).toBe(true);
+    // Une pochette posée puis disparue (balayée par un moteur d'avant) : la réparation la reprend.
+    fs.rmSync(path.join(root, kept.coverRel!));
+    await heal(async (url) => (fetched.push(url), jpeg), db, CREDS.serverUrl, nodeVolume(root), 12);
+    expect(fetched).toEqual([`${CREDS.serverUrl}/api/music/artwork/${JF}`]);
+    expect(fs.readFileSync(path.join(root, kept.coverRel!))).toEqual(Buffer.from(jpeg));
     // Retiré (une playlist tenue à jour l'a perdu) : ni média, ni pochette, ni dossier ne restent sur le disque.
     deleteClaim(db, nodeVolume(root), "u", fileId);
     expect(fs.existsSync(path.join(root, "media", JF))).toBe(false);

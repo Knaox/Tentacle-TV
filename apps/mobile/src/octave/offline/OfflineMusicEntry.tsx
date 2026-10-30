@@ -14,11 +14,10 @@ import { useRouter, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { KeptGlyph } from "@/components/cards/cardGlyphs";
-import { useMusicStatus, useOctaveAvailability } from "@tentacle-tv/api-client";
-import { useOfflineMode } from "@/offline/useOfflineMode";
 import { spacing } from "@/theme";
 import { PressableScale } from "../layout/PressableScale";
 import { setOctaveMode } from "../mode/octaveModeStore";
+import { useOctaveModeFacts } from "../mode/useOctaveModeFacts";
 import { useOctaveColors } from "../theme/octaveColors";
 import { musicEntryVisible } from "./musicEntryRule";
 import { useKeptMusic } from "./useKeptMusic";
@@ -36,10 +35,8 @@ function useSurfaceVisible(): boolean {
 
 /** Octave existe-t-il pour ce compte (lu SEULEMENT derrière la porte du droit) ? */
 function useEntryVisible(): boolean {
-  const offline = useOfflineMode();
-  const octave = useOctaveAvailability();
-  const statusFailed = useMusicStatus().isError;
-  return musicEntryVisible({ surfaceVisible: true, playable: usePlayableCount(), online: !offline, octave, statusFailed });
+  const facts = useOctaveModeFacts();
+  return musicEntryVisible({ surfaceVisible: true, playable: usePlayableCount(), online: !facts.offline, octave: facts.fresh, statusFailed: facts.failed, configKnown: facts.configKnown });
 }
 
 export const OfflineMusicEntry = memo(function OfflineMusicEntry() {

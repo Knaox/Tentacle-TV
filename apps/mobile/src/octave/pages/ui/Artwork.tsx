@@ -3,7 +3,8 @@
  * place RÉSERVÉE à sa taille (rien ne bouge à l'arrivée), un fond d'attente
  * calme puis un fondu court. Sans image : la note de musique dessinée, jamais
  * une case vide. Ronde pour un artiste. Le cache disque est rangé SANS jeton
- * et, hors ligne, la pochette gardée avec le titre passe d'abord (`artworkSource.ts`). Une pochette
+ * et, hors ligne, la pochette gardée avec le titre passe d'abord (`artworkSource.ts`) — celle du titre, ou
+ * celle de la MÊME adresse gardée avec un autre titre (album, mosaïque : `useShownArtworkUrl`). Une pochette
  * IMPORTÉE (lot « sf ») est demandée à la taille de sa place (`releaseArtForPixels`).
  */
 
@@ -16,6 +17,7 @@ import { useTheme } from "@/theme";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useArtworkResolver } from "../env/pagesEnv";
 import { artworkSource } from "./artworkSource";
+import { useShownArtworkUrl } from "../../offline/useKeptMusic";
 
 interface ArtworkProps {
   url: string | null | undefined;
@@ -32,9 +34,12 @@ export const Artwork = memo(function Artwork({ url, size, round, radius = 8, kin
   const theme = useTheme();
   const resolve = useArtworkResolver();
   const offline = useOfflineMode();
+  // Hors ligne, la pochette gardée de la même adresse (un album, une mosaïque, un titre d'une page du serveur).
+  const kept = useShownArtworkUrl(localUrl ? null : url);
+  const keptLocal = localUrl ?? (kept !== null && kept !== url ? kept : null);
   // Une pochette importée a ses tailles : celle qui couvre la place (« fill » : la tête d'une page, en grand).
   const sized = url ? releaseArtForPixels(url, size === "fill" ? 1200 : size * PixelRatio.get()) : url;
-  const src = artworkSource(resolve(sized), localUrl, offline);
+  const src = artworkSource(resolve(sized), keptLocal, offline);
   const box: ViewStyle = size === "fill" ? { width: "100%", aspectRatio: 1 } : { width: size, height: size };
   const r = round ? 9999 : radius;
   const Fallback = kind === "artist" ? Mic2 : Disc3;

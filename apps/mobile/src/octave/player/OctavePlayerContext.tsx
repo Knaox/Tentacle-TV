@@ -20,6 +20,7 @@ import { keepJsAliveWhilePlaying } from "../audio/musicKeepAlive";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
 import { keptPlaybackSource, withKeptSources } from "../offline/keptPlayback";
+import { setKeptPlayHandler } from "../offline/keptPlayPort";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
@@ -63,10 +64,13 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const offKept = followKeptCopies(p);
     // Android : la file avance application derrière (minuteurs du JS gardés vivants pendant l'écoute).
     const offAlive = keepJsAliveWhilePlaying(p);
+    // « Sur cet appareil » : toucher un titre gardé le lit (le port n'avait jamais de lecteur inscrit — rien ne jouait).
+    setKeptPlayHandler((tracks, index, contextId) => p.playList(tracks, index, contextId));
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
     if (__DEV__) Object.assign(globalThis, { __octavePlayer: p, __octaveAuth: auth });
     setPlayer(p);
     return () => {
+      setKeptPlayHandler(null);
       offKept();
       offAlive();
       offResume();

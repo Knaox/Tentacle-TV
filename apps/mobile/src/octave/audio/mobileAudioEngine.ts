@@ -10,10 +10,12 @@ import { createBridgeAudioEngine, type EnginePrefs, type MusicEngineAuth } from 
 import { isOctaveAudioAvailable, octaveAudioBridge } from "../../../modules/octave-audio";
 import { phoneDirectSources } from "../clientFetch/phoneDelegation";
 import { orderedBridge } from "./mobileAudioBridge";
+import { keptCoverForUrl } from "../offline/useKeptMusic";
 
 const bridge = orderedBridge(octaveAudioBridge, phoneDirectSources);
 
 export function createMobileAudioEngine(auth: MusicEngineAuth, prefs: EnginePrefs): Promise<AudioEnginePort> {
   if (!isOctaveAudioAvailable()) return Promise.reject(new Error("octave-audio: module natif absent"));
-  return createBridgeAudioEngine(bridge, auth, prefs, { systemMeta: true });
+  // L'écran verrouillé : la pochette gardée d'abord (un fichier ; hors ligne, l'adresse du serveur ne répond pas).
+  return createBridgeAudioEngine(bridge, auth, prefs, { systemMeta: true, localArtwork: (track) => keptCoverForUrl(track.artworkUrl) });
 }

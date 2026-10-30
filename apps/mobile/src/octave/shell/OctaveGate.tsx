@@ -10,25 +10,20 @@
  * lancement (`octaveMirrorNote`).
  */
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { View } from "react-native";
-import { useMusicStatus, useOctaveAvailability, useServerCapabilities } from "@tentacle-tv/api-client";
 import { octaveMirrorNote, octaveStayVerdict } from "@tentacle-tv/shared/octave/mode";
-import { useOfflineMode } from "@/offline/useOfflineMode";
-import { mirrorAvailableNow, noteOctaveAvailability } from "../mode/octaveMirror";
+import { noteOctaveAvailability } from "../mode/octaveMirror";
+import { useOctaveModeFacts } from "../mode/useOctaveModeFacts";
 import { useLeaveOctave } from "../mode/useOctaveSwitch";
 import { useOctaveColors } from "../theme/octaveColors";
 
 export function OctaveGate({ children }: { children: ReactNode }) {
-  const fresh = useOctaveAvailability();
-  const failed = useMusicStatus().isError;
-  const configKnown = useServerCapabilities().known;
-  const offline = useOfflineMode();
+  const facts = useOctaveModeFacts();
   const colors = useOctaveColors();
   const leave = useLeaveOctave();
-  const mirrorAvailable = useMemo(mirrorAvailableNow, []);
-  const verdict = octaveStayVerdict({ fresh, failed, configKnown, offline, mirrorAvailable });
-  const note = octaveMirrorNote({ fresh, failed, configKnown, offline });
+  const verdict = octaveStayVerdict(facts);
+  const note = octaveMirrorNote(facts);
 
   useEffect(() => {
     if (note !== null) noteOctaveAvailability(note);

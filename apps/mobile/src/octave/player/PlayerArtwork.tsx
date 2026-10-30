@@ -1,6 +1,6 @@
 /**
  * Octave (mobile) — la pochette d'un titre dans le lecteur : l'adresse authentifiée vers le serveur seulement
- * (`elementSourceUrl` : jamais le jeton chez un hôte tiers), un fondu à l'arrivée, et la note de musique sur le
+ * (`elementSourceUrl` : jamais le jeton chez un hôte tiers) — hors ligne, la pochette gardée —, un fondu à l'arrivée, et la note de musique sur le
  * dégradé de la marque tant qu'il n'y a rien.
  */
 
@@ -12,6 +12,7 @@ import { Music } from "lucide-react-native";
 import { elementSourceUrl } from "@tentacle-tv/shared/octave";
 import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useOctaveColors } from "../theme/octaveColors";
+import { useShownArtworkUrl } from "../offline/useKeptMusic";
 
 interface Props {
   url: string | null | undefined;
@@ -34,7 +35,8 @@ export function useArtworkUri(url: string | null | undefined): string | null {
 
 export const PlayerArtwork = memo(function PlayerArtwork({ url, size, radius, style, blurRadius, crossfade = false }: Props) {
   const colors = useOctaveColors();
-  const uri = useArtworkUri(url);
+  // Hors ligne, la pochette gardée sur l'appareil (l'adresse du serveur ne mène nulle part).
+  const uri = useArtworkUri(useShownArtworkUrl(url));
   const box = size === undefined ? null : { width: size, height: size };
   return (
     <View style={[styles.frame, box, { borderRadius: radius, backgroundColor: colors.raised }, style]}>

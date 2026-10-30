@@ -20,3 +20,10 @@ describe("bridgeTrackMeta : la pochette de l'écran verrouillé", () => {
     expect(bridgeTrackMeta(track, auth, "file:///kept/cover.jpg").artworkUrl).toBe("file:///kept/cover.jpg");
   });
 });
+
+describe("un titre lu depuis « Sur cet appareil » (sa pochette EST un fichier gardé)", () => {
+  it("le fichier passe tel quel — jamais préfixé du serveur ni porteur du jeton", () => {
+    const kept = { ...track, artworkUrl: "file:///var/app/Documents/offline/media/x/cover.jpg" } as MusicTrack;
+    expect(bridgeTrackMeta(kept, auth).artworkUrl).toBe("file:///var/app/Documents/offline/media/x/cover.jpg");
+  });
+});

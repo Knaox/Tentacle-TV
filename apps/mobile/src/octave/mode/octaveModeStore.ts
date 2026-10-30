@@ -9,7 +9,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
-import { OCTAVE_MODE_KEY } from "@tentacle-tv/shared/octave/mode";
+import { OCTAVE_MODE_KEY, octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { markOctaveReached, octaveLaunch } from "../launch/octaveLaunch";
 
 let storage: StorageAdapter | null = null;
@@ -56,4 +56,12 @@ export function useOctaveMode(): boolean {
 /** Le stockage d'appareil branché (null avant l'hydratation). */
 export function octaveStorage(): StorageAdapter | null {
   return storage;
+}
+
+/**
+ * L'accueil du MODE en cours : celui d'Octave en mode musique, celui de Tentacle sinon. Une sortie forcée (retour
+ * au compte de l'appareil hors ligne…) y mène — jamais l'accueil de Tentacle sous un mode Octave allumé.
+ */
+export function modeHomePath(): string {
+  return current ? octavePaths.home : "/(tabs)";
 }

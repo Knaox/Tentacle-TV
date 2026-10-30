@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KeptMusicTrack } from "../core/musicLibrary";
 import { mosaicCandidates, pickMosaic, type MusicPlaylist, type MusicTrack } from "@tentacle-tv/shared/music";
-import { coversToRead, imagePlan, keptCoverOf, keptCoverUrls, localCoversByUrl, sameCover, shownCoverUrls, type KeptCover } from "./coverPlan";
+import { coversToRead, imagePlan, keptCoverOf, keptCoverUrls, localCoversByUrl, sameCover, shownArtworkUrl, shownCoverUrls, type KeptCover } from "./coverPlan";
 
 const NOW = Date.UTC(2026, 9, 28, 12);
 const DAY = 86_400_000;
@@ -90,5 +90,22 @@ describe("images", () => {
     expect(sameCover(cover(), { ...cover(), savedAt: 9 })).toBe(true);
     expect(sameCover(cover(), cover(true))).toBe(false);
     expect(sameCover(undefined, cover())).toBe(false);
+  });
+});
+
+describe("shownArtworkUrl : la pochette gardée, partout hors ligne", () => {
+  const local = new Map([["/api/music/art/a1?tag=x", "file:///kept/a1.jpg"]]);
+
+  it("hors ligne : la pochette gardée de la même adresse (l'album et ses titres)", () => {
+    expect(shownArtworkUrl("/api/music/art/a1?tag=x", local, true)).toBe("file:///kept/a1.jpg");
+  });
+
+  it("hors ligne sans pochette gardée : l'adresse (le cache d'images peut l'avoir)", () => {
+    expect(shownArtworkUrl("/api/music/art/b2?tag=y", local, true)).toBe("/api/music/art/b2?tag=y");
+  });
+
+  it("en ligne : l'adresse du serveur, inchangée", () => {
+    expect(shownArtworkUrl("/api/music/art/a1?tag=x", local, false)).toBe("/api/music/art/a1?tag=x");
+    expect(shownArtworkUrl(null, local, true)).toBeNull();
   });
 });

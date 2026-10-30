@@ -2,23 +2,26 @@
  * Octave (mobile) — l'entrée dans le mode musique, dans l'en-tête de Tentacle :
  * seulement si le serveur déclare `music.library` ET que ce compte a une
  * bibliothèque musique et le droit « Accès à Octave » (`useOctaveAvailability`).
- * Serveur d'avant, compte sans musique : rien, aucune erreur.
+ * Serveur d'avant, compte sans musique : rien, aucune erreur. Hors ligne, le
+ * miroir du lancement (`octaveSwitchShown`) : Octave était là au dernier passage
+ * en ligne, sa musique gardée s'ouvre.
  */
 
 import { memo } from "react";
 import { Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Music2 } from "lucide-react-native";
-import { useOctaveAvailability } from "@tentacle-tv/api-client";
+import { octaveSwitchShown } from "@tentacle-tv/shared/octave/mode";
 import { useTheme } from "@/theme";
 import { useEnterOctave } from "./useOctaveSwitch";
+import { useOctaveModeFacts } from "./useOctaveModeFacts";
 
 export const OctaveEnterButton = memo(function OctaveEnterButton() {
   const { t } = useTranslation("octaveShell");
   const { colors } = useTheme();
-  const { available } = useOctaveAvailability();
+  const shown = octaveSwitchShown(useOctaveModeFacts());
   const enter = useEnterOctave();
-  if (!available) return null;
+  if (!shown) return null;
   return (
     <Pressable
       onPress={enter}

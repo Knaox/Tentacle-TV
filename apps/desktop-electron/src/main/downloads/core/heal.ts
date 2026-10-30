@@ -25,6 +25,7 @@ import {
 import * as segments from "./segments";
 import { snapshot } from "./snapshot";
 import { fetchMusicCover } from "./musicLibrary";
+import { mediaFileExists } from "./paths";
 import { firstMediaSourceId } from "./fileLookup";
 import { setSubtitlesDone } from "./store";
 import { fetchAll, parseSpecs } from "./subs";
@@ -147,19 +148,26 @@ export async function heal(
     if (touched) healed += 1;
   }
 
-  for (const itemId of musicMissingCovers(db)) {
+  for (const itemId of musicMissingCovers(db, volume)) {
     if (await fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId, fetchPublic).catch(() => false)) healed += 1;
   }
   return healed;
 }
 
-/** Les titres de musique complets dont la pochette n'a jamais été posée. */
-function musicMissingCovers(db: DatabaseHandle): string[] {
+/**
+ * Les titres de musique complets sans pochette sur le disque : jamais posée, ou posée puis disparue (un
+ * balayage d'avant la 1.31.0 l'effaçait en la croyant orpheline, `usage.ts`) — `fetchMusicCover` la reprend.
+ */
+function musicMissingCovers(db: DatabaseHandle, volume: Volume): string[] {
   return db
     .prepare(
-      `SELECT DISTINCT m.item_id FROM music_meta m JOIN files f ON f.item_id = m.item_id
-       WHERE f.status = 'complete' AND m.cover_rel IS NULL AND m.artwork_path IS NOT NULL`,
+      `SELECT DISTINCT m.item_id, m.cover_rel FROM music_meta m JOIN files f ON f.item_id = m.item_id
+       WHERE f.status = 'complete' AND m.artwork_path IS NOT NULL`,
     )
     .all()
+    .filter((row) => {
+      const rel = textOrNull(row, "cover_rel");
+      return rel === null || !mediaFileExists(volume, rel);
+    })
     .map((row) => text(row, "item_id"));
 }
