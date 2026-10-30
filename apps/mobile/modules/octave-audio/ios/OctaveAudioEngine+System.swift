@@ -269,3 +269,13 @@ extension OctaveAudioEngine {
   }
   #endif
 }
+
+// MARK: - Niveau de sortie
+
+extension OctaveAudioEngine {
+  /// Le niveau entendu (dBFS) ou `NSNull` : la mesure à la sortie des platines, il y a la latence de la route.
+  func outputLevel() -> Any {
+    let db = octave_output_level_db(AVAudioSession.sharedInstance().outputLatency)
+    return db.isNaN ? NSNull() : NSNumber(value: (db * 100).rounded() / 100)
+  }
+}

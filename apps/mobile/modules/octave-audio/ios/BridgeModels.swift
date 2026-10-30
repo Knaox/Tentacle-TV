@@ -108,7 +108,7 @@ enum BridgeJson {
   }
 
   static func string(_ value: Any) -> String {
-    guard JSONSerialization.isValidJSONObject(value) || value is NSNull,
+    guard JSONSerialization.isValidJSONObject(value) || value is NSNull || value is NSNumber,
           let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]) else { return "" }
     return String(data: data, encoding: .utf8) ?? ""
   }

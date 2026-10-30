@@ -2543,7 +2543,7 @@ SPEC CHECKSUMS:
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   MPVKit: 5382ee89e84d909257b0d0f37bca5ef51c448fa0
   MpvPlayer: b4121bfa1bc159cbeae4acabd60061cdd1258293
-  OctaveAudio: 90a4e157e7f9aa8acea04cba5c28d1b3c6fc696e
+  OctaveAudio: f98fd05815813401a994d93e90519843f33ec8ea
   OfflineStorage: 7f40df7d70a3bd610706004527a9f279949519c0
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043

@@ -6,7 +6,7 @@
  *   attaque ~0,2 s, relâchement ~1 s — la vitesse et la hauteur de fond de la vague ;
  * - l'IMPULSION : ce qui dépasse le niveau du moment (un coup de grosse caisse, une attaque) — montée en
  *   ~60 ms, retombée en ~280 ms : la crête qui saute avec le son.
- * Sans mesure (iOS : le mpv embarqué n'a pas de filtre de mesure ; un ancien build ; pause), rien n'est
+ * Sans mesure (un build d'avant les compteurs natifs ; pause), rien n'est
  * inventé : la vague garde une houle calme qui ne prétend suivre aucun rythme (`WAVE_CALM`).
  *
  * La géométrie (`wavePath`) est une fonction de travail : elle tourne sur le fil d'interface, à chaque image.

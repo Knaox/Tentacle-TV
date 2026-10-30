@@ -56,7 +56,7 @@ const BlobView = memo(function BlobView({ id, blob, uri, clock, beat, bpm, wave 
   const { punch, measured } = wave;
   const style = useAnimatedStyle(() => {
     const t = layerTransform(blob.drift, clock.value, width, height);
-    // Le son mesuré l'emporte ; sans lui (iOS), le tempo d'avant.
+    // Le son mesuré l'emporte ; sans lui (ancien build), le tempo d'avant.
     const real = measured.value;
     const pulse = real * punch.value * on.value + (1 - real) * beatPulse(time.value, bpm) * on.value;
     return {

@@ -63,7 +63,8 @@ final class OctaveAudioEngine {
     case "audio_control": control(args)
     case "audio_list_outputs": return [["id": "default", "name": "", "exclusiveCapable": false]]
     case "audio_set_output": break
-    case "audio_level": return NSNull()
+    // Le niveau du son qui sort (`OctaveOutputMeter.c`), recalé sur la latence de la route : la vague du lecteur.
+    case "audio_level": return outputLevel()
     #if DEBUG
     // Bancs de développement : ce que le système affiche (écran verrouillé), relu tel quel.
     case "audio_debug": return debugSnapshot()
