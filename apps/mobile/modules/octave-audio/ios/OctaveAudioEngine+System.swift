@@ -145,6 +145,11 @@ extension OctaveAudioEngine {
     guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
           let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
     if type == .began {
+      // Une interruption annoncée parce que l'app ÉTAIT SUSPENDUE (iOS la remet au retour au premier plan, en
+      // retard) n'interrompt rien qui joue encore : la mettre en pause, c'était la « pause au retour dans l'app »
+      // (lot « fl », 30/10). Apple : `AVAudioSessionInterruptionReasonKey` = `.appWasSuspended` (iOS 14.5),
+      // `AVAudioSessionInterruptionWasSuspendedKey` avant.
+      if Self.interruptionFromSuspension(note) { return }
       Self.interruptedWhilePlaying = wantsPlay
       if wantsPlay { systemPlayOnQueue(false) }
       return
@@ -155,6 +160,16 @@ extension OctaveAudioEngine {
       systemPlayOnQueue(true)
     }
     Self.interruptedWhilePlaying = false
+  }
+
+  /// Le système dit-il cette interruption due à la suspension de l'app (rien n'a pris le son) ?
+  private static func interruptionFromSuspension(_ note: Notification) -> Bool {
+    if #available(iOS 14.5, *),
+       let raw = note.userInfo?[AVAudioSessionInterruptionReasonKey] as? UInt,
+       AVAudioSession.InterruptionReason(rawValue: raw) == .appWasSuspended {
+      return true
+    }
+    return (note.userInfo?[AVAudioSessionInterruptionWasSuspendedKey] as? Bool) == true
   }
 
   /// Casque débranché, Bluetooth perdu : la musique ne passe jamais d'elle-même au haut-parleur.
