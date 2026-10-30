@@ -227,6 +227,8 @@ export default {
     duration: "Durée",
     play: "Lire {{title}}",
     nowPlaying: "En cours de lecture",
+    // Un titre grisé (indisponible) touché : rien ne se lance, on le dit (lot « fl », `unavailableTrack.ts`).
+    unavailableNotice: "Ce titre ne peut pas être lu pour le moment car il n'est pas disponible.",
     like: "Ajouter aux titres likés",
     unlike: "Retirer des titres likés",
     more: "Plus d'options pour {{title}}",

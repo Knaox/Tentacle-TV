@@ -227,6 +227,8 @@ export default {
     duration: "Duration",
     play: "Play {{title}}",
     nowPlaying: "Now playing",
+    // Un titre grisé (indisponible) touché : rien ne se lance, on le dit (lot « fl », `unavailableTrack.ts`).
+    unavailableNotice: "This track can't be played right now because it isn't available.",
     like: "Add to Liked Songs",
     unlike: "Remove from Liked Songs",
     more: "More options for {{title}}",

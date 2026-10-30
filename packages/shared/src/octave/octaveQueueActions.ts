@@ -23,6 +23,7 @@ import {
   type QueueState,
 } from "./queueModel";
 import type { OctavePlayer } from "./octavePlayer";
+import { announceUnavailableTrack, isTrackUnavailable } from "./unavailableTrack";
 
 function apply(player: OctavePlayer, queue: QueueState): void {
   const before = player.snapshot.get().queue;
@@ -116,9 +117,11 @@ export const queueActions = {
     player.startItem(snap.queue, 0, "chosen", "retry");
   },
 
-  /** Clic sur une entrée de la file : elle devient le courant. */
+  /** Clic sur une entrée de la file : elle devient le courant — sauf un titre indisponible, qui est seulement dit. */
   jumpTo(player: OctavePlayer, uid: string): void {
     const q = player.snapshot.get().queue;
+    const target = q.items.find((item) => item.uid === uid);
+    if (target && isTrackUnavailable(target.track)) return announceUnavailableTrack();
     const next = jumpTo(q, uid);
     if (next !== q) player.startItem(next, 0);
   },

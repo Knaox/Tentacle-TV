@@ -10,11 +10,17 @@
  * playlist) pour revenir de l'aléatoire au même endroit. Une entrée absente de
  * `original` est de la FILE D'ATTENTE de l'utilisateur : ses gestes et sa règle
  * (toujours avant la suite du contexte) vivent dans `queueFiles.ts`.
+ *
+ * Un titre INDISPONIBLE (`unavailableTrack.ts`) reste dans la file, grisé, mais n'y est jamais lu : départ, fin du
+ * titre, « Suivant », « Précédent » passent par-dessus.
  */
 
 import type { MusicTrack } from "../music";
 import { shuffled, wrapTracks } from "./queueEntries";
 import { userQueueFirst, wrapToStart } from "./queueFiles";
+import { isTrackUnavailable } from "./unavailableTrack";
+
+const playable = (item: QueueItem | null | undefined): item is QueueItem => !!item && !isTrackUnavailable(item.track);
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -70,8 +76,8 @@ export interface CreateQueueOptions {
 /** Une file née d'une liste, lue à partir de `startIndex` (en aléatoire : ce titre d'abord). */
 export function createQueue(tracks: readonly MusicTrack[], startIndex: number, options: CreateQueueOptions = {}): QueueState {
   if (tracks.length === 0) return { ...EMPTY_QUEUE, repeat: options.repeat ?? "off", shuffle: options.shuffle ?? false };
-  const start = Math.min(Math.max(0, startIndex), tracks.length - 1);
   const items = wrapTracks(tracks);
+  const start = firstPlayableFrom(items, Math.min(Math.max(0, startIndex), tracks.length - 1));
   const original = items.map((item) => item.uid);
   const shuffle = options.shuffle ?? false;
   const base: Omit<QueueState, "items" | "cursor"> = {
@@ -86,6 +92,15 @@ export function createQueue(tracks: readonly MusicTrack[], startIndex: number, o
   return { ...base, items: [first, ...rest], cursor: 0 };
 }
 
+/** Le premier titre lisible à partir de `start` (puis depuis le début) ; aucun : `start`, tel quel. */
+function firstPlayableFrom(items: readonly QueueItem[], start: number): number {
+  for (let i = 0; i < items.length; i += 1) {
+    const index = (start + i) % items.length;
+    if (playable(items[index])) return index;
+  }
+  return start;
+}
+
 export function currentItem(q: QueueState): QueueItem | null {
   return q.items[q.cursor] ?? null;
 }
@@ -95,17 +110,26 @@ export function currentItem(q: QueueState): QueueItem | null {
  * titre le rejoue. Un geste (« Suivant ») passe toujours au titre d'après.
  */
 export function peekNext(q: QueueState, auto: boolean): QueueItem | null {
-  if (q.cursor < 0) return null;
-  if (auto && q.repeat === "one") return currentItem(q);
-  const after = q.items[q.cursor + 1];
-  if (after) return after;
-  return q.repeat === "all" || (q.repeat === "one" && !auto) ? currentItem(wrapToStart(q)) : null;
+  const moved = advance(q, auto);
+  return moved ? currentItem(moved) : null;
 }
 
-/** Avance d'une entrée ; `null` à la fin de la file (rien à lire après). */
+/** Avance jusqu'à la prochaine entrée LISIBLE ; `null` à la fin de la file (rien à lire après). */
 export function advance(q: QueueState, auto: boolean): QueueState | null {
   if (q.cursor < 0) return null;
-  if (auto && q.repeat === "one") return q;
+  if (auto && q.repeat === "one" && playable(currentItem(q))) return q;
+  let state = q;
+  // Au plus un tour complet (et le rebouclage) : une file sans rien de lisible s'arrête.
+  for (let step = 0; step <= q.items.length; step += 1) {
+    const moved = stepForward(state);
+    if (!moved) return null;
+    if (playable(currentItem(moved))) return moved;
+    state = moved;
+  }
+  return null;
+}
+
+function stepForward(q: QueueState): QueueState | null {
   if (q.cursor + 1 < q.items.length) return { ...q, cursor: q.cursor + 1 };
   return q.repeat === "off" ? null : wrapToStart(q);
 }
@@ -115,10 +139,18 @@ export type PreviousOutcome = { kind: "restart" } | { kind: "moved"; queue: Queu
 /** « Précédent » : au début du titre s'il a déjà joué, sinon le titre d'avant. */
 export function previous(q: QueueState, positionMs: number): PreviousOutcome {
   if (q.cursor < 0 || positionMs > RESTART_THRESHOLD_MS) return { kind: "restart" };
-  // La file d'attente reste devant : revenu en arrière, elle se lit encore avant la suite du contexte.
-  if (q.cursor > 0) return { kind: "moved", queue: userQueueFirst({ ...q, cursor: q.cursor - 1 }) };
-  if (q.repeat === "all" && q.items.length > 1) return { kind: "moved", queue: { ...q, cursor: q.items.length - 1 } };
+  // Le titre lisible d'avant (un indisponible se saute) ; la file d'attente reste devant : revenu en arrière, elle se
+  // lit encore avant la suite du contexte.
+  const before = lastPlayable(q.items, q.cursor - 1, 0);
+  if (before >= 0) return { kind: "moved", queue: userQueueFirst({ ...q, cursor: before }) };
+  const last = q.repeat === "all" ? lastPlayable(q.items, q.items.length - 1, q.cursor + 1) : -1;
+  if (last >= 0) return { kind: "moved", queue: { ...q, cursor: last } };
   return { kind: "restart" };
+}
+
+function lastPlayable(items: readonly QueueItem[], from: number, to: number): number {
+  for (let i = from; i >= to; i -= 1) if (playable(items[i])) return i;
+  return -1;
 }
 
 /** Ce qui reste à lire, dans l'ordre (sans le courant). */

@@ -8,6 +8,7 @@
  * Importé par `@tentacle-tv/shared/octave`. Les contrats sont dans `../music`.
  */
 export * from "./queueModel";
+export * from "./unavailableTrack";
 export * from "./queueContextLabel";
 export * from "./audioFormat";
 export * from "./pendingMerge";
