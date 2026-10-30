@@ -46,7 +46,7 @@ export function SearchView() {
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
   useEffect(() => setDraft(query), [query]);
 
-  const { suggestions, recents, remember, forget } = useOctaveSuggestions(draft);
+  const { suggestions, recents, remember, forget, history } = useOctaveSuggestions(draft);
   // La recherche préparée à la pause de frappe (bureau seulement, axe R7) : rien n'est cherché ni montré ici.
   const pause = useTypingPause();
   useEffect(() => {
@@ -107,7 +107,7 @@ export function SearchView() {
       )}
 
       {/* Avant la frappe : le « déjà écouté » et les recherches récentes, dans la page. */}
-      {!query.trim() && <SearchHome recents={recents} onSearch={submit} onForget={forget} />}
+      {!query.trim() && <SearchHome recents={recents} history={history} onSearch={submit} />}
 
       {searched.trim() && <SearchMoodResultsSlot query={searched} onSearch={submit} />}
       {searched.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}

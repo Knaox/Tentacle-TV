@@ -3,7 +3,8 @@
  * d'une playlist (appui maintenu), celle d'un album qui ne se lit pas, le choix de playlist, la confirmation d'un
  * doublon (d'un titre, d'un lot), les avis, et l'enregistreur du
  * « déjà écouté » (chaque titre dont le premier son est sorti, la règle du
- * bureau `recordSearchListensTo`). La coquille le monte une
+ * bureau `recordSearchListensTo`) et des titres lancés depuis des résultats
+ * (`useSearchPickRecorder`). La coquille le monte une
  * fois (m1) ; chaque écran des pages le monte aussi, et seul le premier monté
  * rend (`useSingleHost`) — jamais deux feuilles l'une sur l'autre.
  */
@@ -17,6 +18,7 @@ import { TrackActionSheet } from "./TrackActionSheet";
 import { UnavailableAlbumSheet } from "./UnavailableAlbumSheet";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchPickRecorder } from "@tentacle-tv/api-client";
 import { onUnavailableTrack, recordSearchListensTo } from "@tentacle-tv/shared/octave";
 import { useSingleHost } from "../env/singleHost";
 import { useDeviceStore } from "../env/pagesEnv";
@@ -27,6 +29,7 @@ function SearchListenRecorder() {
   const player = usePagesPlayer();
   const store = useDeviceStore();
   useEffect(() => (player ? recordSearchListensTo(player, store) : undefined), [player, store]);
+  useSearchPickRecorder(player, store);
   return null;
 }
 

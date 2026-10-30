@@ -17,6 +17,7 @@ import { musicMediaRoutes } from "./musicMediaRoutes";
 import { musicUserRoutes } from "./musicUserRoutes";
 import { musicListRoutes } from "./musicListRoutes";
 import { musicShelfRoutes } from "../libraryShelves/shelfRoutes";
+import { musicSearchHistoryRoutes } from "../searchHistory/searchHistoryRoutes";
 import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { musicImportRoutes } from "../playlistImport/importRoutes";
 import { musicSourceOrderRoutes } from "../playlistSource/sourceRoutes";
@@ -92,4 +93,6 @@ export const musicRoutes: FastifyPluginAsync = async (app) => {
   await app.register(async (scope) => musicListRoutes(scope));
   // Idem pour `music.libraryFavorites`.
   await app.register(async (scope) => musicShelfRoutes(scope));
+  // Idem pour `music.searchHistory`.
+  await app.register(async (scope) => musicSearchHistoryRoutes(scope));
 };

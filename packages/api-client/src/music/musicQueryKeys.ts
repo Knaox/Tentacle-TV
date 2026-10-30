@@ -22,6 +22,8 @@ export const musicKeys = {
   listPrefs: (key: string) => ["music", "list-prefs", key] as const,
   /** Les favoris de la bibliothèque et l'ordre de ses rubriques (`music.libraryFavorites`). */
   shelves: () => ["music", "shelves"] as const,
+  /** L'historique de la recherche : celui du compte (`music.searchHistory`), ou celui de l'appareil. */
+  searchHistory: (scope: "account" | "device") => ["music", "search-history", scope] as const,
   source: (id: string) => ["music", "source", id] as const,
   byMbid: (recordings: readonly string[]) => ["music", "by-mbid", [...recordings].sort().join(",")] as const,
   /** Ce que la bibliothèque a parmi des titres et albums d'ailleurs (`signature` : leurs clés, triées). */

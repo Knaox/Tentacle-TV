@@ -12,6 +12,9 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 
 /**
@@ -25,6 +28,8 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
  *   refus du reste : `SourcePolicy`) devant `DefaultDataSource` (HTTP + `file://`).
  * - Tampon : de l'audio, donc modeste en octets ; assez de secondes pour passer
  *   un trou de réseau (métro) sans couper.
+ * - Niveau : la sortie passe par un `TeeAudioProcessor` qui mesure sans modifier
+ *   (`LevelMeter`, la vague du lecteur plein écran).
  */
 @OptIn(UnstableApi::class)
 internal object DeckPlayers {
@@ -37,8 +42,8 @@ internal object DeckPlayers {
     private const val READ_TIMEOUT_MS = 20_000
     private const val USER_AGENT = "TentacleTV-Octave/Android"
 
-    fun create(context: Context): ExoPlayer {
-        val renderers = DefaultRenderersFactory(context)
+    fun create(context: Context, meter: LevelMeter): ExoPlayer {
+        val renderers = MeteredRenderersFactory(context, meter)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             .setEnableDecoderFallback(true)
         val http = DefaultHttpDataSource.Factory()
@@ -71,4 +76,15 @@ internal object DeckPlayers {
             .build()
         return player
     }
+}
+
+/** La fabrique de rendu de Media3, dont la sortie audio passe d'abord par le compteur de niveau. */
+@OptIn(UnstableApi::class)
+private class MeteredRenderersFactory(context: Context, private val meter: LevelMeter) : DefaultRenderersFactory(context) {
+    override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean): AudioSink? =
+        DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
+            .setAudioProcessors(arrayOf(TeeAudioProcessor(meter)))
+            .build()
 }

@@ -13,6 +13,10 @@ export {
 } from "../music/octave/useMusicEntities";
 export { prefetchExternalEntity, warmVisibleAlbums, warmModeOf, takeIntentSlot, INTENT_PER_MINUTE } from "../music/octave/entityWarmup";
 export { useRecordMusicVisit, useSearchHomeSnapshot } from "../music/octave/useSearchMemory";
+export {
+  useOctaveSearchHistory, useSearchHistoryScope, useSearchPickRecorder, readAccountHistory, type OctaveSearchHistory,
+} from "../music/octave/searchHistory/useOctaveSearchHistory";
+export { searchHistoryActions, searchHistoryApi, type SearchHistoryActions, type SearchHistoryScope } from "../music/octave/searchHistory/searchHistoryActions";
 // Octave — les GESTES sur un titre (cœur, playlists, droits d'ajout), et leurs magasins d'interface.
 export type { OctaveActionsUi, MusicTranslate, ActionNoticeKind, ActionNoticeOptions } from "../music/octave/actions/actionsUi";
 export { setLikeOverride, clearLikeOverride, likeOverrideOf, resetLikeOverrides, useLiked } from "../music/octave/actions/likeOverrides";

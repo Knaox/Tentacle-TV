@@ -1084,3 +1084,19 @@ model MusicShelfFavorite {
   @@id([userId, section, itemKey])
   @@map("music_shelf_favorites")
 }
+
+/// 1.41.0 : l'HISTORIQUE de la recherche d'Octave, par COMPTE (`music/searchHistory/`, contrat `musicSearchHistory.ts`) :
+/// une recherche validée (`kind` = `query`, `itemKey` = la requête sans casse) ou un titre lancé depuis les résultats
+/// (`kind` = `track`, `itemKey` = sa clé, `payloadJson` = son INSTANTANÉ). Compte sans tirets, en minuscules ; au plus
+/// `MUSIC_SEARCH_HISTORY_MAX` lignes de chaque sorte par compte.
+model MusicSearchHistory {
+  userId      String
+  kind        String
+  itemKey     String
+  payloadJson String
+  at          DateTime
+
+  @@id([userId, kind, itemKey])
+  @@index([userId, kind, at])
+  @@map("music_search_history")
+}

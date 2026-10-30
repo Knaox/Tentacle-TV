@@ -71,7 +71,7 @@ internal class PlaybackCore(context: Context, internal val host: Host) : AudioDe
     internal val loadedDecks: List<AudioDeck> get() = decks.filterNotNull()
 
     private fun deckAt(index: Int): AudioDeck =
-        decks[index] ?: AudioDeck(DeckPlayers.create(appContext), this).also {
+        decks[index] ?: LevelMeter().let { meter -> AudioDeck(DeckPlayers.create(appContext, meter), this, meter) }.also {
             decks[index] = it
             applyVolumes()
         }
