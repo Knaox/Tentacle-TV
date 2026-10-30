@@ -7,7 +7,7 @@ import { formatFileOptions } from "./audioOptions";
 import type { QueueEntry } from "./audioQueue";
 import { cutSteps, deckChain, fadeInExpr, fadeOutExpr, gainCommand, lavfiEscape, type FadedSource } from "./crossfadeFilter";
 import { armDecision, deckTimeline } from "./crossfadeTiming";
-import { freshFlags, NO_PROPS } from "./audioEngineState";
+import { durationOf, freshFlags, NO_PROPS } from "./audioEngineState";
 
 const source = (extra: Partial<FadedSource> = {}): FadedSource => ({
   url: "http://s/a.flac", origin: "library", complete: true, sizeBytes: null, durationMs: 200_000, replayGain: null, expiresAt: null, ...extra,
@@ -83,5 +83,13 @@ describe("échappement d'une expression dans la chaîne lavfi", () => {
     expect(lavfiEscape("if(lt(t,1),0,1)")).toBe("if(lt(t\\,1)\\,0\\,1)");
     expect(lavfiEscape("a\\,b")).toBe("a\\\\\\,b");
     expect(deckChain(fadeInExpr(2))).toContain(`volume=volume=${lavfiEscape(fadeInExpr(2))}:eval=frame`);
+  });
+
+  it("la barre suit la même durée (lot « fl ») : mesurée si le fichier est complet, annoncée sinon", () => {
+    const current = entry(source());
+    expect(durationOf(current, { ...NO_PROPS, mpvDuration: 203.4 })).toBe(203_400);
+    expect(durationOf(current, { ...NO_PROPS })).toBe(200_000);
+    expect(durationOf(current, { ...NO_PROPS, mpvDuration: 0 })).toBe(200_000);
+    expect(durationOf(entry(source({ complete: false })), { ...NO_PROPS, mpvDuration: 40 })).toBe(200_000);
   });
 });
