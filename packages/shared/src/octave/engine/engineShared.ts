@@ -21,7 +21,9 @@ export interface MusicEngineAuth {
  * du serveur Tentacle (`/api/music/stream/…`, `/api/plugins/<id>/…`).
  */
 export function absoluteSourceUrl(url: string, baseUrl: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
+  // Une adresse qui a déjà son schéma (http, https, et le `file://` d'une pochette GARDÉE sur l'appareil) reste
+  // telle quelle : préfixée du serveur, la pochette d'un titre lu hors ligne devenait `http://…/file:///…`.
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) return url;
   const base = trimTrailingSlashes(baseUrl);
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
