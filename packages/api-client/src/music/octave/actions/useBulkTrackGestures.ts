@@ -7,7 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { MusicPlaylist, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
-import { bulkAddPlan, tracksToAdd } from "@tentacle-tv/shared/octave";
+import { addPlace, bulkAddPlan, tracksToAdd } from "@tentacle-tv/shared/octave";
+import { useServerCapability } from "../../../hooks/useServerCapabilities";
 import type { MusicProvider } from "../../../pluginMusic/musicProvider";
 import { useMusicGestures, useMusicPending } from "../../../pluginMusic/useMusicActions";
 import { useAddToMusicPlaylist, useCreateMusicPlaylist, useMusicPlaylistReader } from "../../useMusicPlaylists";
@@ -33,6 +34,7 @@ export function useBulkTrackGestures(provider: MusicProvider | null, ui: Pick<Oc
   const readPlaylist = useMusicPlaylistReader();
   const { mutateAsync: insertEntries } = useAddToMusicPlaylist();
   const { mutateAsync: createPlaylist } = useCreateMusicPlaylist();
+  const onTop = useServerCapability("music.addOnTop");
   const pending = useMusicPending(provider).data.items;
   const pendingRef = useRef<readonly PendingMusicItem[]>(pending);
   useEffect(() => {
@@ -40,11 +42,11 @@ export function useBulkTrackGestures(provider: MusicProvider | null, ui: Pick<Oc
   }, [pending]);
   const failed = useCallback((reason: string = "failed") => notify("error", t(`refusal.${reason}`), { title: t("refusal.title") }), [notify, t]);
 
-  /** Les titres entrent à la fin de la playlist ; rend combien attendent la bibliothèque (`null` : refus). */
+  /** Les titres entrent à `end` (la fin, ou la tête : `addPlace`), dans l'ordre ; rend combien attendent la bibliothèque (`null` : refus). */
   const insert = useCallback(
     async (playlistId: string, items: readonly Item[], end: number): Promise<number | null> => {
       const library = items.map((i) => i.track).filter(isLibraryTrack);
-      if (library.length > 0) await insertEntries({ playlistId, itemIds: library.map((tr) => tr.jellyfinId), tracks: library });
+      if (library.length > 0) await insertEntries({ playlistId, itemIds: library.map((tr) => tr.jellyfinId), position: end, tracks: library });
       let waiting = 0;
       let at = end + library.length;
       for (const { track, duplicate } of items) {
@@ -70,7 +72,7 @@ export function useBulkTrackGestures(provider: MusicProvider | null, ui: Pick<Oc
         const choice = plan.duplicates.length > 0 ? await askBulkDuplicates(plan.duplicates.length, plan.fresh.length + plan.duplicates.length, playlist.name) : "all";
         const items = tracksToAdd(plan, choice);
         if (!items || items.length === 0) return false;
-        const waiting = await insert(playlist.jellyfinId, items, detail?.entries.length ?? playlist.trackCount);
+        const waiting = await insert(playlist.jellyfinId, items, addPlace(playlist, onTop, detail?.entries.length ?? playlist.trackCount));
         if (waiting === null) return false;
         rememberPlaylistIn(store, playlist.jellyfinId);
         notify("success", t(waiting > 0 ? "selection.addedPending" : "selection.added", { count: items.length, name: playlist.name }));
@@ -80,7 +82,7 @@ export function useBulkTrackGestures(provider: MusicProvider | null, ui: Pick<Oc
         return false;
       }
     },
-    [canAdd, failed, insert, notify, readPlaylist, store, t],
+    [canAdd, failed, insert, notify, onTop, readPlaylist, store, t],
   );
 
   const createPlaylistAndAdd = useCallback(

@@ -10,7 +10,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ExternalActionRefusal, MusicPlaylist, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
-import { playlistHasTrack, playlistOccurrences } from "@tentacle-tv/shared/octave";
+import { addPlace, playlistHasTrack, playlistOccurrences } from "@tentacle-tv/shared/octave";
+import { useServerCapability } from "../../../hooks/useServerCapabilities";
 import type { MusicProvider } from "../../../pluginMusic/musicProvider";
 import { useMusicGestures, useMusicPending } from "../../../pluginMusic/useMusicActions";
 import {
@@ -25,7 +26,7 @@ import { useAcquireRights } from "./useAcquireRights";
 
 export interface PlaylistGestures {
   canAddToPlaylist: (track: MusicTrack) => boolean;
-  /** `position` : la place voulue (0 = en tête) ; absente, à la fin. Demande confirmation d'un doublon. */
+  /** `position` : la place voulue (0 = en tête) ; absente, en tête (`music.addOnTop`), sinon à la fin. Demande confirmation d'un doublon. */
   addToPlaylist: (track: MusicTrack, playlist: MusicPlaylist, position?: number) => Promise<boolean>;
   canRemoveFromPlaylist: (track: MusicTrack) => boolean;
   /** Retire UNE occurrence du titre de cette playlist (une entrée Jellyfin, sinon un ajout en attente). */
@@ -48,6 +49,8 @@ export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveAc
   const gestures = useMusicGestures(provider);
   const readPlaylist = useMusicPlaylistReader();
   const { mutateAsync: insertEntries } = useAddToMusicPlaylist();
+  // Lot fl : un ajout entre EN TÊTE quand le serveur le date aussitôt (`addPlace`).
+  const onTop = useServerCapability("music.addOnTop");
   const { mutateAsync: removeEntry } = useRemoveMusicPlaylistEntry();
   const { mutateAsync: createPlaylist } = useCreateMusicPlaylist();
   const playlists = useMusicPlaylists();
@@ -97,12 +100,13 @@ export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveAc
         const duplicate = await alreadyIn(track, playlist);
         if (duplicate && !(await askDuplicate(track.title, playlist.name))) return false;
         let pending = false;
+        const place = position ?? addPlace(playlist, onTop, undefined);
         if (isLibraryTrack(track)) {
-          await insertEntries({ playlistId: playlist.jellyfinId, itemIds: [track.jellyfinId], position, tracks: [track] });
+          await insertEntries({ playlistId: playlist.jellyfinId, itemIds: [track.jellyfinId], position: place, tracks: [track] });
         } else {
           if (!track.external || !ownsTrack(track)) return false;
           if (acquireRef.current.exhausted) return failed("quota"), false;
-          const outcome = await gestures.playlistAdd(track.external.id, playlist.jellyfinId, position ?? playlist.trackCount, duplicate);
+          const outcome = await gestures.playlistAdd(track.external.id, playlist.jellyfinId, place ?? playlist.trackCount, duplicate);
           if (!outcome.ok) {
             failed(outcome.reason);
             return false;
@@ -118,7 +122,7 @@ export function usePlaylistGestures(provider: MusicProvider | null, ui: OctaveAc
         return false;
       }
     },
-    [added, alreadyIn, failed, gestures, insertEntries, ownsTrack, store, t],
+    [added, alreadyIn, failed, gestures, insertEntries, onTop, ownsTrack, store, t],
   );
   const addToPlaylist = useCallback((track: MusicTrack, playlist: MusicPlaylist, position?: number) => add(track, playlist, position), [add]);
 

@@ -8,6 +8,10 @@
  * comme le serveur datera son arrivée (`addedPlan.ts`) : « Derniers ajouts »
  * suit l'ordre d'ajout, sans saut quand Lidarr la livre. En fin de liste,
  * c'est un ajout : sa demande, jamais avant l'entrée qui la précède.
+ *
+ * Une attente qui n'est PAS née d'un import (ni `imported`, ni `sourceIndex`) est un ajout de l'utilisateur, où
+ * qu'elle soit (en tête depuis `music.addOnTop`, ou avant des titres ajoutés après elle) : sa demande, comme en fin
+ * de liste — celle que l'extension passe à son arrivée (`jellyfin.playlistInsert` + `addedAt`).
  */
 
 import type { MusicListStats } from "../../music";
@@ -28,6 +32,7 @@ export function placedPendingDates(
   natural: readonly ListRow[],
   byEntry: ReadonlyMap<string, MusicListStats>,
   requested: ReadonlyMap<string, number>,
+  added: ReadonlySet<string> = new Set(),
 ): Map<string, number | null> {
   const entryDate = (row: ListRow) => (row.entryId ? (byEntry.get(row.entryId)?.addedAt ?? null) : null);
   let lastDated = -1;
@@ -43,17 +48,19 @@ export function placedPendingDates(
     }
     const asked = requested.get(row.pending.operationId) ?? null;
     let at: number | null;
-    if (index < lastDated) at = previous ?? natural.slice(index + 1).map(entryDate).find((d) => d !== null) ?? asked;
+    if (index < lastDated && !added.has(row.pending.operationId)) at = previous ?? natural.slice(index + 1).map(entryDate).find((d) => d !== null) ?? asked;
     else at = previous === null ? asked : asked === null ? previous : Math.max(previous, asked);
     out.set(row.pending.operationId, at);
-    previous = at ?? previous;
+    // Un ajout de l'utilisateur ne date pas l'attente posée qui le suit : elle prend la date de SA place.
+    if (!added.has(row.pending.operationId)) previous = at ?? previous;
   });
   return out;
 }
 
 export function makeStatsOf({ byEntry, byJellyfin, pending, natural }: StatsSources): StatsOf {
   const requested = new Map(pending.map((p) => [p.operationId, p.createdAt]));
-  const placed = natural && byEntry ? placedPendingDates(natural, byEntry, requested) : null;
+  const added = new Set(pending.filter((p) => p.imported !== true && typeof p.sourceIndex !== "number").map((p) => p.operationId));
+  const placed = natural && byEntry ? placedPendingDates(natural, byEntry, requested, added) : null;
   return (row: ListRow) => {
     if (row.entryId && byEntry?.has(row.entryId)) return byEntry.get(row.entryId)!;
     if (row.pending) {
