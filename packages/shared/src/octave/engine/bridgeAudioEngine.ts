@@ -53,14 +53,18 @@ export interface EnginePrefs {
   exclusive: boolean;
 }
 
-/** Ce que le système affiche du titre (mobile : écran verrouillé, notification) ; pochette authentifiée. */
-export function bridgeTrackMeta(track: MusicTrack, auth: MusicEngineAuth): AudioBridgeTrackMeta {
+/**
+ * Ce que le système affiche du titre (mobile : écran verrouillé, notification) ; pochette authentifiée, sauf
+ * la pochette GARDÉE sur l'appareil (`localArtwork`, un fichier) : elle passe d'abord — hors ligne, l'adresse
+ * du serveur ne mène nulle part.
+ */
+export function bridgeTrackMeta(track: MusicTrack, auth: MusicEngineAuth, localArtwork: string | null = null): AudioBridgeTrackMeta {
   const artist = track.artists.map((a) => a.name).filter((n) => n !== "").join(", ");
   return {
     title: track.title,
     artist: artist === "" ? null : artist,
     album: track.album?.title ?? null,
-    artworkUrl: track.artworkUrl ? elementSourceUrl(track.artworkUrl, auth) : null,
+    artworkUrl: localArtwork ?? (track.artworkUrl ? elementSourceUrl(track.artworkUrl, auth) : null),
   };
 }
 
@@ -93,6 +97,8 @@ export function bridgeSource(source: PlaybackSource, baseUrl: string): AudioBrid
 export interface BridgeEngineOptions {
   /** Publier ce que le système affiche du titre (mobile) ; le bureau n'en a pas l'usage. */
   systemMeta?: boolean;
+  /** La pochette gardée sur l'appareil pour ce titre (fichier local), sinon `null`. */
+  localArtwork?: (track: MusicTrack) => string | null;
 }
 
 class BridgeAudioEngine implements AudioEnginePort {
@@ -136,7 +142,7 @@ class BridgeAudioEngine implements AudioEnginePort {
   }
 
   private trackOf(track: MusicTrack, source: PlaybackSource): AudioBridgeTrack {
-    return bridgeTrack(track, source, this.options.systemMeta ? bridgeTrackMeta(track, this.auth) : undefined);
+    return bridgeTrack(track, source, this.options.systemMeta ? bridgeTrackMeta(track, this.auth, this.options.localArtwork?.(track) ?? null) : undefined);
   }
 
   private call(command: string, args: Record<string, unknown> = {}): void {

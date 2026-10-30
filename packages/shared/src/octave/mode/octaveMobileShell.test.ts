@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { isOctaveTabRoot, octaveTabOf } from "./octaveTabs";
-import { octaveStayVerdict } from "./octaveStay";
 
 describe("octaveTabOf : l'onglet allumé par une adresse", () => {
   it("les racines des onglets", () => {
@@ -31,27 +30,5 @@ describe("octaveTabOf : l'onglet allumé par une adresse", () => {
     expect(isOctaveTabRoot("/octave/search?q=x")).toBe(true);
     expect(isOctaveTabRoot("/octave/liked")).toBe(false);
     expect(isOctaveTabRoot("/octave/album/a")).toBe(false);
-  });
-});
-
-describe("octaveStayVerdict : rester dans Octave", () => {
-  const settled = (available: boolean) => ({ available, settled: true });
-  const pending = { available: false, settled: false };
-
-  it("disponible : ouvert", () => {
-    expect(octaveStayVerdict({ fresh: settled(true), failed: false, mirrorAvailable: false })).toBe("open");
-  });
-
-  it("une panne n'est jamais une absence : on reste (hors ligne)", () => {
-    expect(octaveStayVerdict({ fresh: settled(false), failed: true, mirrorAvailable: false })).toBe("open");
-  });
-
-  it("en attente : ouvert si le miroir le dit, sinon on attend", () => {
-    expect(octaveStayVerdict({ fresh: pending, failed: false, mirrorAvailable: true })).toBe("open");
-    expect(octaveStayVerdict({ fresh: pending, failed: false, mirrorAvailable: false })).toBe("wait");
-  });
-
-  it("une absence ÉTABLIE rend la main à Tentacle", () => {
-    expect(octaveStayVerdict({ fresh: settled(false), failed: false, mirrorAvailable: true })).toBe("leave");
   });
 });

@@ -23,8 +23,8 @@ describe("serveur qui ne déclare rien → aucune trace d'Octave", () => {
   });
 
   it("un mode resté allumé d'avant : la porte rend la main à Tentacle, sans erreur", () => {
-    expect(octaveStayVerdict({ fresh: availability, failed: false, mirrorAvailable: true })).toBe("leave");
-    expect(octaveStayVerdict({ fresh: availability, failed: false, mirrorAvailable: false })).toBe("leave");
+    expect(octaveStayVerdict({ fresh: availability, failed: false, configKnown: true, offline: false, mirrorAvailable: true })).toBe("leave");
+    expect(octaveStayVerdict({ fresh: availability, failed: false, configKnown: true, offline: false, mirrorAvailable: false })).toBe("leave");
   });
 
   it("le lancement suivant ne s'ouvre plus dans Octave, et garde l'animation d'ouverture", () => {
