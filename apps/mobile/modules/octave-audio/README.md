@@ -37,7 +37,7 @@ Natif → JS : l'évènement Expo `onBridgeEvent` `{ json }`, où `json` est un 
 | `audio_control` | `AudioBridgeControl` | `""` | `pause`, `resume`, `stop`, `seek` (ms), `volume` (0–1), `muted`, `replayGain` (mode), `crossfade` (ms, réglage pour info). |
 | `audio_list_outputs` | — | `[{ id: "default", name: "", exclusiveCapable: false }]` | |
 | `audio_set_output` | — | `""` | sans effet. |
-| `audio_level` | — | `null` | |
+| `audio_level` | — | dBFS (nombre) ou `null` | le niveau RMS du son ENTENDU, pour la vague du lecteur plein écran. Android : `LevelMeter.kt` (`TeeAudioProcessor` de Media3, recalé de 200 ms). iOS : `OctaveOutputMeter.c` — le MPVKit embarqué n'a pas d'`astats` ; la définition d'`AudioOutputUnitStart` dans l'exécutable pose une notification de rendu sur l'AudioUnit de la sortie de mpv, recalée sur `AVAudioSession.outputLatency`. `null` : rien de mesuré (pause, attente). |
 
 Hors du pont : `launchId()` (synchrone) — voir « Fermeture complète ».
 

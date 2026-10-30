@@ -1,9 +1,9 @@
 /**
  * Octave (mobile) — ce que la vague et les taches du fond lisent du SON : le niveau réel que mesure le moteur
- * natif (`audio_level` : Android, `LevelMeter`), dix fois par seconde, et SEULEMENT tant que le lecteur plein écran
+ * natif (`audio_level` : Android `LevelMeter`, iOS `OctaveOutputMeter.c`), dix fois par seconde, et SEULEMENT tant que le lecteur plein écran
  * est ouvert, au premier plan, en lecture et sans mouvement réduit (`active`). Chaque mesure passe par la règle
  * pure (`stepWave`) puis rejoint le fil d'interface en valeurs partagées, lissées sur l'intervalle : aucun rendu
- * React. Sans mesure (iOS, ancien build), `measured` reste à 0 et rien n'est inventé.
+ * React. Sans mesure (ancien build sans compteur), `measured` reste à 0 et rien n'est inventé.
  */
 
 import { useEffect, useRef } from "react";
@@ -16,7 +16,7 @@ import { WAVE_START, stepWave, waveNewTrack, type WaveState } from "./waveDrive"
 export const WAVE_POLL_MS = 100;
 /** Tant de mesures vides d'affilée : la mesure est dite absente (fondu vers le calme). */
 const MISSING_AFTER = 5;
-/** Au-delà (2 s sans mesure : iOS, ancien build), une question par seconde seulement, au cas où le son revient. */
+/** Au-delà (2 s sans mesure : ancien build), une question par seconde seulement, au cas où le son revient. */
 const IDLE_AFTER = 20;
 const IDLE_EVERY = 10;
 const FADE_MS = 400;
