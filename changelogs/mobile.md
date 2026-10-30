@@ -5,6 +5,24 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.31.0]
+<!-- Bloc nu : Google Play (500 caractères) ET iOS (aucun bloc [ios-1.31.0]). Lot « fl » d'Octave. Jamais le mot « téléchargement ». -->
+### FR
+- Octave : playlists et file d'attente se réordonnent du doigt, fluides même longues
+- Playlists favorites en tête, dans votre ordre, et proposées d'abord à l'ajout
+- Un titre indisponible reste grisé et n'est jamais joué
+- Recherches récentes partagées avec l'ordinateur (serveur 1.41)
+- Une vague qui suit la musique en plein écran
+- Fondu de 5 s, et plus de pause au retour dans l'app
+
+### EN
+- Octave: playlists and the queue reorder with a finger, smooth even when long
+- Favorite playlists on top, in your order, and offered first when adding
+- An unavailable song stays greyed out and is never played
+- Recent searches shared with your computer (server 1.41)
+- A wave that follows the music in full screen
+- 5 s crossfade, and no more pause when coming back to the app
+
 ## [1.30.0]
 <!-- Bloc nu : Google Play (500 caractères). Octave exige le serveur 1.40.0 (capacités) : face à un serveur plus ancien, ou sans accès à la musique, rien d'Octave ne s'affiche. Octave = la bibliothèque musicale PERSONNELLE du serveur Jellyfin : jamais « gratuit », jamais un catalogue, ni YouTube, ni extension. Jamais le mot « téléchargement ». -->
 ### FR
