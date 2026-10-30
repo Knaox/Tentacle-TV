@@ -43,8 +43,10 @@ describe("Octave mobile : la barre du téléphone, à la Apple Music", () => {
 
   it("la pilule garde les destinations, la recherche est à part, à droite", () => {
     expect(items).toMatch(/OCTAVE_PILL_ITEMS[^=]*= OCTAVE_NAV_ITEMS\.filter\(\(item\) => item\.tab !== "search"\)/);
-    expect(bar.indexOf("OCTAVE_PILL_ITEMS.map")).toBeGreaterThan(0);
-    expect(bar.indexOf("OCTAVE_SEARCH_ITEM.tab)")).toBeGreaterThan(bar.indexOf("OCTAVE_PILL_ITEMS.map"));
+    // « Hors ligne » passe par la porte du hors ligne (lot fl) : la pilule rend les entrées que CE compte voit.
+    expect(bar).toContain("visibleNavItems(OCTAVE_PILL_ITEMS, offlineTab.shown)");
+    expect(bar.indexOf("items.map")).toBeGreaterThan(0);
+    expect(bar.indexOf("OCTAVE_SEARCH_ITEM.tab)")).toBeGreaterThan(bar.indexOf("items.map"));
   });
 });
 

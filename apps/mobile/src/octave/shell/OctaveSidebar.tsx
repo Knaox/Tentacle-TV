@@ -1,6 +1,7 @@
 /**
  * Octave (mobile, tablette) — la BARRE LATÉRALE, comme celle du bureau : la
- * marque, les trois destinations, les raccourcis de la bibliothèque (titres
+ * marque, les destinations (« Hors ligne » avec le droit du compte de
+ * l'appareil seulement, point rose tant que des titres partent), les raccourcis de la bibliothèque (titres
  * likés, playlists), et en bas le retour aux films et séries. Toujours là,
  * même sur une page empilée ; l'onglet d'origine reste allumé.
  */
@@ -20,6 +21,8 @@ import type { OctaveScreenName } from "../registry/octaveRegistryTypes";
 import { OCTAVE_SIDEBAR_WIDTH } from "./octaveChrome";
 import { OCTAVE_NAV_ITEMS } from "./octaveNavItems";
 import { useOctaveTab } from "./useOctaveTab";
+import { visibleNavItems } from "./offlineNavRule";
+import { useOfflineTab } from "./useOfflineTab";
 
 interface RowProps {
   label: string;
@@ -28,9 +31,12 @@ interface RowProps {
   onPress: () => void;
   colors: OctaveColors;
   hint?: string;
+  /** Un point rose sur le glyphe (des titres partent) ; `spokenLabel` le dit au lecteur d'écran. */
+  badge?: boolean;
+  spokenLabel?: string;
 }
 
-const SidebarRow = memo(function SidebarRow({ label, Icon, selected, onPress, colors, hint }: RowProps) {
+const SidebarRow = memo(function SidebarRow({ label, Icon, selected, onPress, colors, hint, badge, spokenLabel }: RowProps) {
   const tint = selected ? colors.accentText : colors.textSecondary;
   return (
     <Pressable
@@ -38,10 +44,13 @@ const SidebarRow = memo(function SidebarRow({ label, Icon, selected, onPress, co
       style={({ pressed }) => [styles.row, selected && { backgroundColor: colors.accentSoft }, pressed && !selected && { backgroundColor: colors.pressed }]}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={spokenLabel ?? label}
       accessibilityHint={hint}
     >
-      <Icon size={20} color={tint} strokeWidth={selected ? 2.4 : 2} />
+      <View>
+        <Icon size={20} color={tint} strokeWidth={selected ? 2.4 : 2} />
+        {badge ? <View testID="octave-offline-badge" style={[styles.badge, { backgroundColor: colors.accent }]} /> : null}
+      </View>
       <Text style={[styles.rowLabel, { color: selected ? colors.text : colors.textSecondary, fontWeight: selected ? "700" : "500" }]} numberOfLines={1}>
         {label}
       </Text>
@@ -63,6 +72,7 @@ export const OctaveSidebar = memo(function OctaveSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const leave = useLeaveOctave();
+  const offlineTab = useOfflineTab();
   const open = (path: string) => {
     if (pathname !== path) router.push(path as Href);
   };
@@ -76,9 +86,21 @@ export const OctaveSidebar = memo(function OctaveSidebar() {
         Octave
       </Text>
       <View style={styles.group}>
-        {OCTAVE_NAV_ITEMS.map(({ tab, labelKey, Icon }) => (
-          <SidebarRow key={tab} label={t(labelKey)} Icon={Icon} selected={tab === active && (tab !== "library" || pathname === octavePaths.library)} onPress={() => go(tab)} colors={colors} />
-        ))}
+        {visibleNavItems(OCTAVE_NAV_ITEMS, offlineTab.shown).map(({ tab, labelKey, Icon }) => {
+          const busy = tab === "offline" && offlineTab.running;
+          return (
+            <SidebarRow
+              key={tab}
+              label={t(labelKey)}
+              spokenLabel={busy ? t("nav.offlineBusy") : undefined}
+              Icon={Icon}
+              selected={tab === active && (tab !== "library" || pathname === octavePaths.library)}
+              onPress={() => go(tab)}
+              colors={colors}
+              badge={busy}
+            />
+          );
+        })}
       </View>
       <Text style={[styles.section, { color: colors.textTertiary }]}>{t("nav.yourPlaylists")}</Text>
       <View style={styles.group}>
@@ -102,5 +124,6 @@ const styles = StyleSheet.create({
   section: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.8, paddingHorizontal: 12, marginTop: 24, marginBottom: 6 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: 12 },
   rowLabel: { fontSize: 15, flexShrink: 1 },
+  badge: { position: "absolute", top: -1, right: -3, width: 8, height: 8, borderRadius: 4 },
   spacer: { flex: 1 },
 });
