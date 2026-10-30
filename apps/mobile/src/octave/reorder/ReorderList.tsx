@@ -54,9 +54,11 @@ export interface ReorderListProps<T> {
   extraData?: unknown;
   /** Après « Monter / Descendre » (lecteur d'écran) : l'annonce de la nouvelle place. */
   onStepped?: (from: number, to: number) => void;
+  /** Les places permises à une rangée (sa section) ; toute la liste sinon. */
+  bounds?: (index: number) => { min: number; max: number };
 }
 
-export function ReorderList<T>({ data, keyOf, rowHeight, renderRow, onMove, scrollY, onScroll, scrollProps, header, footer, edgeInsets = NO_INSETS, extraData, onStepped }: ReorderListProps<T>) {
+export function ReorderList<T>({ data, keyOf, rowHeight, renderRow, onMove, scrollY, onScroll, scrollProps, header, footer, edgeInsets = NO_INSETS, extraData, onStepped, bounds }: ReorderListProps<T>) {
   const theme = useTheme();
   const reduced = useReducedMotion();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -87,6 +89,7 @@ export function ReorderList<T>({ data, keyOf, rowHeight, renderRow, onMove, scro
     viewport,
     edgeInsets,
     version,
+    bounds,
   });
 
   const own = useAnimatedScrollHandler({
@@ -122,11 +125,12 @@ export function ReorderList<T>({ data, keyOf, rowHeight, renderRow, onMove, scro
   const step = useCallback(
     (index: number, delta: -1 | 1) => {
       const to = index + delta;
-      if (!moveRef.current || to < 0 || to >= count) return;
+      const allowed = bounds?.(index) ?? { min: 0, max: count - 1 };
+      if (!moveRef.current || to < allowed.min || to > allowed.max) return;
       moveRef.current(index, to);
       onStepped?.(index, to);
     },
-    [count, onStepped],
+    [bounds, count, onStepped],
   );
 
   const indices = useMemo(() => {

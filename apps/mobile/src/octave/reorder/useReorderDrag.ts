@@ -54,6 +54,8 @@ interface Options {
   edgeInsets: { top: number; bottom: number };
   /** Change à chaque liste affichée. */
   version: number;
+  /** Les places permises à la rangée tenue (sa section : file d'attente, suite du contexte) ; toute la liste sinon. */
+  bounds?: (index: number) => { min: number; max: number };
 }
 
 export interface ReorderDrag {
@@ -73,7 +75,7 @@ const CANCEL_MS = 160;
 /** Sans nouvelle liste après un lâcher (refus, même ordre), la rangée revient à sa place. */
 const REFUSED_MS = 450;
 
-export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, scrollY, maxScroll, viewport, edgeInsets, version }: Options): ReorderDrag {
+export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, scrollY, maxScroll, viewport, edgeInsets, version, bounds }: Options): ReorderDrag {
   const from = useSharedValue(-1);
   const over = useSharedValue(-1);
   const dragVersion = useSharedValue(-1);
@@ -86,6 +88,10 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
   const edgeSince = useSharedValue(-1);
   /** Le geste est tenu (doigt posé) : lu sur le fil d'interface, là où une ref ne se lit pas. */
   const alive = useSharedValue(false);
+  const minOver = useSharedValue(0);
+  const maxOver = useSharedValue(0);
+  const boundsRef = useRef(bounds);
+  boundsRef.current = bounds;
   const reduced = useReducedMotion();
   const [held, setHeld] = useState<{ index: number; key: string; version: number } | null>(null);
   const live = useRef(false);
@@ -103,7 +109,7 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
     (delta) => {
       if (delta === null || !alive.value || from.value < 0) return;
       lift.value = delta;
-      const next = targetOf(from.value, delta, count, rowHeight);
+      const next = Math.min(maxOver.value, Math.max(minOver.value, targetOf(from.value, delta, count, rowHeight)));
       if (next !== over.value) {
         over.value = next;
         runOnJS(haptic)("select");
@@ -226,6 +232,9 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
       pointerY.value = pageY;
       edgeSince.value = -1;
       dragVersion.value = versionRef.current;
+      const allowed = boundsRef.current?.(index) ?? { min: 0, max: count - 1 };
+      minOver.value = allowed.min;
+      maxOver.value = allowed.max;
       over.value = index;
       from.value = index;
       setHeld({ index, key, version: versionRef.current });
@@ -237,7 +246,7 @@ export function useReorderDrag({ count, rowHeight, enabled, onMove, scrollRef, s
       });
       return true;
     },
-    [alive, bottom, dragVersion, dy, edgeSince, frame, from, lift, over, pointerY, scrollY, startScroll, top, viewport],
+    [alive, bottom, count, dragVersion, dy, edgeSince, frame, from, lift, maxOver, minOver, over, pointerY, scrollY, startScroll, top, viewport],
   );
 
   const handlers = useMemo(() => {
