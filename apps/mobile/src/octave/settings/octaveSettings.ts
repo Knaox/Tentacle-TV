@@ -1,7 +1,7 @@
 /**
  * Octave (mobile) — les réglages de l'APPAREIL d'Octave, les mêmes que ceux du bureau (mêmes clés, mêmes
  * défauts, lus par le partagé) : la page « Réglages d'Octave » les écrit, le lecteur, le hors ligne et la porte
- * de « Qui regarde ? » les lisent. Défauts de Damien (28/10) : transition douce allumée à 3 s, tenue à jour des
+ * de « Qui regarde ? » les lisent. Défauts de Damien (28/10) : transition douce allumée à 5 s, tenue à jour des
  * playlists gardées allumée, « ne pas demander le code PIN au démarrage » allumé — un défaut, jamais une
  * réécriture : une clé déjà écrite garde son choix.
  */

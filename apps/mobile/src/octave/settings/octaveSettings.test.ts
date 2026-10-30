@@ -16,7 +16,7 @@ function memory(initial: Record<string, string> = {}): StorageAdapter & { data: 
 describe("Réglages d'Octave (mobile) — les défauts de Damien, jamais une réécriture", () => {
   beforeEach(() => configureOctaveSettings(memory()));
 
-  it("un appareil neuf : transition douce à 3 s, tenue à jour et code PIN au démarrage allumés", () => {
+  it("un appareil neuf : transition douce à 5 s, tenue à jour et code PIN au démarrage allumés", () => {
     expect(octaveAutoSync.get()).toBe(true);
     expect(octaveSkipLaunchPin.get()).toBe(true);
     expect(octaveStartup.get()).toBe("last");
@@ -67,9 +67,9 @@ describe("Réglages d'Octave (mobile) — la transition douce", () => {
     return { store, ...crossfade };
   }
 
-  it("un appareil neuf : allumée, à 3 s", async () => {
+  it("un appareil neuf : allumée, à 5 s", async () => {
     const { getCrossfadeMs } = await fresh();
-    expect(getCrossfadeMs()).toBe(3_000);
+    expect(getCrossfadeMs()).toBe(5_000);
   });
 
   it("coupée sur cet appareil (par le bureau, ou hier) : reste coupée ; une durée choisie s'écrit", async () => {

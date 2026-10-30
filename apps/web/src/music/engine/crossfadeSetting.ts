@@ -1,6 +1,6 @@
 /**
  * Le réglage « Transition douce » d'Octave sur le web et le bureau : le magasin PARTAGÉ
- * (`@tentacle-tv/shared/octave` → `createCrossfadeSetting`, allumé à 3 s d'office) sur le `localStorage` de la
+ * (`@tentacle-tv/shared/octave` → `createCrossfadeSetting`, allumé à 5 s d'office) sur le `localStorage` de la
  * page. Lu par le fournisseur du moteur, qui le passe au port (`setCrossfade`), par le contrôle du lecteur et
  * par la ligne des Réglages d'Octave.
  */

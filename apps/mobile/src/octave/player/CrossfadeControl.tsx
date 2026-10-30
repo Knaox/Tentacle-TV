@@ -1,6 +1,6 @@
 /**
  * Octave (mobile) — la TRANSITION DOUCE dans le lecteur : pas un interrupteur, une pastille qui dit l'état
- * (« Fondu 3 s », « Fondu coupé ») et ouvre un panneau où l'on VOIT le fondu (`CrossfadeGraph`) et où l'on en
+ * (« Fondu 5 s », « Fondu coupé ») et ouvre un panneau où l'on VOIT le fondu (`CrossfadeGraph`) et où l'on en
  * choisit la durée sur une réglette à crans — coupée tout à gauche, puis 2 → 12 s. Le même réglage que la page
  * Réglages d'Octave (`crossfadeSetting.ts`, magasin partagé), appliqué au fondu suivant, même pendant l'écoute.
  */
