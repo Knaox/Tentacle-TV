@@ -19,7 +19,7 @@ vi.mock("../services/jellyfinLegacyAuth", () => ({ jellyfinAcceptsLegacyAuth: as
 vi.mock("../services/family/familyConfig", () => ({ familyCapability: () => ({ v: 1, enabled: true, guests: true, guestRequests: false }) }));
 vi.mock("../remoteAccess/serverAddresses", () => ({ serverAddresses: () => ({}) }));
 vi.mock("../remoteAccess/exposure", () => ({ pairingUrl: () => null, directMediaBaseUrl: () => null }));
-const version = vi.hoisted(() => ({ value: "1.40.0+preview.fab15c3" }));
+const version = vi.hoisted(() => ({ value: "1.41.0+preview.fab15c3" }));
 vi.mock("../services/version", () => ({
   get BACKEND_VERSION() {
     return version.value;
@@ -44,13 +44,21 @@ describe("GET /api/config › capabilities", () => {
   });
 
   it("dit la version fixée au build, et un serveur 1.31.4 tait les capacités de 1.40.0", async () => {
-    expect((await app.inject({ method: "GET", url: "/api/config" })).json()).toMatchObject({ version: "1.40.0+preview.fab15c3" });
+    expect((await app.inject({ method: "GET", url: "/api/config" })).json()).toMatchObject({ version: "1.41.0+preview.fab15c3" });
     version.value = "1.31.4";
     const body = (await app.inject({ method: "GET", url: "/api/config" })).json() as { version: string; capabilities: string[] };
     expect(body.version).toBe("1.31.4");
     expect(body.capabilities).not.toContain("music.library");
     expect(body.capabilities).toContain("family.webProfiles");
     expect(body.capabilities.every((key) => SERVER_CAPABILITIES[key as keyof typeof SERVER_CAPABILITIES] !== "1.40.0")).toBe(true);
-    version.value = "1.40.0+preview.fab15c3";
+    version.value = "1.41.0+preview.fab15c3";
+  });
+
+  it("un serveur 1.40.0 tait les capacités de 1.41.0 (lot fl : l'ajout en tête)", async () => {
+    version.value = "1.40.0";
+    const body = (await app.inject({ method: "GET", url: "/api/config" })).json() as { capabilities: string[] };
+    expect(body.capabilities).toContain("music.libraryFavorites");
+    expect(body.capabilities).not.toContain("music.addOnTop");
+    version.value = "1.41.0+preview.fab15c3";
   });
 });
