@@ -2,8 +2,10 @@
  * Pont entre TanStack Query et le store de connectivité. Monté UNE fois dans
  * l'arbre App (web ET desktop) :
  * - toute erreur réseau/5xx d'une query ou mutation déclenche une sonde ;
- * - au retour en ligne, invalide les queries critiques en cascade échelonnée
- *   (logique reprise de l'ancien useServerReachable, désormais commune).
+ * - au retour en ligne, relance aussitôt ce que la panne a fait échouer
+ *   (`retryFailedQueries` : la configuration, donc les capacités, d'abord),
+ *   puis invalide les queries critiques en cascade échelonnée (logique
+ *   reprise de l'ancien useServerReachable, désormais commune).
  * Ne rend rien.
  */
 
@@ -15,6 +17,7 @@ import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
 import { drainReportQueue } from "./resync";
+import { retryFailedQueries } from "./retryFailedQueries";
 import { refreshLibraryPrefsCache } from "./localTrackPrefs";
 import { refreshItemTracksCache } from "./localItemTracks";
 import { flushPendingInterfaceLanguage, flushPendingPrefs } from "./pendingPrefs";
@@ -100,6 +103,8 @@ export function ConnectivityBinding() {
 
     let staggered: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
+    // Avant la resynchro : la configuration en erreur depuis la panne (capacités vides) n'attend rien d'autre.
+    void retryFailedQueries(queryClient);
     const run = async () => {
       const uid = userIdRef.current;
       if (supportsDownloads() && uid) {
