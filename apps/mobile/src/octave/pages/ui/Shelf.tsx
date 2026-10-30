@@ -26,6 +26,8 @@ interface ShelfProps<T> {
   keyOf: (item: T) => string;
   render: (item: T, width: number) => ReactElement;
   onSeeAll?: () => void;
+  /** Le libellé du lien de tête (par défaut « Tout voir »). */
+  actionLabel?: string;
   /** Largeur d'une carte (par défaut celle des pages). */
   width?: number;
   /** L'album d'une carte, pour le préparer quand elle s'arrête à l'écran (`albumWarmupScope.tsx`). */
@@ -48,7 +50,7 @@ export function SectionTitle({ title, hint, action }: { title: string; hint?: st
   );
 }
 
-function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width, albumOf }: ShelfProps<T>) {
+function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, actionLabel, width, albumOf }: ShelfProps<T>) {
   const { t } = useTranslation("music");
   const theme = useTheme();
   const { gutter, card } = usePageMetrics();
@@ -60,7 +62,7 @@ function ShelfInner<T>({ title, hint, items, keyOf, render, onSeeAll, width, alb
   if (items.length === 0) return null;
   const action = onSeeAll ? (
     <Pressable onPress={onSeeAll} hitSlop={10} accessibilityRole="button" style={styles.seeAll}>
-      <Text style={[typography.caption, { color: theme.colors.text.secondary, fontWeight: "600" }]}>{t("common.seeAll")}</Text>
+      <Text style={[typography.caption, { color: theme.colors.text.secondary, fontWeight: "600" }]}>{actionLabel ?? t("common.seeAll")}</Text>
     </Pressable>
   ) : undefined;
   return (
