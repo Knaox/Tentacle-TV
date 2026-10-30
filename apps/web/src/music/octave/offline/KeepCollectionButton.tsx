@@ -16,6 +16,7 @@
 import { useMemo, useRef, useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
@@ -26,6 +27,7 @@ import { useOfflineSurface } from "./offlineSurfaceContext";
 import { ProgressRing } from "./ProgressRing";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptMusic } from "./useKeptMusic";
+import { octavePaths } from "../octavePaths";
 
 interface KeepCollectionButtonProps {
   kind: "album" | "playlist";
@@ -49,6 +51,7 @@ export function KeepCollectionButton(props: KeepCollectionButtonProps) {
 
 function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, tracks }: KeepCollectionButtonProps) {
   const { t } = useTranslation("musicOffline");
+  const navigate = useNavigate();
   const surface = useOfflineSurface();
   const kept = useKeptMusic();
   const gestures = useKeepGestures();
@@ -76,7 +79,17 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   if (summary.phase === "progress") {
     const label = t("progress", { done: summary.done, total: summary.total });
     return (
-      <button type="button" className={`${ROUND} text-octave-accent-text`} title={label} aria-label={label} aria-disabled onClick={(e) => e.preventDefault()}>
+      // Cliquer l'anneau ouvre « Sur cet appareil », où se suivent les transferts (lot fl).
+      <button
+        type="button"
+        className={`${ROUND} text-octave-accent-text`}
+        title={`${label} · ${t("progressOpen")}`}
+        aria-label={`${label}. ${t("progressOpen")}`}
+        onClick={(e) => {
+          e.preventDefault();
+          navigate(octavePaths.device);
+        }}
+      >
         <ProgressRing fraction={summary.fraction} size={22} stroke={2.5} />
       </button>
     );

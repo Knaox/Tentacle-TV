@@ -145,4 +145,6 @@ export default {
     pill: "Hors ligne",
     pillHint: "Ouvre la musique gardée sur cet appareil",
   },
+  /** Toucher l'anneau de progression d'une collection ouvre « Sur cet appareil », où sont les transferts (lot fl). */
+  progressOpen: "Voir les transferts dans « Sur cet appareil »",
 } as const;

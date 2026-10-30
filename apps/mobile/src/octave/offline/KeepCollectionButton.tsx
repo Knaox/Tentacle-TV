@@ -3,7 +3,8 @@
  * sur ce téléphone, depuis leur en-tête. Un rond de 44 pt, une seule forme qui
  * change d'état (le pendant du bureau) :
  *   - le glyphe « garder » : toucher garde tout (vibration « commit ») ;
- *   - un anneau qui se remplit, « 3 sur 12 » pour les lecteurs d'écran ;
+ *   - un anneau qui se remplit, « 3 sur 12 » pour les lecteurs d'écran ; le toucher
+ *     ouvre « Sur cet appareil », où se suivent les transferts ;
  *   - gardé (glyphe plein, vert) ou en défaut (triangle) : toucher ouvre la
  *     feuille — titres qui manquent, réessayer, retirer (jamais au premier toucher).
  * Rien sans le droit, rien pour une session de profil, rien sans `offline.music`.
@@ -14,7 +15,7 @@
  */
 
 import { memo, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { canKeepTrack, collectionSummary, ownCopies } from "@tentacle-tv/offline-core/music";
@@ -28,6 +29,7 @@ import { useOfflineSurface } from "./musicOfflineContext";
 import { ProgressRing } from "./ProgressRing";
 import { useKeepGestures } from "./useKeepGestures";
 import { useKeptMusic } from "./useKeptMusic";
+import { useOctaveNav } from "../pages/env/nav";
 
 export interface KeepCollectionButtonProps {
   kind: "album" | "playlist";
@@ -54,6 +56,7 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   const surface = useOfflineSurface();
   const kept = useKeptMusic();
   const gestures = useKeepGestures();
+  const nav = useOctaveNav();
   const [open, setOpen] = useState(false);
   const keys = useMemo(() => tracks.map((track) => track.key), [tracks]);
   const wholeKey = `${kind}:${collectionKey}`;
@@ -75,10 +78,20 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   }
   if (summary.phase === "progress") {
     const label = t("progress", { done: summary.done, total: summary.total });
+    // Toucher l'anneau ouvre « Sur cet appareil », où se suivent les transferts (lot fl).
     return (
-      <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max: summary.total, now: summary.done }} style={[styles.round, { borderColor: colors.line }]}>
+      <PressableScale
+        pressedScale={0.94}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={t("progressOpen")}
+        accessibilityValue={{ min: 0, max: summary.total, now: summary.done }}
+        hitSlop={6}
+        onPress={nav.device}
+        style={[styles.round, { borderColor: colors.line }]}
+      >
         <ProgressRing fraction={summary.fraction} size={28} stroke={3} color={colors.accent} track={colors.line} />
-      </View>
+      </PressableScale>
     );
   }
   const failed = summary.phase === "failed";

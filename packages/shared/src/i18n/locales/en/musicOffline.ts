@@ -142,4 +142,6 @@ export default {
     pill: "Offline",
     pillHint: "Opens the music kept on this device",
   },
+  /** Toucher l'anneau de progression d'une collection ouvre « Sur cet appareil », où sont les transferts (lot fl). */
+  progressOpen: "See the transfers in “On this device”",
 } as const;
