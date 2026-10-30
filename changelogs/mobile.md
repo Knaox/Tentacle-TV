@@ -12,6 +12,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - Playlists favorites en tête, dans votre ordre, et proposées d'abord à l'ajout
 - Un titre indisponible reste grisé et n'est jamais joué
 - Recherches récentes partagées avec l'ordinateur (serveur 1.41)
+- Un onglet « Hors ligne » pour retrouver ce qui est sur le téléphone
 - Une vague qui suit la musique en plein écran
 - Fondu de 5 s, et plus de pause au retour dans l'app
 
@@ -20,6 +21,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - Favorite playlists on top, in your order, and offered first when adding
 - An unavailable song stays greyed out and is never played
 - Recent searches shared with your computer (server 1.41)
+- An "Offline" tab to find what is on your phone
 - A wave that follows the music in full screen
 - 5 s crossfade, and no more pause when coming back to the app
 

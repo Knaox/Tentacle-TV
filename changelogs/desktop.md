@@ -19,25 +19,25 @@ et Linux reçoivent l'ensemble.
 - **Liquid Glass, chacun le sien** : coupé d'office dans Tentacle, allumé d'office dans Octave ; les deux se règlent dans Réglages › Apparence, et un choix déjà fait est gardé
 - **Octave : des playlists plus simples à ranger** — réordonner une playlist au glisser ne s'emballe plus, la file d'attente se réordonne aussi, les playlists favorites se rangent dans votre ordre et passent en tête de « Ajouter à une playlist », et le « ⋯ » d'un titre d'une playlist propose de le retirer
 - **Octave : un titre indisponible** reste dans sa playlist, grisé : il est sauté pendant l'écoute, jamais gardé hors ligne, et le choisir explique pourquoi il ne se lit pas
-- **Octave : recherches récentes et titres récemment recherchés**, partagés avec le téléphone (serveur Tentacle 1.41) ; la barre de progression va exactement où l'on clique ; fondu de 5 s d'office ; rouvert, Octave repart de son accueil
+- **Octave : recherches récentes et titres récemment recherchés**, partagés avec le téléphone (serveur Tentacle 1.41) ; la barre de progression va exactement où l'on clique ; fondu de 5 s d'office ; rouvert, Octave repart de son accueil ; « Sur cet appareil » devient « Hors ligne » dans la barre
 
 ### EN
 - **Liquid Glass, each its own**: off by default in Tentacle, on by default in Octave; both are set in Settings › Appearance, and a choice already made is kept
 - **Octave: easier playlist tidying** — dragging inside a playlist no longer runs away, the queue can be reordered too, favorite playlists follow your order and come first in "Add to a playlist", and a playlist song's "⋯" offers to remove it
 - **Octave: an unavailable song** stays in its playlist, greyed out: it is skipped while listening, never kept offline, and picking it explains why it does not play
-- **Octave: recent searches and recently searched songs**, shared with your phone (Tentacle server 1.41); the progress bar seeks exactly where you click; 5 s crossfade by default; reopened, Octave starts from its home
+- **Octave: recent searches and recently searched songs**, shared with your phone (Tentacle server 1.41); the progress bar seeks exactly where you click; 5 s crossfade by default; reopened, Octave starts from its home; "On this device" becomes "Offline" in the sidebar
 
 ## [1.41.0]
 <!-- Bloc nu : Linux et Microsoft Store (pas de bloc [win-1.41.0]). Une nouveauté commune s'ajoute aussi dans [mac-1.41.0]. -->
 ### FR
 - **Octave : des playlists plus simples à ranger** — réordonner une playlist au glisser ne s'emballe plus, la file d'attente se réordonne aussi, les playlists favorites se rangent dans votre ordre et passent en tête de « Ajouter à une playlist », et le « ⋯ » d'un titre d'une playlist propose de le retirer
 - **Octave : un titre indisponible** reste dans sa playlist, grisé : il est sauté pendant l'écoute, jamais gardé hors ligne, et le choisir explique pourquoi il ne se lit pas
-- **Octave : recherches récentes et titres récemment recherchés**, partagés avec le téléphone (serveur Tentacle 1.41) ; la barre de progression va exactement où l'on clique ; fondu de 5 s d'office ; rouvert, Octave repart de son accueil
+- **Octave : recherches récentes et titres récemment recherchés**, partagés avec le téléphone (serveur Tentacle 1.41) ; la barre de progression va exactement où l'on clique ; fondu de 5 s d'office ; rouvert, Octave repart de son accueil ; « Sur cet appareil » devient « Hors ligne » dans la barre
 
 ### EN
 - **Octave: easier playlist tidying** — dragging inside a playlist no longer runs away, the queue can be reordered too, favorite playlists follow your order and come first in "Add to a playlist", and a playlist song's "⋯" offers to remove it
 - **Octave: an unavailable song** stays in its playlist, greyed out: it is skipped while listening, never kept offline, and picking it explains why it does not play
-- **Octave: recent searches and recently searched songs**, shared with your phone (Tentacle server 1.41); the progress bar seeks exactly where you click; 5 s crossfade by default; reopened, Octave starts from its home
+- **Octave: recent searches and recently searched songs**, shared with your phone (Tentacle server 1.41); the progress bar seeks exactly where you click; 5 s crossfade by default; reopened, Octave starts from its home; "On this device" becomes "Offline" in the sidebar
 
 ## [mac-1.40.0]
 <!-- Bloc Mac : App Store Connect seulement (CHANNEL=mac). Le Liquid Glass n'existe que sur macOS 26 : il ne paraît QUE dans ce bloc.
