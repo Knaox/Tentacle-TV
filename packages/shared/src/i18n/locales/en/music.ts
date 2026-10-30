@@ -33,6 +33,8 @@ export default {
     liked: "Liked Songs",
     playlists: "Playlists",
     yourPlaylists: "Your playlists",
+    offline: "Offline",
+    offlineBusy: "Offline, transfers in progress",
   },
   home: {
     morning: "Good morning",

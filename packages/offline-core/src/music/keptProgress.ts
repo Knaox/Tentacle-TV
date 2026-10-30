@@ -103,3 +103,11 @@ export function ownCopies(keys: readonly string[], byKey: ReadonlyMap<string, Ke
   }
   return [...out.values()];
 }
+
+/**
+ * Des titres PARTENT en ce moment (en file, en cours, en pause du système qui repart seule) : la pastille de
+ * l'entrée « Hors ligne » de la navigation. Ni une pause voulue, ni un défaut, ni ce qui est gardé : rien à attendre.
+ */
+export function keptTransfersRunning(tracks: readonly KeptMusicTrack[]): boolean {
+  return tracks.some((k) => k.status === "queued" || k.status === "downloading" || (k.status === "paused" && !k.pausedByUser));
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KeptMusicCollection, KeptMusicTrack } from "../core/musicLibrary";
-import { collectionSummary, keptBytes, ownCopies, trackPhase } from "./keptProgress";
+import { collectionSummary, keptBytes, keptTransfersRunning, ownCopies, trackPhase } from "./keptProgress";
 
 function kept(key: string, partial: Partial<KeptMusicTrack> = {}): KeptMusicTrack {
   return {
@@ -56,5 +56,14 @@ describe("keptProgress", () => {
     const byKey = new Map([["ext:s:ytm:t:v", old], ["ext:s:imp:r", old], ["ext:s:ytm:t:w", other], ["ext:s:imp:q", other]]);
     const collections = [col("playlist:jf:p", ["ext:s:imp:r", "ext:s:imp:q"]), col("album:x", ["ext:s:imp:q"])];
     expect(ownCopies(["ext:s:ytm:t:v", "ext:s:imp:r", "ext:s:ytm:t:w"], byKey, collections, "playlist:jf:p").map((k) => k.fileId)).toEqual([7]);
+  });
+
+  it("la pastille de « Hors ligne » : seulement ce qui part de lui-même", () => {
+    expect(keptTransfersRunning([])).toBe(false);
+    expect(keptTransfersRunning([kept("a"), kept("b", { status: "error" }), kept("c", { status: "canceled" })])).toBe(false);
+    expect(keptTransfersRunning([kept("a", { status: "paused", pausedByUser: true })])).toBe(false);
+    expect(keptTransfersRunning([kept("a"), kept("b", { status: "queued" })])).toBe(true);
+    expect(keptTransfersRunning([kept("a", { status: "downloading" })])).toBe(true);
+    expect(keptTransfersRunning([kept("a", { status: "paused" })])).toBe(true);
   });
 });

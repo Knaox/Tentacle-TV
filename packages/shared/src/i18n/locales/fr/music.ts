@@ -33,6 +33,8 @@ export default {
     liked: "Titres likés",
     playlists: "Playlists",
     yourPlaylists: "Vos playlists",
+    offline: "Hors ligne",
+    offlineBusy: "Hors ligne, transferts en cours",
   },
   home: {
     morning: "Bonjour",

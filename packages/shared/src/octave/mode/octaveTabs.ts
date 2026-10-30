@@ -1,23 +1,26 @@
 /**
  * Octave — la navigation par ONGLETS du mobile et du web étroit (Accueil,
- * Rechercher, Bibliothèque), règle PURE : quel onglet une adresse allume, et sa
- * racine. Une page de la bibliothèque (titres likés, playlists, appareil) est
- * dans « Bibliothèque » ; une page empilée sans onglet à elle (album, artiste,
+ * Rechercher, Bibliothèque, Hors ligne), règle PURE : quel onglet une adresse
+ * allume, et sa racine. « Hors ligne » (lot fl, 30/10) a pour racine « Sur cet
+ * appareil » ; il n'est montré qu'avec le droit du compte de l'appareil (porte du
+ * hors ligne d'Octave, côté client). Une page de la bibliothèque (titres likés,
+ * playlists) est dans « Bibliothèque » ; une page empilée sans onglet à elle (album, artiste,
  * playlist d'une extension, ambiance, réglages) garde l'onglet d'où l'on vient.
  */
 
 import { OCTAVE_BASE_PATH, octavePaths } from "./octavePaths";
 
-export const OCTAVE_TABS = ["home", "search", "library"] as const;
+export const OCTAVE_TABS = ["home", "search", "library", "offline"] as const;
 export type OctaveTab = (typeof OCTAVE_TABS)[number];
 
 export const OCTAVE_TAB_ROOTS: Readonly<Record<OctaveTab, string>> = {
   home: octavePaths.home,
   search: octavePaths.search,
   library: octavePaths.library,
+  offline: octavePaths.device,
 };
 
-const LIBRARY_PAGES = ["library", "liked", "playlists", "playlist", "device"];
+const LIBRARY_PAGES = ["library", "liked", "playlists", "playlist"];
 
 /** Le chemin sans sa question ni sa barre finale. */
 function bare(path: string): string {
@@ -32,6 +35,7 @@ export function octaveTabOf(path: string, previous: OctaveTab = "home"): OctaveT
   if (!p.startsWith(`${OCTAVE_BASE_PATH}/`)) return previous;
   const first = p.slice(OCTAVE_BASE_PATH.length + 1).split("/")[0] ?? "";
   if (first === "search") return "search";
+  if (first === "device") return "offline";
   if (LIBRARY_PAGES.includes(first)) return "library";
   return previous;
 }

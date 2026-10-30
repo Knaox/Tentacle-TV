@@ -3,7 +3,7 @@ import { isOctaveTabRoot, octaveTabOf } from "./octaveTabs";
 import { octaveStayVerdict } from "./octaveStay";
 
 describe("octaveTabOf : l'onglet allumé par une adresse", () => {
-  it("les racines des trois onglets", () => {
+  it("les racines des onglets", () => {
     expect(octaveTabOf("/octave")).toBe("home");
     expect(octaveTabOf("/octave/")).toBe("home");
     expect(octaveTabOf("/octave/search?q=daft")).toBe("search");
@@ -11,7 +11,12 @@ describe("octaveTabOf : l'onglet allumé par une adresse", () => {
   });
 
   it("les pages de la bibliothèque allument « Bibliothèque »", () => {
-    for (const p of ["/octave/liked", "/octave/playlists", "/octave/playlist/abc", "/octave/device"]) expect(octaveTabOf(p, "search")).toBe("library");
+    for (const p of ["/octave/liked", "/octave/playlists", "/octave/playlist/abc"]) expect(octaveTabOf(p, "search")).toBe("library");
+  });
+
+  it("« Sur cet appareil » allume « Hors ligne », sa racine", () => {
+    expect(octaveTabOf("/octave/device", "library")).toBe("offline");
+    expect(isOctaveTabRoot("/octave/device")).toBe(true);
   });
 
   it("une page empilée garde l'onglet d'où l'on vient", () => {
