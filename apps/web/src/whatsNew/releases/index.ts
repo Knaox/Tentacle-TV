@@ -21,6 +21,7 @@ import { RELEASE_1_28_2 } from "./v1_28_2";
 import { RELEASE_1_29_0 } from "./v1_29_0";
 import { RELEASE_1_31_0 } from "./v1_31_0";
 import { RELEASE_1_31_1 } from "./v1_31_1";
+import { RELEASE_1_41_0 } from "./v1_41_0";
 import { RELEASE_1_40_0 } from "./v1_40_0";
 import { RELEASE_1_31_2 } from "./v1_31_2";
 
@@ -31,6 +32,7 @@ import { RELEASE_1_31_2 } from "./v1_31_2";
  * entrée, vide — elle dit « rien », elle ne laisse pas supposer « oublié ».
  */
 export const WHATS_NEW_RELEASES: readonly WhatsNewRelease[] = [
+  RELEASE_1_41_0,
   RELEASE_1_40_0,
   RELEASE_1_31_2,
   RELEASE_1_31_1,
