@@ -16,15 +16,24 @@ import { PlaylistChooserSheet } from "./PlaylistChooserSheet";
 import { TrackActionSheet } from "./TrackActionSheet";
 import { UnavailableAlbumSheet } from "./UnavailableAlbumSheet";
 import { useEffect } from "react";
-import { recordSearchListensTo } from "@tentacle-tv/shared/octave";
+import { useTranslation } from "react-i18next";
+import { onUnavailableTrack, recordSearchListensTo } from "@tentacle-tv/shared/octave";
 import { useSingleHost } from "../env/singleHost";
 import { useDeviceStore } from "../env/pagesEnv";
 import { usePagesPlayer } from "../env/pagesPlayer";
+import { showNotice } from "../env/notices";
 
 function SearchListenRecorder() {
   const player = usePagesPlayer();
   const store = useDeviceStore();
   useEffect(() => (player ? recordSearchListensTo(player, store) : undefined), [player, store]);
+  return null;
+}
+
+/** Un titre indisponible touché (rangée, file d'attente) : rien ne se lance, l'avis le dit (`unavailableTrack.ts`). */
+function UnavailableTrackNotice() {
+  const { t } = useTranslation("music");
+  useEffect(() => onUnavailableTrack(() => showNotice("info", t("track.unavailableNotice"))), [t]);
   return null;
 }
 
@@ -42,6 +51,7 @@ export function OctavePagesHost({ primary = false }: { primary?: boolean }) {
       <BulkDuplicateSheet />
       <NoticeHost />
       <SearchListenRecorder />
+      <UnavailableTrackNotice />
     </>
   );
 }

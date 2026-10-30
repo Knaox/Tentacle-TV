@@ -6,7 +6,7 @@
  */
 
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { rowClickAction, type OctavePlayer } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, isTrackUnavailable, rowClickAction, type OctavePlayer } from "@tentacle-tv/shared/octave";
 import { offlinePlayableQueue } from "../../offline/useOfflineMusic";
 
 export function playFrom(player: OctavePlayer | null, tracks: readonly MusicTrack[], index: number, contextId: string | null): void {
@@ -17,11 +17,15 @@ export function playFrom(player: OctavePlayer | null, tracks: readonly MusicTrac
 
 /**
  * Toucher la RANGÉE d'un titre (la règle du bureau, `pages/rowClick.ts`) : le titre en cours de cette liste se met
- * en pause ou reprend ; tout autre lance la liste depuis lui (`playFrom`).
+ * en pause ou reprend ; tout autre lance la liste depuis lui (`playFrom`) — un titre indisponible ne lance rien, l'avis
+ * le dit (`unavailableTrack.ts`).
  */
 export function playRow(player: OctavePlayer | null, tracks: readonly MusicTrack[], index: number, contextId: string): void {
   if (!player) return;
   const { current, queue } = player.snapshot.get();
-  if (rowClickAction(tracks[index]?.key, current?.key ?? null, queue.contextId, contextId) === "toggle") player.togglePlay();
+  const track = tracks[index];
+  const action = rowClickAction(track?.key, current?.key ?? null, queue.contextId, contextId, !!track && isTrackUnavailable(track));
+  if (action === "unavailable") announceUnavailableTrack();
+  else if (action === "toggle") player.togglePlay();
   else playFrom(player, tracks, index, contextId);
 }

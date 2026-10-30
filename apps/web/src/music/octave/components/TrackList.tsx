@@ -11,7 +11,7 @@ import { ListChecks } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
-import { rowClickAction, type ListRow } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, isTrackUnavailable, rowClickAction, type ListRow } from "@tentacle-tv/shared/octave";
 import type { SelectGesture } from "@tentacle-tv/shared/octave";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { TrackRow, rowColumns } from "./TrackRow";
@@ -79,7 +79,10 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   const play = useCallback(
     (index: number) => {
       const { currentKey: key, playingContext: context } = live.current;
-      if (rowClickAction(tracks[index]?.key, key, context, contextId) === "toggle") player.togglePlay();
+      const track = tracks[index];
+      const action = rowClickAction(track?.key, key, context, contextId, !!track && isTrackUnavailable(track));
+      if (action === "unavailable") announceUnavailableTrack();
+      else if (action === "toggle") player.togglePlay();
       else player.playList(tracks, index, contextId);
     },
     [contextId, player, tracks],

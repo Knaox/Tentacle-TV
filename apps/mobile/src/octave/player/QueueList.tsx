@@ -9,7 +9,7 @@ import { memo, useCallback, useMemo } from "react";
 import { FlatList, Platform, Pressable, StyleSheet, Text, View, type ListRenderItem } from "react-native";
 import { X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { queueActions, queueContextTitleKey, queueSections, type QueueItem } from "@tentacle-tv/shared/octave";
+import { isTrackUnavailable, queueActions, queueContextTitleKey, queueSections, type QueueItem } from "@tentacle-tv/shared/octave";
 import { PlayerArtwork } from "./PlayerArtwork";
 import { useOctavePlayer, usePlayerSelector } from "./OctavePlayerContext";
 import { useOctaveColors } from "../theme/octaveColors";
@@ -92,8 +92,10 @@ export const QueueList = memo(function QueueList() {
 const QueueRow = memo(function QueueRow({ item, onPlay, onRemove, removeLabel }: { item: QueueItem; onPlay: () => void; onRemove: () => void; removeLabel: string }) {
   const colors = useOctaveColors();
   const artist = item.track.artists.map((a) => a.name).join(", ");
+  // Un titre indisponible reste dans la file, grisé : la file le saute, le toucher le dit (`unavailableTrack.ts`).
+  const locked = isTrackUnavailable(item.track);
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, locked && styles.locked]}>
       <Pressable onPress={onPlay} style={({ pressed }) => [styles.main, pressed && { backgroundColor: colors.pressed }]} accessibilityRole="button" accessibilityLabel={`${item.track.title} — ${artist}`}>
         <PlayerArtwork url={item.track.artworkUrl} size={44} radius={8} />
         <View style={styles.texts}>
@@ -116,6 +118,7 @@ const styles = StyleSheet.create({
   clearText: { fontSize: 14, fontWeight: "600" },
   empty: { fontSize: 14, paddingVertical: 12 },
   row: { height: ROW, flexDirection: "row", alignItems: "center" },
+  locked: { opacity: 0.4 },
   main: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, height: ROW, borderRadius: 12, paddingHorizontal: 4 },
   texts: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, fontWeight: "600" },

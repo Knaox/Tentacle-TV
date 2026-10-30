@@ -23,7 +23,7 @@ import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
 import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
-import { clickGesture, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, clickGesture, isTrackUnavailable, type SelectGesture } from "@tentacle-tv/shared/octave";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
 import { AlbumLink, ArtistLinks } from "./TrackLinks";
@@ -100,10 +100,12 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
 export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect, handle = null }: TrackRowProps) {
   const { t } = useTranslation("music");
   const stage = useOctaveGlassStage();
-  // Un titre que la source n'offre pas à l'écoute (`unavailable`, ex. Bandcamp sans écoute publique) : grisé, il ne se lit pas.
-  const locked = track.unavailable != null;
+  // Un titre qui ne se lit pas (`unavailableTrack.ts` : importé sans source, sortie sans écoute publique) : grisé ;
+  // le cliquer ne lance rien, la lecture en cours continue, et l'avis dit pourquoi.
+  const locked = isTrackUnavailable(track);
   const onPlay = () => {
-    if (!locked) onPlayIndex(index);
+    if (locked) announceUnavailableTrack();
+    else onPlayIndex(index);
   };
   const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).

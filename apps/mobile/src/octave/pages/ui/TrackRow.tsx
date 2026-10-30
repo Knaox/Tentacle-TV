@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, MoreHorizontal } from "lucide-react-native";
 import { useLiked } from "@tentacle-tv/api-client";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
+import { announceUnavailableTrack, isTrackUnavailable } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
 import { haptic as playHaptic } from "@/utils/haptics";
 import { TrackStateMark } from "../../offline/TrackStateMark";
@@ -54,8 +55,9 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const { t } = useTranslation("music");
   const { t: tl } = useTranslation("musicLists");
   const liked = useLiked(track.key, track.favorite);
-  // Un titre que la source n'offre pas à l'écoute (`unavailable`, ex. Bandcamp sans écoute publique) : grisé.
-  const locked = track.unavailable != null;
+  // Un titre qui ne se lit pas (`unavailableTrack.ts` : importé sans source, sortie sans écoute publique) : grisé ;
+  // le toucher ne lance rien et l'avis dit pourquoi (la lecture en cours continue).
+  const locked = isTrackUnavailable(track);
   const playable = useTrackPlayable()(track.key) && !locked;
   const keptCover = useKeptCover(track.key);
   const sheet = useCallback(() => {
@@ -82,8 +84,8 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   ];
   const row = (
     <Pressable
-      onPress={editing ? undefined : () => onPlay(index)}
-      disabled={!playable || editing}
+      onPress={editing ? undefined : locked ? announceUnavailableTrack : () => onPlay(index)}
+      disabled={(!playable && !locked) || editing}
       onLongPress={editing ? undefined : sheet}
       delayLongPress={350}
       style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, opacity: playable || editing ? 1 : 0.4, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
@@ -113,7 +115,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
           {track.title}
         </Text>
         <View style={styles.sub}>
-          <TrackStateMark track={track} size={11} />
+          <TrackStateMark track={track} size={11} unavailable={locked} />
           {liked ? <Heart size={11} color={accent} fill={accent} accessibilityLabel={t("track.unlike")} /> : null}
           <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
             {locked ? `${artists} · ${track.unavailable === "notPublic" ? t("notPublic", { ns: "musicReleases" }) : t("unavailableAlbum.badge")}` : artists}

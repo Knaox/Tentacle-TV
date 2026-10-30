@@ -20,7 +20,7 @@ import { useTrackActions, type TrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { SelectCell } from "../components/SelectCell";
 import { SelectionBar } from "../actions/selection/SelectionBar";
-import { clickGesture, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { clickGesture, isTrackUnavailable, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
 import { useListSelection } from "../actions/selection/useListSelection";
 import { NowSwell } from "../motion/NowSwell";
 
@@ -38,8 +38,10 @@ function QueueEntry({ item, index, count, current, actions, selection }: { item:
   const player = useOctavePlayer();
   const track = item.track;
   const tone = current ? "bg-octave-accent-soft" : selection?.selected ? "bg-octave-selected" : "hover:bg-octave-hover";
+  // Un titre indisponible reste dans la file, grisé : la file le saute, le cliquer le dit (`unavailableTrack.ts`).
+  const locked = isTrackUnavailable(track);
   return (
-    <li className={`group flex items-center gap-2 rounded-xl px-1.5 py-1.5 ${tone}`}>
+    <li className={`group flex items-center gap-2 rounded-xl px-1.5 py-1.5 ${tone}${locked ? " opacity-60" : ""}`}>
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
       )}

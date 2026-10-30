@@ -10,4 +10,8 @@ describe("rowClickAction", () => {
     expect(rowClickAction("a", "a", "playlist:2", "album:1")).toBe("play");
     expect(rowClickAction(undefined, null, null, "album:1")).toBe("play");
   });
+  it("un titre indisponible : rien ne part, la lecture en cours continue — même s'il était le courant (lot « fl »)", () => {
+    expect(rowClickAction("b", "a", "album:1", "album:1", true)).toBe("unavailable");
+    expect(rowClickAction("a", "a", "album:1", "album:1", true)).toBe("unavailable");
+  });
 });
