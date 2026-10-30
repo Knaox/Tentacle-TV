@@ -113,6 +113,16 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
             />
           ) : (
             <>
+              {/* Dans une playlist qui le permet : le retrait EN TÊTE (lot fl, 30/10 — il se perdait en bas du menu). */}
+              {onRemove && (
+                <>
+                  <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(onRemove)}>
+                    <Trash2 className="h-4 w-4" />
+                    {t("playlist.remove")}
+                  </button>
+                  <div className="my-1 h-px bg-line-subtle" />
+                </>
+              )}
               <button type="button" role="menuitem" className={itemClass} onClick={run(() => queueActions.playNext(player, [track]))}>
                 <ListStart className="h-4 w-4 text-content-tertiary" />
                 {t("track.playNext")}
@@ -150,15 +160,6 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
                   <span className="truncate">{artists.length > 1 ? t("octaveShell:track.goToArtistNamed", { artist: artist.name }) : t("track.goToArtist")}</span>
                 </button>
               ))}
-              {onRemove && (
-                <>
-                  <div className="my-1 h-px bg-line-subtle" />
-                  <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(onRemove)}>
-                    <Trash2 className="h-4 w-4" />
-                    {t("playlist.remove")}
-                  </button>
-                </>
-              )}
             </>
           )}
         </div>

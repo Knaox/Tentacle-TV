@@ -34,4 +34,11 @@ describe("feuille d'un titre — sans le droit, l'action est absente", () => {
   it("aucun droit, aucun lecteur, aucune page : la feuille est vide", () => {
     expect(trackSheetActions({ hasPlayer: false, canAddToPlaylist: false, canLike: false, keep: "none", albumTarget: null, artistTarget: null })).toEqual([]);
   });
+
+  it("dans une playlist qui permet de retirer : « Retirer de la playlist » en tête, l'ajout (vers une autre) gardé", () => {
+    const shown = trackSheetActions({ ...ALL, canRemoveFromPlaylist: true });
+    expect(shown[0]).toBe("removeFromPlaylist");
+    expect(shown).toContain("addToPlaylist");
+    expect(trackSheetActions(ALL)).not.toContain("removeFromPlaylist");
+  });
 });

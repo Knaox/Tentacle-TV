@@ -58,15 +58,16 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const locked = track.unavailable != null;
   const playable = useTrackPlayable()(track.key) && !locked;
   const keptCover = useKeptCover(track.key);
+  const removeAt = useMemo(() => (editing || !onRemove ? undefined : () => onRemove(index)), [editing, index, onRemove]);
   const sheet = useCallback(() => {
     playHaptic("longPress");
-    openTrackSheet({ track, list, contextId, hide });
-  }, [contextId, hide, list, track]);
+    openTrackSheet({ track, list, contextId, hide, remove: removeAt });
+  }, [contextId, hide, list, removeAt, track]);
   const artists = track.artists.map((a) => a.name).join(", ");
   const accent = accentTextOf(theme);
   const queue = useTrackQueueGestures(track, playable);
   const gestures = editing ? null : queue;
-  const remove = useMemo(() => (editing || !onRemove ? undefined : () => onRemove(index)), [editing, index, onRemove]);
+  const remove = removeAt;
   // Le balayage a toujours son équivalent au lecteur d'écran : deux actions de la rangée.
   const onA11yAction = useCallback(
     (e: AccessibilityActionEvent) => {
