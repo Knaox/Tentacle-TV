@@ -109,12 +109,14 @@ export const PersistentHeader = memo(function PersistentHeader() {
         </View>
 
         {/* Hors ligne, les actions serveur (listes, recherche, cloche) n'ont
-            rien à ouvrir : elles disparaissent ; seule la gestion locale reste.
+            rien à ouvrir : elles disparaissent ; restent la gestion locale et la bascule vers Octave.
             En ligne, trois actions espacées : « Mes contenus » (Ma liste, Mes
             favoris, Sur cet appareil), la recherche et la cloche — cinq icônes
             serrées sur un iPhone de 375 pt ne laissaient que 36 pt de cible. */}
         {localNav ? (
           <View style={styles.actions}>
+            {/* La bascule vers Octave reste : sa musique gardée s'écoute hors ligne (`octaveSwitchShown`). */}
+            <OctaveEnterButton />
             <OnDeviceHeaderButton />
           </View>
         ) : (
