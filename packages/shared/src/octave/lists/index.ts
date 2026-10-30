@@ -11,3 +11,4 @@ export * from "./removalPlan";
 export * from "./playlistCleanup";
 export * from "./libraryShelves";
 export * from "./addPlace";
+export * from "./chooserSections";

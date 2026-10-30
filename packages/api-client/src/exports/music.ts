@@ -62,5 +62,5 @@ export {
   musicShelfApi, useMusicShelvesCapability, useMusicShelves, useToggleShelfFavorite, useSaveShelfOrder, shelfSubjectKey, shelfSubjectFavoritable, shelfFavoriteOf, shelvesAfter,
   type MusicShelfSubject,
 } from "../music/useMusicShelves";
-export { useAlbumShelf, useArtistShelf, usePlaylistShelf, type LibraryShelf } from "../music/useLibraryShelf";
+export { useAlbumShelf, useArtistShelf, usePlaylistShelf, usePlaylistChooserSections, type LibraryShelf } from "../music/useLibraryShelf";
 export { useCollectionMenu, type CollectionMenu } from "../music/useCollectionMenu";
