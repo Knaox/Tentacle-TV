@@ -15,6 +15,8 @@ export interface TrackSheetRequest {
   contextId: string | null;
   /** Sur la page de l'album (ou de l'artiste), « Voir l'album » (« Voir l'artiste ») ne se propose pas. */
   hide?: { album?: boolean; artist?: boolean };
+  /** Le titre est DANS une playlist qui permet de le retirer : « Retirer de la playlist », en tête de la feuille. */
+  remove?: () => void;
 }
 
 let current: TrackSheetRequest | null = null;

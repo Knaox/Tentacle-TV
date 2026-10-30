@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState, type ReactNode } from "react";
+import { ArrowUpDown } from "lucide-react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { LibraryShelf } from "@tentacle-tv/api-client";
@@ -40,16 +41,19 @@ export function ShelfSections<T>({ section, shelf, renderCard, describe, between
     return items.map((item) => ({ key: shelf.keyOf(item), ...describe(item, tm as TFunction) }));
   }, [reordering, shelf, describe, tm]);
   const hasFavorites = shelf.favorites.length > 0;
+  // « Réordonner » VISIBLE à côté du titre (lot fl : il ne vivait que dans le menu d'une carte).
+  const reorderButton = (items: readonly T[], which: "favorites" | "rest") =>
+    items.length > 1 && shelf.ordered(shelf.keyOf(items[0]!)) ? <ReorderButton label={t("actions.reorder")} onClick={() => setReordering(which)} /> : undefined;
   return (
     <ShelfScopeContext.Provider value={scope}>
       {hasFavorites && (
-        <Shelf title={t("shelfTitle")}>
+        <Shelf title={t("shelfTitle")} action={reorderButton(shelf.favorites, "favorites")}>
           <CardGrid>{shelf.favorites.map(renderCard)}</CardGrid>
         </Shelf>
       )}
       {between}
       {hasFavorites && shelf.rest.length > 0 ? (
-        <Shelf title={t(`restTitle.${section}`)} action={restAction}>
+        <Shelf title={t(`restTitle.${section}`)} action={restAction ?? reorderButton(shelf.rest, "rest")}>
           <CardGrid>{shelf.rest.map(renderCard)}</CardGrid>
         </Shelf>
       ) : (
@@ -61,5 +65,18 @@ export function ShelfSections<T>({ section, shelf, renderCard, describe, between
       {after}
       {reordering && rows.length > 0 && <ShelfReorderDialog rows={rows} onMove={shelf.move} onClose={() => setReordering(null)} />}
     </ShelfScopeContext.Provider>
+  );
+}
+
+export function ReorderButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+    >
+      <ArrowUpDown className="h-4 w-4" aria-hidden />
+      {label}
+    </button>
   );
 }

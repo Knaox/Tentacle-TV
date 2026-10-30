@@ -21,6 +21,7 @@ export interface HandleSlot {
     onPointerMove: (e: PointerEvent<HTMLElement>) => void;
     onPointerUp: (e: PointerEvent<HTMLElement>) => void;
     onPointerCancel: () => void;
+    onLostPointerCapture: (e: PointerEvent<HTMLElement>) => void;
     onClick: (e: MouseEvent<HTMLElement>) => void;
   };
 }

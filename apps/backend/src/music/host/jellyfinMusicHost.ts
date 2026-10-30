@@ -105,12 +105,13 @@ export async function setFavorite(params: { userId: string; itemId: string; favo
  * Une playlist IMPORTÉE (relevé de l'ordre de sa source) : le titre entre à SA place dans l'ordre de la source
  * (`sourceIndex`, sinon le titre qu'il est), `position` n'étant qu'un repli (`playlistSource/sourcePlacement.ts`).
  */
-export async function playlistInsert(params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number }): Promise<{ ok: true; position: number }> {
+export async function playlistInsert(params: { userId: string; playlistId: string; itemIds: string[]; position: number; sourceIndex?: number; addedAt?: number }): Promise<{ ok: true; position: number }> {
   const [userId, playlistId] = ids([params.userId, params.playlistId]);
   const itemIds = ids(params.itemIds);
   if (itemIds.length === 0 || !Number.isInteger(params.position) || params.position < 0) throw new HostMusicFailure("invalid", "itemIds / position");
   if (params.sourceIndex !== undefined && (!Number.isInteger(params.sourceIndex) || params.sourceIndex < 0)) throw new HostMusicFailure("invalid", "sourceIndex");
-  const result = await insertFromHost(userId!, playlistId!, itemIds, params.position, params.sourceIndex);
+  if (params.addedAt !== undefined && (!Number.isInteger(params.addedAt) || params.addedAt < 0)) throw new HostMusicFailure("invalid", "addedAt");
+  const result = await insertFromHost(userId!, playlistId!, itemIds, params.position, params.sourceIndex, params.addedAt);
   if (result.ok) return { ok: true, position: result.value };
   throw new HostMusicFailure(result.failure === "not_found" ? "notFound" : result.failure === "invalid" ? "invalid" : result.failure, "playlist");
 }

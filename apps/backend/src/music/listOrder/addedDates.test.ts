@@ -11,7 +11,7 @@ import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyCoreMigrations } from "../../services/database/migrator";
 import { closeSqlitePrisma, connectSqlitePrisma } from "../../services/database/prismaClient";
-import { addedDatesFor, legacyPlaylistScope, playlistScope } from "./addedDates";
+import { addedDatesFor, legacyPlaylistScope, noteArrival, playlistScope } from "./addedDates";
 
 const db = vi.hoisted(() => ({ client: null as unknown as PrismaClient }));
 vi.mock("../../services/db", () => ({ getPrisma: () => db.client }));
@@ -72,5 +72,21 @@ describe("dates d'entrée d'une playlist", () => {
     expect([...dates]).toEqual([["c", 102], ["a", 100], ["b", 101]]);
     const rows = await client.musicListAdded.findMany({ where: { scope }, orderBy: { addedAt: "asc" } });
     expect(rows.map((r) => [r.itemId, r.addedAt.getTime()])).toEqual([["a", 100], ["b", 101], ["c", 102]]);
+  });
+
+  it("une arrivée de l'extension en FIN de playlist garde la date de sa place à la lecture suivante (lot fl)", async () => {
+    const scope = playlistScope(PLAYLIST);
+    const first = await addedDatesFor(scope, ["a", "b"], undefined, options);
+    await noteArrival(PLAYLIST, ["a", "b"], ["x"], 2);
+    const later = await addedDatesFor(scope, ["a", "b", "x"], undefined, options);
+    expect(later.get("x")).toBe(first.get("b"));
+  });
+
+  it("un ajout de l'utilisateur EN TÊTE d'une playlist jamais datée : le plus récent, les autres estimés d'après l'ordre", async () => {
+    const scope = playlistScope(PLAYLIST);
+    await noteArrival(PLAYLIST, ["a", "b"], ["n"], 0, Date.now());
+    const dates = await addedDatesFor(scope, ["n", "a", "b"], undefined, options);
+    expect(dates.get("a")!).toBeLessThan(dates.get("b")!);
+    expect(dates.get("b")!).toBeLessThanOrEqual(dates.get("n")!);
   });
 });

@@ -52,9 +52,10 @@ describe("capacités du serveur", () => {
     expect(resolveServerCapabilities({ version: "1.31.0" }).has("family.webProfiles")).toBe(false);
     // Le runtime isolé et les suggestions d'Octave (1.40.0) non plus en 1.31.1.
     expect(resolveServerCapabilities({ version: "1.31.1" }).size).toBe(since(["1.40.0", "1.41.0"]).length);
-    // L'historique de recherche partagé d'Octave (1.41.0) non plus en 1.40.0.
+    // L'historique de recherche et l'ajout en tête d'Octave (1.41.0, lot fl) non plus en 1.40.0.
     expect(resolveServerCapabilities({ version: "1.40.0" }).size).toBe(since(["1.41.0"]).length);
     expect(resolveServerCapabilities({ version: "1.40.0" }).has("music.searchHistory")).toBe(false);
+    expect(resolveServerCapabilities({ version: "1.40.0" }).has("music.addOnTop")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.41.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 

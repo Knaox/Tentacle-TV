@@ -316,6 +316,11 @@ export const SERVER_CAPABILITIES = {
    *  (`/api/music/library/order/:section` : glisser, « Mettre en haut »). Sans elle : ni cœur sur une carte, ni
    *  « Vos favoris », la bibliothèque dans l'ordre d'avant. */
   "music.libraryFavorites": "1.40.0",
+  /** Un ajout à une playlist entre EN TÊTE (lot fl, 30/10 : en ordre personnalisé, le titre ajouté s'affiche en
+   *  haut) : le serveur date aussitôt chaque ajout de l'utilisateur (« Derniers ajouts » juste, où qu'il entre) et
+   *  chaque arrivée posée par l'extension (`jellyfin.playlistInsert` + `addedAt`). Sans elle : le client ajoute à
+   *  la fin, comme avant (un ajout en tête y serait daté comme une arrivée posée à sa place). */
+  "music.addOnTop": "1.41.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

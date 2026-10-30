@@ -8,7 +8,7 @@
 
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { ArrowDownToLine, CircleCheck, Disc3, Heart, ListEnd, ListPlus, ListStart, Mic2, Play } from "lucide-react-native";
+import { ArrowDownToLine, CircleCheck, Disc3, Heart, ListEnd, ListMinus, ListPlus, ListStart, Mic2, Play } from "lucide-react-native";
 import { openPlaylistChooser, useLiked } from "@tentacle-tv/api-client";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import { BottomSheet } from "@/components/ui";
@@ -32,7 +32,7 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
   const player = usePagesPlayer();
   const actions = useMobileTrackActions();
   const nav = useOctaveNav();
-  const { track, list, contextId, hide } = request;
+  const { track, list, contextId, hide, remove } = request;
   const liked = useLiked(track.key, track.favorite);
   const keep = useTrackKeep(track);
   const albumTarget = track.album ? entityTarget(track.album) : null;
@@ -51,9 +51,12 @@ function SheetBody({ request }: { request: TrackSheetRequest }) {
     albumTarget,
     artistTarget,
     hide,
+    canRemoveFromPlaylist: !!remove,
   });
   const row = (id: TrackSheetActionId) => {
     switch (id) {
+      case "removeFromPlaylist":
+        return remove ? <SheetAction key={id} icon={ListMinus} tone="danger" label={t("playlist.remove")} onPress={then(remove)} /> : null;
       case "play":
         return <SheetAction key={id} icon={Play} label={t("common.playAll")} onPress={then(() => playFrom(player, list.length ? list : [track], list.length ? index : 0, contextId))} />;
       case "playNext":

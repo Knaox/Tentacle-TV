@@ -1,22 +1,24 @@
 /**
- * Octave mobile — une liste de titres (playlist, « Titres likés ») virtualisée, triée et cherchée par la
- * règle du bureau (`useListOrder`), où l'on GLISSE un titre à sa place par sa poignée — en mode « Modifier »
- * SEULEMENT : hors de ce mode, ni poignée ni glisser, et chaque rangée se balaie. Rangées de hauteur
- * FIXE : le geste sait où tombe chaque rangée. La lecture suit l'ordre
+ * Octave mobile — une liste de titres (playlist, « Titres likés ») triée et cherchée par la règle du bureau
+ * (`useListOrder`), où l'on GLISSE un titre à sa place par sa poignée — en mode « Modifier » SEULEMENT : hors
+ * de ce mode, ni poignée ni glisser, et chaque rangée se balaie. Le glisser et la virtualisation sont ceux de
+ * la liste de tri partagée (`ReorderList`, fil d'interface, rangées de hauteur FIXE). La lecture suit l'ordre
  * AFFICHÉ (« Lire » joue ce qu'on voit). La tête de page (`header`) et l'état vide passent en en-tête et pied.
  */
 
-import { useCallback, useMemo, useRef, type ReactElement } from "react";
-import { AccessibilityInfo, FlatList, View, type ListRenderItem } from "react-native";
-import Animated, { runOnJS, useAnimatedScrollHandler, type SharedValue } from "react-native-reanimated";
+import { useCallback, useMemo, type ReactElement } from "react";
+import { AccessibilityInfo } from "react-native";
+import { runOnJS, useAnimatedScrollHandler, type SharedValue } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { ReorderBlock } from "@tentacle-tv/api-client";
-import { rowShift, type ListRow } from "@tentacle-tv/shared/octave";
+import type { ListRow } from "@tentacle-tv/shared/octave";
 import { TRACK_ROW_HEIGHT, usePagesCurrentKey, usePagesPlayer } from "../../pages";
 import { playRow } from "../../pages/env/playFrom";
 import { closeSwipe } from "../../pages/actions/swipeOpenStore";
+import { OCTAVE_TOP_BAR_HEIGHT } from "../../layout/useOctavePageScroll";
+import { ReorderList, type ReorderSlot } from "../../reorder/ReorderList";
 import { ReorderRow } from "./ReorderRow";
-import { useRowReorder } from "./useRowReorder";
 
 interface Props {
   rows: readonly ListRow[];
@@ -41,49 +43,32 @@ interface Props {
   onSwipeRemove?: (row: ListRow) => void;
 }
 
-const AnimatedList = Animated.createAnimatedComponent(FlatList<ListRow>);
+const rowKeyOf = (row: ListRow) => row.rowKey;
+/** La barre de sélection (mode « Modifier ») recouvre le bas de la liste : le défilement part de son bord. */
+const SELECTION_BAR_COVER = 64;
 
 export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header, footer, bottomInset, reorder, editing, onRemove, selected, onToggle, extraBottom = 0, onSwipeRemove }: Props) {
   const { t } = useTranslation("musicLists");
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
-  const listRef = useRef<FlatList<ListRow>>(null);
-  const viewport = useRef<View>(null);
+  const insets = useSafeAreaInsets();
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
   const onScroll = useAnimatedScrollHandler({
-    onScroll: (e) => {
-      scrollY.value = e.contentOffset.y;
-    },
     // Défiler referme la rangée balayée ouverte.
     onBeginDrag: () => {
       runOnJS(closeSwipe)();
     },
   });
-  // Le défilement DANS la liste de titres (la tête de page retirée) : celui que le glisser compte.
-  const readOffset = useCallback(() => scrollY.value, [scrollY]);
   const canDrag = editing && reorder !== null && reorder.block === null;
   const onMove = useCallback((from: number, to: number) => reorder?.onMove(from, to), [reorder]);
-  const { drag, lift, handlers } = useRowReorder({
-    count: rows.length,
-    rowHeight: TRACK_ROW_HEIGHT,
-    enabled: canDrag,
-    onMove,
-    listRef: listRef as never,
-    readOffset,
-    viewport,
-    rowsVersion: rows,
-  });
   // Hors ligne, seuls les titres gardés sur l'appareil partent (la règle de m5, `playFrom`).
   const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
-  const step = useCallback(
-    (index: number, delta: -1 | 1) => {
-      const to = index + delta;
-      if (!canDrag || to < 0 || to >= rows.length) return;
-      onMove(index, to);
-      const title = rows[index]?.track.title ?? "";
+  const announce = useCallback(
+    (from: number, to: number) => {
+      const title = rows[from]?.track.title ?? "";
       AccessibilityInfo.announceForAccessibility(t("moved", { title, position: to + 1 }));
     },
-    [canDrag, onMove, rows, t],
+    [rows, t],
   );
   const toggle = useCallback((index: number) => {
     const row = rows[index];
@@ -98,9 +83,9 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
     if (row) onSwipeRemove?.(row);
   }, [onSwipeRemove, rows]);
 
-  const extraData = useMemo(() => (selected ? [drag, selected] : drag), [drag, selected]);
-  const renderItem = useCallback<ListRenderItem<ListRow>>(
-    ({ item, index }) => (
+  const extraData = useMemo(() => [current, selected], [current, selected]);
+  const renderRow = useCallback(
+    (item: ListRow, index: number, slot: ReorderSlot) => (
       <ReorderRow
         track={item.track}
         index={index}
@@ -109,12 +94,7 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         playing={current === item.track.key}
         onPlay={play}
         gutter={gutter}
-        shift={drag ? rowShift(index, drag.from, drag.over, TRACK_ROW_HEIGHT) : 0}
-        dragging={drag !== null}
-        active={drag?.from === index}
-        lift={lift}
-        handle={canDrag ? handlers(index) : undefined}
-        onStep={step}
+        slot={slot}
         onRemove={onRemove ? remove : undefined}
         editing={editing}
         selected={selected?.has(item.rowKey) ?? false}
@@ -122,29 +102,29 @@ export function ReorderableTrackList({ rows, contextId, gutter, scrollY, header,
         onSwipeRemove={onSwipeRemove && !editing ? swipeRemove : undefined}
       />
     ),
-    [canDrag, contextId, current, drag, editing, gutter, handlers, lift, onRemove, onSwipeRemove, onToggle, play, remove, selected, step, swipeRemove, toggle, tracks],
+    [contextId, current, editing, gutter, onRemove, onSwipeRemove, onToggle, play, remove, selected, swipeRemove, toggle, tracks],
   );
+  const edgeInsets = useMemo(
+    () => ({ top: insets.top + OCTAVE_TOP_BAR_HEIGHT, bottom: Math.max(0, bottomInset - 24) + (extraBottom > 0 ? SELECTION_BAR_COVER : 0) }),
+    [bottomInset, extraBottom, insets.top],
+  );
+  const scrollProps = useMemo(() => ({ contentContainerStyle: { paddingBottom: bottomInset + extraBottom } }), [bottomInset, extraBottom]);
 
   return (
-    <View ref={viewport} style={{ flex: 1 }} collapsable={false}>
-      <AnimatedList
-        ref={listRef}
-        data={rows as ListRow[]}
-        keyExtractor={(r) => r.rowKey}
-        renderItem={renderItem}
-        extraData={extraData}
-        ListHeaderComponent={header}
-        ListFooterComponent={footer ?? null}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        scrollEnabled={drag === null}
-        contentContainerStyle={{ paddingBottom: bottomInset + extraBottom }}
-        initialNumToRender={14}
-        maxToRenderPerBatch={12}
-        windowSize={9}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      />
-    </View>
+    <ReorderList
+      data={rows}
+      keyOf={rowKeyOf}
+      rowHeight={TRACK_ROW_HEIGHT}
+      renderRow={renderRow}
+      onMove={canDrag ? onMove : null}
+      scrollY={scrollY}
+      onScroll={onScroll}
+      scrollProps={scrollProps}
+      header={header}
+      footer={footer ?? null}
+      edgeInsets={edgeInsets}
+      extraData={extraData}
+      onStepped={announce}
+    />
   );
 }

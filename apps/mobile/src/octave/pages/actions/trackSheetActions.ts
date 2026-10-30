@@ -5,10 +5,11 @@
  * Sillon d'ajout (`canAddToPlaylist`, `canLike` : `useAcquireRights`, la source
  * du bureau), le droit hors ligne (`keep` : la surface « garder » de m5,
  * `canKeepTrack`), une page où aller (album, artiste). Sans le droit : absente,
- * jamais grisée.
+ * jamais grisée. Ouverte depuis une playlist qui le permet, « Retirer de la
+ * playlist » vient en tête ; « Ajouter à une playlist » reste (vers une autre).
  */
 
-export type TrackSheetActionId = "play" | "playNext" | "addToQueue" | "addToPlaylist" | "keep" | "removeKept" | "like" | "goToAlbum" | "goToArtist";
+export type TrackSheetActionId = "removeFromPlaylist" | "play" | "playNext" | "addToQueue" | "addToPlaylist" | "keep" | "removeKept" | "like" | "goToAlbum" | "goToArtist";
 
 export interface TrackSheetFacts {
   hasPlayer: boolean;
@@ -19,10 +20,14 @@ export interface TrackSheetFacts {
   albumTarget: string | null;
   artistTarget: string | null;
   hide?: { album?: boolean; artist?: boolean };
+  /** Ouverte depuis une playlist qui permet de retirer ce titre. */
+  canRemoveFromPlaylist?: boolean;
 }
 
 export function trackSheetActions(f: TrackSheetFacts): TrackSheetActionId[] {
   const out: TrackSheetActionId[] = [];
+  // Dans une playlist, le retrait passe EN TÊTE (lot fl, Damien : « ⋯ » proposait d'ajouter, pas de retirer).
+  if (f.canRemoveFromPlaylist) out.push("removeFromPlaylist");
   if (f.hasPlayer) out.push("play", "playNext", "addToQueue");
   if (f.canAddToPlaylist) out.push("addToPlaylist");
   if (f.keep === "keep") out.push("keep");

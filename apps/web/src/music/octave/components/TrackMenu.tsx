@@ -11,8 +11,7 @@ import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListMinus, ListPlus, ListSta
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicPlaylist, MusicTrack } from "@tentacle-tv/shared/music";
-import { canAddToPlaylist } from "@tentacle-tv/shared/music";
-import { useMusicPlaylists } from "@tentacle-tv/api-client";
+import { usePlaylistChooserSections } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { TrackActions } from "../actions/useTrackActions";
 import { albumPathOf, linkedArtistsOf } from "./trackTargets";
@@ -70,7 +69,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
   const [picking, setPicking] = useState<"add" | "remove" | null>(null);
   const player = useOctavePlayer();
   const navigate = useNavigate();
-  const playlists = useMusicPlaylists();
+  const sections = usePlaylistChooserSections();
   const close = onClose;
   const run = (fn: () => void) => () => {
     fn();
@@ -79,7 +78,8 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
   // Bibliothèque ou ailleurs (la vue de l'extension) ; rien où aller : pas d'entrée.
   const albumPath = albumPathOf(track);
   const artists = linkedArtistsOf(track);
-  const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p));
+  // Les favorites d'abord, dans l'ordre personnel (lot fl) ; le retrait vise aussi bien l'une que l'autre.
+  const editable = [...sections.favorites, ...sections.others];
 
   return (
     <>
@@ -105,6 +105,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
             <PlaylistPicker
               mode={picking}
               playlists={editable}
+              favorites={picking === "add" ? sections.favorites.length : 0}
               onBack={() => setPicking(null)}
               onCreate={picking === "add" ? run(() => openPlaylistChooser(track)) : undefined}
               onPick={(p, position) =>
@@ -113,6 +114,16 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
             />
           ) : (
             <>
+              {/* Dans une playlist qui le permet : le retrait EN TÊTE (lot fl, 30/10 — il se perdait en bas du menu). */}
+              {onRemove && (
+                <>
+                  <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(onRemove)}>
+                    <Trash2 className="h-4 w-4" />
+                    {t("playlist.remove")}
+                  </button>
+                  <div className="my-1 h-px bg-line-subtle" />
+                </>
+              )}
               <button type="button" role="menuitem" className={itemClass} onClick={run(() => queueActions.playNext(player, [track]))}>
                 <ListStart className="h-4 w-4 text-content-tertiary" />
                 {t("track.playNext")}
@@ -150,15 +161,6 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
                   <span className="truncate">{artists.length > 1 ? t("octaveShell:track.goToArtistNamed", { artist: artist.name }) : t("track.goToArtist")}</span>
                 </button>
               ))}
-              {onRemove && (
-                <>
-                  <div className="my-1 h-px bg-line-subtle" />
-                  <button type="button" role="menuitem" className={`${itemClass} text-status-error-fg`} onClick={run(onRemove)}>
-                    <Trash2 className="h-4 w-4" />
-                    {t("playlist.remove")}
-                  </button>
-                </>
-              )}
             </>
           )}
         </div>
@@ -168,15 +170,18 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
 }
 
 /** Le choix d'une playlist modifiable : pour y ajouter (à la fin, ou « En tête »), ou pour en retirer le titre. */
-function PlaylistPicker({ mode, playlists, onBack, onPick, onCreate }: {
+function PlaylistPicker({ mode, playlists, favorites = 0, onBack, onPick, onCreate }: {
   mode: "add" | "remove";
   playlists: readonly MusicPlaylist[];
+  /** Les `favorites` premières sont les favorites : un titre les sépare des autres. */
+  favorites?: number;
   onBack: () => void;
   onPick: (playlist: MusicPlaylist, position?: number) => void;
   /** « Nouvelle playlist… » (ajout seulement) : un nom, puis le titre y entre aussitôt. */
   onCreate?: () => void;
 }) {
-  const { t } = useTranslation("music");
+  const { t } = useTranslation(["music", "musicFavorites"]);
+  const heading = (label: string) => <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{label}</p>;
   return (
     <>
       <button type="button" role="menuitem" className={itemClass} onClick={onBack}>
@@ -191,23 +196,27 @@ function PlaylistPicker({ mode, playlists, onBack, onPick, onCreate }: {
         </button>
       )}
       {playlists.length === 0 && !onCreate && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
-      {playlists.map((p) => (
-        <div key={p.jellyfinId} className="flex items-center gap-1">
-          {/* Le nom ajoute à la fin (ou retire) ; « En tête » ajoute à la position 0. */}
-          <button type="button" role="menuitem" className={`${itemClass} min-w-0 flex-1`} onClick={() => onPick(p)}>
-            <span className="truncate">{p.name}</span>
-          </button>
-          {mode === "add" && (
-            <button
-              type="button"
-              role="menuitem"
-              title={t("playlist.addFirst")}
-              onClick={() => onPick(p, 0)}
-              className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:bg-octave-hover focus-visible:outline-none"
-            >
-              {t("playlist.first")}
+      {playlists.map((p, i) => (
+        <div key={p.jellyfinId}>
+          {favorites > 0 && i === 0 && heading(t("musicFavorites:chooser.favorites"))}
+          {favorites > 0 && i === favorites && heading(t("musicFavorites:chooser.others"))}
+          <div className="flex items-center gap-1">
+            {/* Le nom ajoute (en tête si le serveur le sait : `music.addOnTop`, sinon à la fin) ou retire ; « En tête » : position 0. */}
+            <button type="button" role="menuitem" className={`${itemClass} min-w-0 flex-1`} onClick={() => onPick(p)}>
+              <span className="truncate">{p.name}</span>
             </button>
-          )}
+            {mode === "add" && (
+              <button
+                type="button"
+                role="menuitem"
+                title={t("playlist.addFirst")}
+                onClick={() => onPick(p, 0)}
+                className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:bg-octave-hover focus-visible:outline-none"
+              >
+                {t("playlist.first")}
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </>

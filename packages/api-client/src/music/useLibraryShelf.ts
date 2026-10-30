@@ -5,9 +5,10 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { shelfKeyOf, shelfPlaylistKey, type MusicAlbum, type MusicArtist, type MusicLibraryShelves, type MusicPlaylist, type MusicShelfPlaylist, type MusicShelfSection } from "@tentacle-tv/shared/music";
-import { arrangeShelf, canMoveToTop, shelfOrderAfterMove, shelfOrderToTop } from "@tentacle-tv/shared/octave";
+import { canAddToPlaylist, shelfKeyOf, shelfPlaylistKey, type MusicAlbum, type MusicArtist, type MusicLibraryShelves, type MusicPlaylist, type MusicShelfPlaylist, type MusicShelfSection } from "@tentacle-tv/shared/music";
+import { arrangeShelf, canMoveToTop, chooserSections, shelfOrderAfterMove, shelfOrderToTop, type ChooserSections } from "@tentacle-tv/shared/octave";
 import { useMusicShelves, useSaveShelfOrder } from "./useMusicShelves";
+import { useMusicPlaylists } from "./useMusicPlaylists";
 
 export interface LibraryShelf<T> {
   capable: boolean;
@@ -90,4 +91,20 @@ export function useArtistShelf(listing: readonly MusicArtist[]): LibraryShelf<Mu
 export function usePlaylistShelf(playlists: readonly MusicPlaylist[] | undefined): LibraryShelf<MusicShelfPlaylist> {
   const listing = useMemo(() => (playlists ?? []).map((playlist): MusicShelfPlaylist => ({ kind: "library", playlist })), [playlists]);
   return useShelf({ section: "playlists", listing, keyOf: shelfPlaylistKey, favoriteOf: playlistFavorite, served: servedPlaylists, orderRest: true });
+}
+
+const libraryOnly = (entries: readonly MusicShelfPlaylist[]): MusicPlaylist[] => entries.flatMap((e) => (e.kind === "library" ? [e.playlist] : []));
+
+/**
+ * « Ajouter à une playlist » (lot fl) : les playlists où ce compte peut ajouter, ses FAVORITES d'abord dans l'ordre
+ * personnel, puis les autres dans le leur (`chooserSections`). `except` : la playlist d'où l'on déplace un titre.
+ */
+export function usePlaylistChooserSections(except?: string | null): ChooserSections & { pending: boolean; empty: boolean } {
+  const playlists = useMusicPlaylists();
+  const shelf = usePlaylistShelf(playlists.data);
+  return useMemo(() => {
+    const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p) && p.jellyfinId !== except);
+    const sections = chooserSections(editable, libraryOnly(shelf.favorites), libraryOnly(shelf.rest));
+    return { ...sections, pending: playlists.isPending, empty: editable.length === 0 };
+  }, [except, playlists.data, playlists.isPending, shelf.favorites, shelf.rest]);
 }

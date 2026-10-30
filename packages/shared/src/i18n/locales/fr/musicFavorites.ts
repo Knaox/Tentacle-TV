@@ -37,4 +37,9 @@ export default {
   added: "« {{name}} » ajouté aux favoris",
   removed: "« {{name}} » retiré des favoris",
   failed: "Le favori n'a pas pu être gardé. Réessayez.",
+  /** « Ajouter à une playlist » : les favorites d'abord, dans l'ordre personnel (lot fl). */
+  chooser: {
+    favorites: "Playlists favorites",
+    others: "Autres playlists",
+  },
 };

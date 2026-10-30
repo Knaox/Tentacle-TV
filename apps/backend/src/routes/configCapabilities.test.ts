@@ -53,4 +53,12 @@ describe("GET /api/config › capabilities", () => {
     expect(body.capabilities.every((key) => SERVER_CAPABILITIES[key as keyof typeof SERVER_CAPABILITIES] !== "1.40.0" && SERVER_CAPABILITIES[key as keyof typeof SERVER_CAPABILITIES] !== "1.41.0")).toBe(true);
     version.value = "1.41.0+preview.fab15c3";
   });
+
+  it("un serveur 1.40.0 tait les capacités de 1.41.0 (lot fl : l'ajout en tête)", async () => {
+    version.value = "1.40.0";
+    const body = (await app.inject({ method: "GET", url: "/api/config" })).json() as { capabilities: string[] };
+    expect(body.capabilities).toContain("music.libraryFavorites");
+    expect(body.capabilities).not.toContain("music.addOnTop");
+    version.value = "1.41.0+preview.fab15c3";
+  });
 });

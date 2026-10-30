@@ -29,6 +29,8 @@ import { hasCollectionActions } from "../../collections/collectionEligibility";
 import { openCollectionSheet } from "../../collections/collectionSheetStore";
 import { ShelfReorderList } from "../../collections/reorder/ShelfReorderList";
 import { buildLibraryRows, type LibraryRow, type LibrarySectionId } from "../../pages/library/libraryRows";
+import { takePlaylistsReorder } from "./reorderRequest";
+import { useFocusEffect } from "expo-router";
 import { useReorderItemOf } from "../../pages/library/LibraryCard";
 import { openPlaylistSheet } from "../sheets/playlistSheetStore";
 import { GlassIconButton, GlassTextButton } from "./BarButtons";
@@ -62,6 +64,13 @@ export function OctavePlaylistsScreen() {
   const columns = layout.isTablet ? layout.columns(180) : 1;
   const [reordering, setReordering] = useState<LibrarySectionId | null>(null);
   useEffect(() => setReordering(null), [offline]);
+  // Demandé depuis l'accueil (« Vos playlists favorites » › Réordonner) : la page, montée ou non, s'ouvre sur le tri.
+  useFocusEffect(
+    useCallback(() => {
+      const wanted = takePlaylistsReorder();
+      if (wanted) setReordering(wanted);
+    }, []),
+  );
   const { favorites, rest } = shelf;
   const canReorder = (section: LibrarySectionId) => {
     const list = section === "favorites" ? favorites : rest;

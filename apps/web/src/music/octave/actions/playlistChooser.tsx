@@ -1,15 +1,15 @@
 /**
  * Octave — choisir une playlist pour un titre (ou une sélection), ou en CRÉER une (« Nouvelle playlist… » : un nom, puis le titre y
  * entre aussitôt — bibliothèque comme hors bibliothèque). Une seule boîte pour tout Octave, montée par la
- * coquille ; ouverte par le « + » sans playlist connue, et par « Changer » de l'avis « Ajouté à X ».
+ * coquille ; ouverte par le « + » sans playlist connue, et par « Changer » de l'avis « Ajouté à X ». Les playlists
+ * FAVORITES d'abord, dans l'ordre personnel, puis les autres (`usePlaylistChooserSections`, lot fl).
  */
 
 import { useId, useState, useSyncExternalStore } from "react";
 import { ListMusic, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useMusicPlaylists } from "@tentacle-tv/api-client";
+import { usePlaylistChooserSections } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
-import { canAddToPlaylist } from "@tentacle-tv/shared/music";
 import { Modal } from "../../../components/ui/Modal";
 import { useTrackActions } from "./useTrackActions";
 import { useBulkTrackActions } from "./selection/useBulkTrackActions";
@@ -27,12 +27,12 @@ function Chooser({ request }: { request: ChooserRequest }) {
   const { t } = useTranslation("music");
   const titleId = useId();
   const inputId = useId();
-  const playlists = useMusicPlaylists();
+  const { t: tf } = useTranslation("musicFavorites");
+  const sections = usePlaylistChooserSections(request.moveFrom?.jellyfinId);
   const actions = useTrackActions();
   const bulk = useBulkTrackActions();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const editable = (playlists.data ?? []).filter((p) => canAddToPlaylist(p) && p.jellyfinId !== request.moveFrom?.jellyfinId);
 
   const [first] = request.tracks;
   const many = request.tracks.length > 1;
@@ -84,15 +84,30 @@ function Chooser({ request }: { request: ChooserRequest }) {
           </button>
         </div>
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-          {editable.length === 0 && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
-          {editable.map((p) => (
-            <button key={p.jellyfinId} type="button" className={rowClass} disabled={busy} onClick={() => void pick(p)}>
-              <ListMusic className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
-              <span className="truncate">{p.name}</span>
-            </button>
+          {sections.empty && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
+          {sections.favorites.length > 0 && <SectionTitle>{tf("chooser.favorites")}</SectionTitle>}
+          {sections.favorites.map((p) => (
+            <ChooserRow key={p.jellyfinId} playlist={p} disabled={busy} onPick={pick} />
+          ))}
+          {sections.favorites.length > 0 && sections.others.length > 0 && <SectionTitle>{tf("chooser.others")}</SectionTitle>}
+          {sections.others.map((p) => (
+            <ChooserRow key={p.jellyfinId} playlist={p} disabled={busy} onPick={pick} />
           ))}
         </div>
       </div>
     </Modal>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{children}</h3>;
+}
+
+function ChooserRow({ playlist, disabled, onPick }: { playlist: MusicPlaylist; disabled: boolean; onPick: (p: MusicPlaylist) => Promise<void> }) {
+  return (
+    <button type="button" className={rowClass} disabled={disabled} onClick={() => void onPick(playlist)}>
+      <ListMusic className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
+      <span className="truncate">{playlist.name}</span>
+    </button>
   );
 }
