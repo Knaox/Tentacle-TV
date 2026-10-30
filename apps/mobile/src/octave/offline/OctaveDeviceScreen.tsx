@@ -47,7 +47,7 @@ function freeSpaceText(): string | null {
   }
 }
 
-/** `asHome` : l'ACCUEIL hors ligne (`OctaveHomeScreen`) — la même vue, sans « Retour ». */
+/** `asHome` : l'ACCUEIL hors ligne (`OctaveHomeScreen`) — la même vue, sans « Retour » (comme la racine de l'onglet « Hors ligne »). */
 export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps & { asHome?: boolean }) {
   const { t } = useTranslation("musicOffline");
   const { t: tm } = useTranslation("music");
@@ -120,7 +120,9 @@ export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps
         removeClippedSubviews={clipsOffscreenCells(Platform.OS)}
         showsVerticalScrollIndicator={false}
       />
-      <OctaveTopBar scrollY={scrollY} title={title} back={!(asHome && !open)} />
+      {/* Racine de l'onglet « Hors ligne » (lot fl) : pas de « Retour », comme Bibliothèque ; empilée (une collection,
+          ou ouverte par-dessus le compte ou la capsule du mode hors ligne), elle le garde. */}
+      <OctaveTopBar scrollY={scrollY} title={title} back={open !== null || (!asHome && router.canDismiss())} />
     </View>
   );
 }
