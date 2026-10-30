@@ -12,10 +12,14 @@
  *   (route `offline` de son contrat) et le permette au compte (`keepOffline` de
  *   ses droits). Les serveurs refusent de toute façon : l'interface ne fait que
  *   cacher.
+ * - Un titre INDISPONIBLE (`isTrackUnavailable`, lot « fl ») ne se garde jamais :
+ *   ni demandé, ni tenté par la tenue à jour d'une playlist gardée — aucune erreur
+ *   de transfert à cause de lui. Redevenu lisible, la tenue à jour le prend.
  */
 
 import { offlineSurfaceOf, type KeepRight } from "../rights/offlineOwner";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
+import { isTrackUnavailable } from "@tentacle-tv/shared/octave";
 
 export interface MusicOfflineInputs {
   /** La coquille garde la musique (`downloads_music_list`). */
@@ -60,6 +64,7 @@ export function musicOfflineSurface(input: MusicOfflineInputs): MusicOfflineSurf
 
 /** Ce titre peut-il être gardé ? (La bibliothèque, ou un titre de l'extension qui le permet.) */
 export function canKeepTrack(track: MusicTrack, surface: MusicOfflineSurface): boolean {
+  if (isTrackUnavailable(track)) return false;
   if (track.jellyfinId && track.availability === "library") return surface.library;
   return surface.externalFrom !== null && track.external?.pluginId === surface.externalFrom;
 }

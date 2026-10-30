@@ -64,3 +64,11 @@ describe("musicOfflineSurface", () => {
     expect(canKeepTrack(LIBRARY, musicOfflineSurface({ ...BASE, providerKeep: false }))).toBe(true);
   });
 });
+
+describe("titre indisponible (lot « fl »)", () => {
+  it("jamais gardé : ni le geste, ni la tenue à jour d'une playlist gardée ne le tentent ; lisible de nouveau, il se garde", () => {
+    const s = musicOfflineSurface(BASE);
+    expect(canKeepTrack({ ...ELSEWHERE, unavailable: "notStreamable" }, s)).toBe(false);
+    expect(canKeepTrack({ ...ELSEWHERE, unavailable: null }, s)).toBe(true);
+  });
+});

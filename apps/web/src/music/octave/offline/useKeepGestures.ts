@@ -12,6 +12,7 @@ import { useToast } from "../../../contexts/ToastContext";
 import { formatBytes } from "../../../downloads/presets";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { canKeepTrack } from "@tentacle-tv/offline-core/music";
+import { isTrackUnavailable } from "@tentacle-tv/shared/octave";
 import { keepTracks, removeKept, type KeepCollection } from "./keepMusic";
 import { useOfflineSurface } from "./offlineSurfaceContext";
 
@@ -33,7 +34,8 @@ export function useKeepGestures(): KeepGestures {
       const outcome = keepable.length === 0 ? ({ kind: "failed" } as const) : await keepTracks(keepable, provider, collection);
       if (outcome.kind === "noSpace") return void toast.show("error", t("noSpace", { needed: formatBytes(outcome.neededBytes) }));
       if (outcome.kind === "failed") return void toast.show("error", t("failedAll"));
-      const refused = outcome.refused + (tracks.length - keepable.length);
+      // Un titre indisponible n'est jamais tenté (`keepRules.ts`) : ce n'est pas un refus à dire.
+      const refused = outcome.refused + tracks.filter((track) => !isTrackUnavailable(track) && !canKeepTrack(track, surface)).length;
       toast.show("success", refused > 0 ? `${t("queued", { count: outcome.count })} · ${t("refusedSome", { count: refused })}` : t("queued", { count: outcome.count }));
     },
     [provider, surface, t, toast],

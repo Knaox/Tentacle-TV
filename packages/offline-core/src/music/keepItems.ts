@@ -10,6 +10,7 @@
  */
 
 import type { MusicOfflinePlanResponse, MusicOfflineTrackPlan, MusicTrack } from "@tentacle-tv/shared/music";
+import { isTrackUnavailable } from "@tentacle-tv/shared/octave";
 import type { KeptCollectionKind } from "../core/musicLibrary";
 import type { MusicKeepItem } from "../core/musicKeep";
 
@@ -146,6 +147,8 @@ export function keepItemsFor(
 ): MusicKeepItem[] {
   const items: MusicKeepItem[] = [];
   for (const track of tracks) {
+    // Un titre indisponible ne part jamais (`keepRules.ts`) : aucune erreur de transfert à cause de lui.
+    if (isTrackUnavailable(track)) continue;
     if (track.availability === "library") {
       const plan = track.jellyfinId ? plans.get(planId(track.jellyfinId)) : undefined;
       if (plan) items.push(libraryItem(track, plan));

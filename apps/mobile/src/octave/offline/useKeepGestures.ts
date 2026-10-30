@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { musicRouteUrl } from "@tentacle-tv/api-client";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import { canKeepTrack, externalKeepPath, type KeepCollection } from "@tentacle-tv/offline-core/music";
+import { isTrackUnavailable } from "@tentacle-tv/shared/octave";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { showToast } from "@/notices/toastStore";
 import { formatBytes } from "@/offline/formatBytes";
@@ -35,7 +36,8 @@ export function useKeepGestures(): KeepGestures {
       if (outcome.kind === "noSpace") return void showToast({ title: t("noSpace", { needed: formatBytes(outcome.neededBytes) }) });
       if (outcome.kind === "failed") return void showToast({ title: t("failedAll") });
       haptic("commit");
-      const refused = outcome.refused + (tracks.length - keepable.length);
+      // Un titre indisponible n'est jamais tenté (`keepRules.ts`) : ce n'est pas un refus à dire.
+      const refused = outcome.refused + tracks.filter((track) => !isTrackUnavailable(track) && !canKeepTrack(track, surface)).length;
       showToast({ tone: "success", title: t("queued", { count: outcome.count }), ...(refused > 0 ? { text: t("refusedSome", { count: refused }) } : {}) });
     },
     [provider, surface, t],

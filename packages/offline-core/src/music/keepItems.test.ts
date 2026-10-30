@@ -46,4 +46,11 @@ describe("keepItems", () => {
     expect(calls).toEqual([200, 200, 50]);
     expect(libraryIdsOf([musicTrack("jf:x"), musicTrack("ext:s:y")])).toEqual(["x"]);
   });
+
+  it("un titre indisponible ne part jamais (aucune erreur de transfert à cause de lui)", () => {
+    const path = externalKeepPath(PROVIDER, routeUrl);
+    const lost = musicTrack("ext:sillon:imp:1", { external: { pluginId: "sillon", id: "imp:1" }, unavailable: "notStreamable" });
+    const fine = musicTrack("ext:sillon:ytm:t:2", { external: { pluginId: "sillon", id: "ytm:t:2" } });
+    expect(keepItemsFor([lost, fine], new Map(), path).map((i) => i.trackKey)).toEqual(["ext:sillon:ytm:t:2"]);
+  });
 });
