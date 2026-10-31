@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.40.0",
-    "tag": "desktop-v1.40.0",
+    "version": "1.41.0",
+    "tag": "desktop-v1.41.0",
     "notes": {
-      "fr": "• Octave, le nouveau mode musique : un lecteur de musique intégré à Tentacle pour écouter les albums, les artistes et les playlists de votre bibliothèque personnelle. Une bascule « Mode musique » dans la barre l'ouvre aussitôt ; il a son apparence, sa file d'attente, un « en cours » en plein écran et une houle animée qui suit la musique. Octave demande un serveur Tentacle 1.40, aujourd'hui en aperçu restreint, réservé aux testeurs autorisés : il s'activera de lui-même dès la sortie officielle du serveur 1.40 — d'ici là, rien ne change dans l'application\n• Octave : partager une playlist par un lien — un ami qui a son propre serveur Tentacle l'importe chez lui, ses titres retrouvés dans sa bibliothèque ; et la transition douce entre les titres se règle directement dans le lecteur\n• Plein écran sous Linux (GNOME, Fedora…) : sans écran HDR branché, le lecteur s'ouvre en fenêtre et le bouton plein écran fonctionne de nouveau ; avec un écran HDR, il propose de passer en X11 au lieu d'échouer. Quitter une bande-annonce rend aussi la fenêtre\n• Plus léger pour la carte graphique : les bannières de l'accueil et de « Pour vous » ne tournent plus quand elles sont sorties de l'écran, et leur mouvement coûte bien moins",
-      "en": "• Octave, the new music mode: a music player built into Tentacle to listen to the albums, artists and playlists of your personal library. A \"Music mode\" switch in the bar opens it at once; it has its own look, its queue, a full-screen \"now playing\" and an animated swell that follows the music. Octave needs a Tentacle 1.40 server, currently in a limited preview reserved for authorized testers: it will turn on by itself as soon as the 1.40 server is officially released — until then, nothing changes in the app\n• Octave: share a playlist with a link — a friend with their own Tentacle server imports it, its songs matched in their library; and the crossfade between songs is adjusted right in the player\n• Full screen on Linux (GNOME, Fedora…): without an HDR display plugged in, the player opens in a window and the full-screen button works again; with an HDR display, it offers to switch to X11 instead of failing. Leaving a trailer also gives the window back\n• Lighter on the graphics card: the Home and \"For you\" banners no longer rotate once scrolled off screen, and their motion costs far less"
+      "fr": "• Octave : des playlists plus simples à ranger — réordonner une playlist au glisser ne s'emballe plus, la file d'attente se réordonne aussi, les playlists favorites se rangent dans votre ordre et passent en tête de « Ajouter à une playlist », et le « ⋯ » d'un titre d'une playlist propose de le retirer\n• Octave : un titre indisponible reste dans sa playlist, grisé : il est sauté pendant l'écoute, jamais gardé hors ligne, et le choisir explique pourquoi il ne se lit pas\n• Octave : recherches récentes et titres récemment recherchés, partagés avec le téléphone (serveur Tentacle 1.41) ; la barre de progression va exactement où l'on clique ; fondu de 5 s d'office ; rouvert, Octave repart de son accueil ; « Sur cet appareil » devient « Hors ligne » dans la barre",
+      "en": "• Octave: easier playlist tidying — dragging inside a playlist no longer runs away, the queue can be reordered too, favorite playlists follow your order and come first in \"Add to a playlist\", and a playlist song's \"⋯\" offers to remove it\n• Octave: an unavailable song stays in its playlist, greyed out: it is skipped while listening, never kept offline, and picking it explains why it does not play\n• Octave: recent searches and recently searched songs, shared with your phone (Tentacle server 1.41); the progress bar seeks exactly where you click; 5 s crossfade by default; reopened, Octave starts from its home; \"On this device\" becomes \"Offline\" in the sidebar"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.40.0_x86_64.AppImage",
-        "sha256": "f72c37a9d713b857fada559f2de9a8cfa35d859e49691ad8d86a58736dfcf02f"
+        "name": "tentacle-tv_1.41.0_x86_64.AppImage",
+        "sha256": "137806632fb1f57f7a1a3b252d824d9ecdfdac20d72b4ec89bdaa750d9468399"
       },
       "deb": {
-        "name": "tentacle-tv_1.40.0_amd64.deb",
-        "sha256": "8d62265a2bb46bdfc29612a5c0ea8eb3e169ea0365dd54ec66efb4ff602395f0"
+        "name": "tentacle-tv_1.41.0_amd64.deb",
+        "sha256": "7f2c63e6f60cfeb8fd4d0ad9e1a30a580accb153a208615c4df34ef5d1cbbbab"
       },
       "rpm": {
-        "name": "tentacle-tv_1.40.0_x86_64.rpm",
-        "sha256": "b30e1e2cac40b487971fea65d93e850172d3be8398f60e8a13a861bdbb856f7f"
+        "name": "tentacle-tv_1.41.0_x86_64.rpm",
+        "sha256": "e4de917ca7f9a9453401d4c6091269e8cfebe6e8264d599ee418d865f5fb6f2f"
       },
       "pacman": {
-        "name": "tentacle-tv_1.40.0_x64.pkg.tar.zst",
-        "sha256": "871f926f95b93452f60cbd5953ed3ad9864e96749f0fe82133af68f420680ba5"
+        "name": "tentacle-tv_1.41.0_x64.pkg.tar.zst",
+        "sha256": "4e5b4da4efab8721aebeef9e5e68e3da37b8372ce6db75b2ee0209a16b13eaf8"
       }
     }
   }
