@@ -118,6 +118,16 @@ poids disent ce qu'ils pèsent.
   Jellyfin, passe.
 - **Inaffichable** : sans titre ni image.
 - **Déjà vu, refusé, demandé** : exclusions de service (`candidates/exclusions.ts`).
+- **Entamé** : une série commencée, et un FILM commencé (≥ 1 % lu,
+  `STARTED_MOVIE_MIN_PCT` de `libraryIndex.ts` ; en deçà, une ouverture par
+  erreur) — il vit dans « Reprendre », jamais dans une rangée.
+- **Abandonné** : un titre dont l'ancre porte « abandon » (`abandonedKeys`) sort
+  du pool ET de toute rangée de la page, globales comprises (`prepareBuildBase`) :
+  un abandon pèse d'abord sur SON titre.
+- **Compte supprimé de Jellyfin** (`accountPurge.ts`) : absent de deux relevés de
+  `/Users` à 50 min d'intervalle, ses profil, pool, pages, réglages et affiché sont
+  purgés (jamais `__global__`, jamais sur une liste vide) — plus rien ne se génère
+  pour lui.
 
 ## 5. La correspondance (`match`)
 
@@ -126,6 +136,11 @@ proximité aux goûts** : `min(rang, 60 + 35 × min(1, proximité / 0,5))`. Un
 titre classé haut par sa seule notoriété (une procédurale du catalogue) ne
 s'annonce plus à 88 %. « À la une » exige 70 et un visuel large
 (`poolMatch.ts`).
+
+**La confiance du profil borne l'échelle** (`matchCeilingOf`) : la tête d'un
+profil à peine sorti du froid (5 signaux) s'annonce à 72 %, ~83 % à 15, ~91 % à
+30, 95 % au-delà de 60. L'échelle est comprimée au-dessus de la queue (50) :
+l'ordre ne change pas, un profil maigre ne dit plus « 94 % » d'un dessin animé.
 
 **L'ordre visible suit la correspondance affichée.** Le plafond rend la
 correspondance non monotone avec le rang : un titre classé premier par sa
@@ -157,6 +172,31 @@ rangée par ses notes. Invariant tenu par `rowOrder.test.ts`.
 - **Exploration** : un pas de côté, jamais une saga que le profil ne suit pas.
 - **Rangées globales** (tendances, pouls du serveur, meilleurs de la
   bibliothèque, communauté) : filtrées par le goût (`gateGlobalRow`).
+
+**Les cinq rangées personnelles** (Pour vous, Films pour vous, Animés, Dans la
+bibliothèque, À découvrir) — les autres gardent leur logique propre :
+
+- **Plafonds** (`rowCaps.ts`) : deux titres au plus par réalisateur ou créateur,
+  par acteur mis en avant, par saga (`director:`, `actor:`, `collection:`) ; une
+  même ancre (le titre aimé que cite la raison) ne justifie pas plus d'un tiers
+  de la rangée. Le classement est plafonné AVANT la sélection, qui ne fait que
+  choisir parmi lui. Une rangée que le plafond d'ancre laisserait courte (profil
+  maigre : deux ancres portent tout) se complète hors ce seul plafond.
+- **Tirage du jour** (`rowDraw.ts`) : dans le haut du classement plafonné (trois
+  fois la rangée), un tirage pondéré sans remise, déterministe pour (compte,
+  rangée, jour UTC), de une fois et demie la rangée — poids croissant avec le
+  carré du score : les plus forts restent majoritaires. La sélection (MMR, quota
+  d'univers) choisit parmi ces titres-là ; l'ordre affiché reste la correspondance.
+- **Mémoire de l'affiché** (`impressions.ts`, table `reco_impressions`) : le
+  service de page note les titres servis par les rangées tirées du pool, une fois
+  par compte, titre et jour (mémoire, puis écriture groupée une minute plus tard,
+  hors requête). Un titre montré N jours se LASSE — ×0,82 à deux jours, ×0,30 à
+  sept, ×0,07 à quatorze — et cette lassitude multiplie son score au tirage : il
+  sort de la fenêtre au profit des suivants. Elle s'efface à mesure qu'il se
+  repose et tout à fait en 30 jours ; le jour même ne compte pas (une page
+  reconstruite dans la journée tire comme celle du matin). Les lignes sans
+  affichage depuis 60 jours sont purgées. Toucher un titre (le lire, le noter,
+  l'aimer, le mettre de côté) le sort des rangées : aucune lassitude à gérer.
 
 **La page** (`pageBuilder.ts`) : un titre n'apparaît qu'UNE fois. Les rangées
 à thème se construisent en dernier, à leur place, sans reprendre aucun titre
