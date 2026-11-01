@@ -133,6 +133,8 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
     lambda: ctx.lambda,
     profile: ctx.profile,
     providerRefOf: base.providerRefOf,
+    // Le tirage du jour : la page d'aujourd'hui, la même sur tous les appareils.
+    draw: { userId: base.userId, dayStamp: base.dayKey },
   };
   // Un titre n'apparaît qu'UNE fois dans la page : une rangée qui ne ferait que
   // répéter prend les rangs suivants (« Disponible dans votre bibliothèque » sur un

@@ -4,6 +4,8 @@ import { ANIME_COMMON_FACETS, ANIME_MIN_SHARE, ANIME_UNIVERSE_KEY } from "./face
 import { explorationPicks, inDisplayOrder, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
 import { pickCapped } from "./rowCaps";
+import { drawNarrow } from "./rowDraw";
+import type { RowDraw } from "./rowDraw";
 import type { TasteVector } from "./scoring/strategy";
 import { REASONS_MAX, toItem } from "./rowItem";
 import {
@@ -30,6 +32,8 @@ export interface RowBuildOptions {
   /** Nom et logo d'un id de plateforme (annuaire mondial) — les entrées du
    *  pool ne portent que des ids. Absent : références nues. */
   providerRefOf?: (id: number) => ProviderRef;
+  /** Tirage du jour des rangées personnelles (cf. rowDraw) ; absent : le haut du classement. */
+  draw?: RowDraw;
 }
 
 const ROW_SIZES: Record<string, number> = {
@@ -186,6 +190,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   );
   // Part d'animé à la génération : quota des rangées mixtes, rangée dédiée.
   const share = pool.animeShare ?? 0;
+  const narrow = (size: number) => drawNarrow(opts.draw, rowKey, size);
   const exploReason: RecoReason = { kind: "exploration" };
   // Les titres retenus, dans l'ordre de leur correspondance (cf. inDisplayOrder) ;
   // `exploration` : toute la rangée, ou les seules clés données, en « pas de côté ».
@@ -208,7 +213,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const size = ROW_SIZES.forYou;
     const quota = Math.round(size * explorationQuota(opts.lambda * 100));
     // Plafonnée (auteur, acteur, saga, ancre : cf. rowCaps), comme les quatre suivantes.
-    const main = pickCapped(eligible, size - quota, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share));
+    const main = pickCapped(eligible, size - quota, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share), narrow(size - quota));
     const mainKeys = new Set(main.map((e) => e.candidate.key));
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
     // Le pas de côté prend la place de sa correspondance, comme les autres.
@@ -218,24 +223,24 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   if (rowKey === "forYouMovies") {
     // Les meilleurs FILMS pour le compte, variés (deux par auteur, acteur, saga).
     const movies = eligible.filter((e) => e.candidate.mediaType === "movie" && worthFilling(e));
-    return movies.length < BECAUSE_MIN_ITEMS ? null : done(pickCapped(movies, ROW_SIZES.forYouMovies, (list, n) => mmrPick(list, n, opts.lambda)));
+    return movies.length < BECAUSE_MIN_ITEMS ? null : done(pickCapped(movies, ROW_SIZES.forYouMovies, (list, n) => mmrPick(list, n, opts.lambda), narrow(ROW_SIZES.forYouMovies)));
   }
 
   if (rowKey === "inLibrary") {
     const inLibrary = eligible.filter((e) => e.candidate.jellyfinItemId && worthFilling(e));
-    return done(pickCapped(inLibrary, ROW_SIZES.inLibrary, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share)));
+    return done(pickCapped(inLibrary, ROW_SIZES.inLibrary, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share), narrow(ROW_SIZES.inLibrary)));
   }
 
   if (rowKey === "discover") {
     if (!opts.vigieAvailable) return null;
     const outside = eligible.filter((e) => !e.candidate.jellyfinItemId && worthFilling(e));
-    return done(pickCapped(outside, ROW_SIZES.discover, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share)));
+    return done(pickCapped(outside, ROW_SIZES.discover, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share), narrow(ROW_SIZES.discover)));
   }
 
   if (rowKey === "anime") {
     const related = eligible.filter((e) => isAnimeEntry(e) && worthFilling(e));
     if (share < ANIME_MIN_SHARE || related.length < ANIME_ROW_MIN_ITEMS) return null;
-    const row = done(pickCapped(related, ROW_SIZES.anime, (list, n) => mmrPick(list, n, opts.lambda, ANIME_COMMON_FACETS)));
+    const row = done(pickCapped(related, ROW_SIZES.anime, (list, n) => mmrPick(list, n, opts.lambda, ANIME_COMMON_FACETS), narrow(ROW_SIZES.anime)));
     // « Vous regardez des animés » est le TITRE de la rangée : place aux
     // raisons spécifiques (thème, studio, décennie).
     for (const item of row.items) {
