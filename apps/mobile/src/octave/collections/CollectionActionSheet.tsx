@@ -108,7 +108,8 @@ function SheetBody({ request }: { request: CollectionSheetRequest }) {
               label={t(collectionActionLabelKey(a.id))}
               tone={a.destructive ? "danger" : a.id === "unfavorite" ? "accent" : undefined}
               filled={a.id === "unfavorite"}
-              disabled={offline}
+              // Hors ligne, seul l'ORDRE se règle (il part au retour du réseau, `orderOutbox`) ; le reste attend le serveur.
+              disabled={offline && a.id !== "moveTop" && a.id !== "reorder"}
               onPress={() => run(a.id)}
             />
           ))}

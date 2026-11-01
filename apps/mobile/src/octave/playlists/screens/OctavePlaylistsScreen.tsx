@@ -7,7 +7,7 @@
  * à poignée. La liste suit les autres appareils en direct (`music:playlist`, `music:shelves`).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -63,7 +63,6 @@ export function OctavePlaylistsScreen() {
   const { scrollY, scrollProps } = pageScroll;
   const columns = layout.isTablet ? layout.columns(180) : 1;
   const [reordering, setReordering] = useState<LibrarySectionId | null>(null);
-  useEffect(() => setReordering(null), [offline]);
   // Demandé depuis l'accueil (« Vos playlists favorites » › Réordonner) : la page, montée ou non, s'ouvre sur le tri.
   useFocusEffect(
     useCallback(() => {
@@ -74,7 +73,8 @@ export function OctavePlaylistsScreen() {
   const { favorites, rest } = shelf;
   const canReorder = (section: LibrarySectionId) => {
     const list = section === "favorites" ? favorites : rest;
-    return !offline && list.length > 1 && shelf.ordered(shelfPlaylistKey(list[0]!));
+    // Hors ligne aussi (lot « ol ») : l'ordre s'applique tout de suite et part au retour du réseau (`orderOutbox`).
+    return list.length > 1 && shelf.ordered(shelfPlaylistKey(list[0]!));
   };
   const rows = useMemo<Row[]>(() => [LIKED, ...buildLibraryRows({ favorites, rest, columns, keyOf: shelfPlaylistKey })], [favorites, rest, columns]);
   const reorderItemOf = useReorderItemOf();

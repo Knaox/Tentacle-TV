@@ -93,6 +93,15 @@ export function usePlaylistShelf(playlists: readonly MusicPlaylist[] | undefined
   return useShelf({ section: "playlists", listing, keyOf: shelfPlaylistKey, favoriteOf: playlistFavorite, served: servedPlaylists, orderRest: true });
 }
 
+/**
+ * L'ordre des playlists de la bibliothèque tel qu'il se montre en ligne (favorites, puis le reste), relu du cache
+ * d'Octave sans réseau : « Sur cet appareil » y range ses playlists gardées (offline-core › `orderDeviceCollections`).
+ */
+export function useLibraryPlaylistOrder(): string[] {
+  const shelf = usePlaylistShelf(useMusicPlaylists().data);
+  return useMemo(() => [...shelf.favorites, ...shelf.rest].map(shelfPlaylistKey), [shelf.favorites, shelf.rest]);
+}
+
 const libraryOnly = (entries: readonly MusicShelfPlaylist[]): MusicPlaylist[] => entries.flatMap((e) => (e.kind === "library" ? [e.playlist] : []));
 
 /**

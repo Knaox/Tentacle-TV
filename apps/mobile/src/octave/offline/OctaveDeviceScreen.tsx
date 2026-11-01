@@ -11,10 +11,12 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, type Href } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { musicKeys, useLibraryPlaylistOrder } from "@tentacle-tv/api-client";
 import { FlatList, Platform, StyleSheet, Text, View, type ListRenderItem } from "react-native";
 import Animated from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { deviceModel, keptBytes, type DeviceCollection } from "@tentacle-tv/offline-core/music";
+import { deviceModel, keptBytes, orderDeviceCollections, type DeviceCollection } from "@tentacle-tv/offline-core/music";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { offlineDiskInfo } from "@/offline/engineApi";
 import { formatBytes } from "@/offline/formatBytes";
@@ -25,10 +27,10 @@ import { DeviceCollectionCard } from "./DeviceCollectionCard";
 import { DeviceSummary } from "./DeviceSummary";
 import { DeviceTrackRow } from "./DeviceTrackRow";
 import { KeepCollectionButton } from "./KeepCollectionButton";
+import { keptCollectionRoute } from "./keptCollectionRoute";
 import { playKept } from "./keptPlayPort";
 import { useOfflineSurface } from "./musicOfflineContext";
 import type { OctaveScreenProps } from "../registry/octaveRegistryTypes";
-import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import { useKeptMusic } from "./useKeptMusic";
 import { DeviceEmpty } from "./DeviceEmpty";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
@@ -60,14 +62,27 @@ export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps
   const router = useRouter();
   // Une collection s'ouvre comme une page EMPILÉE (`?c=`) : « Retour » et le geste système la referment.
   const openKey = params.c ?? null;
-  const openCollection = useCallback((key: string) => router.push(`${octavePaths.device}?c=${encodeURIComponent(key)}` as Href), [router]);
+  // Une playlist dont la page est gardée s'ouvre SUR SA PAGE (son dernier ordre, le glisser) : `keptCollectionRoute`.
+  const qc = useQueryClient();
+  const openCollection = useCallback(
+    (key: string) =>
+      router.push(
+        keptCollectionRoute(key, (target) =>
+          target.kind === "liked" ? qc.getQueriesData({ queryKey: ["music", "liked"] }).some(([, data]) => data !== undefined) : qc.getQueryData(musicKeys.playlist(target.id)) !== undefined,
+        ) as Href,
+      ),
+    [qc, router],
+  );
   const model = useMemo(
     // `resolve` : un titre renommé depuis qu'il a été gardé reste à sa place dans sa playlist (comme le bureau).
     // Hors de la porte (droit `keepOffline` refusé, rien d'Octave hors ligne ici) : rien de gardé ne se montre.
     () => (surface.visible ? deviceModel(kept.tracks, kept.collections, keptMusicResourceUri, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }) : { tracks: [], collections: [] }),
     [surface.visible, kept.tracks, kept.collections, kept.byKey, offline],
   );
-  const open: DeviceCollection | null = model.collections.find((c) => c.key === openKey) ?? null;
+  // Les playlists dans l'ordre de la bibliothèque en ligne (relu du cache d'Octave sans réseau), comme le bureau.
+  const libraryOrder = useLibraryPlaylistOrder();
+  const collections = useMemo(() => orderDeviceCollections(model.collections, libraryOrder), [model.collections, libraryOrder]);
+  const open: DeviceCollection | null = collections.find((c) => c.key === openKey) ?? null;
   const tracks = open?.tracks ?? model.tracks;
   const contextId = open ? `${DEVICE_CONTEXT}:${open.key}` : DEVICE_CONTEXT;
   // Relue quand la liste change (un titre arrivé, un retrait) : jamais à chaque rendu.
@@ -89,11 +104,11 @@ export function OctaveDeviceScreen({ params, asHome = false }: OctaveScreenProps
       />
       {!open && <DeviceSummary summary={summary} free={free} offline={offline} canKeep={surface.library} />}
       {kept.loaded && model.tracks.length === 0 && <DeviceEmpty />}
-      {!open && model.collections.length > 0 && (
+      {!open && collections.length > 0 && (
         <OctaveSection title={t("view.collections")}>
           <FlatList
             horizontal
-            data={model.collections}
+            data={collections}
             keyExtractor={(c) => c.key}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: layout.gap }}
