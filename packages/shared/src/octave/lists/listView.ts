@@ -144,6 +144,18 @@ export function jellyfinEntryOrder(rows: readonly ListRow[]): string[] {
   return rows.flatMap((r) => (r.entryId ? [r.entryId] : []));
 }
 
+/** Ce que devient l'ordre de la playlist JELLYFIN après un glisser : ses entrées, leurs titres, et l'ordre d'avant (la file d'envoi). */
+export interface JellyfinOrder {
+  entryIds: string[];
+  keys: string[];
+  base: string[];
+}
+
+export function jellyfinOrderOf(natural: readonly ListRow[], moved: readonly ListRow[]): JellyfinOrder {
+  const entries = moved.filter((r) => r.entryId);
+  return { entryIds: entries.map((r) => r.entryId!), keys: entries.map((r) => r.track.key), base: natural.filter((r) => r.entryId).map((r) => r.track.key) };
+}
+
 /** Après un glisser : le tri passe à « Personnalisé », l'ordre de départ est celui qui était affiché. */
 export function prefsAfterMove(prefs: MusicListPrefs, moved: readonly ListRow[]): MusicListPrefs {
   return { sort: "custom", direction: prefs.direction, custom: customOf(moved) };

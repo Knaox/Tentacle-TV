@@ -28,7 +28,9 @@ import { useServerCapability } from "../hooks/useServerCapabilities";
 import { musicKeys } from "./musicQueryKeys";
 import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
-import { latestWinsQueue, markListPrefsSaving } from "./useMusicListOrder";
+import { markListPrefsSaving } from "./useMusicListOrder";
+import { sendOrderWrite } from "./orderOutbox/orderOutbox";
+import { orderOutboxApi, readShelves } from "./orderOutbox/orderOutboxApi";
 
 /** Un élément d'une rubrique, tel qu'un geste le reçoit. */
 export type MusicShelfSubject =
@@ -58,7 +60,7 @@ export function useMusicShelves(options: { enabled?: boolean } = {}) {
   const capable = useMusicShelvesCapability();
   const query = useQuery({
     queryKey: musicKeys.shelves(),
-    queryFn: ({ signal }) => musicShelfApi.shelves(signal),
+    queryFn: ({ signal }) => readShelves(signal),
     enabled: capable && options.enabled !== false,
     staleTime: 60_000,
   });
@@ -156,8 +158,6 @@ export function useToggleShelfFavorite() {
   });
 }
 
-const sendOrder = latestWinsQueue();
-
 function setOrder(qc: QueryClient, section: MusicShelfSection, keys: string[]): void {
   qc.setQueryData<MusicLibraryShelves>(musicKeys.shelves(), (data) => {
     const base = data ?? EMPTY_SHELVES;
@@ -170,10 +170,13 @@ export function useSaveShelfOrder() {
   const qc = useQueryClient();
   return useCallback(
     (section: MusicShelfSection, keys: string[]) => {
+      // La base : l'ordre d'avant ce geste (la file d'envoi lit contre lui ce qu'il a déplacé).
+      const base = qc.getQueryData<MusicLibraryShelves>(musicKeys.shelves())?.order[section] ?? [];
       setOrder(qc, section, keys);
       const listKey = shelfListKey(section);
       const saved = markListPrefsSaving(listKey);
-      void sendOrder(listKey, () => musicShelfApi.order(section, keys)).then(() => {
+      // Gardé sur l'appareil jusqu'à son départ : sans réseau, il attend et se rejoue au retour (`orderOutbox`).
+      void sendOrderWrite({ kind: "shelfOrder", section, keys, base: [...base] }, orderOutboxApi).then(() => {
         saved();
         return qc.invalidateQueries({ queryKey: musicKeys.shelves(), refetchType: "none" });
       });

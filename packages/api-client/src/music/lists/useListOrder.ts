@@ -8,7 +8,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useMusicListPrefs, useSaveMusicListPrefs } from "../useMusicListOrder";
 import { MUSIC_LIST_SORT_KEYS, type MusicListDirection, type MusicListKey, type MusicListNewcomers, type MusicListSortKey } from "@tentacle-tv/shared/music";
 import type { ListRow } from "@tentacle-tv/shared/octave";
-import { jellyfinEntryOrder, movedRows, prefsAfterMove, reorderBlock, usefulFilters, visibleListRows, type ListFilter, type StatsOf } from "@tentacle-tv/shared/octave";
+import { jellyfinOrderOf, mergeOrder, movedRows, prefsAfterMove, reorderBlock, usefulFilters, visibleListRows, type JellyfinOrder, type ListFilter, type StatsOf } from "@tentacle-tv/shared/octave";
 
 export type ReorderBlock = "search" | "filter" | "loading";
 
@@ -16,9 +16,22 @@ export interface ListOrderOptions {
   /** Toute la liste est là (les likés arrivent par pages) : sinon, pas de glisser. */
   complete: boolean;
   /** Une playlist modifiable : l'ordre glissé devient aussi celui de la playlist Jellyfin. */
-  onJellyfinOrder?: (entryIds: string[]) => void;
+  onJellyfinOrder?: (order: JellyfinOrder) => void;
+  /**
+   * La liste COMPLÈTE quand `natural` n'en montre qu'une partie (« Sur cet appareil » : les seules copies
+   * gardées) : un glisser y déplace le titre parmi tous, les titres cachés gardent leur place.
+   */
+  full?: readonly ListRow[];
   /** Une playlist partagée : un titre que mon ordre ne connaît pas va à la fin (`musicListOrder.ts`). */
   newcomers?: MusicListNewcomers;
+}
+
+/** Le glisser d'une partie (`shown` → `moved`) appliqué à la liste entière : les rangées cachées restent à leur place. */
+function movedAmong(all: readonly ListRow[], shown: readonly ListRow[], moved: readonly ListRow[]): ListRow[] {
+  const byKey = new Map(all.map((r) => [r.rowKey, r]));
+  const keys = mergeOrder(shown.map((r) => r.rowKey), moved.map((r) => r.rowKey), all.map((r) => r.rowKey), "union");
+  const shownByKey = new Map(shown.map((r) => [r.rowKey, r]));
+  return keys.flatMap((k) => shownByKey.get(k) ?? byKey.get(k) ?? []);
 }
 
 export function useListOrder(key: MusicListKey | null, natural: readonly ListRow[], statsOf: StatsOf, options: ListOrderOptions) {
@@ -39,16 +52,18 @@ export function useListOrder(key: MusicListKey | null, natural: readonly ListRow
   );
 
   const onSort = useCallback((sort: MusicListSortKey, direction: MusicListDirection) => save({ ...prefs, sort, direction }), [prefs, save]);
-  const { onJellyfinOrder, complete } = options;
+  const { onJellyfinOrder, complete, full } = options;
   const block: ReorderBlock | null = reorderBlock({ prefs, query, filter: activeFilter }) ?? (complete ? null : "loading");
   const onMove = useCallback(
     (from: number, to: number) => {
       if (block) return;
-      const moved = movedRows(rows, from, to);
-      save(prefsAfterMove(prefs, moved));
-      onJellyfinOrder?.(jellyfinEntryOrder(moved));
+      const before = full ? visibleListRows(full, statsOf, state) : rows;
+      const moved = full ? movedAmong(before, rows, movedRows(rows, from, to)) : movedRows(rows, from, to);
+      // La base : ce qui était MONTRÉ (la file d'envoi lit contre elle ce que ce geste a déplacé).
+      save(prefsAfterMove(prefs, moved), before.map((r) => r.track.key));
+      onJellyfinOrder?.(jellyfinOrderOf(full ?? natural, moved));
     },
-    [block, onJellyfinOrder, prefs, rows, save],
+    [block, full, natural, onJellyfinOrder, prefs, rows, save, state, statsOf],
   );
 
   // Stable : la liste (mémoïsée) ne se redessine pas à chaque frappe.

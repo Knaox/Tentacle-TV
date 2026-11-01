@@ -20,7 +20,7 @@ import { KeptSizeMeta } from "../offline/KeptSizeMeta";
 import { TrackList } from "../components/TrackList";
 import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { octavePaths } from "../octavePaths";
-import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
+import { mergePlaylist, queueActions, type JellyfinOrder } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { useLibraryFirstRows } from "@tentacle-tv/api-client";
 import { usePlaylistRemoval } from "../actions/usePlaylistRemoval";
@@ -53,7 +53,7 @@ export function PlaylistView() {
   // Partagée (`musicPlaylistMembers.ts`) : chacun son ordre, jamais celui de Jellyfin ; les ajouts des autres au bout.
   const shared = usePlaylistSharingRules(playlist.data);
   const reorderPlaylist = useReorderMusicPlaylist();
-  const onJellyfinOrder = useCallback((entryIds: string[]) => reorderPlaylist(id, entryIds), [id, reorderPlaylist]);
+  const onJellyfinOrder = useCallback((order: JellyfinOrder) => reorderPlaylist(id, order), [id, reorderPlaylist]);
   const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, {
     complete: true,
     onJellyfinOrder: editable && !shared.isShared ? onJellyfinOrder : undefined,

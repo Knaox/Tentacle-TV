@@ -16,7 +16,10 @@ import {
   type MusicListKey,
   type MusicListPrefs,
 } from "@tentacle-tv/shared/music";
+import type { JellyfinOrder } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../hooks/usePreferences";
+import { sendOrderWrite } from "./orderOutbox/orderOutbox";
+import { orderOutboxApi, readListPrefs } from "./orderOutbox/orderOutboxApi";
 import { useServerCapability } from "../hooks/useServerCapabilities";
 import { musicKeys } from "./musicQueryKeys";
 import { useMusicCapability } from "./useMusicLibrary";
@@ -38,36 +41,8 @@ export function useMusicListOrderCapability(): boolean {
   return music && order;
 }
 
-/**
- * Une file « le dernier gagne » par clé : un envoi à la fois ; pendant qu'il part, seul le plus récent
- * attend son tour (les intermédiaires sont remplacés). Exportée pour les tests.
- */
-export function latestWinsQueue() {
-  const running = new Map<string, Promise<void>>();
-  const waiting = new Map<string, () => Promise<unknown>>();
-  const drain = async (key: string): Promise<void> => {
-    for (let task = waiting.get(key); task; task = waiting.get(key)) {
-      waiting.delete(key);
-      try {
-        await task();
-      } catch {
-        // L'échec d'un envoi ne bloque pas le suivant ; l'appelant relit la vérité du serveur.
-      }
-    }
-    running.delete(key);
-  };
-  return (key: string, task: () => Promise<unknown>): Promise<void> => {
-    waiting.set(key, task);
-    let current = running.get(key);
-    if (!current) {
-      current = drain(key);
-      running.set(key, current);
-    }
-    return current;
-  };
-}
+export { latestWinsQueue } from "./latestWinsQueue";
 
-const sendPrefs = latestWinsQueue();
 // Les listes dont CET appareil garde une préférence en ce moment : l'écho de `music:listPrefs` y est ignoré
 // (relu avant que le dernier envoi soit parti, il ramènerait un ordre intermédiaire sous les yeux).
 const savingPrefs = new Map<string, number>();
@@ -89,14 +64,13 @@ export function markListPrefsSaving(key: string): () => void {
     else savingPrefs.delete(key);
   };
 }
-const sendOrder = latestWinsQueue();
 
 /** La préférence d'ordre d'une liste : celle du compte, la valeur par défaut tant qu'elle n'a pas répondu. */
 export function useMusicListPrefs(key: MusicListKey | null) {
   const capable = useMusicListOrderCapability();
   const query = useQuery({
     queryKey: musicKeys.listPrefs(key ?? ""),
-    queryFn: ({ signal }) => musicListApi.prefs(key!, signal),
+    queryFn: ({ signal }) => readListPrefs(key!, signal),
     enabled: capable && key !== null,
     staleTime: 30_000,
   });
@@ -112,11 +86,13 @@ export function useMusicListPrefs(key: MusicListKey | null) {
 export function useSaveMusicListPrefs(key: MusicListKey | null) {
   const qc = useQueryClient();
   return useCallback(
-    (prefs: MusicListPrefs) => {
+    // `base` : les clés MONTRÉES avant un glisser (la file d'envoi lit contre elles ce qu'il a déplacé) ; un tri : rien.
+    (prefs: MusicListPrefs, base: string[] | null = null) => {
       if (!key) return;
       qc.setQueryData(musicKeys.listPrefs(key), prefs);
       const saved = markListPrefsSaving(key);
-      void sendPrefs(key, () => musicListApi.savePrefs(key, prefs)).then(() => {
+      // Gardée sur l'appareil jusqu'à son départ : sans réseau, elle attend et se rejoue au retour (`orderOutbox`).
+      void sendOrderWrite({ kind: "listPrefs", key, prefs, base }, orderOutboxApi).then(() => {
         saved();
         return qc.invalidateQueries({ queryKey: musicKeys.listPrefs(key), refetchType: "none" });
       });
@@ -125,12 +101,12 @@ export function useSaveMusicListPrefs(key: MusicListKey | null) {
   );
 }
 
-/** Réécrire l'ordre de la playlist Jellyfin (les entrées dans l'ordre voulu), puis la relire. */
+/** Réécrire l'ordre de la playlist Jellyfin (les entrées dans l'ordre voulu), puis la relire. Par la file d'envoi. */
 export function useReorderMusicPlaylist() {
   const qc = useQueryClient();
   return useCallback(
-    (playlistId: string, entryIds: readonly string[]) => {
-      void sendOrder(playlistId, () => musicListApi.reorderPlaylist(playlistId, entryIds)).then(() =>
+    (playlistId: string, order: JellyfinOrder) => {
+      void sendOrderWrite({ kind: "playlistOrder", playlistId, ...order }, orderOutboxApi).then(() =>
         qc.invalidateQueries({ queryKey: musicKeys.playlist(playlistId) }),
       );
     },
