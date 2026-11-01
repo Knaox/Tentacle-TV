@@ -35,7 +35,7 @@ import { EmptyState, RowsSkeleton } from "../components/ViewStates";
 import { ListToolbar } from "../listOrder/ListToolbar";
 import { NoMatch } from "../listOrder/NoMatch";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
-import { deviceModel, type DeviceCollection, bytesOnDisk, collectionBytes } from "@tentacle-tv/offline-core/music";
+import { deviceModel, orderDeviceCollections, type DeviceCollection, bytesOnDisk, collectionBytes } from "@tentacle-tv/offline-core/music";
 import { KeepCollectionButton } from "./KeepCollectionButton";
 import { OfflineNotice, OfflineSwitchButton } from "./OfflineSwitch";
 import { ServerPacingNotice } from "./ServerPacingNotice";
@@ -44,6 +44,7 @@ import { KeptCollectionArtwork } from "./KeptCollectionArtwork";
 import { HEADER_ARTWORK_CLASS } from "../components/PlaylistArtwork";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import { useKeptMusic } from "./useKeptMusic";
+import { useLibraryPlaylistOrder } from "./useLibraryPlaylistOrder";
 import { AutoSyncSetting } from "./autosync/AutoSyncSetting";
 
 const DEVICE_CONTEXT = "device";
@@ -88,7 +89,10 @@ export function DeviceView() {
     () => deviceModel(kept.tracks, kept.collections, rootReady ? localResourceUrl : () => null, { completeOnly: offline, resolve: (key) => kept.byKey.get(key) }),
     [kept.tracks, kept.collections, kept.byKey, offline, rootReady],
   );
-  const open = model.collections.find((c) => c.key === params.get("c")) ?? null;
+  // Les playlists dans l'ordre de la bibliothèque en ligne (relu du cache d'Octave sans réseau).
+  const libraryOrder = useLibraryPlaylistOrder();
+  const collections = useMemo(() => orderDeviceCollections(model.collections, libraryOrder), [model.collections, libraryOrder]);
+  const open = collections.find((c) => c.key === params.get("c")) ?? null;
   // Une playlist ouverte : la playlist en ligne, en version hors ligne (`useKeptListRows`) ; « Lire » joue ce qu'on voit.
   const list = useKeptListRows(open);
   const allRows = useMemo(() => rowsOf(model.tracks), [model.tracks]);
@@ -138,10 +142,10 @@ export function DeviceView() {
             {t("view.emptyHint")}
           </EmptyState>
         )}
-        {!open && model.collections.length > 0 && (
+        {!open && collections.length > 0 && (
           <Shelf title={t("view.collections")}>
             <CardGrid>
-              {model.collections.map((c) => (
+              {collections.map((c) => (
                 <CollectionCard key={c.key} collection={c} bytes={bytesOf(c)} kept={kept.tracks} offline={offline} onOpen={() => setParams({ c: c.key })} />
               ))}
             </CardGrid>
@@ -168,8 +172,8 @@ export function DeviceView() {
             ) : rows.length === 0 ? (
               list.natural.length > 0 && <NoMatch onReset={list.order.reset} />
             ) : open.kind === "playlist" ? (
-              // Le rendu de la playlist en ligne (`PlaylistView`), sans glisser ni retrait.
-              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={open.title} virtual />
+              // Le rendu de la playlist en ligne (`PlaylistView`) : le glisser part au retour du réseau ; pas de retrait.
+              <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={open.title} virtual reorder={list.toolbar ? list.order.reorder : undefined} />
             ) : (
               <TrackList rows={rows} contextId={contextId} showArtwork label={open.title} />
             )}

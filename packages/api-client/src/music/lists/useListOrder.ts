@@ -61,7 +61,8 @@ export function useListOrder(key: MusicListKey | null, natural: readonly ListRow
       const moved = full ? movedAmong(before, rows, movedRows(rows, from, to)) : movedRows(rows, from, to);
       // La base : ce qui était MONTRÉ (la file d'envoi lit contre elle ce que ce geste a déplacé).
       save(prefsAfterMove(prefs, moved), before.map((r) => r.track.key));
-      onJellyfinOrder?.(jellyfinOrderOf(full ?? natural, moved));
+      const jellyfin = jellyfinOrderOf(full ?? natural, moved);
+      if (jellyfin.entryIds.length > 0) onJellyfinOrder?.(jellyfin);
     },
     [block, full, natural, onJellyfinOrder, prefs, rows, save, state, statsOf],
   );
