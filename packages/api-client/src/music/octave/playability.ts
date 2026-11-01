@@ -5,7 +5,7 @@
  *   redessine (`onPlayabilityOf`), jamais toute la liste ;
  * - `usePlayabilityProbe(provider, tracks)` : à l'AFFICHAGE d'une liste, les titres `unknown` de tête (20 au plus) sont
  *   demandés au sondage de l'extension (`music.playability`, `waitMs` 2 s), sans rien retarder ; `retryAfterMs` : les
- *   seuls `unknown` redemandés après ce délai, 3 tours au plus. Une liste qui change annule la sienne. Sans
+ *   seuls `unknown` redemandés après ce délai, 3 tours au plus ; un titre déjà demandé ailleurs ne l'est pas deux fois. Sans
  *   `music.playability` (extension ou serveur d'avant) : aucun appel, rien ne change.
  */
 
@@ -109,19 +109,21 @@ export async function probePlayability(provider: MusicProvider, tracks: readonly
   }
 }
 
-/** À l'affichage d'une liste : ses titres `unknown` de tête sont sondés ; une autre liste annule celle-ci. */
+/** À l'affichage d'une liste : ses titres `unknown` de tête sont sondés (une fois par titre, toutes listes confondues). */
 export function usePlayabilityProbe(provider: MusicProvider | null, tracks: readonly MusicTrack[] | null | undefined): void {
   const path = provider?.music.playability ?? null;
   // La demande ne dépend que des CLÉS à sonder : une révision de la liste qui n'en change rien ne relance rien.
   const signature = useMemo(() => (provider && path && tracks ? probeCandidates(provider, tracks, false).map((t) => t.key).join("|") : ""), [provider, path, tracks]);
-  // `tracks` est lu au moment où la signature change, pas à chaque révision.
-  const latest = useRef(tracks);
-  latest.current = tracks;
+  // `tracks` et `provider` sont lus au moment où la signature change, jamais à chaque rendu. Le sondage n'est PAS
+  // lié à la vie du composant : court (20 titres) et borné (3 tours), il va au bout même si la liste est remplacée
+  // pendant la révélation de la recherche — l'annuler perdait la réponse, et la liste suivante sautait ces titres
+  // « déjà en cours » (vu au banc). Ce qu'il apprend vaut pour toutes les listes (`announcePlayability`).
+  const latest = useRef({ tracks, provider });
+  latest.current = { tracks, provider };
+  const pluginId = provider?.pluginId ?? null;
   useEffect(() => {
-    const list = latest.current;
-    if (!provider || !path || !list || signature === "") return;
-    const controller = new AbortController();
-    void probePlayability(provider, list, controller.signal).catch(() => undefined);
-    return () => controller.abort();
-  }, [provider, path, signature]);
+    const { tracks: list, provider: current } = latest.current;
+    if (!current || !path || !list || signature === "") return;
+    void probePlayability(current, list, new AbortController().signal).catch(() => undefined);
+  }, [pluginId, path, signature]);
 }
