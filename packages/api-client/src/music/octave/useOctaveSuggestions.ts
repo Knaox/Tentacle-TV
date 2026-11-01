@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from "react";
-import { buildSuggestions, type OctaveSuggestion, type SuggestionInput } from "@tentacle-tv/shared/octave";
+import { buildSuggestions, trackPlayability, type OctaveSuggestion, type SuggestionInput } from "@tentacle-tv/shared/octave";
 import type { MusicSuggestion } from "@tentacle-tv/shared/music";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import { useMusicSuggest } from "../../pluginMusic/useMusicSuggest";
@@ -19,7 +19,12 @@ export const SUGGEST_DEBOUNCE_MS = 90;
 const LIBRARY_LIMIT = 6;
 
 function fromExtension(list: readonly MusicSuggestion[]): SuggestionInput[] {
-  return list.map((s) => ({ kind: s.kind, title: s.title, subtitle: s.subtitle, text: s.text }));
+  return list.map((s) => {
+    // Une extension qui sait déjà un titre illisible le dit ici (lot « ol ») ; d'avant, ni `playable` ni marque.
+    const playability = s.kind === "track" ? trackPlayability({ jellyfinId: null, playable: s.playable, unavailable: s.unavailable }) : null;
+    const input: SuggestionInput = { kind: s.kind, title: s.title, subtitle: s.subtitle, text: s.text };
+    return playability?.greyed ? { ...input, unplayable: playability.reason ?? "other" } : input;
+  });
 }
 
 export function useOctaveSuggestions(provider: MusicProvider | null, draft: string, recents: readonly string[]) {

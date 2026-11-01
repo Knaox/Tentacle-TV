@@ -8,6 +8,7 @@
  */
 
 import { searchTokens } from "../../search/searchText";
+import type { UnplayableReason } from "../trackPlayability";
 
 export type SuggestionKind = "recent" | "artist" | "track" | "album";
 
@@ -19,6 +20,8 @@ export interface OctaveSuggestion {
   text: string;
   title: string;
   subtitle: string | null;
+  /** Un TITRE que l'extension sait illisible (lot « ol ») : grisé, sa raison ; la choisir cherche quand même. */
+  unplayable?: UnplayableReason;
 }
 
 /** Une suggestion venue d'une source (bibliothèque, extension), avant fusion. */
@@ -28,6 +31,7 @@ export interface SuggestionInput {
   subtitle: string | null;
   /** Le texte cherché (par défaut : le titre, suivi de l'artiste pour un titre ou un album). */
   text?: string;
+  unplayable?: UnplayableReason;
 }
 
 export interface SuggestionSources {
@@ -60,17 +64,17 @@ export function buildSuggestions({ draft, recents, library, extension }: Suggest
   if (words.length === 0) return [];
   const seen = new Set<string>();
   const byKind = new Map<SuggestionKind, OctaveSuggestion[]>(KIND_ORDER.map((k) => [k, []]));
-  const add = (kind: SuggestionKind, title: string, subtitle: string | null, text: string) => {
+  const add = (kind: SuggestionKind, title: string, subtitle: string | null, text: string, unplayable?: UnplayableReason) => {
     const folded = searchTokens(text).join(" ");
     const bucket = byKind.get(kind);
     if (!folded || seen.has(folded) || !bucket || bucket.length >= PER_KIND[kind]) return;
     seen.add(folded);
-    bucket.push({ id: `${kind}:${folded}`, kind, text, title, subtitle });
+    bucket.push(unplayable && kind === "track" ? { id: `${kind}:${folded}`, kind, text, title, subtitle, unplayable } : { id: `${kind}:${folded}`, kind, text, title, subtitle });
   };
   for (const r of recents) if (matchesDraft(words, r)) add("recent", r, null, r);
   // La bibliothèque d'abord : ce qu'on a déjà, puis ce que l'extension propose.
   for (const s of [...library, ...extension]) {
-    if (matchesDraft(words, `${s.title} ${s.subtitle ?? ""}`)) add(s.kind, s.title, s.subtitle, textOf(s));
+    if (matchesDraft(words, `${s.title} ${s.subtitle ?? ""}`)) add(s.kind, s.title, s.subtitle, textOf(s), s.unplayable);
   }
   return KIND_ORDER.flatMap((k) => byKind.get(k) ?? []).slice(0, SUGGESTIONS_MAX);
 }

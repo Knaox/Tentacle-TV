@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { externalTrack, libraryTrack } from "./fixtures";
-import { reasonOf, trackPlayability, unplayableActions, unplayableReasonKey, withPlayability } from "./trackPlayability";
+import { reasonOf, trackPlayability, unplayableActions, unplayableNotice, unplayableReasonKey, withPlayability } from "./trackPlayability";
 import { isTrackUnavailable } from "./unavailableTrack";
 
 /** Lot « ol » (01/11) : la lisibilité vérifiée par l'extension, lue de la même façon partout. */
@@ -57,5 +57,22 @@ describe("withPlayability — un état arrivé après coup", () => {
     expect(no).toMatchObject({ playable: "no", unavailable: "private" });
     expect(withPlayability(no, { playable: "no", unavailable: "private" })).toBe(no);
     expect(withPlayability(no, { playable: "yes" })).toMatchObject({ playable: "yes", unavailable: null });
+  });
+});
+
+describe("unplayableNotice — l'avis au clic", () => {
+  const track = externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "removed" });
+  it("dit la raison et garde la playlist (en tête) et le favori", () => {
+    expect(unplayableNotice(track, { canLike: true, canAddToPlaylist: true, liked: false })).toEqual({
+      titleKey: "unplayableTrack.title",
+      reasonKey: "unplayableTrack.reason.removed",
+      keepKey: "unplayableTrack.keep",
+      gestures: ["addToPlaylist", "like"],
+      liked: false,
+    });
+  });
+  it("déjà aimé : plus de « Favori », la phrase reste ; aucun geste possible : la raison seule", () => {
+    expect(unplayableNotice(track, { canLike: true, canAddToPlaylist: false, liked: true })).toMatchObject({ gestures: [], keepKey: "unplayableTrack.keep", liked: true });
+    expect(unplayableNotice(track, { canLike: false, canAddToPlaylist: false, liked: false })).toMatchObject({ gestures: [], keepKey: null });
   });
 });

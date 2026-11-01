@@ -79,3 +79,30 @@ export function withPlayability<T extends PlayabilityInput>(track: T, patch: { p
   if (track.playable === patch.playable && (track.unavailable ?? null) === unavailable) return track;
   return { ...track, playable: patch.playable, unavailable };
 }
+
+export type UnplayableGesture = "addToPlaylist" | "like";
+
+/** Ce que l'avis (web, bureau) ou la feuille (mobile) d'un titre illisible dit et propose — mêmes mots partout. */
+export interface UnplayableNotice {
+  titleKey: string;
+  reasonKey: string;
+  /** « Il reste disponible… » : seulement s'il reste un geste, ou qu'il est déjà dans les favoris. */
+  keepKey: string | null;
+  /** Le geste principal d'abord (la playlist si elle est là, sinon le favori), puis l'autre. */
+  gestures: UnplayableGesture[];
+  liked: boolean;
+}
+
+export function unplayableNotice(track: PlayabilityInput, input: UnplayableActionsInput): UnplayableNotice {
+  const can = unplayableActions(input);
+  const gestures: UnplayableGesture[] = [];
+  if (can.addToPlaylist) gestures.push("addToPlaylist");
+  if (can.like && !can.liked) gestures.push("like");
+  return {
+    titleKey: "unplayableTrack.title",
+    reasonKey: unplayableReasonKey(trackPlayability(track).reason),
+    keepKey: gestures.length > 0 || can.liked ? "unplayableTrack.keep" : null,
+    gestures,
+    liked: can.liked,
+  };
+}

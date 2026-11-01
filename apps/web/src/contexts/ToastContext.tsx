@@ -12,8 +12,10 @@ interface ToastOptions {
   title?: string;
   /** Un geste à côté du message (« Ajouté à X — Changer ») : il ferme l'avis. */
   action?: ToastAction;
+  /** Un second geste, plus discret, avant le premier (« Favori · Ajouter à une playlist »). */
+  secondaryAction?: ToastAction;
 }
-interface ToastItem { id: number; type: ToastType; message: string; title?: string; action?: ToastAction }
+interface ToastItem { id: number; type: ToastType; message: string; title?: string; action?: ToastAction; secondaryAction?: ToastAction }
 interface ToastContextValue { show: (type: ToastType, message: string, options?: ToastOptions) => void }
 
 /** Au-delà, les plus anciens cèdent la place : l'écran reste lisible. */
@@ -29,7 +31,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const show = useCallback((type: ToastType, message: string, options?: ToastOptions) => {
     const id = ++idRef.current;
-    setToasts((prev) => [...prev, { id, type, message, title: options?.title, action: options?.action }].slice(-MAX_VISIBLE));
+    setToasts((prev) => [...prev, { id, type, message, title: options?.title, action: options?.action, secondaryAction: options?.secondaryAction }].slice(-MAX_VISIBLE));
   }, []);
 
   const dismiss = useCallback((id: number) => {
@@ -45,7 +47,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div aria-live="polite" className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {toasts.map((t) => (
-            <Toast key={t.id} id={t.id} type={t.type} title={t.title} message={t.message} action={t.action} onDismiss={dismiss} />
+            <Toast key={t.id} id={t.id} type={t.type} title={t.title} message={t.message} action={t.action} secondaryAction={t.secondaryAction} onDismiss={dismiss} />
           ))}
         </AnimatePresence>
       </div>

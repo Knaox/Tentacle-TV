@@ -60,3 +60,19 @@ describe("suggestions de la barre (Octave)", () => {
     expect(moveActive(-1, 0, 1)).toBe(-1);
   });
 });
+
+describe("suggestions — un titre illisible (lot « ol »)", () => {
+  it("garde sa raison, grisé, sans changer d'ordre ; un artiste ou un album n'en porte jamais", () => {
+    const out = buildSuggestions({
+      draft: "da",
+      recents: [],
+      library: [],
+      extension: [
+        { kind: "track", title: "Da Funk", subtitle: "Daft Punk", unplayable: "region" },
+        { kind: "track", title: "Dance", subtitle: null },
+        { kind: "album", title: "Da Album", subtitle: null, unplayable: "other" },
+      ],
+    });
+    expect(out.map((s) => [s.title, s.unplayable ?? null])).toEqual([["Da Funk", "region"], ["Dance", null], ["Da Album", null]]);
+  });
+});

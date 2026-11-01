@@ -23,6 +23,7 @@ import { octavePaths } from "../octavePaths";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
 import type { ListenedCard as ListenedCardModel } from "./searchHomeModel";
+import { announceUnavailableTrack, isTrackUnavailable, playTrackGesture } from "@tentacle-tv/shared/octave";
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 const THUMB = "h-14 w-14 rounded-[var(--oc-radius-art-sm)] shadow-[var(--oc-shadow-art)]";
@@ -32,13 +33,15 @@ function TrackButton({ tracks, index, contextId }: { tracks: readonly MusicTrack
   const player = useOctavePlayer();
   const track = tracks[index] as MusicTrack;
   const prefetch = usePrefetchHandlers(() => [track]);
+  // Un titre illisible (lot « ol ») : grisé ; le cliquer dit pourquoi, rien ne se lance.
+  const locked = isTrackUnavailable(track);
   return (
     <button
       type="button"
-      onClick={() => player.playList(tracks, index, contextId)}
+      onClick={() => playTrackGesture(tracks, index, isTrackUnavailable, (list, i) => player.playList(list, i, contextId), announceUnavailableTrack)}
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
-      className={`group/track flex h-7 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary ${FOCUS}`}
+      className={`group/track flex h-7 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] ${locked ? "text-content-tertiary" : "text-content-secondary"} transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary ${FOCUS}`}
     >
       <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-octave-accent-text" fill="currentColor" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{track.title}</span>
