@@ -3,6 +3,7 @@ import { explorationQuota } from "./exploration";
 import { ANIME_COMMON_FACETS, ANIME_MIN_SHARE, ANIME_UNIVERSE_KEY } from "./facets";
 import { explorationPicks, inDisplayOrder, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
+import { pickCapped } from "./rowCaps";
 import type { TasteVector } from "./scoring/strategy";
 import { REASONS_MAX, toItem } from "./rowItem";
 import {
@@ -206,7 +207,8 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   if (rowKey === "forYou") {
     const size = ROW_SIZES.forYou;
     const quota = Math.round(size * explorationQuota(opts.lambda * 100));
-    const main = pickWithUniverseQuota(capPerCollection(eligible, opts.profile.facets), size - quota, opts.lambda, share);
+    // Plafonnée (auteur, acteur, saga, ancre : cf. rowCaps), comme les quatre suivantes.
+    const main = pickCapped(eligible, size - quota, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share));
     const mainKeys = new Set(main.map((e) => e.candidate.key));
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
     // Le pas de côté prend la place de sa correspondance, comme les autres.
@@ -214,26 +216,26 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   }
 
   if (rowKey === "forYouMovies") {
-    // Les meilleurs FILMS pour le compte, variés (une saga n'y entre que deux fois).
-    const movies = capPerCollection(eligible.filter((e) => e.candidate.mediaType === "movie" && worthFilling(e)), opts.profile.facets);
-    return movies.length < BECAUSE_MIN_ITEMS ? null : done(mmrPick(movies, ROW_SIZES.forYouMovies, opts.lambda));
+    // Les meilleurs FILMS pour le compte, variés (deux par auteur, acteur, saga).
+    const movies = eligible.filter((e) => e.candidate.mediaType === "movie" && worthFilling(e));
+    return movies.length < BECAUSE_MIN_ITEMS ? null : done(pickCapped(movies, ROW_SIZES.forYouMovies, (list, n) => mmrPick(list, n, opts.lambda)));
   }
 
   if (rowKey === "inLibrary") {
-    const inLibrary = capPerCollection(eligible.filter((e) => e.candidate.jellyfinItemId && worthFilling(e)), opts.profile.facets);
-    return done(pickWithUniverseQuota(inLibrary, ROW_SIZES.inLibrary, opts.lambda, share));
+    const inLibrary = eligible.filter((e) => e.candidate.jellyfinItemId && worthFilling(e));
+    return done(pickCapped(inLibrary, ROW_SIZES.inLibrary, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share)));
   }
 
   if (rowKey === "discover") {
     if (!opts.vigieAvailable) return null;
-    const outside = capPerCollection(eligible.filter((e) => !e.candidate.jellyfinItemId && worthFilling(e)), opts.profile.facets);
-    return done(pickWithUniverseQuota(outside, ROW_SIZES.discover, opts.lambda, share));
+    const outside = eligible.filter((e) => !e.candidate.jellyfinItemId && worthFilling(e));
+    return done(pickCapped(outside, ROW_SIZES.discover, (list, n) => pickWithUniverseQuota(list, n, opts.lambda, share)));
   }
 
   if (rowKey === "anime") {
-    const related = capPerCollection(eligible.filter((e) => isAnimeEntry(e) && worthFilling(e)), opts.profile.facets);
+    const related = eligible.filter((e) => isAnimeEntry(e) && worthFilling(e));
     if (share < ANIME_MIN_SHARE || related.length < ANIME_ROW_MIN_ITEMS) return null;
-    const row = done(mmrPick(related, ROW_SIZES.anime, opts.lambda, ANIME_COMMON_FACETS));
+    const row = done(pickCapped(related, ROW_SIZES.anime, (list, n) => mmrPick(list, n, opts.lambda, ANIME_COMMON_FACETS)));
     // « Vous regardez des animés » est le TITRE de la rangée : place aux
     // raisons spécifiques (thème, studio, décennie).
     for (const item of row.items) {
