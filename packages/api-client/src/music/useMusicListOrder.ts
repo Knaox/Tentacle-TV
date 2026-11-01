@@ -20,7 +20,8 @@ import type { JellyfinOrder } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { sendOrderWrite } from "./orderOutbox/orderOutbox";
 import { orderOutboxApi, readListPrefs } from "./orderOutbox/orderOutboxApi";
-import { useServerCapability } from "../hooks/useServerCapabilities";
+import { useServerCapabilities, useServerCapability } from "../hooks/useServerCapabilities";
+import { keptCapability } from "./orderOutbox/keptCapability";
 import { musicKeys } from "./musicQueryKeys";
 import { useMusicCapability } from "./useMusicLibrary";
 
@@ -67,13 +68,16 @@ export function markListPrefsSaving(key: string): () => void {
 
 /** La préférence d'ordre d'une liste : celle du compte, la valeur par défaut tant qu'elle n'a pas répondu. */
 export function useMusicListPrefs(key: MusicListKey | null) {
-  const capable = useMusicListOrderCapability();
+  const declared = useMusicListOrderCapability();
+  const { known } = useServerCapabilities();
   const query = useQuery({
     queryKey: musicKeys.listPrefs(key ?? ""),
     queryFn: ({ signal }) => readListPrefs(key!, signal),
-    enabled: capable && key !== null,
+    enabled: declared && key !== null,
     staleTime: 30_000,
   });
+  // Hors ligne, la préférence GARDÉE de cette liste prouve la capacité : l'ordre du compte et le glisser restent.
+  const capable = keptCapability(declared, known, query.data !== undefined);
   return {
     capable,
     prefs: query.data ?? (key ? defaultListPrefs(key) : defaultListPrefs("liked")),

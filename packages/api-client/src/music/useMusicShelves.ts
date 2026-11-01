@@ -24,7 +24,8 @@ import {
 } from "@tentacle-tv/shared/music";
 import { collectionFavoritable } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../hooks/usePreferences";
-import { useServerCapability } from "../hooks/useServerCapabilities";
+import { useServerCapabilities, useServerCapability } from "../hooks/useServerCapabilities";
+import { keptCapability } from "./orderOutbox/keptCapability";
 import { musicKeys } from "./musicQueryKeys";
 import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
@@ -57,13 +58,16 @@ const EMPTY_SHELVES: MusicLibraryShelves = { albums: [], artists: [], playlists:
 
 /** Les favoris et l'ordre de chaque rubrique ; vides tant que le serveur n'a pas répondu (ou ne sait pas). */
 export function useMusicShelves(options: { enabled?: boolean } = {}) {
-  const capable = useMusicShelvesCapability();
+  const declared = useMusicShelvesCapability();
+  const { known } = useServerCapabilities();
   const query = useQuery({
     queryKey: musicKeys.shelves(),
     queryFn: ({ signal }) => readShelves(signal),
-    enabled: capable && options.enabled !== false,
+    enabled: declared && options.enabled !== false,
     staleTime: 60_000,
   });
+  // Hors ligne, les rubriques GARDÉES prouvent la capacité : favoris et ordre de la bibliothèque restent.
+  const capable = keptCapability(declared, known, query.data !== undefined);
   return { capable, shelves: query.data ?? EMPTY_SHELVES, ready: !capable || query.isSuccess || query.isError, query };
 }
 
