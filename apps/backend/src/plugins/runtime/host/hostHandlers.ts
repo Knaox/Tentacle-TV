@@ -65,9 +65,9 @@ export const HOST_HANDLERS: HostHandlers = {
     stopWorker(ctx.pluginId, workerId);
     return { ok: true };
   },
-  "tools.youtubeAdmit": async (ctx, { kind, cost }) => {
+  "tools.youtubeAdmit": async (ctx, { kind, cost, burst }) => {
     requireAnyTool(ctx);
-    return hostYouTubeBudget.admitExtension(ctx.pluginId, kind, cost, Date.now());
+    return hostYouTubeBudget.admitExtension(ctx.pluginId, kind, cost, Date.now(), burst === true);
   },
   "tools.youtubeReport": async (ctx, { outcome, startedAt }) => {
     requireAnyTool(ctx);

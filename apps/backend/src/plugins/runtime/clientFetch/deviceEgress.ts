@@ -35,12 +35,12 @@ export function egressOfRequest(request: FastifyRequest): string | null {
 }
 
 /** Le budget de cette sortie pour une requête déléguée de `pluginId`. */
-export function admitDeviceEgress(egress: string, kind: EgressKind, pluginId: string): { granted: true; waitMs: number } | { granted: false } {
+export function admitDeviceEgress(egress: string, kind: EgressKind, pluginId: string, burst = false): { granted: true; waitMs: number } | { granted: false } {
   const now = Date.now();
   if (egress === SERVER_EGRESS) {
-    const admission = hostYouTubeBudget.admitExtension(pluginId, kind, 1, now);
+    const admission = hostYouTubeBudget.admitExtension(pluginId, kind, 1, now, burst);
     return admission.granted ? admission : { granted: false };
   }
-  const admission = deviceEgressBudget.admit(egress, kind, now);
+  const admission = deviceEgressBudget.admit(egress, kind, now, burst);
   return admission.granted ? admission : { granted: false };
 }

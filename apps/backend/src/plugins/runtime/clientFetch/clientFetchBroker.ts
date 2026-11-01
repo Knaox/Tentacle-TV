@@ -30,7 +30,7 @@ export interface ClientFetchBrokerDeps {
    * Le budget de l'ADRESSE DE SORTIE de l'appareil (`egressBudget.ts`), partagé par tous les appareils qui sortent
    * par elle : refusé → `budget`, sans rien envoyer ; `waitMs` : la requête part après ce délai. Absent : aucun.
    */
-  admit?(egress: string, kind: "play" | "prefetch", pluginId: string): { granted: true; waitMs: number } | { granted: false };
+  admit?(egress: string, kind: "play" | "prefetch", pluginId: string, burst?: boolean): { granted: true; waitMs: number } | { granted: false };
 }
 
 interface Pending {
@@ -80,7 +80,7 @@ export class ClientFetchBroker {
     if (!target || target.pluginId !== pluginId || !this.deps.online(target.deviceKey)) return { ok: false, reason: "offline" };
     if ((this.inFlight.get(target.deviceKey) ?? 0) >= CLIENT_FETCH_LIMITS.maxParallel) return { ok: false, reason: "budget" };
     // Le plafond de l'adresse de sortie, partagé par les appareils derrière la même box (les gestes d'abord).
-    const admission = target.egress !== null && this.deps.admit ? this.deps.admit(target.egress, request.kind ?? "play", pluginId) : { granted: true as const, waitMs: 0 };
+    const admission = target.egress !== null && this.deps.admit ? this.deps.admit(target.egress, request.kind ?? "play", pluginId, request.burst === true) : { granted: true as const, waitMs: 0 };
     if (!admission.granted) return { ok: false, reason: "budget" };
     if (admission.waitMs > 0) await new Promise((r) => setTimeout(r, admission.waitMs));
     if (!this.deps.online(target.deviceKey)) return { ok: false, reason: "offline" };

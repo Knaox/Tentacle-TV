@@ -41,6 +41,12 @@ export interface ClientFetchRequest {
    * l'hôte sert les gestes d'abord. Absent (une extension d'avant) : un geste. L'appareil l'ignore.
    */
   kind?: "play" | "prefetch";
+  /**
+   * Un SONDAGE EN RAFALE du fond (lot « ol », serveur 1.42.0 : la lisibilité des titres affichés) : l'hôte l'admet
+   * sans sa cadence de 250 ms, sous son plafond de minute des rafales. Seulement avec `kind: "prefetch"`. Un hôte d'avant
+   * le refuse (`invalid`) ; l'appareil l'ignore.
+   */
+  burst?: boolean;
 }
 
 export interface ClientFetchResponse {
@@ -166,6 +172,7 @@ export function checkClientFetchRequest(request: unknown, manifest: ClientFetchM
   if (r.timeoutMs !== undefined && !(Number.isInteger(r.timeoutMs) && r.timeoutMs > 0 && r.timeoutMs <= CLIENT_FETCH_LIMITS.maxTimeoutMs)) return "délai refusé";
   if (r.maxBytes !== undefined && !(Number.isInteger(r.maxBytes) && r.maxBytes > 0 && r.maxBytes <= CLIENT_FETCH_LIMITS.maxResponseBytes)) return "taille refusée";
   if (r.kind !== undefined && r.kind !== "play" && r.kind !== "prefetch") return "nature refusée";
+  if (r.burst !== undefined && (typeof r.burst !== "boolean" || (r.burst && r.kind !== "prefetch"))) return "rafale refusée";
   if (r.headers !== undefined) {
     if (!r.headers || typeof r.headers !== "object" || Array.isArray(r.headers)) return "en-têtes refusés";
     const entries = Object.entries(r.headers);
