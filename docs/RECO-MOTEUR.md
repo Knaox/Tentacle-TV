@@ -21,15 +21,18 @@ signaux ─► ancres ─► profil ─► graines + voisins ─► sources ─�
                                      page servie ◄─ instantané de page ◄─ rangées ◄─────────┘
 ```
 
-1. **Ancres** (`anchors.ts`, `anchorSignals.ts`) : un titre par signal fort —
-   favori, j'aime, note, visionnage (heures), refus « Ne plus me proposer »
-   (poids négatif). Un titre seulement dans Ma liste n'est PAS une ancre (cf.
-   potentiels).
+1. **Ancres** (`anchors.ts`, `anchorSignals.ts`, `viewingSignals.ts`) : un
+   titre par signal fort — favori, j'aime, note, visionnage (heures), refus
+   « Ne plus me proposer » (poids négatif). Un titre seulement dans Ma liste
+   n'est PAS une ancre (cf. potentiels). Ce que disent les visionnages : voir
+   ci-dessous.
 2. **Profil** (`profileCompute.ts`) : facettes TF-IDF pondérées (genres,
-   mots-clés, auteurs, acteurs, studios, décennie, langue, univers, saga).
-3. **Graines** (`poolTaste.ts`, `candidates/seeds.ts`) : les ancres aimées les
-   plus DISTINCTIVES, interrogées sur TMDB (recommandations, similaires) ; les
-   voisins collaboratifs des ancres viennent du cache.
+   mots-clés, auteurs, acteurs, studios, décennie, langue, univers, saga), et
+   sa **confiance** (`signalCount`, `profileConfidence.ts`).
+3. **Graines** (`seedPicker.ts` ; repli sans ancres `candidates/seeds.ts`) :
+   les ancres aimées les plus DISTINCTIVES, interrogées sur TMDB
+   (recommandations, similaires) ; les voisins collaboratifs des ancres
+   viennent du cache.
 4. **Sources** (`poolSources.ts`), dans cet ordre (le plafond d'assemblage
    coupe les dernières) : bibliothèque non vue, graines, voisins, animés
    (`animeSource`), personnes aimées, **auteurs** (`creatorSource`), **Vigie**
@@ -39,6 +42,37 @@ signaux ─► ancres ─► profil ─► graines + voisins ─► sources ─�
    plus par génération), re-score, filtres, et la **correspondance** par rang.
 6. **Rangées** (`rowBuilder.ts`, filtres purs dans `rowFilters.ts`) et **page**
    (`pageBuilder.ts`, `pageRows.ts`, servie par `pageService.ts`).
+
+### Ce que disent les visionnages
+
+Jellyfin ne marque « vu » qu'à 92 % (`MaxResumePct`) et tient pour « en cours »
+un épisode ouvert à 0 % (`MinResumePct`) : le moteur lit donc la POSITION des
+entamés (`viewingSignals.ts`, seuils dans `anchorSignals.ts`).
+
+- **Entamé à ≥ 80 %** : vu. Un film arrêté au générique est un « completed » ;
+  un épisode compte dans les heures ET le nombre d'épisodes de sa série.
+- **Entre 25 et 80 %** : partiel, au prorata — un film à 60 % pèse 60 % d'un
+  film vu (`partial`), un épisode ajoute ses heures sans compter l'épisode.
+- **Abandon** : UNE fois par titre, après un vrai départ (≥ 5 min ou ≥ 5 % ;
+  une ouverture à 0-1 % n'est rien), sous 25 %, laissé un mois, et rien vu de
+  la série depuis. Une série suivie (trois épisodes vus) n'est jamais abandonnée.
+- **Série longue lâchée tôt** (20 épisodes et plus dans la bibliothèque, au plus
+  huit vus et moins d'un cinquième, rien depuis 30 jours) : TIÈDE — jugée, sans
+  poids, jamais « suivie ».
+- **Poids** : un film vu en entier (0,7) pèse à peu près un cœur (0,8) ; le cœur
+  départage, il ne fait pas tout. Une série pèse ses heures (0,45 → 1,1).
+- **Adoré sans geste** (`AnchorTrait`, lu par `isLoved`) : revu (mesuré sur deux
+  jours), série finie ou presque (85 % des épisodes), dévorée (10 h en 14
+  jours), film fini d'une traite il y a moins de 45 jours. Personnes aimées,
+  auteurs, barre de qualité et plancher d'animé s'allument ainsi pour un compte
+  qui ne met jamais de cœur.
+- **Confiance** (`profileConfidence.ts`) : les signaux de chaque titre plus un
+  par tranche de trois heures regardées. Les seuils du service restent < 5
+  froid, < 15 tiède : vingt heures d'une série en binge ne sont jamais froides.
+- **Graines** (`seedPicker.ts`) : quota films/séries au NOMBRE de titres (pas
+  aux heures) ; à force égale, le plus récent, puis le plus regardé, puis le
+  noté — jamais l'id TMDB ; 60 % des places au rang, le reste tiré chaque jour
+  (`pickDaily`, compte et jour UTC) dans un vivier deux fois plus large.
 
 ## 2. Les sources, et pourquoi
 
@@ -93,7 +127,7 @@ poids disent ce qu'ils pèsent.
 - **Thèmes évités** (`themeAversion.ts`) : un thème dense jamais regardé
   (l'isekai d'une saison) ne pénalise qu'un titre peu voté.
 - **Barre de qualité** (`lovedTaste.ts`) : le quart le moins bien noté de ce
-  qu'il adore, moins 0,3 ; l'univers animé a la sienne : les votes, et
+  qu'il adore (geste ou visionnage, cf. « Adoré sans geste »), moins 0,3 ; l'univers animé a la sienne : les votes, et
   l'ÉPOQUE — le quantile 0,15 des années des animés qu'il regarde et adore
   (jamais le seul plus ancien), écart graduel plein quatre ans avant.
 - **Personnes adorées** : un acteur dans trois titres adorés, un auteur dans
