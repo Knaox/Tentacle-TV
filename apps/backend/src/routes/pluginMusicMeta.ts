@@ -40,6 +40,8 @@ export interface PluginMusicManifest {
   releaseSources?: ("bandcamp" | "files")[];
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
   labels?: Record<string, string>;
+  /** Le sondage de lisibilité (lot « ol ») : POST { ids, waitMs } → { states, retryAfterMs }. */
+  playability?: string;
 }
 
 /* ── Lecture du manifeste (même garde que `search` et `titles`) ── */
@@ -58,7 +60,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases", "playability"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
