@@ -39,6 +39,10 @@ export interface PersonaEvent {
   daysAgo?: number;
   /** Épisodes vus d'une série (défaut : tous). */
   episodes?: number;
+  /** Arrêté AVANT la fin (0..1, défaut : 1) : un film quitté au générique, des
+   *  épisodes enchaînés avant leur fin. Sous 0,92 Jellyfin ne marque pas « vu » :
+   *  l'élément reste entamé, à cette position. */
+  progress?: number;
 }
 
 export interface PersonaRef {
@@ -82,6 +86,8 @@ const DAY_MS = 86_400_000;
 const DEFAULT_EPISODE_MINUTES = 45;
 const DEFAULT_DAYS_AGO = 60;
 const ABANDON_SHARE = 0.1;
+/** `MaxResumePct` de Jellyfin : au-delà, l'élément est marqué « vu ». */
+const JELLYFIN_PLAYED_SHARE = 0.92;
 
 function iso(ms: number): string {
   return new Date(ms).toISOString();
@@ -97,6 +103,7 @@ function baseItem(entry: BenchLibraryEntry): SignalItem {
     Studios: entry.Studios,
     ProductionYear: entry.ProductionYear,
     RunTimeTicks: entry.RunTimeTicks,
+    ...(entry.mediaType === "tv" && entry.episodeCount > 0 ? { RecursiveItemCount: entry.episodeCount } : {}),
   };
 }
 
@@ -187,6 +194,14 @@ export function personaInputs(persona: Persona, entries: readonly BenchLibraryEn
       signals.favorites.push({ ...item, UserData: { IsFavorite: true } });
       flags.isFavorite = true;
     }
+    // Arrêté avant 92 % : Jellyfin le laisse « en cours », à sa position.
+    const stopped = event.progress != null && event.progress < JELLYFIN_PLAYED_SHARE ? event.progress : null;
+    if (entry.mediaType === "movie" && stopped != null) {
+      const runtime = entry.RunTimeTicks || 2 * 60 * TICKS_PER_MINUTE;
+      signals.resumable.push({ ...item, RunTimeTicks: runtime, UserData: { PlaybackPositionTicks: runtime * stopped, LastPlayedDate: stamp(days) } });
+      flags.inProgress = true;
+      continue;
+    }
     if (entry.mediaType === "movie") {
       signals.playedMovies.push({ ...item, UserData: { Played: true, PlayCount: 1, LastPlayedDate: stamp(days) } });
       flags.played = true;
@@ -200,13 +215,16 @@ export function personaInputs(persona: Persona, entries: readonly BenchLibraryEn
       const episodeDays = days + Math.floor((seen - 1 - i) / 3) * 2;
       const ep: PlayedEpisode & SignalItem = {
         Id: `${entry.itemId}:e${i + 1}`, Type: "Episode", SeriesId: entry.itemId, RunTimeTicks: runtime,
-        UserData: { Played: true, PlayCount: 1, LastPlayedDate: stamp(episodeDays) },
+        UserData: stopped != null
+          ? { PlaybackPositionTicks: runtime * stopped, LastPlayedDate: stamp(episodeDays) }
+          : { Played: true, PlayCount: 1, LastPlayedDate: stamp(episodeDays) },
       };
-      signals.playedEpisodes.push(ep);
+      if (stopped != null) signals.resumable.push(ep);
+      else signals.playedEpisodes.push(ep);
     }
-    signals.episodesPlayedBySeries.set(entry.itemId, seen);
-    flags.playedEpisodes = seen;
-    if (seen >= total) flags.played = true;
+    if (stopped == null) signals.episodesPlayedBySeries.set(entry.itemId, seen);
+    flags.playedEpisodes = stopped == null ? seen : 0;
+    if (seen >= total && stopped == null) flags.played = true;
     else flags.inProgress = true;
   }
   const accountKeys = [

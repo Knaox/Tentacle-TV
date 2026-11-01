@@ -1,0 +1,16 @@
+{
+  "id": "maigre",
+  "label": "Profil maigre (deux films, trois épisodes)",
+  "description": "Presque rien : deux films de science-fiction vus, trois épisodes d'une série. La correspondance ne doit pas s'y gonfler, ni un dessin animé pour enfants y paraître.",
+  "history": [
+    { "key": "movie:603", "title": "Matrix", "signal": "watched", "daysAgo": 15 },
+    { "key": "movie:78", "title": "Blade Runner", "signal": "watched", "daysAgo": 30 },
+    { "key": "tv:1399", "title": "Game of Thrones", "signal": "watched", "episodes": 3, "daysAgo": 5 }
+  ],
+  "expected": [
+    { "key": "movie:604", "title": "Matrix Reloaded" },
+    { "key": "movie:335984", "title": "Blade Runner 2049" }
+  ],
+  "avoid": [],
+  "avoidUniverses": ["kidsAnimation"]
+}

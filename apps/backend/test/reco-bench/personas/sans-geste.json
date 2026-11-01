@@ -1,0 +1,22 @@
+{
+  "id": "sans-geste",
+  "label": "Visionnages sans aucun geste",
+  "description": "Ne met jamais un cœur ni une note : films quittés au générique (84-90 %), un film vu aux trois cinquièmes, une série dévorée en deux semaines dont chaque épisode s'arrête à 85 %, une sitcom enchaînée à 75 %. Jellyfin n'en marque rien « vu ».",
+  "history": [
+    { "key": "movie:120", "title": "Le Seigneur des anneaux : La Communauté de l'anneau", "signal": "watched", "progress": 0.88, "daysAgo": 40 },
+    { "key": "movie:121", "title": "Le Seigneur des anneaux : Les Deux Tours", "signal": "watched", "progress": 0.9, "daysAgo": 35 },
+    { "key": "movie:155", "title": "The Dark Knight", "signal": "watched", "progress": 0.86, "daysAgo": 25 },
+    { "key": "movie:27205", "title": "Inception", "signal": "watched", "progress": 0.84, "daysAgo": 20 },
+    { "key": "movie:157336", "title": "Interstellar", "signal": "watched", "progress": 0.6, "daysAgo": 10 },
+    { "key": "tv:1396", "title": "Breaking Bad", "signal": "watched", "episodes": 20, "progress": 0.85, "daysAgo": 3 },
+    { "key": "tv:2316", "title": "The Office", "signal": "watched", "episodes": 24, "progress": 0.75, "daysAgo": 8 }
+  ],
+  "expected": [
+    { "key": "movie:122", "title": "Le Seigneur des anneaux : Le Retour du roi" },
+    { "key": "movie:49026", "title": "The Dark Knight Rises" },
+    { "key": "tv:60059", "title": "Better Call Saul" },
+    { "key": "tv:8592", "title": "Parks and Recreation" }
+  ],
+  "avoid": [],
+  "avoidUniverses": ["kidsAnimation"]
+}
