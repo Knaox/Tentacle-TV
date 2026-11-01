@@ -61,8 +61,12 @@ export function readPlayability(raw: PlayabilityResponse | null | undefined, key
 /** Les clés en cours de sondage, toutes listes confondues : deux listes d'une même page ne demandent pas deux fois. */
 const probing = new Set<string>();
 
-/** Les titres de cette extension qu'il reste à sonder, dans l'ordre de la liste, `PROBE_HEAD` au plus. */
-export function probeCandidates(provider: MusicProvider, tracks: readonly MusicTrack[]): MusicTrack[] {
+/**
+ * Les titres de cette extension qu'il reste à sonder, dans l'ordre de la liste, `PROBE_HEAD` au plus. `inFlight` :
+ * ceux qu'un autre sondage demande déjà sont écartés (jamais pour la SIGNATURE d'une liste : sinon le sondage en
+ * cours la changerait, et s'annulerait lui-même — vu au banc).
+ */
+export function probeCandidates(provider: MusicProvider, tracks: readonly MusicTrack[], inFlight = true): MusicTrack[] {
   const out: MusicTrack[] = [];
   for (const track of tracks) {
     if (out.length >= Math.min(PROBE_HEAD, PLAYABILITY_BATCH_MAX)) break;
@@ -70,7 +74,7 @@ export function probeCandidates(provider: MusicProvider, tracks: readonly MusicT
     // Absent = « unknown » (règle du contrat) ; déjà su (par la liste ou appris) : rien à demander.
     if (track.playable === "yes" || track.playable === "no") continue;
     const known = learnedPlayability(track.key);
-    if ((known && known.playable !== "unknown") || probing.has(track.key)) continue;
+    if ((known && known.playable !== "unknown") || (inFlight && probing.has(track.key))) continue;
     out.push(track);
   }
   return out;
@@ -93,8 +97,9 @@ export async function probePlayability(provider: MusicProvider, tracks: readonly
   try {
     for (let round = 0; round < PROBE_ROUNDS && pending.length > 0 && !signal.aborted; round += 1) {
       const { states, retryAfterMs } = await askOnce(provider, path, pending, signal);
-      if (signal.aborted) return;
+      // Une réponse arrivée est un FAIT : posée même si la liste a changé entre-temps ; seuls les tours suivants s'arrêtent.
       announcePlayability(states);
+      if (signal.aborted) return;
       if (retryAfterMs === null) return;
       await wait(retryAfterMs);
       pending = pending.filter((t) => (learnedPlayability(t.key)?.playable ?? "unknown") === "unknown");
@@ -108,7 +113,7 @@ export async function probePlayability(provider: MusicProvider, tracks: readonly
 export function usePlayabilityProbe(provider: MusicProvider | null, tracks: readonly MusicTrack[] | null | undefined): void {
   const path = provider?.music.playability ?? null;
   // La demande ne dépend que des CLÉS à sonder : une révision de la liste qui n'en change rien ne relance rien.
-  const signature = useMemo(() => (provider && path && tracks ? probeCandidates(provider, tracks).map((t) => t.key).join("|") : ""), [provider, path, tracks]);
+  const signature = useMemo(() => (provider && path && tracks ? probeCandidates(provider, tracks, false).map((t) => t.key).join("|") : ""), [provider, path, tracks]);
   // `tracks` est lu au moment où la signature change, pas à chaque révision.
   const latest = useRef(tracks);
   latest.current = tracks;

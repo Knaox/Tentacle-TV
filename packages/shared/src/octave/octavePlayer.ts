@@ -25,7 +25,7 @@ import { queueActions } from "./octaveQueueActions";
 import { applyRemoteCommand } from "./remoteCommands";
 import { engineLostCurrent } from "./engineLoss";
 import { announcePlayability, refusedQueue } from "./playabilityPatch";
-import { announceUnavailableTrack } from "./unavailableTrack";
+import { announceUnavailableTrack, isTrackUnavailable } from "./unavailableTrack";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -276,9 +276,11 @@ export class OctavePlayer {
 
   /** Anticipation : prépare les sources (appui, suivant) et prévient l'extension. */
   prefetch(tracks: readonly MusicTrack[], intent: PrefetchIntent): void {
-    if (tracks.length === 0) return;
-    this.deps.prefetchExternal(tracks, intent);
-    if (intent === "press" || intent === "next") for (const track of tracks) void this.deps.sources.get(track, intent === "next" ? "next" : "play");
+    // Un titre qu'on sait illisible (lot « ol ») ne se prépare jamais : ni anticipation, ni `resolve` au survol.
+    const playable = tracks.filter((track) => !isTrackUnavailable(track));
+    if (playable.length === 0) return;
+    this.deps.prefetchExternal(playable, intent);
+    if (intent === "press" || intent === "next") for (const track of playable) void this.deps.sources.get(track, intent === "next" ? "next" : "play");
   }
 
   /* ── Moteur ── */

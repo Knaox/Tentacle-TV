@@ -54,11 +54,13 @@ describe("probePlayability", () => {
     expect(learnedPlayability("ext:sillon:1")).toEqual({ playable: "no", reason: "members" });
   });
 
-  it("annulé (la liste a changé) : rien n'est posé", async () => {
+  it("annulé (la liste a changé) : la réponse arrivée est posée, aucun tour de plus", async () => {
     const controller = new AbortController();
-    vi.stubGlobal("fetch", vi.fn(async () => (controller.abort(), new Response(JSON.stringify({ states: { "1": { playable: "no" } } })))));
-    await probePlayability(provider("/p"), [t("1")], controller.signal);
-    expect(learnedPlayability("ext:sillon:1")).toBeNull();
+    const fetch = vi.fn(async () => (controller.abort(), new Response(JSON.stringify({ states: { "1": { playable: "no" }, "2": { playable: "unknown" } }, retryAfterMs: 10 }))));
+    vi.stubGlobal("fetch", fetch);
+    await probePlayability(provider("/p"), [t("1"), t("2")], controller.signal, async () => undefined);
+    expect(learnedPlayability("ext:sillon:1")).toEqual({ playable: "no", reason: "noStream" });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -68,6 +70,9 @@ describe("deux listes d'une même page", () => {
     const fetch = vi.fn(() => new Promise<Response>((r) => (release = () => r(new Response(JSON.stringify({ states: { "1": { playable: "yes" } } }))))));
     vi.stubGlobal("fetch", fetch);
     const first = probePlayability(provider("/p"), [t("1")], new AbortController().signal);
+    // La signature d'une liste ignore le sondage en cours (sinon il s'annulerait lui-même).
+    expect(probeCandidates(provider("/p"), [t("1")], false)).toHaveLength(1);
+    expect(probeCandidates(provider("/p"), [t("1")])).toHaveLength(0);
     await probePlayability(provider("/p"), [t("1")], new AbortController().signal);
     release();
     await first;
