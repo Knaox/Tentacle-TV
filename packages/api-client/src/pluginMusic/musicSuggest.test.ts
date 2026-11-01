@@ -93,4 +93,13 @@ describe("suggestions de l'extension (music.suggest)", () => {
       { kind: "track", title: "Bones", subtitle: null, text: "Bones Imagine Dragons" },
     ]);
   });
+  it("la lisibilité d'un TITRE suggéré passe (lot « ol ») ; jamais sur un artiste", () => {
+    expect(readMusicSuggestions({ suggestions: [
+      { kind: "track", title: "A", subtitle: "x", text: "a", playable: "no", playableReason: "region" },
+      { kind: "artist", title: "B", subtitle: null, text: "b", playable: "no" },
+    ] })).toEqual([
+      { kind: "track", title: "A", subtitle: "x", text: "a", playable: "no", playableReason: "region" },
+      { kind: "artist", title: "B", subtitle: null, text: "b" },
+    ]);
+  });
 });
