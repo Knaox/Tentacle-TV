@@ -14,6 +14,7 @@ import { CRAWL_RESEED_BOOT_DELAY_MS, requestCrawlerReseed } from "./crawlReseed"
 import { sweepLibraryMemo } from "./candidates/libraryMemo";
 import { fanoutPages, pokePage, startPageJobs, stopPageJobs } from "./pageJobs";
 import { epochDay, purgeOldImpressions } from "./impressions";
+import { purgeDeletedAccounts } from "./accountPurge";
 import { utcDayStamp } from "./seedRotation";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
@@ -95,6 +96,8 @@ export function startRecoJobs(): void {
   purgeTimer = setInterval(() => {
     void purgeExpiredRecoCache().catch(() => undefined);
     void purgeOldImpressions(epochDay(utcDayStamp())).catch(() => undefined);
+    // Les comptes supprimés de Jellyfin sortent du moteur (confirmé sur deux passages).
+    void purgeDeletedAccounts().catch(() => undefined);
     // Les index de bibliothèque que personne ne lit plus sortent de la mémoire.
     sweepLibraryMemo();
   }, CACHE_PURGE_INTERVAL_MS);
