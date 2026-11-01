@@ -25,7 +25,8 @@ export const CollectionFavoriteButton = memo(function CollectionFavoriteButton({
   const { t: to } = useTranslation("musicOffline");
   const theme = useTheme();
   const offline = useOfflineMode();
-  const { capable, shelves } = useMusicShelves();
+  // `arranged` : hors ligne aussi (rubriques gardées) — l'état gardé se montre, le geste dit qu'il attend le réseau.
+  const { arranged: capable, shelves } = useMusicShelves();
   const toggle = useToggleShelfFavorite();
   const favorite = shelfFavoriteOf(subject, shelves, capable);
   if (favorite === undefined || !hasCollectionActions(subject, capable)) return null;
