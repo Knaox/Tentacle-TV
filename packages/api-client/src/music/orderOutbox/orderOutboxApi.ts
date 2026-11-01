@@ -77,15 +77,21 @@ export function refreshIdleOrderPage(qc: QueryClient, page: OrderPage): void {
  * (liste des playlists, rubriques) relues au démarrage en ligne et au retour du réseau : hors ligne, chaque
  * playlist gardée s'ouvre dans le DERNIER ordre du compte, même changé sur un autre appareil.
  */
-export async function refreshKeptOrderPages(qc: QueryClient, collectionKeys: readonly string[]): Promise<void> {
-  const pages: OrderPage[] = [{ kind: "playlists" }, { kind: "shelves" }];
+export async function refreshKeptOrderPages(
+  qc: QueryClient,
+  collectionKeys: readonly string[],
+  // Les capacités du serveur : sans elles, ni préférence ni rubrique ne se demandent (un serveur d'avant).
+  capable: { listOrder: boolean; shelves: boolean } = { listOrder: true, shelves: true },
+): Promise<void> {
+  const pages: OrderPage[] = [{ kind: "playlists" }];
+  if (capable.shelves) pages.push({ kind: "shelves" });
   for (const key of collectionKeys) {
-    if (key === "playlist:liked") pages.push({ kind: "prefs", key: "liked" });
+    if (key === "playlist:liked" && capable.listOrder) pages.push({ kind: "prefs", key: "liked" });
     if (!key.startsWith("playlist:jf:")) continue;
     const id = key.slice("playlist:jf:".length);
     const listKey = parseListKey(`playlist:${id}`);
     pages.push({ kind: "playlist", id });
-    if (listKey) pages.push({ kind: "prefs", key: listKey });
+    if (listKey && capable.listOrder) pages.push({ kind: "prefs", key: listKey });
   }
   // Une à la fois : quelques requêtes légères, jamais une rafale au retour du réseau.
   for (const page of pages) await refetchOrderPage(qc, page);

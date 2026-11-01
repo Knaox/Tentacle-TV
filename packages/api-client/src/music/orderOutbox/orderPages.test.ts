@@ -49,4 +49,12 @@ describe("pages d'ordre gardées", () => {
     expect(qc.getQueryData(musicKeys.playlist(P1))).toEqual({ entries: [] });
     expect(calls).toHaveLength(4);
   });
+
+  it("un serveur d'avant (sans music.listOrder ni music.libraryFavorites) : ni préférence ni rubrique demandées, sans erreur", async () => {
+    const calls = serve((url) => (url.endsWith("/playlists") ? [] : { entries: [] }));
+    const qc = new QueryClient();
+    await refreshKeptOrderPages(qc, [`playlist:jf:${P1}`, "playlist:liked"], { listOrder: false, shelves: false });
+    expect(calls.some((u) => u.includes("prefs") || u.includes("shelves"))).toBe(false);
+    expect(calls).toHaveLength(2);
+  });
 });
