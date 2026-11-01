@@ -15,6 +15,8 @@ export type AnchorKind =
    *  seulement listé est un POTENTIEL (cf. potentials.ts). Plus jamais écrit. */
   | "watchlist"
   | "completed"
+  /** Film entamé entre 25 et 80 % : une part du « vu », au prorata. */
+  | "partial"
   | "rewatch"
   | "series"
   | "abandon"
@@ -22,6 +24,21 @@ export type AnchorKind =
   | "swipe_like"
   | "superlike"
   | "swipe_dislike";
+
+/**
+ * Ce qui fait d'un titre un ADORÉ sans aucun geste (cf. isLoved) : la moitié
+ * des comptes ne met jamais un cœur, et leurs personnes aimées, leur barre de
+ * qualité, leur plancher d'animé restaient éteints.
+ */
+export type AnchorTrait =
+  /** Revu, et c'est MESURÉ (deux jours distincts) — pas le compteur Jellyfin. */
+  | "rewatched"
+  /** Série finie ou presque (part des épisodes de la bibliothèque). */
+  | "finished"
+  /** Série dévorée : beaucoup d'heures en peu de jours. */
+  | "devoured"
+  /** Film fini récemment, d'une traite. */
+  | "recent_full";
 
 export interface Anchor {
   /** Clé canonique « movie:603 » ; « jf:<itemId> » sans identité TMDB. */
@@ -38,6 +55,8 @@ export interface Anchor {
   /** Dernier signal DATÉ (un marquage en masse ne date rien). */
   lastAt: string | null;
   kinds: AnchorKind[];
+  /** Absent : profil d'avant la v6, ou aucun trait. */
+  traits?: AnchorTrait[];
 }
 
 export interface PlayedEpisode {

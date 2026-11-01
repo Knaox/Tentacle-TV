@@ -10,6 +10,9 @@ export interface SignalItem extends JellyfinFacetSource {
   SeriesId?: string;
   ProviderIds?: Record<string, string>;
   RunTimeTicks?: number;
+  /** Épisodes d'une série dans la bibliothèque (scan des séries seulement). */
+  RecursiveItemCount?: number;
+  /** Position comprise : un entamé à 85 % est un visionnage (cf. viewingSignals). */
   UserData?: {
     PlayCount?: number;
     Played?: boolean;
@@ -31,7 +34,7 @@ const PAGES_MAX = 20;
 
 const FACET_FIELDS = "Genres,Studios,ProductionYear,ProviderIds";
 
-async function pagedUserItems(userId: string, params: string): Promise<SignalItem[]> {
+async function pagedUserItems(userId: string, params: string, extraFields = ""): Promise<SignalItem[]> {
   const url = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
   if (!url || !apiKey) return [];
@@ -40,7 +43,7 @@ async function pagedUserItems(userId: string, params: string): Promise<SignalIte
   for (let page = 0; page < PAGES_MAX; page++) {
     const res = await fetch(
       `${url}/Items?userId=${userId}&Recursive=true&EnableImages=false&EnableUserData=true` +
-        `&Fields=${FACET_FIELDS}&${params}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
+        `&Fields=${FACET_FIELDS}${extraFields}&${params}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
       { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (!res.ok) break;
@@ -56,6 +59,8 @@ export interface UserSignals {
   favorites: SignalItem[];
   watchlist: SignalItem[];
   playedMovies: SignalItem[];
+  /** Entamés (films, épisodes), position comprise — `MinResumePct` vaut 0 :
+   *  un épisode ouvert une seconde y figure. */
   resumable: SignalItem[];
   /** seriesId -> nombre d'épisodes vus (série « suivie » à partir de 3). */
   episodesPlayedBySeries: Map<string, number>;
@@ -82,7 +87,8 @@ export async function fetchUserSignals(userId: string): Promise<UserSignals> {
       pagedUserItems(userId, "Filters=IsPlayed&IncludeItemTypes=Movie"),
       pagedUserItems(userId, "Filters=IsResumable&IncludeItemTypes=Movie,Episode"),
       pagedUserItems(userId, "Filters=IsPlayed&IncludeItemTypes=Episode&EnableImages=false"),
-      pagedUserItems(userId, "IncludeItemTypes=Series"),
+      // Le nombre d'épisodes : une série finie, ou lâchée tôt dans un fleuve.
+      pagedUserItems(userId, "IncludeItemTypes=Series", ",RecursiveItemCount"),
     ]);
 
   const episodesPlayedBySeries = new Map<string, number>();

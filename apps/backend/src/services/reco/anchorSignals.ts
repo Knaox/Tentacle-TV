@@ -70,6 +70,34 @@ export function seriesEngagementByHours(hours: number, episodes: number): number
   return SERIES_WEIGHT_MIN + (SERIES_WEIGHT_MAX - SERIES_WEIGHT_MIN) * clamped;
 }
 
+// ── Éléments ENTAMÉS (Jellyfin ne marque « vu » qu'à 92 %) ──────────────────
+/** Arrêté au générique ou à l'enchaînement d'épisodes : c'est un visionnage. */
+export const WATCHED_MIN_PROGRESS = 0.8;
+/** Entre ce seuil et WATCHED_MIN_PROGRESS : un visionnage PARTIEL, au prorata. */
+export const PARTIAL_MIN_PROGRESS = 0.25;
+/** Un vrai départ : cinq minutes ou 5 % — en deçà (0-1 % : une ouverture,
+ *  un essai de lecteur), rien n'a été regardé, rien n'est jugé. */
+export const START_MIN_MINUTES = 5;
+export const START_MIN_PROGRESS = 0.05;
+/** Un entamé n'est un abandon qu'après un mois sans y revenir. */
+export const ABANDON_MIN_IDLE_DAYS = 30;
+
+// ── Séries : lâchée tôt, finie, dévorée ─────────────────────────────────────
+/** Une série « longue » : au-delà, quelques épisodes vus ne disent pas un goût. */
+export const LONG_SERIES_MIN_EPISODES = 20;
+/** Lâchée tôt : au plus huit épisodes, moins d'un cinquième de la série, et
+ *  plus rien depuis un mois — TIÈDE (aucun poids), jamais « suivie ». */
+export const EARLY_DROP_MAX_EPISODES = 8;
+export const EARLY_DROP_MAX_SHARE = 0.2;
+export const EARLY_DROP_IDLE_DAYS = 30;
+/** Finie ou presque : cette part des épisodes que la bibliothèque en a. */
+export const FINISHED_SHARE = 0.85;
+/** Dévorée : tant d'heures dans une fenêtre de tant de jours. */
+export const DEVOURED_HOURS = 10;
+export const DEVOURED_DAYS = 14;
+/** Film fini récemment, d'une traite (mesuré) : un goût, même sans cœur. */
+export const RECENT_FULL_DAYS = 45;
+
 // ── Décroissance ────────────────────────────────────────────────────────────
 /** Signaux EXPLICITES (note, favori, like, refus) : un goût déclaré dure. */
 const EXPLICIT_HALF_LIFE_DAYS = 730;

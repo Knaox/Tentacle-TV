@@ -9,8 +9,6 @@ import {
   ANCHOR_NOT_INTERESTED,
   ANCHOR_REWATCH,
   ANCHOR_REWATCH_UNVERIFIED,
-  EPISODE_FALLBACK_HOURS,
-  SERIES_MIN_EPISODES,
   bulkMinutes,
   explicitDecay,
   implicitDecay,
@@ -21,12 +19,11 @@ import {
 import { ratingSignalWeight, ratingStats } from "./profileMath";
 import type { SignalItem } from "./signals";
 import type { Anchor, AnchorInputs, AnchorKind, AnchorSet } from "./anchorTypes";
+import { abandonsOf, availableEpisodes, classifyResume, isEarlyDrop, seriesViewings } from "./viewingSignals";
 
 export type { Anchor, AnchorInputs, AnchorKind, AnchorSet, MeasuredViewing, PlayedEpisode } from "./anchorTypes";
 
 const TICKS_PER_HOUR = 36_000_000_000;
-const ABANDON_MAX_PROGRESS = 0.25;
-const ABANDON_MIN_IDLE_DAYS = 30;
 /** Plancher de pertinence : en deçà, une ancre ne dit rien. */
 const ANCHOR_EPSILON = 0.02;
 
@@ -127,11 +124,18 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     if (base > 0) a.lastAt = laterOf(a.lastAt, new Date(sw.updatedAt).toISOString());
   }
 
-  // 3) Films vus, et revus quand c'est vérifié.
+  // 3) Films vus, et revus quand c'est vérifié — arrêtés au générique (≥ 80 %)
+  //    compris : Jellyfin ne marque « vu » qu'à 92 %.
   const playedIds = new Set<string>();
-  for (const item of input.playedMovies) {
+  const completedKeys = new Set<string>();
+  const resumedMovies = input.resumable.filter((m) => m.Type === "Movie" && classifyResume(m).kind === "watched");
+  for (const item of [...input.playedMovies, ...resumedMovies]) {
+    const ref = refOf(item);
+    // Deux versions d'un même film ne font qu'un visionnage.
+    if (!ref || completedKeys.has(ref.key)) continue;
     const a = touchItem(item);
     if (!a) continue;
+    completedKeys.add(ref.key);
     playedIds.add(item.Id);
     const date = item.UserData?.LastPlayedDate ?? null;
     const decay = implicitDecay(playAgeDays(date, bulk, now));
@@ -148,24 +152,32 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     }
   }
 
-  // 4) Séries suivies : heures regardées, dernier épisode daté.
-  const bySeries = new Map<string, { hours: number; episodes: number; last: string | null }>();
-  for (const ep of input.playedEpisodes) {
-    if (!ep.SeriesId) continue;
-    const s = bySeries.get(ep.SeriesId) ?? { hours: 0, episodes: 0, last: null };
-    const ticks = ep.RunTimeTicks ?? 0;
-    s.hours += ticks > 0 ? ticks / TICKS_PER_HOUR : EPISODE_FALLBACK_HOURS;
-    s.episodes++;
-    const date = ep.UserData?.LastPlayedDate ?? null;
-    // Le plus récent épisode vraiment regardé date la série ; un marquage en
-    // masse ne compte que faute de mieux.
-    if (date && playAgeDays(date, bulk, now) < 365) s.last = laterOf(s.last, date);
-    bySeries.set(ep.SeriesId, s);
+  // 3 bis) Films vus en PARTIE (25-80 %) : une part du « vu », au prorata.
+  for (const item of input.resumable) {
+    const verdict = classifyResume(item);
+    const ref = item.Type === "Movie" ? refOf(item) : null;
+    if (verdict.kind !== "partial" || !ref || completedKeys.has(ref.key)) continue;
+    const a = touchItem(item)!;
+    const date = item.UserData?.LastPlayedDate ?? null;
+    a.weight += ANCHOR_COMPLETED * verdict.progress * implicitDecay(playAgeDays(date, bulk, now));
+    a.kinds.add("partial");
+    a.consumption = true;
+    a.hours = Math.max(a.hours, ((item.RunTimeTicks ?? 0) / TICKS_PER_HOUR) * verdict.progress);
+    if (date) a.lastAt = laterOf(a.lastAt, date);
   }
+
+  // 4) Séries suivies : heures regardées (entamés compris), dernier épisode
+  //    daté. Une série longue lâchée tôt reste TIÈDE : jugée, sans poids.
+  const bySeries = seriesViewings(input.playedEpisodes, input.resumable, bulk, now);
   for (const [seriesId, s] of bySeries) {
-    const weight = seriesEngagementByHours(s.hours, s.episodes);
     const series = input.seriesById.get(seriesId);
-    if (weight <= 0 || !series) continue;
+    if (!series) continue;
+    if (isEarlyDrop(s, availableEpisodes(series), now)) {
+      touchItem(series);
+      continue;
+    }
+    const weight = seriesEngagementByHours(s.hours, s.episodes);
+    if (weight <= 0) continue;
     const a = touchItem(series);
     if (!a) continue;
     a.weight += weight * implicitDecay(playAgeDays(s.last, bulk, now));
@@ -175,23 +187,14 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     a.lastAt = laterOf(a.lastAt, s.last);
   }
 
-  // 5) Abandons : < 25 % d'un film jamais terminé, ou une série lâchée tôt
-  //    (un épisode en plan après cinquante vus n'est pas un abandon).
-  for (const item of input.resumable) {
-    const runtime = item.RunTimeTicks ?? 0;
-    const last = item.UserData?.LastPlayedDate;
-    if (runtime <= 0 || !last || playedIds.has(item.Id)) continue;
-    const progress = (item.UserData?.PlaybackPositionTicks ?? 0) / runtime;
-    const idle = ageOf(last);
-    if (progress >= ABANDON_MAX_PROGRESS || idle < ABANDON_MIN_IDLE_DAYS) continue;
-    let target: SignalItem | null = item;
-    if (item.Type === "Episode") {
-      if (!item.SeriesId || (bySeries.get(item.SeriesId)?.episodes ?? 0) >= SERIES_MIN_EPISODES) continue;
-      target = input.seriesById.get(item.SeriesId) ?? null;
-    }
-    const a = target ? touchItem(target) : null;
-    if (!a) continue;
-    a.weight += ANCHOR_ABANDON * implicitDecay(idle);
+  // 5) Abandons, UN par titre : un vrai départ (≥ 5 min ou 5 %) sous 25 %,
+  //    laissé un mois, et rien vu de la série depuis.
+  for (const { target, idleDays } of abandonsOf({ resumable: input.resumable, playedMovieIds: playedIds, series: bySeries, seriesById: input.seriesById, now })) {
+    const ref = refOf(target);
+    if (!ref || completedKeys.has(ref.key)) continue;
+    const a = touchItem(target);
+    if (!a || a.kinds.has("abandon") || a.kinds.has("partial")) continue;
+    a.weight += ANCHOR_ABANDON * implicitDecay(idleDays);
     a.kinds.add("abandon");
   }
 
