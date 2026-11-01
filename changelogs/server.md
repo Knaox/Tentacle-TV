@@ -10,6 +10,24 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.42.0]
+<!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+### FR
+- **Des recommandations qui suivent ce que vous regardez** : un film ou un épisode arrêté au générique compte comme vu, un visionnage partiel compte en partie, et ce que vous regardez pèse autant qu'un « J'aime » — plus besoin de tout noter pour être bien conseillé
+- **Fini les faux refus** : un titre ouvert par erreur n'est plus pris pour un abandon, et une série entamée compte une seule fois
+- **Une page « Pour vous » qui change** : chaque jour un nouveau tirage parmi ce qui vous correspond le mieux, et un titre montré plusieurs jours sans vous intéresser laisse sa place, puis revient plus tard
+- **Plus de variété** : deux titres au plus d'un même réalisateur, acteur ou saga par rangée
+- **Un pourcentage de correspondance plus honnête** tant que le serveur vous connaît peu, et une série regardée sans interruption suffit à personnaliser la page
+- Les titres que vous avez déjà commencés ne sont plus recommandés (ils sont dans « Reprendre »)
+
+### EN
+- **Recommendations that follow what you watch**: a movie or episode stopped at the credits counts as watched, a partial viewing counts in part, and what you watch weighs as much as a "Like" — no need to rate everything to get good suggestions
+- **No more false rejections**: a title opened by mistake is no longer taken as abandoned, and a started series counts only once
+- **A "For you" page that changes**: a fresh daily pick among your best matches, and a title shown for several days without catching your interest makes room, then comes back later
+- **More variety**: at most two titles from the same director, actor or saga per row
+- **A more honest match percentage** while the server barely knows you, and a single binge-watched series is enough to personalize the page
+- Titles you have already started are no longer recommended (they are in "Continue watching")
+
 ## [1.40.0]
 <!-- Pas encore publié : la 1.40 est en aperçu restreint (serveur de développement privé, testeurs autorisés). Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Rien sur les extensions ni sur leur source de musique. -->
 ### FR
