@@ -9,6 +9,8 @@ import { effectiveIncludeVigie } from "./vigieSetting";
 
 // Démarrage à froid (spec) : < 5 signaux → pas de reco personnalisée du tout ;
 // 5..14 → recos servies avec l'indicateur « vos recommandations s'affinent ».
+// Les « signaux » comptent aussi les heures regardées (profileConfidence.ts) :
+// une série dévorée en binge n'est jamais un démarrage à froid.
 const COLD_MIN_SIGNALS = 5;
 const WARMING_MIN_SIGNALS = 15;
 

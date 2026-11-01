@@ -7,6 +7,7 @@ import { buildAnchors } from "./anchors";
 import type { Anchor, AnchorInputs, MeasuredViewing } from "./anchors";
 import type { StoredAnchor } from "./anchorStore";
 import { potentialsOf } from "./potentials";
+import { engagementSignalCount } from "./profileConfidence";
 import type { PotentialTitle } from "./potentials";
 import { buildCentroid, consumptionShares, universeShareOf } from "./tasteModel";
 
@@ -86,8 +87,8 @@ export async function computeTasteProfile(input: ProfileComputeInput, deps: Prof
   // Part d'animé en TEMPS DE VISIONNAGE sur les ancres de CONSOMMATION : c'est
   // ce qu'on REGARDE qui décide, pas ce qu'on met en favori.
   const animeShare = universeShareOf(stored, (a) => (facetsOf(a) ?? []).some((f) => f.key === ANIME_UNIVERSE_KEY));
-  // Compte de signaux (et non d'ancres) : les seuils froid/tiède du service
-  // gardent leur sens — un titre vu, noté et en favori, c'est trois signaux.
-  const signalCount = stored.reduce((s, a) => s + a.kinds.length, 0);
+  // La confiance : signaux ET heures regardées, sur TOUTES les ancres — un
+  // titre que TMDB ne décrit pas encore a pourtant été regardé.
+  const signalCount = engagementSignalCount(anchors);
   return { vector, stored, potentials, signalCount, ratingMean: mean, ratingStdDev: stdDev, animeShare };
 }
