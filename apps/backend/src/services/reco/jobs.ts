@@ -13,6 +13,8 @@ import { startMetaCrawler, stopMetaCrawler } from "./metaCrawler";
 import { CRAWL_RESEED_BOOT_DELAY_MS, requestCrawlerReseed } from "./crawlReseed";
 import { sweepLibraryMemo } from "./candidates/libraryMemo";
 import { fanoutPages, pokePage, startPageJobs, stopPageJobs } from "./pageJobs";
+import { epochDay, purgeOldImpressions } from "./impressions";
+import { utcDayStamp } from "./seedRotation";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -92,6 +94,7 @@ export function startRecoJobs(): void {
 
   purgeTimer = setInterval(() => {
     void purgeExpiredRecoCache().catch(() => undefined);
+    void purgeOldImpressions(epochDay(utcDayStamp())).catch(() => undefined);
     // Les index de bibliothèque que personne ne lit plus sortent de la mémoire.
     sweepLibraryMemo();
   }, CACHE_PURGE_INTERVAL_MS);

@@ -812,6 +812,25 @@ model RecommendationCache {
   @@map("recommendation_cache")
 }
 
+// Mémoire de l'AFFICHÉ des recommandations (services/reco/impressions.ts) : une
+// ligne par compte et par titre servi dans une rangée personnelle, comptée une
+// fois par jour. Les jours sont des entiers (jours depuis le 1er janvier 1970,
+// UTC). Un titre trop montré recule au tirage du jour, puis revient ; les lignes
+// sans affichage depuis 60 jours sont purgées.
+model RecoImpression {
+  jellyfinUserId String
+  itemKey        String // "movie:603"
+  /// Dernière rangée qui l'a servi (debug).
+  rowKey         String
+  firstDay       Int
+  lastDay        Int
+  daysShown      Int    @default(1)
+
+  @@id([jellyfinUserId, itemKey])
+  @@index([lastDay])
+  @@map("reco_impressions")
+}
+
 // « Ne plus me proposer » : exclusion DÉFINITIVE d'un titre des recommandations.
 model RecommendationFeedback {
   id             String   @id @default(cuid())

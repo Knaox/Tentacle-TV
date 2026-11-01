@@ -6,6 +6,8 @@ import { applyServeExclusions, dedupeServedRows, filterRowItems, isThemedRow, sn
 import { PAGE_ROW_MIN_ITEMS } from "./pageBuilder";
 import type { StaleReason } from "./pageRows";
 import { readGlobalsStamp, readSnapshot, touchSnapshot } from "./pageSnapshot";
+import { noteServedRows } from "./impressions";
+import { utcDayStamp } from "./seedRotation";
 import { isRebuilding } from "./profileBuilder";
 import { filterKeyOf } from "./providerFilter";
 import { rightsFilterFor } from "./recoRights";
@@ -82,6 +84,8 @@ export async function servePage(
   // garde ses films, les rangées suivantes ne les répètent pas.
   rows = themes ? dedupeServedRows(rows, PAGE_ROW_MIN_ITEMS) : rows.filter((row) => !isThemedRow(row.key));
   // « À la une » : le titre tel que la page le sert ENCORE (exclusions du moment comprises).
+  // La mémoire de l'affiché : ce que le compte VOIT (en mémoire, écrit plus tard).
+  if (personalized) noteServedRows(userId, utcDayStamp(), rows);
   const featuredRow = snapshot.featured ? rows.find((r) => r.key === snapshot.featured!.rowKey) : undefined;
   const featuredItem = featuredRow?.items.find((i) => i.key === snapshot.featured!.key);
   // « Tendances actuelles » en tête (`?trendingNow=1`), APRÈS « À la une » : la tête

@@ -25,6 +25,11 @@ const SRC = resolve(__dirname, "..");
 
 /** fichier (relatif à src/) → textes d'interpolation (ou d'argument) admis. */
 const REVIEWED: Record<string, Record<string, string>> = {
+  // La mémoire de l'affiché des recos : un gabarit constant (marques répétées,
+  // une constante numérique), toutes les valeurs liées en paramètres.
+  "services/reco/impressions.ts": {
+    "upsertSql(chunk.length)": "« (?, ?, ?, ?, ?, 1) » répété et une constante : des marques, aucune valeur",
+  },
   "services/libraryPresence.ts": {
     cases: "« WHEN ? THEN ? » répété : des marques, aucune valeur",
     marks: "« ?,?,… » : des marques, aucune valeur",

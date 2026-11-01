@@ -5,6 +5,7 @@ import { attachProviders } from "./attachProviders";
 import { abandonExclusionKeys, libraryExclusionKeys } from "./candidates/exclusions";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import { epochDay, readFatigue } from "./impressions";
 import { buildCommunityRow } from "./communityRow";
 import { requestPoolRelief } from "./generationJob";
 import type { PoolEntry, PoolPayload } from "./generationJob";
@@ -44,6 +45,8 @@ export interface PageBuildBase {
   builtAt: string;
   dayKey: string;
   globalsGeneratedAt: string | null;
+  /** Lassitude des titres déjà montrés (cf. impressions) ; absente : aucune. */
+  fatigue?: ReadonlyMap<string, number>;
 }
 
 /** Rend la main à la boucle d'événements entre deux rangées : une
@@ -83,6 +86,7 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
 
   const directory = await getWatchProviderDirectory();
   const now = new Date();
+  const dayKey = utcDayStamp(now);
   return {
     userId,
     ctx,
@@ -97,8 +101,9 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
     regional: directory.providers,
     providerRefOf,
     builtAt: now.toISOString(),
-    dayKey: utcDayStamp(now),
+    dayKey,
     globalsGeneratedAt: await readGlobalsStamp(),
+    fatigue: row ? await readFatigue(userId, epochDay(dayKey)) : undefined,
   };
 }
 
@@ -134,7 +139,7 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
     profile: ctx.profile,
     providerRefOf: base.providerRefOf,
     // Le tirage du jour : la page d'aujourd'hui, la même sur tous les appareils.
-    draw: { userId: base.userId, dayStamp: base.dayKey },
+    draw: { userId: base.userId, dayStamp: base.dayKey, fatigue: base.fatigue },
   };
   // Un titre n'apparaît qu'UNE fois dans la page : une rangée qui ne ferait que
   // répéter prend les rangs suivants (« Disponible dans votre bibliothèque » sur un
