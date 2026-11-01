@@ -6,7 +6,7 @@
  */
 
 import type { QueryClient } from "@tanstack/react-query";
-import { MUSIC_LIST_ROUTES, MUSIC_SHELF_ROUTES, type MusicLibraryShelves, type MusicListKey, type MusicListPrefs, type MusicShelfSection } from "@tentacle-tv/shared/music";
+import { MUSIC_LIST_ROUTES, MUSIC_SHELF_ROUTES, parseListKey, type MusicLibraryShelves, type MusicListKey, type MusicListPrefs, type MusicShelfSection } from "@tentacle-tv/shared/music";
 import { pendingListPrefs, pendingShelfOrder, type OrderWrite } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../../hooks/usePreferences";
 import { musicApi } from "../musicApi";
@@ -40,19 +40,55 @@ export async function readShelves(signal?: AbortSignal): Promise<MusicLibraryShe
   return { ...remote, order };
 }
 
+export type OrderPage = { kind: "prefs"; key: MusicListKey } | { kind: "playlist"; id: string } | { kind: "shelves" } | { kind: "playlists" };
+
+function keyOf(page: OrderPage): readonly unknown[] {
+  if (page.kind === "prefs") return musicKeys.listPrefs(page.key);
+  if (page.kind === "playlist") return musicKeys.playlist(page.id);
+  return page.kind === "shelves" ? musicKeys.shelves() : musicKeys.playlists();
+}
+
+function readerOf(page: OrderPage): () => Promise<unknown> {
+  if (page.kind === "prefs") return () => readListPrefs(page.key);
+  if (page.kind === "playlist") return () => musicApi.playlist(page.id);
+  return page.kind === "shelves" ? () => readShelves() : () => musicApi.playlists();
+}
+
 /**
  * Relire une page d'ordre et la rendre au cache — `fetchQuery`, pas une invalidation : une page restaurée du
  * disque n'a pas d'observateur (ni de `queryFn`), l'invalidation ne la relirait pas, et la copie gardée hors
  * ligne resterait celle d'avant.
  */
-export function refetchOrderPage(qc: QueryClient, page: { kind: "prefs"; key: MusicListKey } | { kind: "playlist"; id: string } | { kind: "shelves" }): Promise<unknown> {
-  const run =
-    page.kind === "prefs"
-      ? qc.fetchQuery({ queryKey: musicKeys.listPrefs(page.key), queryFn: () => readListPrefs(page.key), staleTime: 0 })
-      : page.kind === "playlist"
-        ? qc.fetchQuery({ queryKey: musicKeys.playlist(page.id), queryFn: () => musicApi.playlist(page.id), staleTime: 0 })
-        : qc.fetchQuery({ queryKey: musicKeys.shelves(), queryFn: () => readShelves(), staleTime: 0 });
-  return run.catch(() => undefined);
+export function refetchOrderPage(qc: QueryClient, page: OrderPage): Promise<unknown> {
+  return qc.fetchQuery({ queryKey: keyOf(page), queryFn: readerOf(page), staleTime: 0 }).catch(() => undefined);
+}
+
+/**
+ * Un évènement a changé cette page ailleurs : montée, l'invalidation la relit déjà ; rangée SANS observateur (la
+ * copie d'une playlist gardée, que l'on ouvrira hors ligne), elle se relit ici — jamais une page jamais vue.
+ */
+export function refreshIdleOrderPage(qc: QueryClient, page: OrderPage): void {
+  const query = qc.getQueryCache().find({ queryKey: keyOf(page), exact: true });
+  if (query && query.getObserversCount() === 0) void refetchOrderPage(qc, page);
+}
+
+/**
+ * Les pages d'ordre des collections gardées (`playlist:jf:<id>`, `playlist:liked`) et celles de la bibliothèque
+ * (liste des playlists, rubriques) relues au démarrage en ligne et au retour du réseau : hors ligne, chaque
+ * playlist gardée s'ouvre dans le DERNIER ordre du compte, même changé sur un autre appareil.
+ */
+export async function refreshKeptOrderPages(qc: QueryClient, collectionKeys: readonly string[]): Promise<void> {
+  const pages: OrderPage[] = [{ kind: "playlists" }, { kind: "shelves" }];
+  for (const key of collectionKeys) {
+    if (key === "playlist:liked") pages.push({ kind: "prefs", key: "liked" });
+    if (!key.startsWith("playlist:jf:")) continue;
+    const id = key.slice("playlist:jf:".length);
+    const listKey = parseListKey(`playlist:${id}`);
+    pages.push({ kind: "playlist", id });
+    if (listKey) pages.push({ kind: "prefs", key: listKey });
+  }
+  // Une à la fois : quelques requêtes légères, jamais une rafale au retour du réseau.
+  for (const page of pages) await refetchOrderPage(qc, page);
 }
 
 /** Après un envoi réussi : la vérité du serveur (fusionnée) revient à l'écran et dans la copie gardée. */

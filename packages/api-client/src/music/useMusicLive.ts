@@ -24,6 +24,7 @@ import { LIBRARY_SCOPES, MUSIC_KEY, musicKeys } from "./musicQueryKeys";
 import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
 import { isSavingListPrefs } from "./useMusicListOrder";
+import { refreshIdleOrderPage } from "./orderOutbox/orderOutboxApi";
 
 function invalidateScopes(qc: QueryClient, scopes: readonly string[]): void {
   for (const scope of scopes) void qc.invalidateQueries({ queryKey: ["music", scope] });
@@ -45,6 +46,8 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
     case "music:playlist":
       void qc.invalidateQueries({ queryKey: musicKeys.playlist(event.playlistId) });
       invalidateScopes(qc, ["playlists", "home", "shelves"]);
+      // La copie gardée de cette playlist (rangée, sans observateur) suit aussi : hors ligne, son dernier ordre.
+      refreshIdleOrderPage(qc, { kind: "playlist", id: event.playlistId });
       return;
     case "music:resolved":
     case "music:pending":
@@ -52,11 +55,17 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
       return;
     case "music:shelves":
       // Un autre appareil du compte a posé un favori ou rangé une rubrique ; l'écho de NOTRE ordre ne relit rien.
-      if (!isSavingListPrefs(`library:${event.section}`)) void qc.invalidateQueries({ queryKey: musicKeys.shelves() });
+      if (!isSavingListPrefs(`library:${event.section}`)) {
+        void qc.invalidateQueries({ queryKey: musicKeys.shelves() });
+        refreshIdleOrderPage(qc, { kind: "shelves" });
+      }
       return;
     case "music:listPrefs":
       // Un autre appareil du compte a trié ou glissé cette liste ; l'écho de NOTRE envoi ne relit rien.
-      if (!isSavingListPrefs(event.key)) void qc.invalidateQueries({ queryKey: musicKeys.listPrefs(event.key) });
+      if (!isSavingListPrefs(event.key)) {
+        void qc.invalidateQueries({ queryKey: musicKeys.listPrefs(event.key) });
+        refreshIdleOrderPage(qc, { kind: "prefs", key: event.key });
+      }
       return;
     case "music:provider":
       // L'extension elle-même (`/api/plugins/active`) se relit ailleurs ; ici, ce qu'elle mêlait.
