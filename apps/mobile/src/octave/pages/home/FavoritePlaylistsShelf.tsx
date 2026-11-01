@@ -16,15 +16,14 @@ import { homeFavoritePlaylists } from "@tentacle-tv/shared/octave";
 import { ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
 import { Shelf } from "../ui/Shelf";
 import { requestPlaylistsReorder } from "../../playlists/screens/reorderRequest";
-import { useOfflineMode } from "@/offline/useOfflineMode";
 
 /** Plus petites que les cartes d'étagère : la rangée appelle, elle ne s'impose pas. */
 const COMPACT = 112;
 
 export const FavoritePlaylistsShelf = memo(function FavoritePlaylistsShelf() {
   const { t } = useTranslation("musicFavorites");
-  const { capable, shelves } = useMusicShelves();
-  const offline = useOfflineMode();
+  // Rangées hors ligne aussi (rubriques gardées), comme en ligne.
+  const { arranged: capable, shelves } = useMusicShelves();
   const router = useRouter();
   const items = useMemo(() => (capable ? homeFavoritePlaylists(shelves.playlists, shelfPlaylistKey, shelves.order.playlists) : []), [capable, shelves]);
   const reorder = useCallback(() => {
@@ -38,7 +37,7 @@ export const FavoritePlaylistsShelf = memo(function FavoritePlaylistsShelf() {
       items={items}
       keyOf={shelfPlaylistKey}
       width={COMPACT}
-      onSeeAll={items.length > 1 && !offline ? reorder : undefined}
+      onSeeAll={items.length > 1 ? reorder : undefined}
       actionLabel={t("actions.reorder")}
       render={(entry: MusicShelfPlaylist, w) => (entry.kind === "library" ? <PlaylistCard playlist={entry.playlist} width={w} /> : <ExternalPlaylistCard playlist={entry.playlist} width={w} />)}
     />

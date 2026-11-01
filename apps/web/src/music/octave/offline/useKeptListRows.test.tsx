@@ -9,17 +9,26 @@ import type { DeviceCollection } from "@tentacle-tv/offline-core/music";
  * Octave — une playlist ouverte dans « Sur cet appareil » : les rangées de la playlist EN LIGNE (cache compris) et la
  * préférence de SA liste ; un album, son ordre gardé — jamais le tri des likés.
  */
-const h = vi.hoisted(() => ({ entries: undefined as MusicPlaylistEntry[] | undefined, listKey: "unset" as string | null, playlistId: "unset" as string | null | undefined }));
+const h = vi.hoisted(() => ({
+  entries: undefined as MusicPlaylistEntry[] | undefined,
+  editable: true,
+  listKey: "unset" as string | null,
+  playlistId: "unset" as string | null | undefined,
+  options: null as { onJellyfinOrder?: unknown; full?: readonly unknown[] } | null,
+}));
 
 vi.mock("@tentacle-tv/api-client", () => ({
   useMusicPlaylist: (id: string | null) => {
     h.playlistId = id;
-    return { data: h.entries ? { entries: h.entries } : undefined };
+    return { data: h.entries ? { entries: h.entries, editable: h.editable } : undefined };
   },
   useLibraryFirstRows: (rows: readonly ListRow[]) => rows,
+  usePlaylistSharingRules: () => ({ isShared: false }),
+  useReorderMusicPlaylist: () => () => undefined,
   // Le tri du compte : à l'envers, pour voir qu'il s'applique (ou non).
-  useListOrder: (key: string | null, natural: readonly ListRow[]) => {
+  useListOrder: (key: string | null, natural: readonly ListRow[], _stats: unknown, options: typeof h.options) => {
     h.listKey = key;
+    h.options = options;
     return { capable: true, ready: true, rows: [...natural].reverse() };
   },
 }));
@@ -46,6 +55,8 @@ const run = (open: DeviceCollection | null) => {
 beforeEach(() => {
   h.entries = undefined;
   h.listKey = "unset";
+  h.editable = true;
+  h.options = null;
 });
 
 describe("les rangées d'une collection gardée ouverte", () => {
@@ -71,5 +82,21 @@ describe("les rangées d'une collection gardée ouverte", () => {
     expect(out.rows.map((r) => r.track.key)).toEqual([b.key, a.key, c.key]);
     expect(out.toolbar).toBe(false);
     expect(out.ready).toBe(true);
+  });
+
+  it("hors ligne, le glisser : parmi TOUTES les rangées en ligne, et vers Jellyfin si la playlist est modifiable", () => {
+    h.entries = [entry(a, 0), entry(b, 1), entry(c, 2)];
+    run(collection("playlist:jf:0123456789abcdef0123456789abcdef", "playlist", [a, c]));
+    expect(h.options?.full).toHaveLength(3);
+    expect(typeof h.options?.onJellyfinOrder).toBe("function");
+    h.editable = false;
+    run(collection("playlist:jf:0123456789abcdef0123456789abcdef", "playlist", [a, c]));
+    expect(h.options?.onJellyfinOrder).toBeUndefined();
+  });
+
+  it("« Titres likés » gardés : l'ordre du compte (`liked`), avec sa barre", () => {
+    const out = run(collection("playlist:liked", "playlist", [b, a]));
+    expect(h.listKey).toBe("liked");
+    expect(out.toolbar).toBe(true);
   });
 });

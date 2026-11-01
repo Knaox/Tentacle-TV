@@ -8,7 +8,7 @@
 import { useCallback, useMemo } from "react";
 import { useLibraryFirstRows, useListOrder, useMusicPending, useMusicPlaylist, usePlaylistSharingRules, useReorderMusicPlaylist, useWholeLiked } from "@tentacle-tv/api-client";
 import { parseListKey, type MusicListStats } from "@tentacle-tv/shared/music";
-import { makeStatsOf, mergeLiked, mergePlaylist } from "@tentacle-tv/shared/octave";
+import { makeStatsOf, mergeLiked, mergePlaylist, type JellyfinOrder } from "@tentacle-tv/shared/octave";
 import { useOctavePagesProvider } from "../../pages";
 
 export function usePendingMusic() {
@@ -40,7 +40,7 @@ export function usePlaylistData(id: string) {
   // Partagée (`musicPlaylistMembers.ts`) : chacun son ordre, jamais celui de Jellyfin ; les ajouts des autres au bout.
   const rules = usePlaylistSharingRules(playlist.data);
   const reorderPlaylist = useReorderMusicPlaylist();
-  const onJellyfinOrder = useCallback((entryIds: string[]) => reorderPlaylist(id, entryIds), [id, reorderPlaylist]);
+  const onJellyfinOrder = useCallback((order: JellyfinOrder) => reorderPlaylist(id, order), [id, reorderPlaylist]);
   const order = useListOrder(parseListKey(`playlist:${id}`), natural, statsOf, {
     complete: true,
     onJellyfinOrder: editable && !rules.isShared ? onJellyfinOrder : undefined,

@@ -15,6 +15,7 @@ export * from "./playlistRemoval";
 export * from "./keptRenames";
 export * from "./keptSources";
 export * from "./deviceModel";
+export * from "./deviceCollectionOrder";
 export * from "./syncPlan";
 export * from "./syncRunner";
 export * from "./syncSignals";

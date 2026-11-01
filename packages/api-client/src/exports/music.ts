@@ -26,6 +26,11 @@ export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, t
 export {
   musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
 } from "../music/useMusicListOrder";
+export {
+  ORDER_OUTBOX_KEY, configureOrderOutbox, orderOutboxQueue, subscribeOrderOutbox, sendOrderWrite, flushOrderOutbox, isTransportFailure, type OrderOutboxPort, type OrderOutboxApi,
+} from "../music/orderOutbox/orderOutbox";
+export { orderOutboxApi, readListPrefs, readShelves, refetchOrderPage, refetchAfterOrderWrite, refreshIdleOrderPage, refreshKeptOrderPages, type OrderPage } from "../music/orderOutbox/orderOutboxApi";
+export { useOrderOutboxReplay } from "../music/orderOutbox/useOrderOutboxReplay";
 // Octave — une liste affichée (playlist, « Titres likés ») : tri du compte, recherche, filtre, glisser.
 export { useListOrder, type ListOrderOptions, type ReorderBlock } from "../music/lists/useListOrder";
 export { useWholeLiked } from "../music/lists/useWholeLiked";
@@ -62,5 +67,5 @@ export {
   musicShelfApi, useMusicShelvesCapability, useMusicShelves, useToggleShelfFavorite, useSaveShelfOrder, shelfSubjectKey, shelfSubjectFavoritable, shelfFavoriteOf, shelvesAfter,
   type MusicShelfSubject,
 } from "../music/useMusicShelves";
-export { useAlbumShelf, useArtistShelf, usePlaylistShelf, usePlaylistChooserSections, type LibraryShelf } from "../music/useLibraryShelf";
+export { useAlbumShelf, useArtistShelf, usePlaylistShelf, usePlaylistChooserSections, useLibraryPlaylistOrder, type LibraryShelf } from "../music/useLibraryShelf";
 export { useCollectionMenu, type CollectionMenu } from "../music/useCollectionMenu";

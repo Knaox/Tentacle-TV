@@ -13,6 +13,7 @@ import { useKeptRenames } from "./useKeptRenames";
 import { useMusicOfflineProvider } from "./useMusicOfflineProvider";
 import { useMusicOfflineSurface } from "./useMusicOfflineSurface";
 import { octaveAutoSync } from "../settings/octaveSettings";
+import { useOctaveOrderSync } from "./orderSync/useOctaveOrderSync";
 
 export function MusicOfflineScope({ children }: { children: ReactNode }) {
   const provider = useMusicOfflineProvider();
@@ -20,6 +21,8 @@ export function MusicOfflineScope({ children }: { children: ReactNode }) {
   // « Tenir à jour les playlists gardées sur cet appareil » : le réglage d'appareil d'Octave (allumé par défaut).
   useKeptAutoSync(surface, provider, octaveAutoSync.use());
   useKeptRenames(surface, provider);
+  // Les ordres changés sans réseau partent au retour ; la copie gardée des ordres suit ce qui change ailleurs.
+  useOctaveOrderSync();
   const value = useMemo(() => ({ surface, provider }), [surface, provider]);
   return <MusicOfflineContext.Provider value={value}>{children}</MusicOfflineContext.Provider>;
 }

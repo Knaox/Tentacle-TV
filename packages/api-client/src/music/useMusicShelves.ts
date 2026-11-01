@@ -24,11 +24,14 @@ import {
 } from "@tentacle-tv/shared/music";
 import { collectionFavoritable } from "@tentacle-tv/shared/octave";
 import { tentacleApiFetch } from "../hooks/usePreferences";
-import { useServerCapability } from "../hooks/useServerCapabilities";
+import { useServerCapabilities, useServerCapability } from "../hooks/useServerCapabilities";
+import { keptCapability } from "./orderOutbox/keptCapability";
 import { musicKeys } from "./musicQueryKeys";
 import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
-import { latestWinsQueue, markListPrefsSaving } from "./useMusicListOrder";
+import { markListPrefsSaving } from "./useMusicListOrder";
+import { sendOrderWrite } from "./orderOutbox/orderOutbox";
+import { orderOutboxApi, readShelves } from "./orderOutbox/orderOutboxApi";
 
 /** Un élément d'une rubrique, tel qu'un geste le reçoit. */
 export type MusicShelfSubject =
@@ -55,14 +58,18 @@ const EMPTY_SHELVES: MusicLibraryShelves = { albums: [], artists: [], playlists:
 
 /** Les favoris et l'ordre de chaque rubrique ; vides tant que le serveur n'a pas répondu (ou ne sait pas). */
 export function useMusicShelves(options: { enabled?: boolean } = {}) {
-  const capable = useMusicShelvesCapability();
+  const declared = useMusicShelvesCapability();
+  const { known } = useServerCapabilities();
   const query = useQuery({
     queryKey: musicKeys.shelves(),
-    queryFn: ({ signal }) => musicShelfApi.shelves(signal),
-    enabled: capable && options.enabled !== false,
+    queryFn: ({ signal }) => readShelves(signal),
+    enabled: declared && options.enabled !== false,
     staleTime: 60_000,
   });
-  return { capable, shelves: query.data ?? EMPTY_SHELVES, ready: !capable || query.isSuccess || query.isError, query };
+  // Hors ligne, les rubriques GARDÉES prouvent la capacité de les MONTRER rangées et de les réordonner (le geste
+  // part au retour du réseau) ; un favori, lui, attend le serveur : `capable` reste la déclaration.
+  const arranged = keptCapability(declared, known, query.data !== undefined);
+  return { capable: declared, arranged, shelves: query.data ?? EMPTY_SHELVES, ready: !arranged || query.isSuccess || query.isError, query };
 }
 
 /** La clé d'un élément dans sa rubrique (`shelfKeyOf`). */
@@ -156,8 +163,6 @@ export function useToggleShelfFavorite() {
   });
 }
 
-const sendOrder = latestWinsQueue();
-
 function setOrder(qc: QueryClient, section: MusicShelfSection, keys: string[]): void {
   qc.setQueryData<MusicLibraryShelves>(musicKeys.shelves(), (data) => {
     const base = data ?? EMPTY_SHELVES;
@@ -170,10 +175,13 @@ export function useSaveShelfOrder() {
   const qc = useQueryClient();
   return useCallback(
     (section: MusicShelfSection, keys: string[]) => {
+      // La base : l'ordre d'avant ce geste (la file d'envoi lit contre lui ce qu'il a déplacé).
+      const base = qc.getQueryData<MusicLibraryShelves>(musicKeys.shelves())?.order[section] ?? [];
       setOrder(qc, section, keys);
       const listKey = shelfListKey(section);
       const saved = markListPrefsSaving(listKey);
-      void sendOrder(listKey, () => musicShelfApi.order(section, keys)).then(() => {
+      // Gardé sur l'appareil jusqu'à son départ : sans réseau, il attend et se rejoue au retour (`orderOutbox`).
+      void sendOrderWrite({ kind: "shelfOrder", section, keys, base: [...base] }, orderOutboxApi).then(() => {
         saved();
         return qc.invalidateQueries({ queryKey: musicKeys.shelves(), refetchType: "none" });
       });

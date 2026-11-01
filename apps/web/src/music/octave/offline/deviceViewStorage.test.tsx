@@ -57,6 +57,7 @@ vi.mock("./useKeptListRows", () => ({
     return { natural: rows, rows, order: { reset: () => undefined }, toolbar: true, ready: true };
   },
 }));
+vi.mock("./useLibraryPlaylistOrder", () => ({ useLibraryPlaylistOrder: () => [] }));
 vi.mock("./useKeptMusic", () => ({
   useKeptMusic: () => ({
     loaded: true,

@@ -36,7 +36,8 @@ interface ShelfSpec<T> {
 }
 
 function useShelf<T>(spec: ShelfSpec<T>): LibraryShelf<T> {
-  const { capable, ready, shelves } = useMusicShelves();
+  // `arranged` : la rubrique rangée et réordonnable, hors ligne compris (rubriques gardées).
+  const { arranged: capable, ready, shelves } = useMusicShelves();
   const save = useSaveShelfOrder();
   const { section, listing, keyOf, favoriteOf, served, orderRest } = spec;
   const order = shelves.order[section];
@@ -91,6 +92,15 @@ export function useArtistShelf(listing: readonly MusicArtist[]): LibraryShelf<Mu
 export function usePlaylistShelf(playlists: readonly MusicPlaylist[] | undefined): LibraryShelf<MusicShelfPlaylist> {
   const listing = useMemo(() => (playlists ?? []).map((playlist): MusicShelfPlaylist => ({ kind: "library", playlist })), [playlists]);
   return useShelf({ section: "playlists", listing, keyOf: shelfPlaylistKey, favoriteOf: playlistFavorite, served: servedPlaylists, orderRest: true });
+}
+
+/**
+ * L'ordre des playlists de la bibliothèque tel qu'il se montre en ligne (favorites, puis le reste), relu du cache
+ * d'Octave sans réseau : « Sur cet appareil » y range ses playlists gardées (offline-core › `orderDeviceCollections`).
+ */
+export function useLibraryPlaylistOrder(): string[] {
+  const shelf = usePlaylistShelf(useMusicPlaylists().data);
+  return useMemo(() => [...shelf.favorites, ...shelf.rest].map(shelfPlaylistKey), [shelf.favorites, shelf.rest]);
 }
 
 const libraryOnly = (entries: readonly MusicShelfPlaylist[]): MusicPlaylist[] => entries.flatMap((e) => (e.kind === "library" ? [e.playlist] : []));

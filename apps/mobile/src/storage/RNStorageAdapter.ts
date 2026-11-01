@@ -80,7 +80,7 @@ const STORAGE_KEYS = [
   // Octave (pages) : la mémoire de l'appareil — recherches récentes, « déjà écouté », albums et artistes
   // consultés, dernière playlist du « + », tri des albums (@tentacle-tv/shared/octave › pages, api-client).
   "tentacle_octave_recent_searches", "tentacle_octave_search_listens", "tentacle_octave_recent_visits",
-  "tentacle_octave_last_playlist", "tentacle_octave_album_sort",
+  "tentacle_octave_last_playlist", "tentacle_octave_album_sort", "tentacle_octave_order_outbox",
   // Octave : les titres récemment recherchés et le versement unique de l'historique au compte (`searchHistoryDevice`).
   "tentacle_octave_recent_search_tracks", "tentacle_octave_search_history_synced",
   // Octave : la session du lecteur reprise en pause au retour (`attachPlayerResume`, api-client).
