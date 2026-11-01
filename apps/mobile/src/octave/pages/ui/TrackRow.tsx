@@ -55,8 +55,9 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   const { t } = useTranslation("music");
   const { t: tl } = useTranslation("musicLists");
   const liked = useLiked(track.key, track.favorite);
-  // Un titre qui ne se lit pas (`unavailableTrack.ts` : importé sans source, sortie sans écoute publique) : grisé ;
-  // le toucher ne lance rien et l'avis dit pourquoi (la lecture en cours continue).
+  // Un titre qui ne se lit pas (`trackPlayability.ts`, lot « ol ») : pochette éteinte et « Pas lisible », le texte
+  // reste lisible ; le toucher ouvre la feuille qui dit pourquoi (Favori, Ajouter à une playlist) ; « ⋯ », l'appui
+  // long et le cœur restent. `unknown` se rend comme lisible : l'état arrive sur place, sans rien déplacer.
   const locked = isTrackUnavailable(track);
   const playable = useTrackPlayable()(track.key) && !locked;
   const keptCover = useKeptCover(track.key);
@@ -89,11 +90,11 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
       disabled={(!playable && !locked) || editing}
       onLongPress={editing ? undefined : sheet}
       delayLongPress={350}
-      style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, opacity: playable || editing ? 1 : 0.4, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
+      style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, opacity: playable || locked || editing ? 1 : 0.4, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
       accessibilityRole={editing ? "text" : "button"}
-      accessibilityLabel={editing ? track.title : t("track.play", { title: track.title })}
+      accessibilityLabel={editing ? track.title : locked ? t("unplayableTrack.rowLabel", { title: track.title }) : t("track.play", { title: track.title })}
       accessibilityHint={artists}
-      accessibilityState={{ selected: playing, disabled: !playable && !editing }}
+      accessibilityState={{ selected: playing, disabled: !playable && !locked && !editing }}
       accessibilityActions={a11yActions.length > 0 ? a11yActions : undefined}
       onAccessibilityAction={a11yActions.length > 0 ? onA11yAction : undefined}
     >
@@ -102,7 +103,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
           {playing ? <NowPlayingBars color={accent} /> : <Text style={[typography.caption, { color: theme.colors.text.tertiary }]}>{track.trackNumber ?? index + 1}</Text>}
         </View>
       ) : (
-        <View>
+        <View style={locked ? styles.dimmed : undefined}>
           <Artwork url={track.artworkUrl} localUrl={keptCover} size={44} radius={6} />
           {playing ? (
             <View style={[StyleSheet.absoluteFill, styles.overlay]}>
@@ -112,14 +113,14 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
         </View>
       )}
       <View style={styles.text}>
-        <Text numberOfLines={1} style={[typography.bodyBold, { color: playing ? accent : theme.colors.text.primary }]}>
+        <Text numberOfLines={1} style={[typography.bodyBold, { color: playing ? accent : locked ? theme.colors.text.secondary : theme.colors.text.primary }]}>
           {track.title}
         </Text>
         <View style={styles.sub}>
           <TrackStateMark track={track} size={11} unavailable={locked} />
           {liked ? <Heart size={11} color={accent} fill={accent} accessibilityLabel={t("track.unlike")} /> : null}
           <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: theme.colors.text.tertiary }]}>
-            {locked ? `${artists} · ${track.unavailable === "notPublic" ? t("notPublic", { ns: "musicReleases" }) : t("unavailableAlbum.badge")}` : artists}
+            {locked ? `${artists} · ${t("unplayableTrack.badge")}` : artists}
           </Text>
         </View>
       </View>
@@ -144,5 +145,6 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 0, gap: 2 },
   sub: { flexDirection: "row", alignItems: "center", gap: 4 },
   flex: { flex: 1 },
+  dimmed: { opacity: 0.45 },
   more: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -10 },
 });

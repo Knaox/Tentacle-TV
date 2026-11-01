@@ -90,15 +90,17 @@ const QueueEntryRow = memo(function QueueEntryRow({ item, slot }: { item: QueueI
   const colors = useOctaveColors();
   const player = useOctavePlayer();
   const artist = item.track.artists.map((a) => a.name).join(", ");
-  // Un titre indisponible reste dans la file, grisé : la file le saute, le toucher le dit (`unavailableTrack.ts`).
+  // Un titre illisible reste dans la file, grisé : la file le saute, le toucher ouvre sa feuille (`trackPlayability.ts`).
   const locked = isTrackUnavailable(item.track);
   return (
-    <View style={[styles.row, locked && styles.locked]}>
-      <Pressable onPress={() => queueActions.jumpTo(player, item.uid)} style={({ pressed }) => [styles.main, pressed && { backgroundColor: colors.pressed }]} accessibilityRole="button" accessibilityLabel={`${item.track.title} — ${artist}`}>
-        <PlayerArtwork url={item.track.artworkUrl} size={44} radius={8} />
+    <View style={styles.row}>
+      <Pressable onPress={() => queueActions.jumpTo(player, item.uid)} style={({ pressed }) => [styles.main, pressed && { backgroundColor: colors.pressed }]} accessibilityRole="button" accessibilityLabel={locked ? t("unplayableTrack.rowLabel", { title: item.track.title }) : `${item.track.title} — ${artist}`}>
+        <View style={locked ? styles.locked : undefined}>
+          <PlayerArtwork url={item.track.artworkUrl} size={44} radius={8} />
+        </View>
         <View style={styles.texts}>
-          <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>{item.track.title}</Text>
-          <Text numberOfLines={1} style={[styles.artist, { color: colors.textSecondary }]}>{artist}</Text>
+          <Text numberOfLines={1} style={[styles.title, { color: locked ? colors.textSecondary : colors.text }]}>{item.track.title}</Text>
+          <Text numberOfLines={1} style={[styles.artist, { color: colors.textSecondary }]}>{locked ? `${artist} · ${t("unplayableTrack.badge")}` : artist}</Text>
         </View>
       </Pressable>
       <Pressable onPress={() => queueActions.remove(player, item.uid)} hitSlop={6} style={styles.remove} accessibilityRole="button" accessibilityLabel={t("queue.remove")}>
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
   clearText: { fontSize: 14, fontWeight: "600" },
   empty: { fontSize: 14, paddingVertical: 12 },
   row: { height: ROW, flexDirection: "row", alignItems: "center" },
-  locked: { opacity: 0.4 },
+  locked: { opacity: 0.45 },
   main: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, height: ROW, borderRadius: 12, paddingHorizontal: 4 },
   texts: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, fontWeight: "600" },

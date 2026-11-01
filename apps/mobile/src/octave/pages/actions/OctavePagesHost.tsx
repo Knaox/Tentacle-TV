@@ -16,6 +16,7 @@ import { NoticeHost } from "./NoticeHost";
 import { PlaylistChooserSheet } from "./PlaylistChooserSheet";
 import { TrackActionSheet } from "./TrackActionSheet";
 import { UnavailableAlbumSheet } from "./UnavailableAlbumSheet";
+import { UnplayableTrackSheet } from "./UnplayableTrackSheet";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchPickRecorder } from "@tentacle-tv/api-client";
@@ -33,10 +34,13 @@ function SearchListenRecorder() {
   return null;
 }
 
-/** Un titre indisponible touché (rangée, file d'attente) : rien ne se lance, l'avis le dit (`unavailableTrack.ts`). */
+/**
+ * Un titre illisible touché SANS le titre en main (un geste d'avant) : l'avis court. Avec le titre, la feuille
+ * (`UnplayableTrackSheet`) dit pourquoi et garde Favori et Playlist (lot « ol »).
+ */
 function UnavailableTrackNotice() {
   const { t } = useTranslation("music");
-  useEffect(() => onUnavailableTrack(() => showNotice("info", t("track.unavailableNotice"))), [t]);
+  useEffect(() => onUnavailableTrack((track) => (track ? undefined : showNotice("info", t("track.unavailableNotice")))), [t]);
   return null;
 }
 
@@ -55,6 +59,7 @@ export function OctavePagesHost({ primary = false }: { primary?: boolean }) {
       <NoticeHost />
       <SearchListenRecorder />
       <UnavailableTrackNotice />
+      <UnplayableTrackSheet />
     </>
   );
 }

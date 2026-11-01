@@ -14,7 +14,7 @@ import type { TopResult } from "@tentacle-tv/shared/octave";
 import { entityTarget } from "@tentacle-tv/shared/octave/mode";
 import { usePagesPlayer } from "../env/pagesPlayer";
 import { useOctavePagesProvider } from "../env/pagesEnv";
-import { playFrom } from "../env/playFrom";
+import { playFrom, playTrack } from "../env/playFrom";
 
 type Collection = Extract<TopResult, { kind: "album" | "playlist" }>;
 
@@ -51,7 +51,7 @@ export function useTopPlayback(sideTracks: readonly MusicTrack[], contextId: str
   return useCallback(
     (top: TopResult) => {
       // La liste d'à côté s'ouvre déjà sur le titre en tête : il n'entre qu'une fois dans la file.
-      if (top.kind === "track") return playFrom(player, [top.track, ...sideTracks.filter((t) => t.key !== top.track.key)], 0, contextId);
+      if (top.kind === "track") return playTrack(player, [top.track, ...sideTracks.filter((t) => t.key !== top.track.key)], 0, contextId);
       if (top.kind === "artist") return playFrom(player, sideTracks, 0, contextId);
       void tracksOf(top)
         .then(({ tracks, context }) => tracks.length > 0 && playFrom(player, tracks, 0, context))
