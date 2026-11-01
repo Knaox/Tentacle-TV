@@ -2,9 +2,10 @@ import { getSeerrConfig } from "../seerConfig";
 import { getWatchProviderDirectory, providerRefOf } from "../tmdb/providerDirectory";
 import type { ProviderRef } from "../tmdb/providerNormalize";
 import { attachProviders } from "./attachProviders";
-import { libraryExclusionKeys } from "./candidates/exclusions";
+import { abandonExclusionKeys, libraryExclusionKeys } from "./candidates/exclusions";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import { epochDay, readFatigue } from "./impressions";
 import { buildCommunityRow } from "./communityRow";
 import { requestPoolRelief } from "./generationJob";
 import type { PoolEntry, PoolPayload } from "./generationJob";
@@ -44,6 +45,8 @@ export interface PageBuildBase {
   builtAt: string;
   dayKey: string;
   globalsGeneratedAt: string | null;
+  /** Lassitude des titres déjà montrés (cf. impressions) ; absente : aucune. */
+  fatigue?: ReadonlyMap<string, number>;
 }
 
 /** Rend la main à la boucle d'événements entre deux rangées : une
@@ -60,6 +63,8 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
   // L'index lu ici peut être plus frais que celui du contexte (absent au
   // premier contact) : vus, favoris et Ma liste sortent aussi de la page.
   for (const key of libraryExclusionKeys(library.entries)) ctx.exclude.add(key);
+  // Un titre abandonné ne revient dans AUCUNE rangée, globales comprises.
+  for (const key of await abandonExclusionKeys(userId)) ctx.exclude.add(key);
 
   // Tendances et pouls du serveur : la matière est la même pour tous, mais
   // seul ce qui ressemble au compte passe (cf. gateGlobalRow) ; « les mieux
@@ -81,6 +86,7 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
 
   const directory = await getWatchProviderDirectory();
   const now = new Date();
+  const dayKey = utcDayStamp(now);
   return {
     userId,
     ctx,
@@ -95,8 +101,9 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
     regional: directory.providers,
     providerRefOf,
     builtAt: now.toISOString(),
-    dayKey: utcDayStamp(now),
+    dayKey,
     globalsGeneratedAt: await readGlobalsStamp(),
+    fatigue: row ? await readFatigue(userId, epochDay(dayKey)) : undefined,
   };
 }
 
@@ -131,6 +138,8 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
     lambda: ctx.lambda,
     profile: ctx.profile,
     providerRefOf: base.providerRefOf,
+    // Le tirage du jour : la page d'aujourd'hui, la même sur tous les appareils.
+    draw: { userId: base.userId, dayStamp: base.dayKey, fatigue: base.fatigue },
   };
   // Un titre n'apparaît qu'UNE fois dans la page : une rangée qui ne ferait que
   // répéter prend les rangs suivants (« Disponible dans votre bibliothèque » sur un

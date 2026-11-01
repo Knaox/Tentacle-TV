@@ -1,4 +1,6 @@
 import { getPrisma } from "../../db";
+import { parseAnchors } from "../anchorStore";
+import type { Anchor } from "../anchorTypes";
 import type { LibraryEntry, LibraryIndex } from "./libraryIndex";
 
 /** mediaType du stockage des notes → vocabulaire canonique movie|tv. */
@@ -15,7 +17,7 @@ export interface ExclusionSets {
 
 /**
  * Les titres de bibliothèque qu'un compte connaît déjà : vus, favoris, dans
- * Ma liste, séries entamées. Aucun n'est une découverte — ils restent des
+ * Ma liste, entamés (série ou film). Aucun n'est une découverte — ils restent des
  * GRAINES et des ancres du goût (cf. anchors.ts), jamais des propositions.
  */
 export function libraryExclusionKeys(
@@ -41,8 +43,25 @@ export async function buildExclusions(
   const everywhere = new Set<string>([
     ...(await accountExclusionKeys(userId)),
     ...libraryExclusionKeys(library.entries),
+    ...(await abandonExclusionKeys(userId)),
   ]);
   return { everywhere };
+}
+
+/** Pur : les titres que le compte a ABANDONNÉS (ancre marquée « abandon »). */
+export function abandonedKeys(anchors: ReadonlyArray<Pick<Anchor, "key" | "kinds">>): string[] {
+  return anchors.filter((a) => a.kinds.includes("abandon") && /^(movie|tv):\d+$/.test(a.key)).map((a) => a.key);
+}
+
+/**
+ * Un abandon pèse sur SON titre d'abord : il n'est plus jamais proposé (le
+ * classement, lui, saute l'ancre identique au candidat). Lu dans les ancres du
+ * profil — une lecture, hors du chemin chaud (génération du pool, construction
+ * de la page).
+ */
+export async function abandonExclusionKeys(userId: string): Promise<string[]> {
+  const row = await getPrisma().tasteProfile.findUnique({ where: { jellyfinUserId: userId }, select: { anchors: true } });
+  return abandonedKeys(parseAnchors(row?.anchors) ?? []);
 }
 
 /**

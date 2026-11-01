@@ -140,7 +140,8 @@ export async function computePool(input: PoolComputeInput, deps: PoolComputeDeps
   // L'enrichissement a pu révéler le X (fiche complète) : écarté aussi.
   scored = scored.filter((e) => !explicit(e.candidate)).slice(0, POOL_KEEP);
   // La correspondance : le rang, plafonné par la proximité aux goûts (cf. poolMatch).
-  assignMatches(scored);
+  // La confiance du profil borne le % annoncé (un profil maigre ne dit pas 94 %).
+  assignMatches(scored, profile.signalCount);
 
   // Les plateformes que le cache connaît déjà, pour TOUT le pool (une lecture
   // groupée) ; le reste attend le crawler. La région voyage avec le pool.

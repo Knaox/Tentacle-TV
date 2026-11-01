@@ -31,6 +31,11 @@ export function dailyTieBreak(userId: string, key: string, dayStamp = utcDayStam
   return fnv1a(`${userId}:${dayStamp}:${key}`);
 }
 
+/** Générateur déterministe d'un tirage du jour : même sel, même jour, même suite. */
+export function dailyRandom(salt: string, dayStamp = utcDayStamp()): () => number {
+  return mulberry32(fnv1a(`${salt}:${dayStamp}`));
+}
+
 /** Jour UTC (AAAA-MM-JJ) : le même sur tous les appareils du compte. */
 export function utcDayStamp(now = new Date()): string {
   return now.toISOString().slice(0, 10);
@@ -49,7 +54,7 @@ export function pickDaily<T extends RotationEntry>(
   dayStamp = utcDayStamp()
 ): T[] {
   if (entries.length <= count) return [...entries];
-  const rand = mulberry32(fnv1a(`${userId}:${dayStamp}`));
+  const rand = dailyRandom(userId, dayStamp);
   const remaining = [...entries];
   const picked: T[] = [];
   while (picked.length < count && remaining.length > 0) {

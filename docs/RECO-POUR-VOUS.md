@@ -19,6 +19,16 @@ exclusion au service de chaque page (`serveContext` → `accountExclusionKeys`
 | titre DEMANDÉ (extension de demandes), pour le seul compte qui l'a demandé | base (`recommendation_feedback`, action `requested`) — masqué seulement : ni goût, ni ancre, ni statistique (`services/reco/requestedTitles.ts`) |
 | cœur, Ma liste, « vu » d'un titre de la bibliothèque | index en mémoire, retouché dès que la requête du proxy a réussi (`userDataPatchOf` → `patchLibraryMemo`), sans attendre le balayage |
 
+Sont aussi écartés, sans geste : un titre **entamé** (série commencée, film lu
+au-delà de 1 % — il est dans « Reprendre ») et un titre **abandonné** (ancre
+« abandon » du profil), de toutes les rangées.
+
+**La page change chaque jour**, sans que rien ne change côté client : les rangées
+personnelles tirent leurs titres dans le haut du classement (tirage déterministe
+par compte et par jour), et un titre déjà montré plusieurs jours recule, puis
+revient après un mois de repos (mémoire de l'affiché, `docs/RECO-MOTEUR.md` § 6).
+Aucune capacité serveur : un client d'avant reçoit simplement une page qui tourne.
+
 ## 2. Jamais sous le curseur : le retrait au LÂCHER
 
 Côté client (`packages/api-client/src/reco/recoRetirement.ts`), une carte

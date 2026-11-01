@@ -13,7 +13,8 @@ export interface LibraryEntry extends JellyfinFacetSource {
   isFavorite: boolean;
   /** Dans « Ma liste » (Likes Jellyfin) : déjà choisi, plus une découverte. */
   inWatchlist: boolean;
-  /** Série entamée (≥ un épisode vu, pas terminée) — jamais vrai pour un film. */
+  /** Entamé, pas terminé : série (≥ un épisode vu) ou film commencé (cf.
+   *  STARTED_MOVIE_MIN_PCT) — il vit dans « Reprendre », jamais dans une rangée. */
   inProgress: boolean;
   /** Épisodes vus (séries) — l'engagement qui fait d'une série une graine ; 0 pour un film. */
   playedEpisodes: number;
@@ -47,7 +48,27 @@ interface RawItem extends JellyfinFacetSource {
 }
 
 const PAGE = 1000;
+/** Part (%) d'un film au-delà de laquelle il est entamé : en deçà, une ouverture
+ *  par erreur (Jellyfin le range pourtant dans « Reprendre » dès 0 %). */
+export const STARTED_MOVIE_MIN_PCT = 1;
 const PAGES_MAX = 40;
+
+/**
+ * Pur : un titre entamé. Série : pourcentage global > 0, ou des épisodes vus
+ * (le compte des non-vus descend sous le total). Film : sa part lue dépasse
+ * l'ouverture par erreur. Champs absents → false, sans casse.
+ */
+export function isInProgress(
+  mediaType: "movie" | "tv",
+  played: boolean,
+  percentage: number | undefined,
+  unplayed: number | undefined,
+  episodes: number | undefined
+): boolean {
+  if (played) return false;
+  if (mediaType === "movie") return (percentage ?? 0) >= STARTED_MOVIE_MIN_PCT;
+  return (percentage ?? 0) > 0 || (unplayed != null && episodes != null && unplayed < episodes);
+}
 
 /**
  * UN balayage de la bibliothèque (films + séries, clé admin, UserData du
@@ -83,15 +104,9 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
       if (!mediaType) continue;
       const key = `${mediaType}:${tmdbId}`;
       const played = item.UserData?.Played === true;
-      // Série entamée : pourcentage global > 0, ou des épisodes vus (le compte
-      // des non-vus descend sous le total). Champs absents → false, sans casse.
       const unplayed = item.UserData?.UnplayedItemCount;
       const episodes = item.RecursiveItemCount;
-      const inProgress =
-        mediaType === "tv" &&
-        !played &&
-        ((item.UserData?.PlayedPercentage ?? 0) > 0 ||
-          (unplayed != null && episodes != null && unplayed < episodes));
+      const inProgress = isInProgress(mediaType, played, item.UserData?.PlayedPercentage, unplayed, episodes);
       // Épisodes vus : le total moins les non-vus (déjà rapportés). Une série
       // marquée vue sans compteur vaut son total.
       const playedEpisodes =
