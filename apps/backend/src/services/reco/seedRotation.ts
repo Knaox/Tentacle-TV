@@ -26,6 +26,11 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/** Départage déterministe de deux égaux pour (compte, jour) : ni figé, ni arbitraire d'un jour à l'autre. */
+export function dailyTieBreak(userId: string, key: string, dayStamp = utcDayStamp()): number {
+  return fnv1a(`${userId}:${dayStamp}:${key}`);
+}
+
 /** Jour UTC (AAAA-MM-JJ) : le même sur tous les appareils du compte. */
 export function utcDayStamp(now = new Date()): string {
   return now.toISOString().slice(0, 10);

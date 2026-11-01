@@ -131,7 +131,7 @@ describe("verdicts du swipe → ancres", () => {
   });
 
   it("un super like fait une graine plus forte qu'un like ; un dislike n'en fait jamais", () => {
-    const seeds = pickSeeds(anchorsOf(ALL), facetsOf, { shares: { movie: 1, tv: 0 }, now: NOW });
+    const seeds = pickSeeds(anchorsOf(ALL), facetsOf, { now: NOW, userId: "u" });
     const keys = seeds.map((s) => `movie:${s.tmdbId}`);
     expect(keys[0]).toBe("movie:1");
     expect(keys).toContain("movie:2");

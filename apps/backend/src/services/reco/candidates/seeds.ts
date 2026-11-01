@@ -1,6 +1,7 @@
 import { getPrisma } from "../../db";
 import { getCachedMetaMany, metaKey } from "../../tmdb/metaCache";
 import { ratingSignalWeight, ratingStats, seriesEngagementWeight } from "../profileMath";
+import { dailyTieBreak, utcDayStamp } from "../seedRotation";
 import { canonicalKey } from "./exclusions";
 import type { LibraryIndex } from "./libraryIndex";
 import type { SeedRef } from "./tmdbSource";
@@ -34,6 +35,9 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
   ]);
 
   const { stdDev } = ratingStats(ratings.map((r) => r.score));
+  // Les égaux se départagent au jour du compte, jamais par l'id TMDB (figé).
+  const day = utcDayStamp();
+  const tie = (key: string) => dailyTieBreak(userId, key, day);
   const byKey = new Map<string, SeedRef>();
 
   const push = (mediaType: "movie" | "tv", tmdbId: number, strength: number) => {
@@ -63,7 +67,7 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
   // séries qu'on suit vraiment — animés compris — sans note ni favori.
   const followed = library.entries
     .filter((e) => e.mediaType === "tv" && e.playedEpisodes >= SERIES_SEED_MIN_EPISODES)
-    .sort((a, b) => b.playedEpisodes - a.playedEpisodes || a.tmdbId - b.tmdbId)
+    .sort((a, b) => b.playedEpisodes - a.playedEpisodes || tie(a.key) - tie(b.key))
     .slice(0, SERIES_SEEDS_MAX);
   for (const entry of followed) {
     push("tv", entry.tmdbId, seriesEngagementWeight(entry.playedEpisodes));
@@ -75,7 +79,7 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
   }
 
   const seeds = [...byKey.values()]
-    .sort((a, b) => b.strength - a.strength || a.tmdbId - b.tmdbId)
+    .sort((a, b) => b.strength - a.strength || tie(`${a.mediaType}:${a.tmdbId}`) - tie(`${b.mediaType}:${b.tmdbId}`))
     .slice(0, SEEDS_MAX);
 
   // Titre manquant (graine hors bibliothèque) : le cache de métadonnées le

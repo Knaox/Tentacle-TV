@@ -73,7 +73,7 @@ describe("graines", () => {
       "tv:5": ["genre:10765"],
       "tv:6": ["genre:80"],
     });
-    const seeds = pickSeeds(anchors, facets, { shares: { movie: 0.25, tv: 0.75 }, now: NOW, max: 4 });
+    const seeds = pickSeeds(anchors, facets, { now: NOW, userId: "u", max: 4 });
     const keys = seeds.map((s) => `${s.mediaType}:${s.tmdbId}`);
     expect(keys).toContain("tv:5");
     expect(keys).toContain("tv:6");
@@ -87,7 +87,7 @@ describe("graines", () => {
       anchor("movie:1", { weight: 1 }),
       anchor("movie:2", { weight: 1, lastAt: new Date(NOW - 5 * 86_400_000).toISOString() }),
     ];
-    const seeds = pickSeeds(anchors, () => [], { shares: { movie: 1, tv: 0 }, now: NOW, max: 1 });
+    const seeds = pickSeeds(anchors, () => [], { now: NOW, userId: "u", max: 1 });
     expect(seeds[0].tmdbId).toBe(2);
   });
 });

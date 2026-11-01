@@ -13,7 +13,7 @@ import { FacetScoringStrategy } from "./scoring/facetStrategy";
 import type { Candidate, ScoringStrategy } from "./scoring/strategy";
 import { TasteScoringStrategy } from "./scoring/tasteStrategy";
 import { pickSeeds } from "./seedPicker";
-import { buildTasteIndex, consumptionShares, recencyAffinity } from "./tasteModel";
+import { buildTasteIndex, recencyAffinity } from "./tasteModel";
 import { buildCalibration } from "./calibration";
 import { animeFloorOf, lovedAuthorsOf, lovedPeopleOf, qualityBarOf } from "./lovedTaste";
 import { isAnimated } from "./rowFilters";
@@ -78,8 +78,7 @@ export async function preparePoolTaste(
   for (const a of anchors) if (!a.title) a.title = metaOf(a)?.title ?? library.byKey.get(a.key)?.name ?? "";
 
   const nowYear = new Date().getFullYear();
-  const shares = consumptionShares(anchors);
-  const seeds = pickSeeds(anchors, facetsOf, { shares, now: Date.now() });
+  const seeds = pickSeeds(anchors, facetsOf, { now: Date.now(), userId });
   const anchorByKey = new Map(anchors.map((a) => [a.key, a]));
   for (const seed of seeds) {
     const a = anchorByKey.get(`${seed.mediaType}:${seed.tmdbId}`);
