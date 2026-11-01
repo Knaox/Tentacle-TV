@@ -19,6 +19,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Plus de variété** : deux titres au plus d'un même réalisateur, acteur ou saga par rangée
 - **Un pourcentage de correspondance plus honnête** tant que le serveur vous connaît peu, et une série regardée sans interruption suffit à personnaliser la page
 - Les titres que vous avez déjà commencés ne sont plus recommandés (ils sont dans « Reprendre »)
+- **Octave** : les applications disent tout de suite qu'un titre ne peut pas être lu, et pourquoi — il reste ajoutable à une playlist ou aux favoris ; l'ordre d'une playlist changé hors ligne est repris au retour d'Internet
 
 ### EN
 - **Recommendations that follow what you watch**: a movie or episode stopped at the credits counts as watched, a partial viewing counts in part, and what you watch weighs as much as a "Like" — no need to rate everything to get good suggestions
@@ -27,6 +28,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **More variety**: at most two titles from the same director, actor or saga per row
 - **A more honest match percentage** while the server barely knows you, and a single binge-watched series is enough to personalize the page
 - Titles you have already started are no longer recommended (they are in "Continue watching")
+- **Octave**: apps show right away that a song can't be played, and why — it can still be added to a playlist or your favorites; a playlist order changed offline is picked up once back online
 
 ## [1.40.0]
 <!-- Pas encore publié : la 1.40 est en aperçu restreint (serveur de développement privé, testeurs autorisés). Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Rien sur les extensions ni sur leur source de musique. -->

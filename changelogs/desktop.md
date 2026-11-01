@@ -13,6 +13,18 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.42.0]
+<!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.42.0] ni [win-1.42.0]). Lot « ol » d'Octave. Rien sur les extensions ni sur leur source de musique. -->
+### FR
+- **Octave hors ligne : vos playlists dans votre ordre** — une playlist gardée sur l'ordinateur suit le dernier ordre choisi en ligne, même depuis un autre appareil ; réordonnée hors ligne, elle garde ce nouvel ordre, envoyé au serveur dès le retour d'Internet et fusionné avec ce qui a changé ailleurs
+- **Octave : un titre qui ne peut pas être lu se voit tout de suite** — grisé dans la recherche, les suggestions, les albums, chez l'artiste et dans vos playlists ; le cliquer dit pourquoi, et il reste à portée pour l'ajouter à une playlist ou à vos favoris (serveur Tentacle 1.42)
+- Octave : un titre refusé pendant l'écoute est sauté aussitôt, la lecture ne s'arrête plus
+
+### EN
+- **Octave offline: your playlists in your order** — a playlist kept on the computer follows the last order you chose online, even from another device; reordered offline, it keeps that new order, sent to the server as soon as you are back online and merged with what changed elsewhere
+- **Octave: a song that can't be played shows right away** — greyed out in search, suggestions, albums, artist pages and your playlists; clicking it says why, and you can still add it to a playlist or your favorites (Tentacle server 1.42)
+- Octave: a song refused while listening is skipped at once, playback no longer stops
+
 ## [mac-1.41.0]
 <!-- Bloc Mac : App Store Connect seulement. Même texte que le bloc nu, plus le Liquid Glass (macOS 26). -->
 ### FR

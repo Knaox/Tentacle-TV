@@ -5,6 +5,20 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.32.0]
+<!-- Bloc nu : Google Play (500 caractères) ET iOS. Lot « ol » d'Octave. Jamais le mot « téléchargement », rien sur les extensions ni leur source. -->
+### FR
+- Octave hors ligne : vos playlists dans le dernier ordre choisi en ligne
+- Réordonnées hors ligne, elles sont mises à jour sur le serveur au retour d'Internet
+- Un titre qui ne peut pas être lu est grisé partout, et le toucher dit pourquoi
+- Il reste ajoutable à une playlist ou aux favoris (serveur 1.42)
+
+### EN
+- Octave offline: your playlists in the last order chosen online
+- Reordered offline, they are updated on the server once you are back online
+- A song that can't be played is greyed out everywhere, and tapping it says why
+- It can still be added to a playlist or your favorites (server 1.42)
+
 ## [1.31.0]
 <!-- Bloc nu : Google Play (500 caractères) ET iOS (aucun bloc [ios-1.31.0]). Lot « fl » d'Octave. Jamais le mot « téléchargement ». -->
 ### FR
