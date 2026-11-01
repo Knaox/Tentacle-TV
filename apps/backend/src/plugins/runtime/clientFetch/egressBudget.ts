@@ -31,6 +31,8 @@ export interface EgressLimits {
   prefetchBelow: number;
   /** Cadence entre deux places accordées à une même adresse. */
   spacingMs: number;
+  /** Un sondage en rafale (`burst`, fond) n'est admis que sous ce total de la minute, sans cadence. */
+  burstPerMinute: number;
   /** Adresses suivies à la fois (les moins récentes sont oubliées). */
   maxAddresses: number;
 }
@@ -41,6 +43,7 @@ export const DEVICE_EGRESS_LIMITS: EgressLimits = {
   prefetchPerMinute: 12,
   prefetchBelow: 110,
   spacingMs: 250,
+  burstPerMinute: 16,
   maxAddresses: 2_000,
 };
 
@@ -82,17 +85,18 @@ export class EgressBudget {
   constructor(private readonly limits: EgressLimits = DEVICE_EGRESS_LIMITS) {}
 
   /** Une place pour une requête sortant par `key` ; comptée dès l'accord, à l'instant où elle partira. */
-  admit(key: string, kind: EgressKind, now: number): EgressAdmission {
+  admit(key: string, kind: EgressKind, now: number, burst = false): EgressAdmission {
+    const rafale = burst && kind === "prefetch";
     const list = (this.starts.get(key) ?? []).filter((at) => at > now - HOUR);
     const below = kind === "play" ? this.limits.perHour : this.limits.prefetchBelow;
     if (list.length + 1 > below) return this.refuse(key, list, list.length - below, now, HOUR);
     const minute = list.filter((at) => at > now - MINUTE);
     if (minute.length + 1 > this.limits.perMinute) return this.refuse(key, list, minute.length - this.limits.perMinute, now, MINUTE, minute);
-    if (kind === "prefetch" && minute.length + 1 > this.limits.prefetchPerMinute) {
-      return this.refuse(key, list, minute.length - this.limits.prefetchPerMinute, now, MINUTE, minute);
-    }
-    const startAt = Math.max(now, this.nextStart.get(key) ?? 0);
-    this.nextStart.set(key, startAt + this.limits.spacingMs);
+    const fondMinute = rafale ? this.limits.burstPerMinute : this.limits.prefetchPerMinute;
+    if (kind === "prefetch" && minute.length + 1 > fondMinute) return this.refuse(key, list, minute.length - fondMinute, now, MINUTE, minute);
+    // Une rafale (lot « ol ») part tout de suite et ne décale pas la cadence des requêtes une à une.
+    const startAt = rafale ? now : Math.max(now, this.nextStart.get(key) ?? 0);
+    if (!rafale) this.nextStart.set(key, startAt + this.limits.spacingMs);
     list.push(startAt);
     this.keep(key, list);
     return { granted: true, waitMs: startAt - now };

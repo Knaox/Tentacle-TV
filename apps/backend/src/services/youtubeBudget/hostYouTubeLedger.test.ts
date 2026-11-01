@@ -128,3 +128,38 @@ describe("budget YouTube de l'hôte", () => {
     expect(again.usedInHour(1_000)).toBe(3);
   });
 });
+
+describe("sondage en rafale (lot « ol », `burst`)", () => {
+  const T = 1_793_000_000_000;
+
+  it("un lot de 10 part d'un coup, sans cadence, et ne décale pas la requête une à une qui suit", () => {
+    const ledger = new HostYouTubeLedger(breaker().b);
+    expect(ledger.admitExtension("sillon", "prefetch", 10, T, true)).toEqual({ granted: true, waitMs: 0 });
+    expect(ledger.usedInHour(T)).toBe(10);
+    // Un geste juste après : aucune attente héritée de la rafale.
+    expect(ledger.admitExtension("sillon", "play", 1, T + 1)).toEqual({ granted: true, waitMs: 0 });
+  });
+
+  it("sous 16 dans la minute (4 places gardées aux gestes) ; un geste passe encore", () => {
+    const ledger = new HostYouTubeLedger(breaker().b);
+    expect(ledger.admitExtension("sillon", "prefetch", 10, T, true).granted).toBe(true);
+    expect(ledger.admitExtension("sillon", "prefetch", 6, T + 10, true).granted).toBe(true);
+    const refused = ledger.admitExtension("sillon", "prefetch", 1, T + 20, true);
+    expect(refused.granted).toBe(false);
+    expect(ledger.admitExtension("sillon", "play", 1, T + 30).granted).toBe(true);
+  });
+
+  it("la rafale reste du FOND : sous 110 dans l'heure, jamais quand le disjoncteur est ouvert", () => {
+    const { b, state } = breaker();
+    const ledger = new HostYouTubeLedger(b);
+    let t = T;
+    // Onze extensions (100 par heure chacune au plus) : l'heure du fond est pleine à 110.
+    for (let i = 0; i < 11; i++, t += 61_000) expect(ledger.admitExtension(`ext${i}`, "prefetch", 10, t, true).granted).toBe(true);
+    expect(ledger.admitExtension("sillon", "prefetch", 1, t, true).granted).toBe(false);
+    state.until = t + 60_000;
+    const fresh = new HostYouTubeLedger(b);
+    expect(fresh.admitExtension("sillon", "prefetch", 4, t, true)).toMatchObject({ granted: false, reason: "blocked" });
+    // `burst` sur un geste n'a aucun effet : la cadence s'applique.
+    expect(HOST_YOUTUBE_LIMITS.burstPerMinute).toBe(16);
+  });
+});

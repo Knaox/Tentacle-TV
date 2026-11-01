@@ -80,8 +80,12 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
     })
     .strict(),
   "tools.stopWorker": z.object({ workerId: z.string().regex(/^[a-z0-9-]{1,80}$/) }).strict(),
-  // Un coût hors 1..4 est refusé : une extension ne réserve pas l'heure d'un coup.
-  "tools.youtubeAdmit": z.object({ kind: z.enum(["play", "prefetch"]), cost: z.number().int().min(1).max(4) }).strict(),
+  // Un coût hors 1..4 est refusé : une extension ne réserve pas l'heure d'un coup — sauf un sondage en RAFALE du fond
+  // (`burst`, lot « ol »), 10 au plus.
+  "tools.youtubeAdmit": z
+    .object({ kind: z.enum(["play", "prefetch"]), cost: z.number().int().min(1).max(10), burst: z.boolean().optional() })
+    .strict()
+    .refine((p) => p.cost <= 4 || (p.burst === true && p.kind === "prefetch")),
   "tools.youtubeReport": z.object({ outcome: z.enum(["ok", "antiBot"]), startedAt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) }).strict(),
   // La forme seulement : hôtes, en-têtes et tailles sont jugés contre le manifeste par le courtier.
   "client.fetch": z
@@ -97,6 +101,8 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
           maxBytes: z.number().int().min(1).max(2 * 1024 * 1024).optional(),
           // Geste ou fond : le budget par adresse de sortie sert les gestes d'abord (`clientFetch/egressBudget.ts`).
           kind: z.enum(["play", "prefetch"]).optional(),
+          // Un sondage en rafale du fond (lot « ol ») : admis sans la cadence, sous son plafond de minute.
+          burst: z.boolean().optional(),
         })
         .strict(),
     })

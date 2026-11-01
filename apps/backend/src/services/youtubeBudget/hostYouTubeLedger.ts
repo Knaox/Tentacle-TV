@@ -18,6 +18,11 @@
 /*    aux gestes (clic, recherche validée) et aux bandes-annonces — le  */
 /*    fond ne fait plus attendre un clic d'une minute (25/10) ; une     */
 /*    cadence de 250 ms entre deux places accordées à une extension ;   */
+/*  - un SONDAGE EN RAFALE d'extension (`burst`, lot « ol » : la     */
+/*    lisibilité des titres affichés, un `player` léger par titre) :  */
+/*    un lot de 10 au plus, admis d'un coup SANS la cadence, compté    */
+/*    comme le fond (sous 110 dans l'heure) et sous 16 dans la minute */
+/*    — la minute garde encore 4 places aux gestes ;                   */
 /*  - le disjoncteur est COMMUN (celui des bandes-annonces) : un        */
 /*    anti-robot vu par l'un arrête l'autre ; disjoncteur ouvert, une   */
 /*    lecture-sonde d'extension toutes les 5 min.                       */
@@ -49,6 +54,8 @@ export interface LedgerLimits {
   perExtensionHour: number;
   extensionSpacingMs: number;
   probeEveryMs: number;
+  /** Un sondage en rafale n'est admis que sous ce total de la minute (toutes sources). */
+  burstPerMinute: number;
 }
 
 export const HOST_YOUTUBE_LIMITS: LedgerLimits = {
@@ -60,6 +67,7 @@ export const HOST_YOUTUBE_LIMITS: LedgerLimits = {
   perExtensionHour: 100,
   extensionSpacingMs: 250,
   probeEveryMs: 5 * 60_000,
+  burstPerMinute: 16,
 };
 
 /** Une requête comptée : de qui (une bande-annonce, ou l'identifiant d'une extension), quand. */
@@ -94,8 +102,12 @@ export class HostYouTubeLedger {
     this.entries.push({ at: now, source: TRAILER_SOURCE });
   }
 
-  /** Une place pour `cost` requêtes d'une extension (comptées dès l'accord, à l'instant où elles partiront). */
-  admitExtension(pluginId: string, kind: ExtensionKind, cost: number, now: number): ExtensionAdmission {
+  /**
+   * Une place pour `cost` requêtes d'une extension (comptées dès l'accord, à l'instant où elles partiront).
+   * `burst` (fond seulement) : le lot part d'un coup, sans cadence, sous le plafond de minute des rafales.
+   */
+  admitExtension(pluginId: string, kind: ExtensionKind, cost: number, now: number, burst = false): ExtensionAdmission {
+    const rafale = burst && kind === "prefetch";
     this.prune(now);
     const open = this.breaker.remainingMs(now);
     let probe = false;
@@ -110,14 +122,16 @@ export class HostYouTubeLedger {
       if (total + cost > below) return this.budget(total + cost - below, this.entries, now, HOUR);
       const minute = this.entries.filter((e) => e.at > now - MINUTE);
       if (minute.length + cost > this.limits.perMinute) return this.budget(minute.length + cost - this.limits.perMinute, minute, now, MINUTE);
-      if (kind === "prefetch" && minute.length + cost > this.limits.prefetchPerMinute) {
-        return this.budget(minute.length + cost - this.limits.prefetchPerMinute, minute, now, MINUTE);
+      const fondMinute = rafale ? this.limits.burstPerMinute : this.limits.prefetchPerMinute;
+      if (kind === "prefetch" && minute.length + cost > fondMinute) {
+        return this.budget(minute.length + cost - fondMinute, minute, now, MINUTE);
       }
       const own = this.entries.filter((e) => e.source === pluginId);
       if (own.length + cost > this.limits.perExtensionHour) return this.budget(own.length + cost - this.limits.perExtensionHour, own, now, HOUR);
     } else this.lastProbeAt = now;
-    const startAt = Math.max(now, this.nextExtensionStart);
-    this.nextExtensionStart = startAt + this.limits.extensionSpacingMs * cost;
+    // Une rafale part tout de suite et ne décale personne : la cadence reste celle des requêtes une à une.
+    const startAt = rafale ? now : Math.max(now, this.nextExtensionStart);
+    if (!rafale) this.nextExtensionStart = startAt + this.limits.extensionSpacingMs * cost;
     for (let i = 0; i < cost; i++) this.entries.push({ at: startAt, source: pluginId });
     return { granted: true, waitMs: startAt - now };
   }

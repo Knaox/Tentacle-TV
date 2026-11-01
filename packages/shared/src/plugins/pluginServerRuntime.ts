@@ -209,10 +209,12 @@ export interface HostApi {
    * 250 ms (`waitMs` : attendre avant de lancer). Disjoncteur COMMUN ouvert :
    * `blocked`, sauf une lecture-sonde toutes les 5 min. Exige la famille
    * `tools` ET un outil demandé au manifeste. Hôte d'avant : `forbidden`
-   * (méthode inconnue) — l'extension garde alors sa propre garde.
+   * (méthode inconnue) — l'extension garde alors sa propre garde. `burst` (lot « ol », serveur 1.42.0) : un
+   * SONDAGE EN RAFALE du fond — jusqu'à 10 places d'un coup, sans cadence, sous 16 dans la minute ; un hôte d'avant
+   * le refuse (`invalid`) : l'extension le retire.
    */
   "tools.youtubeAdmit": {
-    params: { kind: "play" | "prefetch"; cost: number };
+    params: { kind: "play" | "prefetch"; cost: number; burst?: boolean };
     result: { granted: true; waitMs: number } | { granted: false; reason: "blocked" | "budget"; retryAfterMs: number };
   };
   /**

@@ -65,3 +65,20 @@ describe("budget par adresse", () => {
     expect(budget.usedInHour("v4:1.1.1.1", T0)).toBe(0);
   });
 });
+
+describe("sondage en rafale d'un appareil (lot « ol », `burst`)", () => {
+  it("dix requêtes du fond sans cadence, sous 16 dans la minute ; un geste reste admis", () => {
+    const budget = new EgressBudget();
+    for (let i = 0; i < 10; i++) expect(budget.admit("v4:203.0.113.9", "prefetch", T0, true)).toEqual({ granted: true, waitMs: 0 });
+    for (let i = 0; i < 6; i++) expect(budget.admit("v4:203.0.113.9", "prefetch", T0 + 5, true).granted).toBe(true);
+    expect(budget.admit("v4:203.0.113.9", "prefetch", T0 + 6, true).granted).toBe(false);
+    expect(budget.admit("v4:203.0.113.9", "play", T0 + 7)).toEqual({ granted: true, waitMs: 0 });
+    expect(DEVICE_EGRESS_LIMITS.burstPerMinute).toBe(16);
+  });
+
+  it("sans `burst`, le fond garde sa cadence de 250 ms et ses 12 par minute", () => {
+    const budget = new EgressBudget();
+    expect(budget.admit("v4:198.51.100.1", "prefetch", T0)).toEqual({ granted: true, waitMs: 0 });
+    expect(budget.admit("v4:198.51.100.1", "prefetch", T0)).toEqual({ granted: true, waitMs: 250 });
+  });
+});
