@@ -12,7 +12,8 @@ vi.mock("../../db", () => ({
   }),
 }));
 
-import { accountExclusionKeys, canonicalKey, libraryExclusionKeys } from "./exclusions";
+import { abandonedKeys, accountExclusionKeys, canonicalKey, libraryExclusionKeys } from "./exclusions";
+import { isInProgress } from "./libraryIndex";
 
 const entry = (key: string, over: Partial<{ played: boolean; isFavorite: boolean; inWatchlist: boolean; inProgress: boolean }> = {}) => ({
   key,
@@ -42,5 +43,35 @@ describe("exclusions de bibliothèque", () => {
   it("la clé canonique d'un like ou d'une note de série est tv:", () => {
     expect(canonicalKey("series", 7)).toBe("tv:7");
     expect(canonicalKey("movie", 7)).toBe("movie:7");
+  });
+});
+
+describe("titres entamés et abandonnés", () => {
+  it("un film commencé est entamé ; ouvert par erreur (< 1 %) ou vu, non", () => {
+    expect(isInProgress("movie", false, 12, undefined, undefined)).toBe(true);
+    expect(isInProgress("movie", false, 0.4, undefined, undefined)).toBe(false);
+    expect(isInProgress("movie", true, 50, undefined, undefined)).toBe(false);
+    expect(isInProgress("movie", false, undefined, undefined, undefined)).toBe(false);
+  });
+
+  it("une série entamée le reste, par pourcentage ou par épisodes vus", () => {
+    expect(isInProgress("tv", false, 3, undefined, undefined)).toBe(true);
+    expect(isInProgress("tv", false, 0, 8, 10)).toBe(true);
+    expect(isInProgress("tv", false, 0, 10, 10)).toBe(false);
+  });
+
+  it("un film entamé sort des rangées comme un vu", () => {
+    const keys = libraryExclusionKeys([entry("movie:7", { inProgress: true }), entry("movie:8")]);
+    expect(keys).toEqual(["movie:7"]);
+  });
+
+  it("les ancres d'abandon excluent leur propre titre, pas les autres", () => {
+    const keys = abandonedKeys([
+      { key: "movie:10", kinds: ["abandon"] },
+      { key: "tv:11", kinds: ["series", "abandon"] },
+      { key: "movie:12", kinds: ["completed"] },
+      { key: "jf:abc", kinds: ["abandon"] },
+    ]);
+    expect(keys).toEqual(["movie:10", "tv:11"]);
   });
 });
