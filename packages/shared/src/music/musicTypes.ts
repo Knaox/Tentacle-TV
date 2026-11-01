@@ -109,6 +109,12 @@ export interface MusicTrack {
    * lisible. Posé par une extension seulement (lot « sf », 28/10 : une piste Bandcamp sans écoute publique).
    */
   unavailable?: MusicUnavailableReason | null;
+  /**
+   * La lisibilité VÉRIFIÉE par l'extension (lot « ol », contrat d'ol3) : `no` porte sa raison dans `unavailable`,
+   * `unknown` n'est pas encore vérifié (jamais grisé). Absent : extension d'avant, seul `unavailable` compte.
+   * Lue par `trackPlayability` (octave/trackPlayability.ts), jamais directement.
+   */
+  playable?: MusicPlayable;
   /** Une SORTIE IMPORTÉE par le compte (lien ou fichiers, musicReleases.ts) : pastille « Importé ». */
   imported?: true;
 }
@@ -119,9 +125,14 @@ export interface MusicTrack {
  *   (YouTube) ; l'aimer ou l'ajouter à une playlist le fait RÉCUPÉRER par le serveur (Lidarr).
  * - `notPublic` : une sortie importée dont la source n'offre pas l'écoute publique de ce titre (Bandcamp : réservé à
  *   l'achat) ; importer le fichier acheté le rend lisible (lot « sf », 28/10).
+ * - `region`, `removed`, `ageRestricted`, `private` (lot « ol ») : la source le refuse dans ce pays, l'a retiré, le
+ *   réserve aux comptes majeurs, ou l'a rendu privé.
  * Une valeur inconnue d'un client se lit comme « pas lisible », sans plus.
  */
-export type MusicUnavailableReason = "notStreamable" | "notPublic";
+export type MusicUnavailableReason = "notStreamable" | "notPublic" | "region" | "removed" | "ageRestricted" | "private";
+
+/** Lot « ol » : la lisibilité vérifiée d'un titre externe (la valeur traverse le réseau ; inconnue → comme absente). */
+export type MusicPlayable = "yes" | "no" | "unknown";
 
 export type AlbumKind = "album" | "single" | "ep" | "compilation" | "live" | "soundtrack" | "other";
 

@@ -104,7 +104,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
   // le cliquer ne lance rien, la lecture en cours continue, et l'avis dit pourquoi.
   const locked = isTrackUnavailable(track);
   const onPlay = () => {
-    if (locked) announceUnavailableTrack();
+    if (locked) announceUnavailableTrack(track);
     else onPlayIndex(index);
   };
   const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);

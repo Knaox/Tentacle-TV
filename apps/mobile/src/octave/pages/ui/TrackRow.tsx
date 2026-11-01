@@ -85,7 +85,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   ];
   const row = (
     <Pressable
-      onPress={editing ? undefined : locked ? announceUnavailableTrack : () => onPlay(index)}
+      onPress={editing ? undefined : locked ? () => announceUnavailableTrack(track) : () => onPlay(index)}
       disabled={(!playable && !locked) || editing}
       onLongPress={editing ? undefined : sheet}
       delayLongPress={350}

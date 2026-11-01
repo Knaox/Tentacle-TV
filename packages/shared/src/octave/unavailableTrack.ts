@@ -10,17 +10,20 @@
  */
 
 import type { MusicTrack } from "../music";
+import { trackPlayability } from "./trackPlayability";
 
-export function isTrackUnavailable(track: Pick<MusicTrack, "jellyfinId" | "unavailable">): boolean {
-  return !track.jellyfinId && track.unavailable != null;
+/** Grisé et jamais lancé (lot « ol » : la lisibilité vérifiée d'abord, `trackPlayability.ts` ; `unknown` jamais). */
+export function isTrackUnavailable(track: Pick<MusicTrack, "jellyfinId" | "unavailable" | "playable">): boolean {
+  return trackPlayability(track).greyed;
 }
 
-type Listener = () => void;
+/** Le titre visé, quand le geste le connaît : l'avis dit sa raison et propose de l'aimer ou de le ranger. */
+type Listener = (track: MusicTrack | null) => void;
 const listeners = new Set<Listener>();
 
 /** Un geste a visé un titre indisponible : chaque application le dit dans son avis (une seule fois par geste). */
-export function announceUnavailableTrack(): void {
-  for (const listener of [...listeners]) listener();
+export function announceUnavailableTrack(track: MusicTrack | null = null): void {
+  for (const listener of [...listeners]) listener(track);
 }
 
 /** L'avis d'une application s'y abonne (monté une fois dans sa coquille) ; rend le désabonnement. */

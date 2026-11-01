@@ -9,6 +9,7 @@
  */
 export * from "./queueModel";
 export * from "./unavailableTrack";
+export * from "./trackPlayability";
 export * from "./queueContextLabel";
 export * from "./audioFormat";
 export * from "./pendingMerge";

@@ -12,7 +12,7 @@
  * par le cœur après `requireAuth` (runtime isolé, pluginServerRuntime.ts).
  */
 
-import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
+import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlayable, MusicPlaylistEntry, MusicTrack, MusicUnavailableReason } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
 import type { MusicImportSource } from "./musicImport";
 import type { ReleaseSource } from "./musicReleases";
@@ -160,6 +160,9 @@ export interface MusicSuggestion {
   subtitle: string | null;
   /** Ce qui part dans la recherche (par défaut : titre et artiste). */
   text: string;
+  /** Un TITRE dont l'extension sait déjà qu'il ne se lit pas (lot « ol ») : la suggestion est grisée. Absent : rien. */
+  playable?: MusicPlayable;
+  unavailable?: MusicUnavailableReason | null;
 }
 
 export interface MusicSuggestResponse {

@@ -121,7 +121,7 @@ export const queueActions = {
   jumpTo(player: OctavePlayer, uid: string): void {
     const q = player.snapshot.get().queue;
     const target = q.items.find((item) => item.uid === uid);
-    if (target && isTrackUnavailable(target.track)) return announceUnavailableTrack();
+    if (target && isTrackUnavailable(target.track)) return announceUnavailableTrack(target.track);
     const next = jumpTo(q, uid);
     if (next !== q) player.startItem(next, 0);
   },

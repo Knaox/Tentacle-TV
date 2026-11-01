@@ -81,7 +81,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
       const { currentKey: key, playingContext: context } = live.current;
       const track = tracks[index];
       const action = rowClickAction(track?.key, key, context, contextId, !!track && isTrackUnavailable(track));
-      if (action === "unavailable") announceUnavailableTrack();
+      if (action === "unavailable") announceUnavailableTrack(track ?? null);
       else if (action === "toggle") player.togglePlay();
       else player.playList(tracks, index, contextId);
     },

@@ -321,6 +321,27 @@ export default {
     notFound: "Titre introuvable.",
     failed: "L'ajout a échoué. Réessayez dans un instant.",
   },
+  // Un titre qui ne se lit pas (lot « ol », `trackPlayability.ts`) : grisé partout ; le toucher le dit et propose de
+  // l'aimer ou de le ranger (le serveur pourra le récupérer). Mobile : jamais le mot « téléchargement ».
+  unplayableTrack: {
+    badge: "Pas lisible",
+    rowLabel: "{{title}}, pas lisible pour le moment",
+    title: "Pas lisible pour le moment",
+    keep: "Il reste disponible : ajoutez-le à une playlist ou en favori, le serveur pourra le récupérer.",
+    like: "Favori",
+    liked: "Dans vos favoris",
+    addToPlaylist: "Ajouter à une playlist",
+    close: "Fermer",
+    reason: {
+      notStreamable: "Aucune source d'écoute ne le propose pour l'instant.",
+      notPublic: "Sa source le réserve à l'achat.",
+      region: "Sa source ne le propose pas dans votre pays.",
+      removed: "Sa source l'a retiré.",
+      ageRestricted: "Sa source le réserve aux comptes majeurs.",
+      private: "Sa source l'a rendu privé.",
+      other: "Sa source ne le propose pas à l'écoute pour l'instant.",
+    },
+  },
   // Un album qui ne se lit pas (lot « Octave mobile 3 ») : carte grisée, feuille au toucher (`unavailableAlbum.ts`).
   unavailableAlbum: {
     badge: "Pas lisible",

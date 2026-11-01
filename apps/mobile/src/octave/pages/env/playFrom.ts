@@ -25,7 +25,7 @@ export function playRow(player: OctavePlayer | null, tracks: readonly MusicTrack
   const { current, queue } = player.snapshot.get();
   const track = tracks[index];
   const action = rowClickAction(track?.key, current?.key ?? null, queue.contextId, contextId, !!track && isTrackUnavailable(track));
-  if (action === "unavailable") announceUnavailableTrack();
+  if (action === "unavailable") announceUnavailableTrack(track ?? null);
   else if (action === "toggle") player.togglePlay();
   else playFrom(player, tracks, index, contextId);
 }
