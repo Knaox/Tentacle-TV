@@ -11,6 +11,8 @@ interface ToastProps {
   message: string;
   /** Un geste à côté du message ; il ferme l'avis. */
   action?: { label: string; onPress: () => void };
+  /** Un second geste, sous le message, avant le premier (deux gestes ne tiennent pas à côté du texte). */
+  secondaryAction?: { label: string; onPress: () => void };
   onDismiss: (id: number) => void;
 }
 
@@ -42,11 +44,11 @@ const ACTION_DURATION_MS = 7000;
  * ferme. La barre qui se vide est une animation CSS de `transform`, suspendue
  * en même temps : plus de rendu React vingt fois par seconde pour la tenir.
  */
-export const Toast = memo(function Toast({ id, type, title, message, action, onDismiss }: ToastProps) {
+export const Toast = memo(function Toast({ id, type, title, message, action, secondaryAction, onDismiss }: ToastProps) {
   const reduced = useReducedMotion() ?? false;
   const [held, setHeld] = useState(false);
   // Un avis qui porte un geste (« Annuler », « Changer ») laisse le temps de le faire.
-  const durationMs = action ? Math.max(ACTION_DURATION_MS, DURATION_MS[type]) : DURATION_MS[type];
+  const durationMs = action || secondaryAction ? Math.max(ACTION_DURATION_MS, DURATION_MS[type]) : DURATION_MS[type];
   const countdown = useMessageCountdown(durationMs, held, () => onDismiss(id));
   const c = COLORS[type];
   // En mode natif : la lentille exacte du galet, et le matériau d'une SURFACE
@@ -79,20 +81,14 @@ export const Toast = memo(function Toast({ id, type, title, message, action, onD
       {title && <p className="font-semibold">{title}</p>}
       <div className="flex items-center justify-between gap-3">
         <p className={title ? "mt-0.5 text-content-secondary" : undefined}>{message}</p>
-        {action && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              action.onPress();
-              onDismiss(id);
-            }}
-            className="relative shrink-0 cursor-pointer rounded-md px-2 py-1 font-semibold text-[var(--brand)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus before:absolute before:-inset-2 before:content-['']"
-          >
-            {action.label}
-          </button>
-        )}
+        {action && !secondaryAction && <ToastButton action={action} onDone={() => onDismiss(id)} />}
       </div>
+      {action && secondaryAction && (
+        <div className="mt-2 flex items-center justify-end gap-1">
+          <ToastButton action={secondaryAction} onDone={() => onDismiss(id)} quiet />
+          <ToastButton action={action} onDone={() => onDismiss(id)} />
+        </div>
+      )}
       <span aria-hidden className="absolute bottom-0 left-0 block h-0.5 w-full motion-reduce:hidden">
         <span
           className="block h-full origin-left animate-countdown"
@@ -106,3 +102,19 @@ export const Toast = memo(function Toast({ id, type, title, message, action, onD
     </motion.div>
   );
 });
+
+function ToastButton({ action, onDone, quiet = false }: { action: { label: string; onPress: () => void }; onDone: () => void; quiet?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        action.onPress();
+        onDone();
+      }}
+      className={`relative shrink-0 cursor-pointer rounded-md px-2 py-1 font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus before:absolute before:-inset-2 before:content-[''] ${quiet ? "text-content-secondary" : "text-[var(--brand)]"}`}
+    >
+      {action.label}
+    </button>
+  );
+}

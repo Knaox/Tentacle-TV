@@ -13,3 +13,21 @@ export function rowClickAction(
   if (unavailable) return "unavailable";
   return clickedKey !== undefined && clickedKey === currentKey && playingContext === contextId ? "toggle" : "play";
 }
+
+/**
+ * Un geste qui vise UN titre d'une liste (tuile, ligne courte du « déjà écouté ») : il lance la liste depuis lui —
+ * sauf un titre illisible (lot « ol »), dont l'avis seul part (`announce`). Jamais la liste lancée depuis le
+ * suivant à sa place : le geste visait CE titre.
+ */
+export function playTrackGesture<T extends { key: string }>(
+  tracks: readonly T[],
+  index: number,
+  unavailable: (track: T) => boolean,
+  play: (tracks: readonly T[], index: number) => void,
+  announce: (track: T) => void,
+): void {
+  const track = tracks[index];
+  if (!track) return;
+  if (unavailable(track)) announce(track);
+  else play(tracks, index);
+}

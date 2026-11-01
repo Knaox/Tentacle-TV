@@ -18,6 +18,7 @@ import { useTrackActions } from "../actions/useTrackActions";
 import { TrackMenu } from "../components/TrackMenu";
 import { QuickAddButton } from "../components/QuickAddButton";
 import { OceanSwell } from "../motion/OceanSwell";
+import { announceUnavailableTrack, isTrackUnavailable, playTrackGesture } from "@tentacle-tv/shared/octave";
 
 /** Une tuile fait au moins 15 rem ; trois colonnes au plus, deux rangées. */
 const TILE_MIN_PX = 240;
@@ -50,13 +51,15 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
     <div className="group flex h-16 min-w-0 items-center gap-1 rounded-[var(--oc-radius-art)] pr-1 transition-colors duration-150 hover:bg-octave-hover">
     <button
       type="button"
-      onClick={() => (current ? player.togglePlay() : player.playList(tracks, index, "home:recent"))}
+      onClick={() =>
+        current ? player.togglePlay() : playTrackGesture(tracks, index, isTrackUnavailable, (list, i) => player.playList(list, i, "home:recent"), announceUnavailableTrack)
+      }
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
       aria-current={current ? "true" : undefined}
       className="flex h-16 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[var(--oc-radius-art)] p-1 pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
-      <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-14 w-14 shadow-[var(--oc-shadow-art)]" />
+      <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className={`h-14 w-14 shadow-[var(--oc-shadow-art)]${isTrackUnavailable(track) ? " opacity-45 grayscale" : ""}`} />
       <span className="min-w-0 flex-1">
         <span className={`block truncate text-sm font-semibold leading-5 ${current ? "text-octave-accent-text" : "text-content-primary"}`}>{track.title}</span>
         <span className="block truncate text-xs leading-5 text-content-tertiary">{track.artists.map((a) => a.name).join(", ")}</span>

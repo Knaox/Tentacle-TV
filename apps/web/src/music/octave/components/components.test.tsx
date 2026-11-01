@@ -154,3 +154,29 @@ describe("sélection et retrait d'une rangée", () => {
     expect(row({})).not.toContain("playlist.removeQuick");
   });
 });
+
+describe("rangée d'un titre illisible (lot « ol »)", () => {
+  const row = (track: ReturnType<typeof libraryTrack>) =>
+    inRouter(<TrackRow track={track} number={1} current={false} actions={actions(true)} index={0} onPlayIndex={() => undefined} showArtwork />);
+
+  it("« no » : la marque en mot et en icône, la raison en infobulle ; cœur, menu et glisser restent", () => {
+    const html = row(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "notStreamable", playableReason: "region" }));
+    expect(html).toContain("data-unplayable");
+    expect(html).toContain("unplayableTrack.badge");
+    expect(html).toContain("unplayableTrack.reason.region");
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain('draggable="true"');
+    expect(html).not.toContain("opacity-60");
+  });
+  it("« unknown » et « yes » : rendus comme lisibles, la même rangée (aucun clignotement)", () => {
+    const unknown = row(externalTrack("sillon", "ytm:1", { playable: "unknown" }));
+    const yes = row(externalTrack("sillon", "ytm:1", { playable: "yes" }));
+    expect(unknown).not.toContain("data-unplayable");
+    expect(unknown).toBe(yes);
+  });
+  it("une extension d'avant (marque de « fl » seule) : grisé comme avant ; rien du tout : lisible", () => {
+    expect(row(externalTrack("sillon", "imp:1", { unavailable: "notStreamable" }))).toContain("unplayableTrack.reason.notStreamable");
+    expect(row(externalTrack("sillon", "ytm:1"))).not.toContain("data-unplayable");
+  });
+});
+

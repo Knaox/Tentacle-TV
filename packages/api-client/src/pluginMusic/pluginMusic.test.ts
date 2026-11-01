@@ -187,6 +187,14 @@ describe("appels à l'extension", () => {
     expect(await resolveMusicSource(provider, "a")).toBeNull();
   });
 
+  it("un titre REFUSÉ par la source (contrat `refused`, lot « ol ») : sa raison ; une raison inconnue vaut « noStream »", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sources: [], refused: [{ externalId: "a", reason: "region" }] }))));
+    expect(await resolveMusicSource(provider, "a")).toEqual({ refused: "region" });
+    expect(await resolveMusicSource(provider, "b")).toBeNull();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sources: [], refused: [{ externalId: "a", reason: "demain" }] }))));
+    expect(await resolveMusicSource(provider, "a")).toEqual({ refused: "noStream" });
+  });
+
   it("le préchargement du suivant se dit (`intent: \"next\"`) ; un geste envoie la demande d'avant, à l'identique", async () => {
     const bodies: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => (bodies.push(JSON.parse(String(init.body))), new Response(JSON.stringify({ sources: [] })))));

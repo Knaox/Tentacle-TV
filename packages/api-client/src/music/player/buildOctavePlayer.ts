@@ -7,7 +7,7 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { AudioEnginePort, MusicTrack } from "@tentacle-tv/shared/music";
-import { OctavePlayer, PlaybackReporter, type SourceResolvers } from "@tentacle-tv/shared/octave";
+import { OctavePlayer, PlaybackReporter, setKeptPlayabilityLookup, type SourceResolvers } from "@tentacle-tv/shared/octave";
 import { fetchMusicSource } from "../useMusicLibrary";
 import { reportMusicPlayback } from "../musicPlaybackReport";
 import { prefetchMusic, reportExternalPlayed, resolveMusicSource } from "../../pluginMusic/musicRequests";
@@ -35,6 +35,8 @@ export function buildOctavePlayer(
   provider: () => MusicProvider | null,
   kept: OctaveKeptPort = {},
 ): OctavePlayer {
+  // Un titre gardé n'est jamais grisé ni sauté, même refusé par sa source (lot « ol », `playabilityPatch.ts`).
+  setKeptPlayabilityLookup(kept.isKept ?? null);
   const resolvers: SourceResolvers = {
     library: (id) => fetchMusicSource(qc, id),
     external: async (track: MusicTrack, intent) => {
@@ -43,6 +45,7 @@ export function buildOctavePlayer(
       // Sans source parce que le budget de l'extension est atteint : le lecteur réessaiera (contrat `retry`).
       // Le préchargement du suivant se dit (l'extension le fait passer après les gestes), « Réessayer » aussi.
       const outcome = await resolveMusicSource(p, track.external.id, undefined, intent === "play" ? undefined : intent);
+      // Refusé par la source (lot « ol ») : le lecteur le grise et passe au suivant, sans échec rouge.
       return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
     },
     now: () => Date.now(),

@@ -10,7 +10,7 @@
  */
 
 import { memo, useCallback } from "react";
-import { Pause, Play } from "lucide-react";
+import { CloudOff, Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import type { TrackActions } from "../actions/useTrackActions";
@@ -23,7 +23,9 @@ import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
 import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
-import { announceUnavailableTrack, clickGesture, isTrackUnavailable, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, clickGesture, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
+import { UnplayableMark } from "./UnplayableMark";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
 import { AlbumLink, ArtistLinks } from "./TrackLinks";
@@ -80,18 +82,21 @@ export interface TrackRowProps {
   handle?: HandleSlot | null;
 }
 
-/** La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse. */
-function NumberCell({ number, current, playing }: { number: number; current: boolean; playing: boolean }) {
+/**
+ * La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse.
+ * Un titre illisible (`locked`) : le nuage barré au survol, jamais un « Lecture » qui ne lirait pas.
+ */
+function NumberCell({ number, current, playing, locked = false }: { number: number; current: boolean; playing: boolean; locked?: boolean }) {
   const { t } = useTranslation("music");
-  const HoverIcon = current && playing ? Pause : Play;
+  const HoverIcon = locked ? CloudOff : current && playing ? Pause : Play;
   return (
     <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
       <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-octave-accent-text" : ""}`}>
         {current ? <OceanSwell playing={playing} /> : number}
       </span>
       {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
-      <span className="octave-row-play absolute inset-0 flex items-center justify-center text-content-primary transition-opacity duration-150" aria-hidden>
-        <HoverIcon className="h-4 w-4" fill="currentColor" />
+      <span className={`octave-row-play absolute inset-0 flex items-center justify-center transition-opacity duration-150 ${locked ? "text-content-tertiary" : "text-content-primary"}`} aria-hidden>
+        <HoverIcon className="h-4 w-4" fill={locked ? "none" : "currentColor"} />
       </span>
     </div>
   );
@@ -100,11 +105,13 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
 export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect, handle = null }: TrackRowProps) {
   const { t } = useTranslation("music");
   const stage = useOctaveGlassStage();
-  // Un titre qui ne se lit pas (`unavailableTrack.ts` : importé sans source, sortie sans écoute publique) : grisé ;
-  // le cliquer ne lance rien, la lecture en cours continue, et l'avis dit pourquoi.
-  const locked = isTrackUnavailable(track);
+  // Un titre qui ne se lit pas (`trackPlayability.ts` : la source le refuse, importé sans source…) : grisé ; le
+  // cliquer ne lance rien, la lecture en cours continue, et l'avis dit pourquoi. Le cœur, le menu, le glisser vers
+  // une playlist restent : le serveur pourra le récupérer. `unknown` se rend comme lisible (aucun clignotement).
+  const playability = useTrackPlayability(track);
+  const locked = playability.greyed;
   const onPlay = () => {
-    if (locked) announceUnavailableTrack();
+    if (locked) announceUnavailableTrack(track);
     else onPlayIndex(index);
   };
   const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);
@@ -125,7 +132,6 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       role="row"
       tabIndex={0}
       aria-current={current ? "true" : undefined}
-      aria-disabled={locked || undefined}
       aria-selected={onSelect ? selected : undefined}
       // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic simple coche aussi (il ne lit plus).
       onClick={(e) => {
@@ -147,15 +153,15 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 ${locked ? "cursor-default opacity-60" : "cursor-pointer"} select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
       } ${columns}`}
     >
       {handle && <DragHandle slot={handle} />}
       {showSelect && (onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : compact ? null : <div role="gridcell" />)}
-      {showNumber && <NumberCell number={number} current={current} playing={playing} />}
+      {showNumber && <NumberCell number={number} current={current} playing={playing} locked={locked} />}
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
-        {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-10 w-10" />}
+        {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className={`h-10 w-10${locked ? " opacity-45 grayscale" : ""}`} />}
         <div className="min-w-0">
           <div title={track.title} className={`flex items-center gap-1.5 truncate text-[15px] font-medium leading-5 ${current ? "text-octave-accent-text" : muted ? "text-content-secondary" : "text-content-primary"}`}>
             <span className="truncate">{track.title}</span>
@@ -166,7 +172,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             )}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
-            <AvailabilityMark availability={track.availability} failed={failed} note={note} showLibrary={markLibrary} />
+            {locked ? <UnplayableMark reason={playability.reason} /> : <AvailabilityMark availability={track.availability} failed={failed} note={note} showLibrary={markLibrary} />}
             <KeptMark trackKey={track.key} />
             <span className="truncate">
               <ArtistLinks track={track} />
@@ -179,7 +185,6 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
               )}
               {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
               {failed && note && <span className="text-status-error-fg"> · {note}</span>}
-              {locked && <span> · {track.unavailable === "notPublic" ? t("notPublic", { ns: "musicReleases" }) : t("unavailableAlbum.badge")}</span>}
             </span>
           </div>
         </div>

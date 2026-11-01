@@ -35,17 +35,18 @@ export const SuggestionList = memo(function SuggestionList({ suggestions, onPick
             key={s.id}
             onPress={() => onPick(s.text)}
             accessibilityRole="button"
-            accessibilityLabel={s.subtitle ? `${s.title}, ${s.subtitle}` : s.title}
+            accessibilityLabel={`${s.subtitle ? `${s.title}, ${s.subtitle}` : s.title}${s.unplayable ? `, ${t("unplayableTrack.badge")}` : ""}`}
             style={({ pressed }) => [styles.row, { paddingHorizontal: gutter, backgroundColor: pressed ? theme.colors.fill.subtle : "transparent" }]}
           >
             <Icon size={18} color={theme.colors.text.tertiary} />
             <View style={styles.text}>
-              <Text numberOfLines={1} style={[typography.body, { color: theme.colors.text.primary }]}>
+              <Text numberOfLines={1} style={[typography.body, { color: s.unplayable ? theme.colors.text.secondary : theme.colors.text.primary }]}>
                 {s.title}
               </Text>
               {s.subtitle ? (
                 <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.tertiary }]}>
-                  {s.subtitle}
+                  {/* Un titre que l'extension sait illisible (lot « ol ») : dit en mot ; le choisir cherche quand même. */}
+                  {s.unplayable ? `${s.subtitle} · ${t("unplayableTrack.badge")}` : s.subtitle}
                 </Text>
               ) : null}
             </View>

@@ -321,6 +321,30 @@ export default {
     notFound: "Track not found.",
     failed: "The addition failed. Try again in a moment.",
   },
+  // Un titre qui ne se lit pas (lot « ol », `trackPlayability.ts`) : grisé partout ; le toucher le dit et propose de
+  // l'aimer ou de le ranger (le serveur pourra le récupérer).
+  unplayableTrack: {
+    badge: "Not playable",
+    rowLabel: "{{title}}, not playable right now",
+    title: "Not playable right now",
+    keep: "It's still yours to keep: add it to a playlist or your favorites, and the server may fetch it.",
+    like: "Favorite",
+    liked: "In your favorites",
+    addToPlaylist: "Add to playlist",
+    close: "Close",
+    reason: {
+      unavailable: "This track's video has been removed or made private.",
+      region: "This track isn't offered in your country.",
+      premium: "This track is for its source's subscribers only.",
+      members: "This track is for channel members only.",
+      age: "This track is age-restricted on its source.",
+      noStream: "No streaming source offers it for now.",
+      preview: "Its source only offers a preview, not the full track.",
+      notStreamable: "No streaming source offers it for now.",
+      notPublic: "Its source keeps it for buyers.",
+      other: "Its source doesn't offer it for listening right now.",
+    },
+  },
   // Un album qui ne se lit pas (lot « Octave mobile 3 ») : carte grisée, feuille au toucher (`unavailableAlbum.ts`).
   unavailableAlbum: {
     badge: "Not playable",

@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useGlassControl } from "../../../components/ui/glass/useGlassControl";
 import { moveActive, type OctaveSuggestion } from "./suggestionModel";
+import { UnplayableMark } from "../components/UnplayableMark";
 import { useOctaveGlassStage } from "../glass/glassStage";
 
 const LIST_ID = "octave-search-suggestions";
@@ -164,10 +165,12 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
                   className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 text-sm ${i === active ? "bg-octave-selected" : ""}`}
                 >
                   <Icon className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate text-content-primary">
+                  <span className={`min-w-0 flex-1 truncate ${s.unplayable ? "text-content-secondary" : "text-content-primary"}`}>
                     {s.title}
                     {s.subtitle && <span className="text-content-tertiary"> · {s.subtitle}</span>}
                   </span>
+                  {/* Un titre que l'extension sait illisible : grisé, la marque ; le choisir cherche quand même (lot « ol »). */}
+                  {s.unplayable && <UnplayableMark reason={s.unplayable} />}
                   {s.kind === "recent" && (
                     <button
                       type="button"

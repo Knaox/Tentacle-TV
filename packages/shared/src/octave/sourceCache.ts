@@ -16,11 +16,16 @@
  * un titre gardé se lisait encore en Opus, depuis YouTube).
  */
 
-import type { MusicTrack, PlaybackSource } from "../music";
+import type { MusicPlayableReason, MusicTrack, PlaybackSource } from "../music";
 
 /** L'extension n'a pas de source à cause de son budget de requêtes : réessayer dans ce délai (contrat `retry`). */
 export interface ExternalRetry {
   retryAfterMs: number;
+}
+
+/** La source REFUSE ce titre (contrat `refused`, lot « ol ») : pas une panne, une raison à dire. */
+export interface ExternalRefusal {
+  refused: MusicPlayableReason;
 }
 
 /**
@@ -33,7 +38,7 @@ export interface SourceResolvers {
   /** Un titre de la bibliothèque (`/api/music/source/:id`). */
   library: (jellyfinId: string) => Promise<PlaybackSource>;
   /** Un titre d'extension (`music.resolve`) ; `null` : pas de source ; `{ retryAfterMs }` : réessayer plus tard. */
-  external: (track: MusicTrack, intent: SourceIntent) => Promise<PlaybackSource | ExternalRetry | null>;
+  external: (track: MusicTrack, intent: SourceIntent) => Promise<PlaybackSource | ExternalRetry | ExternalRefusal | null>;
   now: () => number;
   /** La copie complète gardée sur cet appareil, consultée à CHAQUE lecture avant le cache ; absente : aucune. */
   kept?: (trackKey: string) => PlaybackSource | null;
@@ -47,6 +52,8 @@ export class SourceCache {
   private readonly inFlight = new Map<string, { intent: SourceIntent; request: Promise<PlaybackSource | null> }>();
   /** Le dernier « réessaie plus tard » de l'extension, par titre (`takeRetryHint`). */
   private readonly retryHints = new Map<string, number>();
+  /** Le dernier refus de la source, par titre (`takeRefusal`). */
+  private readonly refusals = new Map<string, MusicPlayableReason>();
 
   constructor(private readonly resolvers: SourceResolvers) {}
 
@@ -77,6 +84,10 @@ export class SourceCache {
           this.retryHints.set(track.key, result.retryAfterMs);
           return null;
         }
+        if (result !== null && "refused" in result) {
+          this.refusals.set(track.key, result.refused);
+          return null;
+        }
         if (result) this.sources.set(track.key, result);
         return result;
       })
@@ -96,6 +107,13 @@ export class SourceCache {
     this.sources.delete(trackKey);
   }
 
+  /** Le refus de la source pour ce titre, une seule fois ; `null` : pas de refus (un échec ordinaire, ou rien). */
+  takeRefusal(trackKey: string): MusicPlayableReason | null {
+    const reason = this.refusals.get(trackKey);
+    this.refusals.delete(trackKey);
+    return reason ?? null;
+  }
+
   /** Le délai demandé par l'extension pour ce titre (« réessaie plus tard »), une seule fois ; `null` sinon. */
   takeRetryHint(trackKey: string): number | null {
     const hint = this.retryHints.get(trackKey);
@@ -103,7 +121,7 @@ export class SourceCache {
     return hint ?? null;
   }
 
-  private resolve(track: MusicTrack, intent: SourceIntent): Promise<PlaybackSource | ExternalRetry | null> {
+  private resolve(track: MusicTrack, intent: SourceIntent): Promise<PlaybackSource | ExternalRetry | ExternalRefusal | null> {
     if (track.jellyfinId && track.availability === "library") return this.resolvers.library(track.jellyfinId);
     if (track.external) return this.resolvers.external(track, intent);
     if (track.jellyfinId) return this.resolvers.library(track.jellyfinId);

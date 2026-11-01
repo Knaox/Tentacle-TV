@@ -26,7 +26,13 @@ export function readMusicSuggestions(raw: unknown): MusicSuggestion[] {
   for (const item of list) {
     const s = item as Partial<MusicSuggestion> | null;
     if (!s || typeof s.title !== "string" || typeof s.text !== "string" || !KINDS.has(String(s.kind))) continue;
-    out.push({ kind: s.kind as MusicSuggestion["kind"], title: s.title.slice(0, 200), subtitle: typeof s.subtitle === "string" ? s.subtitle.slice(0, 200) : null, text: s.text.slice(0, 200) });
+    const suggestion: MusicSuggestion = { kind: s.kind as MusicSuggestion["kind"], title: s.title.slice(0, 200), subtitle: typeof s.subtitle === "string" ? s.subtitle.slice(0, 200) : null, text: s.text.slice(0, 200) };
+    // La lisibilité d'un TITRE (lot « ol ») : gardée telle quelle, la règle partagée la lit (une valeur inconnue = rien).
+    if (s.kind === "track" && typeof s.playable === "string") {
+      suggestion.playable = s.playable;
+      if (typeof s.playableReason === "string") suggestion.playableReason = s.playableReason;
+    }
+    out.push(suggestion);
   }
   return out.slice(0, 20);
 }

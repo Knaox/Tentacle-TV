@@ -15,6 +15,8 @@ import { rememberAlbumPreview } from "../data/albumPreview";
 import { Artwork } from "../components/Artwork";
 import { entityTarget, octavePaths } from "../octavePaths";
 import type { TopResult } from "./searchLayout";
+import { UnplayableMark } from "../components/UnplayableMark";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 
 interface TopResultCardProps {
   top: TopResult;
@@ -58,6 +60,10 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
   const headingId = useId();
   const face = useFace(top);
   const actions = useTrackActions();
+  // Un TITRE illisible en tête : la pochette éteinte et la marque ; le clic dit pourquoi (`useTopPlayback`).
+  const learned = useTrackPlayability(top.kind === "track" ? top.track : null);
+  const playability = top.kind === "track" ? learned : null;
+  const locked = playability?.greyed ?? false;
   const albumTarget = top.kind === "album" && !top.album.jellyfinId ? entityTarget(top.album) : null;
   // Le nom : un lien vers sa vue, dont la zone couvre toute la carte (le bouton Lecture reste au-dessus).
   const nameClass =
@@ -68,7 +74,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
         {t("search.topResult")}
       </h2>
       <div className="octave-card group relative flex min-h-[15rem] flex-1 flex-col justify-between gap-4 rounded-xl bg-fill-subtle p-5 transition-colors duration-150 hover:bg-fill-medium focus-within:bg-fill-medium">
-        <Artwork url={face.art} kind={face.round ? "artist" : "album"} round={face.round} eager className="h-28 w-28 shadow-lg" />
+        <Artwork url={face.art} kind={face.round ? "artist" : "album"} round={face.round} eager className={`h-28 w-28 shadow-lg${locked ? " opacity-45 grayscale" : ""}`} />
         <div className="min-w-0 pr-16">
           {face.to ? (
             <Link to={face.to} className={nameClass} onClick={albumTarget && top.kind === "album" ? () => rememberAlbumPreview(albumTarget, top.album) : undefined}>
@@ -81,6 +87,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
           )}
           <p className="mt-2 flex min-w-0 items-center gap-2 text-sm text-content-tertiary">
             <span className="shrink-0 rounded-full bg-fill-medium px-2.5 py-0.5 text-xs font-semibold text-content-secondary">{face.kind}</span>
+            {locked && <UnplayableMark reason={playability?.reason ?? null} />}
             {face.subtitle && <span className="truncate">{face.subtitle}</span>}
           </p>
         </div>

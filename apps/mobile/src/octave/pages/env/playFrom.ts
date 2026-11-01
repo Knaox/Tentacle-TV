@@ -6,13 +6,22 @@
  */
 
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { announceUnavailableTrack, isTrackUnavailable, rowClickAction, type OctavePlayer } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, isTrackUnavailable, playTrackGesture, rowClickAction, type OctavePlayer } from "@tentacle-tv/shared/octave";
 import { offlinePlayableQueue } from "../../offline/useOfflineMusic";
 
 export function playFrom(player: OctavePlayer | null, tracks: readonly MusicTrack[], index: number, contextId: string | null): void {
   if (!player) return;
   const queue = offlinePlayableQueue(tracks, index);
   if (queue) player.playList(queue.tracks, queue.index, contextId);
+}
+
+/**
+ * Un geste qui vise CE titre (tuile, ligne du « déjà écouté », meilleur résultat) : la liste depuis lui — un titre
+ * illisible (lot « ol ») n'ouvre que sa feuille, jamais la liste depuis le suivant. « Lire » une liste entière reste
+ * `playFrom` (le premier lisible).
+ */
+export function playTrack(player: OctavePlayer | null, tracks: readonly MusicTrack[], index: number, contextId: string | null): void {
+  playTrackGesture(tracks, index, isTrackUnavailable, (list, i) => playFrom(player, list, i, contextId), announceUnavailableTrack);
 }
 
 /**
@@ -25,7 +34,7 @@ export function playRow(player: OctavePlayer | null, tracks: readonly MusicTrack
   const { current, queue } = player.snapshot.get();
   const track = tracks[index];
   const action = rowClickAction(track?.key, current?.key ?? null, queue.contextId, contextId, !!track && isTrackUnavailable(track));
-  if (action === "unavailable") announceUnavailableTrack();
+  if (action === "unavailable") announceUnavailableTrack(track ?? null);
   else if (action === "toggle") player.togglePlay();
   else playFrom(player, tracks, index, contextId);
 }

@@ -10,7 +10,8 @@ import { FlatList, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { SearchX } from "lucide-react-native";
 import { layoutSearch, type SearchFilter, type ShownExternalLists } from "@tentacle-tv/shared/octave";
-import { searchAlbumOwnership, type AlbumOwnership } from "@tentacle-tv/api-client";
+import { searchAlbumOwnership, usePlayabilityProbe, type AlbumOwnership } from "@tentacle-tv/api-client";
+import { useOctavePagesProvider } from "../env/pagesEnv";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicArtist, MusicPlaylist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { AlbumCard, ArtistCard, ExternalPlaylistCard, PlaylistCard } from "../ui/Cards";
@@ -58,6 +59,8 @@ export const SearchKindList = memo(function SearchKindList({ query, filter, libr
     return [...layout.libraryPlaylists.map((playlist) => ({ kind: "playlist" as const, playlist })), ...layout.externalPlaylists.map((playlist) => ({ kind: "external" as const, playlist }))];
   }, [filter, layout]);
   const contextId = `search:${query}:tracks`;
+  // Les titres pas encore sus de cette liste : sondés à l'affichage, l'état arrive sur place (lot « ol »).
+  usePlayabilityProbe(useOctavePagesProvider(), layout.tracks);
   const play = useCallback((index: number) => playRow(player, layout.tracks, index, contextId), [contextId, layout.tracks, player]);
   const grid = filter !== "tracks";
   const columns = grid ? (isTablet ? Math.max(3, Math.floor(700 / card)) : 2) : 1;

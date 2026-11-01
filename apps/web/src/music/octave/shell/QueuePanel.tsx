@@ -21,8 +21,10 @@ import { AlbumLink, ArtistLinks } from "../components/TrackLinks";
 import { useTrackActions, type TrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { SelectCell } from "../components/SelectCell";
+import { UnplayableMark } from "../components/UnplayableMark";
 import { SelectionBar } from "../actions/selection/SelectionBar";
-import { clickGesture, isTrackUnavailable, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { clickGesture, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 import { useListSelection } from "../actions/selection/useListSelection";
 import { NowSwell } from "../motion/NowSwell";
 import { DragHandle, type HandleSlot } from "../listOrder/DragHandle";
@@ -77,10 +79,11 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
       : selection?.selected
         ? "bg-octave-selected"
         : "hover:bg-octave-hover";
-  // Un titre indisponible reste dans la file, grisé : la file le saute, le cliquer le dit (`unavailableTrack.ts`).
-  const locked = isTrackUnavailable(track);
+  // Un titre illisible reste dans la file, grisé : la file le saute, le cliquer le dit (`trackPlayability.ts`).
+  const playability = useTrackPlayability(track);
+  const locked = playability.greyed;
   return (
-    <li className={`group flex shrink-0 items-center gap-2 rounded-xl px-1.5 ${tone}${locked ? " opacity-60" : ""}`} style={{ height: ENTRY_HEIGHT, ...style }}>
+    <li className={`group flex shrink-0 items-center gap-2 rounded-xl px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>
       {handle && <DragHandle slot={handle} />}
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
@@ -101,11 +104,11 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
           aria-label={t("track.play", { title: track.title })}
           className="absolute inset-0 cursor-pointer rounded-lg disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         />
-        <Artwork url={track.artworkUrl} className="pointer-events-none h-10 w-10" />
+        <Artwork url={track.artworkUrl} className={`pointer-events-none h-10 w-10${locked ? " opacity-45 grayscale" : ""}`} />
         <span className="pointer-events-none min-w-0">
-          <span className={`block truncate text-sm font-medium ${current ? "text-octave-accent-text" : "text-content-primary"}`}>{track.title}</span>
+          <span className={`block truncate text-sm font-medium ${current ? "text-octave-accent-text" : locked ? "text-content-secondary" : "text-content-primary"}`}>{track.title}</span>
           <span className="flex items-center gap-1.5 truncate text-xs text-content-tertiary">
-            <AvailabilityMark availability={track.availability} />
+            {locked ? <UnplayableMark reason={playability.reason} /> : <AvailabilityMark availability={track.availability} />}
             <span className="pointer-events-auto relative truncate">
               <ArtistLinks track={track} />
               {track.album && (

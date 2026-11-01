@@ -13,7 +13,7 @@ import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ownedCount, useAlbumOwnership, useMusicAlbumEntity, useRecordMusicVisit } from "@tentacle-tv/api-client";
+import { ownedCount, useAlbumOwnership, useMusicAlbumEntity, usePlayabilityProbe, useRecordMusicVisit } from "@tentacle-tv/api-client";
 import { albumPreview, inDiscOrder, longReleaseDate, queueActions } from "@tentacle-tv/shared/octave";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
@@ -57,11 +57,14 @@ export function OctaveAlbumScreen({ id }: { id: string }) {
   const { gutter, bottomInset } = usePageMetrics();
   // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
   const { scrollY, scrollProps } = useOctavePageScroll();
-  const album = useMusicAlbumEntity(useOctavePagesProvider(), id, albumPreview);
+  const provider = useOctavePagesProvider();
+  const album = useMusicAlbumEntity(provider, id, albumPreview);
   const { ordered, discs } = useMemo(() => inDiscOrder(album.data?.tracks ?? []), [album.data]);
   const ownership = useAlbumOwnership(album.data, ordered, album.isPlaceholder);
   useRecordMusicVisit(useDeviceStore(), useOctaveOwner(), "album", album.isPlaceholder || !ownership.settled || ownership.libraryAlbumId ? undefined : album.data);
   const tracks = ownership.tracks;
+  // Les titres pas encore sus de cette liste : sondés à l'affichage, l'état arrive sur place (lot « ol »).
+  usePlayabilityProbe(provider, tracks);
   const contextId = `album:${id}`;
   const meta = useCountAndDuration(album.data?.trackCount ?? tracks.length, album.data?.durationMs ?? tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   // Entièrement dans la bibliothèque : la vue de la bibliothèque, à sa place dans l'historique.

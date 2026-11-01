@@ -10,7 +10,8 @@ import { Platform, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { ownedCount, useOwnedTracks } from "@tentacle-tv/api-client";
+import { ownedCount, useOwnedTracks, usePlayabilityProbe } from "@tentacle-tv/api-client";
+import { useOctavePagesProvider } from "../env/pagesEnv";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useOctavePageScroll } from "../../layout/useOctavePageScroll";
@@ -66,6 +67,8 @@ export function TrackCollectionPage({ head, tracks: raw, contextId, pending, fai
   // Le défilement de la coquille (page gardée au lancement) ; la tête de page pose elle-même sa marge du haut.
   const { scrollY, scrollProps } = useOctavePageScroll();
   const { tracks } = useOwnedTracks(raw ?? NO_TRACKS);
+  // Les titres pas encore sus de cette liste : sondés à l'affichage, l'état arrive sur place (lot « ol »).
+  usePlayabilityProbe(useOctavePagesProvider(), tracks);
   const play = useCallback((index: number) => playRow(player, tracks, index, contextId), [contextId, player, tracks]);
   const meta = useCountAndDuration(tracks.length, tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const owned = useMemo(() => ownedCount(tracks), [tracks]);

@@ -12,7 +12,7 @@
  * par le cœur après `requireAuth` (runtime isolé, pluginServerRuntime.ts).
  */
 
-import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
+import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlayable, MusicPlayableReason, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
 import type { MusicImportSource } from "./musicImport";
 import type { ReleaseSource } from "./musicReleases";
@@ -101,6 +101,11 @@ export interface PluginMusicManifest {
   releases?: string;
   /** Ce que `releases` sait importer (liste fermée `ReleaseSource`). */
   releaseSources?: ReleaseSource[];
+  /**
+   * Le SONDAGE de lisibilité (lot « ol », contrat d'ol3) — POST `PlayabilityRequest` → `PlayabilityResponse` : l'état
+   * des titres `unknown` QUE LE CLIENT MONTRE. Absent (extension d'avant) : le client n'appelle rien.
+   */
+  playability?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -160,6 +165,9 @@ export interface MusicSuggestion {
   subtitle: string | null;
   /** Ce qui part dans la recherche (par défaut : titre et artiste). */
   text: string;
+  /** Un TITRE dont l'extension sait déjà qu'il ne se lit pas (lot « ol ») : la suggestion est grisée. Absent : rien. */
+  playable?: MusicPlayable;
+  playableReason?: MusicPlayableReason | null;
 }
 
 export interface MusicSuggestResponse {
@@ -211,7 +219,28 @@ export interface ExternalSourcesResponse {
    * l'ignore n'y voit qu'une absence de source, comme avant.
    */
   retry?: SourceRetryHint;
+  /**
+   * Des titres demandés que la source REFUSE (lot « ol ») : pas une panne — le client dit la raison (comme pour un
+   * titre grisé) et passe au suivant, sans échec rouge. Additif : un client d'avant n'y voit qu'une absence de source.
+   */
+  refused?: { externalId: string; reason: MusicPlayableReason }[];
 }
+
+/** Le sondage de lisibilité (manifeste `playability`) : les identifiants externes `unknown` affichés, ≤ 60. */
+export interface PlayabilityRequest {
+  ids: string[];
+  /** Attente maximale de la réponse, 0..2500 ms (0 par défaut : ce qui est déjà su). */
+  waitMs?: number;
+}
+
+export interface PlayabilityResponse {
+  states: Record<string, { playable: MusicPlayable; reason?: MusicPlayableReason }>;
+  /** Présent : il en reste en cours — redemander UNE fois les seuls `unknown` après ce délai (3 tours au plus). */
+  retryAfterMs?: number;
+}
+
+/** Au plus par demande de sondage (le contrat de l'extension). */
+export const PLAYABILITY_BATCH_MAX = 60;
 
 export interface SourceRetryHint {
   /** Liste fermée : le client a ses mots pour chacune. */
@@ -303,7 +332,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "moods", "mood", "importRead", "importTracks", "releases", "playability"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

@@ -20,7 +20,8 @@ import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "@tentacle-tv/shared/octave";
 import { useListSelection } from "../actions/selection/useListSelection";
 import type { HandleSlot } from "../listOrder/DragHandle";
-import type { ReorderBlock } from "@tentacle-tv/api-client";
+import { usePlayabilityProbe, type ReorderBlock } from "@tentacle-tv/api-client";
+import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { VirtualTrackRows } from "../listOrder/VirtualTrackRows";
 
 interface TrackListProps {
@@ -71,6 +72,8 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   const playingContext = usePlayerSelector((s) => s.queue.contextId);
   const wantsPlay = usePlayerSelector((s) => s.wantsPlay);
   const tracks = useMemo(() => queueTracks ?? rows.map((r) => r.track), [queueTracks, rows]);
+  // Les titres pas encore sus de cette liste : sondés à l'affichage, l'état arrive sur place (lot « ol »).
+  usePlayabilityProbe(useOctaveProvider(), tracks);
   // Lu au clic, jamais une dépendance du rappel (sinon chaque titre suivant redessinerait toute la liste).
   const live = useRef({ currentKey, playingContext });
   useEffect(() => {
@@ -81,7 +84,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
       const { currentKey: key, playingContext: context } = live.current;
       const track = tracks[index];
       const action = rowClickAction(track?.key, key, context, contextId, !!track && isTrackUnavailable(track));
-      if (action === "unavailable") announceUnavailableTrack();
+      if (action === "unavailable") announceUnavailableTrack(track ?? null);
       else if (action === "toggle") player.togglePlay();
       else player.playList(tracks, index, contextId);
     },

@@ -24,6 +24,8 @@ import { CHOSEN_BUDGET_TRIES, type StartCause } from "./startCause";
 import { queueActions } from "./octaveQueueActions";
 import { applyRemoteCommand } from "./remoteCommands";
 import { engineLostCurrent } from "./engineLoss";
+import { announcePlayability, refusedQueue } from "./playabilityPatch";
+import { announceUnavailableTrack, isTrackUnavailable } from "./unavailableTrack";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -137,6 +139,7 @@ export class OctavePlayer {
 
   /** Aucune source : on le dit ; un titre CHOISI reste là, l'enchaînement passe au suivant (deux fois d'affilée au plus). */
   private failCurrent(token: number, cause: StartCause): void {
+    if (this.skipRefused(cause)) return;
     // Rien ne joue : le bouton redevient « Lecture » (qui vaut « Réessayer »).
     this.snapshot.update({ phase: "error", error: "noSource", notice: null, wantsPlay: false });
     if (cause !== "chained" || !this.failures.failed()) return;
@@ -146,6 +149,25 @@ export class OctavePlayer {
       const moved = advance(this.snapshot.get().queue, false);
       if (moved && moved.cursor !== this.snapshot.get().queue.cursor) this.startItem(moved, 0, "chained");
     }, delay);
+  }
+
+  /**
+   * La source a REFUSÉ le titre courant (lot « ol ») : il est grisé dans la file et partout, dit s'il avait été
+   * choisi, et la file passe au lisible suivant — tout de suite, sans compter un échec (jamais un lecteur bloqué).
+   */
+  private skipRefused(cause: StartCause): boolean {
+    const snap = this.snapshot.get();
+    const key = snap.current?.key;
+    const reason = key ? this.deps.sources.takeRefusal(key) : null;
+    if (!key || reason === null) return false;
+    const queue = refusedQueue(snap.queue, key, reason);
+    const current = currentItem(queue)?.track ?? snap.current;
+    this.snapshot.update({ queue, current, phase: "error", error: null, notice: null, wantsPlay: false });
+    announcePlayability(new Map([[key, { playable: "no", reason }]]));
+    if (cause !== "chained" && current) announceUnavailableTrack(current);
+    const moved = advance(queue, false);
+    if (moved && moved.cursor !== queue.cursor) this.startItem(moved, 0, "chained");
+    return true;
   }
 
   /** Donne au moteur le suivant de la file (préchargement sans blanc), et l'annonce à l'extension. */
@@ -162,7 +184,15 @@ export class OctavePlayer {
     this.deps.prefetchExternal([next.track], "next");
     const ready = this.deps.sources.peek(next.track.key);
     const hand = (source: Parameters<AudioEnginePort["setNext"]>[1]) => {
-      if (token !== this.playToken || !source) return;
+      if (token !== this.playToken) return;
+      // Le suivant refusé par la source : grisé, et la file en annonce un autre (lot « ol »).
+      const refused = source ? null : this.deps.sources.takeRefusal(next.track.key);
+      if (refused !== null) {
+        this.snapshot.update({ queue: refusedQueue(this.snapshot.get().queue, next.track.key, refused) });
+        announcePlayability(new Map([[next.track.key, { playable: "no", reason: refused }]]));
+        return this.scheduleNext();
+      }
+      if (!source) return;
       this.nextUid = next.uid;
       this.nextFromDevice = source.kept !== undefined;
       this.engineKeys.set(next.uid, next.track.key);
@@ -246,9 +276,11 @@ export class OctavePlayer {
 
   /** Anticipation : prépare les sources (appui, suivant) et prévient l'extension. */
   prefetch(tracks: readonly MusicTrack[], intent: PrefetchIntent): void {
-    if (tracks.length === 0) return;
-    this.deps.prefetchExternal(tracks, intent);
-    if (intent === "press" || intent === "next") for (const track of tracks) void this.deps.sources.get(track, intent === "next" ? "next" : "play");
+    // Un titre qu'on sait illisible (lot « ol ») ne se prépare jamais : ni anticipation, ni `resolve` au survol.
+    const playable = tracks.filter((track) => !isTrackUnavailable(track));
+    if (playable.length === 0) return;
+    this.deps.prefetchExternal(playable, intent);
+    if (intent === "press" || intent === "next") for (const track of playable) void this.deps.sources.get(track, intent === "next" ? "next" : "play");
   }
 
   /* ── Moteur ── */

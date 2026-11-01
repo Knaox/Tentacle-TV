@@ -14,6 +14,7 @@ import { GlassSurface, PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { Artwork } from "../ui/Artwork";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 import { useOpenWarmup } from "../ui/Cards";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
@@ -35,6 +36,9 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
   const theme = useTheme();
   const nav = useOctaveNav();
   const d = describe(top);
+  // Un TITRE illisible en tête (lot « ol ») : pochette éteinte, « Pas lisible » ; le toucher ouvre sa feuille.
+  const playability = useTrackPlayability(top.kind === "track" ? top.track : null);
+  const locked = top.kind === "track" && playability.greyed;
   const warm = useOpenWarmup();
   const open = () => {
     if (top.kind === "track") return onPlay();
@@ -56,11 +60,13 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
   return (
     <PressableCard onPress={open} accessibilityRole="button" accessibilityLabel={`${t("search.topResult")} : ${d.title}`}>
       <GlassSurface tier="subtle" tint="regular" radius={18} style={styles.card}>
-        <Artwork url={d.art} size={96} round={d.round} radius={12} kind={top.kind === "artist" ? "artist" : "album"} />
+        <View style={locked ? styles.dimmed : undefined}>
+          <Artwork url={d.art} size={96} round={d.round} radius={12} kind={top.kind === "artist" ? "artist" : "album"} />
+        </View>
         <View style={styles.text}>
           <Text style={[typography.small, { color: theme.colors.text.tertiary, textTransform: "uppercase" }]}>{t("search.topResult")}</Text>
           <Text numberOfLines={2} style={[typography.title, { color: theme.colors.text.primary }]}>{d.title}</Text>
-          <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.secondary }]}>{[t(d.kind), d.by].filter(Boolean).join(" · ")}</Text>
+          <Text numberOfLines={1} style={[typography.caption, { color: theme.colors.text.secondary }]}>{[t(d.kind), d.by, locked ? t("unplayableTrack.badge") : null].filter(Boolean).join(" · ")}</Text>
         </View>
         <OctavePlayButton round={48} label={t("search.playTop", { title: d.title })} onPress={onPlay} />
       </GlassSurface>
@@ -71,4 +77,5 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
 const styles = StyleSheet.create({
   card: { flexDirection: "row", alignItems: "center", gap: 16, padding: 14 },
   text: { flex: 1, minWidth: 0, gap: 4 },
+  dimmed: { opacity: 0.45 },
 });

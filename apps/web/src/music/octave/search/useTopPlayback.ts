@@ -10,7 +10,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchExternalAlbum, fetchExternalPlaylist } from "@tentacle-tv/api-client";
 import type { ExternalMusicPlaylist, MusicAlbum, MusicTrack } from "@tentacle-tv/shared/music";
-import { queueActions } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, isTrackUnavailable, queueActions } from "@tentacle-tv/shared/octave";
 import { useCollectionPlayback } from "../actions/useCollectionPlayback";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { entityTarget } from "../octavePaths";
@@ -75,6 +75,8 @@ export function useTopPlayback(sideTracks: readonly MusicTrack[], contextId: str
   const play = useCallback(
     (top: TopResult) => {
       // La liste à côté s'ouvre déjà sur le titre en tête (R5-06) : il n'entre qu'une fois dans la file.
+      // Un titre illisible en tête : rien ne part, l'avis le dit (`trackPlayability.ts`).
+      if (top.kind === "track" && isTrackUnavailable(top.track)) return announceUnavailableTrack(top.track);
       if (top.kind === "track") return player.playList([top.track, ...sideTracks.filter((t) => t.key !== top.track.key)], 0, contextId);
       if (top.kind === "artist") return sideTracks.length > 0 ? player.playList([...sideTracks], 0, contextId) : undefined;
       if (top.kind === "album") return top.album.jellyfinId ? void library.play({ kind: "album", id: top.album.jellyfinId }) : void external.play({ kind: "album", album: top.album });

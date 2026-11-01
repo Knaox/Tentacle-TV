@@ -9,6 +9,8 @@
 import { memo, useCallback } from "react";
 import { View } from "react-native";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
+import { usePlayabilityProbe } from "@tentacle-tv/api-client";
+import { useOctavePagesProvider } from "../env/pagesEnv";
 import { usePagesCurrentKey, usePagesPlayer } from "../env/pagesPlayer";
 import { TrackRow } from "./TrackRow";
 import { playRow } from "../env/playFrom";
@@ -27,6 +29,8 @@ export const TrackList = memo(function TrackList({ tracks, queue, contextId, gut
   const player = usePagesPlayer();
   const current = usePagesCurrentKey();
   const list = queue ?? tracks;
+  // Les titres pas encore sus de cette liste : sondés à l'affichage, l'état arrive sur place (lot « ol »).
+  usePlayabilityProbe(useOctavePagesProvider(), tracks);
   const play = useCallback((index: number) => playRow(player, list, index, contextId), [contextId, list, player]);
   return (
     <View>

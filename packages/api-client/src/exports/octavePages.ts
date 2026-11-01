@@ -7,6 +7,9 @@ export { useOctaveSearch, settledQuery, type OctaveSearchLabels } from "../music
 export { useRevealedResults, useArtReady, type RevealedResultsOptions, type ShownExternal } from "../music/octave/useRevealedResults";
 export { useKindResults, type KindResults } from "../music/octave/useKindResults";
 export { useOctaveSuggestions, SUGGEST_DEBOUNCE_MS } from "../music/octave/useOctaveSuggestions";
+export {
+  useTrackPlayability, usePlayabilityProbe, probePlayability, probeCandidates, readPlayability, PROBE_HEAD, PROBE_ROUNDS, PROBE_WAIT_MS,
+} from "../music/octave/playability";
 export { useMusicMoods, useMusicMoodMix, useMusicMoodTracks, moodLanguage, moodContextId } from "../music/octave/useMusicMoods";
 export {
   useMusicAlbumEntity, useMusicArtistEntity, useMusicExternalPlaylist, externalEntityKey, externalEntityRef, type MusicEntityState,
