@@ -73,6 +73,9 @@ export const PROFILE_STORAGE_KEYS: readonly string[] = [
   // compte. Octave ne vit pas sur la TV ; classées ici pour qu'aucune ne survive à un profil.
   "tentacle_octave_last_playlist",
   "tentacle_octave_player",
+  // Octave : la file des ordres changés hors ligne (`ORDER_OUTBOX_KEY`, lot « ol ») — des gestes du compte, jamais
+  // rejoués avec le jeton d'un autre.
+  "tentacle_octave_order_outbox",
 ];
 
 /**
