@@ -36,7 +36,8 @@ interface ShelfSpec<T> {
 }
 
 function useShelf<T>(spec: ShelfSpec<T>): LibraryShelf<T> {
-  const { capable, ready, shelves } = useMusicShelves();
+  // `arranged` : la rubrique rangée et réordonnable, hors ligne compris (rubriques gardées).
+  const { arranged: capable, ready, shelves } = useMusicShelves();
   const save = useSaveShelfOrder();
   const { section, listing, keyOf, favoriteOf, served, orderRest } = spec;
   const order = shelves.order[section];

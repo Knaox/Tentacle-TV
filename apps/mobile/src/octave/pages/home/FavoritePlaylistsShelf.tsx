@@ -22,7 +22,8 @@ const COMPACT = 112;
 
 export const FavoritePlaylistsShelf = memo(function FavoritePlaylistsShelf() {
   const { t } = useTranslation("musicFavorites");
-  const { capable, shelves } = useMusicShelves();
+  // Rangées hors ligne aussi (rubriques gardées), comme en ligne.
+  const { arranged: capable, shelves } = useMusicShelves();
   const router = useRouter();
   const items = useMemo(() => (capable ? homeFavoritePlaylists(shelves.playlists, shelfPlaylistKey, shelves.order.playlists) : []), [capable, shelves]);
   const reorder = useCallback(() => {

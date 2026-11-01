@@ -66,9 +66,10 @@ export function useMusicShelves(options: { enabled?: boolean } = {}) {
     enabled: declared && options.enabled !== false,
     staleTime: 60_000,
   });
-  // Hors ligne, les rubriques GARDÉES prouvent la capacité : favoris et ordre de la bibliothèque restent.
-  const capable = keptCapability(declared, known, query.data !== undefined);
-  return { capable, shelves: query.data ?? EMPTY_SHELVES, ready: !capable || query.isSuccess || query.isError, query };
+  // Hors ligne, les rubriques GARDÉES prouvent la capacité de les MONTRER rangées et de les réordonner (le geste
+  // part au retour du réseau) ; un favori, lui, attend le serveur : `capable` reste la déclaration.
+  const arranged = keptCapability(declared, known, query.data !== undefined);
+  return { capable: declared, arranged, shelves: query.data ?? EMPTY_SHELVES, ready: !arranged || query.isSuccess || query.isError, query };
 }
 
 /** La clé d'un élément dans sa rubrique (`shelfKeyOf`). */
