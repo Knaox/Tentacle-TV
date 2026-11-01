@@ -10,11 +10,16 @@
  */
 
 import type { MusicTrack } from "../music";
+import { isKeptForPlayback, withLearnedPlayability } from "./playabilityPatch";
 import { trackPlayability } from "./trackPlayability";
 
-/** Grisé et jamais lancé (lot « ol » : la lisibilité vérifiée d'abord, `trackPlayability.ts` ; `unknown` jamais). */
-export function isTrackUnavailable(track: Pick<MusicTrack, "jellyfinId" | "unavailable" | "playable">): boolean {
-  return trackPlayability(track).greyed;
+/**
+ * Grisé et jamais lancé (lot « ol » : la lisibilité vérifiée d'abord, `trackPlayability.ts` ; `unknown` jamais) —
+ * l'état APPRIS depuis (sondage, refus de la source) compris : la file saute un titre qu'on sait illisible.
+ */
+export function isTrackUnavailable(track: Pick<MusicTrack, "jellyfinId" | "unavailable" | "playable" | "playableReason"> & { key?: string }): boolean {
+  if (track.key && isKeptForPlayback(track.key)) return false;
+  return trackPlayability(track.key ? withLearnedPlayability(track as typeof track & { key: string }) : track).greyed;
 }
 
 /** Le titre visé, quand le geste le connaît : l'avis dit sa raison et propose de l'aimer ou de le ranger. */

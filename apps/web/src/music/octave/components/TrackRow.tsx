@@ -23,7 +23,8 @@ import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
 import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
-import { announceUnavailableTrack, clickGesture, trackPlayability, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack, clickGesture, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 import { UnplayableMark } from "./UnplayableMark";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
@@ -104,7 +105,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
   // Un titre qui ne se lit pas (`trackPlayability.ts` : la source le refuse, importé sans source…) : grisé ; le
   // cliquer ne lance rien, la lecture en cours continue, et l'avis dit pourquoi. Le cœur, le menu, le glisser vers
   // une playlist restent : le serveur pourra le récupérer. `unknown` se rend comme lisible (aucun clignotement).
-  const playability = trackPlayability(track);
+  const playability = useTrackPlayability(track);
   const locked = playability.greyed;
   const onPlay = () => {
     if (locked) announceUnavailableTrack(track);

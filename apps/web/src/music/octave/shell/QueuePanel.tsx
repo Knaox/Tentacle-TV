@@ -23,7 +23,8 @@ import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvid
 import { SelectCell } from "../components/SelectCell";
 import { UnplayableMark } from "../components/UnplayableMark";
 import { SelectionBar } from "../actions/selection/SelectionBar";
-import { clickGesture, orderedKeys, trackPlayability, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { clickGesture, orderedKeys, type SelectGesture } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 import { useListSelection } from "../actions/selection/useListSelection";
 import { NowSwell } from "../motion/NowSwell";
 import { DragHandle, type HandleSlot } from "../listOrder/DragHandle";
@@ -79,7 +80,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
         ? "bg-octave-selected"
         : "hover:bg-octave-hover";
   // Un titre illisible reste dans la file, grisé : la file le saute, le cliquer le dit (`trackPlayability.ts`).
-  const playability = trackPlayability(track);
+  const playability = useTrackPlayability(track);
   const locked = playability.greyed;
   return (
     <li className={`group flex shrink-0 items-center gap-2 rounded-xl px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>

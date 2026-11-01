@@ -4,7 +4,7 @@ import { createFakeEngine } from "./fakeEngine";
 import { externalTrack, libraryTrack } from "./fixtures";
 import { OctavePlayer } from "./octavePlayer";
 import { PlaybackReporter } from "./playbackReports";
-import { onPlayabilityLearned, refusedQueue } from "./playabilityPatch";
+import { announcePlayability, learnedPlayability, onPlayabilityLearned, onPlayabilityOf, refusedQueue, resetLearnedPlayability, setKeptPlayabilityLookup, withLearnedPlayability } from "./playabilityPatch";
 import { createQueue, currentItem } from "./queueModel";
 import { SourceCache } from "./sourceCache";
 import { isTrackUnavailable, onUnavailableTrack } from "./unavailableTrack";
@@ -31,7 +31,10 @@ function playerRefusing(refused: ReadonlySet<string>) {
 }
 
 const offs: (() => void)[] = [];
-afterEach(() => offs.splice(0).forEach((off) => off()));
+afterEach(() => {
+  offs.splice(0).forEach((off) => off());
+  resetLearnedPlayability();
+});
 
 describe("refus de la source — le lecteur", () => {
   const x = externalTrack("sillon", "ytm:x");
@@ -91,5 +94,42 @@ describe("refusedQueue", () => {
     expect(once.items.filter((i) => isTrackUnavailable(i.track))).toHaveLength(2);
     expect(refusedQueue(once, x.key, "age")).toBe(once);
     expect(currentItem(once)?.track.key).toBe("jf:a");
+  });
+});
+
+describe("états appris — par clé, sur place", () => {
+  it("la rangée de CETTE clé est prévenue, pas les autres ; un état redit ne prévient personne", () => {
+    const a = vi.fn();
+    const b = vi.fn();
+    offs.push(onPlayabilityOf("ext:sillon:ytm:a", a), onPlayabilityOf("ext:sillon:ytm:b", b));
+    announcePlayability(new Map([["ext:sillon:ytm:a", { playable: "no", reason: "premium" } as const]]));
+    announcePlayability(new Map([["ext:sillon:ytm:a", { playable: "no", reason: "premium" } as const]]));
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).not.toHaveBeenCalled();
+    expect(learnedPlayability("ext:sillon:ytm:a")).toEqual({ playable: "no", reason: "premium" });
+  });
+
+  it("isTrackUnavailable lit l'appris : la file saute un titre qu'on sait illisible ; un titre de la bibliothèque, jamais", () => {
+    const t = externalTrack("sillon", "ytm:a", { playable: "unknown" });
+    expect(isTrackUnavailable(t)).toBe(false);
+    announcePlayability(new Map([[t.key, { playable: "no", reason: "age" } as const]]));
+    expect(isTrackUnavailable(t)).toBe(true);
+    expect(withLearnedPlayability(t).playableReason).toBe("age");
+    const q = createQueue([t, libraryTrack("a")], 0);
+    expect(currentItem(q)?.track.key).toBe("jf:a");
+    const lib = libraryTrack("b");
+    announcePlayability(new Map([[lib.key, { playable: "no" } as const]]));
+    expect(isTrackUnavailable(lib)).toBe(false);
+  });
+});
+
+describe("un titre GARDÉ sur l'appareil", () => {
+  it("jamais grisé ni sauté, même appris illisible : il se lit depuis son fichier", () => {
+    const t = externalTrack("sillon", "ytm:k");
+    announcePlayability(new Map([[t.key, { playable: "no", reason: "unavailable" } as const]]));
+    expect(isTrackUnavailable(t)).toBe(true);
+    setKeptPlayabilityLookup((key) => key === t.key);
+    expect(isTrackUnavailable(t)).toBe(false);
+    expect(currentItem(createQueue([t, libraryTrack("a")], 0))?.track.key).toBe(t.key);
   });
 });

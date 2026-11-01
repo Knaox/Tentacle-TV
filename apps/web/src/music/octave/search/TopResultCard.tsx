@@ -16,7 +16,7 @@ import { Artwork } from "../components/Artwork";
 import { entityTarget, octavePaths } from "../octavePaths";
 import type { TopResult } from "./searchLayout";
 import { UnplayableMark } from "../components/UnplayableMark";
-import { trackPlayability } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 
 interface TopResultCardProps {
   top: TopResult;
@@ -61,7 +61,8 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
   const face = useFace(top);
   const actions = useTrackActions();
   // Un TITRE illisible en tête : la pochette éteinte et la marque ; le clic dit pourquoi (`useTopPlayback`).
-  const playability = top.kind === "track" ? trackPlayability(top.track) : null;
+  const learned = useTrackPlayability(top.kind === "track" ? top.track : null);
+  const playability = top.kind === "track" ? learned : null;
   const locked = playability?.greyed ?? false;
   const albumTarget = top.kind === "album" && !top.album.jellyfinId ? entityTarget(top.album) : null;
   // Le nom : un lien vers sa vue, dont la zone couvre toute la carte (le bouton Lecture reste au-dessus).

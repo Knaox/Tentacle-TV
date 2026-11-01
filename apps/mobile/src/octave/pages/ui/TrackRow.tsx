@@ -15,9 +15,9 @@ import type { AccessibilityActionEvent } from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Heart, MoreHorizontal } from "lucide-react-native";
-import { useLiked } from "@tentacle-tv/api-client";
+import { useLiked, useTrackPlayability } from "@tentacle-tv/api-client";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { announceUnavailableTrack, isTrackUnavailable } from "@tentacle-tv/shared/octave";
+import { announceUnavailableTrack } from "@tentacle-tv/shared/octave";
 import { typography, useTheme } from "@/theme";
 import { haptic as playHaptic } from "@/utils/haptics";
 import { TrackStateMark } from "../../offline/TrackStateMark";
@@ -58,7 +58,7 @@ export const TrackRow = memo(function TrackRow({ track, index, list, contextId, 
   // Un titre qui ne se lit pas (`trackPlayability.ts`, lot « ol ») : pochette éteinte et « Pas lisible », le texte
   // reste lisible ; le toucher ouvre la feuille qui dit pourquoi (Favori, Ajouter à une playlist) ; « ⋯ », l'appui
   // long et le cœur restent. `unknown` se rend comme lisible : l'état arrive sur place, sans rien déplacer.
-  const locked = isTrackUnavailable(track);
+  const locked = useTrackPlayability(track).greyed;
   const playable = useTrackPlayable()(track.key) && !locked;
   const keptCover = useKeptCover(track.key);
   const removeAt = useMemo(() => (editing || !onRemove ? undefined : () => onRemove(index)), [editing, index, onRemove]);

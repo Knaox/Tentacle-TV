@@ -11,7 +11,8 @@ import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-nati
 import { useSharedValue } from "react-native-reanimated";
 import { GripVertical, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { isTrackUnavailable, queueActions, queueContextTitleKey, type QueueItem } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
+import { queueActions, queueContextTitleKey, type QueueItem } from "@tentacle-tv/shared/octave";
 import { PlayerArtwork } from "./PlayerArtwork";
 import { useOctavePlayer, usePlayerSelector } from "./OctavePlayerContext";
 import { useOctaveColors } from "../theme/octaveColors";
@@ -91,7 +92,7 @@ const QueueEntryRow = memo(function QueueEntryRow({ item, slot }: { item: QueueI
   const player = useOctavePlayer();
   const artist = item.track.artists.map((a) => a.name).join(", ");
   // Un titre illisible reste dans la file, grisé : la file le saute, le toucher ouvre sa feuille (`trackPlayability.ts`).
-  const locked = isTrackUnavailable(item.track);
+  const locked = useTrackPlayability(item.track).greyed;
   return (
     <View style={styles.row}>
       <Pressable onPress={() => queueActions.jumpTo(player, item.uid)} style={({ pressed }) => [styles.main, pressed && { backgroundColor: colors.pressed }]} accessibilityRole="button" accessibilityLabel={locked ? t("unplayableTrack.rowLabel", { title: item.track.title }) : `${item.track.title} — ${artist}`}>

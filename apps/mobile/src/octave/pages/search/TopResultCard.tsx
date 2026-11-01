@@ -14,7 +14,7 @@ import { GlassSurface, PressableCard } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { useOctaveNav } from "../env/nav";
 import { Artwork } from "../ui/Artwork";
-import { isTrackUnavailable } from "@tentacle-tv/shared/octave";
+import { useTrackPlayability } from "@tentacle-tv/api-client";
 import { useOpenWarmup } from "../ui/Cards";
 import { OctavePlayButton } from "../../layout/OctavePlayButton";
 
@@ -37,7 +37,8 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay }: { top:
   const nav = useOctaveNav();
   const d = describe(top);
   // Un TITRE illisible en tête (lot « ol ») : pochette éteinte, « Pas lisible » ; le toucher ouvre sa feuille.
-  const locked = top.kind === "track" && isTrackUnavailable(top.track);
+  const playability = useTrackPlayability(top.kind === "track" ? top.track : null);
+  const locked = top.kind === "track" && playability.greyed;
   const warm = useOpenWarmup();
   const open = () => {
     if (top.kind === "track") return onPlay();
