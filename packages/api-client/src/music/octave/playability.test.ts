@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe("probeCandidates", () => {
   it("les titres de cette extension pas encore sus, dans l'ordre, 20 au plus", () => {
-    const list = [libraryTrack("a"), t("1", { playable: "yes" }), t("2", { playable: "no" }), t("3"), t("4", { playable: "unknown" }), externalTrack("autre", "5")];
+    const list = [libraryTrack("a"), t("1", { playable: "yes" }), t("2", { playable: "no" }), t("3"), t("4", { playable: "unknown" }), externalTrack("autre", "5"), t("6", { unavailable: "notStreamable" })];
     expect(probeCandidates(provider("/p"), list).map((x) => x.external?.id)).toEqual(["3", "4"]);
     expect(probeCandidates(provider("/p"), Array.from({ length: 40 }, (_, i) => t(`n${i}`)))).toHaveLength(20);
   });

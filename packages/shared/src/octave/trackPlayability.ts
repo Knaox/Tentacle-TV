@@ -78,7 +78,8 @@ export function unplayableActions(input: UnplayableActionsInput): UnplayableActi
 
 /** Un état arrivé après coup (révision, route de lot) : posé sur le titre, ou le même objet s'il ne change rien. */
 export function withPlayability<T extends PlayabilityInput>(track: T, patch: { playable: NonNullable<MusicTrack["playable"]>; reason?: MusicPlayableReason | null }): T {
-  if (track.jellyfinId) return track;
+  // « unknown » n'apprend rien : il n'efface jamais un état su (ni la marque de « fl » d'une extension d'avant).
+  if (track.jellyfinId || patch.playable === "unknown") return track;
   const no = patch.playable === "no";
   // `no` pose aussi la marque de « fl » (règle 2 du contrat) : la file et le hors ligne la lisent sans rien de nouveau.
   const unavailable = no ? (track.unavailable ?? "notStreamable") : null;

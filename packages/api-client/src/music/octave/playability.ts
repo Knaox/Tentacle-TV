@@ -71,8 +71,8 @@ export function probeCandidates(provider: MusicProvider, tracks: readonly MusicT
   for (const track of tracks) {
     if (out.length >= Math.min(PROBE_HEAD, PLAYABILITY_BATCH_MAX)) break;
     if (track.jellyfinId || !track.external || !isFromMusicProvider(provider, track.external.pluginId)) continue;
-    // Absent = « unknown » (règle du contrat) ; déjà su (par la liste ou appris) : rien à demander.
-    if (track.playable === "yes" || track.playable === "no") continue;
+    // Absent = « unknown » (règle du contrat) ; déjà su (par la liste, la marque de « fl », ou appris) : rien à demander.
+    if (track.playable === "yes" || track.playable === "no" || (track.playable === undefined && track.unavailable != null)) continue;
     const known = learnedPlayability(track.key);
     if ((known && known.playable !== "unknown") || (inFlight && probing.has(track.key))) continue;
     out.push(track);

@@ -59,6 +59,10 @@ describe("withPlayability — un état arrivé après coup", () => {
     expect(isTrackUnavailable(no)).toBe(true);
     expect(withPlayability(no, { playable: "no", reason: "members" })).toBe(no);
     expect(withPlayability(no, { playable: "yes" })).toMatchObject({ playable: "yes", unavailable: null, playableReason: null });
+    // « unknown » n'apprend rien : la marque d'une extension d'avant reste (vu au banc ol4 : elle s'effaçait).
+    const legacy = externalTrack("sillon", "imp:1", { unavailable: "notStreamable" });
+    expect(withPlayability(legacy, { playable: "unknown" })).toBe(legacy);
+    expect(isTrackUnavailable(withPlayability(legacy, { playable: "unknown" }))).toBe(true);
     const lib = libraryTrack("a");
     expect(withPlayability(lib, { playable: "no" })).toBe(lib);
   });

@@ -27,6 +27,8 @@ const learned = new Map<string, PlayabilityPatch>();
 export function announcePlayability(states: ReadonlyMap<string, PlayabilityPatch>): void {
   const changed = new Map<string, PlayabilityPatch>();
   for (const [key, patch] of states) {
+    // « unknown » n'est pas un état appris (il ne grise ni ne dégrise rien) : rien à garder ni à dire.
+    if (patch.playable === "unknown") continue;
     const before = learned.get(key);
     if (before && before.playable === patch.playable && (before.reason ?? null) === (patch.reason ?? null)) continue;
     learned.delete(key);
