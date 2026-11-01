@@ -117,6 +117,12 @@ export interface MusicTrack {
   playable?: MusicPlayable;
   /** Seulement avec `playable: "no"` : le MOT dit à l'utilisateur. */
   playableReason?: MusicPlayableReason | null;
+  /**
+   * La SOURCE d'un titre hors bibliothèque, quand ce n'est pas celle d'office de l'extension (lot « ol », 01/11 :
+   * Sillon trouve aussi des pistes SoundCloud). Liste FERMÉE, la valeur traverse le réseau ; absente : rien à dire.
+   * Un client peut la montrer en petit sur la ligne du titre ; une valeur inconnue s'ignore.
+   */
+  source?: MusicTrackSource;
   /** Une SORTIE IMPORTÉE par le compte (lien ou fichiers, musicReleases.ts) : pastille « Importé ». */
   imported?: true;
 }
@@ -129,6 +135,9 @@ export interface MusicTrack {
  *   l'achat) ; importer le fichier acheté le rend lisible (lot « sf », 28/10).
  * Une valeur inconnue d'un client se lit comme « pas lisible », sans plus.
  */
+/** D'où vient un titre hors bibliothèque (`MusicTrack.source`) — liste FERMÉE, la valeur traverse le réseau. */
+export type MusicTrackSource = "soundcloud";
+
 export type MusicUnavailableReason = "notStreamable" | "notPublic";
 
 /** Lisibilité RÉELLE d'un titre hors bibliothèque (sondage de lecture de l'extension ; contrat d'ol3, lot « ol »). */
