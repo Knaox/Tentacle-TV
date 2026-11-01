@@ -12,7 +12,10 @@ export const ANCHOR_FAVORITE = 0.8;
 export const ANCHOR_LIKE = 0.7;
 // « Ma liste » n'a AUCUN poids : une intention, pas un goût. Un titre
 // seulement listé — ni vu, ni aimé — est un potentiel (cf. potentials.ts).
-export const ANCHOR_COMPLETED = 0.5;
+/** Film vu EN ENTIER : à peu près le poids d'un cœur (0,8). À 0,5, un compte
+ *  qui regarde sans jamais rien marquer n'avait que des ancres tièdes et le
+ *  cœur faisait tout : il départage, il ne remplace pas le visionnage. */
+export const ANCHOR_COMPLETED = 0.7;
 /** Revisionnage VÉRIFIÉ : au moins deux jours distincts de visionnage mesuré. */
 export const ANCHOR_REWATCH = 0.35;
 /** Compteur Jellyfin ≥ 2 sans mesure : un test de lecteur l'incrémente aussi

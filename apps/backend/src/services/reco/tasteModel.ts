@@ -1,5 +1,6 @@
 import type { Anchor } from "./anchors";
 import type { FacetEntry } from "./facets";
+import { isLoved } from "./lovedTaste";
 import { TasteIndex } from "./scoring/tasteIndex";
 
 /**
@@ -94,9 +95,8 @@ export function buildTasteIndex(
     if (!facets || facets.length === 0) continue;
     const liked =
       a.consumption || a.kinds.some((k) => k === "favorite" || k === "like" || k === "swipe_like" || k === "superlike");
-    const loved =
-      a.kinds.some((k) => k === "favorite" || k === "like" || k === "swipe_like" || k === "superlike") ||
-      (a.kinds.includes("rating") && a.weight >= 1);
+    // La même règle que les personnes aimées et la barre de qualité.
+    const loved = isLoved(a);
     index.add({ key: a.key, title: a.title, weight: a.weight, mediaType: a.mediaType, liked, loved }, facets);
   }
   return index;

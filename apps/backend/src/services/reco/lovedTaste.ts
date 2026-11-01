@@ -55,10 +55,18 @@ function quantile(values: number[], q: number): number {
   return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
 }
 
+/**
+ * Un titre ADORÉ : un geste (cœur, j'aime, coup de cœur, belle note) — ou,
+ * sans aucun geste, ce que le visionnage prouve (cf. AnchorTrait) : revu
+ * (mesuré), série finie ou dévorée, film fini d'une traite il y a peu. Sans
+ * ces traits, un compte qui ne marque rien n'adorait jamais rien : ni
+ * personnes aimées, ni auteurs, ni barre de qualité, ni plancher d'animé.
+ */
 export function isLoved(a: Anchor): boolean {
   return (
     a.kinds.some((k) => k === "favorite" || k === "like" || k === "swipe_like" || k === "superlike") ||
-    (a.kinds.includes("rating") && a.weight >= 1)
+    (a.kinds.includes("rating") && a.weight >= 1) ||
+    (a.weight > 0 && (a.traits?.length ?? 0) > 0)
   );
 }
 

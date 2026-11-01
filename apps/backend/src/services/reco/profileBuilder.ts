@@ -18,9 +18,11 @@ const NEIGHBORS_UPGRADE_TOP = 150;
 /** Version du profil stocké : 2 = animeShare, 3 = notes sur l'échelle absolue
  *  (point neutre 6,5), 4 = ancres du goût (facettes et poids refondus),
  *  5 = Ma liste hors du goût (les titres seulement listés sont des
- *  potentiels) et un seul « j'aime » par titre. Le fan-out de boot
- *  reconstruit une fois les profils d'une version antérieure. */
-export const PROFILE_SCHEMA_VERSION = 5;
+ *  potentiels) et un seul « j'aime » par titre, 6 = visionnages réels
+ *  (entamés à 80 % vus, partiels, abandon par titre, traits d'adoré sans
+ *  geste, confiance à l'engagement). Le fan-out de boot reconstruit une fois
+ *  les profils d'une version antérieure. */
+export const PROFILE_SCHEMA_VERSION = 6;
 
 // Une reconstruction à la fois par compte : les pokes en rafale s'écrasent.
 const inFlight = new Map<string, Promise<ProfileSummary>>();

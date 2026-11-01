@@ -13,22 +13,26 @@ import {
   explicitDecay,
   implicitDecay,
   playAgeDays,
+  RECENT_FULL_DAYS,
   seriesEngagementByHours,
   swipeAnchorWeight,
 } from "./anchorSignals";
 import { ratingSignalWeight, ratingStats } from "./profileMath";
 import type { SignalItem } from "./signals";
-import type { Anchor, AnchorInputs, AnchorKind, AnchorSet } from "./anchorTypes";
-import { abandonsOf, availableEpisodes, classifyResume, isEarlyDrop, seriesViewings } from "./viewingSignals";
+import type { Anchor, AnchorInputs, AnchorKind, AnchorSet, AnchorTrait } from "./anchorTypes";
+import {
+  abandonsOf, availableEpisodes, classifyResume, isDevoured, isEarlyDrop, isFinished, seriesViewings,
+} from "./viewingSignals";
 
-export type { Anchor, AnchorInputs, AnchorKind, AnchorSet, MeasuredViewing, PlayedEpisode } from "./anchorTypes";
+export type { Anchor, AnchorInputs, AnchorKind, AnchorSet, AnchorTrait, MeasuredViewing, PlayedEpisode } from "./anchorTypes";
 
 const TICKS_PER_HOUR = 36_000_000_000;
 /** Plancher de pertinence : en deçà, une ancre ne dit rien. */
 const ANCHOR_EPSILON = 0.02;
 
-interface Acc extends Omit<Anchor, "kinds"> {
+interface Acc extends Omit<Anchor, "kinds" | "traits"> {
   kinds: Set<AnchorKind>;
+  traits: Set<AnchorTrait>;
   ratingWeights: number[];
   /** Les « j'aime » du titre, par toutes leurs voies : seul le plus fort compte. */
   likeWeights: number[];
@@ -64,7 +68,7 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
   const touch = (key: string, mediaType: "movie" | "tv", tmdbId: number, title: string): Acc => {
     let a = acc.get(key);
     if (!a) {
-      a = { key, mediaType, tmdbId, title, weight: 0, consumption: false, hours: 0, lastAt: null, kinds: new Set(), ratingWeights: [], likeWeights: [] };
+      a = { key, mediaType, tmdbId, title, weight: 0, consumption: false, hours: 0, lastAt: null, kinds: new Set(), traits: new Set(), ratingWeights: [], likeWeights: [] };
       acc.set(key, a);
     }
     if (!a.title && title) a.title = title;
@@ -144,12 +148,16 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     a.consumption = true;
     a.hours = Math.max(a.hours, (item.RunTimeTicks ?? 0) / TICKS_PER_HOUR);
     if (playAgeDays(date, bulk, now) < 365 && date) a.lastAt = laterOf(a.lastAt, date);
-    const verified = (input.measured?.get(item.Id)?.fullDays ?? 0) >= 2;
+    const fullDays = input.measured?.get(item.Id)?.fullDays ?? 0;
+    const verified = fullDays >= 2;
     const counted = (item.UserData?.PlayCount ?? 0) >= 2;
     if (verified || counted) {
       a.weight += (verified ? ANCHOR_REWATCH : ANCHOR_REWATCH_UNVERIFIED) * decay;
       a.kinds.add("rewatch");
     }
+    // Adoré sans geste : revu (mesuré), ou fini d'une traite il y a peu.
+    if (verified) a.traits.add("rewatched");
+    if (fullDays >= 1 && playAgeDays(date, bulk, now) <= RECENT_FULL_DAYS) a.traits.add("recent_full");
   }
 
   // 3 bis) Films vus en PARTIE (25-80 %) : une part du « vu », au prorata.
@@ -180,6 +188,8 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     if (weight <= 0) continue;
     const a = touchItem(series);
     if (!a) continue;
+    if (isFinished(s, availableEpisodes(series))) a.traits.add("finished");
+    if (isDevoured(s)) a.traits.add("devoured");
     a.weight += weight * implicitDecay(playAgeDays(s.last, bulk, now));
     a.kinds.add("series");
     a.consumption = true;
@@ -229,6 +239,7 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
       hours: Math.round(a.hours * 10) / 10,
       lastAt: a.lastAt,
       kinds: [...a.kinds],
+      ...(a.traits.size > 0 ? { traits: [...a.traits] } : {}),
     });
   }
   anchors.sort((x, y) => Math.abs(y.weight) - Math.abs(x.weight) || (x.key < y.key ? -1 : 1));
