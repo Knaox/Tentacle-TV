@@ -61,3 +61,16 @@ describe("probePlayability", () => {
     expect(learnedPlayability("ext:sillon:1")).toBeNull();
   });
 });
+
+describe("deux listes d'une même page", () => {
+  it("ne demandent pas deux fois les mêmes titres pendant qu'un sondage est en cours", async () => {
+    let release: () => void = () => undefined;
+    const fetch = vi.fn(() => new Promise<Response>((r) => (release = () => r(new Response(JSON.stringify({ states: { "1": { playable: "yes" } } }))))));
+    vi.stubGlobal("fetch", fetch);
+    const first = probePlayability(provider("/p"), [t("1")], new AbortController().signal);
+    await probePlayability(provider("/p"), [t("1")], new AbortController().signal);
+    release();
+    await first;
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});

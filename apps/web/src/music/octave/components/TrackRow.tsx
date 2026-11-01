@@ -10,7 +10,7 @@
  */
 
 import { memo, useCallback } from "react";
-import { Pause, Play } from "lucide-react";
+import { CloudOff, Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import type { TrackActions } from "../actions/useTrackActions";
@@ -82,18 +82,21 @@ export interface TrackRowProps {
   handle?: HandleSlot | null;
 }
 
-/** La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse. */
-function NumberCell({ number, current, playing }: { number: number; current: boolean; playing: boolean }) {
+/**
+ * La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse.
+ * Un titre illisible (`locked`) : le nuage barré au survol, jamais un « Lecture » qui ne lirait pas.
+ */
+function NumberCell({ number, current, playing, locked = false }: { number: number; current: boolean; playing: boolean; locked?: boolean }) {
   const { t } = useTranslation("music");
-  const HoverIcon = current && playing ? Pause : Play;
+  const HoverIcon = locked ? CloudOff : current && playing ? Pause : Play;
   return (
     <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
       <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-octave-accent-text" : ""}`}>
         {current ? <OceanSwell playing={playing} /> : number}
       </span>
       {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
-      <span className="octave-row-play absolute inset-0 flex items-center justify-center text-content-primary transition-opacity duration-150" aria-hidden>
-        <HoverIcon className="h-4 w-4" fill="currentColor" />
+      <span className={`octave-row-play absolute inset-0 flex items-center justify-center transition-opacity duration-150 ${locked ? "text-content-tertiary" : "text-content-primary"}`} aria-hidden>
+        <HoverIcon className="h-4 w-4" fill={locked ? "none" : "currentColor"} />
       </span>
     </div>
   );
@@ -156,7 +159,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
     >
       {handle && <DragHandle slot={handle} />}
       {showSelect && (onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : compact ? null : <div role="gridcell" />)}
-      {showNumber && <NumberCell number={number} current={current} playing={playing} />}
+      {showNumber && <NumberCell number={number} current={current} playing={playing} locked={locked} />}
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
         {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className={`h-10 w-10${locked ? " opacity-45 grayscale" : ""}`} />}
         <div className="min-w-0">

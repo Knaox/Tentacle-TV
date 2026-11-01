@@ -58,6 +58,9 @@ export function readPlayability(raw: PlayabilityResponse | null | undefined, key
   return { states, retryAfterMs: typeof retry === "number" && Number.isFinite(retry) && retry >= 0 ? Math.min(retry, RETRY_CAP_MS) : null };
 }
 
+/** Les clés en cours de sondage, toutes listes confondues : deux listes d'une même page ne demandent pas deux fois. */
+const probing = new Set<string>();
+
 /** Les titres de cette extension qu'il reste à sonder, dans l'ordre de la liste, `PROBE_HEAD` au plus. */
 export function probeCandidates(provider: MusicProvider, tracks: readonly MusicTrack[]): MusicTrack[] {
   const out: MusicTrack[] = [];
@@ -67,7 +70,7 @@ export function probeCandidates(provider: MusicProvider, tracks: readonly MusicT
     // Absent = « unknown » (règle du contrat) ; déjà su (par la liste ou appris) : rien à demander.
     if (track.playable === "yes" || track.playable === "no") continue;
     const known = learnedPlayability(track.key);
-    if (known && known.playable !== "unknown") continue;
+    if ((known && known.playable !== "unknown") || probing.has(track.key)) continue;
     out.push(track);
   }
   return out;
@@ -85,13 +88,19 @@ export async function probePlayability(provider: MusicProvider, tracks: readonly
   const path = provider.music.playability;
   if (!path) return;
   let pending = probeCandidates(provider, tracks);
-  for (let round = 0; round < PROBE_ROUNDS && pending.length > 0 && !signal.aborted; round += 1) {
-    const { states, retryAfterMs } = await askOnce(provider, path, pending, signal);
-    if (signal.aborted) return;
-    announcePlayability(states);
-    if (retryAfterMs === null) return;
-    await wait(retryAfterMs);
-    pending = pending.filter((t) => (learnedPlayability(t.key)?.playable ?? "unknown") === "unknown");
+  const mine = pending.map((t) => t.key);
+  for (const key of mine) probing.add(key);
+  try {
+    for (let round = 0; round < PROBE_ROUNDS && pending.length > 0 && !signal.aborted; round += 1) {
+      const { states, retryAfterMs } = await askOnce(provider, path, pending, signal);
+      if (signal.aborted) return;
+      announcePlayability(states);
+      if (retryAfterMs === null) return;
+      await wait(retryAfterMs);
+      pending = pending.filter((t) => (learnedPlayability(t.key)?.playable ?? "unknown") === "unknown");
+    }
+  } finally {
+    for (const key of mine) probing.delete(key);
   }
 }
 
