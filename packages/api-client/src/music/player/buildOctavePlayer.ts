@@ -43,6 +43,7 @@ export function buildOctavePlayer(
       // Sans source parce que le budget de l'extension est atteint : le lecteur réessaiera (contrat `retry`).
       // Le préchargement du suivant se dit (l'extension le fait passer après les gestes), « Réessayer » aussi.
       const outcome = await resolveMusicSource(p, track.external.id, undefined, intent === "play" ? undefined : intent);
+      // Refusé par la source (lot « ol ») : le lecteur le grise et passe au suivant, sans échec rouge.
       return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
     },
     now: () => Date.now(),

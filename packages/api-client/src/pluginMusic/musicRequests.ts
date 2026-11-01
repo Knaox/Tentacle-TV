@@ -18,6 +18,7 @@ import type {
   PlaybackSource,
   PrefetchIntent,
   ExternalSourcesRequest,
+  MusicPlayableReason,
 } from "@tentacle-tv/shared/music";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
 import { musicRouteUrl, type MusicProvider } from "./musicProvider";
@@ -38,8 +39,19 @@ export async function resolveMusicSources(provider: MusicProvider, ids: readonly
   return readSources(await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post({ ids }, signal)));
 }
 
-/** La source d'UN titre ; sans source parce que le budget de l'extension est atteint, le délai à attendre (`retry`). */
-export type MusicSourceOutcome = { source: PlaybackSource } | { retryAfterMs: number } | null;
+/**
+ * La source d'UN titre ; sans source parce que le budget de l'extension est atteint, le délai à attendre (`retry`) ;
+ * REFUSÉ par la source (lot « ol », `refused`), sa raison. Une raison inconnue de ce client vaut « noStream ».
+ */
+export type MusicSourceOutcome = { source: PlaybackSource } | { retryAfterMs: number } | { refused: MusicPlayableReason } | null;
+
+const REFUSAL_REASONS: ReadonlySet<string> = new Set<MusicPlayableReason>(["unavailable", "region", "premium", "members", "age", "noStream", "preview"]);
+
+function sourceRefusalOf(raw: ExternalSourcesResponse | null | undefined, id: string): MusicPlayableReason | null {
+  const entry = Array.isArray(raw?.refused) ? raw.refused.find((r) => r && r.externalId === id) : undefined;
+  if (!entry) return null;
+  return typeof entry.reason === "string" && REFUSAL_REASONS.has(entry.reason) ? entry.reason : "noStream";
+}
 
 /** `intent` : « next » = le lecteur précharge le suivant (du fond), « retry » = « Réessayer » (un geste) ; absent : un geste. */
 export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal, intent?: ExternalSourcesRequest["intent"]): Promise<MusicSourceOutcome> {
@@ -47,6 +59,8 @@ export async function resolveMusicSource(provider: MusicProvider, id: string, si
   const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post(body, signal));
   const source = readSources(raw).get(id);
   if (source) return { source };
+  const refused = sourceRefusalOf(raw, id);
+  if (refused) return { refused };
   const retry = raw?.retry;
   return retry && retry.reason === "budget" && Number.isFinite(retry.afterMs) && retry.afterMs >= 0 ? { retryAfterMs: retry.afterMs } : null;
 }

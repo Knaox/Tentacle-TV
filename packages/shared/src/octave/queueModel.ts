@@ -216,8 +216,13 @@ function replaceTrackWhere(q: QueueState, key: string, update: (track: MusicTrac
   let changed = false;
   const items = q.items.map((item) => {
     if (item.track.key !== key) return item;
+    const track = update(item.track);
+    if (track === item.track) return item;
     changed = true;
-    return { uid: item.uid, track: update(item.track) };
+    return { uid: item.uid, track };
   });
   return changed ? { ...q, items } : q;
 }
+
+/** Chaque entrée du titre `key` passée par `update` ; un `update` qui rend le même titre ne change rien (même file). */
+export const replaceTracks = replaceTrackWhere;
