@@ -8,12 +8,13 @@ describe("trackPlayability — le contrat d'ol3", () => {
   it("« yes » et « unknown » ne sont jamais grisés ; « no » l'est, avec sa raison", () => {
     expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "yes" }))).toEqual({ state: "playable", reason: null, greyed: false });
     expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "unknown" }))).toEqual({ state: "unknown", reason: null, greyed: false });
-    expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "region" }))).toEqual({ state: "unplayable", reason: "region", greyed: true });
+    expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "notStreamable", playableReason: "region" }))).toEqual({ state: "unplayable", reason: "region", greyed: true });
   });
 
   it("« no » sans raison, ou une raison inconnue de ce client : « other », toujours grisé", () => {
     expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "no" })).reason).toBe("other");
-    const future = externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "copyrightClaim" as never });
+    expect(trackPlayability(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "notStreamable" })).reason).toBe("notStreamable");
+    const future = externalTrack("sillon", "ytm:1", { playable: "no", playableReason: "copyrightClaim" as never });
     expect(trackPlayability(future)).toEqual({ state: "unplayable", reason: "other", greyed: true });
   });
 
@@ -33,7 +34,7 @@ describe("trackPlayability — le contrat d'ol3", () => {
   });
 
   it("un titre de la bibliothèque se lit toujours", () => {
-    expect(isTrackUnavailable(libraryTrack("a", { playable: "no", unavailable: "removed" }))).toBe(false);
+    expect(isTrackUnavailable(libraryTrack("a", { playable: "no", playableReason: "unavailable" }))).toBe(false);
   });
 });
 
@@ -53,19 +54,22 @@ describe("trackPlayability — les mots et les gestes", () => {
 describe("withPlayability — un état arrivé après coup", () => {
   it("pose l'état sans changer d'objet quand rien ne change (aucun rendu de trop)", () => {
     const track = externalTrack("sillon", "ytm:1", { playable: "unknown" });
-    const no = withPlayability(track, { playable: "no", unavailable: "private" });
-    expect(no).toMatchObject({ playable: "no", unavailable: "private" });
-    expect(withPlayability(no, { playable: "no", unavailable: "private" })).toBe(no);
-    expect(withPlayability(no, { playable: "yes" })).toMatchObject({ playable: "yes", unavailable: null });
+    const no = withPlayability(track, { playable: "no", reason: "members" });
+    expect(no).toMatchObject({ playable: "no", unavailable: "notStreamable", playableReason: "members" });
+    expect(isTrackUnavailable(no)).toBe(true);
+    expect(withPlayability(no, { playable: "no", reason: "members" })).toBe(no);
+    expect(withPlayability(no, { playable: "yes" })).toMatchObject({ playable: "yes", unavailable: null, playableReason: null });
+    const lib = libraryTrack("a");
+    expect(withPlayability(lib, { playable: "no" })).toBe(lib);
   });
 });
 
 describe("unplayableNotice — l'avis au clic", () => {
-  const track = externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "removed" });
+  const track = externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "notStreamable", playableReason: "unavailable" });
   it("dit la raison et garde la playlist (en tête) et le favori", () => {
     expect(unplayableNotice(track, { canLike: true, canAddToPlaylist: true, liked: false })).toEqual({
       titleKey: "unplayableTrack.title",
-      reasonKey: "unplayableTrack.reason.removed",
+      reasonKey: "unplayableTrack.reason.unavailable",
       keepKey: "unplayableTrack.keep",
       gestures: ["addToPlaylist", "like"],
       liked: false,

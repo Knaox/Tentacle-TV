@@ -110,11 +110,13 @@ export interface MusicTrack {
    */
   unavailable?: MusicUnavailableReason | null;
   /**
-   * La lisibilité VÉRIFIÉE par l'extension (lot « ol », contrat d'ol3) : `no` porte sa raison dans `unavailable`,
-   * `unknown` n'est pas encore vérifié (jamais grisé). Absent : extension d'avant, seul `unavailable` compte.
+   * La lisibilité VÉRIFIÉE par l'extension (lot « ol », contrat d'ol3) — absent = « unknown » (extension d'avant :
+   * seul `unavailable` compte). Avec `no`, l'extension pose AUSSI `unavailable` (un client d'avant grise donc déjà).
    * Lue par `trackPlayability` (octave/trackPlayability.ts), jamais directement.
    */
   playable?: MusicPlayable;
+  /** Seulement avec `playable: "no"` : le MOT dit à l'utilisateur. */
+  playableReason?: MusicPlayableReason | null;
   /** Une SORTIE IMPORTÉE par le compte (lien ou fichiers, musicReleases.ts) : pastille « Importé ». */
   imported?: true;
 }
@@ -125,14 +127,22 @@ export interface MusicTrack {
  *   (YouTube) ; l'aimer ou l'ajouter à une playlist le fait RÉCUPÉRER par le serveur (Lidarr).
  * - `notPublic` : une sortie importée dont la source n'offre pas l'écoute publique de ce titre (Bandcamp : réservé à
  *   l'achat) ; importer le fichier acheté le rend lisible (lot « sf », 28/10).
- * - `region`, `removed`, `ageRestricted`, `private` (lot « ol ») : la source le refuse dans ce pays, l'a retiré, le
- *   réserve aux comptes majeurs, ou l'a rendu privé.
  * Une valeur inconnue d'un client se lit comme « pas lisible », sans plus.
  */
-export type MusicUnavailableReason = "notStreamable" | "notPublic" | "region" | "removed" | "ageRestricted" | "private";
+export type MusicUnavailableReason = "notStreamable" | "notPublic";
 
-/** Lot « ol » : la lisibilité vérifiée d'un titre externe (la valeur traverse le réseau ; inconnue → comme absente). */
+/** Lisibilité RÉELLE d'un titre hors bibliothèque (sondage de lecture de l'extension ; contrat d'ol3, lot « ol »). */
 export type MusicPlayable = "yes" | "no" | "unknown";
+
+/** Pourquoi `no` — liste FERMÉE, traverse le réseau ; une valeur inconnue d'un client = « pas lisible », sans plus. */
+export type MusicPlayableReason =
+  | "unavailable" // vidéo retirée, privée, « Video unavailable »
+  | "region" // bloquée dans ce pays (ou grisée par YouTube Music lui-même)
+  | "premium" // réservée aux abonnés Premium / Music Premium
+  | "members" // réservée aux membres d'une chaîne
+  | "age" // limitée par l'âge (connexion exigée)
+  | "noStream" // aucune source trouvée / aucun flux audio exploitable
+  | "preview"; // aperçu seulement (SoundCloud : 30 s), pas le titre entier
 
 export type AlbumKind = "album" | "single" | "ep" | "compilation" | "live" | "soundtrack" | "other";
 

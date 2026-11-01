@@ -160,7 +160,7 @@ describe("rangée d'un titre illisible (lot « ol »)", () => {
     inRouter(<TrackRow track={track} number={1} current={false} actions={actions(true)} index={0} onPlayIndex={() => undefined} showArtwork />);
 
   it("« no » : la marque en mot et en icône, la raison en infobulle ; cœur, menu et glisser restent", () => {
-    const html = row(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "region" }));
+    const html = row(externalTrack("sillon", "ytm:1", { playable: "no", unavailable: "notStreamable", playableReason: "region" }));
     expect(html).toContain("data-unplayable");
     expect(html).toContain("unplayableTrack.badge");
     expect(html).toContain("unplayableTrack.reason.region");
