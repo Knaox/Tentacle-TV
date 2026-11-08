@@ -5,6 +5,20 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.33.0]
+<!-- Bloc nu : Google Play (500 caractères) ET iOS. Lot « bat » (batterie d'Octave). Aucun serveur exigé : le ping espacé du serveur ne fait qu'ajouter au gain. Jamais le mot « téléchargement ». -->
+### FR
+- Octave consomme bien moins de batterie pendant l'écoute
+- Écran éteint, moins d'échanges avec le serveur
+- Les animations s'arrêtent dès qu'elles ne sont plus à l'écran
+- En pause, plus rien ne tourne en arrière-plan
+
+### EN
+- Octave uses much less battery while you listen
+- With the screen off, fewer exchanges with the server
+- Animations stop as soon as they are off screen
+- When paused, nothing keeps running in the background
+
 ## [1.32.0]
 <!-- Bloc nu : Google Play (500 caractères) ET iOS. Lot « ol » d'Octave. Jamais le mot « téléchargement », rien sur les extensions ni leur source. -->
 ### FR
