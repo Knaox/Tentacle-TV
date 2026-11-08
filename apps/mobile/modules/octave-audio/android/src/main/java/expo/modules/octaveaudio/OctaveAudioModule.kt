@@ -30,6 +30,11 @@ class OctaveAudioModule : Module() {
             OctaveAudioEngine.clearEmitter(this@OctaveAudioModule)
         }
 
+        // Application derrière : l'état part moins souvent (`StatePace`). Fil principal (cycle de vie de l'hôte).
+        OnActivityEntersBackground { OctaveAudioEngine.setInBackground(true) }
+
+        OnActivityEntersForeground { OctaveAudioEngine.setInBackground(false) }
+
         // Le lancement en cours (processus, puis chaque balayage) : la reprise du lecteur ne vaut que dans le même.
         Function("launchId") { OctaveAudioEngine.launchId() }
 

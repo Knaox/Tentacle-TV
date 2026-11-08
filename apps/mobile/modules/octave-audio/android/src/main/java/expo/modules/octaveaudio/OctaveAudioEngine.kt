@@ -136,6 +136,12 @@ internal object OctaveAudioEngine : PlaybackCore.Host {
         return DeckEntry(track, source)
     }
 
+    /** L'application passe derrière ou revient (`StatePace`) : de retour devant, le JS reçoit l'état aussitôt. */
+    fun setInBackground(background: Boolean) {
+        StatePace.inBackground = background
+        if (!background) core?.queueState()
+    }
+
     // ── PlaybackCore.Host ───────────────────────────────────────────────────
 
     override fun emit(json: String) {
