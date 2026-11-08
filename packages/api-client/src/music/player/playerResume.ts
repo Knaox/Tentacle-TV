@@ -1,9 +1,10 @@
 /**
  * Octave — le dernier titre et la file, gardés sur l'appareil PAR IDENTITÉ (`tentacle_octave_player` : des titres
  * tels que les listes les montrent, jamais une URL de source) et repris en pause à l'ouverture du lecteur
- * (`restorePlayback`, shared). Écrit au changement de titre ou de file, à la pause, toutes les 15 s pendant
- * l'écoute, et quand l'app passe en arrière-plan. Le même pour le web, le bureau et le mobile : chaque client
- * donne son stockage synchrone et son signal « l'app se cache » (`onHide`).
+ * (`restorePlayback`, shared). Écrit aux TRANSITIONS — changement de titre ou de file, pause, app qui passe en
+ * arrière-plan — et, pendant l'écoute seulement, au plus toutes les 30 s (lot « bat » : une fermeture brutale perd
+ * au plus cela). Une écriture ne relit ni ne réécrit tout le stockage (`playerResumeStore.ts`). Le même pour le
+ * web, le bureau et le mobile : chaque client donne son stockage synchrone et son signal « l'app se cache » (`onHide`).
  *
  * La reprise ne vaut que DANS LE MÊME LANCEMENT (`launchId`, règle du 29/10) : quitter Octave puis y revenir, un
  * rechargement de la page, un hôte JS rechargé la retrouvent ; l'application fermée pour de bon (balayée, quittée
@@ -12,16 +13,13 @@
  */
 
 import { restorePlayback, savePlayback, type OctavePlayer, type SavedPlayback, type SyncStorage } from "@tentacle-tv/shared/octave";
+import { createPlayerResumeWriter, OCTAVE_PLAYER_KEY, parseStoredPlayers } from "./playerResumeStore";
 
-export const OCTAVE_PLAYER_KEY = "tentacle_octave_player";
-/** Pendant l'écoute, la position s'écrit à ce rythme (une fermeture brutale perd au plus cela). */
-const PLAYING_SAVE_MS = 15_000;
+export { OCTAVE_PLAYER_KEY };
+/** Pendant l'écoute, la position s'écrit au plus à ce rythme (une fermeture brutale perd au plus cela). */
+const PLAYING_SAVE_MS = 30_000;
 /** Un changement de file s'écrit une fois au repos. */
 const CHANGE_SAVE_MS = 800;
-/** Au plus tant d'identités gardées (les plus récentes), comme le cache des pages. */
-const MAX_OWNERS = 4;
-
-type StoredPlayers = Record<string, { playback: SavedPlayback | null; at: number; launch?: string }>;
 
 /** Le lancement de CE moteur JS : un repli pour qui n'a pas mieux (le mobile demande au natif, le web à l'onglet). */
 const JS_LAUNCH = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -40,32 +38,11 @@ export interface PlayerResumeDeps {
   now?: () => number;
 }
 
-function readAll(storage: SyncStorage): StoredPlayers {
-  try {
-    const parsed = JSON.parse(storage.getItem(OCTAVE_PLAYER_KEY) ?? "null") as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as StoredPlayers) : {};
-  } catch {
-    return {};
-  }
-}
-
 /** La session gardée de cette identité ; avec `launch`, seulement si elle a été gardée par CE lancement. */
 export function readSavedPlayback(storage: SyncStorage, owner: string, launch?: string): SavedPlayback | null {
-  const entry = readAll(storage)[owner];
+  const entry = parseStoredPlayers(storage.getItem(OCTAVE_PLAYER_KEY))[owner];
   if (!entry || (launch !== undefined && entry.launch !== launch)) return null;
   return entry.playback ?? null;
-}
-
-function write(storage: SyncStorage, owner: string, playback: SavedPlayback | null, at: number, launch: string): void {
-  const all = { ...readAll(storage), [owner]: { playback, at, launch } };
-  const kept = Object.entries(all)
-    .sort(([, a], [, b]) => (b?.at ?? 0) - (a?.at ?? 0))
-    .slice(0, MAX_OWNERS);
-  try {
-    storage.setItem(OCTAVE_PLAYER_KEY, JSON.stringify(Object.fromEntries(kept)));
-  } catch {
-    /* stockage plein ou bloqué : la prochaine ouverture repartira d'une barre vide */
-  }
 }
 
 /**
@@ -78,27 +55,36 @@ export function attachPlayerResume(player: OctavePlayer, owner: string | null, d
   const launchId = deps.launchId ?? (() => JS_LAUNCH);
   restorePlayback(player, readSavedPlayback(deps.storage, owner, launchId()));
 
+  const writer = createPlayerResumeWriter(deps.storage);
   const save = () => {
-    if (deps.ownerNow() === owner) write(deps.storage, owner, savePlayback(player.snapshot.get(), player.position.get().positionMs), now(), launchId());
+    if (deps.ownerNow() === owner) writer.write(owner, savePlayback(player.snapshot.get(), player.position.get().positionMs), now(), launchId());
+  };
+  // L'écriture régulière ne bat que pendant l'écoute : en pause, rien ne bouge, aucune raison de réveiller l'app.
+  let playing: ReturnType<typeof setInterval> | null = null;
+  const pace = (wantsPlay: boolean) => {
+    if (wantsPlay && playing === null) playing = setInterval(save, PLAYING_SAVE_MS);
+    if (!wantsPlay && playing !== null) {
+      clearInterval(playing);
+      playing = null;
+    }
   };
   let changeTimer: ReturnType<typeof setTimeout> | null = null;
   let last = player.snapshot.get();
+  pace(last.wantsPlay);
   const offSnapshot = player.snapshot.subscribe(() => {
     const next = player.snapshot.get();
     const changed = next.queue !== last.queue || next.current !== last.current || next.wantsPlay !== last.wantsPlay;
     last = next;
     if (!changed) return;
+    pace(next.wantsPlay);
     if (changeTimer !== null) clearTimeout(changeTimer);
     changeTimer = setTimeout(save, CHANGE_SAVE_MS);
   });
-  const playing = setInterval(() => {
-    if (player.snapshot.get().wantsPlay) save();
-  }, PLAYING_SAVE_MS);
   const offHide = deps.onHide(save);
 
   return () => {
     offSnapshot();
-    clearInterval(playing);
+    pace(false);
     if (changeTimer !== null) clearTimeout(changeTimer);
     offHide();
     save();

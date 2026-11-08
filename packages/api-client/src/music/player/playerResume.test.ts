@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PlaybackSource } from "@tentacle-tv/shared/music";
 import { OctavePlayer, PlaybackReporter, SourceCache, type SyncStorage } from "@tentacle-tv/shared/octave";
-import { createFakeEngine, libraryTrack } from "@tentacle-tv/shared/octave/testing";
+import { createFakeEngine, libraryTrack, type FakeEngine } from "@tentacle-tv/shared/octave/testing";
 import { attachPlayerResume, OCTAVE_PLAYER_KEY, readSavedPlayback } from "./playerResume";
 
 /** La session du lecteur reprise en pause : la même règle pour le web, le bureau et le mobile. */
@@ -103,5 +103,45 @@ describe("reprise : seulement dans le même lancement (fermeture complète = rep
     const again = newPlayer();
     attachPlayerResume(again, "srv|u1", quiet(storage, "L1"));
     expect(again.snapshot.get().current).toBeNull();
+  });
+});
+
+describe("reprise : écrite aux transitions et au plus toutes les 30 s d'écoute (lot « bat »)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  function counting() {
+    const data: Record<string, string> = {};
+    const storage: SyncStorage & { writes: number } = { writes: 0, getItem: (k) => data[k] ?? null, setItem: (k, v) => void ((storage.writes += 1), (data[k] = v)) };
+    return storage;
+  }
+
+  it("en lecture : une écriture par 30 s si la position a bougé ; en pause, aucune jusqu'au passage derrière", async () => {
+    vi.useFakeTimers();
+    const storage = counting();
+    let hide: () => void = () => undefined;
+    const player = newPlayer();
+    const engine = player.deps.engine as FakeEngine;
+    attachPlayerResume(player, "srv|u1", { storage, ownerNow: () => "srv|u1", launchId: () => "L1", onHide: (save) => ((hide = save), () => undefined) });
+    player.playList(["a", "b"].map((id) => libraryTrack(id)), 0);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(storage.writes).toBe(1); // le titre choisi
+    engine.sound(1_000);
+    await vi.advanceTimersByTimeAsync(29_200);
+    expect(storage.writes).toBe(2); // 30 s d'écoute
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(storage.writes).toBe(2); // position figée (attente de données) : rien de neuf à écrire
+    engine.sound(61_000);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(storage.writes).toBe(3);
+    expect(readSavedPlayback(storage, "srv|u1")?.positionMs).toBe(61_000);
+    player.pause();
+    await vi.advanceTimersByTimeAsync(800);
+    expect(storage.writes).toBe(3); // la pause : même file, même position, déjà écrites
+    player.seek(70_000);
+    await vi.advanceTimersByTimeAsync(180_000);
+    expect(storage.writes).toBe(3); // en pause, l'horloge des écritures ne bat plus
+    hide();
+    expect(storage.writes).toBe(4);
+    expect(readSavedPlayback(storage, "srv|u1")?.positionMs).toBe(70_000);
   });
 });
