@@ -33,10 +33,16 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
                          "disable-spell-checking"}) {
     cl->AppendSwitch(sw);
   }
+  // Les cinq dernières : le localStorage et l'IndexedDB du front se PARTAGENT avec Electron
+  // (scripts/dev.sh), qui les tient en LevelDB. Chromium 156 sait les passer en SQLite
+  // (nouvelles bases, migration des anciennes) : une base migrée ici serait illisible pour
+  // Electron. On reste en LevelDB.
   appendFeatures(cl, "disable-features",
                  "Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,"
                  "SafeBrowsing,PushMessaging,BackgroundSync,PasswordManager,"
-                 "AutofillServerCommunication,SpellCheck");
+                 "AutofillServerCommunication,SpellCheck,"
+                 "DomStorageSqlite,DomStorageSqliteMigration,DomStorageSqliteNewDatabases,"
+                 "IdbSqliteBackingStore,IdbSqliteOnDiskRollout");
   if (processType.empty()) {
     // Modèle de processus (axe ram, docs/MESURES-RAM.md). Une seule page, une seule origine :
     // - un seul Renderer : Chromium n'en prépare plus un « de réserve » pour la navigation
