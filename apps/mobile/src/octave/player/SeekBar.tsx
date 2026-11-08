@@ -2,6 +2,8 @@
  * Octave (mobile) — la barre de position du lecteur : une piste fine qui s'épaissit sous le doigt (zone tactile
  * de 44 pt), le temps écoulé et la durée en chiffres tabulaires. On glisse n'importe où sur la piste ; le saut
  * part au LÂCHER (pas une requête par pixel). Accessibilité : un ajustable, ±10 s par geste.
+ * Batterie (lot « bat ») : elle ne se redessine que si ce qu'elle montre change (une seconde, un point de la
+ * piste : `seekBarTick`), et plus du tout app derrière — la position est relue au retour.
  */
 
 import { memo, useMemo, useRef, useState } from "react";
@@ -9,8 +11,10 @@ import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent } from "re
 import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { useOctavePlayer, usePlayerPosition } from "./OctavePlayerContext";
-import { playedFraction } from "./ProgressLine";
+import { useAppActive } from "./ambient/useAppActive";
+import { useOctavePlayer } from "./OctavePlayerContext";
+import { playedFraction, seekBarTick } from "./positionTicks";
+import { usePositionTick } from "./usePositionTick";
 import { useOctaveColors } from "../theme/octaveColors";
 
 /** « 3:07 », « 1:02:45 ». */
@@ -26,9 +30,12 @@ export const SeekBar = memo(function SeekBar() {
   const { t } = useTranslation("music");
   const colors = useOctaveColors();
   const player = useOctavePlayer();
-  const { positionMs, durationMs } = usePlayerPosition();
   const [width, setWidth] = useState(0);
   const [scrub, setScrub] = useState<number | null>(null);
+  const appActive = useAppActive();
+  // Redessinée quand la graine change (app au premier plan seulement) ; la position se lit alors telle quelle.
+  usePositionTick(appActive, (position) => seekBarTick(position, width));
+  const { positionMs, durationMs } = player.position.get();
   const live = useRef({ width, durationMs });
   live.current = { width, durationMs };
 
@@ -76,7 +83,7 @@ export const SeekBar = memo(function SeekBar() {
         accessibilityLabel={t("player.seek")}
         accessibilityValue={{ text: `${formatClock(shown)} / ${formatClock(durationMs ?? 0)}` }}
         accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-        onAccessibilityAction={(e) => player.seek(positionMs + (e.nativeEvent.actionName === "increment" ? 10_000 : -10_000))}
+        onAccessibilityAction={(e) => player.seek(player.position.get().positionMs + (e.nativeEvent.actionName === "increment" ? 10_000 : -10_000))}
       >
         <Animated.View pointerEvents="none" style={[styles.track, { backgroundColor: colors.line }, trackStyle]}>
           <View style={[styles.fill, { width: `${fraction * 100}%` }]}>
