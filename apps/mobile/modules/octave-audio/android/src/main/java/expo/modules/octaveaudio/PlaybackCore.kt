@@ -251,7 +251,7 @@ internal class PlaybackCore(context: Context, internal val host: Host) : AudioDe
         host.emit(BridgeJson.stateEvent(state, System.currentTimeMillis()))
     }
 
-    /** L'horloge : fondus (pas fin), signal de départ du fondu, état toutes les 250 ms. Tourne tant que ça joue. */
+    /** L'horloge : fondus (pas fin), signal de départ du fondu, état à son rythme (`StatePace`). Tourne tant que ça joue. */
     internal fun scheduleTick() {
         if (ticking) return
         ticking = true
@@ -264,7 +264,7 @@ internal class PlaybackCore(context: Context, internal val host: Host) : AudioDe
         if (run != null) stepFade(run) else maybeStartFade()
         val active = fade != null || decks.any { it?.player?.isPlaying == true }
         if (!active) return
-        if (SystemClock.elapsedRealtime() - lastStateAt >= STATE_EVERY_MS) emitState()
+        if (SystemClock.elapsedRealtime() - lastStateAt >= StatePace.everyMs()) emitState()
         ticking = true
         handler.postDelayed(tickRunnable, tickDelay())
     }
@@ -292,8 +292,5 @@ internal class PlaybackCore(context: Context, internal val host: Host) : AudioDe
     private companion object {
         /** « Baisser le son » d'Android : le volume × 0,2 le temps de l'interruption. */
         const val DUCK_GAIN = 0.2
-
-        /** Un état toutes les 250 ms en lecture (marge pour la gigue de l'horloge). */
-        const val STATE_EVERY_MS = 240L
     }
 }
