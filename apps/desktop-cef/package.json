@@ -4,9 +4,10 @@
   "license": "AGPL-3.0-or-later",
   "private": true,
   "description": "Tentacle TV desktop (CEF + libmpv + SDL3) — prototype, macOS d'abord. Aucune dépendance npm : les scripts appellent CMake/Ninja.",
-  "//scripts": "Pas de script typecheck/test : la CI les joue avec --if-present et n'a ni CEF ni libmpv.",
+  "//scripts": "dev (= pnpm dev:cef à la racine) : build web pour la coquille de bureau + build natif, puis l'app sous tentacle://app sur le profil d'Electron. dev:server : page servie par le serveur, profil à part (bancs). Pas de script typecheck/test : la CI les joue avec --if-present et n'a ni CEF ni libmpv.",
   "scripts": {
     "dev": "scripts/dev.sh run",
+    "dev:server": "scripts/dev.sh run-server",
     "build": "scripts/dev.sh build",
     "banc": "scripts/dev.sh banc",
     "test:update": "bench/update/test.sh",
