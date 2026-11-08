@@ -58,7 +58,8 @@ export { useLibraryFirstRows } from "../music/lists/useLibraryFirstRows";
 export { usePlaylistRemoval, type PlaylistTarget } from "../music/octave/playlists/usePlaylistRemoval";
 export { usePlaylistManageGestures, type PlaylistManageHooks } from "../music/octave/playlists/usePlaylistManageGestures";
 // Octave — la file d'une session musique sur un moteur, la même pour le web, le bureau et le mobile.
-export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort } from "../music/player/buildOctavePlayer";
+export { buildOctavePlayer, isFromMusicProvider, type OctaveKeptPort, type OctaveReportPacing } from "../music/player/buildOctavePlayer";
+export { socketReportPacing, type SocketReportPacing } from "../music/player/socketReportPacing";
 export { followSearchWithRadio, RADIO_REFILL_AT, RADIO_MISSES_MAX } from "../music/player/searchRadio";
 export { attachPlayerResume, readSavedPlayback, OCTAVE_PLAYER_KEY, type PlayerResumeDeps } from "../music/player/playerResume";
 export { applyOctaveEvent } from "../music/octave/events/octaveEventEffects";

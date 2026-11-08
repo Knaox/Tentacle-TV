@@ -13,11 +13,8 @@ import { canUseWatchTogether } from "../services/family/profileSessionLimits";
 import { cookieDecidesAtOnce } from "../services/sessionTokenChoice";
 import type { BoundSession } from "./wsSessionAuth";
 import { createSocketAnnouncement } from "./wsAnnouncement";
-
-/** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
- *  fermé d'office — une séance ne doit pas attendre un lecteur disparu
- *  jusqu'à ce que TCP s'en aperçoive. */
-const PING_INTERVAL_MS = 10_000;
+import { startKeepalive } from "./wsKeepalive";
+import { getRoomOf } from "../services/watchTogether/roomRegistry";
 
 type WsClientMessage = { type: string; token?: string } & Record<string, unknown>;
 
@@ -83,17 +80,6 @@ function bindChannel(socket: WebSocket, user: JellyfinUser, token: string): Boun
   };
 }
 
-function setupPing(ws: WebSocket): ReturnType<typeof setInterval> {
-  let alive = true;
-  ws.on("pong", () => { alive = true; });
-  return setInterval(() => {
-    if (ws.readyState !== 1) return;
-    if (!alive) { ws.terminate(); return; }
-    alive = false;
-    ws.ping();
-  }, PING_INTERVAL_MS);
-}
-
 /** Le cookie de session de la poignée de main (web ; le pot d'une app native aussi). */
 function sessionCookieOf(request: FastifyRequest): string | undefined {
   const cookies = (request as unknown as { cookies?: Record<string, string> }).cookies;
@@ -111,7 +97,7 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
     let user: JellyfinUser | null = null;
     let tokenHash: string | null = null;
     let bound: BoundChannel | null = null;
-    let pingInterval: ReturnType<typeof setInterval> | null = null;
+    let stopKeepalive: (() => void) | null = null;
     let closed = false;
 
     /** La socket parle au nom de cette session. Fermée pendant la vérification :
@@ -124,11 +110,13 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
       user = session.user;
       tokenHash = session.tokenHash;
       bound = bindChannel(socket, session.user, session.token);
-      pingInterval = setupPing(socket);
+      // Socket muette 35 s : un ping, sans réponse au tour suivant : fermée (`wsKeepalive.ts`).
+      // Un compte en séance Watch Together garde le ping de chaque tour (10 s).
+      stopKeepalive = startKeepalive(socket, () => user !== null && getRoomOf(user.userId) !== null);
     };
     /** Plus de session : socket fermée, ou une session en remplace une autre. */
     const release = () => {
-      if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
+      if (stopKeepalive) { stopKeepalive(); stopKeepalive = null; }
       if (bound) {
         handleSessionClosed(bound.channel);
         bound = null;

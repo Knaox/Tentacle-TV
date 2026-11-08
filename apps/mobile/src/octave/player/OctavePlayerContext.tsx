@@ -10,8 +10,9 @@
  */
 
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
+import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, socketReportPacing, useTentacleConfig } from "@tentacle-tv/api-client";
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { bindCrossfadeStorage, getCrossfadeMs, subscribeCrossfade } from "../audio/crossfadeSetting";
 import { followKeptCopies } from "../audio/keptCopySwap";
@@ -21,9 +22,13 @@ import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
 import { keptPlaybackSource, withKeptSources } from "../offline/keptPlayback";
 import { setKeptPlayHandler } from "../offline/keptPlayPort";
+import { followListeningForProbe } from "./listeningProbe";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
+
+/** App derrière (écran éteint, autre app, centre de contrôle) : le rapport d'écoute s'espace (60 s au lieu de 15 s). */
+const isAppBehind = (): boolean => AppState.currentState !== "active";
 
 /** Le volume se règle aux boutons de l'appareil : le moteur reste à 1. */
 const PREFS: EnginePrefs = { volume: 1, muted: false, replayGain: "auto", deviceId: null, exclusive: false };
@@ -44,11 +49,15 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const owner = octaveOwnerOf(storage, auth.baseUrl);
     // La copie gardée d'abord (en ligne comme sans serveur), comme au bureau : rien à préparer chez l'extension.
     // Les sources résolues survivent à la sortie d'Octave : y revenir et relancer un titre ne les redemande pas.
-    const p = buildOctavePlayer(engine, qc, () => providerRef.current, {
-      wrapSources: withKeptSources,
-      isKept: (key) => keptPlaybackSource(key) !== null,
-      retainSourcesFor: owner,
-    });
+    // Batterie : app derrière, une progression par minute, partie AVEC le ping du socket (un seul réveil du modem).
+    const pacing = socketReportPacing(isAppBehind);
+    const p = buildOctavePlayer(
+      engine,
+      qc,
+      () => providerRef.current,
+      { wrapSources: withKeptSources, isKept: (key) => keptPlaybackSource(key) !== null, retainSourcesFor: owner },
+      pacing.pacing,
+    );
     // Après le premier son d'un titre de recherche, sa radio devient la suite (comme au bureau).
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
     // La transition douce suit le réglage de l'appareil, même pendant l'écoute (le fondu suivant la prend).
@@ -64,6 +73,8 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const offKept = followKeptCopies(p);
     // Android : la file avance application derrière (minuteurs du JS gardés vivants pendant l'écoute).
     const offAlive = keepJsAliveWhilePlaying(p);
+    // Le son avance : la sonde de connectivité à 90 s se tait ; un blocage ou un échec la relance aussitôt.
+    const offProbe = followListeningForProbe(p);
     // « Sur cet appareil » : toucher un titre gardé le lit (le port n'avait jamais de lecteur inscrit — rien ne jouait).
     setKeptPlayHandler((tracks, index, contextId) => p.playList(tracks, index, contextId));
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
@@ -72,11 +83,13 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     return () => {
       setKeptPlayHandler(null);
       offKept();
+      offProbe();
       offAlive();
       offResume();
       offCrossfade();
       offRadio();
       p.dispose();
+      pacing.dispose();
       engine.dispose();
       setPlayer(null);
     };

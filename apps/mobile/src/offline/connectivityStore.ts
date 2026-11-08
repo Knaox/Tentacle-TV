@@ -18,6 +18,7 @@ import { runProbe, type OfflineReason } from "./connectivityProbe";
 import { startNetworkListeners } from "./connectivityListeners";
 import { type NetworkType } from "./networkState";
 import { isLocalPlaybackActive } from "./nowPlaying";
+import { isMusicPlaying, skipPeriodicProbe } from "./probeQuiet";
 import {
   applyLinkLost,
   applyProbe,
@@ -122,10 +123,15 @@ const ensureTimers = (): void => {
   if (intervalId !== null) clearInterval(intervalId);
   intervalMs = wanted;
   intervalId = setInterval(() => {
-    // Une lecture locale ne doit rien devoir au réseau, pas même la sonde :
-    // une panne lui est indifférente, l'arrêt et le premier plan re-sonderont.
-    if (isLocalPlaybackActive()) return;
-    void probe();
+    // Une vidéo gardée ne doit rien au réseau, pas même la sonde ; Octave qui
+    // joue, en ligne, sonde par ses propres requêtes (`probeQuiet.ts`) : le
+    // modem dort entre deux. Tout échec sonde quand même, tout de suite.
+    const quiet = skipPeriodicProbe({
+      localPlayback: isLocalPlaybackActive(),
+      musicPlaying: isMusicPlaying(),
+      online: snapshot.state === "online",
+    });
+    if (!quiet) void probe();
   }, wanted);
 };
 
