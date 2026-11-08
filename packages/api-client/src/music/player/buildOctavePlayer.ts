@@ -26,6 +26,12 @@ export interface OctaveKeptPort {
   retainSourcesFor?: string | null;
 }
 
+/** Le rythme du rapport d'écoute (mobile seulement ; web et bureau n'en passent pas : la cadence d'avant). */
+export interface OctaveReportPacing {
+  /** L'app est derrière (écran éteint, autre app) : la progression passe de 15 s à 60 s (`playbackReports.ts`). */
+  background?: () => boolean;
+}
+
 // Ce titre vient-il de CETTE extension ? Une seule règle (`pluginMusic/musicProvider.ts`).
 export { isFromMusicProvider };
 
@@ -34,6 +40,7 @@ export function buildOctavePlayer(
   qc: QueryClient,
   provider: () => MusicProvider | null,
   kept: OctaveKeptPort = {},
+  pacing: OctaveReportPacing = {},
 ): OctavePlayer {
   // Un titre gardé n'est jamais grisé ni sauté, même refusé par sa source (lot « ol », `playabilityPatch.ts`).
   setKeptPlayabilityLookup(kept.isKept ?? null);
@@ -58,6 +65,7 @@ export function buildOctavePlayer(
       if (track.external && isFromMusicProvider(p, track.external.pluginId)) reportExternalPlayed(p, track.external.id, completed);
     },
     now: () => Date.now(),
+    ...(pacing.background ? { background: pacing.background } : {}),
   });
   return new OctavePlayer({
     engine,

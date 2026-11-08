@@ -10,6 +10,7 @@
  */
 
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
@@ -24,6 +25,9 @@ import { setKeptPlayHandler } from "../offline/keptPlayPort";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
+
+/** App derrière (écran éteint, autre app, centre de contrôle) : le rapport d'écoute s'espace (60 s au lieu de 15 s). */
+const isAppBehind = (): boolean => AppState.currentState !== "active";
 
 /** Le volume se règle aux boutons de l'appareil : le moteur reste à 1. */
 const PREFS: EnginePrefs = { volume: 1, muted: false, replayGain: "auto", deviceId: null, exclusive: false };
@@ -44,11 +48,14 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const owner = octaveOwnerOf(storage, auth.baseUrl);
     // La copie gardée d'abord (en ligne comme sans serveur), comme au bureau : rien à préparer chez l'extension.
     // Les sources résolues survivent à la sortie d'Octave : y revenir et relancer un titre ne les redemande pas.
-    const p = buildOctavePlayer(engine, qc, () => providerRef.current, {
-      wrapSources: withKeptSources,
-      isKept: (key) => keptPlaybackSource(key) !== null,
-      retainSourcesFor: owner,
-    });
+    const p = buildOctavePlayer(
+      engine,
+      qc,
+      () => providerRef.current,
+      { wrapSources: withKeptSources, isKept: (key) => keptPlaybackSource(key) !== null, retainSourcesFor: owner },
+      // Batterie : app derrière, une progression par minute (le modem se rendort entre deux).
+      { background: isAppBehind },
+    );
     // Après le premier son d'un titre de recherche, sa radio devient la suite (comme au bureau).
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
     // La transition douce suit le réglage de l'appareil, même pendant l'écoute (le fondu suivant la prend).
