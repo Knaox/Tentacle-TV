@@ -1,5 +1,6 @@
 import type { WsClientMessage, WsServerMessage } from "@tentacle-tv/shared";
 import { recordClockSample } from "./clockSync";
+import { emitKeepaliveBeat } from "./keepaliveBeat";
 
 /**
  * Socket Tentacle partagé — UNE connexion WebSocket `/api/ws` par application,
@@ -105,10 +106,9 @@ function connect(): void {
     if (authToken && ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "auth", token: authToken }));
     }
+    // Chaque ping est un BATTEMENT : ce qui peut attendre part avec lui, modem déjà réveillé.
     pingTimer = setInterval(() => {
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "ping", t: Date.now() }));
-      }
+      if (sendSocketMessage({ type: "ping", t: Date.now() })) emitKeepaliveBeat();
     }, PING_INTERVAL);
     // Un premier échantillon d'horloge tout de suite : rejoindre une séance en
     // cours calcule sa position de départ avant tout ping keepalive.

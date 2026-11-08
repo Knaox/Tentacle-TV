@@ -12,7 +12,7 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, useTentacleConfig } from "@tentacle-tv/api-client";
+import { attachPlayerResume, buildOctavePlayer, followSearchWithRadio, socketReportPacing, useTentacleConfig } from "@tentacle-tv/api-client";
 import { createDeferredEngine, type EnginePrefs, type OctavePlayer, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { bindCrossfadeStorage, getCrossfadeMs, subscribeCrossfade } from "../audio/crossfadeSetting";
 import { followKeptCopies } from "../audio/keptCopySwap";
@@ -49,13 +49,14 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const owner = octaveOwnerOf(storage, auth.baseUrl);
     // La copie gardée d'abord (en ligne comme sans serveur), comme au bureau : rien à préparer chez l'extension.
     // Les sources résolues survivent à la sortie d'Octave : y revenir et relancer un titre ne les redemande pas.
+    // Batterie : app derrière, une progression par minute, partie AVEC le ping du socket (un seul réveil du modem).
+    const pacing = socketReportPacing(isAppBehind);
     const p = buildOctavePlayer(
       engine,
       qc,
       () => providerRef.current,
       { wrapSources: withKeptSources, isKept: (key) => keptPlaybackSource(key) !== null, retainSourcesFor: owner },
-      // Batterie : app derrière, une progression par minute (le modem se rendort entre deux).
-      { background: isAppBehind },
+      pacing.pacing,
     );
     // Après le premier son d'un titre de recherche, sa radio devient la suite (comme au bureau).
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
@@ -88,6 +89,7 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
       offCrossfade();
       offRadio();
       p.dispose();
+      pacing.dispose();
       engine.dispose();
       setPlayer(null);
     };

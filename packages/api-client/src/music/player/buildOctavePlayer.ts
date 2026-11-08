@@ -30,6 +30,8 @@ export interface OctaveKeptPort {
 export interface OctaveReportPacing {
   /** L'app est derrière (écran éteint, autre app) : la progression passe de 15 s à 60 s (`playbackReports.ts`). */
   background?: () => boolean;
+  /** Reçoit le battement du rapporteur, à appeler à chaque ping du socket (`socketReportPacing.ts`). */
+  onBeat?: (beat: () => void) => void;
 }
 
 // Ce titre vient-il de CETTE extension ? Une seule règle (`pluginMusic/musicProvider.ts`).
@@ -67,6 +69,7 @@ export function buildOctavePlayer(
     now: () => Date.now(),
     ...(pacing.background ? { background: pacing.background } : {}),
   });
+  pacing.onBeat?.(() => reporter.beat());
   return new OctavePlayer({
     engine,
     sources,
