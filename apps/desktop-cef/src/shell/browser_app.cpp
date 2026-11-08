@@ -4,6 +4,7 @@
 #include <string>
 
 #include "include/cef_command_line.h"
+#include "shell/app_scheme.h"
 #include "shell/message_pump.h"
 
 namespace tentacle {
@@ -62,6 +63,10 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
   const char* muteEnv = std::getenv("TENTACLE_MUTE");  // ≠ vide et ≠ "0", comme sound_policy.h
   const bool muted = cl->HasSwitch("mute") || (muteEnv && *muteEnv && std::string(muteEnv) != "0");
   if (processType.empty() && muted) cl->AppendSwitch("mute-audio");
+}
+
+void BrowserApp::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) {
+  appscheme::registerScheme(registrar);  // le même appel dans les helpers (renderer_app.cpp)
 }
 
 void BrowserApp::OnScheduleMessagePumpWork(int64_t delayMs) {

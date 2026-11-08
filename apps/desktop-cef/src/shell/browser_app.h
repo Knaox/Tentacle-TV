@@ -12,6 +12,7 @@ class BrowserApp final : public CefApp, public CefBrowserProcessHandler {
   explicit BrowserApp(MessagePump* pump) : pump_(pump) {}
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
+  void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
   void OnBeforeCommandLineProcessing(const CefString& processType,
                                      CefRefPtr<CefCommandLine> commandLine) override;
   void OnScheduleMessagePumpWork(int64_t delayMs) override;

@@ -45,12 +45,19 @@ add_library(tentacle_shell STATIC
   src/shell/shell.cpp
   src/shell/builtin_handlers.cpp
   src/shell/shell_shortcuts.cpp
+  src/shell/app_scheme.cpp
+  src/shell/web_root.cpp
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
 add_library(tentacle_renderer STATIC
   src/shell/renderer_app.cpp
   src/shell/renderer_ipc.cpp
+  src/shell/app_scheme_register.cpp
 )
+# Règle pure de tentacle://app (quel fichier du build web pour quel chemin) : sans CEF.
+add_executable(tentacle_web_root_tests src/shell/tests/web_root_tests.cpp src/shell/web_root.cpp)
+target_include_directories(tentacle_web_root_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+add_test(NAME tentacle_web_root_tests COMMAND tentacle_web_root_tests)
 if(APPLE)
   target_sources(tentacle_shell PRIVATE
     src/platform/macos/app_mac.mm

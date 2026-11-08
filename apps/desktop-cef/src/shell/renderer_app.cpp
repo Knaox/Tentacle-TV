@@ -1,5 +1,6 @@
 #include "shell/renderer_app.h"
 
+#include "shell/app_scheme.h"
 #include "shell/renderer_ipc.h"
 
 namespace tentacle {
@@ -8,6 +9,10 @@ namespace {
 class HelperApp final : public CefApp, public CefRenderProcessHandler {
  public:
   CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
+  // Tous les helpers (rendu, GPU, réseau…) : la même déclaration que le principal.
+  void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override {
+    appscheme::registerScheme(registrar);
+  }
 
   // extra_info vient de CreateBrowser (processus navigateur) : c'est le seul canal qui
   // arrive dans CHAQUE nouveau processus de rendu avant la création du contexte JS —

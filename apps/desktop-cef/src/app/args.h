@@ -8,7 +8,12 @@
 //                           1e6b5a) ; edr = aplat HDR à niveau × blanc SDR (défaut 4)
 //   --size=<L>x<H>          taille initiale de la fenêtre en points (défaut 1280x800)
 //   --background            ne pas voler le focus au lancement
-// Toute autre option --clé=valeur est conservée dans `extra` pour les modules.
+// Toute autre option --clé=valeur est conservée dans `extra` pour les modules, dont :
+//   --web-root=<dossier>    sert ce build web sous tentacle://app (shell/app_scheme.h) ;
+//                           avec --url=tentacle://app/, la page a l'origine d'Electron
+//   --server-url=<URL>      adresse du serveur posée dans le front s'il n'en a aucune
+//                           (défaut : l'origine de --url quand elle est http(s))
+//   --app-version=<x.y.z>   window.tentacle.version (défaut : celle du banc)
 // Les deux formes « --clé=valeur » et « --clé valeur » sont acceptées.
 
 #include <cstdint>

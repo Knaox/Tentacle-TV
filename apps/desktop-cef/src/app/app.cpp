@@ -12,6 +12,7 @@
 
 #include "app/platform_app.h"
 #include "include/cef_app.h"
+#include "shell/app_scheme.h"
 #include "shell/browser_app.h"
 #include "shell/builtin_handlers.h"
 #include "shell/message_pump.h"
@@ -106,6 +107,14 @@ int runApp(int argc, char** argv) {
   if (!CefInitialize(mainArgs, settings, app, nullptr)) {
     std::fprintf(stderr, "CefInitialize a échoué (code %d)\n", CefGetExitCode());
     return 1;
+  }
+
+  // Front embarqué sous tentacle://app (l'origine d'Electron), pour --url=tentacle://app/.
+  if (auto it = opts.extra.find("web-root"); it != opts.extra.end() && !it->second.empty()) {
+    if (!appscheme::serveWebRoot(it->second)) {
+      CefShutdown();
+      return 1;
+    }
   }
 
   AppContext ctx{window, platform::nativeWindow(window), compositor.get(), &opts, fake.get()};
