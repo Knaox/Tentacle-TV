@@ -63,7 +63,11 @@ Hors du pont : `launchId()` (synchrone) — voir « Fermeture complète ».
 ### Les évènements
 
 - `state` : `{ status, trackKey, positionMs, durationMs, volume, muted, format: null, output: { deviceId: null,
-  exclusive: false }, error, at: Date.now() }` — à chaque changement d'état, et toutes les 250 ms en lecture.
+  exclusive: false }, error, at: Date.now() }` — à chaque changement d'état, et toutes les 250 ms en lecture
+  (seulement si la position a bougé ; aucune horloge en pause). Application en arrière-plan : la position au plus
+  toutes les 5 s, un changement d'état toujours aussitôt, l'état tout de suite au retour devant — le natif garde
+  pour lui sa précision (fondu, reprise d'un titre interrompu, écran verrouillé). `at` date la position : le JS
+  l'extrapole entre deux états (`extrapolatedPosition`).
   `trackKey` est celui du titre DEVANT (pendant un fondu : le sortant jusqu'à la mi-fondu, puis l'entrant).
   `status` : `loading` (ouverture), `buffering` (attente de données en lecture), `playing`, `paused`,
   `ended` (fin du dernier titre, rien de suivant), `error` (+ `error` en texte), `idle`.

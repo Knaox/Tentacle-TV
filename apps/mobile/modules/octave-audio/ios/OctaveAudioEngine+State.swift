@@ -1,6 +1,7 @@
 import Foundation
 
-/// Ce que les platines disent, l'horloge du moteur (250 ms, 30 ms pendant un fondu) et l'état poussé à la page.
+/// Ce que les platines disent, l'horloge du moteur (250 ms, 30 ms pendant un fondu ; seulement quand le son doit
+/// avancer) et l'état poussé à la page (à son rythme : `OctaveAudioEngine+Pace.swift`).
 extension OctaveAudioEngine: AudioDeckDelegate {
   // MARK: - Évènements des platines
 
@@ -108,7 +109,10 @@ extension OctaveAudioEngine: AudioDeckDelegate {
 
   // MARK: - Horloge et état
 
+  /// Allume, règle ou éteint l'horloge selon l'état (appelée à chaque état poussé : une pause, une fin, une
+  /// erreur l'arrêtent ; une reprise, un saut, une reprise après coupure la relancent).
   func ensureTicker() {
+    guard needsTicker else { return stopTicker() }
     let interval = fade != nil ? 0.03 : 0.25
     if ticker != nil && interval == tickInterval { return }
     stopTicker()
@@ -126,7 +130,7 @@ extension OctaveAudioEngine: AudioDeckDelegate {
   }
 
   private func tick() {
-    guard let playing = current else { return stopTicker() }
+    guard let playing = current, needsTicker else { return stopTicker() }
     if fade == nil, wantsPlay, !stalled, pendingPositionMs == nil, frontDeck.restarted {
       recovery.played(playing.track.key, frontDeck.positionMs)
       if let duration = frontDeck.durationMs { playedDurationMs = duration }
@@ -139,7 +143,7 @@ extension OctaveAudioEngine: AudioDeckDelegate {
         beginFade(lengthMs: next.crossfadeMs)
       }
     }
-    if Date().timeIntervalSince(lastStateAt) >= 0.25 { emitState() }
+    paceState()
   }
 
   func status() -> String {
@@ -159,13 +163,16 @@ extension OctaveAudioEngine: AudioDeckDelegate {
     lastStateAt = Date()
     let duration = frontDeck.durationMs ?? current?.durationMs
     let status = status()
+    let position = positionMs()
+    sentMark = markOf(status: status, durationMs: duration)
+    sentPositionMs = position
     send([
       "type": "state",
       "at": Int64(Date().timeIntervalSince1970 * 1000),
       "state": [
         "status": status,
         "trackKey": current?.track.key ?? NSNull(),
-        "positionMs": positionMs(),
+        "positionMs": position,
         "durationMs": duration ?? NSNull(),
         "volume": volume,
         "muted": muted,
@@ -174,7 +181,8 @@ extension OctaveAudioEngine: AudioDeckDelegate {
         "error": error ?? NSNull(),
       ] as [String: Any],
     ])
-    publishPlayback(status: status, positionMs: positionMs(), durationMs: duration)
+    publishPlayback(status: status, positionMs: position, durationMs: duration)
+    ensureTicker()
   }
 
   func send(_ event: [String: Any]) {

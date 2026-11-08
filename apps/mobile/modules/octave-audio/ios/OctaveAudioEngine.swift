@@ -45,10 +45,16 @@ final class OctaveAudioEngine {
   var tickInterval = 0.25
   var lastStateAt = Date.distantPast
   var lastPublishedStatus = ""
+  /// L'application derrière : la page n'apprend plus la position qu'au plus toutes les 5 s (`OctaveAudioEngine+Pace.swift`).
+  var inBackground = false
+  /// Ce que la page sait déjà : l'état hors position, et la position, du dernier envoi.
+  var sentMark: StateMark?
+  var sentPositionMs: Double?
 
   private init() {
     decks = [AudioDeck(queue: queue), AudioDeck(queue: queue)]
     decks.forEach { $0.delegate = self }
+    observeAppState()
   }
 
   // MARK: - Commandes du pont
