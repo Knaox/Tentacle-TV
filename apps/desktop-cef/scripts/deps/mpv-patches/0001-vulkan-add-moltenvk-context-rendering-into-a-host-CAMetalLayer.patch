@@ -1,0 +1,271 @@
+From b5c712f4de991694633c4116fb9140aef4956458 Mon Sep 17 00:00:00 2001
+From: Knaox <djamvn@gmail.com>
+Date: Tue, 3 Nov 2026 01:10:38 +0100
+Subject: [PATCH] vulkan: add moltenvk context rendering into a host
+ CAMetalLayer
+
+--gpu-context=moltenvk takes the CAMetalLayer pointer from --wid and
+renders into it with no window of its own; --moltenvk-surface-size sets
+the swapchain size (VOCTRL_EXTERNAL_RESIZE, like d3d11-composition-size).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ DOCS/man/options.rst                |  12 +++
+ meson.build                         |   3 +
+ options/options.c                   |   3 +
+ options/options.h                   |   1 +
+ player/command.c                    |   3 +-
+ video/out/gpu/context.c             |   4 +
+ video/out/vulkan/context_moltenvk.m | 134 ++++++++++++++++++++++++++++
+ 7 files changed, 159 insertions(+), 1 deletion(-)
+ create mode 100644 video/out/vulkan/context_moltenvk.m
+
+diff --git a/DOCS/man/options.rst b/DOCS/man/options.rst
+index d8c11bd995..e9569e5fae 100644
+--- a/DOCS/man/options.rst
++++ b/DOCS/man/options.rst
+@@ -7136,6 +7136,14 @@ them.
+ 
+     Windows with ``--gpu-context=d3d11`` and  ``--d3d11-output-mode=composition`` only.
+ 
++``--moltenvk-surface-size=<WxH>``
++    Size, in pixels, of the swapchain for ``--gpu-context=moltenvk``. There is
++    no window: the embedding application owns the ``CAMetalLayer`` passed with
++    ``--wid`` and must set its size. Without it, the layer's ``drawableSize`` is
++    used.
++
++    macOS with ``--gpu-context=moltenvk`` only.
++
+ ``--gpu-sw``
+     Continue even if a software renderer is detected. This only works with
+     OpenGL/Vulkan backends. For d3d11, see ``--d3d11-warp``.
+@@ -7186,6 +7194,10 @@ them.
+         Android/EGL. Requires ``--wid`` be set to an ``android.view.Surface``.
+     macvk
+         Vulkan on macOS with a metal surface through a translation layer (experimental)
++    moltenvk
++        Vulkan on macOS (MoltenVK) into a ``CAMetalLayer`` owned by the
++        embedding application. Requires ``--wid`` be set to that layer; see
++        ``--moltenvk-surface-size``.
+ 
+     This is an object settings list option. See `List Options`_ for details.
+ 
+diff --git a/meson.build b/meson.build
+index 1cd2570f0d..928436c08e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1660,6 +1660,9 @@ if features['macos-cocoa-cb']
+                            'video/out/cocoa_cb_common.swift',
+                            'video/out/mac/gl_layer.swift')
+ endif
++if features['cocoa'] and features['vulkan']
++    sources += files('video/out/vulkan/context_moltenvk.m')
++endif
+ if features['cocoa'] and features['vulkan'] and features['swift']
+     swift_sources += files('video/out/mac_common.swift',
+                            'video/out/mac/metal_layer.swift')
+diff --git a/options/options.c b/options/options.c
+index 48baef13ff..803513e235 100644
+--- a/options/options.c
++++ b/options/options.c
+@@ -253,6 +253,9 @@ static const m_option_t mp_vo_opt_list[] = {
+ #endif
+ #if HAVE_D3D11
+     {"d3d11-composition-size", OPT_SIZE_BOX(d3d11_composition_size)},
++#endif
++#if HAVE_COCOA && HAVE_VULKAN
++    {"moltenvk-surface-size", OPT_SIZE_BOX(moltenvk_surface_size)},
+ #endif
+     {"swapchain-depth", OPT_INT(swapchain_depth), M_RANGE(1, VO_MAX_SWAPCHAIN_DEPTH)},
+     {"override-display-fps", OPT_REPLACED("display-fps-override")},
+diff --git a/options/options.h b/options/options.h
+index 014e41de6d..0bb6363200 100644
+--- a/options/options.h
++++ b/options/options.h
+@@ -88,6 +88,7 @@ typedef struct mp_vo_opts {
+     struct m_geometry android_surface_size;
+ 
+     struct m_geometry d3d11_composition_size;
++    struct m_geometry moltenvk_surface_size;
+ 
+     int swapchain_depth;  // max number of images to render ahead
+ 
+diff --git a/player/command.c b/player/command.c
+index 0dea4bfc94..a1adc76ca4 100644
+--- a/player/command.c
++++ b/player/command.c
+@@ -8347,7 +8347,8 @@ void mp_option_run_callback(struct MPContext *mpctx, struct mp_option_callback *
+             queue_seek(mpctx, MPSEEK_RELATIVE, 0.0, MPSEEK_EXACT, 0);
+     }
+ 
+-    if (opt_ptr == &opts->vo->android_surface_size || opt_ptr == &opts->vo->d3d11_composition_size) {
++    if (opt_ptr == &opts->vo->android_surface_size || opt_ptr == &opts->vo->d3d11_composition_size ||
++        opt_ptr == &opts->vo->moltenvk_surface_size) {
+         if (mpctx->video_out)
+             vo_control(mpctx->video_out, VOCTRL_EXTERNAL_RESIZE, NULL);
+     }
+diff --git a/video/out/gpu/context.c b/video/out/gpu/context.c
+index 60c0641a70..62c1774f1c 100644
+--- a/video/out/gpu/context.c
++++ b/video/out/gpu/context.c
+@@ -50,6 +50,7 @@ extern const struct ra_ctx_fns ra_ctx_vulkan_xlib;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_android;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_display;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_mac;
++extern const struct ra_ctx_fns ra_ctx_vulkan_moltenvk;
+ 
+ /* Direct3D 11 */
+ extern const struct ra_ctx_fns ra_ctx_d3d11;
+@@ -96,6 +97,9 @@ static const struct ra_ctx_fns *const contexts[] = {
+ #if HAVE_COCOA && HAVE_SWIFT
+     &ra_ctx_vulkan_mac,
+ #endif
++#if HAVE_COCOA
++    &ra_ctx_vulkan_moltenvk,
++#endif
+ #endif
+ 
+ // OpenGL contexts:
+diff --git a/video/out/vulkan/context_moltenvk.m b/video/out/vulkan/context_moltenvk.m
+new file mode 100644
+index 0000000000..c9566461f8
+--- /dev/null
++++ b/video/out/vulkan/context_moltenvk.m
+@@ -0,0 +1,134 @@
++/*
++ * This file is part of mpv.
++ *
++ * mpv is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * mpv is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++// Vulkan (MoltenVK) context rendering into a CAMetalLayer owned by the host
++// application. --wid is the CAMetalLayer pointer. mpv creates no window and
++// touches no AppKit object; the host owns the layer, its view and its place
++// in the layer tree. The drawable size comes from --moltenvk-surface-size
++// (falling back to the layer's drawableSize). Colorspace, EDR and HDR
++// metadata are set on the layer by MoltenVK when libplacebo picks the
++// swapchain color space (see --target-colorspace-hint).
++
++#import <QuartzCore/QuartzCore.h>
++
++#include "options/options.h"
++#include "video/out/gpu/context.h"
++
++#include "common.h"
++#include "context.h"
++#include "utils.h"
++
++struct priv {
++    struct mpvk_ctx vk;
++    CAMetalLayer *layer;
++};
++
++static void moltenvk_uninit(struct ra_ctx *ctx)
++{
++    struct priv *p = ctx->priv;
++
++    ra_vk_ctx_uninit(ctx);
++    mpvk_uninit(&p->vk);
++    if (p->layer)
++        CFRelease((__bridge CFTypeRef)p->layer);
++    p->layer = nil;
++}
++
++static bool moltenvk_init(struct ra_ctx *ctx)
++{
++    struct priv *p = ctx->priv = talloc_zero(ctx, struct priv);
++    struct mpvk_ctx *vk = &p->vk;
++    int msgl = ctx->opts.probing ? MSGL_V : MSGL_ERR;
++
++    int64_t wid = ctx->vo->opts->WinID;
++    if (wid <= 0) {
++        MP_MSG(ctx, msgl, "moltenvk: --wid must be a CAMetalLayer pointer\n");
++        goto error;
++    }
++    id obj = (__bridge id)(void *)(intptr_t)wid;
++    if (![obj isKindOfClass:[CAMetalLayer class]]) {
++        MP_MSG(ctx, msgl, "moltenvk: --wid is not a CAMetalLayer\n");
++        goto error;
++    }
++    p->layer = obj;
++    CFRetain((__bridge CFTypeRef)p->layer);
++
++    if (!mpvk_init(vk, ctx, VK_EXT_METAL_SURFACE_EXTENSION_NAME))
++        goto error;
++
++    VkMetalSurfaceCreateInfoEXT info = {
++        .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
++        .pLayer = p->layer,
++    };
++
++    VkInstance inst = vk->vkinst->instance;
++    VkResult res = vkCreateMetalSurfaceEXT(inst, &info, NULL, &vk->surface);
++    if (res != VK_SUCCESS) {
++        MP_MSG(ctx, msgl, "moltenvk: failed creating Metal surface\n");
++        goto error;
++    }
++
++    struct ra_ctx_params params = {0};
++    if (!ra_vk_ctx_init(ctx, vk, params, VK_PRESENT_MODE_FIFO_KHR))
++        goto error;
++
++    MP_VERBOSE(ctx, "moltenvk: rendering into host CAMetalLayer %p\n",
++               (__bridge void *)p->layer);
++    return true;
++error:
++    moltenvk_uninit(ctx);
++    return false;
++}
++
++static bool moltenvk_surface_size(struct ra_ctx *ctx, int *w, int *h)
++{
++    struct priv *p = ctx->priv;
++    struct m_geometry *g = &ctx->vo->opts->moltenvk_surface_size;
++    *w = g->w;
++    *h = g->h;
++    if (*w <= 0 || *h <= 0) {
++        CGSize size = p->layer.drawableSize;
++        *w = (int)size.width;
++        *h = (int)size.height;
++    }
++    return *w > 0 && *h > 0;
++}
++
++static bool moltenvk_reconfig(struct ra_ctx *ctx)
++{
++    int w, h;
++    if (!moltenvk_surface_size(ctx, &w, &h)) {
++        MP_ERR(ctx, "moltenvk: unknown surface size, set --moltenvk-surface-size\n");
++        return false;
++    }
++    return ra_vk_ctx_resize(ctx, w, h);
++}
++
++static int moltenvk_control(struct ra_ctx *ctx, int *events, int request, void *arg)
++{
++    return VO_NOTIMPL;
++}
++
++const struct ra_ctx_fns ra_ctx_vulkan_moltenvk = {
++    .type           = "vulkan",
++    .name           = "moltenvk",
++    .description    = "Vulkan (MoltenVK) into a host CAMetalLayer (--wid)",
++    .reconfig       = moltenvk_reconfig,
++    .control        = moltenvk_control,
++    .init           = moltenvk_init,
++    .uninit         = moltenvk_uninit,
++};
+-- 
+2.53.0
+

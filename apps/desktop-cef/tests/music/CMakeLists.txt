@@ -1,0 +1,26 @@
+# Banc d'Octave (faux natif) : le mode musique sans CEF.
+#   -DOCTAVE_WITH_PLAYER=ON : sur le `Player` de vidéo-HDR (libmpv du fork, audio seul) ;
+#   sinon libmpv de Homebrew par `MpvAudioBackend`.
+cmake_minimum_required(VERSION 3.24)
+project(octave_probe LANGUAGES C CXX)
+if(APPLE)
+  enable_language(OBJCXX)
+endif()
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(OCTAVE_WITH_PLAYER "banc sur le Player de video-HDR" OFF)
+if(OCTAVE_WITH_PLAYER)
+  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../src/player" player)
+endif()
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../src/music" music)
+add_executable(octave_probe octave_probe.cpp)
+target_link_libraries(octave_probe PRIVATE tentacle_music)
+if(OCTAVE_WITH_PLAYER)
+  set_target_properties(octave_probe PROPERTIES BUILD_RPATH "${TENTACLE_MPV_LIBDIR}")
+endif()
+# Relais stdin/stdout : le vrai moteur branché au vrai front (`web/shim/octave-relay.mjs`).
+add_executable(octave_relay octave_relay.cpp)
+target_link_libraries(octave_relay PRIVATE tentacle_music)
+if(OCTAVE_WITH_PLAYER)
+  set_target_properties(octave_relay PROPERTIES BUILD_RPATH "${TENTACLE_MPV_LIBDIR}")
+endif()

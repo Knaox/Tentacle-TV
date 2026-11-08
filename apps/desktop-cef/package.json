@@ -1,0 +1,16 @@
+{
+  "name": "@tentacle-tv/desktop-cef",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "description": "Tentacle TV desktop (CEF + libmpv + SDL3) — prototype, macOS d'abord. Aucune dépendance npm : les scripts appellent CMake/Ninja.",
+  "//scripts": "Pas de script typecheck/test : la CI les joue avec --if-present et n'a ni CEF ni libmpv.",
+  "scripts": {
+    "dev": "scripts/dev.sh run",
+    "build": "scripts/dev.sh build",
+    "banc": "scripts/dev.sh banc",
+    "test:update": "bench/update/test.sh",
+    "dev:update": "node bench/update/dev-update.mjs",
+    "test:update:cross": "bench/update/cross-test.sh"
+  }
+}

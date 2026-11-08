@@ -1,0 +1,7 @@
+# Tout ce qui se télécharge ou se construit vit dans ~/.cache/tentacle-cef (hors dépôt, hors Syncthing)
+/build/
+/out/
+/.cache/
+/.claude/
+.DS_Store
+*.dmg

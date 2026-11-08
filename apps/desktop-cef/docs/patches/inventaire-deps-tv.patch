@@ -1,0 +1,71 @@
+diff --git a/apps/tv/metro.config.js b/apps/tv/metro.config.js
+index 3d2c230..12dec8b 100644
+--- a/apps/tv/metro.config.js
++++ b/apps/tv/metro.config.js
+@@ -30,7 +30,6 @@ const singletonNames = [
+   "react-native-reanimated",
+   "react-native-video",
+   "react-native-linear-gradient",
+-  "react-native-webview",
+   "react-native-css-interop",
+   "@shopify/flash-list",
+   "@react-native-async-storage/async-storage",
+diff --git a/apps/tv/package.json b/apps/tv/package.json
+index 6bfa6a1..de2704a 100644
+--- a/apps/tv/package.json
++++ b/apps/tv/package.json
+@@ -35,8 +35,7 @@
+     "react-native-safe-area-context": "~5.6.2",
+     "react-native-screens": "~4.16.0",
+     "react-native-svg": "^15.15.3",
+-    "react-native-video": "^6.9.0",
+-    "react-native-webview": "13.15.0"
++    "react-native-video": "^6.9.0"
+   },
+   "devDependencies": {
+     "@react-native-community/cli": "^19.0.0",
+diff --git a/apps/tv/react-native.config.js b/apps/tv/react-native.config.js
+index 54c976e..2235f27 100644
+--- a/apps/tv/react-native.config.js
++++ b/apps/tv/react-native.config.js
+@@ -3,12 +3,4 @@ module.exports = {
+   // android/app/src/main/assets/fonts ; ce manifest permet de re-lier via
+   // `npx react-native-asset` si besoin.
+   assets: ["./assets/fonts"],
+-  dependencies: {
+-    // react-native-webview n'a AUCUN support tvOS (pas de WebView sur Apple
+-    // TV). On désactive son autolinking CocoaPods, sinon `pod install` casse
+-    // sur la cible tvOS. Côté JS, `TrailerWebView.ios.tsx` ne l'importe pas.
+-    "react-native-webview": {
+-      platforms: { ios: null },
+-    },
+-  },
+ };
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index a94acd0..2749baf 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -518,9 +518,6 @@ importers:
+       react-native-video:
+         specifier: ^6.9.0
+         version: 6.19.0(patch_hash=336777c80e48c42d8c33ecf2128c9ca4341cae1303c26e8cd7e9dd9762b0aec8)(react-native-tvos@0.80.1-0)(react@19.1.0)
+-      react-native-webview:
+-        specifier: 13.15.0
+-        version: 13.15.0(react-native-tvos@0.80.1-0)(react@19.1.0)
+     devDependencies:
+       '@react-native-community/cli':
+         specifier: ^19.0.0
+@@ -16425,13 +16422,6 @@ snapshots:
+       react: 19.1.0
+       react-native: 0.81.5(@babel/core@7.29.7)(@react-native-community/cli@20.2.0(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.1.0)
+ 
+-  react-native-webview@13.15.0(react-native-tvos@0.80.1-0)(react@19.1.0):
+-    dependencies:
+-      escape-string-regexp: 4.0.0
+-      invariant: 2.2.4
+-      react: 19.1.0
+-      react-native: react-native-tvos@0.80.1-0(patch_hash=6376af2238dcd1b1661aafdae6f6f22dc1a722759b46f8f1054d090069dba8d3)(@babel/core@7.29.7)(@react-native-community/cli@19.1.2(typescript@5.9.3))(@types/react@19.2.14)(react-native-tvos@0.80.1-0)(react@19.1.0)
+-
+   react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@20.2.0(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.1.0))(react@19.1.0):
+     dependencies:
+       escape-string-regexp: 4.0.0

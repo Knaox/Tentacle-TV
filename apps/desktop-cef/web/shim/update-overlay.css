@@ -1,0 +1,82 @@
+/* Surcouche de mise à jour — styles (Shadow DOM : rien ne fuit vers le front, rien n'y entre).
+ * Le verre sombre de Tentacle (theme/glass/surfaceTokens.css : remplissage 28,28,32 à 0,78,
+ * flou 30 px, saturation 0,75) et son dégradé de marque (violet #8B5CF6 → rose #EC4899).
+ * Embarqué dans update-overlay.js au build (jeton __UPDATE_CSS__) : ni accent grave ni dollar-accolade. */
+:host { all: initial; }
+.layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000;
+  font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  color: #f4f4f7; -webkit-font-smoothing: antialiased;
+  --fill: rgba(28, 28, 32, 0.78); --edge: rgba(255, 255, 255, 0.09); --muted: rgba(244, 244, 247, 0.72);
+  --brand: #8b5cf6; --brand-deep: #7c3aed; --accent: #ec4899; --focus: #c4b5fd; }
+.glass { background: var(--fill); border: 1px solid var(--edge); border-radius: 16px;
+  -webkit-backdrop-filter: blur(30px) saturate(0.75); backdrop-filter: blur(30px) saturate(0.75);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: auto; }
+
+/* --- Notification (majeure, ou obligatoire qui ne peut pas bloquer) --- */
+.toast { position: absolute; right: 20px; bottom: 20px; width: 368px; max-width: calc(100vw - 40px);
+  box-sizing: border-box; padding: 14px 14px 12px; display: grid; grid-template-columns: 32px 1fr auto;
+  column-gap: 12px; row-gap: 10px; transform: translateY(0); opacity: 1;
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 240ms ease-out; }
+.toast[data-leaving] { transform: translateY(10px); opacity: 0; transition-duration: 160ms; transition-timing-function: ease-in; }
+.toast[data-entering] { transform: translateY(14px); opacity: 0; }
+.icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%); color: #fff; }
+.icon.warn { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+.icon svg { width: 18px; height: 18px; }
+.text { min-width: 0; }
+.title { font-weight: 600; font-size: 14px; line-height: 1.3; margin: 0 0 2px; color: #fff; }
+.body { margin: 0; color: var(--muted); }
+.close { width: 28px; height: 28px; margin: -4px -4px 0 0; border: 0; border-radius: 8px; background: transparent;
+  color: var(--muted); cursor: pointer; display: grid; place-items: center; transition: background 150ms; }
+.close:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.close svg { width: 14px; height: 14px; }
+.wide { grid-column: 1 / -1; }
+
+/* Progression : barre fine, dégradé de marque ; avancement inconnu → balayage. */
+.progress { display: flex; align-items: center; gap: 10px; }
+.track { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.fill { height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--brand), var(--accent));
+  transition: width 200ms ease-out; }
+.fill.sweep { width: 35%; animation: sweep 1.3s ease-in-out infinite; }
+@keyframes sweep { from { transform: translateX(-110%); } to { transform: translateX(310%); } }
+.pct { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 34px; text-align: right; }
+
+.notes { margin: 0; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.05);
+  color: var(--muted); list-style: none; display: grid; gap: 4px; max-height: 120px; overflow: auto; }
+.notes li::before { content: "•"; color: var(--brand); margin-right: 6px; }
+
+.actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn { height: 32px; padding: 0 14px; border-radius: 9px; border: 1px solid transparent; cursor: pointer;
+  font-family: inherit; font-weight: 600; font-size: 13px; line-height: 1; transition: background 150ms, transform 120ms, opacity 150ms; }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--brand-deep); color: #fff; }
+.btn.primary:hover { background: #6d28d9; }
+.btn.ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.08); }
+.btn.ghost:hover { background: rgba(255, 255, 255, 0.12); }
+.btn[disabled] { opacity: 0.45; cursor: default; transform: none; }
+.link { border: 0; background: none; padding: 2px 0; cursor: pointer; font: inherit; font-size: 12px;
+  color: var(--muted); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(255,255,255,0.25); }
+.link:hover { color: #fff; }
+.links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.btn:focus-visible, .link:focus-visible, .close:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* --- Mise à jour de sécurité : bloque l'app, non masquable --- */
+.scrim { position: absolute; inset: 0; background: rgba(5, 5, 10, 0.62); pointer-events: auto;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center;
+  animation: fade 220ms ease-out; }
+.dialog { width: 440px; max-width: calc(100vw - 40px); box-sizing: border-box; padding: 22px; display: grid; gap: 14px;
+  animation: rise 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.dialog .head { display: flex; gap: 12px; align-items: center; }
+.dialog .title { font-size: 16px; }
+.dialog .icon { width: 40px; height: 40px; border-radius: 12px; }
+.dialog .icon svg { width: 22px; height: 22px; }
+.dialog .actions .btn { height: 36px; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast[data-leaving], .toast[data-entering] { transition: opacity 120ms linear; transform: none; }
+  .fill.sweep { animation: none; width: 100%; opacity: 0.5; }
+  .scrim, .dialog { animation: none; }
+}

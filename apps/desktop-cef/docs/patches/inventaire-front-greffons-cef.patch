@@ -1,0 +1,40 @@
+diff --git a/apps/web/src/desktop/pluginDocument.ts b/apps/web/src/desktop/pluginDocument.ts
+index 05f9240..c783db3 100644
+--- a/apps/web/src/desktop/pluginDocument.ts
++++ b/apps/web/src/desktop/pluginDocument.ts
+@@ -15,6 +15,18 @@
+ import { useEffect, useState } from "react";
+ import { invoke, isElectronShell } from "./bridge";
+ 
++/**
++ * La coquille sert-elle les greffons sous leur origine à elle ?
++ *
++ * La capacité, pas seulement la coquille : une coquille qui pose
++ * `window.tentacle` sans `plugin_document_set` (Tentacle CEF, qui charge la
++ * page DEPUIS le serveur, sous sa politique) laissait l'iframe vide et le
++ * chargeur affiché pour toujours — le rejet de `invoke` était avalé.
++ */
++function shellServesPluginDocuments(): boolean {
++  return isElectronShell() && (window.tentacle?.capabilities.includes("plugin_document_set") ?? false);
++}
++
+ /** Attributs de montage : l'un des deux est défini, jamais les deux. */
+ export interface PluginMount {
+   /** Electron : URL servie sous l'origine des greffons. */
+@@ -32,7 +44,7 @@ export function usePluginMount(pluginId: string, html: string | null): PluginMou
+   const [src, setSrc] = useState<string | null>(null);
+ 
+   useEffect(() => {
+-    if (!isElectronShell() || html === null) return;
++    if (!shellServesPluginDocuments() || html === null) return;
+     let cancelled = false;
+     setSrc(null);
+     void invoke<string | null>("plugin_document_set", { id: pluginId, html })
+@@ -48,6 +60,6 @@ export function usePluginMount(pluginId: string, html: string | null): PluginMou
+   }, [pluginId, html]);
+ 
+   if (html === null) return null;
+-  if (!isElectronShell()) return { srcDoc: html };
++  if (!shellServesPluginDocuments()) return { srcDoc: html };
+   return src === null ? null : { src };
+ }

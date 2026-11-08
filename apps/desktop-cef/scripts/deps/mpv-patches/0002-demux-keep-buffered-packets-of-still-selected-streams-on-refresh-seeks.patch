@@ -1,0 +1,47 @@
+From e47e57dc545cf95daf91f0a23edae13961ea9627 Mon Sep 17 00:00:00 2001
+From: tentacle-cef <tentacle-cef@localhost>
+Date: Wed, 4 Nov 2026 12:05:13 +0100
+Subject: [PATCH] demux: keep buffered packets of still-selected streams on
+ refresh seeks
+
+Switching the audio or subtitle track issues a refresh seek, which used to
+discard the packet queues of ALL streams: the whole forward cache was thrown
+away and re-read from the network. On a remote file this stalls playback
+(paused-for-cache) on every track switch.
+
+Keep the queues of streams that stay selected; the re-read packets are
+dropped until they reach the end of each kept queue (the existing refreshing
+mechanism), and only the newly selected stream is filled from the seek
+point.
+---
+ demux/demux.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/demux/demux.c b/demux/demux.c
+index 69008829c4..3e9be0921c 100644
+--- a/demux/demux.c
++++ b/demux/demux.c
+@@ -4051,6 +4051,20 @@ static void initiate_refresh_seek(struct demux_internal *in,
+         for (int n = 0; n < in->num_streams; n++) {
+             struct demux_stream *ds = in->streams[n]->ds;
+ 
++            // Streams that stay selected keep their buffered packets: the
++            // re-read data is dropped until it reaches the end of their queue
++            // (queue->last_pos/last_dts are those of the last queued packet),
++            // then appended as usual. Only the newly selected stream starts
++            // from scratch. Without this, every audio/subtitle switch threw
++            // away the whole forward cache, and playback stalled until the
++            // network had refilled it.
++            if (ds->selected && ds != stream && ds->queue->head &&
++                (ds->queue->correct_dts || ds->queue->correct_pos))
++            {
++                ds->refreshing = true;
++                continue;
++            }
++
+             bool correct_pos = ds->queue->correct_pos;
+             bool correct_dts = ds->queue->correct_dts;
+ 
+-- 
+2.53.0
+

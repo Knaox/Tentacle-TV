@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Banc saisie</title>
+<style>
+  body { font: 16px system-ui; background: #222; color: #eee; margin: 24px; }
+  input, textarea { font: 16px system-ui; display: block; margin: 8px 0; width: 420px; }
+</style>
+</head>
+<body>
+<!-- Banc de la saisie : chaque keydown/keypress/keyup est noté dans window.__ev (lu par
+     tests/saisie/banc.mjs via les DevTools), chaque envoi de formulaire dans window.__submits. -->
+<form id="f">
+  <input id="a" name="a" autocomplete="off">
+  <input id="b" name="b" autocomplete="off">
+  <button id="ok" type="submit">Envoyer</button>
+</form>
+<textarea id="ta" rows="4"></textarea>
+<script>
+  window.__ev = [];
+  window.__submits = 0;
+  for (const t of ['keydown', 'keypress', 'keyup']) {
+    document.addEventListener(t, (e) => {
+      __ev.push({ t, key: e.key, code: e.code, keyCode: e.keyCode, charCode: e.charCode,
+                  alt: e.altKey, ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey,
+                  repeat: e.repeat, target: document.activeElement?.id || '' });
+      if (window.__block && window.__block(e)) e.preventDefault();
+    }, true);
+  }
+  document.getElementById('f').addEventListener('submit', (e) => { e.preventDefault(); __submits++; });
+</script>
+</body>
+</html>

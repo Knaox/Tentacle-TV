@@ -1,0 +1,176 @@
+diff -ruN a/.github/workflows/desktop-cef.yml b/.github/workflows/desktop-cef.yml
+--- a/.github/workflows/desktop-cef.yml	1970-01-01 01:00:00
++++ b/.github/workflows/desktop-cef.yml	2026-11-04 12:15:23
+@@ -0,0 +1,146 @@
++# Tentacle TV — BUREAU CEF (CEF + libmpv + SDL3) : construire, publier, et SIGNER le flux de
++# mise à jour automatique lu par l'app (src/update/ du dépôt tentacle-cef, docs/MISE-A-JOUR.md).
++#
++# Le flux est UN fichier, `updates/desktop-cef/<canal>.json` sur `main` (lu par l'app via
++# raw.githubusercontent.com, comme `updates/store-versions.json`) : une enveloppe
++# { format, keyId, manifest, signature } — ed25519 sur les octets du manifeste, qui donne
++# l'URL et le SHA-256 de chaque archive (Release GitHub `desktop-cef-vX.Y.Z`).
++#
++# CRANS (`channel`) :
++#   • build         — construire et archiver. Rien ne part.
++#   • test          — Release en PRÉ-VERSION, flux `beta` signé (les appareils sur le canal beta).
++#   • store         — Release publiée, flux `stable` signé et poussé sur main.
++#   • manifest-only — re-signer le flux `stable` SANS rien rebâtir : sert à FORCER une mise à
++#                     jour (minVersion relevée depuis versions.json → desktopCefMinVersion, ou
++#                     gravité critique passée en entrée). Les appareils en dessous ne peuvent
++#                     plus continuer sans installer (sauf hors ligne : jamais bloqués sans réseau).
++#
++# Secrets : TENTACLE_UPDATE_SIGNING_KEY (PEM PKCS#8 ed25519, JAMAIS ailleurs que dans les
++# secrets ; sa clé publique est compilée dans l'app par la variable TENTACLE_UPDATE_PUBLIC_KEY),
++# APPLE_DEVELOPER_ID_* (signature Developer ID + notarisation : hors Mac App Store, donc pas de
++# bac à sable imposé et le remplacement du .app est permis).
++name: Desktop CEF
++on:
++  workflow_dispatch:
++    inputs:
++      channel: { type: choice, options: [build, test, store, manifest-only], default: build }
++      severity: { type: choice, options: [from-changelog, minor, major, critical], default: from-changelog }
++
++permissions:
++  contents: write
++
++env:
++  FEED_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/updates/desktop-cef/stable.json
++  KEY_ID: tentacle-2026
++
++jobs:
++  prepare:
++    runs-on: ubuntu-latest
++    outputs:
++      version: ${{ steps.v.outputs.version }}
++      min: ${{ steps.v.outputs.min }}
++      sha: ${{ steps.v.outputs.sha }}
++    steps:
++      - uses: actions/checkout@v4
++      - id: v
++        run: |
++          echo "version=$(jq -r .desktop versions.json)" >> "$GITHUB_OUTPUT"
++          echo "min=$(jq -r '.desktopCefMinVersion // "0.0.0"' versions.json)" >> "$GITHUB_OUTPUT"
++          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
++
++  macos:
++    if: inputs.channel != 'manifest-only'
++    needs: prepare
++    runs-on: macos-15
++    steps:
++      - uses: actions/checkout@v4
++        with: { ref: "${{ needs.prepare.outputs.sha }}" }
++      # Tant que le bureau CEF vit dans son propre dépôt ; à retirer s'il rejoint le monorepo.
++      - uses: actions/checkout@v4
++        with: { repository: "${{ github.repository_owner }}/tentacle-cef", path: cef }
++      - run: brew install ninja sdl3 nlohmann-json libsodium
++      - name: Construire (flux et clé publique compilés)
++        run: |
++          cd cef
++          cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release \
++            -DTENTACLE_UPDATE_FEED_URL="$FEED_URL" \
++            -DTENTACLE_UPDATE_PUBLIC_KEYS="$KEY_ID:${{ vars.TENTACLE_UPDATE_PUBLIC_KEY }}"
++          ninja -C build -j4
++          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ needs.prepare.outputs.version }}" \
++            -c "Set :CFBundleVersion ${{ needs.prepare.outputs.version }}" build/Tentacle.app/Contents/Info.plist
++      - name: Tests de la mise à jour (règle, moteur, surcouche)
++        run: cd cef && bench/update/test.sh
++      - name: Signer (Developer ID, runtime renforcé), notariser, agrafer
++        env:
++          IDENTITY: ${{ secrets.APPLE_DEVELOPER_ID_IDENTITY }}
++        run: |
++          app=cef/build/Tentacle.app
++          # L'assistant de remplacement AVANT le paquet (code imbriqué).
++          codesign --force --options runtime --timestamp -s "$IDENTITY" "$app/Contents/MacOS/tentacle-update"
++          codesign --force --deep --options runtime --timestamp -s "$IDENTITY" "$app"
++          ditto -c -k --keepParent "$app" notarize.zip
++          xcrun notarytool submit notarize.zip --wait --apple-id "${{ secrets.APPLE_ID }}" \
++            --team-id "${{ secrets.APPLE_TEAM_ID }}" --password "${{ secrets.APPLE_APP_PASSWORD }}"
++          xcrun stapler staple "$app"
++      - name: "Archive de mise à jour (tar.xz : liens des frameworks et signature intacts)"
++        run: |
++          V=${{ needs.prepare.outputs.version }}
++          tar --options xz:compression-level=9 -cJf "Tentacle-$V-macos-arm64.tar.xz" -C cef/build Tentacle.app
++      - uses: actions/upload-artifact@v4
++        with: { name: cef-macos, path: "Tentacle-*-macos-arm64.tar.xz" }
++
++  # Linux (AppImage) et Windows (zip par utilisateur) : même schéma, à écrire quand leurs
++  # builds CEF existeront (src/platform/{linux,windows}/update_* sont prêts, non éprouvés).
++
++  publish:
++    if: inputs.channel == 'test' || inputs.channel == 'store'
++    needs: [prepare, macos]
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/download-artifact@v4
++        with: { name: cef-macos }
++      - name: Release desktop-cef-vX.Y.Z
++        env: { GH_TOKEN: "${{ github.token }}" }
++        run: |
++          V=${{ needs.prepare.outputs.version }}
++          gh release create "desktop-cef-v$V" --repo "${{ github.repository }}" --target "${{ needs.prepare.outputs.sha }}" \
++            ${{ inputs.channel == 'test' && '--prerelease' || '' }} --title "Bureau CEF $V" --notes "Voir changelogs/desktop.md" \
++            Tentacle-$V-macos-arm64.tar.xz
++
++  feed:
++    if: always() && (inputs.channel == 'test' || inputs.channel == 'store' || inputs.channel == 'manifest-only')
++    needs: [prepare, publish]
++    runs-on: macos-15
++    steps:
++      - uses: actions/checkout@v4
++        with: { ref: "${{ needs.prepare.outputs.sha }}" }
++      - uses: actions/checkout@v4
++        with: { repository: "${{ github.repository_owner }}/tentacle-cef", path: cef }
++      - name: Archive publiée (pour son empreinte)
++        env: { GH_TOKEN: "${{ github.token }}" }
++        run: |
++          V=${{ needs.prepare.outputs.version }}
++          gh release download "desktop-cef-v$V" --repo "${{ github.repository }}" --pattern "Tentacle-$V-macos-arm64.tar.xz"
++      - name: Signer le flux
++        env:
++          TENTACLE_UPDATE_SIGNING_KEY: ${{ secrets.TENTACLE_UPDATE_SIGNING_KEY }}
++        run: |
++          V=${{ needs.prepare.outputs.version }}
++          CANAL=${{ inputs.channel == 'test' && 'beta' || 'stable' }}
++          SEV=${{ inputs.severity }}
++          mkdir -p updates/desktop-cef
++          node cef/bench/update/make-manifest.mjs --version="$V" --channel="$CANAL" --key-id="$KEY_ID" \
++            --changelog=changelogs/desktop.md --min-version="${{ needs.prepare.outputs.min }}" \
++            $([ "$SEV" != from-changelog ] && echo "--severity=$SEV") \
++            --notes-url="https://github.com/${{ github.repository }}/releases/tag/desktop-cef-v$V" \
++            --asset="macos-arm64=https://github.com/${{ github.repository }}/releases/download/desktop-cef-v$V/Tentacle-$V-macos-arm64.tar.xz:Tentacle-$V-macos-arm64.tar.xz" \
++            --out="updates/desktop-cef/$CANAL.json"
++      - name: Relire le flux comme l'app le lira
++        run: |
++          cmake -G Ninja -S cef/src/update -B verify -DCMAKE_BUILD_TYPE=Release && ninja -C verify tentacle_update_verify
++          CANAL=${{ inputs.channel == 'test' && 'beta' || 'stable' }}
++          verify/tentacle_update_verify "updates/desktop-cef/$CANAL.json" "${{ vars.TENTACLE_UPDATE_PUBLIC_KEY }}" "$KEY_ID"
++      - uses: ./.github/actions/push-main
++        with:
++          paths: updates/desktop-cef
++          message: "chore(update) : flux du bureau CEF ${{ needs.prepare.outputs.version }} (${{ inputs.channel }})"
+diff -ruN a/changelogs/desktop.md b/changelogs/desktop.md
+--- a/changelogs/desktop.md	2026-11-04 12:14:27
++++ b/changelogs/desktop.md	2026-11-04 12:15:07
+@@ -13,6 +13,12 @@
+ ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
+ et Linux reçoivent l'ensemble.
+ 
++Bureau CEF (mise à jour automatique, `.github/workflows/desktop-cef.yml`) : la gravité d'un
++bloc se donne par un commentaire `<!-- severity: minor|major|critical -->` (mineure par défaut).
++Mineure : installée en silence au redémarrage suivant. Majeure : une notification. Critique :
++obligatoire, l'app ne laisse pas continuer — sa raison va dans `### Sécurité` / `### Security`.
++Forcer sans rebâtir : `versions.json` → `desktopCefMinVersion`, puis le cran `manifest-only`.
++
+ ## [1.42.0]
+ <!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.42.0] ni [win-1.42.0]). Lot « ol » d'Octave. Rien sur les extensions ni sur leur source de musique. -->
+ ### FR
+diff -ruN a/versions.json b/versions.json
+--- a/versions.json	2026-11-04 12:14:27
++++ b/versions.json	2026-11-04 12:15:07
+@@ -1,5 +1,6 @@
+ {
+   "desktop": "1.42.0",
++  "desktopCefMinVersion": "0.0.0",
+   "tv": "1.20.0",
+   "webos": "1.0.0",
+   "mobile": "1.32.0",

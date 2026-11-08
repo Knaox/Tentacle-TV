@@ -1,0 +1,7 @@
+// Généré par CMake depuis web/shim/update-overlay.js : la surcouche de mise à jour est
+// embarquée dans le binaire (sa version est celle de l'app). Ne pas modifier ici.
+namespace tentacle::update {
+const char* overlaySource() {
+  return R"tentacleupdate(@TENTACLE_UPDATE_OVERLAY@)tentacleupdate";
+}
+}  // namespace tentacle::update

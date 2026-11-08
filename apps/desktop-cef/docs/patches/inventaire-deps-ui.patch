@@ -1,0 +1,40 @@
+diff --git a/packages/ui/package.json b/packages/ui/package.json
+index 78bef66..5fdcf5c 100644
+--- a/packages/ui/package.json
++++ b/packages/ui/package.json
+@@ -17,14 +17,11 @@
+     "framer-motion": "^11.15.0"
+   },
+   "peerDependencies": {
+-    "react": ">=18.0.0",
+-    "react-dom": ">=18.0.0"
++    "react": ">=18.0.0"
+   },
+   "devDependencies": {
+     "@types/react": "^19.0.0",
+-    "@types/react-dom": "^19.0.0",
+     "react": "^19.0.0",
+-    "react-dom": "^19.0.0",
+     "typescript": "^5.7.0"
+   }
+ }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index a94acd0..9f61881 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -846,15 +846,9 @@ importers:
+       '@types/react':
+         specifier: ^19.0.0
+         version: 19.2.14
+-      '@types/react-dom':
+-        specifier: ^19.0.0
+-        version: 19.2.3(@types/react@19.2.14)
+       react:
+         specifier: ^19.0.0
+         version: 19.2.4
+-      react-dom:
+-        specifier: ^19.0.0
+-        version: 19.2.4(react@19.2.4)
+       typescript:
+         specifier: ^5.7.0
+         version: 5.9.3

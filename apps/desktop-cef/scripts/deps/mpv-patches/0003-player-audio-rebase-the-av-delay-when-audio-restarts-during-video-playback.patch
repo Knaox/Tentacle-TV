@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tentacle-cef <tentacle-cef@localhost>
+Date: Wed, 4 Nov 2026 14:40:00 +0100
+Subject: [PATCH] player/audio: rebase the A/V delay when audio restarts during
+ video playback
+
+When the audio chain is reset while video keeps playing (audio track switch,
+audio reconfig), mpctx->delay restarts from 0 and every video frame shown
+afterwards is subtracted from it. But the first audio frame queued is clipped
+to the CURRENT video position (start_pts), not to the position at the reset.
+Once audio starts, update_avsync_before_frame() therefore sees audio far
+behind the video and holds the next video frame for exactly as long as the
+new track took to be read: on a remote file, every audio track switch froze
+the picture for 0.3-0.6 s, then reported an A/V desynchronisation.
+
+Rebase mpctx->delay on the first audio frame actually queued while syncing,
+when video is already playing. After a seek (video not playing yet) nothing
+changes.
+---
+ player/audio.c | 20 ++++++++++++++++++++
+ player/core.h  |  3 +++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/player/audio.c b/player/audio.c
+index b3e975dd2e..65844a92c8 100644
+--- a/player/audio.c
++++ b/player/audio.c
+@@ -222,6 +222,7 @@ static void ao_chain_reset_state(struct ao_chain *ao_c)
+     ao_c->out_eof = false;
+     ao_c->start_pts_known = false;
+     ao_c->start_pts = MP_NOPTS_VALUE;
++    ao_c->delay_rebased = false;
+     ao_c->untimed_throttle = false;
+     ao_c->underrun = false;
+     ao_c->delaying_audio_start = false;
+@@ -730,6 +731,25 @@ static void ao_process(struct mp_filter *f)
+             return;
+         }
+ 
++        // Audio was reset while video kept playing (e.g. audio track switch):
++        // mpctx->delay restarted from 0 at the reset, and every video frame
++        // shown since then was subtracted from it, while the first queued audio
++        // frame starts at the CURRENT video position (start_pts), not at the
++        // reset position. Without rebasing, the A/V sync code believes audio
++        // starts that much behind, and holds the video for as long as the new
++        // track took to arrive (a visible freeze on slow networks).
++        if (mpctx->audio_status == STATUS_SYNCING && !ao_c->delay_rebased &&
++            mpctx->video_status == STATUS_PLAYING &&
++            mpctx->video_pts != MP_NOPTS_VALUE &&
++            mp_aframe_get_pts(af) != MP_NOPTS_VALUE)
++        {
++            mpctx->delay = mp_aframe_get_pts(af) + mpctx->opts->audio_delay -
++                           mpctx->video_pts;
++            ao_c->delay_rebased = true;
++            MP_VERBOSE(mpctx, "A/V delay rebased on first audio frame: %f\n",
++                       mpctx->delay);
++        }
++
+         mpctx->shown_aframes += samples;
+         double real_samplerate = mp_aframe_get_rate(af) / mpctx->audio_speed;
+         if (mpctx->video_status != STATUS_EOF)
+diff --git a/player/core.h b/player/core.h
+index f17a8a9a32..b6e9ff4e05 100644
+--- a/player/core.h
++++ b/player/core.h
+@@ -202,6 +202,9 @@ struct ao_chain {
+ 
+     double start_pts;
+     bool start_pts_known;
++    // mpctx->delay was rebased on the first audio frame queued after a reset
++    // that happened while video kept playing (track switch).
++    bool delay_rebased;
+ 
+     bool delaying_audio_start;
+ 
+-- 
+2.53.0
+

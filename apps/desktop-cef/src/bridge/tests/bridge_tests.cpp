@@ -1,0 +1,164 @@
+// Tests du pont : formes des charges attendues par le front de Tentacle, listes
+// blanches, étranglement, plein écran. Sans dépendance de test : un échec imprime
+// sa ligne et le code de sortie compte les échecs.
+#include <cstdio>
+#include <string>
+
+#include "mpv_policy.h"
+#include "registry.h"
+#include "tests/fakes.h"
+#include "video_channels.h"
+#include "window_channels.h"
+
+using namespace bridge;
+using namespace bridge::testing;
+
+static int failures = 0;
+#define CHECK(cond)                                                     \
+  do {                                                                  \
+    if (!(cond)) {                                                      \
+      std::fprintf(stderr, "ÉCHEC %s:%d : %s\n", __FILE__, __LINE__, #cond); \
+      failures++;                                                       \
+    }                                                                   \
+  } while (0)
+
+// La charge exacte de `mpv_init` envoyée par le front (macOS, `buildMpvInitOptions`).
+static Json frontInit() {
+  return Json::parse(R"({"options":{
+    "initialOptions":{"vo":"gpu-next","hwdec":"videotoolbox,videotoolbox-copy","keep-open":"yes",
+      "force-window":"no","gpu-api":"vulkan","gpu-context":"macvk","target-colorspace-hint":"yes",
+      "border":"no","cache":"yes","cache-pause-wait":15,"osd-level":0,"subprocess":"x"},
+    "observedProperties":[["pause","flag"],["time-pos","double","none"],["aid","int64"],["eof-reached","flag"]]}})");
+}
+
+static void testRegistry() {
+  FakeIpc ipc;
+  Registry reg(ipc);
+  reg.command("mpv_init", [](const Json&, Reply r) { r.ok("ok"); });
+  reg.event("mpv://event");
+  CHECK(ipc.handlers.count("tentacle:mpv_init") == 1);
+  CHECK(reg.commands() == std::vector<std::string>{"mpv_init"});
+  bool threw = false;
+  try { reg.command("mpv_init", [](const Json&, Reply) {}); } catch (const std::logic_error&) { threw = true; }
+  CHECK(threw);
+  threw = false;
+  try { reg.emit("audio://event", nullptr); } catch (const std::logic_error&) { threw = true; }
+  CHECK(threw);
+  reg.emit("mpv://event", {{"event", "idle"}});
+  CHECK(ipc.emitted.at(0).first == "tentacle:mpv://event");
+
+  ShimConfig cfg{{"http://127.0.0.1:3471"}, "http://127.0.0.1:3471", "1.42.0", "darwin", 0};
+  const std::string script = reg.injectedScript(embeddedShimSource(), cfg);
+  CHECK(script.find("__TENTACLE_SHIM_CONFIG__") == std::string::npos);
+  CHECK(script.find(R"("commands":["mpv_init"])") != std::string::npos);
+  CHECK(script.find(R"("platform":"darwin")") != std::string::npos);
+  // ASCII seul : U+2028 deviendrait un   inoffensif.
+  cfg.version = "1.42 ";
+  CHECK(reg.injectedScript(embeddedShimSource(), cfg).find("\\u2028") != std::string::npos);
+}
+
+static void testPolicy() {
+  using namespace mpv_policy;
+  CHECK(refuseCommand("run", {"/bin/sh"}).has_value());
+  CHECK(refuseCommand("subprocess", {}).has_value());
+  CHECK(refuseCommand("load-script", {"x.lua"}).has_value());
+  CHECK(!refuseCommand("set", {"aid", "2"}).has_value());
+  CHECK(!refuseCommand("set", {"hr-seek-demuxer-offset", "0"}).has_value());
+  CHECK(refuseCommand("set", {"tone-mapping", "clip"}).has_value());  // chaîne de couleur : vidéo-HDR
+  CHECK(refuseCommand("loadfile", {"u", "replace"}).has_value());     // arité 1, comme Electron
+  CHECK(!refuseCommand("seek", {"30", "relative"}).has_value());
+  const auto f = filterInitOptions(frontInit()["options"]["initialOptions"]);
+  CHECK(f.kept.value("keep-open", "") == "yes");
+  CHECK(f.kept.value("cache-pause-wait", "") == "15");
+  CHECK(!f.kept.contains("vo") && !f.kept.contains("gpu-context") && !f.kept.contains("force-window"));
+  CHECK(f.ownedByPlayer.size() == 6);
+  CHECK(f.refused == std::vector<std::string>{"subprocess"});
+  CHECK(coerce("yes", "flag") == true);
+  CHECK(coerce("3", "int64") == 3.0);
+  CHECK(coerce(Json(nullptr), "string").is_null());
+  CHECK(toMpvString(true) == "yes");
+}
+
+static void testVideo() {
+  FakeIpc ipc;
+  FakePlayer player;
+  Registry reg(ipc);
+  double now = 1000;
+  VideoChannels video(reg, player, [&now] { return now; });
+  bool claimed = false;
+  video.setOnVideoClaim([&claimed] { claimed = true; });
+
+  auto a = ipc.invoke("tentacle:mpv_init", frontInit());
+  CHECK(a.ok && a.value == "ok");
+  CHECK(claimed);
+  CHECK(player.started.size() == 1 && !player.started[0].contains("vo"));
+  CHECK(player.observed.size() == 4 && player.observed[1].first == "time-pos");
+
+  // time-pos à 8 Hz : la 2e valeur, 50 ms plus tard, est retenue puis libérée par `pause`.
+  player.listener->onProperty("time-pos", 1.0);
+  now += 50;
+  player.listener->onProperty("time-pos", 1.05);
+  CHECK(ipc.payloadsOf("tentacle:mpv://property-change").size() == 1);
+  player.listener->onProperty("pause", true);
+  auto changes = ipc.payloadsOf("tentacle:mpv://property-change");
+  CHECK(changes.size() == 3);
+  CHECK(changes[1]["data"] == 1.05 && changes[2]["name"] == "pause");
+  CHECK(changes[2]["id"] == 1 && changes[2]["at"] == 1050.0);
+  player.listener->onProperty("vf", "x");  // non observée par la page : rien
+  CHECK(ipc.payloadsOf("tentacle:mpv://property-change").size() == 3);
+
+  player.listener->onEvent({{"event", "end-file"}, {"reason", 4}, {"error", -13}});
+  CHECK(ipc.payloadsOf("tentacle:mpv://event").at(0)["reason"] == 4);
+
+  a = ipc.invoke("tentacle:mpv_command", {{"name", "seek"}, {"args", {30, "relative"}}});
+  CHECK(a.ok && player.commands.back() == Json({"seek", "30", "relative"}));
+  a = ipc.invoke("tentacle:mpv_command", {{"name", "run"}, {"args", {"/bin/sh"}}});
+  CHECK(!a.ok && a.message == "commande refusee : run");
+  player.commandError = "property not found";
+  a = ipc.invoke("tentacle:mpv_command", {{"name", "set"}, {"args", {"sid", "9"}}});
+  CHECK(!a.ok && a.message == "set : property not found");  // jamais les arguments
+
+  a = ipc.invoke("tentacle:mpv_set_property", {{"name", "volume"}, {"value", 40}});
+  CHECK(a.ok && player.writes["volume"] == 40);
+  player.values["track-list/0/selected"] = "yes";
+  a = ipc.invoke("tentacle:mpv_get_property", {{"name", "track-list/0/selected"}, {"format", "flag"}});
+  CHECK(a.ok && a.value == true);
+  a = ipc.invoke("tentacle:mpv_get_property", {{"name", "track-list/9/id"}, {"format", "int64"}});
+  CHECK(a.ok && a.value.is_null());
+
+  a = ipc.invoke("tentacle:mpv_init", frontInit());  // épisode suivant : l'ancienne part d'abord
+  CHECK(a.ok && player.stops == 1 && player.started.size() == 2);
+  a = ipc.invoke("tentacle:mpv_destroy");
+  CHECK(a.ok && player.stops == 2 && !player.running());
+  a = ipc.invoke("tentacle:mpv_command", {{"name", "seek"}, {"args", {1}}});
+  CHECK(!a.ok && a.code == "no_player");
+}
+
+static void testWindow() {
+  FakeIpc ipc;
+  FakeWindow win;
+  Registry reg(ipc);
+  WindowChannels channels(reg, win);
+  auto a = ipc.invoke("tentacle:player_fullscreen_enter");
+  CHECK(a.ok && a.value == false);
+  a = ipc.invoke("tentacle:toggle_fullscreen");
+  CHECK(a.ok && a.value == true && win.requested.back() == true);
+  channels.fullscreenChanged(true);
+  channels.fullscreenChanged(true);  // une seule émission par changement réel
+  CHECK(ipc.payloadsOf("tentacle:window://fullscreen") == std::vector<Json>{true});
+  a = ipc.invoke("tentacle:open-external", {{"url", "file:///etc/passwd"}});
+  CHECK(!a.ok && win.opened.empty());
+  a = ipc.invoke("tentacle:open-external", {{"url", "https://tentacletv.app"}});
+  CHECK(a.ok && win.opened.size() == 1);
+  ipc.invoke("tentacle:prevent_display_sleep_start");
+  CHECK(win.sleepBlocked);
+}
+
+int main() {
+  testRegistry();
+  testPolicy();
+  testVideo();
+  testWindow();
+  std::printf(failures ? "%d échec(s)\n" : "tous les tests du pont passent\n", failures);
+  return failures ? 1 : 0;
+}

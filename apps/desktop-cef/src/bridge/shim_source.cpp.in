@@ -1,0 +1,11 @@
+// Généré par CMake depuis web/shim/tentacle-bridge.js — ne pas modifier.
+#include "registry.h"
+
+namespace bridge {
+
+const std::string& embeddedShimSource() {
+  static const std::string source = R"tentacleshim(@TENTACLE_SHIM_SOURCE@)tentacleshim";
+  return source;
+}
+
+}  // namespace bridge

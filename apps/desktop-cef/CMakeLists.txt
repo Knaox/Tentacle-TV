@@ -1,0 +1,121 @@
+# Tentacle CEF — prototype : CEF (UI web, hors écran) + SDL3 (fenêtre) + libmpv (lecture).
+# Construire avec scripts/build.sh (Ninja, ninja -j4), jamais dans le dépôt.
+cmake_minimum_required(VERSION 3.24)
+project(tentacle_cef LANGUAGES C CXX)
+if(APPLE)
+  enable_language(OBJC OBJCXX)
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Paquet de distribution (scripts/build.sh --dist) : dylibs embarquées, rien hors du .app.
+# Sans lui (développement), l'app trouve libmpv et SDL3 dans le cache et Homebrew.
+option(TENTACLE_DIST "Paquet de distribution autonome (voir docs/PAQUET.md)" OFF)
+if(TENTACLE_DIST)
+  # Symboles de débogage compilés puis sortis en .dSYM (strip-symbols.sh) ; code mort retiré
+  # au lien. Posé avant CEF pour valoir aussi pour libcef_dll_wrapper.
+  add_compile_options(-g)
+  add_link_options(-Wl,-dead_strip)
+endif()
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(TentacleCef)          # CEF épinglé + libcef_dll_wrapper (cible tentacle::cef)
+# Notre code vise macOS 14+ (EDR moderne, ProMotion) ; le wrapper CEF garde ses 13.0.
+set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
+
+find_package(SDL3 REQUIRED CONFIG)
+find_package(nlohmann_json 3.11 REQUIRED CONFIG)
+
+# --- Bibliothèque du socle : hôte CEF, IPC, saisie, compositeur ------------------------
+add_library(tentacle_shell STATIC
+  src/app/app.cpp
+  src/app/args.cpp
+  src/app/modules.cpp
+  src/shell/browser_app.cpp
+  src/shell/client.cpp
+  src/shell/client_render.cpp
+  src/shell/input.cpp
+  src/shell/ipc.cpp
+  src/shell/main_thread.cpp
+  src/shell/shell.cpp
+  src/shell/builtin_handlers.cpp
+  src/shell/shell_shortcuts.cpp
+)
+# Code commun au rendu (renderer) : lié par l'app ET par les helpers.
+add_library(tentacle_renderer STATIC
+  src/shell/renderer_app.cpp
+  src/shell/renderer_ipc.cpp
+)
+if(APPLE)
+  target_sources(tentacle_shell PRIVATE
+    src/platform/macos/app_mac.mm
+    src/platform/macos/shell_message_pump_mac.mm
+    src/platform/macos/shell_keymap_mac.cpp
+    src/platform/macos/shell_native_input_mac.mm
+    src/platform/macos/shell_menu_mac.mm
+    src/platform/macos/shell_frame_clock_mac.mm
+    src/platform/macos/compositor_mac.mm
+    src/platform/macos/compositor_web_layer_mac.mm
+    src/platform/macos/compositor_web_pipeline_mac.mm
+    src/platform/macos/compositor_fake_video_mac.mm
+  )
+elseif(WIN32)
+  target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
+                                        src/platform/windows/shell_stubs_windows.cpp
+                                        src/platform/windows/compositor_windows.cpp)
+else()
+  target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
+                                        src/platform/linux/shell_stubs_linux.cpp
+                                        src/platform/linux/compositor_linux.cpp)
+endif()
+
+foreach(lib tentacle_shell tentacle_renderer)
+  target_include_directories(${lib} PUBLIC "${CMAKE_SOURCE_DIR}/src")
+  target_link_libraries(${lib} PUBLIC tentacle::cef nlohmann_json::nlohmann_json)
+  # ARC pour l'Objective-C++ ; avertissements stricts sur notre code.
+  target_compile_options(${lib} PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
+                         $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+endforeach()
+target_link_libraries(tentacle_shell PUBLIC tentacle_renderer SDL3::SDL3)
+
+# --- Modules du lot (propriétaires : vidéo-HDR, pont, octave) ---------------------------
+# tentacle_player porte la surface vidéo (createVideoSurface, prepareWindowForVideo) : le
+# socle en dépend. Le pont et octave sont construits ici ; leur branchement à l'app passe
+# par src/app/modules.cpp.
+add_subdirectory(src/player)
+target_link_libraries(tentacle_shell PUBLIC tentacle_player)
+if(EXISTS "${CMAKE_SOURCE_DIR}/src/bridge/CMakeLists.txt")
+  add_subdirectory(src/bridge)
+endif()
+if(EXISTS "${CMAKE_SOURCE_DIR}/src/music/CMakeLists.txt")
+  add_subdirectory(src/music)
+endif()
+if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
+  add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
+endif()
+if(APPLE)
+  target_link_libraries(tentacle_shell PUBLIC
+    "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"
+    "-framework CoreVideo" "-framework Carbon")  # Carbon : disposition clavier (TIS, saisie)
+endif()
+
+# --- Exécutables et paquet .app --------------------------------------------------------
+if(APPLE)
+  include(MacBundle)
+  tentacle_add_mac_app(
+    NAME "Tentacle"
+    BUNDLE_ID "tv.tentacle.proto.cef"
+    MAIN_SOURCES src/app/main_mac.mm
+    HELPER_SOURCES src/app/helper_main_mac.mm
+    RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
+  )
+else()
+  # Ébauche Linux/Windows : un exécutable unique, ressources CEF copiées à côté.
+  add_executable(tentacle_app src/app/main_desktop.cpp)
+  target_link_libraries(tentacle_app PRIVATE tentacle_shell)
+endif()

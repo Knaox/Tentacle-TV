@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Socle — page de test</title>
+<style>
+  /* Fond transparent : là où la page ne dessine rien, la couche vidéo (dessous) se voit. */
+  html, body { margin: 0; background: transparent; color: #eee; font: 14px -apple-system, sans-serif; }
+  header { background: #101418; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #probe { position: relative; height: 64px; }
+  #half { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: rgba(255,0,0,0.5); }
+  #hole { height: 160px; display: flex; align-items: flex-end; padding: 8px 16px; }
+  #scroller { background: #182028; height: 120px; width: 360px; overflow: auto; margin: 0 16px; }
+  #scroller div { height: 2000px; background: linear-gradient(#182028, #3a5068); }
+  #log { background: rgba(16,20,24,0.92); padding: 12px 16px; height: 160px; overflow: auto; white-space: pre-wrap; font: 12px ui-monospace, monospace; }
+  .spin { width: 18px; height: 18px; border: 3px solid #4af; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; }
+  .static .spin { animation: none; }
+  .opaque, .opaque body { background: #000; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  button, select, input { font: inherit; }
+  a { color: #8cf; }
+</style>
+</head>
+<body>
+<header>
+  <div class="spin"></div>
+  <button id="ping">shell.ping</button>
+  <button id="fs">plein écran</button>
+  <select id="sel"><option>Piste audio 1</option><option>Piste audio 2</option><option>Sous-titres FR</option></select>
+  <input id="txt" placeholder="saisie / IME / copier-coller" size="28">
+  <a id="lnk" href="#">lien</a>
+  <span id="fps">— fps</span>
+</header>
+<div id="probe"><div id="half"></div></div>
+<div id="hole">zone transparente : la couche vidéo se voit ici</div>
+<div id="scroller"><div></div></div>
+<div id="log"></div>
+<script>
+  // ?static=1 : aucune animation (mesure du coût au repos).
+  const isStatic = new URLSearchParams(location.search).has('static');
+  if (isStatic) document.documentElement.classList.add('static');
+  // ?opaque=1 : page entièrement opaque (contre-épreuve EDR : la vidéo est masquée).
+  if (new URLSearchParams(location.search).has('opaque')) document.documentElement.classList.add('opaque');
+  const ev = window.__events = [];
+  const log = (...a) => {
+    const line = a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ');
+    ev.push(line);
+    const el = document.getElementById('log');
+    el.textContent += line + '\n';
+    el.scrollTop = el.scrollHeight;
+    console.log(line);
+  };
+  log('window.__shell présent avant les scripts de la page :', typeof window.__shell === 'object');
+  log('marqueur injecté :', String(window.__socleInjected));
+  document.getElementById('ping').onclick = async () => log('ping →', await __shell.invoke('shell.ping', { hello: 'socle' }));
+  document.getElementById('fs').onclick = async () => {
+    const s = await __shell.invoke('shell.window.state');
+    log('plein écran →', await __shell.invoke('shell.window.setFullscreen', { on: !s.fullscreen }));
+  };
+  document.getElementById('sel').onchange = e => log('select →', e.target.value);
+  const txt = document.getElementById('txt');
+  for (const t of ['compositionstart', 'compositionupdate', 'compositionend'])
+    txt.addEventListener(t, e => log(t, e.data));
+  document.addEventListener('keydown', e => log('keydown', { key: e.key, code: e.code, meta: e.metaKey, shift: e.shiftKey }));
+  document.addEventListener('contextmenu', e => { e.preventDefault(); log('contextmenu', e.clientX, e.clientY); });
+  document.addEventListener('dblclick', e => log('dblclick', e.target.id || e.target.tagName));
+  document.getElementById('lnk').onclick = e => { e.preventDefault(); log('clic lien'); };
+  __shell.on('shell.window', p => log('évènement shell.window', p));
+  __shell.invoke('canal.inconnu').catch(e => log('canal inconnu rejeté :', e.code));
+  // Cadence rAF (côté page) : la preuve 120 Hz compare ceci et la présentation réelle.
+  if (!isStatic) {
+    let n = 0, t0 = performance.now();
+    (function tick(t) { n++; if (t - t0 >= 1000) { document.getElementById('fps').textContent = (n * 1000 / (t - t0)).toFixed(1) + ' fps'; window.__rafFps = n * 1000 / (t - t0); n = 0; t0 = t; } requestAnimationFrame(tick); })(t0);
+  }
+</script>
+</body>
+</html>
