@@ -4,6 +4,7 @@
 
 #include "compositor/compositor.h"
 #include "include/cef_client.h"
+#include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_resource_request_handler.h"
 
@@ -40,9 +41,16 @@ class Client final : public CefClient,
                      public CefKeyboardHandler,
                      public CefContextMenuHandler,
                      public CefRequestHandler,
-                     public CefResourceRequestHandler {
+                     public CefResourceRequestHandler,
+                     public CefPermissionHandler {
  public:
   explicit Client(ViewHost* host) : host_(host) {}
+
+  CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
+  // CefPermissionHandler : l'accès au réseau local, pour tentacle://app seul (client.cpp).
+  bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
+                              const CefString& requestingOrigin, uint32_t requestedPermissions,
+                              CefRefPtr<CefPermissionPromptCallback> callback) override;
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
