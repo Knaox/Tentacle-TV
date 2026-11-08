@@ -22,6 +22,7 @@ import { useMobileEngineAuth } from "../audio/useMobileEngineAuth";
 import { useMobileMusicProvider } from "../audio/useMobileMusicProvider";
 import { keptPlaybackSource, withKeptSources } from "../offline/keptPlayback";
 import { setKeptPlayHandler } from "../offline/keptPlayPort";
+import { followListeningForProbe } from "./listeningProbe";
 import { mobileResumeDeps, octaveOwnerOf } from "./playerResumeMobile";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
@@ -71,6 +72,8 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     const offKept = followKeptCopies(p);
     // Android : la file avance application derrière (minuteurs du JS gardés vivants pendant l'écoute).
     const offAlive = keepJsAliveWhilePlaying(p);
+    // Le son avance : la sonde de connectivité à 90 s se tait ; un blocage ou un échec la relance aussitôt.
+    const offProbe = followListeningForProbe(p);
     // « Sur cet appareil » : toucher un titre gardé le lit (le port n'avait jamais de lecteur inscrit — rien ne jouait).
     setKeptPlayHandler((tracks, index, contextId) => p.playList(tracks, index, contextId));
     // Bancs de développement seulement : le lecteur lisible par l'inspecteur (Hermes), jamais dans un build livré.
@@ -79,6 +82,7 @@ export function OctavePlayerProvider({ children }: { children: ReactNode }) {
     return () => {
       setKeptPlayHandler(null);
       offKept();
+      offProbe();
       offAlive();
       offResume();
       offCrossfade();
