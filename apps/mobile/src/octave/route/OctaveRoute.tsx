@@ -7,6 +7,7 @@
 import { memo, useEffect, useMemo, useRef } from "react";
 import { useLocalSearchParams, usePathname, useRouter, type Href } from "expo-router";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
+import { OctavePageFocusScope } from "../layout/pageFocus";
 import { OctaveRequires } from "../registry/OctaveRequires";
 import { reportOctaveFirstPage } from "../launch/octaveBootReport";
 import { useTranslation } from "react-i18next";
@@ -56,7 +57,10 @@ export const OctaveRoute = memo(function OctaveRoute({ name }: { name: OctaveScr
   const away = name === "home" ? null : <BackToOctaveHome />;
   return (
     <OctaveRequires requires={entry.requires} unmet={away}>
-      <Screen params={params} />
+      {/* La page sait si on la regarde (pile d'expo-router) : ce qui s'anime dedans s'arrête dessous. */}
+      <OctavePageFocusScope>
+        <Screen params={params} />
+      </OctavePageFocusScope>
     </OctaveRequires>
   );
 });
