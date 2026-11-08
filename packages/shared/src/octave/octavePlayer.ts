@@ -302,8 +302,9 @@ export class OctavePlayer {
     const snap = this.snapshot.get();
     if (!snap.current || state.trackKey === null || state.trackKey !== this.currentEngineKey()) return;
     const playing = state.status === "playing";
-    // La progression démarre AVEC le son : rien n'avance tant que le moteur n'a pas dit « playing ».
-    this.position.set({ positionMs: state.positionMs, durationMs: state.durationMs ?? snap.durationMs, running: playing });
+    // La progression démarre AVEC le son : rien n'avance tant que le moteur n'a pas dit « playing ». Champ par
+    // champ : un état qui redit la même position (pause, attente, moteur qui répète) ne réveille aucun abonné.
+    this.position.update({ positionMs: state.positionMs, durationMs: state.durationMs ?? snap.durationMs, running: playing });
     this.snapshot.update({
       phase: enginePhase(state.status, snap.phase),
       error: state.status === "error" ? "engine" : snap.error,

@@ -214,3 +214,25 @@ describe("les deux files, appliquées par le lecteur (o3)", () => {
     expect(keys.slice(player.snapshot.get().queue.cursor)).toEqual(["jf:m", "jf:x", "jf:n"]);
   });
 });
+
+describe("la position ne réveille ses abonnés que si elle change (lot « bat »)", () => {
+  it("un état qui redit la même position (pause, attente) ne notifie personne ; une position neuve, si", async () => {
+    const { player, engine } = setup();
+    player.playList(tracks, 0);
+    await flush();
+    engine.sound(1_000);
+    let notified = 0;
+    player.position.subscribe(() => (notified += 1));
+    // Le moteur répète son état sans que rien n'ait bougé : en pause, il en envoyait quatre par seconde.
+    for (let i = 0; i < 4; i += 1) engine.sound(1_000);
+    expect(notified).toBe(0);
+    engine.sound(1_250);
+    expect(notified).toBe(1);
+    expect(player.position.get()).toMatchObject({ positionMs: 1_250, running: true });
+    engine.pause();
+    expect(notified).toBe(2);
+    expect(player.position.get().running).toBe(false);
+    engine.pause();
+    expect(notified).toBe(2);
+  });
+});
