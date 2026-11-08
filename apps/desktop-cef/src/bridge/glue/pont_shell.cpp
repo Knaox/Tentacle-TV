@@ -65,6 +65,11 @@ std::string originOf(const std::string& url) {
   return path == std::string::npos ? url : url.substr(0, path);
 }
 
+std::string extraOption(const AppContext& ctx, const char* key) {
+  const auto it = ctx.options->extra.find(key);
+  return it == ctx.options->extra.end() ? std::string() : it->second;
+}
+
 }  // namespace
 
 void install(AppContext& ctx) {
@@ -103,8 +108,14 @@ void installShim(AppContext& ctx) {
   bridge::ShimConfig config;
   const std::string origin = originOf(ctx.options->url);
   if (!origin.empty()) config.origins.push_back(origin);
-  config.serverUrl = origin;
-  config.version = "1.42.0";  // la version du front servi par le banc
+  // Adresse du serveur que le front reçoit s'il n'en a aucune : --server-url, sinon l'origine
+  // de la page quand c'est le serveur qui la sert. Sous tentacle://app (front embarqué, profil
+  // d'Electron), c'est le stockage qui la porte : rien n'est imposé sans --server-url.
+  config.serverUrl = extraOption(ctx, "server-url");
+  const bool servedByServer = origin.rfind("http://", 0) == 0 || origin.rfind("https://", 0) == 0;
+  if (config.serverUrl.empty() && servedByServer) config.serverUrl = origin;
+  config.version = extraOption(ctx, "app-version");
+  if (config.version.empty()) config.version = "1.42.0";  // la version du front servi par le banc
 #if defined(__APPLE__)
   config.platform = "darwin";
 #elif defined(_WIN32)

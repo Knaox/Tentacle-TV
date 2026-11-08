@@ -33,9 +33,11 @@
   // Le front, chargé DEPUIS le serveur, se croit sur le bureau et lit l'adresse du
   // serveur dans `tentacle_server_url` (`lib/backendBase.ts`) — sans elle, écran
   // « adresse du serveur ». Même origine : on la pose avant la page, comme le preload
-  // restaure son stockage. Jamais d'écrasement d'une valeur déjà là.
+  // restaure son stockage. Jamais d'écrasement d'une valeur déjà là. Front embarqué
+  // (tentacle://app, profil d'Electron) : `serverUrl` est vide sauf --server-url, le
+  // stockage d'Electron porte déjà l'adresse.
   try {
-    if (localStorage.getItem("tentacle_server_url") === null) {
+    if (config.serverUrl && localStorage.getItem("tentacle_server_url") === null) {
       localStorage.setItem("tentacle_server_url", config.serverUrl);
     }
   } catch (e) {
