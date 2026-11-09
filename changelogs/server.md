@@ -10,6 +10,16 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.42.1]
+<!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Lot « bat » : le serveur et le client web. -->
+### FR
+- **Octave consomme moins de batterie sur le téléphone** : le serveur ne sollicite plus un appareil qui lui parle déjà, et l'écoute en arrière-plan échange bien moins souvent avec lui
+- Octave sur le web et le bureau : le lecteur travaille moins pendant l'écoute et plus du tout en pause
+
+### EN
+- **Octave uses less battery on your phone**: the server no longer pings a device that is already talking to it, and background listening exchanges with it far less often
+- Octave on the web and desktop: the player does less work while listening, and none at all when paused
+
 ## [1.42.0]
 <!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
