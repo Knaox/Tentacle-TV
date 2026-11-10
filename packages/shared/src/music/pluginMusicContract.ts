@@ -92,6 +92,12 @@ export interface PluginMusicManifest {
   importRead?: string;
   /** Les sources que `importRead` sait lire (liste fermée `MusicImportSource`, sans `text`). */
   importSources?: MusicImportSource[];
+  /**
+   * Parmi `importSources`, celles que `importRead` lit EN ENTIER (lot « pg », 1.43.0) quand le cœur n'en lit qu'une
+   * page publique bornée (Spotify, Apple Music : 100 titres) : le client les lui confie AVANT le cœur, et revient au
+   * cœur si elle refuse (`unavailable`, `budget`, `unsupported`). Absent : le cœur d'abord, comme avant.
+   */
+  importReadFirst?: MusicImportSource[];
   /** Import — POST `ImportTracksRequest` → 202 `ImportTracksAccepted` ; GET/DELETE `<importTracks>/<operationId>`. */
   importTracks?: string;
   /**
@@ -350,6 +356,10 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
+  }
+  if (Array.isArray(m.importReadFirst) && out.importSources) {
+    const first = out.importSources.filter((k) => k !== "youtube" && (m.importReadFirst as unknown[]).includes(k));
+    if (first.length > 0) out.importReadFirst = first;
   }
   if (Array.isArray(m.releaseSources)) {
     const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));
