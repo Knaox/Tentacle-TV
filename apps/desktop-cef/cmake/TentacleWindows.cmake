@@ -4,16 +4,22 @@
 # Studio (vcvarsall x64) avec CEF_ROOT, SDL3_DIR, nlohmann_json_DIR, MPV_PREFIX, libsodium.
 # ⚠️ Jamais construit dans le lot (aucun MSVC sur le Mac) : éprouvé par `pnpm dev:cef` sur un PC.
 
-if(NOT MSVC)
+# Mode « syntaxe » (bench/windows/syntax-check.sh, toolchain-syntax.cmake) : un compilateur
+# clang ou GCC ciblant x86_64-w64-mingw32 configure le MÊME arbre — sélection des sources par OS,
+# définitions et chemins de chaque module — pour une compilation à blanc ; jamais un binaire.
+if(NOT MSVC AND NOT TENTACLE_WINDOWS_SYNTAX)
   message(FATAL_ERROR "Windows : le build attend MSVC (Visual Studio Build Tools) — lancer pnpm dev:cef")
 endif()
-enable_language(RC)  # icône, version, manifeste de l'exécutable
+if(MSVC)
+  enable_language(RC)  # icône, version, manifeste de l'exécutable
+endif()
 
 # Le CRT statique de CEF (/MT : cef_variables.cmake) pour TOUT le binaire : un seul runtime.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Sous Ninja, CEF VIDE CMAKE_CXX_FLAGS* (cef_variables.cmake, issue #2120) : ce qui manque à
 # notre code revient ici, pour toutes les cibles créées ensuite (pas le wrapper de CEF).
+if(MSVC)
 add_compile_options(
   /utf-8                                 # sources UTF-8 : commentaires et chaînes en français
   /permissive- /Zc:__cplusplus /Zc:preprocessor
@@ -22,6 +28,7 @@ add_compile_options(
   $<$<CONFIG:Release>:/O2> $<$<CONFIG:Release>:/Ob2>
   $<$<CONFIG:Debug>:/Od> $<$<CONFIG:Debug>:/Zi>
 )
+endif()
 add_compile_definitions(
   NOMINMAX UNICODE _UNICODE             # pas WIN32_LEAN_AND_MEAN : l’assistant de maj veut shellapi.h
   _WIN32_WINNT=0x0A00 WINVER=0x0A00      # Windows 10 (DPI par écran v2 : 1703 ; MSIX : 2004)
@@ -47,6 +54,9 @@ function(tentacle_windows_app target)
     set(TENTACLE_APP_VERSION_COMMAS "0,1,0")
   endif()
   configure_file("${res}/tentacle.rc.in" "${CMAKE_BINARY_DIR}/tentacle.rc" @ONLY)
+  if(NOT MSVC)
+    return()  # mode syntaxe : ni ressources, ni édition de liens, ni copies
+  endif()
   target_sources(${target} PRIVATE "${CMAKE_BINARY_DIR}/tentacle.rc" "${res}/tentacle.exe.manifest")
   set_target_properties(${target} PROPERTIES
     OUTPUT_NAME "Tentacle"
@@ -94,6 +104,9 @@ function(_tentacle_collect_targets dir out)
 endfunction()
 
 function(tentacle_windows_finalize)
+  if(NOT MSVC)
+    return()  # mode syntaxe : clang et GCC comprennent ces drapeaux
+  endif()
   _tentacle_collect_targets("${CMAKE_SOURCE_DIR}" targets)
   foreach(t IN LISTS targets)
     if(t STREQUAL "libcef_dll_wrapper")
