@@ -166,6 +166,10 @@ void beforeSdl(int argc, char** argv, const AppOptions& opts) {
   // Fermer la dernière fenêtre n'est PAS quitter : la croix passe par la garde de sortie, et
   // peut laisser les transferts finir sans fenêtre (SDL enverrait sinon SDL_EVENT_QUIT).
   SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0");
+  // SDL3 empêche d'office la veille de l'écran tant que l'app tourne (mesuré : une assertion
+  // PreventUserIdleDisplaySleep dès le lancement). Electron ne bloque rien hors lecture : l'écran
+  // n'est tenu que par `prevent_display_sleep_start` (powerSave.ts).
+  SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
 }
 
 void prepareWindow(SDL_Window* window) {

@@ -8,6 +8,7 @@
 //   focus {focused}               → l'évènement SDL de focus (la chaîne jusqu'à la page)
 //   note {path, body, baseUrl…}   → un report de lecture, comme le relais jellyfin_session_post
 //   sheet {end?: number}          → la feuille native ouverte (boîte, sélecteur) ; la ferme
+//   awake {on}                    → keepSystemAwake (l'anti-suspension des transferts)
 // Sans émetteur de l'axe reseau, l'adieu est journalisé au lieu d'être posté.
 
 #include <SDL3/SDL.h>
@@ -79,6 +80,10 @@ void installDebugChannels(SDL_Window* window, std::function<std::string()> phase
     noteSessionPost({p.value("baseUrl", ""), p.value("path", ""), p.value("token", ""),
                      p.value("authHeader", ""), p.value("body", "")});
     r.reply(hub::farewell().pending());
+  });
+  ipc::registerHandler("lifecycle.debug.awake", [](const Json& p, ipc::Responder r) {
+    keepSystemAwake(p.value("on", false));
+    r.reply();
   });
   ipc::registerHandler("lifecycle.debug.sheet", [window](const Json& p, ipc::Responder r) {
     const int end = p.is_object() && p.contains("end") ? p["end"].get<int>() : -1;
