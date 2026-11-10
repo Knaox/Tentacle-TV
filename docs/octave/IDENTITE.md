@@ -85,8 +85,13 @@ nuit (elle se calcule là où elle est déclarée).
   filtres, les onglets, le tri, le cœur et la file du dock en `.lg-bead` ; les entrées du rail en `.lg-pane-nav`.
   Le lavis de pochette de la tête s'efface en natif (le fond ambiant porte la couleur).
 - **La place** : une information qui ne tient pas entière s'efface, elle n'est jamais coupée au milieu
-  d'un mot. Dans le dock, la colonne de droite est un conteneur (requêtes de conteneur, `shell.css`) :
-  la glissière du volume cède d'abord, puis la qualité passe en ICÔNE seule, puis disparaît.
+  d'un mot, et rien ne se chevauche. Dans le dock (trois colonnes égales, 1 320 px au plus), la colonne de droite
+  est un conteneur (`shell.css`) : cèdent, dans l'ordre, la valeur de la transition douce (l'infobulle la dit), le
+  mot de la qualité (icône seule), l'icône, la glissière du volume. Plus étroit encore (file ouverte, fenêtre de
+  1 024 px), c'est la ZONE du dock qui range : l'ajout rapide, puis le cœur, le menu, la transition et l'arrêt,
+  puis le texte et le volume — tous restent dans le lecteur « en cours » ; pochette, transport et file ne partent
+  jamais. La tête d'une vue se règle sur sa colonne ; dans la file, monter / descendre / retirer sont un plateau
+  qui paraît au survol et au focus.
 - **Focus** : l'anneau de Tentacle (`ring-line-focus`, à la teinte franche) ; sur une glissière, la tête et son halo.
 
 ## L'océan — le mouvement d'Octave

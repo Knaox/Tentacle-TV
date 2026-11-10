@@ -63,7 +63,7 @@ describe("la glissière commune", () => {
 
 describe("la colonne de droite du dock (O3-2 : jamais « Sans pe », jamais un chevauchement)", () => {
   const css = readFileSync(join(__dirname, "shell.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  // Mesuré au banc (Figtree) : état + mot « Sans perte » (le plus long), icône de qualité, transition douce (et sa valeur),
+  // Mesuré au banc avec Inter (25/10 ; Figtree, plus étroite, n'a pas été remesurée) : état + mot « Sans perte » (le plus long), icône de qualité, transition douce (et sa valeur),
   // arrêt, file, bouton du volume, écart. Transition, arrêt, file et bouton muet ne s'effacent jamais dans cette colonne.
   const LABEL = 97;
   const ICON = 22;

@@ -26,7 +26,8 @@
  * de la transition douce (l'infobulle la dit), le mot de la qualité (il passe
  * en icône seule, nom accessible, infobulle), l'icône, puis la glissière du
  * volume ; transition, arrêt, file et bouton muet restent.
- * Mesuré (Figtree, « Sans perte », le plus long) : état + mot 97, icône 22,
+ * Largeurs : celles mesurées au banc avec Inter le 25/10 (« Sans perte », le plus
+ * long) — Figtree est plus étroite, NON remesuré : état + mot 97, icône 22,
  * transition 36 (+48 avec sa valeur), arrêt 36, file 36, bouton du volume 40,
  * écarts 6. Le socle fixe = 36 + 36 + 36 + 40 + 3 écarts = 166. D'où l'échelle :
  *   < 240 : ni qualité ni glissière ;            240 → glissière 64 (230) ;
