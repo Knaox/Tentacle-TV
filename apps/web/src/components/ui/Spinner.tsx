@@ -45,17 +45,17 @@ export function Spinner({
   );
 }
 
-// "neutral" et "white" : paliers de gris volontairement proches mais distincts
-// (hors granularité de la table fill-*, qui les aurait confondus) — non migrés
-// pour préserver les 3 tons distincts que ce composant expose.
+// "brand" : la teinte franche de la refonte (`--accent`), plus le violet de marque.
+// "neutral" suit le thème (un blanc à 12 % était invisible sur une page claire) ;
+// "white" reste blanc : il se pose sur une image ou une vidéo.
 const TONE_RING: Record<SpinnerTone, string> = {
-  brand: "rgba(var(--brand-rgb), 0.18)",
-  neutral: "rgba(255, 255, 255, 0.12)",
+  brand: "rgba(var(--accent-rgb), 0.18)",
+  neutral: "var(--fill-medium)",
   white: "rgba(255, 255, 255, 0.18)",
 };
 
 const TONE_HEAD: Record<SpinnerTone, string> = {
-  brand: "var(--brand)",
+  brand: "var(--accent)",
   neutral: "var(--cta-primary-bg-hover)",
   white: "#FFFFFF",
 };
