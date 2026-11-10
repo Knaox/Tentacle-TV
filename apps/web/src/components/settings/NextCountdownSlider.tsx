@@ -34,14 +34,14 @@ export function NextCountdownSlider({ valueMs, onChange, disabled = false }: Nex
   return (
     <div className={disabled ? "opacity-50" : undefined}>
       <div className="flex items-baseline justify-between gap-4">
-        <label htmlFor="next-countdown" className="text-sm font-medium text-content-primary">
+        <label htmlFor="next-countdown" className="text-sm font-semibold text-content-primary">
           {t("nextCountdownLabel")}
         </label>
-        <span className="text-sm font-semibold tabular-nums text-content-secondary">
+        <span className="num text-sm font-semibold text-content-secondary">
           {t("segmentDelayValue", { seconds })}
         </span>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+      <p className="mt-0.5 max-w-[62ch] text-[13px] leading-relaxed text-content-tertiary">
         {disabled ? t("upNextNeedsCountdown") : t("nextCountdownHint")}
       </p>
       <input
@@ -54,7 +54,7 @@ export function NextCountdownSlider({ valueMs, onChange, disabled = false }: Nex
         disabled={disabled}
         onChange={(e) => { onChange(Math.round(Number(e.target.value) * 1000)); }}
         style={rangeFill(seconds, MIN_SECONDS, MAX_SECONDS)}
-        className="ctl-range mt-3 w-full max-w-xs"
+        className="ctl-range mt-3 w-full max-w-sm"
       />
     </div>
   );

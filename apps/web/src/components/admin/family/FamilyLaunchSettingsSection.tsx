@@ -42,7 +42,7 @@ export function FamilyLaunchSettingsSection() {
       ) : policy.isError ? (
         <p className="text-sm text-status-error-fg">{t("adminPolicy.loadError")}</p>
       ) : (
-        <div aria-hidden="true" className="h-40 animate-pulse rounded-xl bg-fill-subtle" />
+        <div aria-hidden="true" className="skeleton-shimmer h-40 rounded-tile" />
       )}
     </AdminSection>
   );
@@ -72,7 +72,7 @@ function LaunchSettingsForm({ saved }: { saved: FamilyLaunchSettings }) {
         onChange={(enabled) => change({ ...draft, enabled })}
       />
       <fieldset disabled={!draft.enabled} className={draft.enabled ? undefined : "opacity-50"}>
-        <legend className="text-sm font-medium text-content-primary">{t("launchSettings.platformsLegend")}</legend>
+        <legend className="text-sm font-semibold text-content-primary">{t("launchSettings.platformsLegend")}</legend>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {FAMILY_LAUNCH_ASK_PLATFORMS.map((platform) => (
             <PlatformTile
@@ -117,15 +117,15 @@ function PlatformTile({ platform, checked, disabled, onChange }: PlatformTilePro
   const { t } = useTranslation("profilePicker");
   const Icon = ICONS[platform];
   const frame = checked
-    ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)]"
-    : "border-line-subtle bg-fill-faint hover:border-line-strong";
+    ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]"
+    : "bg-surface-2 hover:bg-surface-3";
   const cursor = disabled ? "cursor-not-allowed" : "cursor-pointer";
   return (
-    <label className={`flex ${cursor} items-start gap-3 rounded-xl border p-4 transition-colors duration-150 ${frame}`}>
+    <label className={`flex ${cursor} items-start gap-3 rounded-tile p-4 transition-colors duration-hover ${frame}`}>
       <input type="checkbox" className={`${CHECKBOX} mt-0.5`} checked={checked} onChange={(event) => onChange(event.target.checked)} />
       <Icon size={18} aria-hidden="true" className="mt-px shrink-0 text-content-secondary" />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-content-primary">{t(`launchSettings.platform_${platform}`)}</span>
+        <span className="block text-sm font-semibold text-content-primary">{t(`launchSettings.platform_${platform}`)}</span>
         <span className="mt-0.5 block text-xs leading-relaxed text-content-tertiary">{t(`launchSettings.platformHint_${platform}`)}</span>
       </span>
     </label>

@@ -37,7 +37,7 @@ export interface AdminNoticeProps {
 export function AdminNotice({ tone = "info", title, children, action, role, className }: AdminNoticeProps) {
   const { box, accent, Icon } = TONE[tone];
   return (
-    <div role={role} className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm ${box} ${className ?? ""}`}>
+    <div role={role} className={`flex items-start gap-3 rounded-tile px-4 py-3 text-sm ${box} ${className ?? ""}`}>
       <Icon aria-hidden="true" size={16} className={`mt-0.5 flex-shrink-0 ${accent}`} />
       <div className="min-w-0 flex-1 leading-relaxed">
         {title ? <p className={`font-semibold ${accent}`}>{title}</p> : null}

@@ -67,4 +67,6 @@ export default {
   readLicense: "Read the text",
   closeLicense: "Close",
   licenseTextDesktop: "The desktop player embeds mpv and FFmpeg: on macOS under LGPL v2.1+ (separate, replaceable dynamic libraries), on Windows under LGPL v3+ (libmpv-2.dll), on Linux mpv under GPL v2+ — its X11 video output requires it — with FFmpeg under LGPL v2.1+. The TENTACLE_MPV_LIB environment variable loads a modified libmpv.",
+  // Un texte de licence qu'aucun composant tiers ne porte : celui de Tentacle lui-même.
+  licenseTentacle: "Tentacle TV's own licence",
 } as const;

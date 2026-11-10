@@ -11,11 +11,11 @@ export function SetupErrorLine({ code, onRetry }: { code: WizardErrorCode | null
   const { t } = useTranslation("setupWizard");
   if (!code) return null;
   return (
-    <div role="alert" className="flex flex-wrap items-start gap-x-3 gap-y-2 rounded-xl border border-danger-border bg-status-error-bg px-4 py-3">
+    <div role="alert" className="flex flex-wrap items-start gap-x-3 gap-y-2 rounded-tile bg-status-error-bg px-4 py-3">
       <CircleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-status-error-fg" />
       <p className="min-w-0 flex-1 text-sm leading-relaxed text-status-error-fg">{t(`error_${code}`)}</p>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="min-h-6 text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80">
+        <button type="button" onClick={onRetry} className="btn btn-soft btn-sm">
           {t("retry")}
         </button>
       ) : null}

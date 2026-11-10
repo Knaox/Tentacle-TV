@@ -39,7 +39,7 @@ export function SegmentPluginsRepair() {
       {offersRestartAnyway(current) && !busy ? <p className="text-xs text-content-tertiary">{t("restartAnywayHint")}</p> : null}
       {start.isError ? <p role="alert" className="text-xs text-status-error-fg">{t("requestError")}</p> : null}
       {shown ? (
-        <div className="rounded-xl border border-line-subtle p-3">
+        <div className="rounded-tile bg-surface-2 p-3">
           <SegmentRunView run={shown} />
         </div>
       ) : null}

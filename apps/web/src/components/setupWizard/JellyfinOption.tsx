@@ -1,17 +1,18 @@
 import { useTranslation } from "react-i18next";
-import { CubeIcon as Boxes } from "@phosphor-icons/react/dist/csr/Cube";
+import { StackIcon as Boxes } from "@phosphor-icons/react/dist/csr/Stack";
 import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { hostAndPort, serverState } from "./jellyfinChoice";
 
 const BADGE = {
-  blank: "bg-status-success-bg text-status-success-fg",
+  blank: "chip-success",
   configured: "bg-status-info-bg text-status-info-fg",
-  incompatible: "bg-status-error-bg text-status-error-fg",
+  incompatible: "chip-danger",
 } as const;
 
 /**
- * Une ligne de la liste : un vrai bouton radio, le nom, l'état en toutes
+ * Une ligne de la liste — une tuile, la retenue au fond et au trait de la
+ * teinte franche : un vrai bouton radio, le nom, l'état en toutes
  * lettres (jamais la couleur seule), « dans cette pile » et « Conseillé »
  * s'il y a lieu, puis l'adresse, le port et la version.
  */
@@ -34,24 +35,24 @@ export function JellyfinOption({
   const disabled = state === "incompatible";
   return (
     <label
-      className={`flex min-h-14 items-start gap-3 rounded-xl border px-4 py-3 transition-colors duration-200 ${
-        checked ? "border-[rgba(var(--brand-rgb),0.6)] bg-[var(--brand-soft)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]" : "border-line-subtle hover:bg-fill-faint"
+      className={`flex min-h-14 items-start gap-3 rounded-tile px-4 py-3 transition-colors duration-hover ${
+        checked ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]" : disabled ? "bg-surface-2" : "bg-surface-2 hover:bg-surface-3"
       } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
     >
-      <input type="radio" name={name} value={server.url} checked={checked} disabled={disabled} onChange={onSelect} className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]" />
+      <input type="radio" name={name} value={server.url} checked={checked} disabled={disabled} onChange={onSelect} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-content-primary">{server.serverName || t("jfUnnamed")}</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[state]}`}>{t(`jfState_${state}`)}</span>
+          <span className={`chip ${BADGE[state]}`}>{t(`jfState_${state}`)}</span>
           {recommended ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2 py-0.5 text-xs font-medium text-content-primary">
-              <Sparkles size={12} aria-hidden="true" />
+            <span className="chip chip-accent">
+              <Sparkles size={12} weight="bold" aria-hidden="true" />
               {t("jfRecommended")}
             </span>
           ) : null}
           {server.inStack ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-fill-soft px-2 py-0.5 text-xs font-medium text-content-secondary">
-              <Boxes size={12} aria-hidden="true" />
+            <span className="chip">
+              <Boxes size={12} weight="bold" aria-hidden="true" />
               {t("jfInStack")}
             </span>
           ) : null}

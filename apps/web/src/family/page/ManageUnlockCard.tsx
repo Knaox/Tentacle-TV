@@ -4,7 +4,7 @@ import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { useUnlockFamilyManage } from "@tentacle-tv/api-client";
 import { FAMILY_PIN_LENGTH, isValidPin } from "@tentacle-tv/shared";
 import { useFamilyText } from "../useFamilyText";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, FIELD } from "./familyUi";
+import { BRAND_BUTTON, FIELD } from "./familyUi";
 
 /**
  * La gestion d'une session de PROFIL, fermée (bureau, 1.30.0) : la fenêtre
@@ -32,7 +32,7 @@ export function ManageUnlockCard() {
 
   const shown = localError ?? (unlock.isError ? errorText(unlock.error) : null);
   return (
-    <form aria-labelledby={titleId} onSubmit={submit} noValidate className="rounded-xl border border-line-subtle bg-surface-1 p-5">
+    <form aria-labelledby={titleId} onSubmit={submit} noValidate className="ui-panel p-5">
       <p id={titleId} className="flex items-center gap-2 text-sm font-semibold text-content-primary">
         <Lock size={16} aria-hidden="true" className="text-content-tertiary" />
         {t("manageUnlock.title")}
@@ -55,7 +55,7 @@ export function ManageUnlockCard() {
           disabled={unlock.isPending}
           className={`${FIELD} max-w-[10rem] text-center font-mono text-lg tracking-[0.5em]`}
         />
-        <button type="submit" disabled={unlock.isPending} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+        <button type="submit" disabled={unlock.isPending} className={BRAND_BUTTON}>
           {t("manageUnlock.submit")}
         </button>
       </div>

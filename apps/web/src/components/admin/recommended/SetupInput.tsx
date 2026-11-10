@@ -41,9 +41,9 @@ export function SetupInput({ field, value, storedSecret, error, onChange, disabl
             onClick={() => setRevealed((shown) => !shown)}
             aria-controls={id}
             aria-pressed={revealed}
-            className="-mr-1 mb-0.5 inline-flex min-h-[28px] items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="btn btn-ghost btn-sm -mr-1 mb-0.5 h-7 px-2 text-xs"
           >
-            {revealed ? <EyeOff size={13} aria-hidden="true" /> : <Eye size={13} aria-hidden="true" />}
+            {revealed ? <EyeOff size={13} weight="bold" aria-hidden="true" /> : <Eye size={13} weight="bold" aria-hidden="true" />}
             {revealed ? t("setupHideSecret") : t("setupShowSecret")}
           </button>
         )}
@@ -62,7 +62,7 @@ export function SetupInput({ field, value, storedSecret, error, onChange, disabl
         aria-invalid={error ? true : undefined}
         aria-required={field.required || undefined}
         aria-describedby={describedBy || undefined}
-        className={`${cls.inp} aria-[invalid=true]:border-status-error`}
+        className={cls.inp}
       />
       {error && <p id={`${id}-error`} className="mt-1.5 text-xs leading-relaxed text-status-error-fg">{error}</p>}
       {field.hint && (

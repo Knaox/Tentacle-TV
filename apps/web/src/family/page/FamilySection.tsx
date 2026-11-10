@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
-import { SettingsSection } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import {
   useCancelFamilyInvitation,
   useDeleteFamilyGuest,
@@ -41,7 +41,7 @@ import { PendingInvitations } from "./PendingInvitations";
 import { GuestPinDialog } from "./PinEditors";
 import { ProfileRow } from "./ProfileRow";
 import { useAvatarGallery } from "../../profiles/avatarGallery/useAvatarGallery";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, ICON_PLAQUE, SECONDARY_BUTTON } from "./familyUi";
 
 /** Les refus que la page dit déjà dans ses encarts (SettingsFamily), et ceux
  *  d'un membre : il n'invite pas, et sans le droit, il n'a pas de bouton. */
@@ -144,7 +144,7 @@ export function FamilySection({ overview, badge }: { overview: FamilyOverviewDto
   const buttons = (showInvite || showAddGuest) && (
     <div className="flex flex-wrap gap-2">
       {showInvite && (
-        <button type="button" onClick={() => setDialog("invite")} disabled={actions.invite !== null} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+        <button type="button" onClick={() => setDialog("invite")} disabled={actions.invite !== null} className={BRAND_BUTTON}>
           <UserPlus size={16} aria-hidden="true" />
           {t("familyWeb:owned.invite")}
         </button>
@@ -170,7 +170,7 @@ export function FamilySection({ overview, badge }: { overview: FamilyOverviewDto
 
   return (
     <>
-      <SettingsSection title={title} caption={caption || undefined} badge={badge}>
+      <SettingsCard title={title} caption={caption || undefined} badge={badge}>
         {family ? (
           <ul>
             {family.profiles.map((profile, index) => (
@@ -198,7 +198,7 @@ export function FamilySection({ overview, badge }: { overview: FamilyOverviewDto
           </ul>
         ) : (
           <div className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center">
-            <span aria-hidden="true" className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-cta-brand-fg" style={BRAND_BUTTON_STYLE}>
+            <span aria-hidden="true" className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-tile ${ICON_PLAQUE}`}>
               <Users size={22} />
             </span>
             <div className="min-w-0 flex-1">
@@ -208,7 +208,7 @@ export function FamilySection({ overview, badge }: { overview: FamilyOverviewDto
             </div>
           </div>
         )}
-      </SettingsSection>
+      </SettingsCard>
       {blockedText && personal && <p className="-mt-4 mb-6 px-1 text-xs text-content-tertiary">{blockedText}</p>}
 
       {family && owner && family.pendingInvitations.length > 0 && (

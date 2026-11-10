@@ -50,13 +50,13 @@ export const TagListField = memo(function TagListField({ field, value, known, di
                 aria-label={t("parental.tagRemove", { tag })}
                 className={CHIP_REMOVE}
               >
-                <X aria-hidden className="h-3.5 w-3.5" />
+                <X weight="bold" aria-hidden className="h-3.5 w-3.5" />
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-xs text-content-quaternary">{t("parental.tagEmpty")}</p>
+        <p className="mt-2 text-xs text-content-tertiary">{t("parental.tagEmpty")}</p>
       )}
       <div className="mt-2 flex gap-2">
         <input
@@ -76,7 +76,7 @@ export const TagListField = memo(function TagListField({ field, value, known, di
           className={INPUT}
         />
         <button type="button" onClick={add} disabled={disabled || !canAdd} className={SMALL_BUTTON}>
-          <Plus aria-hidden className="h-3.5 w-3.5" />
+          <Plus weight="bold" aria-hidden className="h-3.5 w-3.5" />
           {t("parental.tagAdd")}
         </button>
       </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, PairIcon, SettingsIcon, StatsIcon } from "../userMenu/icons";
 import { useAccountAbilities } from "@tentacle-tv/api-client";
 import { abilityRefusals } from "../userMenu/abilityRefusals";
@@ -56,7 +57,7 @@ export function ProfileLinks({ isAdmin }: Props) {
   return (
     <>
       {profileItems.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-line-subtle bg-fill-faint">
+        <div className="ui-panel overflow-hidden">
           <ul className="divide-y divide-line-subtle">
             {profileItems.map((item) => (
               <li key={item.key}>
@@ -67,7 +68,7 @@ export function ProfileLinks({ isAdmin }: Props) {
         </div>
       )}
       <section
-        className="overflow-hidden rounded-2xl border border-line-subtle bg-fill-faint"
+        className="ui-panel overflow-hidden"
         aria-label={t("profile")}
       >
         <ul className="divide-y divide-line-subtle">
@@ -90,13 +91,13 @@ function LinkRow({ icon, label, onClick }: { icon: ReactNode; label: string; onC
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-content-secondary transition-colors duration-150 active:bg-fill-faint"
+      className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] text-content-secondary transition-colors duration-hover hover:bg-fill-faint active:bg-fill-subtle"
     >
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-fill-subtle text-content-secondary">
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field bg-fill-soft text-content-secondary">
         {icon}
       </span>
       <span className="flex-1">{label}</span>
-      <span className="flex-shrink-0 text-content-quaternary" aria-hidden>›</span>
+      <CaretRightIcon aria-hidden size={16} className="flex-shrink-0 text-content-quaternary" />
     </button>
   );
 }

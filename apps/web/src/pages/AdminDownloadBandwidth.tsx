@@ -79,7 +79,7 @@ export function AdminDownloadBandwidth() {
       description={
         <>
           {t("bandwidthIntro")}
-          <span className="mt-2 block text-xs text-content-quaternary">{t("bandwidthPoolsHelp")}</span>
+          <span className="mt-2 block text-xs text-content-tertiary">{t("bandwidthPoolsHelp")}</span>
         </>
       }
     >
@@ -144,7 +144,7 @@ function BandwidthForm({ initial }: { initial: BandwidthCaps }) {
             aria-label={t("bandwidthAddIp")}
             aria-expanded={addingIp}
             title={t("bandwidthAddIp")}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line-subtle bg-fill-soft text-content-secondary transition hover:bg-fill-medium hover:text-content-primary"
+            className="icon-btn btn-soft btn-sm"
           >
             <Plus size={16} />
           </button>
@@ -160,7 +160,7 @@ function BandwidthForm({ initial }: { initial: BandwidthCaps }) {
         >
           {mutation.isPending ? "..." : t("save")}
         </button>
-        {invalid && <span className="text-xs text-[var(--status-error-fg)]">{t("bandwidthInvalid")}</span>}
+        {invalid && <span className="text-xs text-status-error-fg">{t("bandwidthInvalid")}</span>}
       </div>
     </div>
   );
@@ -182,7 +182,7 @@ function CapRow({
 }) {
   const { t } = useTranslation("admin");
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-fill-subtle p-3">
+    <div className="flex min-h-16 flex-wrap items-center gap-3 rounded-tile bg-surface-2 px-4 py-3">
       <span className="min-w-0 flex-1 text-sm font-semibold text-content-primary">{label}</span>
       <label className="flex flex-shrink-0 cursor-pointer items-center gap-2">
         <span className="text-xs font-medium text-content-tertiary">{t("bandwidthLimit")}</span>
@@ -211,7 +211,7 @@ function CapRow({
           <span className="text-xs text-content-tertiary">{t("bandwidthUnit")}</span>
         </label>
       ) : (
-        <span className="text-xs text-content-quaternary">{t("bandwidthUnlimited")}</span>
+        <span className="text-xs text-content-tertiary">{t("bandwidthUnlimited")}</span>
       )}
     </div>
   );

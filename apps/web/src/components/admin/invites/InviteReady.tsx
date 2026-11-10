@@ -62,7 +62,7 @@ export function InviteReady({ invite, linkBase, titleId, onDone }: InviteReadyPr
                 qu'il cachait. Un clic le sélectionne d'un bloc. */}
             <output
               id={fieldId}
-              className="block min-w-0 flex-1 select-all break-all rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 font-mono text-sm leading-snug text-content-primary"
+              className="field block h-auto min-w-0 flex-1 select-all break-all px-3 py-2.5 font-mono text-sm leading-snug"
             >
               {url}
             </output>

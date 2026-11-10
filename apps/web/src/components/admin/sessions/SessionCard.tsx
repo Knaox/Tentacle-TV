@@ -76,12 +76,12 @@ export const SessionCard = memo(function SessionCard({
       initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
-      className="flex flex-col gap-4 rounded-xl border border-line-subtle bg-fill-faint p-4 sm:flex-row"
+      className="ui-panel flex flex-col gap-4 p-4 sm:flex-row"
     >
       <SessionArtwork item={item} />
       <div className="min-w-0 flex-1 space-y-3">
         <header className="min-w-0">
-          <h3 className="line-clamp-2 text-base font-semibold text-content-primary" title={label.full}>
+          <h3 className="line-clamp-2 text-heading-3 text-content-primary" title={label.full}>
             {label.title}
             {label.episode !== null && <span className="font-medium text-content-secondary"> — {label.episode}</span>}
           </h3>
@@ -95,10 +95,10 @@ export const SessionCard = memo(function SessionCard({
           <SessionAppLabel session={session} className="truncate text-content-tertiary" />
           {session.viaTentacle && (
             <span
-              className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 text-[11px] font-semibold tracking-wide text-content-primary"
+              className="chip text-[11px]"
               title={t("viaTentacleHint")}
             >
-              <Radio size={12} aria-hidden />
+              <Radio weight="bold" size={12} aria-hidden />
               {t("viaTentacle")}
             </span>
           )}
@@ -111,13 +111,13 @@ export const SessionCard = memo(function SessionCard({
             aria-valuemax={100}
             aria-valuenow={Math.round(fraction * 100)}
             aria-label={label.full}
-            className="h-1.5 overflow-hidden rounded-full bg-fill-soft"
+            className="gauge"
           >
             {/* `scaleX` et non `width` : la barre avance chaque seconde, une
                 transformation ne repeint rien. */}
-            <div className="h-full origin-left rounded-full bg-brand" style={{ transform: `scaleX(${fraction})` }} />
+            <i style={{ transform: `scaleX(${fraction})` }} />
           </div>
-          <div className="flex items-center justify-between text-xs tabular-nums text-content-tertiary">
+          <div className="num flex items-center justify-between text-xs text-content-tertiary">
             <CommandStatus isPaused={session.isPaused} feedback={feedback} />
             <span>
               {formatClock(position)}
@@ -167,7 +167,7 @@ export const SessionCard = memo(function SessionCard({
           </div>
         ) : (
           <p className="flex items-center gap-1.5 border-t border-line-subtle pt-3 text-xs text-content-tertiary">
-            <Lock size={12} aria-hidden />
+            <Lock weight="bold" size={12} aria-hidden />
             {t("noRemote")}
           </p>
         )}

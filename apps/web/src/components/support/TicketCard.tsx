@@ -1,5 +1,6 @@
 import { memo, useState, type DragEvent, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import type { SupportTicket } from "@tentacle-tv/api-client";
 import { formatAgo } from "../notifications/NotifRow";
 import { TICKET_CATEGORY_LABEL_KEYS } from "./ticketMeta";
@@ -52,30 +53,19 @@ export const TicketCard = memo(function TicketCard({
       draggable={(draggable && !selectable) || undefined}
       onDragStart={draggable && !selectable ? onDragStart : undefined}
       onDragEnd={draggable ? () => setDragging(false) : undefined}
-      className={`relative rounded-lg border bg-fill-subtle p-3 outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.5)] ${
-        selected ? "border-[rgba(var(--brand-rgb),0.45)]" : "border-line-subtle"
-      } ${draggable && !selectable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "opacity-50" : ""}`}
+      className={`ui-tile relative p-3 outline-none hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-line-focus ${draggable && !selectable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "opacity-50" : ""}`}
     >
       {selectable && (
-        <span
-          aria-hidden
-          className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border ${
-            selected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]" : "border-line-strong"
-          }`}
-        >
-          {selected && (
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
+        <span aria-hidden className="ui-check absolute right-2 top-2 rounded-full" data-checked={selected}>
+          {selected && <CheckIcon size={12} weight="bold" />}
         </span>
       )}
-      <p className={`line-clamp-2 text-sm font-medium text-content-primary ${selectable ? "pr-6" : ""}`}>{ticket.subject}</p>
+      <p className={`line-clamp-2 text-sm font-semibold text-content-primary ${selectable ? "pr-6" : ""}`}>{ticket.subject}</p>
       {ticket.mediaItemName && (
-        <p className="mt-1 truncate text-xs text-[var(--brand)]">{ticket.mediaItemName}</p>
+        <p className="mt-1 truncate text-xs text-accent">{ticket.mediaItemName}</p>
       )}
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-content-quaternary">
-        <span className="rounded bg-fill-soft px-1.5 py-0.5 text-content-tertiary">
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-content-tertiary">
+        <span className="rounded-chip bg-fill-soft px-1.5 py-0.5 font-semibold text-content-secondary">
           {t(TICKET_CATEGORY_LABEL_KEYS[ticket.category] ?? "")}
         </span>
         {ticket._count && <span>{t("messagesCount", { count: ticket._count.messages })}</span>}

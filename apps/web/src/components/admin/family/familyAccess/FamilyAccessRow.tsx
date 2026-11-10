@@ -22,8 +22,8 @@ export const FamilyAccessRow = memo(function FamilyAccessRow({ feature, level, o
   const title = t(`admin.${feature}`);
   return (
     <div>
-      <p className="text-sm font-medium text-content-primary">{title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{t(`admin.${feature}Access`)}</p>
+      <p className="text-sm font-semibold text-content-primary">{title}</p>
+      <p className="mt-1 max-w-[65ch] text-[13px] leading-relaxed text-content-tertiary">{t(`admin.${feature}Access`)}</p>
       <SegmentedChoice
         label={title}
         value={level}

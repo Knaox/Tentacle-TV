@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "../components/CryingTentacle";
 import { PageTransition } from "../components/PageTransition";
+import { BackButton } from "../components/ui/BackButton";
 
 /**
  * 404 page — replaces the silent wildcard redirect.
@@ -13,36 +14,25 @@ export function NotFound() {
 
   return (
     <PageTransition>
-      <div
-        className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
-        style={{ background: "var(--surface-0)" }}
-      >
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface-0 px-6 text-center">
+        <BackButton fallback="/" className="absolute left-4 top-4 md:left-12 md:top-6" />
         <div className="mb-6">
           <CryingTentacle size={160} />
         </div>
 
-        <p
-          className="mb-3 text-xs font-bold uppercase tracking-[0.32em]"
-          style={{ color: "var(--brand-light)" }}
-        >
-          404
-        </p>
+        <p className="ui-eyebrow num mb-3">404</p>
 
-        <h1 className="mb-3 text-3xl font-bold tracking-tight text-content-primary md:text-4xl">
+        <h1 className="mb-3 text-display-3 text-content-primary md:text-[2.5rem]">
           {t("common:notFoundTitle", { defaultValue: "Page introuvable" })}
         </h1>
-        <p className="mb-8 max-w-md text-sm leading-relaxed text-content-tertiary">
+        <p className="mb-8 max-w-md text-sm leading-relaxed text-content-secondary">
           {t("common:notFoundDescription", {
             defaultValue:
               "Le tentacle a cherché partout, mais cette page semble avoir disparu dans les abysses.",
           })}
         </p>
 
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
-          style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35)" }}
-        >
+        <Link to="/" className="btn btn-solid btn-lg">
           {t("common:backHome", { defaultValue: "Retour à l'accueil" })}
         </Link>
       </div>

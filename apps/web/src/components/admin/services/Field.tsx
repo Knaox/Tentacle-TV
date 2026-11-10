@@ -30,9 +30,8 @@ export function Field({ label, hint, error, warning, className = "", id, ...inpu
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy || undefined}
-        // Variante `aria-[invalid=true]` : elle passe après la bordure de base
-        // ET après celle du focus — un champ faux reste rouge sous le curseur.
-        className={`${cls.inp} aria-[invalid=true]:border-status-error`}
+        // `.field[aria-invalid="true"]` (socle) : un champ faux reste rouge sous le curseur.
+        className={cls.inp}
         {...input}
       />
       {message && (

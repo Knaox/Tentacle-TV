@@ -62,7 +62,7 @@ export function TrailersCard() {
             onChange={(allocine) => update.mutate({ allocine })}
           />
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{t("trailersSources")}</p>
+            <p className="ui-eyebrow mb-2">{t("trailersSources")}</p>
             <ul className="space-y-2">
               <SourceRow label="YouTube" status={data.sources.youtube} />
               <SourceRow label="Dailymotion" status={data.sources.dailymotion} />
@@ -78,7 +78,7 @@ export function TrailersCard() {
       ) : status.isError ? (
         <p className="text-sm text-status-error-fg">{t("trailersLoadError")}</p>
       ) : (
-        <div aria-hidden="true" className="h-24 animate-pulse rounded-xl bg-fill-subtle" />
+        <div aria-hidden="true" className="skeleton-shimmer h-24 rounded-tile" />
       )}
     </AdminSection>
   );

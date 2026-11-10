@@ -28,14 +28,14 @@ export const CodeHelp = memo(function CodeHelp({ host, defaultOpen }: CodeHelpPr
   const items = tabs.map((id) => ({ id, label: t(`codeHelp_tab_${id}`) }));
 
   return (
-    <details open={defaultOpen} className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-sm leading-relaxed text-content-secondary">
+    <details open={defaultOpen} className="rounded-tile bg-surface-2 px-4 py-3 text-sm leading-relaxed text-content-secondary">
       <summary className="min-h-11 cursor-pointer py-2.5 font-semibold text-content-primary">{t("codeWhereTitle")}</summary>
       <div className="space-y-4 pb-1">
         <p>{t(packagedHelpKey("setupWizard", "codeHelp_intro", host?.packaging))}</p>
         {containerId ? (
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>{t("codeHelp_containerId")}</span>
-            <code className="rounded-md border border-[rgba(var(--brand-rgb),0.35)] bg-[var(--brand-soft)] px-2 py-0.5 font-mono text-[var(--brand-light)]">
+            <code className="rounded-chip bg-surface-4 px-2 py-0.5 font-mono text-content-primary">
               {containerId}
             </code>
           </p>

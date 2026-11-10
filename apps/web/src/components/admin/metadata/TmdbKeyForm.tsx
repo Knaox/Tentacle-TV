@@ -98,7 +98,7 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
             onClick={() => setReveal((shown) => !shown)}
             aria-label={t(reveal ? "keyHide" : "keyShow")}
             aria-pressed={reveal}
-            className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+            className="icon-btn btn-sm absolute right-1 top-1"
           >
             {reveal ? <EyeOff aria-hidden size={17} /> : <Eye aria-hidden size={17} />}
           </button>
@@ -133,7 +133,7 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
         href={TMDB_API_SETTINGS}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm font-medium text-brand-light underline-offset-2 hover:underline"
+        className="inline-flex items-center gap-1 rounded-chip text-sm font-medium text-accent underline-offset-2 hover:underline"
       >
         {t("tmdbGetKey")}
         <ExternalLink aria-hidden size={14} />

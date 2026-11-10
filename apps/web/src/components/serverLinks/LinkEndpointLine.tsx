@@ -56,7 +56,7 @@ export function LinkEndpointLine({ endpoint, showRole = true, hideIssues }: Prop
   const lines = issues.length > 0 ? issues.map((issue) => issueText(t, issue, endpoint)) : [statusText(t, endpoint)];
 
   return (
-    <div className="min-w-0 rounded-lg bg-fill-subtle px-3 py-2">
+    <div className="min-w-0 rounded-field bg-surface-2 px-3 py-2">
       {showRole && (
         <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-xs">
           <span className="font-medium text-content-secondary">{t(`role_${endpoint.role}`)}</span>
@@ -66,7 +66,7 @@ export function LinkEndpointLine({ endpoint, showRole = true, hideIssues }: Prop
       <ul className={showRole ? "mt-1 space-y-1" : "space-y-1"}>
         {lines.map((line) => (
           <li key={line} className={`flex items-start gap-1.5 text-xs leading-relaxed ${COLOR[tone]}`}>
-            <Icon aria-hidden size={14} className="mt-px flex-shrink-0" />
+            <Icon aria-hidden size={14} weight="bold" className="mt-px flex-shrink-0" />
             <span>{line}</span>
           </li>
         ))}

@@ -73,7 +73,7 @@ export const RemoteOverview = memo(function RemoteOverview({ state, publicIp }: 
           {publicIp ? (
             <li>
               <StatusPill tone="neutral" size="sm">
-                <span className="tabular-nums">{t("overviewPublicIp", { ip: publicIp })}</span>
+                <span className="num">{t("overviewPublicIp", { ip: publicIp })}</span>
               </StatusPill>
             </li>
           ) : null}
@@ -90,7 +90,7 @@ export const RemoteOverview = memo(function RemoteOverview({ state, publicIp }: 
 
 function Place({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-line-subtle bg-fill-faint p-4">
+    <div className="rounded-tile bg-surface-2 p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-content-primary">
         <span className="text-content-tertiary">{icon}</span>
         {title}

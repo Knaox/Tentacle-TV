@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { desktopPlatform, invoke, relaunch } from "../../desktop/bridge";
 import { supportsLinuxSession } from "../../desktop/capabilities";
 import { SettingItem } from "./wide/SettingItem";
+import { SegmentedChoice } from "./SegmentedChoice";
 
 /**
  * Le choix de session graphique Linux — Auto / Wayland / X11.
@@ -60,35 +61,37 @@ export function LinuxSessionSelect() {
   };
 
   return (
-    <SettingItem setting="linuxSession">
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
+    <SettingItem
+      setting="linuxSession"
+      note={(
+        <>
+          <span className="block">{t("preferences:linuxSessionHint")}</span>
+          {state.montage !== null && (
+            <span className="mt-1 block">{t("preferences:linuxSessionCurrent", { montage: state.montage })}</span>
+          )}
+        </>
+      )}
+      trailing={(
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SegmentedChoice
+            label={t("preferences:linuxSessionTitle")}
             value={value}
-            onChange={(e) => changer(e.target.value as SessionChoice)}
-            aria-label={t("preferences:linuxSessionTitle")}
-            className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
-          >
-            <option value="auto">{t("preferences:linuxSessionAuto")}</option>
-            <option value="wayland">{t("preferences:linuxSessionWayland")}</option>
-            <option value="x11">{t("preferences:linuxSessionX11")}</option>
-          </select>
+            options={[
+              { value: "auto", label: t("preferences:linuxSessionAuto") },
+              { value: "wayland", label: t("preferences:linuxSessionWayland") },
+              { value: "x11", label: t("preferences:linuxSessionX11") },
+            ]}
+            onChange={changer}
+            className="max-w-full"
+          />
+          {/* Le choix ne vaut qu'au prochain lancement : la relance est proposée, jamais imposée. */}
           {changed && (
-            <button
-              onClick={() => void relaunch()}
-              className="rounded-lg bg-tentacle-accent px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
-            >
+            <button type="button" onClick={() => void relaunch()} className="btn btn-accent btn-sm">
               {t("preferences:linuxSessionRestart")}
             </button>
           )}
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-content-quaternary">{t("preferences:linuxSessionHint")}</p>
-        {state.montage !== null && (
-          <p className="mt-2 text-xs text-content-tertiary">
-            {t("preferences:linuxSessionCurrent", { montage: state.montage })}
-          </p>
-        )}
-      </div>
-    </SettingItem>
+      )}
+    />
   );
 }

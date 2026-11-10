@@ -49,7 +49,7 @@ export function SourcesTab() {
   }, [closeSheet, show, t]);
 
   if (sources.isLoading) {
-    return <div className="skeleton-shimmer h-48 rounded-2xl" aria-busy="true" />;
+    return <div className="skeleton-shimmer h-48 rounded-panel" aria-busy="true" />;
   }
   if (sources.isError && !sources.data) {
     return (

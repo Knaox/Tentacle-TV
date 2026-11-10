@@ -248,7 +248,7 @@ describe("le rapport du test", () => {
     };
     const html = renderToStaticMarkup(<CheckResults report={report} wanIp="" />);
     expect(html).toContain("state_exposed_http");
-    expect(html).toContain("border-danger-border");
+    expect(html).toContain("bg-status-error-bg");
     expect(html).toContain("http://203.0.113.5:3471");
     expect(html).toContain("cause_ipv6_not_testable");
   });

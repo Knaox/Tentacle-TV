@@ -21,7 +21,7 @@ export const ChangelogView = memo(function ChangelogView({ text, language }: { t
             ))}
           </ul>
         ) : item.kind === "heading" ? (
-          <p key={index} className="text-xs font-semibold uppercase tracking-wide text-content-tertiary">
+          <p key={index} className="ui-eyebrow">
             <Spans spans={item.spans} />
           </p>
         ) : (
@@ -58,7 +58,7 @@ function Spans({ spans }: { spans: ChangelogSpan[] }) {
         span.strong ? (
           <strong key={i} className="font-semibold text-content-primary">{span.text}</strong>
         ) : span.code ? (
-          <code key={i} className="rounded bg-fill-soft px-1 font-mono text-[12px]">{span.text}</code>
+          <code key={i} className="rounded-chip bg-fill-soft px-1 font-mono text-[12px]">{span.text}</code>
         ) : (
           <Fragment key={i}>{span.text}</Fragment>
         ),

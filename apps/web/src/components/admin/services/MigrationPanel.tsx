@@ -71,7 +71,7 @@ function RemigrateBlock() {
             type="button"
             disabled={remigrate.isPending}
             onClick={() => remigrate.mutate()}
-            className="inline-flex h-9 items-center rounded-full bg-[var(--brand-soft)] px-4 text-sm font-semibold text-[var(--brand-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
+            className="btn btn-solid btn-sm"
           >
             {remigrate.isPending ? t("adminPlugins:restartRequesting") : t("adminPlugins:restartNow")}
           </button>
@@ -81,7 +81,7 @@ function RemigrateBlock() {
         <button
           type="button"
           onClick={() => setAsked(true)}
-          className="mt-2 inline-flex h-9 items-center rounded-full border border-line-subtle px-4 text-sm font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-soft btn-sm mt-2"
         >
           {t("remigrateButton")}
         </button>

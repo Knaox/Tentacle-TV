@@ -48,9 +48,9 @@ export function MyDevicesSection({ embedded = false }: {
   const list = (
     <>
       {isError ? (
-        <p className="px-4 py-3.5 text-sm text-status-error-fg">{t("pairing:devicesLoadError")}</p>
+        <p className="px-4 py-3.5 text-[13px] text-status-error-fg">{t("pairing:devicesLoadError")}</p>
       ) : !devices || devices.length === 0 ? (
-        <p className="px-4 py-3.5 text-sm text-content-tertiary">{t("pairing:noPairedDevices")}</p>
+        <p className="px-4 py-3.5 text-[13px] text-content-tertiary">{t("pairing:noPairedDevices")}</p>
       ) : (
         devices.map((device, i) => (
           <SettingsRow
@@ -66,7 +66,7 @@ export function MyDevicesSection({ embedded = false }: {
                 type="button"
                 onClick={() => setToRevoke(device.id)}
                 disabled={revokeMut.isPending}
-                className="rounded-lg bg-danger-surface px-3 py-1.5 text-xs font-medium text-status-error-fg transition-colors hover:bg-danger-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-40"
+                className="btn btn-danger btn-sm"
               >
                 {t("pairing:revoke")}
               </button>
@@ -80,7 +80,7 @@ export function MyDevicesSection({ embedded = false }: {
   return (
     <>
       {embedded ? (
-        <div className="overflow-hidden rounded-lg border border-line-subtle">{list}</div>
+        <div className="overflow-hidden rounded-tile bg-surface-2">{list}</div>
       ) : (
         <SettingsSection title={t("pairing:pairedDevices")}>{list}</SettingsSection>
       )}

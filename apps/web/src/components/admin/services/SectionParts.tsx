@@ -28,7 +28,7 @@ export function SectionSkeleton({ lines = 2 }: { lines?: number }) {
       {Array.from({ length: lines }, (_, i) => (
         <div key={i} className="space-y-2">
           <div className="skeleton-shimmer h-3 w-32 rounded" />
-          <div className="skeleton-shimmer h-11 rounded-lg" />
+          <div className="skeleton-shimmer h-10 rounded-field" />
         </div>
       ))}
     </div>
@@ -39,12 +39,12 @@ export function SectionSkeleton({ lines = 2 }: { lines?: number }) {
 export function SectionError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("adminServices");
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl bg-status-error-bg px-4 py-3">
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-tile bg-status-error-bg px-4 py-3">
       <p className="min-w-0 flex-1 text-sm text-status-error-fg">{t("loadError")}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
+        className="btn btn-soft btn-sm"
       >
         {t("retry")}
       </button>
@@ -69,7 +69,7 @@ export function SectionFooter({ status, children }: { status?: ReactNode; childr
 export function ResultLine({ ok, children }: { ok: boolean; children: ReactNode }) {
   return (
     <p className={`flex items-start gap-1.5 text-xs leading-relaxed ${ok ? "text-status-success-fg" : "text-status-error-fg"}`}>
-      <span aria-hidden="true" className="mt-px shrink-0">{ok ? <CircleCheck size={14} /> : <CircleAlert size={14} />}</span>
+      <span aria-hidden="true" className="mt-px shrink-0">{ok ? <CircleCheck size={14} weight="bold" /> : <CircleAlert size={14} weight="bold" />}</span>
       <span className="min-w-0">{children}</span>
     </p>
   );

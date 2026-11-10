@@ -38,7 +38,7 @@ const ICON_TONE: Record<StatusTone, string> = {
   error: "bg-status-error-bg text-status-error-fg",
   info: "bg-status-info-bg text-status-info-fg",
   neutral: "bg-fill-soft text-content-tertiary",
-  brand: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+  brand: "bg-accent-soft text-accent",
 };
 
 /** Les gestes qui RÈGLENT quelque chose ; les autres (générer, relancer) prolongent un réglage fait. */
@@ -100,7 +100,7 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
 
   return (
     <li className="flex gap-3 px-5 py-4">
-      <span aria-hidden="true" className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${ICON_TONE[tone]}`}>
+      <span aria-hidden="true" className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field ${ICON_TONE[tone]}`}>
         <Icon size={18} />
       </span>
       <div className="min-w-0 flex-1">
@@ -133,21 +133,21 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
                 rel="noreferrer"
                 className={
                   dashboardIsMain
-                    ? "inline-flex h-9 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-medium text-content-primary transition hover:border-line-strong hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-                    : "inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-xs font-medium text-content-secondary underline-offset-4 transition hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                    ? "btn btn-soft btn-sm"
+                    : "btn btn-ghost btn-sm"
                 }
               >
                 {t("openInJellyfin")}
-                <ExternalLink size={dashboardIsMain ? 14 : 12} aria-hidden="true" />
+                <ExternalLink size={14} weight="bold" aria-hidden="true" />
                 <span className="sr-only"> {t("opensNewTab")}</span>
               </a>
             )}
             {guideHref && (
               <Link
                 to={guideHref}
-                className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-xs font-medium text-content-secondary underline-offset-4 transition hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="btn btn-ghost btn-sm"
               >
-                <BookOpen size={12} aria-hidden="true" />
+                <BookOpen size={14} weight="bold" aria-hidden="true" />
                 {t("trailerHelp:adminGuideLink")}
               </Link>
             )}

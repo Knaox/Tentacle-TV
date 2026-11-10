@@ -29,6 +29,7 @@ import {
 } from "@tentacle-tv/shared";
 import { BeforeEndTargetFields } from "./BeforeEndTargetFields";
 import { SettingToggleRow } from "./SettingToggleRow";
+import { SubSetting } from "./SubSetting";
 import { useSettingsLibraries } from "./useSettingsLibraries";
 
 export function BeforeEndRules({ next }: { next: NextEpisodeSettings }) {
@@ -52,19 +53,15 @@ export function BeforeEndRules({ next }: { next: NextEpisodeSettings }) {
       />
 
       {next.beforeEndEnabled && (
-        <div className="space-y-5 border-l border-line-subtle pl-4">
-          <div>
-            <p className="text-sm font-medium text-content-primary">{t("beforeEndDefaultTitle")}</p>
-            <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
-              {t("beforeEndDefaultHint")}
-            </p>
+        <div className="space-y-5 rounded-tile bg-surface-2 p-4">
+          <SubSetting title={t("beforeEndDefaultTitle")} hint={t("beforeEndDefaultHint")}>
             <BeforeEndTargetFields
               idPrefix="before-end-default"
               label={t("beforeEndDefaultTitle")}
               target={next.beforeEndDefault}
               onChange={(beforeEndDefault) => { setPlaybackSettings({ next: { beforeEndDefault } }); }}
             />
-          </div>
+          </SubSetting>
 
           {next.beforeEndRules.map((rule, index) => (
             <RuleCard
@@ -86,7 +83,7 @@ export function BeforeEndRules({ next }: { next: NextEpisodeSettings }) {
                   { libraryIds: [libraries[0].id], mode: "seconds", value: 30 },
                 ]);
               }}
-              className="min-h-11 rounded-lg border border-line-subtle px-4 text-sm font-medium text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary"
+              className="btn btn-soft btn-sm"
             >
               {t("beforeEndAddRule")}
             </button>
@@ -118,15 +115,15 @@ function RuleCard({ index, rule, libraries, onChange, onRemove }: RuleCardProps)
   };
 
   return (
-    <div className="rounded-lg border border-line-subtle p-4">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-sm font-medium text-content-primary">
+    <div className="rounded-field bg-surface-3 p-4">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-semibold text-content-primary">
           {t("beforeEndRuleTitle", { index: index + 1 })}
         </p>
         <button
           type="button"
           onClick={onRemove}
-          className="min-h-11 px-2 text-sm font-medium text-content-tertiary transition-colors hover:text-status-error-fg"
+          className="btn btn-ghost btn-sm"
         >
           {t("beforeEndRemoveRule")}
         </button>
@@ -142,10 +139,10 @@ function RuleCard({ index, rule, libraries, onChange, onRemove }: RuleCardProps)
               role="checkbox"
               aria-checked={active}
               onClick={() => { toggleLibrary(library.id); }}
-              className={`min-h-11 rounded-full border px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+              className={`inline-flex h-8 items-center rounded-pill px-3.5 text-[13px] font-semibold transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
                 active
-                  ? "border-tentacle-accent bg-tentacle-accent font-semibold text-cta-brand-fg"
-                  : "border-line-subtle font-medium text-content-tertiary hover:text-content-primary"
+                  ? "bg-accent-soft text-accent shadow-[inset_0_0_0_1.5px_var(--accent)]"
+                  : "bg-fill-soft text-content-secondary hover:bg-fill-medium hover:text-content-primary"
               }`}
             >
               {library.name}
@@ -154,12 +151,14 @@ function RuleCard({ index, rule, libraries, onChange, onRemove }: RuleCardProps)
         })}
       </div>
 
-      <BeforeEndTargetFields
-        idPrefix={`before-end-rule-${index}`}
-        label={t("beforeEndRuleTitle", { index: index + 1 })}
-        target={rule}
-        onChange={(target) => { onChange(target); }}
-      />
+      <div className="mt-3">
+        <BeforeEndTargetFields
+          idPrefix={`before-end-rule-${index}`}
+          label={t("beforeEndRuleTitle", { index: index + 1 })}
+          target={rule}
+          onChange={(target) => { onChange(target); }}
+        />
+      </div>
     </div>
   );
 }

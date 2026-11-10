@@ -25,7 +25,7 @@ export function DangerZoneSection() {
 
   return (
     <AdminSection id="danger" tone="danger" scope="server" title={t("dangerTitle")} description={t("dangerDescription")}>
-      <div className="flex flex-col gap-4 rounded-xl bg-status-error-bg p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 rounded-tile bg-status-error-bg p-4 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-content-primary">{t("resetTitle")}</p>
           <p className="mt-1 text-xs leading-relaxed text-content-secondary">{t("resetDescription")}</p>
@@ -86,7 +86,7 @@ function ResetServerDialog({ open, onClose }: { open: boolean; onClose: () => vo
         className="p-6"
       >
         <div className="flex items-start gap-3">
-          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-error-bg text-status-error-fg">
+          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-field bg-status-error-bg text-status-error-fg">
             <TriangleAlert size={20} />
           </span>
           <div className="min-w-0">

@@ -81,9 +81,9 @@ export function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSele
 
   if (selection) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-[rgba(var(--brand-rgb),0.3)] bg-[rgba(var(--brand-rgb),0.1)] px-3 py-2">
-        <span className="flex-1 text-sm text-[var(--brand-light)] truncate">{selection.displayName}</span>
-        <button onClick={clear} className="text-content-quaternary hover:text-content-primary" type="button">&times;</button>
+      <div className="flex min-h-10 items-center gap-2 rounded-field bg-accent-soft py-1.5 pl-3.5 pr-2">
+        <span className="flex-1 truncate text-sm font-medium text-content-primary">{selection.displayName}</span>
+        <button onClick={clear} className="icon-btn h-6 w-6 text-content-tertiary" type="button">&times;</button>
       </div>
     );
   }
@@ -95,11 +95,11 @@ export function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSele
         onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); setPickedSeries(null); }}
         onFocus={() => setShowDropdown(true)}
         placeholder={t("tickets:searchMedia")}
-        className="w-full rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]"
+        className="field"
       />
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line-subtle bg-tentacle-bg shadow-xl">
+        <div className="ui-menu absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto">
           {pickedSeries ? (
             <SeriesEpisodePicker
               series={pickedSeries}
@@ -113,8 +113,8 @@ export function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSele
             />
           ) : (
             <>
-              {search.length < 2 && <p className="px-4 py-3 text-xs text-content-quaternary">{t("tickets:typeAtLeast")}</p>}
-              {search.length >= 2 && (!results || results.length === 0) && <p className="px-4 py-3 text-xs text-content-quaternary">{t("tickets:noResults")}</p>}
+              {search.length < 2 && <p className="px-3 py-2.5 text-xs text-content-tertiary">{t("tickets:typeAtLeast")}</p>}
+              {search.length >= 2 && (!results || results.length === 0) && <p className="px-3 py-2.5 text-xs text-content-tertiary">{t("tickets:noResults")}</p>}
               {results?.map((item) => (
                 <SearchResultRow key={item.Id} item={item} client={client} onClick={() => selectItem(item)} />
               ))}
@@ -131,20 +131,20 @@ function SearchResultRow({ item, client, onClick }: { item: MediaItem; client: a
   const poster = item.ImageTags?.Primary ? client.getImageUrl(item.Id, "Primary", { width: 60, quality: 80 }) : null;
   return (
     <button onClick={onClick} type="button"
-      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-fill-subtle">
+      className="flex w-full items-center gap-3 rounded-field px-3 py-2 text-left transition-colors duration-hover hover:bg-fill-soft">
       {poster ? (
-        <img src={poster} alt="" className="h-10 w-7 rounded object-cover" />
+        <img src={poster} alt="" className="h-10 w-7 rounded-chip object-cover" />
       ) : (
-        <div className="flex h-10 w-7 items-center justify-center rounded bg-fill-subtle text-xs text-content-quaternary">?</div>
+        <div className="flex h-10 w-7 items-center justify-center rounded-chip bg-fill-soft text-xs text-content-tertiary">?</div>
       )}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-content-primary truncate">{item.Name}</p>
-        <p className="text-xs text-content-quaternary">
+        <p className="text-xs text-content-tertiary">
           {item.Type === "Series" ? t("common:series") : t("common:movie")}
           {item.ProductionYear ? ` — ${item.ProductionYear}` : ""}
         </p>
       </div>
-      {item.Type === "Series" && <span className="text-xs text-content-quaternary">&rsaquo;</span>}
+      {item.Type === "Series" && <span className="text-xs text-content-tertiary">&rsaquo;</span>}
     </button>
   );
 }

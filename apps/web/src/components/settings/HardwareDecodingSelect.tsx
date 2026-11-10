@@ -34,8 +34,23 @@ export function HardwareDecodingSelect() {
   if (!supportsMpv() || desktopPlatform() === null) return null;
 
   return (
-    <SettingItem setting="hardwareDecoding">
-      <div>
+    <SettingItem
+      setting="hardwareDecoding"
+      note={(
+        <>
+          <span className="block">{t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}</span>
+          {/* Ce qui a RÉELLEMENT décodé, et non ce qu'on a demandé — voir
+              `rememberActiveDecoder`. Rien tant qu'aucune lecture n'a eu lieu. */}
+          {active !== null && (
+            <span className="mt-1 block">
+              {decoderIsSoftware(active)
+                ? t("hwDecodeActiveSoftware")
+                : t("hwDecodeActiveHardware", { decoder: active })}
+            </span>
+          )}
+        </>
+      )}
+      trailing={(
         <SegmentedChoice
           label={t("hwDecodeTitle")}
           value={choice}
@@ -50,19 +65,7 @@ export function HardwareDecodingSelect() {
           }}
           className="max-w-full"
         />
-        <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
-          {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}
-        </p>
-        {/* Ce qui a RÉELLEMENT décodé, et non ce qu'on a demandé — voir
-            `rememberActiveDecoder`. Rien tant qu'aucune lecture n'a eu lieu. */}
-        {active !== null && (
-          <p className="mt-2 text-xs leading-relaxed text-content-quaternary">
-            {decoderIsSoftware(active)
-              ? t("hwDecodeActiveSoftware")
-              : t("hwDecodeActiveHardware", { decoder: active })}
-          </p>
-        )}
-      </div>
-    </SettingItem>
+      )}
+    />
   );
 }

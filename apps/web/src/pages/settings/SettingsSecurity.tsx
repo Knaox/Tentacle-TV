@@ -32,7 +32,7 @@ export function SettingsSecurity() {
   const linkedVisible = useWideSettingVisible("linkedAccounts");
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <WideGroup section="security" group="signIn">
         {passwordVisible && (
           <SettingItem setting="password">

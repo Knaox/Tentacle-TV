@@ -38,7 +38,7 @@ export function ServerRestartPanel({ installed }: { installed: InstalledPlugin[]
   if (phase.kind === "waiting") {
     const seconds = Math.max(0, Math.round((now - phase.startedAt) / 1000));
     const elapsed = (
-      <span aria-hidden="true" className="ml-2 font-normal tabular-nums text-content-tertiary">
+      <span aria-hidden="true" className="num ml-2 font-normal text-content-tertiary">
         {t("elapsedSeconds", { count: seconds })}
       </span>
     );
@@ -63,7 +63,7 @@ export function ServerRestartPanel({ installed }: { installed: InstalledPlugin[]
         <p>{t("restartingBody")}</p>
         {/* Une barre qui passe : le travail avance, sans promettre de durée. */}
         <div aria-hidden="true" className="relative mt-2 h-1 max-w-sm overflow-hidden rounded-full bg-fill-soft">
-          <div className="absolute inset-y-0 left-0 w-1/4 animate-loading-bar rounded-full bg-brand motion-reduce:w-full motion-reduce:animate-pulse" />
+          <div className="absolute inset-y-0 left-0 w-1/4 animate-loading-bar rounded-full bg-accent motion-reduce:w-full motion-reduce:animate-pulse" />
         </div>
       </AdminNotice>
     );

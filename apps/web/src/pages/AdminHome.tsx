@@ -100,7 +100,7 @@ function Shortcuts() {
 
 function Shortcut({ to, icon, children }: { to: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <Link to={to} className={`${cls.bs} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus`}>
+    <Link to={to} className={cls.bs}>
       <span aria-hidden="true" className="flex text-content-tertiary">
         {icon}
       </span>

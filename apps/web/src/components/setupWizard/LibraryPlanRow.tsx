@@ -21,11 +21,11 @@ export function LibraryPlanRow({ plan, onChange, onBrowse, onRemove, explorer }:
   const nameInvalid = plan.name !== "" && !isValidLibraryName(plan.name.trim());
   const folder = plan.paths[0];
   return (
-    <div className="space-y-3 rounded-xl border border-line-subtle bg-fill-faint p-4">
+    <div className="space-y-3 rounded-tile bg-surface-2 p-4">
       <div className="grid gap-3 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
         <div>
           <label htmlFor={nameId} className={cls.lbl}>{t("libraryName")}</label>
-          <input id={nameId} value={plan.name} onChange={(e) => onChange({ name: e.target.value })} aria-invalid={nameInvalid || undefined} className={`${cls.inp} aria-[invalid=true]:border-status-error`} />
+          <input id={nameId} value={plan.name} onChange={(e) => onChange({ name: e.target.value })} aria-invalid={nameInvalid || undefined} className={cls.inp} />
         </div>
         <div>
           <label htmlFor={typeId} className={cls.lbl}>{t("libraryType")}</label>
@@ -37,8 +37,8 @@ export function LibraryPlanRow({ plan, onChange, onBrowse, onRemove, explorer }:
             ))}
           </select>
         </div>
-        <button type="button" onClick={onRemove} aria-label={t("libraryRemove", { name: plan.name || "…" })} className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-content-tertiary hover:bg-fill-subtle hover:text-status-error-fg">
-          <Trash2 size={16} aria-hidden="true" />
+        <button type="button" onClick={onRemove} aria-label={t("libraryRemove", { name: plan.name || "…" })} className="icon-btn">
+          <Trash2 size={18} aria-hidden="true" />
         </button>
       </div>
       {nameInvalid ? <p className="text-xs text-status-error-fg">{t("libraryNameInvalid")}</p> : null}

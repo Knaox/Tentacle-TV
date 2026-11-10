@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useTicketDetail } from "@tentacle-tv/api-client";
 import { Sheet } from "../ui/Sheet";
 import { Spinner } from "../ui/Spinner";
@@ -43,16 +44,16 @@ export function TicketDetailSheet({ ticketId, scope, canMove, onMove, onClose }:
             {ticket && (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-semibold text-content-primary">{ticket.subject}</h2>
-                  <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${STATUS_STYLE[ticket.status].chip}`}>
+                  <h2 className="text-heading-3 text-content-primary">{ticket.subject}</h2>
+                  <span className={`chip ${STATUS_STYLE[ticket.status].chip}`}>
                     {t(TICKET_STATUS_LABEL_KEYS[ticket.status])}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-content-quaternary">
+                <p className="mt-1 text-xs text-content-tertiary">
                   {t(TICKET_CATEGORY_LABEL_KEYS[ticket.category] ?? "")} — {new Date(ticket.createdAt).toLocaleDateString()}
                   {scope === "all" && ` — ${t("by", { username: ticket.username })}`}
                 </p>
-                {ticket.mediaItemName && <p className="mt-1 text-xs text-[var(--brand)]">{ticket.mediaItemName}</p>}
+                {ticket.mediaItemName && <p className="mt-1 text-xs text-accent">{ticket.mediaItemName}</p>}
               </>
             )}
           </div>
@@ -61,11 +62,9 @@ export function TicketDetailSheet({ ticketId, scope, canMove, onMove, onClose }:
             type="button"
             onClick={onClose}
             aria-label={t("common:close")}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+            className="icon-btn btn-sm"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon size={16} aria-hidden />
           </button>
         </header>
 
@@ -87,7 +86,7 @@ export function TicketDetailSheet({ ticketId, scope, canMove, onMove, onClose }:
 
         {ticket &&
           (ticket.status === "closed" ? (
-            <p className="border-t border-line-subtle px-5 py-4 text-sm text-content-quaternary">{t("ticketClosed")}</p>
+            <p className="border-t border-line-subtle px-5 py-4 text-sm text-content-tertiary">{t("ticketClosed")}</p>
           ) : (
             <>
               <TicketReplyForm ticketId={ticket.id} />

@@ -31,7 +31,7 @@ export function LinkBenefits({ id }: { id: LinkCheckId }) {
         const Icon = ICON[benefit] ?? Globe;
         return (
           <li key={benefit} className="flex items-start gap-2 text-xs leading-relaxed text-content-secondary">
-            <Icon aria-hidden size={14} className="mt-0.5 flex-shrink-0 text-[var(--brand-light)]" />
+            <Icon aria-hidden size={14} weight="bold" className="mt-0.5 flex-shrink-0 text-content-tertiary" />
             <span>{t(`benefit_${id}_${benefit}`)}</span>
           </li>
         );

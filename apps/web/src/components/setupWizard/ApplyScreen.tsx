@@ -111,7 +111,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const line = (label: string, state: LineState) => (
     <li className="flex items-center gap-3 text-sm">
       {state === "ok" ? (
-        <CircleCheck size={16} aria-hidden="true" className="text-status-success-fg" />
+        <CircleCheck size={16} weight="fill" aria-hidden="true" className="text-status-success-fg" />
       ) : state === "error" ? (
         <CircleAlert size={16} aria-hidden="true" className="text-status-error-fg" />
       ) : (

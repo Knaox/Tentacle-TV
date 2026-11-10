@@ -30,18 +30,18 @@ export const GuideStep = memo(function GuideStep({
   const [first, ...rest] = packagedHelpKeys("trailerHelp", step.paragraphKeys, packaging);
 
   return (
-    <li className="flex gap-4 rounded-2xl border border-line-subtle bg-fill-faint p-4 sm:p-5">
+    <li className="ui-panel flex gap-4 p-4 sm:p-5">
       <span
         aria-hidden
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fill-soft text-sm font-semibold text-content-primary ring-1 ring-[rgba(var(--brand-rgb),0.4)]"
+        className="num flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-3 text-sm font-semibold text-content-primary"
       >
         {number}
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-base font-semibold text-content-primary">
+        <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-0.5 text-heading-3 text-content-primary">
           {t(step.titleKey)}
           {step.optional && (
-            <span className="rounded-full bg-fill-soft px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-content-secondary">
+            <span className="chip tracking-normal">
               {t("optional")}
             </span>
           )}
@@ -50,7 +50,7 @@ export const GuideStep = memo(function GuideStep({
         {step.exampleKey && (
           // Des noms de fichiers : à chasse fixe, sans retour à la ligne — une
           // ligne trop longue défile plutôt que de couper un chemin en deux.
-          <pre className="mt-3 overflow-x-auto rounded-xl bg-fill-subtle px-4 py-3 font-mono text-[0.8125rem] leading-6 text-content-secondary">
+          <pre className="mt-3 overflow-x-auto rounded-tile bg-surface-2 px-4 py-3 font-mono text-[0.8125rem] leading-6 text-content-secondary">
             <code>{t(step.exampleKey)}</code>
           </pre>
         )}

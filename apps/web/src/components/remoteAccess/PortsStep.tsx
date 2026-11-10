@@ -55,8 +55,8 @@ function RulesTable({ rules, target }: { rules: PortRule[]; target: string }) {
   const th = "px-3 py-2 text-left text-xs font-medium text-content-tertiary";
   const td = "px-3 py-2.5 text-sm text-content-primary";
   return (
-    <table className="hidden w-full overflow-hidden rounded-xl border border-line-subtle sm:table">
-      <thead className="bg-fill-subtle">
+    <table className="hidden w-full overflow-hidden rounded-tile bg-surface-2 sm:table">
+      <thead className="bg-surface-3">
         <tr>
           <th scope="col" className={th}>{t("colExternal")}</th>
           <th scope="col" className={th}>{t("colInternal")}</th>
@@ -68,8 +68,8 @@ function RulesTable({ rules, target }: { rules: PortRule[]; target: string }) {
       <tbody className="divide-y divide-line-subtle">
         {rules.map((rule) => (
           <tr key={`${rule.external}-${rule.purpose}`}>
-            <td className={`${td} font-mono tabular-nums`}>{rule.external}</td>
-            <td className={`${td} font-mono tabular-nums`}>{rule.internal}</td>
+            <td className={`${td} font-mono num`}>{rule.external}</td>
+            <td className={`${td} font-mono num`}>{rule.internal}</td>
             <td className={td}>{rule.protocol}</td>
             <td className={`${td} font-mono`}>{target}</td>
             <td className={`${td} text-content-secondary`}>
@@ -87,15 +87,15 @@ function RulesCards({ rules, target }: { rules: PortRule[]; target: string }) {
   return (
     <ul className="space-y-2 sm:hidden">
       {rules.map((rule) => (
-        <li key={`${rule.external}-${rule.purpose}`} className="rounded-xl border border-line-subtle bg-fill-faint p-3">
+        <li key={`${rule.external}-${rule.purpose}`} className="rounded-tile bg-surface-2 p-3">
           <p className="text-sm font-semibold text-content-primary">
             <Purpose rule={rule} />
           </p>
           <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
             <dt className="text-content-tertiary">{t("colExternal")}</dt>
-            <dd className="font-mono tabular-nums text-content-primary">{rule.external}</dd>
+            <dd className="num font-mono text-content-primary">{rule.external}</dd>
             <dt className="text-content-tertiary">{t("colInternal")}</dt>
-            <dd className="font-mono tabular-nums text-content-primary">{rule.internal}</dd>
+            <dd className="num font-mono text-content-primary">{rule.internal}</dd>
             <dt className="text-content-tertiary">{t("colProtocol")}</dt>
             <dd className="text-content-primary">{rule.protocol}</dd>
             <dt className="text-content-tertiary">{t("colTarget")}</dt>

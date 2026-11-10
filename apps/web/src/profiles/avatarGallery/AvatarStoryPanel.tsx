@@ -24,11 +24,11 @@ export const AvatarStoryPanel = memo(function AvatarStoryPanel({ character, curr
   return (
     <div className="flex min-w-0 flex-1 items-center gap-4" aria-live="polite">
       <span
-        className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-cta-brand-fg"
+        className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-content-primary"
         style={{
           width: PORTRAIT,
           height: PORTRAIT,
-          background: character ? character.tone : "linear-gradient(135deg, var(--brand-dark), var(--brand))",
+          background: character ? character.tone : "var(--surface-3)",
         }}
       >
         {character ? (

@@ -38,7 +38,7 @@ export function HealthCard({ className }: { className?: string }) {
       actions={
         <Link
           to="/admin/services"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-ghost btn-sm"
         >
           {t("homeHealthManage")}
           <ChevronRight aria-hidden="true" size={16} />
@@ -85,10 +85,10 @@ function ServiceRow({
   // La puce sous le nom, pas à sa droite : la carte partage sa largeur entre
   // deux services, et une puce en bout de ligne tronquait « Base de données ».
   return (
-    <div className="flex items-start gap-3 rounded-xl bg-fill-subtle px-3 py-3" aria-busy={state === undefined || undefined}>
+    <div className="flex items-start gap-3 rounded-tile bg-surface-2 px-3 py-3" aria-busy={state === undefined || undefined}>
       <span
         aria-hidden="true"
-        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-fill-soft text-content-secondary"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field bg-fill-soft text-content-secondary"
       >
         {icon}
       </span>

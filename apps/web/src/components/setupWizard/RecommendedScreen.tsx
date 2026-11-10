@@ -112,11 +112,11 @@ export function AdviceRow({ advice, checked, onToggle }: { advice: JellyfinAdvic
   const targets = advice.targets.join(" · ");
   return (
     <label
-      className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors duration-200 ${
-        checked ? "border-[rgba(var(--brand-rgb),0.6)] bg-[var(--brand-soft)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]" : "border-line-subtle hover:bg-fill-faint"
+      className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-tile px-4 py-3 transition-colors duration-hover ${
+        checked ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]" : "bg-surface-2 hover:bg-surface-3"
       }`}
     >
-      <input type="checkbox" checked={checked} onChange={onToggle} className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]" />
+      <input type="checkbox" checked={checked} onChange={onToggle} className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]" />
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block font-semibold text-content-primary">{t(`rec_${advice.id}`)}</span>
         <span className="block text-sm text-content-secondary">{t(`rec_${advice.id}_why`)}</span>

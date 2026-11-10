@@ -31,7 +31,7 @@ export function EntryDetails({ id, variant, items, context, values }: Props) {
 
   if (kind === "text") {
     return (
-      <p className="max-w-3xl rounded-lg bg-fill-subtle px-3 py-2 text-xs leading-relaxed text-content-secondary">
+      <p className="max-w-3xl rounded-field bg-surface-2 px-3 py-2 text-xs leading-relaxed text-content-secondary">
         {t(entryKeys(id, variant, "details").map((key) => `adminOverview:${key}`), values)}
       </p>
     );
@@ -65,10 +65,10 @@ function JellyfinDetails({ items, context }: { items: readonly string[]; context
   const report = context.setup;
   const todo = report ? report.checks.filter((check) => items.includes(`setup:${check.id}`)) : [];
   const dashboardHome = report?.dashboardUrl ? `${report.dashboardUrl}/web/#/dashboard` : null;
-  const linkClass = "inline-flex min-h-[36px] items-center gap-1 rounded-lg text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  const linkClass = "inline-flex min-h-[36px] items-center gap-1 rounded-chip text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line-subtle">
+    <div className="overflow-hidden rounded-tile bg-surface-2">
       {items.includes("restart") || items.includes("partial") ? (
         <div className="space-y-2 p-3">
           {items.includes("restart") ? (
@@ -77,7 +77,7 @@ function JellyfinDetails({ items, context }: { items: readonly string[]; context
               action={dashboardHome ? (
                 <a href={dashboardHome} target="_blank" rel="noreferrer" className={linkClass}>
                   {t("adminJellyfin:openDashboard")}
-                  <ExternalLink size={14} aria-hidden="true" />
+                  <ExternalLink size={14} weight="bold" aria-hidden="true" />
                   <span className="sr-only"> {t("adminOverview:opensNewTab")}</span>
                 </a>
               ) : undefined}

@@ -26,26 +26,22 @@ interface ScopeBadgeProps {
 /**
  * La pastille « Compte » / « Cet appareil » / « Tout le serveur » / « Octave
  * seulement » : un mot ET une icône, jamais la couleur seule — la même que
- * celle du mobile (`settingsMobile` › `scope`). Le compte prend la teinte de
- * marque, le reste reste neutre. Une seule pastille pour toutes les pages de
- * réglages du web, du bureau et d'Octave : jamais une copie.
+ * celle du mobile (`settingsMobile` › `scope`). C'est la PUCE du socle
+ * (`.chip`, refonte de nov. 2026) : le compte prend la teinte franche
+ * (`.chip-accent`), le reste reste neutre. Une seule pastille pour toutes les
+ * pages de réglages du web, du bureau et d'Octave : jamais une copie.
  */
 export const ScopeBadge = memo(function ScopeBadge({ scope, className }: ScopeBadgeProps) {
   const { t } = useTranslation("settingsMobile");
   const Icon = ICONS[scope];
-  // La couleur de marque en clair (`rgba(var(--brand-rgb), …)`) : sur un jeton `var()`, le modificateur `/30` de
-  // Tailwind supprime la déclaration en silence (`theme/alphaModifier.test.ts`).
-  const tone = scope === "account"
-    ? "border-[rgba(var(--brand-rgb),0.3)] bg-[rgba(var(--brand-rgb),0.1)] text-tentacle-accent-light"
-    : "border-line-subtle bg-white/5 text-content-tertiary";
   return (
     <span
       role="note"
       aria-label={t(`scope.${scope}A11y`)}
       title={t(`scope.${scope}A11y`)}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] font-semibold leading-none ${tone}${className ? ` ${className}` : ""}`}
+      className={`chip shrink-0${scope === "account" ? " chip-accent" : ""}${className ? ` ${className}` : ""}`}
     >
-      <Icon size={10} aria-hidden />
+      <Icon size={13} weight="bold" aria-hidden />
       {t(`scope.${scope}`)}
     </span>
   );

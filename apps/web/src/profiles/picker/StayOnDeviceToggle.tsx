@@ -36,11 +36,10 @@ export const StayOnDeviceToggle = memo(function StayOnDeviceToggle({ checked, di
         />
         <span
           aria-hidden
-          className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0 ${
-            checked ? "border-transparent bg-[var(--brand)]" : "border-line-strong"
-          }`}
+          data-checked={checked}
+          className="ui-check peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0"
         >
-          <Check weight="bold" size={14} className={`text-white transition-opacity duration-150 ${checked ? "opacity-100" : "opacity-0"}`} />
+          <Check weight="bold" size={14} />
         </span>
         {t("stayOnDevice")}
       </label>

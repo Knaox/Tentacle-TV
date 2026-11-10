@@ -78,7 +78,7 @@ describe("FamilySwitchesSection", () => {
     h.defaults = undefined;
     const html = render();
     expect(html).not.toContain("radiogroup");
-    expect(html).toContain("animate-pulse");
+    expect(html).toContain("skeleton-shimmer");
   });
 
   it("serveur d'avant `family.creationRights` : les deux interrupteurs, comme alors", () => {

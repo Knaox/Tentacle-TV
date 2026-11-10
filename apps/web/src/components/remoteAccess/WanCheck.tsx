@@ -20,7 +20,7 @@ export const WanCheck = memo(function WanCheck({ value, onChange, publicIpV4 }: 
   const tone = verdict === "none" ? "text-status-success-fg" : verdict ? "text-status-warning-fg" : "text-content-tertiary";
 
   return (
-    <div className="rounded-xl border border-line-subtle bg-fill-faint p-4">
+    <div className="rounded-tile bg-surface-2 p-4">
       <h3 className="text-sm font-semibold text-content-primary">{t("wanTitle")}</h3>
       <Field
         label={t("wanLabel")}

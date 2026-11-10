@@ -10,10 +10,10 @@ export function PlanB({ showGuideLink }: { showGuideLink: boolean }) {
   const { t } = useTranslation("remoteAccess");
   const { t: tHelp } = useTranslation("remoteAccessHelp");
   return (
-    <details className="group rounded-2xl border border-line-subtle bg-fill-faint">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-base font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-details-marker]:hidden">
+    <details className="group ui-panel">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-panel px-5 py-4 text-heading-3 text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-details-marker]:hidden">
         {t("planBTitle")}
-        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-content-tertiary transition-transform duration-200 group-open:rotate-180" />
+        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-content-tertiary transition-transform duration-hover ease-out group-open:rotate-180" />
       </summary>
       <div className="space-y-3 px-5 pb-5 text-sm leading-relaxed text-content-secondary">
         <p>{t("planBBody")}</p>
@@ -24,7 +24,7 @@ export function PlanB({ showGuideLink }: { showGuideLink: boolean }) {
                 href={REMOTE_ACCESS_DOCS[doc]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
+                className="inline-flex items-center gap-1 rounded-chip font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
               >
                 {tHelp(remoteAccessDocLabelKey(doc))}
                 <ExternalLink size={14} aria-hidden="true" />

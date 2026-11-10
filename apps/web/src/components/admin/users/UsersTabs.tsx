@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { EnvelopeSimpleOpenIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimpleOpen";
+import { EnvelopeSimpleIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimple";
 import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 
 export type UsersTab = "users" | "invites";
@@ -14,9 +14,9 @@ const TABS: ReadonlyArray<{ id: UsersTab; to: string; labelKey: string; icon: Re
 
 /** Les pilules des onglets du kit (`ui/Tabs`) : un seul langage pour « choisir parmi ». */
 const PILL =
-  "lg-glass-btn inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-line-focus";
-const SELECTED = "lg-glass-selected border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]";
-const IDLE = "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary";
+  "lg-glass-btn inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-transparent px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus";
+const SELECTED = "lg-glass-selected bg-surface-4 font-semibold text-content-primary";
+const IDLE = "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary";
 
 /**
  * Les onglets d'« Utilisateurs » : les comptes, et les invitations qui en

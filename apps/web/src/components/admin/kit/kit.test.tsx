@@ -15,6 +15,8 @@ vi.mock("react-router-dom", () => ({
   Link: ({ to, children, ...rest }: { to: string; children: ReactNode }) => (
     <a href={to} {...rest}>{children}</a>
   ),
+  // Le bouton Retour de l'en-tête lit le routeur.
+  useNavigate: () => () => undefined,
 }));
 // « Voir plus » lit ses mots par i18next : chargé en vrai, il tire lui aussi une seconde copie de React.
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -70,6 +72,12 @@ describe("les onglets accessibles", () => {
 });
 
 describe("l'en-tête d'une page d'administration", () => {
+  it("porte le bouton Retour, avant le titre", () => {
+    const markup = html(<AdminPageHeader title="Utilisateurs" />);
+    expect(markup).toContain('aria-label="back"');
+    expect(markup.indexOf('aria-label="back"')).toBeLessThan(markup.indexOf("<h1"));
+  });
+
   it("un h1 au titre, la description, les actions", () => {
     const markup = html(
       <AdminPageHeader title="Utilisateurs" description="Les comptes du serveur." actions={<button>Inviter</button>} />,

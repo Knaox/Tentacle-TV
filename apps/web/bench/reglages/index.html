@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Labo des réglages et de l'administration</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Une COQUILLE DE BUREAU simulée (`?bureau=linux|windows`), posée AVANT le module : la
+      // détection est figée au chargement (`src/desktop/detect.ts`). Elle n'annonce que les
+      // commandes que lisent les réglages (`desktop/capabilities.ts`,
+      // `useWideSettingsContext.ts`) — lecteur natif, session graphique de Linux, HDR de
+      // Windows, téléchargements — et répond des valeurs plausibles ; toute autre commande
+      // rend `null`, sans jamais rejeter. Forme : `ElectronBridge` (`src/desktop/types.ts`).
+      (function () {
+        var kind = new URLSearchParams(window.location.search).get("bureau");
+        if (kind !== "linux" && kind !== "windows") return;
+        var linux = kind === "linux";
+        var root = linux ? "/home/camille/Vidéos/Tentacle" : "D:\\Vidéos\\Tentacle";
+        var background = true;
+        var session = "auto";
+        var answers = {
+          downloads_get_root: function () { return root; },
+          downloads_set_root: function (args) { root = (args && args.path) || root; return root; },
+          downloads_disk_free: function () { return 412300000000; },
+          downloads_disk_usage: function () { return 38600000000; },
+          downloads_list: function () { return []; },
+          downloads_state_for_item: function () { return null; },
+          downloads_background_get: function () { return background; },
+          downloads_background_set: function (args) { background = !!(args && args.on); return background; },
+          linux_session_get: function () { return { choice: session, montage: "wayland", bureau: "KDE" }; },
+          linux_session_set: function (args) { session = (args && args.choice) || session; return null; },
+          display_hdr_state: function () { return { supporte: true }; },
+        };
+        var capabilities = [
+          "mpv_init", "downloads_list", "downloads_get_root", "downloads_set_root", "downloads_disk_free", "downloads_disk_usage",
+          "downloads_state_for_item", "downloads_set_auto_delete", "downloads_background_get", "downloads_background_set",
+        ].concat(linux ? ["linux_session_get", "linux_session_set"] : ["display_hdr_state"]);
+        // Le hors ligne appartient au compte de l'appareil : son jeton est sur le bureau.
+        try { window.localStorage.setItem("tentacle_token", "lab-token"); } catch (e) { /* stockage bloqué : la page se rend sans */ }
+        window.tentacle = {
+          platform: linux ? "linux" : "win32",
+          version: "1.42.0",
+          capabilities: capabilities,
+          montage: linux ? "wayland" : undefined,
+          fenetrage: linux ? "libre" : undefined,
+          titleBarHeight: 0,
+          invoke: function (command, args) {
+            var answer = answers[command];
+            return Promise.resolve(answer ? answer(args) : null);
+          },
+          on: function () { return function () {}; },
+          openExternal: function () { return Promise.resolve(); },
+          pickFolder: function () { return Promise.resolve(linux ? "/mnt/medias/Hors ligne" : "E:\\Hors ligne"); },
+          relaunch: function () { return Promise.resolve(); },
+        };
+      })();
+    </script>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

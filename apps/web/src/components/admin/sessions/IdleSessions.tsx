@@ -35,7 +35,7 @@ export const IdleSessions = memo(function IdleSessions({
 }) {
   const { t, i18n } = useTranslation("sessions");
   return (
-    <ul className="divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
+    <ul className="ui-panel divide-y divide-line-subtle overflow-hidden">
       {sessions.map((session) => (
         <li key={session.id} className="flex items-center gap-3 px-4 py-2">
           <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={32} />
@@ -44,7 +44,7 @@ export const IdleSessions = memo(function IdleSessions({
               <span className="truncate">{session.userName}</span>
               <FamilyGuestTag owner={session.familyGuestOf} />
               {session.viaTentacle && (
-                <Radio size={12} aria-label={t("viaTentacle")} className="shrink-0 text-brand" />
+                <Radio weight="bold" size={12} aria-label={t("viaTentacle")} className="shrink-0 text-accent" />
               )}
             </p>
             <SessionAppLabel

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import type { StillWatchingTrialState } from "@tentacle-tv/api-client";
+import { SubSetting } from "./SubSetting";
 
 interface StillWatchingTrialRowProps {
   trial: StillWatchingTrialState;
@@ -21,27 +22,25 @@ export function StillWatchingTrialRow({ trial }: StillWatchingTrialRowProps) {
   const { armed } = trial;
 
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-content-primary">{t("stillWatchingTrialTitle")}</p>
-        <p role="status" className="mt-1 text-xs leading-relaxed text-content-tertiary">
+    <SubSetting
+      title={t("stillWatchingTrialTitle")}
+      hint={(
+        <span role="status">
           {armed ? (
             <span className="flex items-start gap-1.5 text-content-secondary">
-              <CircleCheck aria-hidden="true" size={14} className="mt-px shrink-0 text-[var(--brand-light)]" />
+              <CircleCheck aria-hidden="true" size={14} weight="fill" className="mt-0.5 shrink-0 text-accent" />
               <span>{t("stillWatchingTrialArmed")}</span>
             </span>
           ) : (
             t("stillWatchingTrialHint")
           )}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={armed ? trial.cancel : trial.arm}
-        className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-line-subtle px-4 text-sm font-medium text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-tentacle-surface"
-      >
-        {armed ? t("stillWatchingTrialCancel") : t("stillWatchingTrialStart")}
-      </button>
-    </div>
+        </span>
+      )}
+      trailing={(
+        <button type="button" onClick={armed ? trial.cancel : trial.arm} className="btn btn-soft btn-sm">
+          {armed ? t("stillWatchingTrialCancel") : t("stillWatchingTrialStart")}
+        </button>
+      )}
+    />
   );
 }

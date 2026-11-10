@@ -51,7 +51,7 @@ export function AccountFamilyRightsGroup({ userId }: { userId: string }) {
           </p>
           {dto.restrictedBy && (
             <p className="flex items-start gap-2 text-xs leading-relaxed text-content-secondary">
-              <ShieldCheck size={14} aria-hidden="true" className="mt-px shrink-0 text-[var(--brand-light)]" />
+              <ShieldCheck weight="bold" size={14} aria-hidden="true" className="mt-px shrink-0 text-accent" />
               {t("accountRights.restrictedBy", { owner: dto.restrictedBy.ownerName })}
             </p>
           )}

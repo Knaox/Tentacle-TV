@@ -23,7 +23,7 @@ function Note({ tone, children }: { tone: "info" | "warning"; children: string }
   const Icon = tone === "warning" ? AlertTriangle : Info;
   return (
     <p role={tone === "warning" ? "status" : undefined} className={`flex items-start gap-2 text-xs leading-relaxed ${tone === "warning" ? "text-status-warning-fg" : "text-content-tertiary"}`}>
-      <Icon size={14} aria-hidden="true" className="mt-px shrink-0" />
+      <Icon weight="bold" size={14} aria-hidden="true" className="mt-px shrink-0" />
       <span>{children}</span>
     </p>
   );

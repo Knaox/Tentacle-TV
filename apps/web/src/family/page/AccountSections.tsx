@@ -2,7 +2,8 @@ import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { LockOpenIcon as LockOpen } from "@phosphor-icons/react/dist/csr/LockOpen";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
+import { SettingsRow } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import { useDissolveFamily, useServerCapability } from "@tentacle-tv/api-client";
 import { Modal } from "../../components/ui/Modal";
 import { useToast } from "../../contexts/ToastContext";
@@ -20,7 +21,7 @@ export function MyPinSection({ hasPin, badge }: { hasPin: boolean; badge?: React
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")} badge={badge}>
+      <SettingsCard title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")} badge={badge}>
         <SettingsRow
           icon={hasPin ? <Lock size={17} /> : <LockOpen size={17} />}
           label={hasPin ? t("myPin.on") : t("myPin.off")}
@@ -31,7 +32,7 @@ export function MyPinSection({ hasPin, badge }: { hasPin: boolean; badge?: React
             </button>
           }
         />
-      </SettingsSection>
+      </SettingsCard>
       {open && <OwnPinDialog hasPin={hasPin} onClose={() => setOpen(false)} />}
     </>
   );
@@ -48,7 +49,7 @@ export function DissolveSection() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("danger.title")}>
+      <SettingsCard title={t("danger.title")}>
         <SettingsRow
           label={t("danger.dissolve")}
           description={t("danger.dissolveHint")}
@@ -57,7 +58,7 @@ export function DissolveSection() {
           onClick={() => setOpen(true)}
           chevron
         />
-      </SettingsSection>
+      </SettingsCard>
       {open && <DissolveDialog onClose={() => setOpen(false)} />}
     </>
   );
@@ -92,9 +93,9 @@ function DissolveDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal open onClose={close} maxWidth={440} labelledBy={titleId} describedBy={descId}>
       <div className="p-6">
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("confirm.dissolveTitle")}</h2>
+        <h2 id={titleId} className="text-heading-3 text-content-primary">{t("confirm.dissolveTitle")}</h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-content-tertiary">{t("confirm.dissolveBody")}</p>
-        <label htmlFor={checkId} className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-danger-border bg-danger-surface p-3">
+        <label htmlFor={checkId} className="mt-4 flex cursor-pointer items-start gap-3 rounded-tile bg-danger-surface p-3.5">
           <input
             id={checkId}
             type="checkbox"
@@ -112,7 +113,7 @@ function DissolveDialog({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={confirm}
             disabled={!understood || dissolve.isPending}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-danger-border bg-[var(--status-error-bg)] px-4 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-45"
+            className="btn btn-danger"
           >
             {t("confirm.dissolveAction")}
           </button>

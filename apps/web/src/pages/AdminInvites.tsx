@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { EnvelopeSimpleOpenIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimpleOpen";
+import { EnvelopeSimpleIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimple";
 import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { buildInviteUrl, inviteStatus, type AdminInviteDto } from "@tentacle-tv/shared";
 import { cls } from "./adminUtils";
@@ -127,7 +127,7 @@ export function AdminInvites() {
   } else if (!invites || !link.ready) {
     body = (
       <div aria-busy="true" className={GRID}>
-        {Array.from({ length: 3 }, (_, i) => <div key={i} className="skeleton-shimmer h-[188px] rounded-xl" />)}
+        {Array.from({ length: 3 }, (_, i) => <div key={i} className="skeleton-shimmer h-[188px] rounded-panel" />)}
       </div>
     );
   } else if (invites.length === 0) {
@@ -144,7 +144,7 @@ export function AdminInvites() {
       <div>
         <InviteFilters value={filter} counts={counts} onChange={setFilter} />
         {visible.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-dashed border-line-subtle p-8 text-center text-sm text-content-quaternary">
+          <p className="ui-panel mt-4 p-8 text-center text-sm text-content-tertiary">
             {t(`emptyFilter_${filter}`)}
           </p>
         ) : (

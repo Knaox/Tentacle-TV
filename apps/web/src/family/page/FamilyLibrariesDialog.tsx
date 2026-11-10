@@ -7,9 +7,9 @@ import { useToast } from "../../contexts/ToastContext";
 import { Modal } from "../../components/ui/Modal";
 import { useFamilyText } from "../useFamilyText";
 import { draftVerdict, initialDraft, isChecked, toggleAll, toggleLibrary, type LibrariesDraft } from "./familyLibrariesModel";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, ICON_PLAQUE, SECONDARY_BUTTON } from "./familyUi";
 
-const CHECKBOX = "h-4 w-4 shrink-0 accent-[var(--brand)]";
+const CHECKBOX = "h-4 w-4 shrink-0 accent-[var(--accent)]";
 
 /**
  * Les bibliothèques d'un invité ou d'un membre mineur (serveur 1.30.0,
@@ -57,7 +57,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
     <Modal open onClose={close} maxWidth={480} labelledBy={titleId} describedBy={introId} dismissOnBackdrop={false}>
       <form onSubmit={submit} noValidate className="flex max-h-[85dvh] flex-col">
         <header className="flex items-start gap-3 border-b border-line-subtle p-6 pb-4">
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cta-brand-fg" style={BRAND_BUTTON_STYLE}>
+          <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${ICON_PLAQUE}`}>
             <Library size={20} />
           </span>
           <div className="min-w-0">
@@ -76,7 +76,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
           ) : (
             <fieldset disabled={pending} className="space-y-1">
               <legend className="sr-only">{t("libraries.title", { name: profile.name })}</legend>
-              <label htmlFor={allId} className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-fill-subtle">
+              <label htmlFor={allId} className="flex cursor-pointer items-start gap-3 rounded-field px-2 py-2 hover:bg-fill-subtle">
                 <input id={allId} type="checkbox" className={`${CHECKBOX} mt-0.5`} checked={current === null}
                   onChange={() => setDraft(toggleAll(current, available))} />
                 <span>
@@ -87,7 +87,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
               <ul className="ml-7 space-y-1 border-l border-line-subtle pl-3">
                 {available.map((library) => (
                   <li key={library.id}>
-                    <label className={`flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-content-primary ${current === null ? "opacity-60" : "cursor-pointer hover:bg-fill-subtle"}`}>
+                    <label className={`flex items-center gap-3 rounded-field px-2 py-1.5 text-sm text-content-primary ${current === null ? "opacity-60" : "cursor-pointer hover:bg-fill-subtle"}`}>
                       <input type="checkbox" className={CHECKBOX} checked={isChecked(current, library.id)} disabled={current === null}
                         onChange={() => setDraft(toggleLibrary(current, library.id))} />
                       {library.name}
@@ -102,7 +102,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line-subtle p-4">
           <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>{t("parental.cancel")}</button>
-          <button type="submit" disabled={pending || !libraries.data || verdict !== "ready"} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+          <button type="submit" disabled={pending || !libraries.data || verdict !== "ready"} className={BRAND_BUTTON}>
             {t("libraries.save")}
           </button>
         </footer>

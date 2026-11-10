@@ -30,7 +30,7 @@ export function TicketCloseForm({ ticketId }: { ticketId: string }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm text-content-tertiary transition-colors hover:text-status-error-fg"
+          className="btn btn-ghost btn-sm -ml-3 hover:text-status-error-fg"
         >
           {t("closeTicket")}
         </button>
@@ -39,8 +39,8 @@ export function TicketCloseForm({ ticketId }: { ticketId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="border-t border-line-subtle bg-fill-faint px-5 py-4">
-      <label className="block text-sm font-medium text-content-primary" htmlFor="ticket-close-reason">
+    <form onSubmit={submit} className="border-t border-line-subtle bg-surface-2 px-5 py-4">
+      <label className="mb-1.5 block text-xs font-semibold text-content-tertiary" htmlFor="ticket-close-reason">
         {t("closeReasonLabel")}
       </label>
       <textarea
@@ -52,21 +52,21 @@ export function TicketCloseForm({ ticketId }: { ticketId: string }) {
         maxLength={2000}
         required
         autoFocus
-        className="mt-2 w-full resize-none rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]"
+        className="field resize-none"
       />
       {closeMut.isError && <p className="mt-2 text-xs text-status-error-fg">{t("closeFailed")}</p>}
       <div className="mt-2 flex justify-end gap-2">
         <button
           type="button"
           onClick={cancel}
-          className="h-11 rounded-lg border border-line-subtle bg-fill-soft px-4 text-sm font-semibold text-content-primary hover:bg-fill-medium"
+          className="btn btn-ghost"
         >
           {t("common:cancel")}
         </button>
         <button
           type="submit"
           disabled={!reason.trim() || closeMut.isPending}
-          className="h-11 rounded-lg bg-status-error-bg px-4 text-sm font-bold text-status-error-fg hover:opacity-90 disabled:opacity-50"
+          className="btn btn-danger"
         >
           {closeMut.isPending ? t("common:sending") : t("closeConfirm")}
         </button>

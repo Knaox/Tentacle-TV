@@ -41,7 +41,7 @@ export function AdminBandwidthIps({ ips, onChange, adding, onAddingChange }: Adm
 
   return (
     <div className="ml-3 space-y-2 border-l-2 border-line-subtle pl-3">
-      <p className="text-xs text-content-quaternary">{t("bandwidthIpsHelp")}</p>
+      <p className="text-xs text-content-tertiary">{t("bandwidthIpsHelp")}</p>
       {ips.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {ips.map((ip) => (
@@ -51,9 +51,9 @@ export function AdminBandwidthIps({ ips, onChange, adding, onAddingChange }: Adm
                 type="button"
                 onClick={() => onChange(ips.filter((other) => other !== ip))}
                 aria-label={t("bandwidthIpRemove", { ip })}
-                className="ml-0.5 rounded-full text-content-tertiary transition hover:text-content-primary"
+                className="icon-btn -mr-1 h-5 w-5 text-content-tertiary"
               >
-                <X size={12} />
+                <X weight="bold" size={12} />
               </button>
             </li>
           ))}
@@ -61,7 +61,7 @@ export function AdminBandwidthIps({ ips, onChange, adding, onAddingChange }: Adm
       )}
       {adding && (
         <form onSubmit={add} className="flex flex-wrap items-center gap-2">
-          <span className="w-64">
+          <span className="w-72 max-w-full">
             <input
               autoFocus
               value={draft}
@@ -76,10 +76,10 @@ export function AdminBandwidthIps({ ips, onChange, adding, onAddingChange }: Adm
             />
           </span>
           <button type="submit" className={cls.bs}>{t("bandwidthIpAdd")}</button>
-          <button type="button" onClick={() => onAddingChange(false)} className="text-xs text-content-tertiary hover:text-content-primary">
+          <button type="button" onClick={() => onAddingChange(false)} className="btn btn-ghost">
             {t("common:cancel")}
           </button>
-          {invalid && <span className="text-xs text-[var(--status-error-fg)]">{t("bandwidthIpInvalid")}</span>}
+          {invalid && <span className="text-xs text-status-error-fg">{t("bandwidthIpInvalid")}</span>}
         </form>
       )}
     </div>

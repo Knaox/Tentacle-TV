@@ -36,8 +36,8 @@ export const SourceRow = memo(function SourceRow({ source, state, now, restartin
     <li className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4">
       <span
         aria-hidden
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          source.official ? "bg-[var(--brand-soft)] text-[var(--brand-light)]" : "bg-fill-soft text-content-secondary"
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-field ${
+          source.official ? "bg-accent-soft text-accent" : "bg-fill-soft text-content-secondary"
         } ${enabled ? "" : "opacity-60"}`}
       >
         <Icon className="h-5 w-5" />

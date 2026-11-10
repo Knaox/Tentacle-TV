@@ -15,14 +15,14 @@ export const ExposureModes = memo(function ExposureModes({ current, ip }: { curr
   const ipLabel = ip ?? "203.0.113.x";
   return (
     <section aria-labelledby="exposure-modes" className="space-y-3">
-      <h2 id="exposure-modes" className="text-base font-semibold text-content-primary">{t("modesTitle")}</h2>
+      <h2 id="exposure-modes" className="text-heading-3 text-content-primary">{t("modesTitle")}</h2>
       <div className="grid gap-3 md:grid-cols-2">
         {(["private", "public"] as const).map((mode) => {
           const active = mode === current;
           return (
             <div
               key={mode}
-              className={`rounded-xl border p-4 ${active ? "border-[rgba(var(--brand-rgb),0.55)] bg-[var(--brand-soft)]" : "border-line-subtle bg-fill-faint"}`}
+              className={`ui-panel p-4 ${active ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]" : ""}`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-semibold text-content-primary">{t(mode === "private" ? "modePrivateTitle" : "modePublicTitle")}</p>

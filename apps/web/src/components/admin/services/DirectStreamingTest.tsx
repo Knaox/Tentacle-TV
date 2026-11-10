@@ -17,7 +17,7 @@ export function DirectStreamingTestResults({ result }: { result: DirectStreaming
   const corsMissing = rows.some(([, probe]) => probe.ok && probe.corsOk === false);
   return (
     <div className="space-y-2" role="status">
-      <ul className="divide-y divide-line-subtle rounded-lg border border-line-subtle">
+      <ul className="divide-y divide-line-subtle rounded-field bg-surface-2">
         {rows.map(([label, probe]) => (
           <li key={label} className="flex flex-wrap items-center gap-2 px-3 py-2.5">
             <span className="mr-auto text-sm font-medium text-content-primary">{label}</span>

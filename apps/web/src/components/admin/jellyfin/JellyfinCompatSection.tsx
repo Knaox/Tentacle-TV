@@ -58,17 +58,17 @@ export function JellyfinCompatSection({ variant }: Props) {
         isOutdatedServer(compat.error) ? (
           <AdminNotice>{t("outdatedServer")}</AdminNotice>
         ) : (
-          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl bg-status-error-bg px-4 py-3">
+          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-tile bg-status-error-bg px-4 py-3">
             <p className="min-w-0 flex-1 text-sm text-status-error-fg">{t("loadError")}</p>
-            <button type="button" onClick={() => void compat.refetch()} className="text-sm font-semibold text-content-primary underline underline-offset-4">
+            <button type="button" onClick={() => void compat.refetch()} className="btn btn-soft btn-sm">
               {t("retry")}
             </button>
           </div>
         )
       ) : (
         <div aria-hidden="true" className="grid gap-3 md:grid-cols-2">
-          <div className="skeleton-shimmer h-36 rounded-xl" />
-          <div className="skeleton-shimmer h-36 rounded-xl" />
+          <div className="skeleton-shimmer h-36 rounded-tile" />
+          <div className="skeleton-shimmer h-36 rounded-tile" />
         </div>
       )}
     </AdminSection>
@@ -94,7 +94,7 @@ function Footer({ report, withDetails }: { report: JellyfinCompatReport; withDet
       {withDetails && (
         <Link
           to="/admin/services#compat"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-ghost btn-sm"
         >
           {t("compatDetails")}
           <ChevronRight size={16} aria-hidden="true" />

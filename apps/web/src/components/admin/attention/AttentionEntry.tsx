@@ -13,7 +13,7 @@ import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
 import { LockOpenIcon as LockOpen } from "@phosphor-icons/react/dist/csr/LockOpen";
 import { WarningOctagonIcon as OctagonAlert } from "@phosphor-icons/react/dist/csr/WarningOctagon";
 import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
-import { CloudSlashIcon as ServerOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { LinkBreakIcon as ServerOff } from "@phosphor-icons/react/dist/csr/LinkBreak";
 import { SkipForwardIcon as SkipForward } from "../../icons/transport";
 import { SlidersHorizontalIcon as SlidersHorizontal } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
@@ -54,16 +54,14 @@ const ICON: Record<EntryId, IconType> = {
 
 const TILE = {
   blocking: "bg-status-error-bg text-status-error-fg",
-  recommendation: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+  recommendation: "bg-accent-soft text-accent",
   hidden: "bg-fill-soft text-content-tertiary",
 };
 
-// Sous le verre de macOS 26, un geste du contenu : le remplissage, sans
-// teinte de marque (`lg-content-control`, lot lg2).
-const PILL =
-  "lg-content-control inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.16)] px-3.5 text-[13px] font-medium text-content-primary transition hover:bg-[rgba(var(--brand-rgb),0.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
-const QUIET =
-  "inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-content-secondary transition hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+// L'action d'une entrée : la pilule secondaire du socle. Sous le verre de
+// macOS 26, un geste du contenu (`lg-content-control`, lot lg2).
+const PILL = "lg-content-control btn btn-soft btn-sm";
+const QUIET = "btn btn-ghost btn-sm";
 
 interface Props {
   id: EntryId;
@@ -96,7 +94,7 @@ export const AttentionEntry = memo(function AttentionEntry({ id, variant, items,
 
   return (
     <li className="relative flex gap-3 px-5 py-4">
-      <span aria-hidden="true" className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${TILE[hidden ? "hidden" : family]}`}>
+      <span aria-hidden="true" className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field ${TILE[hidden ? "hidden" : family]}`}>
         <Icon size={18} />
       </span>
       <div className="min-w-0 flex-1">
@@ -111,7 +109,7 @@ export const AttentionEntry = memo(function AttentionEntry({ id, variant, items,
               {foldable ? (
                 <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)} className={QUIET}>
                   {t("details")}
-                  <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+                  <ChevronDown size={14} weight="bold" aria-hidden="true" className={`transition-transform duration-hover ease-out ${open ? "rotate-180" : ""}`} />
                 </button>
               ) : null}
             </div>
@@ -133,7 +131,7 @@ function ActionButton({ action, open, panelId, onToggle }: { action: EntryAction
     return (
       <Link to={action.to} className={PILL}>
         {t(action.label)}
-        <ChevronRight size={14} aria-hidden="true" className="text-[var(--brand-light)]" />
+        <ChevronRight size={14} weight="bold" aria-hidden="true" className="text-content-tertiary" />
       </Link>
     );
   }
@@ -141,14 +139,14 @@ function ActionButton({ action, open, panelId, onToggle }: { action: EntryAction
     return (
       <button type="button" onClick={() => revealCard(action.target)} className={PILL}>
         {t(action.label)}
-        <ChevronDown size={14} aria-hidden="true" className="text-[var(--brand-light)]" />
+        <ChevronDown size={14} weight="bold" aria-hidden="true" className="text-content-tertiary" />
       </button>
     );
   }
   return (
     <button type="button" aria-expanded={open} aria-controls={panelId} onClick={onToggle} className={PILL}>
       {open ? t(action.hideLabel) : t(action.label)}
-      <ChevronDown size={14} aria-hidden="true" className={`text-[var(--brand-light)] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      <ChevronDown size={14} weight="bold" aria-hidden="true" className={`text-content-tertiary transition-transform duration-hover ease-out ${open ? "rotate-180" : ""}`} />
     </button>
   );
 }
@@ -178,9 +176,9 @@ function DismissButton({ hint, hidden, title }: { hint: DismissibleHint; hidden:
       title={label}
       disabled={setDismissed.isPending}
       onClick={() => setDismissed.mutate({ hint, dismissed: !hidden }, { onError: () => show("error", t("saveError")) })}
-      className={`${QUIET} absolute right-3 top-3 text-xs disabled:opacity-50`}
+      className={`${QUIET} absolute right-3 top-3`}
     >
-      {hidden ? <Eye size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />}
+      {hidden ? <Eye size={14} weight="bold" aria-hidden="true" /> : <EyeOff size={14} weight="bold" aria-hidden="true" />}
       {hidden ? t("restore") : t("dismiss")}
     </button>
   );

@@ -73,10 +73,10 @@ export type WizardFrameBase = Omit<WizardFrameProps, "children" | "primary" | "s
  * défile, et seulement s'il le faut ; le pied ne recouvre jamais rien.
  *
  * La hauteur est celle de la fenêtre moins le bandeau de la coquille macOS
- * (`--hote-bandeau`, 0 ailleurs). Coût GPU : le fond est FIXE (deux dégradés
- * peints une fois), le panneau n'a AUCUN `backdrop-filter` — derrière lui ne
- * passe qu'un dégradé lisse, le flou n'y changerait rien et se recalculerait à
- * chaque défilement. L'entrée d'un écran est bornée, en `transform`/`opacity`.
+ * (`--hote-bandeau`, 0 ailleurs). Coût GPU : le fond est l'encre de la page,
+ * sans lavis ; le panneau est OPAQUE (`.ui-panel`, une teinte et son arête),
+ * sans `backdrop-filter`. L'entrée d'un écran est bornée, en
+ * `transform`/`opacity`.
  */
 export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackaging, aside, primary, secondary, status, layout = "split", bare, children }: WizardFrameProps) {
   const { t } = useTranslation("setupWizard");
@@ -98,15 +98,6 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
 
   return (
     <div className="relative isolate flex h-[calc(100dvh-var(--hote-bandeau))] flex-col overflow-hidden bg-surface-0">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(70% 60% at 0% 0%, rgba(var(--brand-rgb), 0.2) 0%, rgba(var(--brand-rgb), 0.05) 45%, transparent 72%)," +
-            "radial-gradient(55% 55% at 100% 100%, rgba(var(--brand-accent-rgb), 0.13) 0%, transparent 70%)",
-        }}
-      />
       <WizardHeader step={wizard.step} position={wizard.position} total={wizard.total} hideProgress={hideProgress} />
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -115,21 +106,21 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
         >
           <section aria-labelledby="wizard-title" className={`min-w-0 animate-fade-slide-up ${place.head}`}>
             {hideProgress ? null : (
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--brand-light)] tabular-nums">
+              <p className="ui-eyebrow num">
                 {t("progress", { n: wizard.position, total: wizard.total })}
               </p>
             )}
-            <h1 id="wizard-title" ref={heading} tabIndex={-1} className="mt-2 text-pretty text-3xl font-extrabold tracking-tight text-content-primary focus:outline-none lg:text-4xl">
+            <h1 id="wizard-title" ref={heading} tabIndex={-1} className="mt-2 text-pretty text-display-3 text-content-primary focus:outline-none lg:text-[2.5rem]">
               {title}
             </h1>
-            {subtitle ? <p className="mt-3 max-w-prose text-base leading-relaxed text-content-secondary">{subtitle}</p> : null}
+            {subtitle ? <p className="mt-3 max-w-[65ch] text-base leading-relaxed text-content-secondary">{subtitle}</p> : null}
             {wizard.server ? <ChosenServer server={wizard.server} /> : null}
             {aside ? <div className="mt-6 space-y-4 text-sm leading-relaxed text-content-secondary">{aside}</div> : null}
           </section>
 
           <div
             className={`min-w-0 animate-fade-slide-up ${place.panel} ${
-              bare ? "" : "rounded-2xl border border-line-subtle bg-fill-subtle p-5 shadow-[var(--elev-3)] sm:p-7"
+              bare ? "" : "ui-panel p-5 sm:p-7"
             }`}
           >
             {children}
@@ -153,9 +144,9 @@ function ChosenServer({ server }: { server: SetupSelection }) {
       role="note"
       aria-label={t("chosenLabel")}
       data-testid="setup-chosen-server"
-      className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-line-subtle bg-fill-faint px-3 py-1.5 text-xs font-medium text-content-secondary"
+      className="mt-5 inline-flex max-w-full items-center gap-2 rounded-pill bg-surface-2 px-3 py-1.5 text-xs font-medium text-content-secondary"
     >
-      <Server size={14} aria-hidden="true" className="shrink-0 text-content-tertiary" />
+      <Server size={14} weight="bold" aria-hidden="true" className="shrink-0 text-content-tertiary" />
       <span className="break-words">
         {t("chosenServer", { name, state: t(`chosenState_${server.path}`) })}
         {server.inStack ? ` · ${t("chosenInStack")}` : ""}

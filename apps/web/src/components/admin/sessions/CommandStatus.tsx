@@ -29,15 +29,15 @@ export const CommandStatus = memo(function CommandStatus({ isPaused, feedback }:
   let content;
   if (command !== null && (phase === "sending" || phase === "waiting")) {
     content = (
-      <span className="inline-flex items-center gap-1.5 font-medium text-[var(--brand-light)]">
-        <LoaderCircle size={12} aria-hidden className="animate-spin" />
+      <span className="inline-flex items-center gap-1.5 font-medium text-accent">
+        <LoaderCircle weight="bold" size={12} aria-hidden className="animate-spin" />
         {t(REQUESTED[command])}
       </span>
     );
   } else if (command !== null && phase === "late") {
     content = (
       <span className="inline-flex items-center gap-1.5 font-medium text-status-warning-fg">
-        <CircleAlert size={12} aria-hidden />
+        <CircleAlert weight="bold" size={12} aria-hidden />
         {t("deviceLate")}
       </span>
     );

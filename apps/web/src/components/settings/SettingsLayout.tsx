@@ -12,6 +12,7 @@ import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 import { firstWideSection, visibleWideSections, type WideSettingsSectionId } from "@tentacle-tv/shared";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { BackButton } from "../ui/BackButton";
 import { useGlassSidebar } from "../nav/useGlassSidebar";
 import { SettingsSearchField, SettingsSearchResults } from "./wide/SettingsSearch";
 import { useSettingHashScroll } from "./wide/useSettingHashScroll";
@@ -29,6 +30,12 @@ import { SettingTargetCtx, WideSettingsCtx, useCatalogText } from "./wide/wideSe
  * téléchargements, un profil de la Famille n'a pas de mot de passe). La
  * recherche remplace la rubrique tant qu'elle a un mot ; un résultat mène à
  * SA ligne (`#<id>`).
+ *
+ * L'en-tête de chaque rubrique porte le bouton RETOUR (refonte de nov. 2026 :
+ * on ne se perd jamais). Passer d'une rubrique à l'autre REMPLACE l'adresse
+ * au lieu d'empiler : les réglages sont un seul lieu, et Retour ramène donc
+ * d'un geste là d'où l'on y est entré — pas à la rubrique d'avant. Fenêtre
+ * étroite (le rail seul, puis la rubrique seule) : Retour ramène au rail.
  */
 
 const ICON = 17;
@@ -62,6 +69,7 @@ export function SettingsLayout() {
   const { pathname, hash } = useLocation();
   const target = hash ? decodeURIComponent(hash.slice(1)) : null;
   const ctx = useWideSettingsContext();
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   useSettingHashScroll();
 
@@ -83,6 +91,8 @@ export function SettingsLayout() {
   const active = visible.find((s) => s.id === activeId);
   const searching = query.trim().length > 0;
   const sidebar = useGlassSidebar("settings");
+  const title = searching ? t("settingsWeb:search.title", { query: query.trim() }) : active ? text(active.label) : t("preferences:settingsTitle");
+  const description = searching ? undefined : active ? text(active.intro) : undefined;
 
   return (
     <div className="pt-6">
@@ -91,16 +101,24 @@ export function SettingsLayout() {
           <SettingsShell
             sections={sections}
             activeId={searching ? activeId ?? "search" : activeId}
-            onSelect={(id) => navigate(`/settings/${id}`)}
-            title={searching ? t("settingsWeb:search.title", { query: query.trim() }) : active ? text(active.label) : t("preferences:settingsTitle")}
-            description={searching ? undefined : active ? text(active.intro) : undefined}
+            onSelect={(id) => navigate(`/settings/${id}`, { replace: !isMobile })}
             navLabel={t("preferences:settingsTitle")}
-            onBack={() => (searching ? setQuery("") : navigate("/settings"))}
-            backLabel={t("preferences:back")}
             railHeader={<SettingsSearchField value={query} onChange={setQuery} />}
             selectionIndicator={sidebar.selection}
             sidebarSurface={sidebar.surface}
           >
+            <header className="mb-7 flex items-start gap-3">
+              {/* Une recherche en cours : Retour la referme. Fenêtre étroite : il ramène au rail. */}
+              <BackButton
+                fallback="/"
+                onBack={searching ? () => setQuery("") : isMobile ? () => navigate("/settings") : undefined}
+                className="-ml-1 shrink-0"
+              />
+              <div className="min-w-0 pt-0.5">
+                <h1 className="text-[1.875rem] font-[650] leading-[1.15] tracking-[-0.02em] text-content-primary">{title}</h1>
+                {description ? <p className="mt-1.5 max-w-[60ch] text-sm leading-relaxed text-content-secondary">{description}</p> : null}
+              </div>
+            </header>
             {searching ? <SettingsSearchResults query={query} ctx={ctx} onPick={() => setQuery("")} /> : <Outlet />}
           </SettingsShell>
         </SettingTargetCtx.Provider>

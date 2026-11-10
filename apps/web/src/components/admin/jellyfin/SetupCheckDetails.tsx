@@ -65,15 +65,15 @@ function Plugins({ plugins }: { plugins: SetupPlugin[] }) {
   return (
     <ul className="mt-1 grid gap-1.5 sm:grid-cols-2">
       {plugins.map((plugin) => (
-        <li key={plugin.name} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-fill-subtle px-2.5 py-1.5">
+        <li key={plugin.name} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-field bg-fill-subtle px-2.5 py-1.5">
           <a
             href={plugin.homepage ?? undefined}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-w-0 items-center gap-1 text-xs font-medium text-content-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="inline-flex min-w-0 items-center gap-1 rounded-chip text-xs font-medium text-content-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             <span className="truncate">{plugin.name}</span>
-            <ExternalLink size={11} aria-hidden="true" className="flex-shrink-0 text-content-quaternary" />
+            <ExternalLink size={11} weight="bold" aria-hidden="true" className="flex-shrink-0 text-content-quaternary" />
             <span className="sr-only"> {t("opensNewTab")}</span>
           </a>
           <StatusPill tone={PLUGIN_TONE[plugin.state].tone} size="sm">{t(PLUGIN_TONE[plugin.state].key)}</StatusPill>
@@ -84,9 +84,9 @@ function Plugins({ plugins }: { plugins: SetupPlugin[] }) {
             <button
               type="button"
               onClick={() => void copy(plugin.repositoryUrl as string)}
-              className="inline-flex min-h-[28px] items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-content-secondary hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="btn btn-ghost btn-sm"
             >
-              <Copy size={12} aria-hidden="true" />
+              <Copy size={14} weight="bold" aria-hidden="true" />
               {t("copyRepository")}
             </button>
           )}

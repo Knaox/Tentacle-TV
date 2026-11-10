@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { ORIGINAL_AUDIO_LANG } from "@tentacle-tv/shared";
+import { SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 
 /**
  * Carte de préférences de langues d'UNE bibliothèque (extraction de
@@ -51,40 +52,39 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
   };
 
   return (
-    <div className="lg-content rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <div className="flex items-center justify-between">
+    <div className="lg-content rounded-tile bg-surface-2 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h3 className="text-sm font-semibold text-content-primary">{libraryName}</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {pref && !editing && (
-            <div className="flex items-center gap-2 text-xs text-content-tertiary">
+            <div className="flex flex-wrap items-center gap-1.5">
               {pref.audioLang && (
-                <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-[var(--brand-light)]">
+                <span className="chip chip-accent">
                   {t("preferences:audio")}: {pref.audioLang === ORIGINAL_AUDIO_LANG
                     ? t("preferences:langOriginal")
                     : languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
                 </span>
               )}
               {pref.subtitleLang && pref.subtitleMode !== "none" && (
-                <span className="rounded bg-status-info-bg px-2 py-0.5 text-status-info-fg">
+                <span className="chip">
                   ST: {languages.find((l) => l.code === pref.subtitleLang)?.label ?? pref.subtitleLang}
                   ({subtitleModes.find((m) => m.value === pref.subtitleMode)?.label})
                 </span>
               )}
             </div>
           )}
-          <button onClick={() => setEditing(!editing)}
-            className="rounded-lg bg-fill-soft px-3 py-1.5 text-xs text-content-secondary hover:bg-fill-medium">
+          <button type="button" onClick={() => setEditing(!editing)} aria-expanded={editing} className="btn btn-soft btn-sm">
             {editing ? t("common:cancel") : t("common:edit")}
           </button>
         </div>
       </div>
 
       {editing && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-4 border-t border-line-subtle pt-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:audio")}</label>
+            <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("preferences:audio")}</label>
             <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
+              className={SETTING_FIELD}>
               <option value="">{t("preferences:default")}</option>
               {/* La langue originale DU TITRE, quelle qu'elle soit (Jellyfin 12+). */}
               <option value={ORIGINAL_AUDIO_LANG}>{t("preferences:langOriginal")}</option>
@@ -95,9 +95,9 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitles")}</label>
+            <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("preferences:subtitles")}</label>
             <select value={subtitleLang} onChange={(e) => setSubtitleLang(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
+              className={SETTING_FIELD}>
               <option value="">{t("preferences:none")}</option>
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -106,9 +106,9 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-content-tertiary">{t("preferences:subtitleMode")}</label>
+            <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("preferences:subtitleMode")}</label>
             <select value={subtitleMode} onChange={(e) => setSubtitleMode(e.target.value as "none" | "always" | "forced" | "signs")}
-              className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
+              className={SETTING_FIELD}>
               {subtitleModes.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
@@ -116,13 +116,11 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
           </div>
 
           <div className="flex gap-2 sm:col-span-3">
-            <button onClick={handleSave}
-              className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-xs font-bold hover:bg-cta-primary-bg-hover">
+            <button type="button" onClick={handleSave} className="btn btn-solid btn-sm">
               {t("common:save")}
             </button>
             {pref && (
-              <button onClick={handleReset}
-                className="rounded-lg bg-danger-surface px-4 py-2 text-xs text-status-error-fg hover:bg-danger-surface-hover">
+              <button type="button" onClick={handleReset} className="btn btn-danger btn-sm">
                 {t("preferences:reset")}
               </button>
             )}

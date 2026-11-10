@@ -171,8 +171,8 @@ export function AdminSessions() {
     >
       {query.isLoading && (
         <div className="grid gap-4 xl:grid-cols-2" aria-busy="true">
-          <div className="h-48 rounded-xl border border-line-subtle bg-fill-faint" />
-          <div className="h-48 rounded-xl border border-line-subtle bg-fill-faint" />
+          <div className="ui-panel h-48" />
+          <div className="ui-panel h-48" />
         </div>
       )}
 
@@ -187,7 +187,7 @@ export function AdminSessions() {
       )}
 
       {data && playing.length === 0 && data.groups.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint px-6 py-12 text-center">
+        <div className="ui-panel flex flex-col items-center gap-3 px-6 py-12 text-center">
           <MonitorPlay size={32} aria-hidden className="text-content-quaternary" />
           <p className="font-medium text-content-primary">{t("empty")}</p>
           <p className="text-sm text-content-tertiary">{t("emptyHint")}</p>

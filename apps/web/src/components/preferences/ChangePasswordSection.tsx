@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EyeIcon } from "@phosphor-icons/react/dist/csr/Eye";
+import { EyeSlashIcon } from "@phosphor-icons/react/dist/csr/EyeSlash";
 import { BACKEND, hdrs, creds } from "../../pages/adminUtils";
 import { getImpersonationState } from "../../lib/impersonation";
 
-const INPUT =
-  "h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-3 pr-11 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
+/** Le champ du socle (40 px) ; la marge de droite laisse sa place à l'œil. */
+const INPUT = "field pr-11";
 
 /**
  * Section "Mot de passe" du profil (web + desktop) — change le mot de passe
@@ -64,7 +66,7 @@ export function ChangePasswordSection({ embedded = false }: {
   };
 
   return (
-    <div className={embedded ? "" : "lg-content mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5"}>
+    <div className={embedded ? "" : "lg-content ui-panel mt-8 p-5"}>
       {!embedded && (
         <>
           <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("preferences:changePasswordTitle")}</h3>
@@ -72,7 +74,7 @@ export function ChangePasswordSection({ embedded = false }: {
         </>
       )}
 
-      <form onSubmit={handleSubmit} className="max-w-sm space-y-3">
+      <form onSubmit={handleSubmit} className="max-w-sm space-y-3.5">
         <PasswordField
           id="current-password"
           label={t("preferences:currentPassword")}
@@ -112,7 +114,7 @@ export function ChangePasswordSection({ embedded = false }: {
         <button
           type="submit"
           disabled={pending || !current || !next || !confirmNext}
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-solid"
          
         >
           {pending ? t("preferences:passwordChanging") : t("common:save")}
@@ -134,7 +136,7 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, toggleL
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs font-medium text-content-tertiary">{label}</label>
+      <label htmlFor={id} className="mb-1.5 block text-xs font-semibold text-content-tertiary">{label}</label>
       <div className="relative">
         <input
           id={id}
@@ -150,32 +152,12 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, toggleL
             type="button"
             onClick={onToggleShow}
             aria-label={toggleLabel}
-            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-content-quaternary transition hover:bg-fill-soft hover:text-content-secondary"
+            className="icon-btn btn-sm absolute right-1 top-1/2 -translate-y-1/2"
           >
-            {show ? <EyeOffIcon /> : <EyeIcon />}
+            {show ? <EyeSlashIcon size={17} aria-hidden /> : <EyeIcon size={17} aria-hidden />}
           </button>
         )}
       </div>
     </div>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-      <path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-      <line x1="2" x2="22" y1="2" y2="22" />
-      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-    </svg>
   );
 }

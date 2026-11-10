@@ -6,8 +6,8 @@ import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/S
 export const SecurityNotes = memo(function SecurityNotes() {
   const { t } = useTranslation("remoteAccess");
   return (
-    <section aria-labelledby="remote-security" className="rounded-xl border border-line-subtle bg-fill-faint p-4">
-      <h2 id="remote-security" className="flex items-center gap-2 text-sm font-semibold text-content-primary">
+    <section aria-labelledby="remote-security" className="ui-panel p-5">
+      <h2 id="remote-security" className="flex items-center gap-2 text-heading-3 text-content-primary">
         <ShieldCheck size={16} aria-hidden="true" className="text-content-tertiary" />
         {t("securityTitle")}
       </h2>

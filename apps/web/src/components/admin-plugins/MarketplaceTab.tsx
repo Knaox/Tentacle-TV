@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
+import { MagnifyingGlassIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { StorefrontIcon as Store } from "@phosphor-icons/react/dist/csr/Storefront";
 import { EmptyState } from "../ui/EmptyState";
 import { AdminNotice } from "../admin/kit";
@@ -69,7 +69,7 @@ export function MarketplaceTab({ filter, onFilter, onShowSources }: MarketplaceT
   if (marketplace.isLoading) {
     return (
       <div className={GRID} aria-busy="true">
-        {[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-64 rounded-2xl" />)}
+        {[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-64 rounded-panel" />)}
       </div>
     );
   }

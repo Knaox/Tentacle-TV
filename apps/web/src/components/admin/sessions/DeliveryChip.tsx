@@ -39,7 +39,7 @@ const STYLE: Record<DeliveryKind, DeliveryStyle> = {
   direct: { label: "directPlay", count: "countDirect", hint: "directPlayHint", tone: "bg-status-success-bg text-status-success-fg", Icon: CircleCheck },
   remux: { label: "remux", count: "countRemux", hint: "remuxHint", tone: "bg-status-info-bg text-status-info-fg", Icon: Package },
   audio: { label: "audioTranscode", count: "countAudio", hint: "audioTranscodeHint", tone: "bg-status-warning-bg text-status-warning-fg", Icon: AudioLines },
-  video: { label: "transcode", count: "countVideo", hint: "transcodeHint", tone: "border border-status-warning bg-status-warning-bg text-status-warning-fg", Icon: Cpu },
+  video: { label: "transcode", count: "countVideo", hint: "transcodeHint", tone: "bg-status-warning-bg text-status-warning-fg shadow-[inset_0_0_0_1px_var(--status-warning)]", Icon: Cpu },
   pending: { label: "pending", count: "countPending", hint: "pendingHint", tone: "bg-fill-soft text-content-secondary", Icon: Hourglass },
 };
 
@@ -62,8 +62,8 @@ export const DeliveryChip = memo(function DeliveryChip({ kind, count, size = "md
       className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold tracking-wide ${box.box} ${style.tone}`}
       title={t(style.hint)}
     >
-      <style.Icon size={box.icon} aria-hidden strokeWidth={2.2} />
-      <span className={count === undefined ? undefined : "tabular-nums"}>
+      <style.Icon size={box.icon} aria-hidden weight="bold" />
+      <span className={count === undefined ? undefined : "num"}>
         {count === undefined ? t(style.label) : t(style.count, { count })}
       </span>
     </span>

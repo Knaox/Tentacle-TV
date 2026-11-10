@@ -47,7 +47,7 @@ export function TicketBoard({ scope }: { scope: TicketBoardScope }) {
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {scope === "mine" && (
-          <h2 className="text-lg font-semibold text-content-primary">{t("myTickets")}</h2>
+          <h2 className="text-heading-3 text-content-primary">{t("myTickets")}</h2>
         )}
         <ScopedSearchField
           value={board.search}
@@ -60,7 +60,7 @@ export function TicketBoard({ scope }: { scope: TicketBoardScope }) {
           <button
             type="button"
             onClick={url.openComposer}
-            className="h-11 flex-shrink-0 rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg hover:bg-cta-primary-bg-hover"
+            className="btn btn-solid flex-shrink-0"
           >
             {t("newTicket")}
           </button>
@@ -69,7 +69,7 @@ export function TicketBoard({ scope }: { scope: TicketBoardScope }) {
           <button
             type="button"
             onClick={sel.enterSelectionMode}
-            className="h-11 flex-shrink-0 rounded-lg border border-line-subtle bg-fill-subtle px-4 text-sm font-medium text-content-secondary hover:bg-fill-soft"
+            className="btn btn-soft flex-shrink-0"
           >
             {t("select")}
           </button>
@@ -77,7 +77,7 @@ export function TicketBoard({ scope }: { scope: TicketBoardScope }) {
       </div>
 
       {board.hiddenCount > 0 && (
-        <p className="mb-3 text-xs text-content-quaternary">{t("olderHidden", { count: board.hiddenCount })}</p>
+        <p className="mb-3 text-xs text-content-tertiary">{t("olderHidden", { count: board.hiddenCount })}</p>
       )}
 
       {board.isError ? (

@@ -22,14 +22,14 @@ export function InviteFilters({ value, counts, onChange }: InviteFiltersProps) {
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(filter)}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.4)] ${
+            className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
-                ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-content-primary"
-                : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
+                ? "bg-surface-4 text-content-primary"
+                : "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
             }`}
           >
             {t(`filter_${filter}`)}
-            <span className="tabular-nums text-content-quaternary">{counts[filter]}</span>
+            <span className="num text-content-tertiary">{counts[filter]}</span>
           </button>
         );
       })}

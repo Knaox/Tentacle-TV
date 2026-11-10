@@ -223,4 +223,6 @@ export default {
   bandwidthIpAdd: "Add",
   bandwidthIpInvalid: "Invalid IP address or range.",
   bandwidthIpRemove: "Remove {{ip}}",
+  // L'ÉTAT d'un code coupé (la pastille) — `provisioningDisable` est le geste (le bouton).
+  provisioningDisabledState: "Code disabled",
 } as const;

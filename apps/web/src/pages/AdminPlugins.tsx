@@ -97,7 +97,7 @@ function SummaryLink({ tone, onClick, children }: { tone: StatusTone; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full outline-none transition-transform duration-150 hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="rounded-full outline-none transition-opacity duration-hover hover:opacity-80 focus-visible:ring-2 focus-visible:ring-line-focus"
     >
       <StatusPill tone={tone}>{children}</StatusPill>
     </button>

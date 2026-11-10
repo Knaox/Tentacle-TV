@@ -9,7 +9,7 @@ import type {
  * par portée ni par technique (NN/g, Material : « ce que l'utilisateur veut
  * faire ») ; chaque réglage dans la rubrique où on le chercherait :
  *
- *   REGARDER   Lecture                — sauts et enchaînement · « encore là ? » · données · vidéo de l'ordinateur
+ *   REGARDER   Lecture                — intros, résumés, génériques · d'un épisode à l'autre · données · vidéo de l'ordinateur
  *              Langues et sous-titres — langue de l'interface · audio et sous-titres de chaque bibliothèque
  *              Téléchargements        — emplacement · espace · continuer en arrière-plan (bureau)
  *   INTERFACE  Apparence              — thème · Liquid Glass · Octave
@@ -31,7 +31,9 @@ const w = (key: string): SettingsI18nRef => ({ ns: "settingsWeb", key });
 function entry(
   id: WideSettingId,
   scope: WideSettingScope | null,
-  options: { requires?: readonly WideSettingsRequirement[]; capability?: WideSettingEntry["capability"]; keywords?: boolean } = {},
+  options: {
+    requires?: readonly WideSettingsRequirement[]; capability?: WideSettingEntry["capability"]; keywords?: boolean; advanced?: boolean;
+  } = {},
 ): WideSettingEntry {
   return {
     id,
@@ -41,6 +43,7 @@ function entry(
     ...(options.keywords === false ? {} : { keywords: w(`entries.${id}.keywords`) }),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.capability ? { capability: options.capability } : {}),
+    ...(options.advanced ? { advanced: true } : {}),
   };
 }
 
@@ -60,19 +63,24 @@ const section = (
 const PERSONAL_ONLINE: readonly WideSettingsRequirement[] = ["online", "personal"];
 
 export const WIDE_SETTINGS_SECTIONS: readonly WideSettingsSection[] = [
+  // Lecture, rangée par INTENTION (refonte de nov. 2026) : ce que le lecteur fait des passages, ce
+  // qui se passe d'un épisode à l'autre, ce que la lecture consomme, puis la vidéo de l'ordinateur.
+  // Le réglage fin (passage par passage, pilote, session graphique) est `advanced` : replié, jamais absent.
   section("playback", "watch", [
     group("playback", "player", [
       entry("playbackMode", "account"),
-      entry("skipPassages", "account"),
-      entry("upNext", "account"),
+      entry("skipPassages", "account", { advanced: true }),
     ]),
-    group("playback", "stillWatching", [entry("stillWatching", "account", { capability: "playback.stillWatching" })]),
+    group("playback", "nextEpisode", [
+      entry("upNext", "account"),
+      entry("stillWatching", "account", { capability: "playback.stillWatching" }),
+    ]),
     // L'économie de données règle ce que la LECTURE consomme : elle avait sa rubrique d'une ligne (« Données »).
     group("playback", "data", [entry("dataSaver", "device")]),
     group("playback", "video", [
-      entry("hardwareDecoding", "device", { requires: ["hardwareDecoding"] }),
       entry("hdrAuto", "device", { requires: ["hdrAuto"] }),
-      entry("linuxSession", "device", { requires: ["linuxSession"] }),
+      entry("hardwareDecoding", "device", { requires: ["hardwareDecoding"], advanced: true }),
+      entry("linuxSession", "device", { requires: ["linuxSession"], advanced: true }),
     ]),
   ]),
   // Les pistes choisies d'office : la question la plus posée (« pourquoi pas la VF ? »), une rubrique à elle.

@@ -77,7 +77,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         </div>
         <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("invite.hint")}</p>
 
-        <div className="mt-4 min-h-[120px] flex-1 overflow-y-auto rounded-xl border border-line-subtle bg-surface-1" aria-busy={searching}>
+        <div className="mt-4 min-h-[120px] flex-1 overflow-y-auto rounded-tile bg-surface-2" aria-busy={searching}>
           {candidates.isError ? (
             <p className="px-4 py-6 text-center text-sm text-status-error-fg">{t("invite.loadError")}</p>
           ) : list.length === 0 && !searching ? (

@@ -10,10 +10,8 @@ interface AuthButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS = {
-  primary:
-    "bg-cta-primary-bg text-cta-primary-fg font-bold shadow-[0_8px_24px_-8px_rgba(var(--brand-rgb),0.55)] hover:bg-cta-primary-bg-hover",
-  secondary:
-    "border border-line-subtle bg-fill-subtle text-content-primary font-semibold hover:border-line-strong hover:bg-fill-soft",
+  primary: "btn-solid",
+  secondary: "btn-soft",
 } as const;
 
 /**
@@ -37,9 +35,7 @@ export function AuthButton({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl px-5 text-sm transition-[transform,background-color,border-color] duration-150 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${
-        fullWidth ? "w-full" : ""
-      } ${VARIANTS[variant]} ${className ?? ""}`}
+      className={`btn btn-lg ${fullWidth ? "w-full" : ""} ${VARIANTS[variant]} ${className ?? ""}`}
       {...rest}
     >
       {loading && (
@@ -58,7 +54,7 @@ export function AuthTextButton({ className, children, type = "button", ...rest }
   return (
     <button
       type={type}
-      className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium text-content-tertiary transition-colors hover:text-[var(--brand-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${className ?? ""}`}
+      className={`btn btn-ghost btn-sm ${className ?? ""}`}
       {...rest}
     >
       {children}

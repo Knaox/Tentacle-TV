@@ -77,9 +77,9 @@ function DetailBody({ entry, installed, update, titleId, onClose }: {
           autoFocus
           onClick={onClose}
           aria-label={t("common:close")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-tertiary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="icon-btn btn-sm"
         >
-          <X aria-hidden className="h-5 w-5" />
+          <X aria-hidden size={18} />
         </button>
       </div>
 
@@ -99,9 +99,9 @@ function DetailBody({ entry, installed, update, titleId, onClose }: {
             href={repo.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:border-line-strong hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="btn btn-soft"
           >
-            <ExternalLink aria-hidden className="h-4 w-4 text-content-secondary" />
+            <ExternalLink aria-hidden size={16} className="text-content-secondary" />
             {t("sourceCode")}
           </a>
         )}
@@ -113,7 +113,7 @@ function DetailBody({ entry, installed, update, titleId, onClose }: {
       </p>
 
       {entry.changelog && (
-        <section aria-labelledby={`${titleId}-notes`} className="space-y-3 rounded-xl border border-line-subtle bg-fill-faint p-4">
+        <section aria-labelledby={`${titleId}-notes`} className="space-y-3 rounded-tile bg-surface-2 p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 id={`${titleId}-notes`} className="text-sm font-semibold text-content-primary">
               {t("whatsNewIn", { version: entry.version })}
@@ -127,7 +127,7 @@ function DetailBody({ entry, installed, update, titleId, onClose }: {
       <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
         <Fact label={t("factId")}><span className="font-mono text-[13px]">{entry.pluginId}</span></Fact>
         <Fact label={t("factVersion")}>
-          <span className="tabular-nums">
+          <span className="num">
             v{entry.version}
             {installed && installed.version !== entry.version && ` · ${t("installedVersion", { version: installed.version })}`}
           </span>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowCircleUpIcon as CircleArrowUp } from "@phosphor-icons/react/dist/csr/ArrowCircleUp";
-import { PackageIcon as PackagePlus } from "@phosphor-icons/react/dist/csr/Package";
+import { DownloadSimpleIcon as PackagePlus } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ActionPill, type PillStatus } from "../admin/sessions/ActionPill";

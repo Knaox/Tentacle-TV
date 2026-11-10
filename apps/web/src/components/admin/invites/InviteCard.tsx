@@ -35,7 +35,7 @@ const STATUS_TONE: Record<InviteStatus, StatusTone> = {
 };
 
 const ICON_BUTTON =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line-subtle text-content-tertiary transition-colors";
+  "icon-btn btn-soft";
 
 function expiryText(invite: AdminInviteDto, now: number, locale: string, t: TFunction<"adminInvites">): string {
   if (invite.expiresAt === null) return t("neverExpires");
@@ -65,14 +65,12 @@ function UsesMeter({ invite, active }: { invite: AdminInviteDto; active: boolean
   const ratio = Math.min(1, invite.currentUses / invite.maxUses);
   return (
     <div>
-      <p className="text-sm tabular-nums text-content-secondary">
+      <p className="num text-sm text-content-secondary">
         {t("usesCount", { current: invite.currentUses, max: invite.maxUses })}
       </p>
-      <div aria-hidden className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-fill-soft">
-        <div
-          className={`h-full rounded-full ${active ? "bg-[var(--brand)]" : "bg-content-quaternary"}`}
-          style={{ width: `${ratio * 100}%` }}
-        />
+      {/* Une invitation qui ne sert plus garde sa mesure, sans le dégradé de jauge. */}
+      <div aria-hidden className="gauge mt-1.5">
+        <i style={active ? { transform: `scaleX(${ratio})` } : { transform: `scaleX(${ratio})`, background: "var(--text-quaternary)" }} />
       </div>
     </div>
   );
@@ -93,10 +91,10 @@ export const InviteCard = memo(function InviteCard({
   const soon = active && expiresSoon(invite, now);
 
   return (
-    <article className="relative flex h-full flex-col gap-3 rounded-xl border border-line-subtle bg-fill-faint p-4 transition-colors hover:border-line-strong">
+    <article className="ui-panel relative flex h-full flex-col gap-3 p-4">
       <span
         aria-hidden
-        className="pointer-events-none absolute -inset-px rounded-xl border-2 border-[var(--brand)] transition-opacity duration-700"
+        className="pointer-events-none absolute inset-0 rounded-panel shadow-[inset_0_0_0_2px_var(--accent)] transition-opacity duration-700"
         style={{ opacity: highlighted ? 1 : 0 }}
       />
 
@@ -109,7 +107,7 @@ export const InviteCard = memo(function InviteCard({
 
       <UsesMeter invite={invite} active={active} />
 
-      <div className="space-y-0.5 text-xs text-content-quaternary">
+      <div className="space-y-0.5 text-xs text-content-tertiary">
         {/* Épuisée, son échéance ne dit plus rien. */}
         {status !== "exhausted" && (
           <p
@@ -139,7 +137,7 @@ export const InviteCard = memo(function InviteCard({
             onClick={() => onShare(invite)}
             aria-label={t("share")}
             title={t("share")}
-            className={`${ICON_BUTTON} hover:bg-fill-soft hover:text-content-primary`}
+            className={ICON_BUTTON}
           >
             <Share2 size={16} aria-hidden />
           </button>
@@ -149,7 +147,7 @@ export const InviteCard = memo(function InviteCard({
           onClick={() => onDelete(invite)}
           aria-label={t("deleteLabel", { key: invite.key })}
           title={t("deleteConfirm")}
-          className={`${ICON_BUTTON} hover:border-danger-border hover:bg-danger-surface hover:text-status-error-fg`}
+          className={`${ICON_BUTTON} hover:bg-danger-surface hover:text-status-error-fg`}
         >
           <Trash2 size={16} aria-hidden />
         </button>

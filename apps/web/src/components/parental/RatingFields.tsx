@@ -82,7 +82,7 @@ export const UnratedTypesField = memo(function UnratedTypesField({ types, value,
       <span className={FIELD_HINT}>{t("fields.blockUnratedItems.hint")}</span>
       <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
         {shown.map((type) => (
-          <label key={type} className="flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-lg px-1 text-sm text-content-secondary hover:text-content-primary">
+          <label key={type} className="flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-field px-1 text-sm text-content-secondary transition-colors duration-hover hover:text-content-primary">
             <input
               type="checkbox"
               className={CHECKBOX}

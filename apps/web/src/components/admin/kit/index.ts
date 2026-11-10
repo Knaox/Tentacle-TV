@@ -19,6 +19,7 @@ export { StatusPill, type StatusPillProps, type StatusTone } from "./StatusPill"
 export { StatTile, type StatTileProps, type StatTone } from "./StatTile";
 export { AdminNotice, type AdminNoticeProps, type NoticeTone } from "./AdminNotice";
 export { ShowMore, type ShowMoreProps } from "./ShowMore";
+export { AdminBackCtx } from "./adminBack";
 export { Tabs, TabPanel, type TabItem } from "../../ui/Tabs";
 export { useUrlTab } from "../../../hooks/useUrlTab";
 export { UserAvatar } from "../../ui/UserAvatar";

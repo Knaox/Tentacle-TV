@@ -9,10 +9,17 @@
   will-change: auto;
 }
 
-.avatar-tile:hover .avatar-tile__art,
 .avatar-tile:focus-visible .avatar-tile__art {
   transform: translateY(-4px) scale(1.04);
   animation: var(--avatar-motion) var(--avatar-motion-duration, 1.8s) var(--ease-in-out) infinite;
+}
+
+/* Le survol ne vaut qu'à la souris : au doigt, un appui « survole » et le personnage resterait à danser. */
+@media (hover: hover) and (pointer: fine) {
+  .avatar-tile:hover .avatar-tile__art {
+    transform: translateY(-4px) scale(1.04);
+    animation: var(--avatar-motion) var(--avatar-motion-duration, 1.8s) var(--ease-in-out) infinite;
+  }
 }
 
 .avatar-tile[data-temperament="float"] { --avatar-motion: avatar-float; --avatar-motion-duration: 2.4s; }

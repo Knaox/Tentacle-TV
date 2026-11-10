@@ -1,14 +1,13 @@
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
 import { MoonIcon as Moon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SunIcon as Sun } from "@phosphor-icons/react/dist/csr/Sun";
-import { SettingsRow } from "@tentacle-tv/ui";
 import type { ThemeMode } from "@tentacle-tv/theme";
 
 import { useThemeMode } from "../../theme/useThemeMode";
 import { useLiquidGlass } from "../../theme/useLiquidGlass";
+import { ChoiceTiles, type ChoiceTile } from "../../components/settings/ChoiceTiles";
+import { ThemeMini } from "../../components/settings/ThemeMini";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { SettingItem } from "../../components/settings/wide/SettingItem";
 import { WideGroup } from "../../components/settings/wide/WideGroup";
@@ -25,7 +24,7 @@ import { OctaveAppearanceSettings, useTentacleGlassLabel } from "../../music/oct
  * marque de l'admin, lui global à l'instance.
  */
 
-const ICON = 17;
+const ICON = 18;
 
 export function SettingsAppearance() {
   const { t } = useTranslation("preferences");
@@ -34,31 +33,18 @@ export function SettingsAppearance() {
   // Avec Octave, deux interrupteurs Liquid Glass : celui-ci se nomme « Liquid Glass dans Tentacle ».
   const glassLabel = useTentacleGlassLabel() ?? t("liquidGlassTitle");
 
-  const modes: Array<{ id: ThemeMode; label: string; icon: ReactNode; hint?: string }> = [
-    { id: "light", label: t("themeLight"), icon: <Sun size={ICON} /> },
-    { id: "dark", label: t("themeDark"), icon: <Moon size={ICON} /> },
-    { id: "auto", label: t("themeAuto"), icon: <Monitor size={ICON} />, hint: t("themeAutoHint") },
+  // Chaque thème montre ce qu'il donne (`ThemeMini`) : on choisit en voyant.
+  const modes: ChoiceTile<ThemeMode>[] = [
+    { id: "light", label: t("themeLight"), icon: <Sun size={ICON} />, preview: <ThemeMini mode="light" /> },
+    { id: "dark", label: t("themeDark"), icon: <Moon size={ICON} />, preview: <ThemeMini mode="dark" /> },
+    { id: "auto", label: t("themeAuto"), icon: <Monitor size={ICON} />, hint: t("themeAutoHint"), preview: <ThemeMini mode="auto" /> },
   ];
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <WideGroup section="appearance" group="theme">
         <SettingItem setting="theme">
-          <div className="overflow-hidden rounded-lg border border-line-subtle">
-            {modes.map((m, i) => (
-              <SettingsRow
-                key={m.id}
-                icon={m.icon}
-                label={m.label}
-                description={m.hint}
-                onClick={() => setMode(m.id)}
-                last={i === modes.length - 1}
-                trailing={mode === m.id ? (
-                  <span className="text-brand" aria-label="selected"><Check size={18} /></span>
-                ) : undefined}
-              />
-            ))}
-          </div>
+          <ChoiceTiles label={t("theme")} value={mode} options={modes} onChange={setMode} />
         </SettingItem>
       </WideGroup>
 

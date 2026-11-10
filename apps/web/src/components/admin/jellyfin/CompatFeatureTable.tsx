@@ -94,7 +94,7 @@ function FeatureName({ row }: { row: Row }) {
     <div className="min-w-0">
       <p className="text-sm font-medium text-content-primary">{localized(row.feature.label, i18n.language)}</p>
       {row.feature.since && !row.installed && (
-        <p className="text-xs text-[var(--brand-light)]">{t("featureSince", { version: row.feature.since })}</p>
+        <p className="text-xs text-accent">{t("featureSince", { version: row.feature.since })}</p>
       )}
       {note && <p className="mt-0.5 text-xs leading-relaxed text-content-tertiary">{localized(note, i18n.language)}</p>}
     </div>
@@ -166,7 +166,7 @@ function FeatureGroups({ groups, heads, showLatest, areaLabel }: FeatureGroupsPr
     <>
       <table className="hidden w-full text-left md:table">
         <thead>
-          <tr className="border-b border-line-subtle text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+          <tr className="ui-eyebrow border-b border-line-subtle">
             <th scope="col" className="py-2 pr-4 font-semibold">{t("featureColumn")}</th>
             <th scope="col" className="py-2 pr-4 font-semibold">{heads.installed}</th>
             <th scope="col" className="py-2 pr-4 font-semibold">{t("serverColumn")}</th>
@@ -197,7 +197,7 @@ function FeatureGroups({ groups, heads, showLatest, areaLabel }: FeatureGroupsPr
             <p className="mb-1.5 text-xs font-semibold text-content-secondary">{areaLabel(area)}</p>
             <ul className="space-y-2">
               {rows.map((row) => (
-                <li key={row.feature.id} className="rounded-xl bg-fill-subtle px-3 py-2.5">
+                <li key={row.feature.id} className="rounded-tile bg-surface-2 px-3 py-2.5">
                   <FeatureName row={row} />
                   <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
                     <Line label={heads.installed}><StateCell state={cell(row, "installed")} /></Line>

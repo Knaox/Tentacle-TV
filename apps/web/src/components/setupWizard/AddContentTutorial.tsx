@@ -27,12 +27,12 @@ export const AddContentTutorial = memo(function AddContentTutorial({ folders }: 
   const { t, i18n } = useTranslation("setupWizard");
   return (
     <section aria-labelledby="add-content" className="space-y-4">
-      <h2 id="add-content" className="font-semibold text-content-primary">{t("addTitle")}</h2>
+      <h2 id="add-content" className="text-heading-3 text-content-primary">{t("addTitle")}</h2>
       <p>{folders.length ? t("addLead") : t("addLeadNone")}</p>
       {folders.length ? (
         <ul className="space-y-1.5" data-testid="add-content-folders">
           {folders.map((folder) => (
-            <li key={`${folder.name}-${folder.path}`} className="rounded-lg bg-fill-subtle px-3 py-2">
+            <li key={`${folder.name}-${folder.path}`} className="rounded-field bg-surface-2 px-3 py-2">
               <span className="font-semibold text-content-primary">{folder.name}</span>{" "}
               <span className="break-all font-mono text-xs text-content-primary">{folder.hostPath ?? folder.path}</span>
               {folder.hostPath ? (
@@ -46,11 +46,11 @@ export const AddContentTutorial = memo(function AddContentTutorial({ folders }: 
       ) : null}
       <ol aria-label={t("addSchemaLabel")} className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {STEPS.map((step, index) => (
-          <li key={step.title} className="flex min-w-0 items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint px-3 py-2.5">
-            <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill-subtle text-xs font-semibold tabular-nums text-content-secondary">
+          <li key={step.title} className="flex min-w-0 items-center gap-3 rounded-tile bg-surface-2 px-3 py-2.5">
+            <span aria-hidden="true" className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-4 text-xs font-semibold text-content-secondary">
               {index + 1}
             </span>
-            <step.icon size={20} aria-hidden="true" className="shrink-0 text-[var(--brand)]" />
+            <step.icon size={20} aria-hidden="true" className="shrink-0 text-content-secondary" />
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-content-primary">{t(step.title)}</span>
               <span className="block text-xs text-content-tertiary">{t(step.body)}</span>
@@ -61,9 +61,9 @@ export const AddContentTutorial = memo(function AddContentTutorial({ folders }: 
       <p>{t("addNaming")}</p>
       <p>{t("addTiming")}</p>
       <p>{t("addRescan")}</p>
-      <a href={setupDocUrl("addContent", i18n.language ?? "en")} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary">
+      <a href={setupDocUrl("addContent", i18n.language ?? "en")} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-accent hover:underline">
         {t("addGuide")}
-        <ExternalLink size={14} aria-hidden="true" />
+        <ExternalLink size={14} weight="bold" aria-hidden="true" />
       </a>
     </section>
   );

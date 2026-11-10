@@ -30,7 +30,7 @@ export function GuideHiddenNote() {
         type="button"
         disabled={setDismissed.isPending}
         onClick={() => setDismissed.mutate({ hint: "trailerHelp", dismissed: false }, { onSuccess: () => setRestored(true) })}
-        className="min-h-[2.25rem] font-semibold text-content-primary underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-current disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="btn btn-soft btn-sm"
       >
         {t("showAgain")}
       </button>

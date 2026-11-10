@@ -27,8 +27,7 @@ export function NewTicketSheet({ open, onClose, onCreated }: NewTicketSheetProps
   );
 }
 
-const INPUT =
-  "w-full rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]";
+const INPUT = "field";
 
 function NewTicketForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (id: string) => void }) {
   const { t } = useTranslation("tickets");
@@ -50,21 +49,21 @@ function NewTicketForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-content-primary">{t("newTicket")}</h2>
-        <button type="button" onClick={onCancel} className="text-sm text-content-tertiary hover:text-content-primary">
+        <h2 className="text-heading-3 text-content-primary">{t("newTicket")}</h2>
+        <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm -mr-3">
           {t("common:cancel")}
         </button>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-content-tertiary">{t("subject")}</label>
+        <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("subject")}</label>
         <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("subjectPlaceholder")} className={INPUT} maxLength={300} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-content-tertiary">{t("category")}</label>
+        <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("category")}</label>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as TicketCategory)}
-          className={`${INPUT} appearance-none [&>option]:bg-tentacle-surface [&>option]:text-content-primary`}
+          className={`${INPUT} cursor-pointer appearance-none [&>option]:bg-surface-2 [&>option]:text-content-primary`}
         >
           {TICKET_CATEGORIES.map((c) => (
             <option key={c} value={c}>{t(TICKET_CATEGORY_LABEL_KEYS[c])}</option>
@@ -72,17 +71,17 @@ function NewTicketForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-content-tertiary">{t("relatedMedia")}</label>
+        <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("relatedMedia")}</label>
         <MediaSelector selection={media} onSelect={setMedia} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-content-tertiary">{t("message")}</label>
+        <label className="mb-1.5 block text-xs font-semibold text-content-tertiary">{t("message")}</label>
         <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("messagePlaceholder")} rows={6} className={`${INPUT} resize-none`} maxLength={5000} />
       </div>
       <button
         type="submit"
         disabled={createMut.isPending || !subject.trim() || !body.trim()}
-        className="h-11 self-start rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg hover:bg-cta-primary-bg-hover disabled:opacity-50"
+        className="btn btn-solid self-start"
       >
         {createMut.isPending ? t("common:sending") : t("createTicket")}
       </button>

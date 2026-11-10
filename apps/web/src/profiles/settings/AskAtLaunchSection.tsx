@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
+import { SettingsRow } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { IN_BROWSER } from "../pickerPlatform";
 import { useAskAtLaunch } from "./useAskAtLaunch";
@@ -22,7 +23,7 @@ export function AskAtLaunchSection({ badge }: { badge?: ReactNode } = {}) {
   const setting = useAskAtLaunch();
   if (!setting) return null;
   return (
-    <SettingsSection badge={badge} title={t("launchSetting.title")} caption={IN_BROWSER ? t("launchSetting.captionWeb") : t("launchSetting.caption")}>
+    <SettingsCard badge={badge} title={t("launchSetting.title")} caption={IN_BROWSER ? t("launchSetting.captionWeb") : t("launchSetting.caption")}>
       <SettingsRow
         icon={<MonitorPlay size={17} />}
         label={IN_BROWSER ? t("launchSetting.sectionWeb") : t("launchSetting.section")}
@@ -30,6 +31,6 @@ export function AskAtLaunchSection({ badge }: { badge?: ReactNode } = {}) {
         trailing={setting.allowed ? <ToggleSwitch checked={setting.proposes} onChange={setting.toggle} label={t("launchSetting.title")} /> : undefined}
         last
       />
-    </SettingsSection>
+    </SettingsCard>
   );
 }

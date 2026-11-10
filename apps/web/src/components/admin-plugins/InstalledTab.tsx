@@ -46,7 +46,7 @@ export function InstalledTab({ onBrowse }: { onBrowse: () => void }) {
   if (installed.isLoading) {
     return (
       <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,28rem),1fr))]" aria-busy="true">
-        {[0, 1].map((i) => <div key={i} className="skeleton-shimmer h-52 rounded-2xl" />)}
+        {[0, 1].map((i) => <div key={i} className="skeleton-shimmer h-52 rounded-panel" />)}
       </div>
     );
   }

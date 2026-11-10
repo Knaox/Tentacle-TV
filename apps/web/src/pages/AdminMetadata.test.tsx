@@ -34,6 +34,8 @@ vi.mock("../components/PageTransition", () => ({
   PageTransition: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("../components/ui/ConfirmDialog", () => ({ ConfirmDialog: () => null }));
+// Le bouton Retour de l'en-tête lit le routeur : chargé en vrai, react-router tire une seconde copie de React.
+vi.mock("../components/ui/BackButton", () => ({ BackButton: () => null }));
 // L'ancre `#tmdb` lit le routeur, qui embarque sa propre copie de React : inerte ici.
 vi.mock("../components/admin/services/useHashTarget", () => ({ useHashTarget: () => undefined }));
 vi.mock("framer-motion", () => ({
@@ -60,7 +62,7 @@ describe("la page Admin → Métadonnées", () => {
   it("pendant la première lecture : l'en-tête et un squelette, jamais une page blanche", () => {
     const html = render();
     expect(html).toContain("title");
-    expect(html).toContain("animate-pulse");
+    expect(html).toContain("skeleton-shimmer");
     expect(html).not.toContain('role="alert"');
   });
 

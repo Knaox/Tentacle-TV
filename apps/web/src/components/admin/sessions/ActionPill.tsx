@@ -16,32 +16,22 @@ import type { Icon as IconType } from "@phosphor-icons/react";
  *
  * Une seule grammaire pour les trois tons — neutre, marque, danger —, la même
  * hauteur, le même rayon : c'était le défaut de l'ancienne rangée, trois
- * boutons de trois familles côte à côte. La pression s'enfonce (`scale`), en
- * `transform` seul.
+ * boutons de trois familles côte à côte. Ce sont les pilules du socle
+ * (`theme/buttons.css`) : la peau, la pression, le survol et le focus sont
+ * dans la classe.
  */
 
 export type PillTone = "neutral" | "brand" | "danger" | "dangerSolid";
 export type PillStatus = "idle" | "busy" | "done" | "error";
 
 const TONE: Record<PillTone, { box: string; icon: string }> = {
-  neutral: {
-    box: "border-line-subtle bg-fill-soft text-content-primary hover:border-line-strong hover:bg-fill-medium",
-    icon: "text-content-secondary",
-  },
-  brand: {
-    box: "border-[color:rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.16)] text-content-primary hover:bg-[rgba(var(--brand-rgb),0.26)]",
-    icon: "text-[var(--brand-light)]",
-  },
-  danger: {
-    box: "border-danger-border bg-danger-surface text-status-error-fg hover:bg-danger-surface-hover",
-    icon: "",
-  },
+  neutral: { box: "btn-soft", icon: "text-content-secondary" },
+  // L'action intermédiaire : la teinte franche, en fond doux.
+  brand: { box: "btn-accent", icon: "" },
+  danger: { box: "btn-danger", icon: "" },
   // La confirmation d'un geste destructeur : cerclée de rouge plein. Un aplat
   // rouge sous du blanc tombait à 3,8:1 en thème sombre — sous le seuil.
-  dangerSolid: {
-    box: "border-status-error bg-status-error-bg text-status-error-fg hover:bg-danger-surface-hover",
-    icon: "",
-  },
+  dangerSolid: { box: "btn-danger shadow-[inset_0_0_0_1.5px_var(--status-error)]", icon: "" },
 };
 
 // Sous le verre de macOS 26 (lot lg4), le bouton au repos est un verre ; « fait »
@@ -54,14 +44,17 @@ const GLASS: Record<PillTone, string> = {
   dangerSolid: "lg-glass-btn lg-glass-danger",
 };
 
+// L'aplat d'état tient aussi sous la souris : le voile de survol d'un bouton
+// d'icône sans peau l'effacerait.
 const STATUS_BOX: Partial<Record<PillStatus, string>> = {
-  done: "border-transparent bg-status-success-bg text-status-success-fg",
-  error: "animate-shake border-transparent bg-status-error-bg text-status-error-fg",
+  done: "bg-status-success-bg text-status-success-fg hover:bg-status-success-bg hover:text-status-success-fg",
+  error: "animate-shake bg-status-error-bg text-status-error-fg hover:bg-status-error-bg hover:text-status-error-fg",
 };
 
+// 40 px, ou 32 dans une ligne et dans la bulle de confirmation.
 const SIZE = {
-  md: { box: "h-10 gap-2 px-4 text-[13px]", square: "h-10 w-10", icon: "h-4 w-4" },
-  sm: { box: "h-9 gap-1.5 px-3.5 text-[13px]", square: "h-9 w-9", icon: "h-4 w-4" },
+  md: { box: "", icon: "h-4 w-4" },
+  sm: { box: "btn-sm", icon: "h-4 w-4" },
 } as const;
 
 interface ActionPillProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
@@ -108,9 +101,7 @@ export const ActionPill = forwardRef<HTMLButtonElement, ActionPillProps>(functio
       aria-busy={busy || undefined}
       aria-label={iconOnly ? text : rest["aria-label"]}
       title={iconOnly ? text : rest.title}
-      className={`inline-flex shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full border font-semibold outline-none transition-[background-color,border-color,color,transform,filter] duration-150 ease-out active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${
-        iconOnly ? dims.square : dims.box
-      } ${toneBox} ${busy ? "cursor-progress" : ""} ${className}`}
+      className={`${iconOnly ? "icon-btn" : "btn"} ${dims.box} select-none ${toneBox} ${busy ? "cursor-progress" : ""} ${className}`}
     >
       {Icon && (
         // `key` : l'icône change avec l'état, et son entrée se rejoue.

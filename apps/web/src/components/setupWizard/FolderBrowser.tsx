@@ -40,15 +40,15 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
   }, [path, attempt]);
 
   return (
-    <div className="space-y-3 rounded-xl border border-[rgba(var(--brand-rgb),0.4)] bg-fill-faint p-4" role="group" aria-label={t("browserTitle")}>
+    <div className="space-y-3 rounded-tile bg-surface-2 p-4 shadow-[inset_0_0_0_1.5px_var(--accent)]" role="group" aria-label={t("browserTitle")}>
       <p className="text-sm font-semibold text-content-primary">{t("browserTitle")}</p>
       <p className="text-xs text-content-tertiary">{t(`pathHint_${style}`)}</p>
-      <p className="break-all rounded-lg bg-fill-subtle px-3 py-2 font-mono text-xs text-content-secondary">{listing?.path ?? t(`browserRoot_${style}`)}</p>
+      <p className="break-all rounded-field bg-surface-3 px-3 py-2 font-mono text-xs text-content-secondary">{listing?.path ?? t(`browserRoot_${style}`)}</p>
       <SetupErrorLine code={error} onRetry={() => setAttempt((n) => n + 1)} />
-      <ul className="max-h-64 divide-y divide-line-subtle overflow-y-auto rounded-lg border border-line-subtle">
+      <ul className="max-h-64 divide-y divide-line-subtle overflow-y-auto rounded-field bg-surface-3">
         {listing?.parent !== undefined && listing?.path !== null ? (
           <li>
-            <button type="button" onClick={() => setPath(listing?.parent ?? null)} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-content-secondary hover:bg-fill-subtle">
+            <button type="button" onClick={() => setPath(listing?.parent ?? null)} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-content-secondary transition-colors duration-hover hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus">
               <CornerLeftUp size={16} aria-hidden="true" />
               {t("browserUp")}
             </button>
@@ -56,7 +56,7 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
         ) : null}
         {listing?.entries.map((entry) => (
           <li key={entry.path}>
-            <button type="button" onClick={() => setPath(entry.path)} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-content-primary hover:bg-fill-subtle">
+            <button type="button" onClick={() => setPath(entry.path)} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-content-primary transition-colors duration-hover hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus">
               {atDrives ? (
                 <HardDrive size={16} aria-hidden="true" className="shrink-0 text-content-tertiary" />
               ) : (

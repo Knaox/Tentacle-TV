@@ -53,7 +53,7 @@ export function SettingsFamily({ exitTo = "/settings" }: { exitTo?: string } = {
 
   return (
     <PageTransition>
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         {overview.data ? (
           <FamilyContent overview={overview.data} />
         ) : refusal === "family.personal_session_required" ? (
@@ -128,7 +128,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
 /** Un encart d'information : ce qui change ce que la page permet, et pourquoi. */
 function Notice({ text }: { text: string }) {
   return (
-    <p className="mb-4 flex gap-2 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-sm text-content-secondary">
+    <p className="mb-5 flex gap-2.5 rounded-tile bg-surface-2 px-4 py-3 text-sm leading-relaxed text-content-secondary">
       <Info size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-content-tertiary" />
       {text}
     </p>
@@ -139,7 +139,7 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
   const { t } = useTranslation("familyWeb");
   const { errorText } = useFamilyText();
   return (
-    <div className="rounded-xl border border-line-subtle bg-surface-1 p-5">
+    <div className="ui-panel p-5">
       <p className="text-sm font-semibold text-content-primary">{t("loadError")}</p>
       <p className="mt-1 text-sm text-content-tertiary">{errorText(error)}</p>
       <button type="button" onClick={onRetry} className={`${SECONDARY_BUTTON} mt-4`}>{t("retry")}</button>

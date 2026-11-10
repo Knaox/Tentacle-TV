@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { CameraIcon } from "@phosphor-icons/react/dist/csr/Camera";
 import { avatarRingStyleFor } from "../userMenu/menuItems";
 import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
@@ -6,6 +7,9 @@ import { useAvatarGallery } from "../../profiles/avatarGallery/useAvatarGallery"
 import { useGuestSessionPhoto } from "../../profiles/avatarGallery/useGuestSessionPhoto";
 import { useActiveProfile, type ActiveProfile } from "../../auth/profileSession";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
+
+/** Le pictogramme du voile posé sur la photo (sur une image) : il reste blanc dans les deux thèmes. */
+const CAMERA_ON_PHOTO = "h-6 w-6 text-white";
 
 interface Props {
   name: string;
@@ -31,7 +35,9 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { openGallery, dialog: galleryDialog } = useAvatarGallery();
 
   const activeProfile = useActiveProfile();
-  // Bureau, famille : le rond à la couleur du profil du compte, comme sur « Qui regarde ? ».
+  // Bureau, famille : le rond à la couleur du profil du compte, comme sur « Qui regarde ? » ;
+  // sans famille, l'encre.
+  // Le rond du compte : la source est celle de la barre du haut et du menu (`avatarRingStyleFor`) — un seul visage.
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
   if (activeProfile) return <ProfileSessionHero profile={activeProfile} />;
@@ -44,7 +50,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
-        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
+        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold transition-transform duration-press ease-out active:scale-[0.97] text-cta-brand-fg"
         style={ringStyle}
       >
         {/* `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis
@@ -60,27 +66,27 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         ) : (
           initial
         )}
-        {/* Scrim superposé à la photo d'avatar (conteneur absolute inset-0 au-dessus d'un <img>) :
-            reste noir/blanc dans les deux thèmes, hors périmètre de la migration. */}
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {/* Voile superposé à la photo d'avatar (conteneur absolute inset-0 au-dessus d'un <img>) :
+            reste noir/blanc dans les deux thèmes. */}
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-hover group-hover:opacity-100">
           {uploading ? (
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/40 border-t-white" />
           ) : (
-            <CameraIcon />
+            <CameraIcon aria-hidden className={CAMERA_ON_PHOTO} />
           )}
         </span>
       </button>
       {galleryDialog}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-xl font-bold text-content-primary">
+        <h1 className="truncate text-heading-1 text-content-primary">
           {name || t("defaultUsername")}
         </h1>
         {isAdmin ? (
-          <span className="mt-2 inline-flex items-center rounded-full border border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.15)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-light)]">
+          <span className="chip chip-accent mt-2">
             {tNav("admin")}
           </span>
         ) : (
-          <p className="mt-1 text-sm text-content-quaternary">{t("title")}</p>
+          <p className="mt-1 text-sm text-content-tertiary">{t("title")}</p>
         )}
       </div>
     </header>
@@ -102,12 +108,12 @@ function ProfileSessionHero({ profile }: { profile: ActiveProfile }) {
           onClick={() => openGallery(guestTarget)}
           aria-label={t("profile:changePhoto")}
           title={t("profile:changePhoto")}
-          className="group relative flex-shrink-0 rounded-full transition-transform duration-200 active:scale-95"
+          className="group relative flex-shrink-0 rounded-full transition-transform duration-press ease-out active:scale-[0.97]"
         >
           {avatar}
-          {/* Scrim superposé à la photo : reste noir/blanc dans les deux thèmes. */}
-          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <CameraIcon />
+          {/* Voile superposé à la photo : reste noir/blanc dans les deux thèmes. */}
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-hover group-hover:opacity-100">
+            <CameraIcon aria-hidden className={CAMERA_ON_PHOTO} />
           </span>
         </button>
       ) : (
@@ -115,21 +121,11 @@ function ProfileSessionHero({ profile }: { profile: ActiveProfile }) {
       )}
       {galleryDialog}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-xl font-bold text-content-primary">{profile.name}</h1>
-        <p className="mt-1 text-sm text-content-quaternary">
+        <h1 className="truncate text-heading-1 text-content-primary">{profile.name}</h1>
+        <p className="mt-1 text-sm text-content-tertiary">
           {profile.kind === "guest" ? t("profilePicker:session.guestBadge") : t("profilePicker:session.memberBadge")}
         </p>
       </div>
     </header>
-  );
-}
-
-function CameraIcon() {
-  // Icône affichée dans le scrim posé sur l'avatar (on-media) : reste blanche, hors périmètre.
-  return (
-    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
   );
 }

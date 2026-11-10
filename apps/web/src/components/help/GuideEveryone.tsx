@@ -9,7 +9,7 @@ import { GUIDE_PARAGRAPH } from "./GuideStep";
 function GuideBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <h3 className="text-base font-semibold text-content-primary">{title}</h3>
+      <h3 className="text-heading-3 text-content-primary">{title}</h3>
       {children}
     </div>
   );
@@ -39,9 +39,9 @@ export const GuideEveryone = memo(function GuideEveryone({ isAdmin }: { isAdmin:
             {TRAILER_GUIDE_SOURCES.map((source) => {
               const Icon = GUIDE_ICONS[source.icon];
               return (
-                <li key={source.id} className="rounded-2xl border border-line-subtle bg-fill-faint p-4">
+                <li key={source.id} className="ui-panel p-4">
                   <div className="flex items-center gap-3">
-                    <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fill-soft text-content-secondary">
+                    <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-card bg-surface-2 text-content-secondary">
                       <Icon size={18} />
                     </span>
                     <p className="text-[0.9375rem] font-semibold text-content-primary">{t(source.titleKey)}</p>
@@ -56,11 +56,11 @@ export const GuideEveryone = memo(function GuideEveryone({ isAdmin }: { isAdmin:
         <GuideBlock title={t("whatToDoTitle")}>
           <p className={GUIDE_PARAGRAPH}>{t("whatToDoBody")}</p>
           {isAdmin && (
-            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-[rgba(var(--brand-rgb),0.1)] px-4 py-3 text-sm text-content-primary">
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-tile bg-surface-2 px-4 py-3 text-sm text-content-primary">
               <span>{t("whatToDoAdmin")}</span>
               <Link
                 to={{ hash: "#admin" }}
-                className="font-semibold underline decoration-[rgba(var(--brand-rgb),0.6)] underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
                 {t("whatToDoAdminLink")}
               </Link>

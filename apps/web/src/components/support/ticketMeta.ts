@@ -17,6 +17,6 @@ export type { TicketStatus };
 export const STATUS_STYLE: Record<TicketStatus, { chip: string; dot: string }> = {
   open: { chip: "bg-status-success-bg text-status-success-fg", dot: "bg-status-success-fg" },
   in_progress: { chip: "bg-status-info-bg text-status-info-fg", dot: "bg-status-info-fg" },
-  resolved: { chip: "bg-[var(--brand-soft)] text-[var(--brand-light)]", dot: "bg-[var(--brand)]" },
-  closed: { chip: "bg-fill-soft text-content-quaternary", dot: "bg-content-quaternary" },
+  resolved: { chip: "bg-accent-soft text-accent", dot: "bg-accent" },
+  closed: { chip: "bg-fill-soft text-content-tertiary", dot: "bg-content-quaternary" },
 };

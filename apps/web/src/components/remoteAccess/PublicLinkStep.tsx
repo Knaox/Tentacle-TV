@@ -43,7 +43,7 @@ export function PublicLinkStep({ state, publicIp }: { state: RemoteAccessState; 
       </p>
       {suggested ? (
         suggested !== state.publicUrl ? (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint p-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-tile bg-surface-2 p-3">
             <span className="min-w-0 flex-1 text-sm text-content-secondary">
               {t("publicLinkSuggested")} <span className="break-all font-mono text-content-primary">{suggested}</span>
             </span>

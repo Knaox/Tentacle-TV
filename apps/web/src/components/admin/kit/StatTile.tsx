@@ -21,7 +21,7 @@ const ICON_TONE: Record<StatTone, string> = {
   success: "bg-status-success-bg text-status-success-fg",
   warning: "bg-status-warning-bg text-status-warning-fg",
   error: "bg-status-error-bg text-status-error-fg",
-  brand: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+  brand: "bg-accent-soft text-accent",
 };
 
 const VALUE_TONE: Record<StatTone, string> = {
@@ -57,7 +57,7 @@ export function StatTile({ label, value, hint, icon, tone = "default", loading =
         {icon ? (
           <span
             aria-hidden="true"
-            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${ICON_TONE[tone]}`}
+            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-field ${ICON_TONE[tone]}`}
           >
             {icon}
           </span>
@@ -73,12 +73,12 @@ export function StatTile({ label, value, hint, icon, tone = "default", loading =
       </div>
       {loading ? (
         <div aria-hidden="true" className="mt-4 space-y-2">
-          <div className="skeleton-shimmer h-8 w-16 rounded-lg" />
+          <div className="skeleton-shimmer h-8 w-16 rounded-field" />
           <div className="skeleton-shimmer h-3 w-28 rounded" />
         </div>
       ) : (
         <>
-          <p className={`mt-3 text-3xl font-semibold leading-none tracking-tight tabular-nums ${VALUE_TONE[tone]}`}>
+          <p className={`num mt-3 font-display text-[2rem] font-[650] leading-none tracking-[-0.02em] ${VALUE_TONE[tone]}`}>
             {value ?? "—"}
           </p>
           {hint ? <p className="mt-2 text-xs leading-snug text-content-tertiary">{hint}</p> : null}
@@ -87,14 +87,14 @@ export function StatTile({ label, value, hint, icon, tone = "default", loading =
     </>
   );
 
-  const base = `lg-content group flex min-h-[128px] flex-col rounded-2xl border border-line-subtle bg-fill-faint p-4 ${className ?? ""}`;
+  const base = `lg-content ui-panel group flex min-h-[128px] flex-col p-4 ${className ?? ""}`;
 
   if (to) {
     return (
       <Link
         to={to}
         aria-busy={loading || undefined}
-        className={`${base} lg-content-tile transition-colors duration-150 hover:border-line-strong hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus`}
+        className={`${base} lg-content-tile transition-colors duration-hover hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus`}
       >
         {body}
       </Link>

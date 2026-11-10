@@ -21,7 +21,7 @@ export function SettingsPersonalization() {
   const offline = useOfflineMode();
   return (
     <PageTransition>
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         {/* « Au démarrage, ouvrir » d'Octave : son propre groupe titré, posé tel quel. */}
         <WideGroup section="personalization" group="startup" untitled>
           <div {...settingAnchor("octaveStartup")} className="scroll-mt-24">

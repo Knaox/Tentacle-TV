@@ -38,13 +38,13 @@ export function PluginSetupForm({ pluginId, meta, name, onSaved }: Props) {
   const [result, setResult] = useState<{ ok: boolean; message: SetupMessage } | null>(null);
 
   if (state.isPending) {
-    return <div aria-hidden="true" className="grid gap-4 md:grid-cols-2"><div className="skeleton-shimmer h-20 rounded-lg" /><div className="skeleton-shimmer h-20 rounded-lg" /></div>;
+    return <div aria-hidden="true" className="grid gap-4 md:grid-cols-2"><div className="skeleton-shimmer h-20 rounded-field" /><div className="skeleton-shimmer h-20 rounded-field" /></div>;
   }
   if (state.isError) {
     return (
-      <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl bg-status-error-bg px-4 py-3">
+      <div role="alert" className="flex flex-wrap items-center gap-3 rounded-tile bg-status-error-bg px-4 py-3">
         <p className="min-w-0 flex-1 text-sm text-status-error-fg">{t("setupLoadError")}</p>
-        <button type="button" onClick={() => void state.refetch()} className="text-sm font-semibold text-content-primary underline underline-offset-4">
+        <button type="button" onClick={() => void state.refetch()} className="btn btn-soft btn-sm">
           {t("setupRetry")}
         </button>
       </div>

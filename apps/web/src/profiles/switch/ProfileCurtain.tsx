@@ -48,18 +48,13 @@ export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase }: P
       style={{
         top: "var(--hote-bandeau, 0px)",
         opacity: visible ? 1 : 0,
-        transition: phase === "leaving" ? "opacity 260ms cubic-bezier(0.4, 0, 1, 1)" : undefined,
+        transition: phase === "leaving" ? "opacity 260ms cubic-bezier(0.23, 1, 0.32, 1)" : undefined,
         animation: phase === "entering" ? "fadeIn 200ms ease-out both" : undefined,
       }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(60% 50% at 50% 45%, rgba(var(--brand-rgb), 0.16) 0%, transparent 70%)" }}
-      />
       <div className={`relative flex flex-col items-center ${phase === "entering" ? "animate-scale-in" : ""}`}>
         <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={112} />
-        <p className="mt-5 text-2xl font-bold tracking-tight text-content-primary">{profile.name}</p>
+        <p className="mt-5 font-display text-heading-1 text-content-primary">{profile.name}</p>
       </div>
     </div>
   );

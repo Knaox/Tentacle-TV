@@ -1,23 +1,25 @@
 /**
- * Les classes des champs des droits et du contrôle parental — celles des
- * réglages (`UsersToolbar`, `InviteForm`), réunies pour ne pas se recopier.
+ * Les classes des champs des droits et du contrôle parental — des raccourcis vers
+ * les contrôles du socle (`theme/buttons.css`, `theme/overlays.css`), réunis pour
+ * ne pas se recopier : le champ, la pilule, la pression et le focus sont dans la classe.
  */
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 /** Un `<select>` natif : clavier, lecteurs d'écran et menus tactiles sont ceux du système. */
-export const SELECT = `h-10 w-full cursor-pointer appearance-none rounded-[10px] border border-line-subtle bg-tentacle-surface pl-3 pr-9 text-[13px] font-medium text-content-primary transition-colors duration-150 hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50 [&>option]:bg-tentacle-surface [&>option]:text-content-primary ${FOCUS}`;
+export const SELECT = "field cursor-pointer appearance-none pl-3 pr-9 text-[13px] font-medium disabled:cursor-not-allowed [&>option]:bg-surface-2 [&>option]:text-content-primary";
 
-export const INPUT = `h-10 w-full rounded-[10px] border border-line-subtle bg-tentacle-surface px-3 text-[13px] text-content-primary placeholder:text-content-quaternary transition-colors duration-150 hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+export const INPUT = "field px-3 text-[13px]";
 
-export const SMALL_BUTTON = `inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-line-subtle bg-fill-soft px-3 text-xs font-semibold text-content-primary transition-colors hover:bg-fill-medium disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
+/** L'action posée à côté d'un champ : la pilule secondaire, à sa hauteur (40 px). */
+export const SMALL_BUTTON = "btn btn-soft text-[13px]";
 
 /** Une pastille d'étiquette, avec sa croix. */
-export const CHIP = "inline-flex max-w-full items-center gap-1 rounded-full border border-line-subtle bg-fill-soft py-1 pl-3 pr-1 text-xs font-medium text-content-primary";
+export const CHIP = "inline-flex max-w-full items-center gap-1 rounded-full bg-fill-soft py-1 pl-3 pr-1 text-xs font-medium text-content-primary";
 
-export const CHIP_REMOVE = `flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-medium hover:text-content-primary disabled:opacity-45 ${FOCUS}`;
+export const CHIP_REMOVE = "icon-btn h-6 w-6 text-content-tertiary";
 
-/** Une case à cocher native, teintée à la marque. */
-export const CHECKBOX = `h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--brand)] disabled:cursor-not-allowed ${FOCUS}`;
+/** Une case à cocher native, à la teinte franche. */
+export const CHECKBOX = `h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--accent)] disabled:cursor-not-allowed ${FOCUS}`;
 
 export const FIELD_LABEL = "block text-sm font-medium text-content-primary";
 export const FIELD_HINT = "mt-0.5 block text-xs leading-relaxed text-content-tertiary";

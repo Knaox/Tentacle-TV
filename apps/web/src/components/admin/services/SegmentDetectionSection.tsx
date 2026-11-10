@@ -54,7 +54,7 @@ export function SegmentDetectionSection() {
   return (
     <AdminSection id="segments" scope="server" title={t("segmentsTitle")} description={t("segmentsDescription")}>
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">{t("segmentsPlugins")}</p>
+        <p className="ui-eyebrow mb-2">{t("segmentsPlugins")}</p>
         <ul className="grid gap-2 md:grid-cols-3">
           {PLUGINS.map((plugin) => {
             const state = states.get(plugin.url);
@@ -64,7 +64,7 @@ export function SegmentDetectionSection() {
                   href={plugin.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="lg-content lg-content-tile group flex h-full items-start gap-3 rounded-xl border border-line-subtle bg-fill-subtle px-3 py-2.5 transition-colors hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                  className="lg-content lg-content-tile group flex h-full items-start gap-3 rounded-tile bg-surface-2 px-3 py-2.5 transition-colors duration-hover hover:bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-content-primary">
@@ -76,7 +76,7 @@ export function SegmentDetectionSection() {
                     </span>
                     <span className="mt-0.5 block text-xs leading-relaxed text-content-tertiary">{t(`segmentPlugins:role_${plugin.key}`)}</span>
                   </span>
-                  <ExternalLink size={14} aria-hidden="true" className="mt-1 shrink-0 text-content-quaternary group-hover:text-content-secondary" />
+                  <ExternalLink size={14} weight="bold" aria-hidden="true" className="mt-1 shrink-0 text-content-quaternary group-hover:text-content-secondary" />
                 </a>
               </li>
             );

@@ -41,7 +41,7 @@ export function RemoteAccessGuide({ packaging }: { packaging?: SetupPackaging })
                         href={REMOTE_ACCESS_DOCS[doc]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
+                        className="inline-flex items-center gap-1 rounded-chip font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
                       >
                         {t(remoteAccessDocLabelKey(doc))}
                         <ExternalLink size={14} aria-hidden="true" />

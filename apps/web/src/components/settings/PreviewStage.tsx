@@ -44,14 +44,21 @@ const WIDTH = {
   card: "w-[460px] max-w-full",
 } as const;
 
+/**
+ * Une image de film sans image : trois encres neutres en biais. Écrites en dur parce qu'elles ne
+ * suivent PAS le thème (voir plus haut) ; neutres parce que le violet d'avant était un dégradé
+ * de marque décoratif (refonte de nov. 2026 : le dégradé ne sert qu'à lire et à mesurer).
+ */
+const STAGE_INK = "linear-gradient(135deg, #303036 0%, #1B1B1E 55%, #0B0B0C 100%)";
+
 export function PreviewStage({ children, caption, width = "pill", stageRef }: PreviewStageProps) {
   return (
     <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-2">
       <div
         ref={stageRef}
         inert
-        className={`relative aspect-video ${WIDTH[width]} shrink-0 overflow-hidden rounded-xl border border-line-subtle`}
-        style={{ background: "linear-gradient(135deg, #2b2436 0%, #16131c 55%, #0a0a0d 100%)" }}
+        className={`relative aspect-video ${WIDTH[width]} shrink-0 overflow-hidden rounded-card shadow-edge`}
+        style={{ background: STAGE_INK }}
       >
         {/* Le décor : deux traits qui suggèrent une barre de lecture. Ni image
             ni vidéo — l'aperçu ne doit rien télécharger. */}
@@ -60,7 +67,7 @@ export function PreviewStage({ children, caption, width = "pill", stageRef }: Pr
         </div>
         {children}
       </div>
-      <p className="min-w-[11rem] flex-1 text-xs leading-relaxed text-content-tertiary">{caption}</p>
+      <p className="min-w-[11rem] max-w-[46ch] flex-1 text-[13px] leading-relaxed text-content-tertiary">{caption}</p>
     </div>
   );
 }

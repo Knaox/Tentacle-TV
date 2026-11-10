@@ -35,13 +35,13 @@ export function ShowMore({ label, defaultOpen = false, className = "", children 
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((value) => !value)}
-        className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="btn btn-ghost btn-sm -ml-2 mt-2"
       >
         {open ? t("showLess") : label ?? t("showMore")}
         <ChevronDown
           size={16}
           aria-hidden="true"
-          className={`transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+          className={`transition-transform duration-hover ease-out motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
         />
       </button>
     </div>

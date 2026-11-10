@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useServerCapabilities } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { isDesktopApp } from "../desktop/bridge";
 import { useDesktopVersion } from "../hooks/useDesktopVersion";
 import { PageTransition } from "../components/PageTransition";
+import { BackButton } from "../components/ui/BackButton";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 import type { WhatsNewSelection } from "../whatsNew/selectFeatures";
 import { selectionForRelease, whatsNewGateForced } from "../whatsNew/whatsNewDev";
@@ -40,34 +42,26 @@ export function About() {
   return (
     <PageTransition>
     <div className="mx-auto max-w-2xl px-6 pt-16 pb-16">
-      <div className="flex items-center gap-5">
-        <TentacleLogo size="xl" variant="glow" />
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-4xl font-bold tracking-tight text-content-primary">Tentacle TV</h1>
-            {preReleaseTag && (
-              <span
-                className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] backdrop-blur-md"
-                style={{
-                  background: "linear-gradient(180deg, rgba(var(--brand-rgb), 0.32) 0%, rgba(var(--brand-rgb), 0.18) 100%)",
-                  boxShadow: "0 2px 10px rgba(var(--brand-rgb), 0.35)",
-                  textShadow: "0 1px 2px rgba(0,0,0,0.45)",
-                }}
-              >
-                {preReleaseTag}
-              </span>
-            )}
+      <div className="flex items-center gap-3">
+        <BackButton fallback="/" className="-ml-1 shrink-0" />
+        <div className="flex min-w-0 items-center gap-5">
+          <TentacleLogo size="xl" />
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-display-3 text-content-primary sm:text-[2.5rem]">Tentacle TV</h1>
+              {preReleaseTag && <span className="chip chip-accent">{preReleaseTag}</span>}
+            </div>
+            <p className="num mt-1 text-sm text-content-tertiary">{t("about:version", { version: versionLabel })} — {platform}</p>
           </div>
-          <p className="mt-1 text-sm text-content-tertiary">{t("about:version", { version: versionLabel })} — {platform}</p>
         </div>
       </div>
 
-      <p className="mt-8 leading-relaxed text-content-secondary">
+      <p className="mt-8 max-w-[65ch] leading-relaxed text-content-secondary">
         {t("about:description")}
       </p>
 
-      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:features")}</h2>
-      <ul className="mt-3 space-y-2 text-sm text-content-tertiary">
+      <h2 className="mt-10 text-heading-2 text-content-primary">{t("about:features")}</h2>
+      <ul className="mt-3 space-y-2 text-sm text-content-secondary">
         <li className="flex items-center gap-2"><Dot /> {t("about:featurePlayer")}</li>
         <li className="flex items-center gap-2"><Dot /> {t("about:featureResume")}</li>
         <li className="flex items-center gap-2"><Dot /> {t("about:featureRequests")}</li>
@@ -76,29 +70,24 @@ export function About() {
         <li className="flex items-center gap-2"><Dot /> {t("about:featureNotifications")}</li>
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:contact")}</h2>
-      <p className="mt-3 text-sm text-content-tertiary">
+      <h2 className="mt-10 text-heading-2 text-content-primary">{t("about:contact")}</h2>
+      <p className="mt-3 max-w-[65ch] text-sm leading-relaxed text-content-secondary">
         {t("about:contactText")}
       </p>
 
-      <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3">
-        <Link
-          to="/credits"
-          className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
-          style={{ color: "var(--brand-light)" }}
-        >
+      <div className="mt-10 flex flex-wrap items-center gap-x-2 gap-y-3">
+        <Link to="/credits" className="btn btn-soft pr-3.5">
           {t("about:creditsLink")}
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          <CaretRightIcon size={16} aria-hidden />
         </Link>
         {canReplayWhatsNew && (
           <button
             type="button"
             onClick={() => setWhatsNew(selectionForRelease(replayVersion, capabilities))}
-            className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
-            style={{ color: "var(--brand-light)" }}
+            className="btn btn-soft pr-3.5"
           >
             {t("about:whatsNewAgain")}
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <CaretRightIcon size={16} aria-hidden />
           </button>
         )}
       </div>
@@ -114,9 +103,6 @@ export function About() {
 
 function Dot() {
   return (
-    <span
-      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-      style={{ background: "var(--brand-light)" }}
-    />
+    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-content-quaternary" />
   );
 }

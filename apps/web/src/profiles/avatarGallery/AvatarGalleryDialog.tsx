@@ -118,7 +118,7 @@ export default function AvatarGalleryDialog({ open, mode, target = ACCOUNT_TARGE
         subtitle={
           invite ? (
             <span>
-              <span className="mr-2 inline-flex items-center rounded-full bg-[rgba(var(--brand-rgb),0.18)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-light)]">
+              <span className="chip chip-accent mr-2">
                 {t("invite.eyebrow")}
               </span>
               {t("invite.subtitle", { count: AVATAR_CHARACTERS.length })}
@@ -166,7 +166,7 @@ export default function AvatarGalleryDialog({ open, mode, target = ACCOUNT_TARGE
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary outline-none transition hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="btn btn-soft"
           >
             {invite ? t("notNow") : t("cancel")}
           </button>
@@ -174,7 +174,7 @@ export default function AvatarGalleryDialog({ open, mode, target = ACCOUNT_TARGE
             type="button"
             onClick={() => chosenId && apply(chosenId)}
             disabled={!chosenId || busy}
-            className="inline-flex h-11 min-w-[9rem] items-center justify-center gap-2 rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg outline-none transition hover:bg-cta-primary-bg-hover focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
+            className="btn btn-solid min-w-[9rem]"
           >
             {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
             {busy ? t("applying") : chosenName ? t("choose", { name: chosenName }) : t("chooseIdle")}

@@ -81,7 +81,7 @@ export function ProfileRightsSummary({ profile, omit = [] }: {
         {reads && libraries.isLoading && !omit.includes("libraries") && <li className="text-[13px] text-content-tertiary">{t("loading")}</li>}
       </ul>
       {summary.editElsewhere && (
-        <p className="mt-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand-light)]">
+        <p className="mt-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-accent">
           <Monitor size={13} aria-hidden />
           {t(partial ? "moreElsewhere" : "editElsewhere")}
         </p>

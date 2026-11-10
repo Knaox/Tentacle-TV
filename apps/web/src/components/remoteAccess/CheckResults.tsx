@@ -37,7 +37,7 @@ function ServiceCard({ verdict, lang, publicIp }: { verdict: RemoteServiceVerdic
   return (
     <section
       aria-label={t(`service_${verdict.service}`)}
-      className={`rounded-xl border p-4 ${verdict.tone === "danger" ? "border-danger-border bg-status-error-bg" : "border-line-subtle bg-fill-faint"}`}
+      className={`rounded-tile p-4 ${verdict.tone === "danger" ? "bg-status-error-bg" : "bg-surface-2"}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-semibold text-content-primary">{t(`service_${verdict.service}`)}</h3>

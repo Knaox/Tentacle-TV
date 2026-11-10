@@ -38,7 +38,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ entry, installed,
   return (
     <article
       aria-labelledby={titleId}
-      className="flex flex-col rounded-2xl border border-line-subtle bg-fill-faint p-5 transition-colors duration-150 hover:border-line-strong"
+      className="ui-panel flex flex-col p-5"
     >
       <div className="flex items-start gap-4">
         <PluginIcon name={entry.name} image={entry.icon} lucide={installed ? navIconName(installed) : null} />
@@ -49,7 +49,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ entry, installed,
           <p className="mt-0.5 truncate text-xs text-content-tertiary">
             {entry.author ? t("byAuthor", { author: entry.author }) : <span className="font-mono">{entry.pluginId}</span>}
             <span aria-hidden> · </span>
-            <span className="tabular-nums">v{entry.version}</span>
+            <span className="num">v{entry.version}</span>
           </p>
         </div>
       </div>
@@ -57,7 +57,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ entry, installed,
       <div className="mt-3 flex flex-wrap gap-1.5">
         {entry.official ? (
           <StatusPill tone="brand" size="sm" dot={false}>
-            <ShieldCheck aria-hidden size={12} />
+            <ShieldCheck aria-hidden size={12} weight="bold" />
             {t("official")}
           </StatusPill>
         ) : (

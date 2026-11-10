@@ -49,23 +49,17 @@ export function FamilyPinSuggestDialog({ variant, owner, onLater, onClose }: Fam
       initialFocus={() => primaryRef.current}
     >
       <div className="relative overflow-hidden p-6 sm:p-7">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-32 opacity-60"
-          style={{ background: "radial-gradient(120% 100% at 50% 0%, rgba(var(--brand-rgb), 0.28), transparent 70%)" }}
-        />
         <div className="relative flex flex-col items-center text-center">
           <span
             aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-2xl text-cta-brand-fg shadow-lg"
-            style={{ backgroundImage: "var(--cta-brand-gradient)" }}
+            className="flex h-14 w-14 items-center justify-center rounded-tile bg-accent-soft text-accent"
           >
             <LockKeyhole size={26} />
           </span>
-          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand-light)]">
+          <p className="ui-eyebrow mt-4">
             {t("pinSuggest.eyebrow")}
           </p>
-          <h2 id={titleId} className="mt-1.5 text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="mt-1.5 text-heading-3 text-content-primary">
             {joined ? t("pinSuggest.joinedTitle", { owner: owner ?? "" }) : t("pinSuggest.title")}
           </h2>
           <p id={descId} className="mt-2 text-sm leading-relaxed text-content-secondary">
@@ -73,8 +67,8 @@ export function FamilyPinSuggestDialog({ variant, owner, onLater, onClose }: Fam
           </p>
         </div>
 
-        <p className="relative mt-5 flex gap-3 rounded-xl border border-line-subtle bg-fill-subtle p-4 text-left text-sm leading-relaxed text-content-secondary">
-          <ShieldCheck size={18} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-[var(--brand-light)]" />
+        <p className="relative mt-5 flex gap-3 rounded-tile bg-surface-2 p-4 text-left text-sm leading-relaxed text-content-secondary">
+          <ShieldCheck size={18} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-accent" />
           <span>{t("pinSuggest.why")}</span>
         </p>
 
@@ -83,15 +77,14 @@ export function FamilyPinSuggestDialog({ variant, owner, onLater, onClose }: Fam
             ref={primaryRef}
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex h-11 w-full items-center justify-center rounded-lg px-5 text-sm font-bold text-cta-brand-fg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-            style={{ backgroundImage: "var(--cta-brand-gradient)" }}
+            className="btn btn-solid w-full"
           >
             {t("pinSuggest.set")}
           </button>
           <button
             type="button"
             onClick={onLater}
-            className="inline-flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="btn btn-ghost w-full"
           >
             {t("pinSuggest.later")}
           </button>

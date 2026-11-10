@@ -66,7 +66,7 @@ export function UserDevicesSection({ devices, failed, now }: UserDevicesSectionP
                 type="button"
                 onClick={() => { setTarget(device); setConfirming(true); }}
                 aria-label={`${t("revoke")} — ${device.name}`}
-                className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold text-status-error-fg transition-colors duration-150 hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="btn btn-danger btn-sm shrink-0"
               >
                 {t("revoke")}
               </button>

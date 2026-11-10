@@ -21,7 +21,7 @@ export function LanguageToggle() {
     <div
       role="group"
       aria-label={t("language")}
-      className="flex rounded-full border border-line-subtle bg-fill-faint p-0.5"
+      className="flex gap-0.5 rounded-pill bg-surface-2 p-[3px]"
     >
       {LANGUAGES.map((lng) => {
         const active = current === lng;
@@ -32,10 +32,8 @@ export function LanguageToggle() {
             lang={lng}
             aria-pressed={active}
             onClick={() => select(lng)}
-            className={`min-h-9 min-w-11 cursor-pointer rounded-full px-3 text-xs font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
-              active
-                ? "bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                : "text-content-tertiary hover:text-content-primary"
+            className={`h-8 min-w-11 rounded-pill px-3 text-xs font-semibold tracking-wide transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+              active ? "bg-surface-4 text-content-primary" : "text-content-tertiary hover:text-content-primary"
             }`}
           >
             {lng.toUpperCase()}

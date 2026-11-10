@@ -75,6 +75,11 @@ export interface WideSettingEntry {
   keywords?: SettingsI18nRef;
   requires?: readonly WideSettingsRequirement[];
   capability?: ServerCapability;
+  /**
+   * Un réglage RARE (refonte de nov. 2026) : sa page le replie sous « Avancé » — il n'en
+   * disparaît pas (le repli le nomme), et la recherche le trouve et l'ouvre comme les autres.
+   */
+  advanced?: boolean;
 }
 
 export interface WideSettingsGroup {

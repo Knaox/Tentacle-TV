@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
+import { SettingsRow } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import { useLeaveFamily } from "@tentacle-tv/api-client";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../contexts/ToastContext";
@@ -29,7 +30,7 @@ export function LeaveSection({ familyId, ownerName }: { familyId: string; ownerN
 
   return (
     <>
-      <SettingsSection title={t("danger.title")}>
+      <SettingsCard title={t("danger.title")}>
         <SettingsRow
           label={t("shared.leave")}
           description={t("shared.leaveHint")}
@@ -38,7 +39,7 @@ export function LeaveSection({ familyId, ownerName }: { familyId: string; ownerN
           chevron
           onClick={() => setOpen(true)}
         />
-      </SettingsSection>
+      </SettingsCard>
       {open && (
         <ConfirmDialog
           open

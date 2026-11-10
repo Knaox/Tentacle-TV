@@ -11,7 +11,7 @@ import { TagListField } from "../../components/parental/TagListField";
 import { effectiveParentalSummary, guestCeilingOf, guestParentalOf, hasGuestParental, sameGuestParental } from "../../components/parental/guestParental";
 import { currentRating, ratingChoices, ratingLabel } from "../../components/parental/parentalModel";
 import { useFamilyText } from "../useFamilyText";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON, SMALL_DANGER_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, ICON_PLAQUE, SECONDARY_BUTTON, SMALL_DANGER_BUTTON } from "./familyUi";
 
 interface GuestParentalDialogProps {
   /** Le profil réglé : un invité, ou (1.30.0) un membre mineur. */
@@ -102,7 +102,7 @@ export function GuestParentalDialog({ guest, creatorName, member = false, onClos
     >
       <form onSubmit={submit} noValidate className="flex max-h-[85dvh] flex-col">
         <header className="flex items-start gap-3 border-b border-line-subtle p-6 pb-4">
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cta-brand-fg" style={BRAND_BUTTON_STYLE}>
+          <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${ICON_PLAQUE}`}>
             <ShieldCheck size={20} />
           </span>
           <div className="min-w-0">
@@ -116,7 +116,7 @@ export function GuestParentalDialog({ guest, creatorName, member = false, onClos
         </header>
 
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
-          <p className="rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-xs leading-relaxed text-content-secondary">
+          <p className="rounded-field bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-content-secondary">
             {ceilingText.filter(Boolean).join(" ")}
           </p>
           {options.isError && <p role="alert" className="text-sm text-status-error-fg">{t("familyWeb:parental.optionsError")}</p>}
@@ -161,7 +161,7 @@ export function GuestParentalDialog({ guest, creatorName, member = false, onClos
             <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>
               {t("familyWeb:parental.cancel")}
             </button>
-            <button type="submit" disabled={pending || unchanged} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+            <button type="submit" disabled={pending || unchanged} className={BRAND_BUTTON}>
               {t("familyWeb:parental.save")}
             </button>
           </div>

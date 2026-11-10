@@ -14,7 +14,7 @@ export function LocaleFields({ locale, onChange }: { locale: WizardLocale; onCha
   const countryId = useId();
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-medium text-content-primary">{t("localeTitle")}</legend>
+      <legend className="text-sm font-semibold text-content-primary">{t("localeTitle")}</legend>
       <p className="text-xs text-content-tertiary">{t("localeSubtitle")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

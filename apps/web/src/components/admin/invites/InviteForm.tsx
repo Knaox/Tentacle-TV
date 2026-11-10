@@ -23,7 +23,7 @@ interface InviteFormProps {
 const HOUR = 3_600_000;
 const ERROR = "mt-1.5 text-xs text-status-error-fg";
 // Les options d'un `<select>` natif ne suivent pas le fond translucide du champ.
-const SELECT = `${cls.inp} pr-8 [&>option]:bg-tentacle-surface [&>option]:text-content-primary`;
+const SELECT = `${cls.inp} pr-8 [&>option]:bg-surface-2 [&>option]:text-content-primary`;
 
 /**
  * Les réglages d'une nouvelle invitation : combien de personnes, combien de
@@ -107,7 +107,7 @@ export function InviteForm({ draft, onChange, submitted, pending, failed, onSubm
       </ChoiceChips>
 
       {result.ok && (
-        <p aria-live="polite" className="rounded-lg bg-fill-subtle px-3 py-2.5 text-sm text-content-secondary">
+        <p aria-live="polite" className="rounded-field bg-surface-2 px-3 py-2.5 text-sm text-content-secondary">
           {t("summary", {
             people: t("people", { count: result.request.maxUses }),
             date: formatDeadline(now + result.request.expiresInHours * HOUR, i18n.language),

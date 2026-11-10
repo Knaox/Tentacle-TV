@@ -59,7 +59,7 @@ export const AvatarTile = memo(function AvatarTile({
         <span
           aria-hidden="true"
           className="avatar-tile__ring avatar-tile__ring--chosen absolute -inset-[5px] rounded-full"
-          style={{ boxShadow: "0 0 0 3px var(--brand)" }}
+          style={{ boxShadow: "0 0 0 3px var(--accent)" }}
         />
         <span className="avatar-tile__art block h-full w-full overflow-hidden rounded-full" style={{ background: avatar.tone }}>
           <img
@@ -74,7 +74,7 @@ export const AvatarTile = memo(function AvatarTile({
           />
         </span>
         {chosen && (
-          <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-[var(--brand)] text-cta-brand-fg">
+          <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-accent text-accent-on">
             <Check weight="bold" size={13} aria-hidden />
           </span>
         )}

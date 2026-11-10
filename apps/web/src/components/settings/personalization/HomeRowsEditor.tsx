@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { moveRow } from "@tentacle-tv/api-client";
 import type { HomeRowDescriptor } from "@tentacle-tv/api-client";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretUpIcon } from "@phosphor-icons/react/dist/csr/CaretUp";
+import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
 import { ToggleSwitch } from "../ToggleSwitch";
 
 interface HomeRowsEditorProps {
@@ -53,32 +56,32 @@ export function HomeRowsEditor({ rows, labelFor, onChange }: HomeRowsEditorProps
             setDragIndex(null);
             setOverIndex(null);
           }}
-          className={`flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors ${
+          className={`flex items-center gap-3 rounded-field px-3 py-1.5 transition-colors duration-hover ${
             overIndex === index && dragIndex !== null && dragIndex !== index
-              ? "border-line-focus bg-fill-soft"
-              : "border-line-subtle bg-fill-faint"
+              ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]"
+              : "bg-surface-2"
           } ${dragIndex === index ? "opacity-50" : ""}`}
         >
           <span aria-hidden className="cursor-grab text-content-quaternary" title={t("persoRowsDragHint")}>
-            <GripIcon />
+            <DotsSixVerticalIcon size={16} weight="bold" />
           </span>
           <span className={`min-w-0 flex-1 truncate text-sm ${row.enabled ? "text-content-primary" : "text-content-tertiary"}`}>
             {labelFor(row.key)}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             <MoveButton
               label={t("persoRowMoveUp")}
               disabled={index === 0}
               onClick={() => onChange(moveRow(rows, index, index - 1))}
             >
-              <ChevronUp />
+              <CaretUpIcon size={15} weight="bold" aria-hidden />
             </MoveButton>
             <MoveButton
               label={t("persoRowMoveDown")}
               disabled={index === rows.length - 1}
               onClick={() => onChange(moveRow(rows, index, index + 1))}
             >
-              <ChevronDown />
+              <CaretDownIcon size={15} weight="bold" aria-hidden />
             </MoveButton>
           </div>
           <ToggleSwitch
@@ -112,35 +115,9 @@ function MoveButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary disabled:opacity-30 disabled:hover:bg-transparent"
+      className="icon-btn btn-sm"
     >
       {children}
     </button>
-  );
-}
-
-function GripIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-      <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-      <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-    </svg>
-  );
-}
-
-function ChevronUp() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-    </svg>
-  );
-}
-
-function ChevronDown() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-    </svg>
   );
 }

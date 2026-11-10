@@ -49,7 +49,7 @@ const TONE: Record<ServerUpdateStatus, StatusTone> = {
 
 const ICON_TONE: Record<StatusTone, string> = {
   success: "bg-status-success-bg text-status-success-fg",
-  brand: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+  brand: "bg-accent-soft text-accent",
   error: "bg-status-error-bg text-status-error-fg",
   warning: "bg-status-warning-bg text-status-warning-fg",
   info: "bg-status-info-bg text-status-info-fg",
@@ -86,7 +86,7 @@ export function ServerUpdateCard({ className }: { className?: string }) {
           <AdminNotice
             tone="error"
             action={
-              <button type="button" onClick={() => void query.refetch()} className="text-sm font-semibold text-content-primary underline underline-offset-4">
+              <button type="button" onClick={() => void query.refetch()} className="btn btn-soft btn-sm">
                 {t("serverRetry")}
               </button>
             }
@@ -96,7 +96,7 @@ export function ServerUpdateCard({ className }: { className?: string }) {
         )
       ) : (
         <div aria-hidden="true" className="space-y-3">
-          <div className="skeleton-shimmer h-10 w-2/3 rounded-xl" />
+          <div className="skeleton-shimmer h-10 w-2/3 rounded-field" />
           <div className="skeleton-shimmer h-4 w-1/2 rounded-full" />
         </div>
       )}
@@ -148,12 +148,12 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
   return (
     <div>
       <div className="flex items-start gap-3">
-        <span aria-hidden="true" className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${ICON_TONE[TONE[status]]}`}>
+        <span aria-hidden="true" className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-field ${ICON_TONE[TONE[status]]}`}>
           <Server size={20} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <p className="text-lg font-semibold tabular-nums text-content-primary">{t("serverVersion", { version: report.current })}</p>
+            <p className="num text-lg font-semibold text-content-primary">{t("serverVersion", { version: report.current })}</p>
             <StatusPill tone={TONE[status]}>{t(`serverState_${status}`)}</StatusPill>
           </div>
           {sentence ? <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-secondary">{sentence}</p> : null}
@@ -169,7 +169,7 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
           <ul className="mt-2 max-w-3xl space-y-1.5">
             {highlights.map((line) => (
               <li key={line} className="flex gap-2 text-sm leading-relaxed text-content-secondary">
-                <span aria-hidden="true" className="mt-[9px] h-1 w-1 flex-shrink-0 rounded-full bg-[var(--brand-light)]" />
+                <span aria-hidden="true" className="mt-[9px] h-1 w-1 flex-shrink-0 rounded-full bg-content-quaternary" />
                 <span>{line}</span>
               </li>
             ))}
@@ -179,10 +179,10 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
               href={latest.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex min-h-[36px] items-center gap-1 rounded-lg text-sm font-medium text-content-secondary underline-offset-4 hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="mt-2 inline-flex min-h-[36px] items-center gap-1 rounded-chip text-sm font-medium text-content-secondary underline-offset-4 transition-colors duration-hover hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
             >
               {t("serverNotes")}
-              <ExternalLink size={14} aria-hidden="true" />
+              <ExternalLink size={14} weight="bold" aria-hidden="true" />
               <span className="sr-only"> {t("opensNewTab")}</span>
             </a>
           ) : null}
