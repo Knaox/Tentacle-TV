@@ -33,7 +33,7 @@ interface NavBarEditorPanelProps {
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return <p className="lg-menu-label mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
+  return <p className="lg-menu-label ui-eyebrow mb-2 px-1">{children}</p>;
 }
 
 export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarEditorPanelProps) {
@@ -87,10 +87,10 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
       role="dialog"
       labelledBy={titleId}
       tabIndex={-1}
-      className="lg-menu lg-menu-wide flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
+      className="lg-menu lg-menu-wide flex w-[460px] flex-col overflow-hidden rounded-tile bg-surface-dropdown shadow-menu outline-none"
     >
       <header className="lg-sep border-b border-line-subtle px-5 pb-3 pt-4">
-        <h2 id={titleId} className="text-base font-semibold text-content-primary">{t("customizeBar")}</h2>
+        <h2 id={titleId} className="text-heading-2 text-content-primary">{t("customizeBar")}</h2>
         <p className="mt-0.5 text-[13px] leading-relaxed text-content-tertiary">{t("customizeBarHint")}</p>
       </header>
 
@@ -98,7 +98,7 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
         <section>
           <SectionTitle>{t("inTheBar")}</SectionTitle>
           {order.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-line-subtle px-3 py-3 text-[13px] text-content-tertiary">{t("barEmpty")}</p>
+            <p className="rounded-card bg-fill-subtle px-3 py-3 text-[13px] text-content-tertiary">{t("barEmpty")}</p>
           ) : (
             <Reorder.Group as="ul" axis="y" values={order} onReorder={setDraft} className="space-y-1.5">
               {order.map((key, index) => {
@@ -134,7 +134,7 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
         <button
           type="button"
           onClick={editor.reset}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-content-tertiary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-sm btn-ghost"
         >
           <RotateCcw aria-hidden className="h-3.5 w-3.5" />
           {t("resetBar")}
@@ -142,7 +142,7 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
         <button
           type="button"
           onClick={close}
-          className="inline-flex h-9 items-center rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 text-[13px] font-bold text-cta-primary-fg outline-none transition-[background-color,transform] hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-sm btn-solid"
         >
           {t("done")}
         </button>

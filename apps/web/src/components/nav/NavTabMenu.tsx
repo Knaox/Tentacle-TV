@@ -19,7 +19,7 @@ import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/c
 import { useGlassControl } from "../ui/glass/useGlassControl";
 
 const ITEM =
-  "flex h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-[13.5px] text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-soft focus-visible:text-content-primary";
+  "ui-menu-item";
 
 export interface NavTabMenuTarget {
   x: number;
@@ -95,7 +95,7 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       style={{ ...position, ...glass.props.style }}
-      className="lg-menu lg-menu-list fixed z-[60] min-w-56 animate-scale-in rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-1 shadow-[var(--shadow-dropdown)]"
+      className="lg-menu lg-menu-list ui-menu fixed z-[60] min-w-56 animate-scale-in"
     >
       {glass.layers}
       {target.key !== null && (

@@ -1,14 +1,13 @@
 /**
- * La barre de navigation desktop — une CAPSULE de verre qui flotte au-dessus
- * du contenu : les bannières passent dessous, la page défile dessous, et la
- * barre reste lisible sur n'importe quelle image (verre sombre, puis assise
- * qui s'opacifie au défilement).
+ * La barre de navigation desktop — des GROUPES de verre qui flottent au-dessus du contenu
+ * (refonte de nov. 2026) : les bannières passent dessous, la page défile dessous, et chaque
+ * groupe reste lisible sur n'importe quelle image (verre, puis assise qui s'opacifie au
+ * défilement — `NavGroup`).
  *
- * De gauche à droite : la marque ; les destinations, icône et libellé,
- * bibliothèques comprises — plus de menu à ouvrir pour atteindre « Films » —,
- * avec « Plus » pour le reste ; la RECHERCHE, au cœur de la barre (⌘K) ;
- * puis ce qui se passe maintenant : téléchargements, Watch Together,
- * notifications, profil.
+ * De gauche à droite : la NAVIGATION — la marque, les destinations, bibliothèques comprises,
+ * et « Plus » pour ce qui ne tient pas (la largeur est MESURÉE, `usePriorityOverflow` : la
+ * barre ne déborde jamais, même avec vingt bibliothèques) ; la RECHERCHE (⌘K) ; les ACTIONS —
+ * état de la connexion, Octave, téléchargements, Watch Together, notifications ; le COMPTE.
  *
  * Hors ligne (bureau), la navigation serveur s'efface : restent le catalogue
  * local, l'état de la connexion et le profil — pour la session d'un profil de
@@ -19,17 +18,17 @@
  * Le bandeau d'hôte de macOS (feux tricolores) reste au-dessus.
  *
  * Liquid Glass (macOS 26, mode natif, `windowGlass.ts`) : le verre change le
- * MATÉRIAU, jamais les DIMENSIONS (Damien, 26/10) — même capsule, mêmes places
- * qu'hors verre ; seule sa peau devient celle de la maquette
+ * MATÉRIAU, jamais les DIMENSIONS (Damien, 26/10) — mêmes groupes, mêmes places
+ * qu'hors verre ; seule leur peau devient celle de la maquette
  * (`windowGlassNav.css`). `data-lg-toolbar` dit à l'effet de bord de
  * défilement de couvrir aussi la barre.
  */
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
 import { NavBrand } from "./NavBrand";
+import { NavGroup } from "./NavGroup";
 import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
 import { NotificationBell } from "../NotificationBell";
@@ -50,25 +49,19 @@ export function TopNav() {
   // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
   // sépare rien.
   const profileSession = useActiveProfile() !== null;
-  const showFieldLauncher = !offline;
-  // Liquid Glass (26/10, Damien : « le verre change le MATÉRIAU, jamais les
-  // DIMENSIONS ») : la barre garde EXACTEMENT la mise en page d'avant — même
-  // capsule, mêmes places ; en natif, seule sa peau change (`windowGlassNav.css`).
   const statusChips = (
     <>
       <ConnectivityChip />
       <DataSaverChip />
     </>
   );
-  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs />;
-
-  // L'assise d'avant : nulle en haut de page (le verre seul, par-dessus la
-  // bannière), puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la
-  // couche de verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
-  const scrim = useScrollScrim<HTMLDivElement>({
-    threshold: 140,
-    opacityAt: (p) => Math.min(0.78, p * 0.95),
-  });
+  // Le groupe de navigation ÉPOUSE son contenu : la place libre se lit sur la case qui
+  // s'étire autour de lui (`OverflowSlack`). Des éléments tenus en état, pas des refs —
+  // leur arrivée relance la mesure.
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
+  const [hug, setHug] = useState<HTMLDivElement | null>(null);
+  const slack = useMemo(() => (slot && hug ? { slot, hug } : undefined), [slot, hug]);
+  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs slack={slack} />;
 
   useEffect(() => {
     if (!glass) return;
@@ -81,24 +74,16 @@ export function TopNav() {
 
   return (
     <header
-      // La zone est transparente aux clics : seule la capsule en prend.
+      // La zone est transparente aux clics : seuls les groupes en prennent.
       // `data-top-nav` : la mini-carte d'aperçu ne monte jamais sous la barre.
       data-top-nav
       className="pointer-events-none fixed inset-x-0 z-40 h-[68px] px-3 md:px-4 lg:px-6"
       style={{ top: "var(--hote-bandeau)", paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      {/* Le voile des greffons (`hostChromeVeil`) vise la CAPSULE, pas
-          l'en-tête : son `pointer-events: none` posé sur l'en-tête ne
-          l'atteindrait pas, puisqu'elle rétablit les clics pour elle-même. */}
-      <div
-        data-hote-voile="topbar"
-        className="lgc-capsule pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
-      >
-        <div aria-hidden className="nav-capsule-glass" />
-        <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
-
-        <div className="relative flex min-w-0 flex-1 items-center gap-1">
-          <div className="contents">
+      <div className="mx-auto mt-[11px] flex h-[46px] max-w-[1840px] items-center gap-2">
+        {/* La case qui s'étire : le groupe de navigation y prend sa largeur, jamais plus. */}
+        <div ref={setSlot} className="flex min-w-0 flex-1 items-center">
+          <NavGroup ref={setHug} className="min-w-0 max-w-full" contentClassName="gap-0.5 pl-1.5 pr-1">
             <NavBrand />
             {tabs && (
               <>
@@ -106,22 +91,22 @@ export function TopNav() {
                 {tabs}
               </>
             )}
-          </div>
+          </NavGroup>
         </div>
 
-        <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
+        {!offline && <SearchLauncher variant="field" className="hidden w-[clamp(200px,20vw,280px)] shrink-0 lg:block" />}
+
+        <NavGroup className="lgc-actions shrink-0" contentClassName="gap-0.5 px-1">
           {statusChips}
-          {showFieldLauncher && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
-          <div className="contents">
-            {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
-            {/* Hors ligne aussi (lot « fl ») : la bascule décide seule (`octaveSwitchShown`). */}
-            <OctaveModeSwitch placement="tentacle" />
-            <DownloadsNavButton />
-            {!offline && <WatchTogetherButton />}
-            {!offline && <NotificationBell />}
-            <UserAvatarMenu />
-          </div>
-        </div>
+          {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
+          {/* Hors ligne aussi (lot « fl ») : la bascule décide seule (`octaveSwitchShown`). */}
+          <OctaveModeSwitch placement="tentacle" />
+          <DownloadsNavButton />
+          {!offline && <WatchTogetherButton />}
+          {!offline && <NotificationBell />}
+        </NavGroup>
+
+        <UserAvatarMenu />
       </div>
     </header>
   );

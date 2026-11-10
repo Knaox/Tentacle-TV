@@ -93,7 +93,33 @@ function jellyfin(path: string, params: URLSearchParams, options: LabServerOptio
 
 const CAPABILITIES = ["jellyfin.health", "home.heroRecoKinds", "account.abilities", "rights.live", "watchTogether.access", "notifications.paging"];
 
-function backend(path: string, options: LabServerOptions): Answer {
+function search(query: string) {
+  const term = query.toLowerCase();
+  const hits = ALL.filter((item) => item.Type !== "Episode" && item.Name.toLowerCase().includes(term)).map((item, i) => ({
+    item,
+    match: { field: "title" },
+    score: 1 - i * 0.05,
+  }));
+  const movies = hits.filter((hit) => hit.item.Type === "Movie");
+  const series = hits.filter((hit) => hit.item.Type === "Series");
+  return {
+    query,
+    ready: true,
+    tookMs: 4,
+    correction: null,
+    partial: false,
+    top: hits[0] ? { kind: "item", hit: hits[0] } : null,
+    movies: movies.slice(0, 5),
+    series: series.slice(0, 5),
+    collections: [],
+    people: [{ id: "p1", name: "Saul Bass", imageTag: null, roles: ["Générique"], count: 3, score: 0.5 }],
+    genres: [{ name: "Science-fiction", count: 6 }],
+    studios: [{ name: "Blender Studio", count: 8 }],
+    totals: { movies: movies.length, series: series.length, collections: 0, people: 1 },
+  };
+}
+
+function backend(path: string, params: URLSearchParams, options: LabServerOptions): Answer {
   if (path === "/api/config") return { body: { version: "1.41.0", brandName: "Tentacle TV", features: { downloads: false, demo: false }, capabilities: CAPABILITIES } };
   if (path === "/api/preferences/home-layout") {
     const libs = libraries(options.libraries).slice(0, 3);
@@ -115,8 +141,16 @@ function backend(path: string, options: LabServerOptions): Answer {
     return { body: { stored: false, settings: { personalized: true, includeVigie: false, community: true, shareHistory: true, explorationBalance: 0.5, providerFilter: [], trendingNow: true } } };
   }
   if (path.startsWith("/api/notifications")) return { body: { notifications: [], unreadCount: 0, items: [], total: 0 } };
-  if (path.startsWith("/api/watchlist")) return { body: { items: labItems("charade", "spring").map((item) => ({ itemId: item.Id })), ids: ["charade", "spring"] } };
-  if (path.startsWith("/api/ratings")) return { body: { ratings: [{ tmdbId: 1, mediaType: "movie", score: 9, jellyfinItemId: "vertigo" }] } };
+  if (path === "/api/watchlist/pending" || path === "/api/likes/pending") return { body: [] };
+  if (path === "/api/ratings") {
+    return { body: [{ id: "r1", mediaType: "movie", tmdbId: 426, jellyfinItemId: "vertigo", seasonNumber: 0, episodeNumber: 0, score: 9, syncStatus: "synced", updatedAt: "2026-11-01T10:00:00Z" }] };
+  }
+  if (path === "/api/search/discover") {
+    return { body: { ready: true, genres: ["Animation", "Science-fiction", "Thriller", "Comédie", "Drame", "Western"].map((name, i) => ({ name, count: 12 - i })) } };
+  }
+  if (path === "/api/search") return { body: search(params.get("q") ?? "") };
+  if (path === "/api/watch-together/group") return { body: { group: null } };
+  if (path === "/api/watch-together/invites") return { body: { invites: [] } };
   return null;
 }
 
@@ -139,7 +173,7 @@ export function installLabServer(options: LabServerOptions): void {
     const method = init?.method ?? "GET";
     const answer = url.pathname.startsWith("/api/jellyfin/")
       ? jellyfin(url.pathname.slice("/api/jellyfin".length), url.searchParams, options)
-      : backend(url.pathname, options);
+      : backend(url.pathname, url.searchParams, options);
     if (method !== "GET" && answer === null) return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
     if (answer === null) {
       const line = `${method} ${url.pathname}${url.search}`;

@@ -44,6 +44,9 @@ import { GLASS_LENS_PROPS } from "../theme/glass";
  * « Qui regarde ? » (`useAccountFaceColor`) ; sans famille, la marque.
  * Flèches Haut et Bas d'une entrée à l'autre (`useMenuKeyboard`).
  */
+/** L'habillage du rond sans couleur de profil : l'encre de sélection, l'initiale à l'encre du texte. */
+const NEUTRAL_FACE = { background: "var(--surface-4)", color: "var(--text-primary)" } as const;
+
 export function UserAvatarMenu() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -57,7 +60,10 @@ export function UserAvatarMenu() {
   // Le catalogue local : visible dès qu'il y a un droit ou du contenu.
   const { visible: onDeviceVisible } = useDownloadsVisibility();
   const activeProfile = useActiveProfile();
-  const ringStyle = avatarRingStyleFor(useAccountFaceColor());
+  // Le rond du compte : la couleur du PROFIL de la Famille quand il en a une (celle de
+  // « Qui regarde ? ») ; sinon une encre neutre — plus de dégradé de marque décoratif.
+  const faceColor = useAccountFaceColor();
+  const ringStyle = faceColor ? avatarRingStyleFor(faceColor) : NEUTRAL_FACE;
 
   const close = useCallback(() => setOpen(false), []);
   // L'écran « Qui regarde ? » refermé, le focus revient à l'avatar.
@@ -114,7 +120,7 @@ export function UserAvatarMenu() {
   // `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis sur
   // l'initiale s'il n'y en a aucune (cf. `useAvatarUpload`). Un profil : son rond.
   const avatarContent = activeProfile ? (
-    <FamilyAvatar userId={activeProfile.id} name={activeProfile.name} color={activeProfile.color} imageTag={activeProfile.imageTag} size={36} />
+    <FamilyAvatar userId={activeProfile.id} name={activeProfile.name} color={activeProfile.color} imageTag={activeProfile.imageTag} size={46} />
   ) : avatarSrc ? (
     <img
       key={`${avatarVersion}-${avatarSrc}`}
@@ -137,7 +143,10 @@ export function UserAvatarMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         {...GLASS_LENS_PROPS}
-        className="lgc-avatar flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 hover:-translate-y-0.5"
+        // Le compte est son propre groupe de la barre : un rond de 46 px, à la hauteur des autres.
+        data-account-trigger
+        data-hote-voile="topbar"
+        className="lgc-avatar pointer-events-auto flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[15px] font-bold text-cta-brand-fg shadow-edge transition-transform duration-press ease-out active:scale-[0.97]"
         style={ringStyle}
       >
         {avatarContent}

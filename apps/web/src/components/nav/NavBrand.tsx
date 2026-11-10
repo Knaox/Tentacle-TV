@@ -17,10 +17,10 @@ export const NavBrand = memo(function NavBrand() {
       to="/"
       onClick={countLogoClick}
       aria-label={t("brandHome")}
-      className="flex shrink-0 items-center gap-2.5 rounded-[11px] px-2 py-1 outline-none transition-opacity duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="flex h-[38px] shrink-0 items-center gap-2 rounded-pill pl-1 pr-2 outline-none transition-opacity duration-hover hover:opacity-85 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
     >
       <TentacleLogo size="md" variant="bare" />
-      <span className="hidden whitespace-nowrap text-[15px] font-bold tracking-[-0.02em] text-content-primary xl:inline">
+      <span className="hidden whitespace-nowrap font-display text-[15px] font-bold tracking-[-0.01em] text-content-primary xl:inline">
         Tentacle<span className="font-semibold text-content-tertiary"> TV</span>
       </span>
     </Link>
