@@ -1,29 +1,32 @@
 /**
  * Ligne d'épisode de la liste Saisons & Épisodes — extraite d'EpisodeList
- * (limite de 300 lignes par fichier). Vignette + progression, méta qualité,
- * et les actions de l'épisode : garder hors ligne (bureau, droit requis) et
- * la bascule « vu ».
+ * (limite de 300 lignes par fichier).
  *
- * La grammaire des cartes, jusqu'au bout : AU REPOS, l'état se lit sur la
- * vignette et nulle part ailleurs — la pastille du modèle (vu, sur cette
- * machine) et la barre de progression commune ; AU SURVOL (ou au focus
- * clavier), les actions paraissent au bout du titre et la pastille leur cède
- * la place, comme le plateau d'une carte. Une coche violette restait
- * affichée à côté du titre, pleine quand l'épisode était vu : elle doublait
- * la pastille. Aucun bouton de lecture sur la vignette : la ligne entière lit.
+ * La forme de la refonte de nov. 2026 (docs/REFONTE-UI.md) : le numéro en
+ * chiffres à chasse fixe, la vignette 16:9 (la couleur de l'image d'abord,
+ * puis UN fondu), le titre et ses puces, le résumé sur deux lignes, la durée.
+ * L'épisode en cours repose sur une encre plus claire ; rien d'autre ne
+ * distingue une ligne au repos.
+ *
+ * L'état se dit EN MOTS sur la ligne du titre — la coche « vu » à la teinte
+ * franche, « Épisode actuel », « Sur cet appareil » — et la progression se
+ * mesure sur la vignette, au dégradé de jauge. Au survol (ou au focus
+ * clavier), les actions paraissent au bout du titre : garder hors ligne
+ * (bureau, droit requis) et la bascule « vu ». Aucun bouton de lecture sur la
+ * vignette : la ligne entière lit.
  */
 
-import { useMemo } from "react";
+import { useMemo, type KeyboardEvent, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import { cardToggleLabelKey, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
+import { useCardMarkers, useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
+import { cardDeviceLabelKey, cardToggleLabelKey, type MediaItem } from "@tentacle-tv/shared";
 import { useCardDeviceState } from "../downloads/useDeviceState";
 import { FadeImage } from "./FadeImage";
-import { CardProgressBar } from "./cards/CardProgressBar";
-import { CardStatusMarkers } from "./cards/CardStatusMarkers";
-import { WatchedGlyph } from "./cards/cardGlyphs";
+import { KeptGlyph, WatchedGlyph } from "./cards/cardGlyphs";
 import { QualityChips, LanguagePill } from "./media/MetaChips";
 import { extractMediaQuality } from "../lib/mediaQuality";
+import { imageColorOf, type ImageBlurHashes } from "../lib/blurhashColor";
 import { EpisodeDownloadAction } from "../downloads/EpisodeDownloadAction";
 import { RichOverview } from "../lib/overviewHtml";
 import { EpisodeRatingLine } from "./rating/EpisodeRatingLine";
@@ -47,9 +50,18 @@ export interface EpisodeRowProps {
   onPlay: () => void;
   /** Absent quand l'épisode n'est pas notable (série sans tmdb, numéros manquants). */
   rating?: EpisodeRowRating;
+  /**
+   * La ligne est elle-même une cible du clavier (Tab, Entrée, Espace). Le
+   * client LG l'ENVELOPPE dans sa propre cible (`EpisodeRowTv`) et ne le passe
+   * pas : deux cibles emboîtées feraient deux arrêts par épisode.
+   */
+  keyboard?: boolean;
 }
 
-export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay, rating }: EpisodeRowProps) {
+/** Le voile sous la jauge : elle se lit sur n'importe quelle vignette (posé sur média, constant). */
+const GAUGE_TRACK = { backgroundColor: "rgba(11, 11, 12, 0.62)" } as const;
+
+export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay, rating, keyboard = false }: EpisodeRowProps) {
   const { t } = useTranslation(["common", "cards"]);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const quality = useMemo(() => extractMediaQuality(ep), [ep]);
@@ -60,17 +72,26 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
   // actions — et l'animation d'ouverture jouait dans le vide, hors écran.
   // Le surlignage `isCurrent` suffit à situer l'épisode une fois qu'on
   // descend jusqu'à la liste de son plein gré.
-  const thumbUrl = ep.ImageTags?.Primary
+  const ownImage = Boolean(ep.ImageTags?.Primary);
+  const thumbUrl = ownImage
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
+  // La couleur d'attente : celle de la vignette, lue dans son blurhash (rien à décoder).
+  // Jellyfin joint `ImageBlurHashes` à ses titres ; le type partagé ne le déclare pas.
+  const thumbColor = ownImage
+    ? imageColorOf((ep as { ImageBlurHashes?: ImageBlurHashes }).ImageBlurHashes, "Primary", ep.ImageTags?.Primary)
+    : null;
 
   // Le modèle des marqueurs, réduit à ce qu'une LIGNE dit d'un épisode : vu,
   // et sur cette machine. Ma liste et les favoris vivent au niveau de la
-  // série, sur la fiche — les répéter à chaque ligne serait du bruit.
+  // série, sur la fiche — les répéter à chaque ligne serait du bruit (d'où
+  // les deux `false`). `useCardMarkers` et non `ep.UserData` : le geste en
+  // cours passe devant le cache, la coche répond au clic.
   const device = useCardDeviceState(ep);
-  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false, device });
+  const markers = useCardMarkers(ep, { communityRating: null, scope: "item", inWatchlist: false, isFavorite: false, device });
   const played = markers.statuses.includes("watched");
-  const progress = ep.UserData?.PlayedPercentage;
+  const percent = played ? null : ep.UserData?.PlayedPercentage;
+  const ratio = percent != null && percent >= 1 ? Math.min(100, percent) / 100 : null;
   const watchedLabel = t(`cards:${cardToggleLabelKey("watched", played)}`);
   const runtime = ep.RunTimeTicks ? Math.floor(ep.RunTimeTicks / 600_000_000) : null;
 
@@ -82,7 +103,14 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     }
   };
 
-  const handleWatchedToggle = (e: React.MouseEvent) => {
+  // Entrée et Espace sur la LIGNE seulement : un bouton qu'elle contient garde les siennes.
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault();
+    handleClick();
+  };
+
+  const handleWatchedToggle = (e: MouseEvent) => {
     e.stopPropagation();
     if (played) {
       markUnwatched.mutate();
@@ -91,82 +119,79 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     }
   };
 
+  const selected = isSelecting && isSelected;
+  const surface = selected
+    ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]"
+    : isCurrent ? "bg-surface-2" : "hover:bg-surface-2";
+
   return (
-    <div onClick={handleClick}
-      className={`group flex cursor-pointer gap-4 rounded-xl p-3 transition-colors ${
-        isSelecting && isSelected
-          ? "bg-[rgba(var(--brand-rgb),0.1)] ring-1 ring-[rgba(var(--brand-rgb),0.4)]"
-          : "bg-fill-faint hover:bg-fill-soft"
-      }`}>
-      {/* Selection checkbox or thumbnail */}
-      {isSelecting ? (
-        <div className="flex w-24 flex-shrink-0 xs:w-28 items-center justify-center sm:w-44">
-          <div className={`h-5 w-5 rounded border-2 transition-colors ${
-            isSelected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)]" : "border-line-strong"
-          }`}>
-            {isSelected && (
-              <svg className="h-full w-full text-[var(--brand-light)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <path d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </div>
+    <div
+      onClick={handleClick}
+      onKeyDown={keyboard ? handleKeyDown : undefined}
+      role={keyboard ? (isSelecting ? "checkbox" : "button") : undefined}
+      aria-checked={keyboard && isSelecting ? isSelected : undefined}
+      aria-current={isCurrent ? "true" : undefined}
+      tabIndex={keyboard ? 0 : undefined}
+      className={`group flex cursor-pointer items-center gap-3 rounded-tile p-2.5 outline-none transition-colors duration-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] sm:gap-4 ${surface}`}
+    >
+      {/* Le numéro — ou, en sélection, la case : la vignette reste, on choisit ce qu'on voit. */}
+      <span className="flex w-6 flex-shrink-0 justify-center">
+        {isSelecting ? (
+          <span className="ui-check" data-checked={isSelected}>
+            <CheckIcon weight="bold" className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        ) : (
+          <span className="font-display text-[15px] font-semibold tabular-nums leading-none text-content-tertiary">
+            {ep.IndexNumber ?? "·"}
+          </span>
+        )}
+      </span>
+
+      <div
+        className="relative w-24 flex-shrink-0 overflow-hidden rounded-card bg-surface-2 xs:w-28 sm:w-44"
+        style={thumbColor ? { backgroundColor: thumbColor } : undefined}
+      >
+        <div className="aspect-video">
+          {thumbUrl && <FadeImage src={thumbUrl} alt="" duration={0.22} className="h-full w-full object-cover" loading="lazy" />}
         </div>
-      ) : (
-        <div className="relative w-24 flex-shrink-0 xs:w-28 overflow-hidden rounded-lg bg-tentacle-surface sm:w-44">
-          <div className="aspect-video">
-            {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
+        {/* Ce qui se MESURE porte le dégradé de jauge ; un `scaleX`, jamais une largeur. */}
+        {ratio !== null && (
+          <div
+            className="gauge absolute inset-x-2 bottom-2"
+            style={GAUGE_TRACK}
+            role="img"
+            aria-label={t("common:percentWatched", { percent: Math.round(ratio * 100) })}
+          >
+            <i style={{ transform: `scaleX(${ratio})` }} />
           </div>
-          {/* La pastille et la barre de TOUTES les cartes, posées sur la
-              vignette : un épisode vu n'a pas de pourcentage, c'est la pastille
-              qui le dit. Au survol, elle cède la place aux actions. */}
-          <CardStatusMarkers
-            statuses={markers.statuses}
-            device={markers.device}
-            className="right-1.5 top-1.5 group-hover:opacity-0 group-focus-within:opacity-0"
-          />
-          {!played && <CardProgressBar percent={progress} />}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Info */}
-      <div className="flex-1 py-1">
-        <div className="flex items-center gap-2">
-          <span className={`text-sm text-content-primary ${isCurrent ? "font-bold" : "font-semibold"}`}>
-            {isCurrent && (
-              <span
-                className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brand-accent)] align-middle shadow-[0_0_8px_rgba(var(--brand-accent-rgb),0.7)]"
-                aria-hidden
-              />
-            )}
-            {ep.IndexNumber}. {ep.Name}
+      <div className="min-w-0 flex-1 py-0.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span className={`min-w-0 text-[15px] leading-snug text-content-primary ${isCurrent ? "font-bold" : "font-semibold"}`}>
+            {ep.Name}
           </span>
-          {isCurrent && (
-            <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-accent-light)]">
-              {t("common:currentEpisode")}
+          {played && (
+            <span className="flex-shrink-0 text-accent" role="img" aria-label={t("cards:status.watched")}>
+              <WatchedGlyph className="h-4 w-4" filled />
             </span>
           )}
-          {/* Les actions de l'épisode, au survol ou au focus seulement :
-              garder hors ligne (bureau, droit requis — sinon absent) puis
-              « vu ». Toujours à leur place (opacité), le titre ne bouge pas. */}
-          {!isSelecting && (
-            <span className="flex flex-shrink-0 items-center gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-              <EpisodeDownloadAction episode={ep} />
-              <button
-                type="button"
-                onClick={handleWatchedToggle}
-                title={watchedLabel}
-                aria-label={watchedLabel}
-                aria-pressed={played}
-                className={`flex-shrink-0 transition-colors ${
-                  played ? "text-[var(--brand-light)] hover:text-content-secondary" : "text-content-tertiary hover:text-[var(--brand-light)]"
-                }`}
-              >
-                <WatchedGlyph className="h-5 w-5" filled={played} />
-              </button>
+          {isCurrent && <span className="chip chip-accent flex-shrink-0">{t("common:currentEpisode")}</span>}
+          {markers.device !== null && (
+            <span className="chip chip-success flex-shrink-0">
+              <KeptGlyph className="h-3 w-3" />
+              {t(`cards:${cardDeviceLabelKey(markers.device)}`)}
             </span>
           )}
         </div>
-        <div className="card-caption mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+        {ep.Overview && (
+          <p className="card-caption mt-1 line-clamp-2 max-w-[68ch] text-[13px] leading-relaxed">
+            <RichOverview text={ep.Overview} />
+          </p>
+        )}
+        <div className="card-caption mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
           {rating && <EpisodeRatingLine {...rating} />}
@@ -174,9 +199,27 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
           <QualityChips quality={quality} density="full" />
           <LanguagePill labels={quality.audioLabels} max={3} />
         </div>
-        {ep.Overview && <p className="card-caption mt-1.5 text-xs leading-relaxed line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
+
+      {/* Les actions de l'épisode, au survol ou au focus seulement : garder
+          hors ligne (bureau, droit requis — sinon absent) puis « vu ».
+          Toujours à leur place (opacité), rien ne bouge. Au doigt, pas de
+          survol : elles restent visibles. */}
+      {!isSelecting && (
+        <span className="flex flex-shrink-0 items-center gap-1.5 self-center opacity-0 transition-opacity duration-hover group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+          <EpisodeDownloadAction episode={ep} />
+          <button
+            type="button"
+            onClick={handleWatchedToggle}
+            title={watchedLabel}
+            aria-label={watchedLabel}
+            aria-pressed={played}
+            className="icon-btn btn-sm"
+          >
+            <WatchedGlyph className="h-[18px] w-[18px]" filled={played} />
+          </button>
+        </span>
+      )}
     </div>
   );
 }
-

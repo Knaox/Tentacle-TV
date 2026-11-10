@@ -41,7 +41,8 @@ export const seasonTabId = (seasonId: string) => `season-tab-${seasonId}`;
  * La bande des saisons : des onglets (`tablist`), une pastille par saison.
  *
  * - Lisible sur n'importe quel fond (cf. `theme/seasonTabs.css`) ; la saison
- *   affichée porte le dégradé de marque ; celle qu'on regarde, un point ;
+ *   affichée est une pastille PLEINE et neutre (plus de dégradé : refonte de
+ *   nov. 2026) ; celle qu'on regarde porte un point à la teinte franche ;
  *   une saison vue, la coche des cartes ; chacune, son nombre d'épisodes.
  * - La saison affichée est ramenée dans le champ à l'ouverture (la saison 14
  *   d'une série de 22 n'est plus hors écran) et à chaque changement.
@@ -81,8 +82,8 @@ export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, 
         data-season-tabs
         data-tone={tone}
         onKeyDown={onKeyDown}
-        // `py-2` / `-my-2` : la lueur de la pastille active et l'anneau de focus
-        // débordent — un défilement horizontal rogne aussi à la verticale.
+        // `py-2` / `-my-2` : l'anneau de focus déborde de la pastille — un
+        // défilement horizontal rogne aussi à la verticale.
         className={`relative -my-2 flex gap-2 overflow-x-auto py-2 scrollbar-hide ${stripClassName}`}
         style={{ overscrollBehaviorX: "contain", scrollBehavior: "smooth", ...edgeFadeMask(canLeft, canRight, EDGE) }}
       >

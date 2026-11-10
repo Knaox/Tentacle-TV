@@ -19,7 +19,8 @@ export function SeasonDeleteAction({ seasonId, seasonName }: { seasonId: string 
         <button
           type="button"
           onClick={deletion.open}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--status-error-fg)] transition-colors hover:bg-danger-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
+          // Discrète au repos (la pilule sans peau), rouge de bout en bout : c'est une suppression.
+          className="btn btn-ghost btn-sm lg-glass-btn lg-glass-danger text-[var(--status-error-fg)] hover:bg-danger-surface hover:text-[var(--status-error-fg)]"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
           {t("deleteSeason")}
