@@ -99,7 +99,7 @@ export function ConfirmButton({
         role="alertdialog"
         labelledBy={titleId}
         attrs={{ id: panelId, "aria-describedby": bodyId }}
-        className="lg-menu w-[18rem] overflow-y-auto rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
+        className="lg-menu ui-menu w-[18rem] overflow-y-auto p-4"
       >
         <p id={titleId} className="text-sm font-semibold text-content-primary">{title}</p>
         <p id={bodyId} className="mt-1 text-[13px] leading-relaxed text-content-tertiary">{body}</p>

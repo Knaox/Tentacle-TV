@@ -96,7 +96,7 @@ function UserSheetBody({ user, titleId, isSelf, allRights, devices, devicesFaile
           className={user.isDisabled ? "opacity-50 grayscale" : undefined}
         />
         <div className="min-w-0 flex-1 pt-1">
-          <h2 id={titleId} className="truncate text-lg font-semibold text-content-primary">{user.name}</h2>
+          <h2 id={titleId} className="truncate text-heading-3 text-content-primary">{user.name}</h2>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             <UserBadges user={user} isSelf={isSelf} />
           </div>
@@ -105,7 +105,7 @@ function UserSheetBody({ user, titleId, isSelf, allRights, devices, devicesFaile
           type="button"
           onClick={onClose}
           aria-label={t("common:close")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-content-tertiary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="icon-btn btn-sm shrink-0"
         >
           <X aria-hidden className="h-4 w-4" />
         </button>

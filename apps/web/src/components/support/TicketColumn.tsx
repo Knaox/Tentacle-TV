@@ -55,22 +55,22 @@ export function TicketColumn({
     <section
       aria-label={t(TICKET_STATUS_LABEL_KEYS[status])}
       {...dragHandlers}
-      className={`flex flex-col rounded-xl border p-3 transition-colors ${
-        over ? "border-line-focus bg-fill-soft" : "border-line-subtle bg-fill-faint"
+      className={`ui-panel flex flex-col p-3 transition-colors duration-hover ${
+        over ? "bg-surface-2 shadow-[inset_0_0_0_1.5px_var(--accent)]" : ""
       } ${single ? "" : "max-h-[70vh]"}`}
     >
       <header className="mb-3 flex items-center gap-2 px-1">
         <span className={`h-2.5 w-2.5 rounded-full ${STATUS_STYLE[status].dot}`} aria-hidden />
         <h3 className="text-sm font-semibold text-content-primary">{t(TICKET_STATUS_LABEL_KEYS[status])}</h3>
-        <span className="ml-auto rounded-md bg-fill-subtle px-2 py-0.5 text-xs text-content-tertiary">
+        <span className="chip num ml-auto">
           {tickets.length}
         </span>
       </header>
-      {hint && <p className="-mt-2 mb-3 px-1 text-[11px] text-content-quaternary">{hint}</p>}
+      {hint && <p className="-mt-2 mb-3 px-1 text-[11px] leading-snug text-content-tertiary">{hint}</p>}
       <div className="flex min-h-[4rem] flex-col gap-2 overflow-y-auto">
         {isLoading && [0, 1, 2].map((i) => <Shimmer key={i} height="88px" />)}
         {!isLoading && tickets.length === 0 && (
-          <p className="py-8 text-center text-xs text-content-quaternary">{t("noTicketsInColumn")}</p>
+          <p className="py-8 text-center text-xs text-content-tertiary">{t("noTicketsInColumn")}</p>
         )}
         {!isLoading &&
           tickets.map((tk) => (

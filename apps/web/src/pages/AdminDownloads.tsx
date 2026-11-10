@@ -90,12 +90,12 @@ export function AdminDownloads() {
           cartes, chacune avec son explication. */}
       <AdminDownloadBandwidth />
       <AdminSection scope="user" title={t("downloadsRightsTitle")} description={t("downloadsIntro")}>
-        {/* Squelettes au balayage borné (`skeleton-shimmer`) : `animate-pulse`
-            battait sans fin tant que Jellyfin ne répondait pas. */}
+        {/* Squelettes immobiles (`skeleton-shimmer`) : `animate-pulse` battait
+            sans fin tant que Jellyfin ne répondait pas. */}
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+              <div key={i} className="skeleton-shimmer h-14 rounded-tile" />
             ))}
           </div>
         )}
@@ -106,7 +106,7 @@ export function AdminDownloads() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex flex-wrap items-center gap-3 rounded-xl bg-fill-subtle p-3 transition-colors hover:bg-fill-soft"
+                className="flex flex-wrap items-center gap-3 rounded-tile bg-surface-2 px-4 py-3 transition-colors duration-hover hover:bg-surface-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex min-w-0 items-center gap-2 text-sm font-semibold text-content-primary">
@@ -117,7 +117,7 @@ export function AdminDownloads() {
                       </StatusPill>
                     )}
                   </p>
-                  <p className="mt-0.5 text-xs text-content-quaternary">
+                  <p className="mt-0.5 text-xs text-content-tertiary">
                     {user.enableAllFolders
                       ? t("downloadsAllLibraries")
                       : t("downloadsSomeLibraries", { count: user.enabledFoldersCount })}

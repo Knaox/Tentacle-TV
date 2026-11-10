@@ -50,14 +50,14 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
       <legend id={titleId} className={FIELD_LABEL}>{t("fields.accessSchedules.label")}</legend>
       <span className={FIELD_HINT}>{t("fields.accessSchedules.hint")}</span>
       {notice && (
-        <p role="note" className="mt-2 flex items-start gap-2 rounded-lg border border-status-warning bg-status-warning-bg px-3 py-2 text-xs leading-relaxed text-status-warning-fg">
-          <TriangleAlert aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p role="note" className="mt-2 flex items-start gap-2 rounded-field bg-status-warning-bg px-3 py-2 text-xs leading-relaxed text-status-warning-fg">
+          <TriangleAlert weight="bold" aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {notice}
         </p>
       )}
       {never ? (
-        <p className="mt-2 flex items-center gap-2.5 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-primary">
-          <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
+        <p className="mt-2 flex items-center gap-2.5 rounded-field bg-fill-subtle px-3 py-2 text-sm text-content-primary">
+          <Clock weight="bold" aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
           {t("parental.scheduleNever")}
         </p>
       ) : value.length > 0 ? (
@@ -67,10 +67,10 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
             const to = formatHour(schedule.endHour);
             return (
               <li key={`${schedule.dayOfWeek}-${schedule.startHour}-${schedule.endHour}`}
-                className="flex items-center gap-2.5 rounded-lg border border-line-subtle bg-fill-subtle py-1 pl-3 pr-1 text-sm">
-                <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
+                className="flex items-center gap-2.5 rounded-field bg-fill-subtle py-1 pl-3 pr-1 text-sm">
+                <Clock weight="bold" aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
                 <span className="min-w-0 flex-1 text-content-primary">{dayName(schedule.dayOfWeek)}</span>
-                <span className="tabular-nums text-content-secondary">{t("parental.scheduleRange", { from, to })}</span>
+                <span className="num text-content-secondary">{t("parental.scheduleRange", { from, to })}</span>
                 <button
                   type="button"
                   disabled={disabled}
@@ -78,14 +78,14 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
                   aria-label={t("parental.scheduleRemove", { day: dayName(schedule.dayOfWeek), from, to })}
                   className={CHIP_REMOVE}
                 >
-                  <X aria-hidden className="h-3.5 w-3.5" />
+                  <X weight="bold" aria-hidden className="h-3.5 w-3.5" />
                 </button>
               </li>
             );
           })}
         </ul>
       ) : (
-        <p className="mt-2 text-xs text-content-quaternary">{t("parental.scheduleEmpty")}</p>
+        <p className="mt-2 text-xs text-content-tertiary">{t("parental.scheduleEmpty")}</p>
       )}
       <div className="mt-2 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] items-end gap-2">
         <Labelled label={t("parental.scheduleDay")}>
@@ -110,7 +110,7 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
         onClick={() => onChange(addSchedule(value, draft))}
         className={`${SMALL_BUTTON} mt-2`}
       >
-        <Plus aria-hidden className="h-3.5 w-3.5" />
+        <Plus weight="bold" aria-hidden className="h-3.5 w-3.5" />
         {t("parental.scheduleAdd")}
       </button>
     </fieldset>
@@ -120,7 +120,7 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
 function Labelled({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block min-w-0">
-      <span className="mb-1 block text-[11px] font-medium text-content-tertiary">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold text-content-tertiary">{label}</span>
       <span className="relative block">
         {children}
         <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
@@ -137,7 +137,7 @@ function HourSelect({ value, hours, disabled, describedBy, onChange }: {
   onChange: (hour: number) => void;
 }) {
   return (
-    <select value={value} disabled={disabled} aria-describedby={describedBy} className={`${SELECT} tabular-nums`}
+    <select value={value} disabled={disabled} aria-describedby={describedBy} className={`${SELECT} num`}
       onChange={(event) => onChange(Number(event.target.value))}>
       {hours.map((hour) => <option key={hour} value={hour}>{formatHour(hour)}</option>)}
     </select>

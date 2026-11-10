@@ -26,8 +26,8 @@ export function SessionArtwork({ item }: { item: AdminNowPlayingDto }) {
       ? client.getImageUrl(item.imageItemId, "Primary", { width: listening ? 240 : 160, quality: 80, tag: item.imageTag })
       : null;
   return listening ? (
-    <Poster src={src} width={120} height={120} icon={Music} className="h-[120px] w-[120px] shrink-0 rounded-lg bg-fill-soft" />
+    <Poster src={src} width={120} height={120} icon={Music} className="h-[120px] w-[120px] shrink-0 rounded-card bg-surface-3" />
   ) : (
-    <Poster src={src} width={80} height={120} icon={Film} className="h-[120px] w-20 shrink-0 rounded-lg bg-fill-soft" />
+    <Poster src={src} width={80} height={120} icon={Film} className="h-[120px] w-20 shrink-0 rounded-card bg-surface-3" />
   );
 }

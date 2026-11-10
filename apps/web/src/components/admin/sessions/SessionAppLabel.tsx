@@ -26,7 +26,7 @@ export function SessionAppLabel({
       {app.version && (
         <>
           {app.name && " "}
-          <span className="font-medium tabular-nums text-content-secondary">{app.version}</span>
+          <span className="num font-medium text-content-secondary">{app.version}</span>
         </>
       )}
       {tail && `${app.name || app.version ? " · " : ""}${tail}`}

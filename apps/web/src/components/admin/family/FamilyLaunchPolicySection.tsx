@@ -25,7 +25,7 @@ export function FamilyLaunchPolicySection() {
 
   if (!shown) return null;
   const current = policy.data;
-  const heading = "text-xs font-semibold uppercase tracking-wide text-content-tertiary";
+  const heading = "ui-eyebrow";
 
   return (
     <AdminSection scope="server" title={t("adminPolicy.title")} description={t("adminPolicy.description")}>
@@ -62,7 +62,7 @@ export function FamilyLaunchPolicySection() {
       ) : policy.isError ? (
         <p className="text-sm text-status-error-fg">{t("adminPolicy.loadError")}</p>
       ) : (
-        <div aria-hidden="true" className="h-24 animate-pulse rounded-xl bg-fill-subtle" />
+        <div aria-hidden="true" className="skeleton-shimmer h-24 rounded-tile" />
       )}
     </AdminSection>
   );

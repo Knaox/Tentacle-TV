@@ -105,7 +105,7 @@ export function FamilySwitchesSection() {
       ) : loadFailed ? (
         <p className="text-sm text-status-error-fg">{t("admin.loadError")}</p>
       ) : (
-        <div aria-hidden="true" className="h-24 animate-pulse rounded-xl bg-fill-subtle" />
+        <div aria-hidden="true" className="skeleton-shimmer h-24 rounded-tile" />
       )}
     </AdminSection>
   );

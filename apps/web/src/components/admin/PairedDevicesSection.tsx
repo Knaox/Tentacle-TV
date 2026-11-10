@@ -25,17 +25,17 @@ export function PairedDevicesSection() {
     <div className={cls.card}>
       <CollapsibleSection title={t("pairedDevices")} count={devices?.length ?? 0}>
       {!devices || devices.length === 0 ? (
-        <p className="text-sm text-content-quaternary">{t("noPairedDevices")}</p>
+        <p className="text-sm text-content-tertiary">{t("noPairedDevices")}</p>
       ) : (
         <div className="space-y-3">
           {devices.map((device) => (
             <div
               key={device.id}
-              className="flex flex-col items-start gap-3 rounded-lg border border-line-subtle p-4 xs:flex-row xs:items-center xs:justify-between"
+              className="flex flex-col items-start gap-3 rounded-tile bg-surface-2 p-4 xs:flex-row xs:items-center xs:justify-between"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-content-primary">{device.name}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-content-quaternary">
+                <p className="truncate text-sm font-semibold text-content-primary">{device.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-content-tertiary">
                   <span>{device.username}</span>
                   <span>{t("lastActivity", { date: new Date(device.lastSeen).toLocaleDateString() })}</span>
                   <span>{t("pairedOn", { date: new Date(device.createdAt).toLocaleDateString() })}</span>

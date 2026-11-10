@@ -121,7 +121,7 @@ function AdminUsersView() {
       {family && (
         <p className="mt-8 text-sm text-content-tertiary">
           {t("usersFamilyMoved")}{" "}
-          <Link to="/admin/family" className="font-medium text-content-primary underline-offset-4 hover:underline">
+          <Link to="/admin/family" className="font-medium text-accent underline-offset-4 hover:underline">
             {t("usersFamilyMovedLink")}
           </Link>
         </p>

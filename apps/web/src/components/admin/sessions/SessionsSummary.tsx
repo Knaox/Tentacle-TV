@@ -16,7 +16,7 @@ export const SessionsSummary = memo(function SessionsSummary({ sessions }: { ses
   const playing = DELIVERY_ORDER.reduce((sum, kind) => sum + counts[kind], 0);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-medium tabular-nums text-content-secondary">{t("playingCount", { count: playing })}</span>
+      <span className="num text-sm font-medium text-content-secondary">{t("playingCount", { count: playing })}</span>
       {playing > 0 && <span aria-hidden className="mx-1 h-4 w-px bg-line-subtle" />}
       {DELIVERY_ORDER.filter((kind) => counts[kind] > 0).map((kind) => (
         <DeliveryChip key={kind} kind={kind} count={counts[kind]} size="sm" />

@@ -53,7 +53,7 @@ function DurationPicker({ value, onChange }: { value: Duration; onChange: (value
               checked={value === d.value}
               onChange={() => onChange(d.value)}
             />
-            <span className="inline-flex h-9 items-center rounded-full border border-line-subtle bg-fill-subtle px-3.5 text-[13px] font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary peer-checked:border-[color:rgba(var(--brand-rgb),0.5)] peer-checked:bg-[rgba(var(--brand-rgb),0.18)] peer-checked:text-content-primary peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus">
+            <span className="inline-flex h-9 items-center rounded-full bg-fill-subtle px-3.5 text-[13px] font-medium text-content-secondary transition-colors duration-hover hover:bg-fill-soft hover:text-content-primary peer-checked:bg-accent-soft peer-checked:text-content-primary peer-checked:shadow-[inset_0_0_0_1.5px_var(--accent)] peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus">
               {t(d.key)}
             </span>
           </label>
@@ -138,7 +138,7 @@ export function MessageComposer({
             onKeyDown={onTextKey}
             className={`${cls.inp} h-auto resize-y py-2 leading-relaxed`}
           />
-          <p className="mt-1 text-right text-xs tabular-nums text-content-quaternary">{text.length} / {TEXT_MAX}</p>
+          <p className="num mt-1 text-right text-xs text-content-tertiary">{text.length} / {TEXT_MAX}</p>
         </div>
 
         <DurationPicker value={duration} onChange={setDuration} />
@@ -157,21 +157,21 @@ export function MessageComposer({
         </div>
 
         {failed && (
-          <p role="alert" className="flex items-center gap-2 rounded-lg bg-status-error-bg px-3 py-2 text-sm text-status-error-fg">
+          <p role="alert" className="flex items-center gap-2 rounded-field bg-status-error-bg px-3 py-2 text-sm text-status-error-fg">
             <CircleAlert size={16} aria-hidden className="shrink-0" />
             {t("composerFailed")}
           </p>
         )}
 
         <div className="flex items-center justify-end gap-2 pt-1">
-          <span className="mr-auto hidden text-xs text-content-quaternary sm:inline">{t("composerShortcut", { keys: shortcut })}</span>
+          <span className="mr-auto hidden text-xs text-content-tertiary sm:inline">{t("composerShortcut", { keys: shortcut })}</span>
           <ActionPill label={t("cancel")} onClick={onClose} />
           <button
             type="submit"
             // Pendant l'envoi, le bouton ne pâlit pas : il travaille (anneau).
             disabled={empty}
             aria-busy={pending || undefined}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 text-[13px] font-bold text-cta-primary-fg outline-none transition-[background-color,transform] duration-150 hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
+            className="btn btn-solid"
           >
             {pending ? <LoaderCircle size={15} aria-hidden className="animate-spin" /> : <Send size={15} aria-hidden />}
             {pending ? t("sending") : t("send")}

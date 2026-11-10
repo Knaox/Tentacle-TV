@@ -41,7 +41,7 @@ export const InviteUsers = memo(function InviteUsers({ usages }: { usages: Admin
       {rest.length > 0 && (
         <li
           title={rest.map((usage) => usage.username).join(", ")}
-          className="inline-flex items-center rounded-full bg-fill-subtle px-2.5 py-0.5 text-xs font-semibold tabular-nums text-content-tertiary"
+          className="num inline-flex items-center rounded-full bg-fill-subtle px-2.5 py-0.5 text-xs font-semibold text-content-tertiary"
         >
           {t("moreUsers", { count: rest.length })}
         </li>

@@ -30,7 +30,7 @@ export const cls = {
 
   // Champ et son libellé.
   inp: "field",
-  lbl: "mb-1 block text-xs font-medium text-content-tertiary",
+  lbl: "mb-1.5 block text-xs font-semibold text-content-tertiary",
 
   // L'action principale — neutre : le dégradé du logo est réservé à la lecture.
   bp: "btn btn-solid",

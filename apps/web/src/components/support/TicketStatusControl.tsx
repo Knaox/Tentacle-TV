@@ -23,7 +23,7 @@ export function TicketStatusControl({ value, onChange }: TicketStatusControlProp
           const next = e.target.value;
           if (isTicketStatus(next) && next !== value) onChange(next);
         }}
-        className="h-9 appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
+        className="field w-auto cursor-pointer appearance-none px-3 [&>option]:bg-surface-2 [&>option]:text-content-primary"
       >
         {TICKET_STATUSES.map((status) => (
           <option key={status} value={status}>

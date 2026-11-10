@@ -30,7 +30,7 @@ export const UserCard = memo(function UserCard({ user, isSelf, deviceCount, now,
         type="button"
         onClick={() => onOpen(user.id)}
         aria-haspopup="dialog"
-        className="lg-content lg-content-tile group flex h-full w-full items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint p-3 text-left transition-colors duration-150 hover:border-line-strong hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="lg-content lg-content-tile ui-panel group flex h-full w-full items-center gap-3 p-3 text-left transition-colors duration-hover hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <UserAvatar
           userId={user.id}
@@ -60,7 +60,7 @@ export const UserCard = memo(function UserCard({ user, isSelf, deviceCount, now,
         </span>
         <ChevronRight
           aria-hidden
-          className="h-4 w-4 shrink-0 text-content-quaternary transition-transform duration-150 group-hover:translate-x-0.5"
+          className="h-4 w-4 shrink-0 text-content-quaternary transition-colors duration-hover group-hover:text-content-secondary"
         />
       </button>
     </li>

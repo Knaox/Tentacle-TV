@@ -24,7 +24,7 @@ export const RightsGroup = memo(function RightsGroup({ title, summary, open, onT
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex min-h-[56px] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
+        className="flex min-h-[56px] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors duration-hover hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-content-primary">{title}</span>
@@ -32,7 +32,7 @@ export const RightsGroup = memo(function RightsGroup({ title, summary, open, onT
         </span>
         <ChevronDown
           aria-hidden
-          className={`h-4 w-4 shrink-0 text-content-tertiary transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-content-tertiary transition-transform duration-hover ease-out ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (

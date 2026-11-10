@@ -22,13 +22,13 @@ export function TicketReplyForm({ ticketId }: { ticketId: string }) {
         placeholder={t("replyPlaceholder")}
         rows={3}
         maxLength={5000}
-        className="w-full resize-none rounded-lg border border-line-subtle bg-tentacle-surface px-4 py-2.5 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)]"
+        className="field resize-none"
       />
       <div className="mt-2 flex justify-end">
         <button
           type="submit"
           disabled={replyMut.isPending || !reply.trim()}
-          className="h-11 rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg hover:bg-cta-primary-bg-hover disabled:opacity-50"
+          className="btn btn-solid"
         >
           {replyMut.isPending ? t("common:sending") : t("common:send")}
         </button>

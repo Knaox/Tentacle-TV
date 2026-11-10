@@ -67,7 +67,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
       initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
-      className="space-y-4 rounded-xl border border-line-subtle bg-fill-faint p-4"
+      className="ui-panel space-y-4 p-4"
     >
       <header className="flex items-start gap-4">
         {item && (
@@ -75,16 +75,16 @@ export const WatchGroupCard = memo(function WatchGroupCard({
             src={client.getImageUrl(item.imageItemId, "Primary", { width: 120, quality: 80, tag: item.imageTag })}
             width={60}
             height={90}
-            className="h-[90px] w-[60px] shrink-0 rounded-md bg-fill-soft"
+            className="h-[90px] w-[60px] shrink-0 rounded-chip bg-surface-3"
           />
         )}
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className="line-clamp-2 text-base font-semibold text-content-primary" title={label?.full}>
+          <h3 className="line-clamp-2 text-heading-3 text-content-primary" title={label?.full}>
             {label?.title ?? "—"}
             {label?.episode != null && <span className="font-medium text-content-secondary"> — {label.episode}</span>}
           </h3>
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-content-tertiary">
-            <span className="inline-flex items-center gap-1"><Users size={12} aria-hidden />{t("groupOf", { count: group.members.length })}</span>
+          <p className="num flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-tertiary">
+            <span className="inline-flex items-center gap-1"><Users weight="bold" size={12} aria-hidden />{t("groupOf", { count: group.members.length })}</span>
             <CommandStatus isPaused={group.isPaused} feedback={feedback} />
             <span>{formatClock(position)}{item?.runTimeTicks ? ` / ${formatClock(item.runTimeTicks)}` : ""}</span>
           </p>
@@ -107,7 +107,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-sm font-medium text-content-primary">
                   <span className="truncate">{member.userName}</span>
-                  {member.isHost && <Crown size={12} aria-label={t("host")} className="shrink-0 text-brand" />}
+                  {member.isHost && <Crown weight="bold" size={12} aria-label={t("host")} className="shrink-0 text-accent" />}
                 </p>
                 <p className="truncate text-xs text-content-tertiary">
                   {joinParts([status, !session && member.inPlayback ? t("noSession") : null])}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
 import { BACKEND, hdrs, cls, creds } from "../../pages/adminUtils";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { ScopeBadge } from "../settings/ScopeBadge";
@@ -130,22 +131,21 @@ export function ProvisioningCodeSection() {
   return (
     <div className={cls.card}>
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-content-primary">{t("provisioningTitle")}</h2>
+        <h2 className="text-heading-3 text-content-primary">{t("provisioningTitle")}</h2>
         {/* Un code pour tout le serveur : n'importe quelle TV peut s'en servir. */}
         <ScopeBadge scope="server" />
         <span
-          className={`${cls.chip} ${state.enabled ? "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]" : "bg-fill-soft text-content-tertiary"}`}
+          className={`${cls.chip} ${state.enabled ? "bg-status-success-bg text-status-success-fg" : "bg-fill-soft text-content-tertiary"}`}
         >
-          {state.enabled ? t("provisioningEnabled") : t("provisioningDisable")}
+          {/* L'ÉTAT, pas le geste : « Code désactivé » (la pastille disait « Désactiver », le mot du bouton). */}
+          {state.enabled ? t("provisioningEnabled") : t("provisioningDisabledState")}
         </span>
       </div>
-      <p className="mb-4 text-sm text-content-quaternary">{t("provisioningDescription")}</p>
+      <p className="mb-4 max-w-[65ch] text-sm leading-relaxed text-content-secondary">{t("provisioningDescription")}</p>
 
       {readOnly && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-[var(--status-warning-bg)] px-3 py-2 text-xs text-[var(--status-warning-fg)]">
-          <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1.5 1.5 0 003.19 21h17.62a1.5 1.5 0 001.3-2.59l-8.4-14.55a1.5 1.5 0 00-2.62 0z" />
-          </svg>
+        <div className="mb-4 flex items-start gap-2 rounded-field bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
+          <WarningIcon size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0" />
           <span>{t("provisioningNeedsPublicUrl")}</span>
         </div>
       )}
@@ -154,7 +154,7 @@ export function ProvisioningCodeSection() {
         {/* Code */}
         <label className={cls.lbl}>{t("provisioningCodeLabel")}</label>
         <div className="flex flex-wrap items-center gap-3">
-          <code ref={codeRef} className="select-all rounded-lg bg-fill-subtle px-3 py-2 text-lg font-bold tracking-[0.3em] text-content-primary">
+          <code ref={codeRef} className="inline-flex h-10 select-all items-center rounded-field bg-surface-3 px-3 text-lg font-bold tracking-[0.3em] text-content-primary">
             {state.code}
           </code>
           <button onClick={copyCode} className={`${cls.bs} pointer-events-auto`}>
@@ -173,7 +173,7 @@ export function ProvisioningCodeSection() {
         {/* Compte dédié */}
         <label className={`${cls.lbl} mt-4`}>{t("provisioningAccount")}</label>
         {state.account && (
-          <p className="text-xs text-content-quaternary">{t("provisioningCurrentAccount", { name: state.account })}</p>
+          <p className="text-xs text-content-tertiary">{t("provisioningCurrentAccount", { name: state.account })}</p>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -195,7 +195,7 @@ export function ProvisioningCodeSection() {
             className={`${cls.inp} min-w-[180px] flex-1`}
           />
         </div>
-        <p className="text-xs text-content-quaternary">{t("provisioningAccountHelp")}</p>
+        <p className="text-xs text-content-tertiary">{t("provisioningAccountHelp")}</p>
 
         {/* Expiration + actions */}
         <label className={`${cls.lbl} mt-4`}>{t("provisioningExpiresAt")}</label>
@@ -213,7 +213,7 @@ export function ProvisioningCodeSection() {
             <button onClick={() => apply(true)} disabled={busy || readOnly} className={cls.bp}>{t("provisioningEnable")}</button>
           )}
           {msg && (
-            <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>
+            <span className={`text-xs ${msg.ok ? "text-status-success-fg" : "text-status-error-fg"}`}>{msg.t}</span>
           )}
         </div>
       </div>

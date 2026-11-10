@@ -117,7 +117,7 @@ export const NumberRight = memo(function NumberRight({
             onKeyDown={(event) => {
               if (event.key === "Enter") save();
             }}
-            className={`${INPUT} tabular-nums ${suffix ? "pr-14" : ""}`}
+            className={`${INPUT} num ${suffix ? "pr-14" : ""}`}
           />
           {suffix && <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-content-tertiary">{suffix}</span>}
         </span>
@@ -151,12 +151,12 @@ export function CheckList({ title, hint, items, value, disabled, empty, onToggle
       <legend id={titleId} className={FIELD_LABEL}>{title}</legend>
       <span className={FIELD_HINT}>{hint}</span>
       {items.length === 0 ? (
-        <p className="mt-2 text-xs text-content-quaternary">{empty}</p>
+        <p className="mt-2 text-xs text-content-tertiary">{empty}</p>
       ) : (
         <ul className="mt-2 space-y-0.5">
           {items.map((item) => (
             <li key={item.id}>
-              <label className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-lg px-2 hover:bg-fill-subtle">
+              <label className="flex min-h-10 cursor-pointer items-center gap-3 rounded-field px-2 transition-colors duration-hover hover:bg-fill-subtle">
                 <input type="checkbox" className={CHECKBOX} checked={value.includes(item.id)} disabled={disabled}
                   onChange={(event) => onToggle(item.id, event.target.checked)} />
                 <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{item.name}</span>

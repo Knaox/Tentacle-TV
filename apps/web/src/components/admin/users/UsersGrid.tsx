@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
+import { MagnifyingGlassIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { EmptyState } from "../../ui/EmptyState";
 import { AdminNotice } from "../kit";
@@ -41,7 +41,7 @@ export function UsersGrid({
     return (
       <ul aria-hidden className={GRID}>
         {Array.from({ length: 8 }, (_, i) => (
-          <li key={i} className="flex items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint p-3">
+          <li key={i} className="ui-panel flex items-center gap-3 p-3">
             <span className="skeleton-shimmer h-12 w-12 shrink-0 rounded-full" />
             <span className="flex-1 space-y-2">
               <span className="skeleton-shimmer block h-3.5 w-2/5 rounded" />

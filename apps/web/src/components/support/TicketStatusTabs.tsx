@@ -26,15 +26,15 @@ export function TicketStatusTabs({ active, counts, onChange }: TicketStatusTabsP
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(status)}
-            className={`flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex h-9 flex-shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
-                ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]"
-                : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft"
+                ? "bg-surface-4 font-semibold text-content-primary"
+                : "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
             }`}
           >
             <span className={`h-2 w-2 rounded-full ${STATUS_STYLE[status].dot}`} aria-hidden />
             {t(TICKET_STATUS_FILTER_KEYS[status])}
-            <span className="rounded bg-fill-soft px-1.5 text-[10px] text-content-quaternary">{counts[status]}</span>
+            <span className="num rounded-chip bg-fill-soft px-1.5 text-[11px] text-content-tertiary">{counts[status]}</span>
           </button>
         );
       })}

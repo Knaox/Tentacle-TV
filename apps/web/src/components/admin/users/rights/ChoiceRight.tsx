@@ -31,7 +31,7 @@ function ChoiceRightView<T extends string>({ field, value, choices, writer }: Ch
         {choices.map((choice) => (
           <label
             key={choice.value}
-            className={`flex min-h-[44px] items-start gap-3 rounded-lg px-2 py-2 hover:bg-fill-subtle ${value === choice.value ? "bg-fill-subtle" : ""} ${pending ? "cursor-default" : "cursor-pointer"}`}
+            className={`flex min-h-10 items-start gap-3 rounded-field px-2 py-2 transition-colors duration-hover hover:bg-fill-subtle ${value === choice.value ? "bg-fill-subtle" : ""} ${pending ? "cursor-default" : "cursor-pointer"}`}
           >
             <input
               type="radio"

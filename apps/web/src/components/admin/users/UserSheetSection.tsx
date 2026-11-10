@@ -11,7 +11,7 @@ export function UserSheetSection({ title, scope, children }: { title: string; sc
   return (
     <section aria-labelledby={headingId}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h3 id={headingId} className="text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+        <h3 id={headingId} className="ui-eyebrow">
           {title}
         </h3>
         {scope ? <ScopeBadge scope={scope} /> : null}
@@ -22,7 +22,7 @@ export function UserSheetSection({ title, scope, children }: { title: string; sc
 }
 
 /** Le cadre commun des lignes d'une rubrique — séparées d'un filet. */
-export const SHEET_LIST = "divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-fill-faint";
+export const SHEET_LIST = "divide-y divide-line-subtle overflow-hidden rounded-tile bg-surface-2";
 
 /** Deux barres de chargement à la place d'une rubrique qui arrive. */
 export function SheetSkeleton() {
