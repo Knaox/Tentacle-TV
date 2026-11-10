@@ -41,6 +41,7 @@ import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
 import { webPluginRoutes } from "./hooks/pluginNavPages";
 import { DevGlassLab } from "./dev/glassLab/devRoute";
 import { DevSocleLab } from "./dev/socleLab/devRoute";
+import { DevReglagesLab } from "./dev/reglagesLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -155,6 +156,8 @@ export function App() {
           {DevGlassLab ? <Route path="/dev/verre" element={guard(<DevGlassLab />)} /> : null}
           {/* Le labo du socle : sans garde — il ne lit aucune donnée (paquets de développement seulement). */}
           {DevSocleLab ? <Route path="/dev/socle" element={<DevSocleLab />} /> : null}
+          {/* Le labo des réglages et de l'administration : les vrais écrans sur un faux serveur, sans garde. */}
+          {DevReglagesLab ? <Route path="/dev/reglages" element={<DevReglagesLab />} /> : null}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
