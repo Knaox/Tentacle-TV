@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 
 interface SelectionCheckboxProps {
   checked: boolean;
@@ -6,22 +7,20 @@ interface SelectionCheckboxProps {
 }
 
 export const SelectionCheckbox = memo(function SelectionCheckbox({ checked, onClick }: SelectionCheckboxProps) {
-  // Badge d'angle posé SUR le poster : fond noir translucide + liseré blanc
-  // constants dans les deux thèmes (cf. règle « posé sur média »).
+  // Pastille d'angle posée SUR l'affiche : un voile d'encre et un liseré `on-media`, constants
+  // dans les deux thèmes. Cochée, l'aplat de la teinte franche (un état ACTIF). Plus de
+  // `backdrop-filter` : une passe de flou par carte, sur toute une grille en sélection.
   return (
     <button
+      type="button"
       onClick={(e) => { e.stopPropagation(); onClick(e); }}
-      className={`absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full transition ${
+      className={`absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-press ${
         checked
-          ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] shadow-[0_0_8px_rgba(var(--brand-rgb), 0.45)]"
-          : "border border-white/40 bg-black/40 backdrop-blur-sm"
+          ? "bg-accent text-accent-on"
+          : "border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-transparent"
       }`}
     >
-      {checked && (
-        <svg className="h-3.5 w-3.5 text-[var(--brand-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      )}
+      {checked && <CheckIcon size={14} weight="bold" aria-hidden />}
     </button>
   );
 });
