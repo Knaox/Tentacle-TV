@@ -8,7 +8,7 @@
 //                              fenêtre reste comme l'utilisateur l'a laissée
 //   window://fullscreen      → à CHAQUE changement réel, y compris hors de l'appli
 //                              (bouton vert, ⌃⌘F) : sans lui, icône et Échap mentent
-//   prevent_display_sleep_start / _stop, player_surface_transparent, open-external
+//   prevent_display_sleep_start / _stop, player_surface_transparent
 #pragma once
 
 #include <optional>

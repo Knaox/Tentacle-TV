@@ -9,6 +9,7 @@
 #include "net/net_shell.h"  // reseau : tentacle://art, tentacle://plugin, relais (src/net)
 #include "pip/glue/pip_install.h"  // pip : image dans l'image (src/pip)
 #include "update/update_shell.h"  // maj : mise à jour automatique (src/update)
+#include "lifecycle/lifecycle_shell.h"  // systeme : cycle de vie (src/lifecycle)
 
 namespace tentacle {
 
@@ -16,6 +17,9 @@ void initModules(AppContext& ctx) {
   pont::install(ctx);  // pont — octave déclare ses canaux entre ces deux lignes
   music::installInShell(pont::registry());  // octave : canaux audio_*
   pont::setOnVideoClaim([] { music::videoClaim(); });  // octave : une vidéo met la musique en pause
+  lifecycle::install(ctx, pont::registry());  // systeme : liens d'app, liens externes, dossier, relance, focus
+  lifecycle::setVideoControls({pont::videoRunning, pont::stopVideo, pont::pauseVideo});  // systeme : le lecteur vu de la fermeture
+  lifecycle::onWindowClosed([] { music::shutdownMusic(); });  // systeme : la musique s'arrête avec la fenêtre (Electron)
   reseau::install(ctx);  // reseau : schémas tentacle://art|plugin, canaux jellyfin_*, client_fetch_*…
   pip::install(ctx, pont::registry());  // pip : commandes pip_*, fenêtre PiP
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
