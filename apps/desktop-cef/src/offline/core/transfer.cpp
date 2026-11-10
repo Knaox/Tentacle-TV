@@ -26,6 +26,27 @@ CallbackAwaiter<bool> stopCall(TransferDriver& driver, std::string url, HeaderLi
   });
 }
 
+/// Fin de session serveur, best-effort, à TOUTE sortie : libère ffmpeg côté Jellyfin. (Des
+/// fonctions, pas des lambdas-coroutines : GCC 12 refuse ces dernières à capture par référence.)
+Task<void> stopTranscodeOf(TransferDriver& driver, std::string base, std::optional<TranscodeSession> session,
+                           std::string token) {
+  if (!session) co_return;
+  HeaderList headers;
+  headers.emplace_back("X-Emby-Token", token);
+  const std::string url = base + "?deviceId=" + session->deviceId + "&playSessionId=" + session->playSessionId;
+  auto pending = stopCall(driver, url, headers);
+  co_await pending;
+}
+
+/// La préparation du serveur n'est plus utile : arrivée chez nous, ou abandonnée.
+Task<void> releaseOf(TransferDriver& driver, std::optional<std::string> url, std::string token) {
+  if (!url || url->empty()) co_return;
+  HeaderList headers;
+  headers.emplace_back("Authorization", "Bearer " + token);
+  auto pending = stopCall(driver, *url, headers);
+  co_await pending;
+}
+
 }  // namespace
 
 Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob job, std::shared_ptr<TransferFlags> flags,
@@ -68,21 +89,21 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
   int64_t lastPersistAt = now();
 
   const std::string transcodeBase = job.serverUrl + "/api/jellyfin/Videos/ActiveEncodings";
-  // Fin de session serveur, best-effort, à TOUTE sortie : libère ffmpeg côté Jellyfin.
-  auto stopTranscode = [&]() -> Task<void> {
-    if (!*session) co_return;
-    const std::string url = transcodeBase + "?deviceId=" + (*session)->deviceId + "&playSessionId=" + (*session)->playSessionId;
-    co_await stopCall(driver, url, {{"X-Emby-Token", job.token}});
+  // Arrêt du transcodage et libération : chaque appel rend une `Task` NOMMÉE avant d'être
+  // attendue (`Exit::stop`, `Exit::release`) — jamais un temporaire dans un `co_await`.
+  struct Exit {
+    TransferDriver& driver;
+    const std::string& base;
+    const std::shared_ptr<std::optional<TranscodeSession>>& session;
+    const TransferJob& job;
+    Task<void> stop() { return stopTranscodeOf(driver, base, *session, job.token); }
+    Task<void> release() { return releaseOf(driver, job.releaseUrl, job.token); }
   };
-  // La préparation du serveur n'est plus utile : arrivée chez nous, ou abandonnée.
-  auto release = [&]() -> Task<void> {
-    if (!job.releaseUrl || job.releaseUrl->empty()) co_return;
-    co_await stopCall(driver, *job.releaseUrl, {{"Authorization", "Bearer " + job.token}});
-  };
+  Exit exit{driver, transcodeBase, session, job};
 
   TransferRequest request;
   request.url = job.url;
-  request.headers = {{"Authorization", "Bearer " + job.token}};
+  request.headers.emplace_back("Authorization", "Bearer " + job.token);
   request.partPath = part;
   request.resumeFrom = resumeFrom;
   request.signal = flags;
@@ -111,7 +132,7 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
   // Un pilote qui LÈVE (coupé net) : `unexpected` le dit, et les bascules décident d'abord.
   bool threw = false;
   std::string thrown;
-  const TransferOutcome outcome = co_await CallbackAwaiter<TransferOutcome>(
+  CallbackAwaiter<TransferOutcome> downloading(
       [&driver, &request, &threw, &thrown](std::function<void(TransferOutcome)> done) {
         try {
           driver.download(request, done);
@@ -121,33 +142,34 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
           done(TransferOutcome{});
         }
       });
+  const TransferOutcome outcome = co_await downloading;
   if (threw) {
     if (flags->cancel()) {
       discard(part);
-      co_await stopTranscode();
-      co_await release();
+      { auto t = exit.stop(); co_await t; }
+      { auto t = exit.release(); co_await t; }
       co_return TransferEnd::canceled();
     }
     if (flags->pause()) {
-      co_await stopTranscode();
+      { auto t = exit.stop(); co_await t; }
       co_return TransferEnd::paused(sizeOr(part, resumeFrom));
     }
     if (hooks.onUnexpected) hooks.onUnexpected("transfer.download", thrown);
-    co_await stopTranscode();
+    { auto t = exit.stop(); co_await t; }
     co_return TransferEnd::failed("unexpected", sizeOr(part, resumeFrom));
   }
 
   switch (outcome.kind) {
     case TransferOutcome::Kind::Canceled:
       discard(part);
-      co_await stopTranscode();
-      co_await release();
+      { auto t = exit.stop(); co_await t; }
+      { auto t = exit.release(); co_await t; }
       co_return TransferEnd::canceled();
     case TransferOutcome::Kind::Paused:
-      co_await stopTranscode();
+      { auto t = exit.stop(); co_await t; }
       co_return TransferEnd::paused(sizeOr(part, outcome.bytesKnown));
     case TransferOutcome::Kind::Failed:
-      co_await stopTranscode();
+      { auto t = exit.stop(); co_await t; }
       if (outcome.cause == "range-ignored") {
         // Pas pu tronquer : on repart de zéro, en pause SYSTÈME (reprise automatique).
         discard(part);
@@ -159,7 +181,7 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
   }
 
   if (outcome.status >= 400) {
-    co_await stopTranscode();
+    { auto t = exit.stop(); co_await t; }
     // 401/403 : jeton expiré pendant le transfert — une pause système qui repart d'elle-même.
     const std::string code = outcome.status == 404 ? "unavailable" : "network";
     const auto wait = outcome.header ? serverWaitMs(outcome.status, outcome.header, now()) : std::nullopt;
@@ -171,7 +193,7 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
     co_return TransferEnd::failed(code, resumeFrom, wait);
   }
 
-  co_await stopTranscode();
+  { auto t = exit.stop(); co_await t; }
   const int64_t written = sizeOr(part, 0);
   // Intégrité : l'Original fait EXACTEMENT la taille annoncée, sinon on repart propre.
   if (job.variant == "original" && job.expectedSize && *job.expectedSize > 0 && written != *job.expectedSize) {
@@ -187,7 +209,7 @@ Task<TransferEnd> runTransfer(TransferDriver& driver, Volume volume, TransferJob
   } catch (...) {
     co_return TransferEnd::failed("io", written);
   }
-  co_await release();
+  { auto t = exit.release(); co_await t; }
   co_return TransferEnd::complete(written);
 }
 

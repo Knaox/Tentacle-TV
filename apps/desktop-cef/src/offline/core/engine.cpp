@@ -125,14 +125,18 @@ void DownloadEngine::updateActivity() {
 
 Task<void> DownloadEngine::work(Creds creds, int64_t fileId, std::shared_ptr<TransferFlags> flags) {
   auto alive = alive_;
-  co_await yieldTo(*deps_.scheduler);
-  const Attempt attempt = co_await runAttempt(deps_, creds, fileId, flags, [this, alive] {
+  auto hop = yieldTo(*deps_.scheduler);
+  co_await hop;
+  std::function<void()> changed = [this, alive] {
     if (*alive) notifyChanged();
-  });
+  };
+  auto attemptTask = runAttempt(deps_, creds, fileId, flags, changed);
+  const Attempt attempt = co_await attemptTask;
   // La suite d'un `await` ne court jamais dans la pile du geste qui l'a provoquée : une pause
   // qui solde le transfert sur-le-champ ne doit pas relancer la file AVANT que
   // `suspendForSystem` ait fini de la mettre de côté.
-  co_await yieldTo(*deps_.scheduler);
+  auto settle = yieldTo(*deps_.scheduler);
+  co_await settle;
   if (*alive) finish(fileId, attempt.end, attempt.moved);
 }
 
@@ -215,7 +219,10 @@ void DownloadEngine::cancel(int64_t fileId) {
 
 Task<void> DownloadEngine::waitNotActive(int64_t fileId, int64_t timeoutMs) {
   const int64_t limit = deps_.now() + timeoutMs;
-  while (isActive(fileId) && deps_.now() < limit) co_await sleepFor(*deps_.scheduler, 50);
+  while (isActive(fileId) && deps_.now() < limit) {
+    auto tick = sleepFor(*deps_.scheduler, 50);
+    co_await tick;
+  }
 }
 
 }  // namespace tentacle::offline

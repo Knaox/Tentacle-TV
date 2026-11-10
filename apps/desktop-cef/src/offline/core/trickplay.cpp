@@ -151,7 +151,8 @@ Task<int64_t> fetchTrickplay(FetchBytes fetchBytes, std::string serverUrl, Volum
     }
     const std::string url = serverUrl + "/api/jellyfin/items/" + itemId + "/trickplay/" + std::to_string(width) + "/" +
                             std::to_string(index) + ".jpg?mediaSourceId=" + source;
-    const auto bytes = co_await fetch(fetchBytes, url, kMaxTileBytes);
+    auto pending = fetch(fetchBytes, url, kMaxTileBytes);
+    const auto bytes = co_await pending;
     if (!bytes || bytes->empty()) continue;
     try {
       files::mkdirp(target.parent_path());

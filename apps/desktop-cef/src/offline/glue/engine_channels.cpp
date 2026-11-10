@@ -27,13 +27,15 @@ const Json& list(const Json& p, const char* key, size_t max) {
 Task<void> stopFirst(DownloadEngine& engine, int64_t id) {
   if (!engine.isActive(id)) co_return;
   engine.cancel(id);
-  co_await engine.waitNotActive(id, 5000);
+  auto waiting = engine.waitNotActive(id, 5000);
+  co_await waiting;
 }
 
 Task<void> deleteOne(std::string user, int64_t id, bridge::Reply reply) {
   try {
     DownloadEngine& engine = downloadsEngine();
-    co_await stopFirst(engine, id);
+    auto stopping = stopFirst(engine, id);
+    co_await stopping;
     Runtime& rt = runtime();
     const DeleteOutcome outcome = deleteClaim(rt.db(), rt.volume(), user, id);
     engine.notifyChanged();
@@ -49,7 +51,8 @@ Task<void> removeMusic(std::string user, std::vector<int64_t> ids, std::optional
     Runtime& rt = runtime();
     int64_t removed = 0;
     for (const int64_t id : ids) {
-      co_await stopFirst(engine, id);
+      auto stopping = stopFirst(engine, id);
+      co_await stopping;
       if (deleteClaim(rt.db(), rt.volume(), user, id).fileDeleted) ++removed;
     }
     if (collection && !collection->empty()) music::deleteMusicCollection(rt.db(), user, *collection);

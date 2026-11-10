@@ -29,8 +29,10 @@ struct Run {
   }
   TransferEnd go(TransferJob j, std::shared_ptr<TransferFlags> flags = std::make_shared<TransferFlags>()) {
     spawn([](Run* self, TransferJob job, std::shared_ptr<TransferFlags> f) -> Task<void> {
-      self->end = co_await runTransfer(self->driver, self->root.volume, job, f,
-                                       [self](int64_t b) { self->progress.push_back(b); }, [self] { return self->scheduler.now; });
+      std::function<void(int64_t)> progress = [self](int64_t b) { self->progress.push_back(b); };
+      std::function<int64_t()> now = [self] { return self->scheduler.now; };
+      auto transfer = runTransfer(self->driver, self->root.volume, job, f, progress, now);
+      self->end = co_await transfer;
     }(this, std::move(j), flags));
     scheduler.drain();
     return end.value_or(TransferEnd::failed("pending", -1));

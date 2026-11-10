@@ -11,6 +11,11 @@
 //   spawn(task)     `void promise` : lancée tout de suite, jamais attendue ;
 //   Started<T>      une promesse lancée MAINTENANT et attendue plus tard (`const p = f(); … await p`) ;
 //   awaitCallback   un rappel du monde extérieur devenu attendable.
+//
+// RÈGLE : jamais un temporaire dans l'expression d'un `co_await` (`co_await f(x + y, [..]{})`).
+// GCC avant 13 détruit deux fois certains de ces temporaires (une lambda convertie en
+// `std::function`, mesuré sous Debian 12 : un `shared_ptr` libéré trop tôt). On NOMME la tâche
+// ou l'attente, puis on l'attend : `auto t = f(x + y, fn); co_await t;`.
 
 #include <coroutine>
 #include <cstdio>

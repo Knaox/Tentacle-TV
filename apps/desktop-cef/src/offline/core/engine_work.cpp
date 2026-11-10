@@ -41,7 +41,8 @@ Task<void> fetchSidecars(const EngineDeps& deps, Volume volume, FetchBytes fetch
   Database& db = *deps.db;
   if (file.sourcePath) {  // un titre de musique : sa pochette seulement
     try {
-      co_await fetchMusicCover(fetchBytes, db, creds.serverUrl, volume, file.itemId, fetchPublic);
+      auto task = fetchMusicCover(fetchBytes, db, creds.serverUrl, volume, file.itemId, fetchPublic);
+      co_await task;
     } catch (...) {
     }
     co_return;
@@ -49,7 +50,8 @@ Task<void> fetchSidecars(const EngineDeps& deps, Volume volume, FetchBytes fetch
   if (!snapshotExists(volume, file.itemId)) {
     if (const auto spec = getSpec(db, file.itemId)) {
       try {
-        co_await snapshot(fetchBytes, db, creds.serverUrl, volume, *spec, nowMs);
+        auto task = snapshot(fetchBytes, db, creds.serverUrl, volume, *spec, nowMs);
+        co_await task;
       } catch (...) {
         // Snapshot manqué : la fiche sera pauvre hors ligne, le film sera là.
       }
@@ -61,14 +63,15 @@ Task<void> fetchSidecars(const EngineDeps& deps, Volume volume, FetchBytes fetch
       try {
         const auto onUnexpected = deps.onUnexpected;
         const std::string itemId = file.itemId;
-        const int64_t fetched = co_await fetchSubtitles(
-            fetchBytes, creds.serverUrl, volume, file.itemId, file.mediaSourceId, specs,
+        std::function<void(const SubtitleSpec&, const std::string&)> skipped =
             [onUnexpected, itemId](const SubtitleSpec& spec, const std::string& reason) {
               if (onUnexpected) {
                 onUnexpected("subs.fetch",
                              itemId + " piste " + std::to_string(spec.index) + " (" + spec.langTag + ") : " + reason);
               }
-            });
+            };
+        auto task = fetchSubtitles(fetchBytes, creds.serverUrl, volume, file.itemId, file.mediaSourceId, specs, skipped);
+        const int64_t fetched = co_await task;
         setSubtitlesDone(db, file.itemId, file.mediaSourceId, fetched);
       } catch (...) {
       }
@@ -99,10 +102,13 @@ Task<TransferEnd> runWorker(const EngineDeps& deps, Creds creds, FileRow file, s
   if (prepare) job.releaseUrl = creds.serverUrl + "/api/downloads/prepared/" + file.itemId + lightQuery(file);
   const FetchBytes fetchBytes = deps.makeFetcher(creds.token);
   const FetchBytes fetchPublic = deps.makePublicFetcher ? deps.makePublicFetcher() : FetchBytes();
-  Started<TransferEnd> media(runTransfer(*deps.driver, volume, job, flags, hooks.onProgress, deps.now,
-                                         {hooks.onExpected, hooks.onResponse, deps.onUnexpected}));
-  co_await fetchSidecars(deps, volume, fetchBytes, fetchPublic, creds, file, nowMs);
-  co_return co_await media;
+  const TransferHooks transferHooks{hooks.onExpected, hooks.onResponse, deps.onUnexpected};
+  auto transfer = runTransfer(*deps.driver, volume, job, flags, hooks.onProgress, deps.now, transferHooks);
+  Started<TransferEnd> media(std::move(transfer));
+  auto sidecars = fetchSidecars(deps, volume, fetchBytes, fetchPublic, creds, file, nowMs);
+  co_await sidecars;
+  const TransferEnd end = co_await media;
+  co_return end;
 }
 
 }  // namespace
@@ -148,7 +154,8 @@ Task<Attempt> runAttempt(const EngineDeps& deps, Creds creds, int64_t fileId, st
       }
     };
     try {
-      attempt.end = co_await runWorker(deps, creds, *file, flags, hooks, deps.now());
+      auto worker = runWorker(deps, creds, *file, flags, hooks, deps.now());
+      attempt.end = co_await worker;
     } catch (const std::exception& error) {
       // Une exception levée PARCE QU'ON VIENT D'INTERROMPRE n'est pas une panne.
       if (flags->cancel()) attempt.end = TransferEnd::canceled();

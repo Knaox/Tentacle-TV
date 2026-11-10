@@ -80,7 +80,8 @@ void onStarted(const Creds& creds) {
   spawn([](Creds c) -> Task<void> {
     Runtime& rt = runtime();
     try {
-      const int64_t healed = co_await heal(makeFetcher(c.token), rt.db(), c.serverUrl, rt.volume(), nowMs(), makePublicFetcher());
+      auto task = heal(makeFetcher(c.token), rt.db(), c.serverUrl, rt.volume(), nowMs(), makePublicFetcher());
+      const int64_t healed = co_await task;
       if (healed > 0) rt.notifyChanged();
     } catch (...) {
     }

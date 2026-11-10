@@ -20,14 +20,17 @@ constexpr const char* kParentFields = "Overview,Genres,People,Studios,Taglines,P
 
 // Coroutines : les chaînes passent PAR VALEUR (elles vivent dans le cadre de la coroutine).
 Task<std::optional<Bytes>> fetchJson(const FetchBytes& fetchBytes, std::string url, Volume volume, std::string rel) {
-  auto bytes = co_await fetch(fetchBytes, url, kMaxJsonBytes);
+  auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+  auto bytes = co_await pending;
   if (!bytes) co_return std::nullopt;
   co_return saveBytes(volume, rel, *bytes) ? bytes : std::nullopt;
 }
 
 /// La bibliothèque de l'item : le `CollectionFolder` de PREMIER niveau (le dernier en remontant).
 Task<bool> setLibraryFromAncestors(const FetchBytes& fetchBytes, Database& db, std::string base, std::string itemId) {
-  const auto bytes = co_await fetch(fetchBytes, base + "/Items/" + itemId + "/Ancestors", kMaxJsonBytes);
+  const std::string url = base + "/Items/" + itemId + "/Ancestors";
+  auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+  const auto bytes = co_await pending;
   if (!bytes) co_return false;
   const Json ancestors = parseJson(*bytes);
   if (!ancestors.is_array()) co_return false;
@@ -62,24 +65,27 @@ Task<void> snapshot(FetchBytes fetchBytes, Database& db, std::string serverUrl, 
   const std::string dir = "meta/" + spec.itemId;
   std::vector<std::string> succeeded;
 
-  const auto itemJson =
-      co_await fetchJson(fetchBytes, base + "/Items/" + spec.itemId + "?fields=" + kItemFields, volume, dir + "/item.json");
+  auto itemTask = fetchJson(fetchBytes, base + "/Items/" + spec.itemId + "?fields=" + kItemFields, volume, dir + "/item.json");
+  const auto itemJson = co_await itemTask;
   if (itemJson) succeeded.push_back("item");
   if (spec.seriesId) {
-    const auto ok = co_await fetchJson(fetchBytes, base + "/Items/" + *spec.seriesId + "?fields=" + kParentFields, volume,
-                                       dir + "/series.json");
+    auto task = fetchJson(fetchBytes, base + "/Items/" + *spec.seriesId + "?fields=" + kParentFields, volume,
+                          dir + "/series.json");
+    const auto ok = co_await task;
     if (ok) succeeded.push_back("series");
   }
   if (spec.seasonId) {
-    const auto ok = co_await fetchJson(fetchBytes, base + "/Items/" + *spec.seasonId + "?fields=" + kParentFields, volume,
-                                       dir + "/season.json");
+    auto task = fetchJson(fetchBytes, base + "/Items/" + *spec.seasonId + "?fields=" + kParentFields, volume,
+                          dir + "/season.json");
+    const auto ok = co_await task;
     if (ok) succeeded.push_back("season");
   }
   if (itemJson) {
     // Le DTO frais fait autorité sur les numéros (répare une mise en file d'avant le v5).
     applyEpisodeNumbers(db, spec.itemId, *itemJson);
     const std::string mediaSourceId = firstMediaSourceId(db, spec.itemId).value_or(spec.itemId);
-    const int64_t sheets = co_await fetchTrickplay(fetchBytes, serverUrl, volume, spec.itemId, mediaSourceId, *itemJson, nowMs);
+    auto task = fetchTrickplay(fetchBytes, serverUrl, volume, spec.itemId, mediaSourceId, *itemJson, nowMs);
+    const int64_t sheets = co_await task;
     if (sheets > 0) succeeded.push_back("trickplay");
   }
   // L'affiche vient de l'item ; la bannière et le logo de la SÉRIE pour un épisode.
@@ -90,22 +96,28 @@ Task<void> snapshot(FetchBytes fetchBytes, Database& db, std::string serverUrl, 
       {base + "/Items/" + visual + "/Images/Logo?maxWidth=800&format=Png", dir + "/logo.png", "logo"},
   };
   for (const auto& [url, rel, name] : images) {
-    const auto bytes = co_await fetch(fetchBytes, url, kMaxJsonBytes);
+    auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+    const auto bytes = co_await pending;
     if (bytes && !bytes->empty() && saveBytes(volume, rel, *bytes)) succeeded.push_back(name);
   }
   if (spec.seriesId) {
-    const auto bytes = co_await fetch(
-        fetchBytes, base + "/Items/" + *spec.seriesId + "/Images/Primary?maxWidth=600&quality=90&format=Jpg", kMaxJsonBytes);
+    const std::string url = base + "/Items/" + *spec.seriesId + "/Images/Primary?maxWidth=600&quality=90&format=Jpg";
+    auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+    const auto bytes = co_await pending;
     if (bytes && saveBytes(volume, dir + "/series-primary.jpg", *bytes)) succeeded.push_back("seriesPrimary");
   }
-  if (co_await setLibraryFromAncestors(fetchBytes, db, base, spec.itemId)) succeeded.push_back("library");
+  auto libraryTask = setLibraryFromAncestors(fetchBytes, db, base, spec.itemId);
+  if (co_await libraryTask) succeeded.push_back("library");
   // Les segments viennent du résolveur du backend, pas du proxy Jellyfin.
-  if (co_await fetchSegments(fetchBytes, serverUrl, volume, spec.itemId)) succeeded.push_back("segments");
+  auto segmentsTask = fetchSegments(fetchBytes, serverUrl, volume, spec.itemId);
+  if (co_await segmentsTask) succeeded.push_back("segments");
   markSnapshotDone(db, spec.itemId, Json{{"ok", succeeded}}.dump(), nowMs);
 }
 
 Task<bool> fetchSegments(FetchBytes fetchBytes, std::string serverUrl, Volume volume, std::string itemId) {
-  const auto bytes = co_await fetch(fetchBytes, serverUrl + "/api/playback/segments/" + itemId, kMaxJsonBytes);
+  const std::string url = serverUrl + "/api/playback/segments/" + itemId;
+  auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+  const auto bytes = co_await pending;
   if (!bytes) co_return false;
   if (!plausibleContract(parseJson(*bytes))) co_return false;
   co_return saveBytes(volume, "meta/" + itemId + "/segments.json", *bytes);
@@ -148,7 +160,8 @@ Task<int64_t> fetchSubtitles(FetchBytes fetchBytes, std::string serverUrl, Volum
     }
     const std::string url = serverUrl + "/api/jellyfin/Videos/" + itemId + "/" + mediaSourceId + "/Subtitles/" +
                             std::to_string(spec.index) + "/Stream." + spec.format;
-    const auto bytes = co_await fetch(fetchBytes, url, kMaxSubtitleBytes);
+    auto pending = fetch(fetchBytes, url, kMaxSubtitleBytes);
+    const auto bytes = co_await pending;
     if (!bytes || bytes->empty()) {
       skipped(spec, "fetch");
       continue;

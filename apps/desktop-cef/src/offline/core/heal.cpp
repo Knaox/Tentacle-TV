@@ -37,8 +37,14 @@ Task<bool> fetchMusicCover(FetchBytes fetchBytes, Database& db, std::string serv
   const bool elsewhere = music::isPublicArtUrl(*artwork);
   if (elsewhere && !fetchPublic) co_return false;
   std::optional<Bytes> bytes;
-  if (elsewhere) bytes = co_await fetch(fetchPublic, *artwork, kMaxTileBytes);
-  else if (music::isServerPath(*artwork)) bytes = co_await fetch(fetchBytes, serverUrl + *artwork, kMaxTileBytes);
+  if (elsewhere) {
+    auto pending = fetch(fetchPublic, *artwork, kMaxTileBytes);
+    bytes = co_await pending;
+  } else if (music::isServerPath(*artwork)) {
+    const std::string url = serverUrl + *artwork;
+    auto pending = fetch(fetchBytes, url, kMaxTileBytes);
+    bytes = co_await pending;
+  }
   const auto ext = bytes ? imageExt(*bytes) : std::nullopt;
   if (!bytes || !ext) co_return false;
   const std::string rel = "media/" + itemId + "/cover." + *ext;
@@ -67,7 +73,8 @@ Task<int64_t> heal(FetchBytes fetchBytes, Database& db, std::string serverUrl, V
       const bool versionStale = metaVersion(db, item.itemId) < kCurrentMetaVersion;
       if (!snapshotExists(volume, item.itemId) || seriesPosterMissing || versionStale) {
         try {
-          co_await snapshot(fetchBytes, db, serverUrl, volume, *spec, nowMs);
+          auto task = snapshot(fetchBytes, db, serverUrl, volume, *spec, nowMs);
+          co_await task;
           touched = true;
         } catch (...) {
           // Non réparé ce tour-ci ; on continue avec les suivants.
@@ -76,23 +83,26 @@ Task<int64_t> heal(FetchBytes fetchBytes, Database& db, std::string serverUrl, V
     }
     // Segments pris pendant une analyse en cours : redemandés tant qu'elle n'a pas abouti.
     if (!touched && segmentsNeedRefresh(volume, item.itemId)) {
-      touched = co_await fetchSegments(fetchBytes, serverUrl, volume, item.itemId);
+      auto task = fetchSegments(fetchBytes, serverUrl, volume, item.itemId);
+      touched = co_await task;
     }
     // Trickplay manquant — le marqueur `trickplay.none` évite de redemander à chaque démarrage.
     if (!trickplayExists(volume, item.itemId) && !trickplayNoneRecently(volume, item.itemId, nowMs)) {
-      const auto itemJson =
-          co_await fetch(fetchBytes, serverUrl + "/api/jellyfin/Items/" + item.itemId + "?fields=Trickplay", kMaxJsonBytes);
+      const std::string url = serverUrl + "/api/jellyfin/Items/" + item.itemId + "?fields=Trickplay";
+      auto pending = fetch(fetchBytes, url, kMaxJsonBytes);
+      const auto itemJson = co_await pending;
       if (itemJson) {
         const std::string msrc = firstMediaSourceId(db, item.itemId).value_or(item.itemId);
-        const int64_t sheets = co_await fetchTrickplay(fetchBytes, serverUrl, volume, item.itemId, msrc, *itemJson, nowMs);
+        auto task = fetchTrickplay(fetchBytes, serverUrl, volume, item.itemId, msrc, *itemJson, nowMs);
+        const int64_t sheets = co_await task;
         touched = touched || sheets > 0;
       }
     }
     if (item.subtitlesJson) {
       const auto specs = parseSpecs(*item.subtitlesJson);
       if (!specs.empty()) {
-        const int64_t fetched =
-            co_await fetchSubtitles(fetchBytes, serverUrl, volume, item.itemId, item.mediaSourceId, specs);
+        auto task = fetchSubtitles(fetchBytes, serverUrl, volume, item.itemId, item.mediaSourceId, specs);
+        const int64_t fetched = co_await task;
         // Le compte se recale à chaque passage : ce qui manquait au transfert arrive souvent ici.
         setSubtitlesDone(db, item.itemId, item.mediaSourceId, fetched);
         touched = touched || fetched > 0;
@@ -112,7 +122,8 @@ Task<int64_t> heal(FetchBytes fetchBytes, Database& db, std::string serverUrl, V
   for (const auto& itemId : covers) {
     bool ok = false;
     try {
-      ok = co_await fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId, fetchPublic);
+      auto task = fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId, fetchPublic);
+      ok = co_await task;
     } catch (...) {
     }
     if (ok) ++healed;

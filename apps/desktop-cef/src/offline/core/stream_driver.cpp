@@ -87,6 +87,9 @@ class Transfer final : public StreamSink, public std::enable_shared_from_this<Tr
 
   void onComplete(bool ok) override {
     if (unsubscribe_) std::exchange(unsubscribe_, {})();
+    // Le flux est fini : l'annulation (qui tient le flux, qui nous tient) est oubliée — sans
+    // quoi le transfert et son flux se garderaient l'un l'autre en vie.
+    abort_ = nullptr;
     if (finished_) return;
     if (!responded_) {  // jamais ouvert : le réseau
       finish({TransferOutcome::Kind::Failed, 0, {}, "network", request_.resumeFrom});
