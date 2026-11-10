@@ -1,12 +1,14 @@
 #include "shell/shell.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "shell/app_menu.h"
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/window_scale.h"
 
 namespace tentacle {
 namespace {
@@ -130,10 +132,13 @@ void Shell::handleEvent(const SDL_Event& e) {
 }
 
 void Shell::syncWindowGeometry() {
+  // En DIP (shell/window_scale.h) : identique sur macOS, ramené de pixels sous Windows/X11.
   int w = 0, h = 0;
-  SDL_GetWindowSize(window_, &w, &h);
-  float scale = SDL_GetWindowPixelDensity(window_);
-  if (scale <= 0) scale = 1.0f;
+  windowSizeDip(window_, w, h);
+  const WindowScale ws = windowScale(window_);
+  const float scale = ws.deviceScale;
+  windowToDip_ = ws.windowToDip;
+  input_.setWindowToDip(windowToDip_);
   const bool sizeChanged = w != widthPt_ || h != heightPt_;
   const bool scaleChanged = scale != scale_;
   if (!sizeChanged && !scaleChanged) return;
@@ -163,8 +168,8 @@ void Shell::viewSizePt(int& width, int& height) {
 void Shell::viewToScreen(int x, int y, int& sx, int& sy) {
   int wx = 0, wy = 0;
   SDL_GetWindowPosition(window_, &wx, &wy);
-  sx = wx + x;
-  sy = wy + y;
+  sx = wx + int(std::lround(x / windowToDip_));
+  sy = wy + int(std::lround(y / windowToDip_));
 }
 
 void Shell::syncFrameRate() {
@@ -181,7 +186,9 @@ void Shell::syncFrameRate() {
 }
 
 void Shell::setImeRect(const CefRect& r) {
-  SDL_Rect area{r.x, r.y, std::max(r.width, 1), std::max(r.height, 1)};
+  const float k = 1.0f / windowToDip_;  // DIP → unités de fenêtre SDL
+  SDL_Rect area{int(std::lround(r.x * k)), int(std::lround(r.y * k)), std::max(int(std::lround(r.width * k)), 1),
+                std::max(int(std::lround(r.height * k)), 1)};
   SDL_SetTextInputArea(window_, &area, 0);
 }
 

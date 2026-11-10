@@ -1,6 +1,7 @@
 #pragma once
 // Saisie : évènements SDL3 → CefBrowserHost (souris, molette, clavier, texte, IME).
-// Coordonnées : SDL3 livre la souris en points de fenêtre, c'est l'unité (DIP) de CEF.
+// Coordonnées : SDL3 livre la souris en unités de fenêtre, ramenées en DIP (l'unité de CEF) ;
+// identiques sur macOS, des pixels sous Windows (shell/window_scale.h).
 
 #include <SDL3/SDL.h>
 
@@ -17,6 +18,8 @@ class InputRouter {
   // Défilement natif (macOS) : remplace SDL_EVENT_MOUSE_WHEEL une fois activé.
   void setNativeWheel(bool on) { nativeWheel_ = on; }
   void wheel(const platform::NativeWheel& w, CefRefPtr<CefBrowser> browser);
+  // DIP par unité de fenêtre SDL (shell/window_scale.h) : 1 sur macOS, 1/échelle sous Windows.
+  void setWindowToDip(float k) { windowToDip_ = k; }
 
  private:
   uint32_t mouseModifiers() const;
@@ -24,7 +27,8 @@ class InputRouter {
   void text(const char* utf8, CefRefPtr<CefBrowser> browser);
   void editing(const SDL_TextEditingEvent& t, CefRefPtr<CefBrowser> browser);
 
-  float mouseX_ = 0, mouseY_ = 0;
+  float mouseX_ = 0, mouseY_ = 0;  // DIP
+  float windowToDip_ = 1.0f;
   int lastNativeKey_ = 0;
   bool composing_ = false;
   std::set<int> imeKeys_;  // touches enfoncées pendant une composition (cf. key())

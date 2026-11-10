@@ -10,6 +10,7 @@
 #include "platform/video_surface.h"
 #include "player/player.h"
 #include "shell/main_thread.h"
+#include "shell/window_scale.h"
 
 namespace bridge {
 namespace {
@@ -28,7 +29,7 @@ MpvPlayerPort::MpvPlayerPort(SDL_Window* window, void* nativeWindow, tentacle::C
                              tentacle::VideoSurface* restingLayer)
     : window_(window), nativeWindow_(nativeWindow), compositor_(compositor), restingLayer_(restingLayer) {
   int w = 0, h = 0;
-  SDL_GetWindowSize(window_, &w, &h);  // en points sur macOS
+  tentacle::windowSizeDip(window_, w, h);  // DIP : points sur macOS, pixels/échelle sous Windows
   widthPt_ = w;
   heightPt_ = h;
 }
