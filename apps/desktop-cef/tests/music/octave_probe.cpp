@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "probe_harness.h"
+#include "octave_probe_crossfade.h"
 
 using namespace tentacle::music;
 using namespace tentacle::music::test;
@@ -72,6 +73,11 @@ void coverAndControls(Harness& h) {
   h.loop.runFor(700);
   double s = num(h.prop("time-pos"));
   h.check(s >= 9.9 && s < 11.5, "seek 10 s → time-pos " + std::to_string(s));
+  // La houle d'Octave : le niveau RMS mesuré par `astats` dans la chaîne (`audioLevel.ts`).
+  h.loop.runFor(300);
+  auto [okLevel, level] = h.call("audio_level");
+  h.check(okLevel && level.is_number() && level.get<double>() <= 0 && level.get<double>() >= -120,
+          "audio_level en lecture → " + level.dump() + " dBFS");
 }
 
 void gapless(Harness& h) {
@@ -82,6 +88,8 @@ void gapless(Harness& h) {
   h.waitStatus("playing", 4000);
   auto* adv = h.waitEvent("advanced", mark, 6000);
   h.check(adv && (*adv)["fromKey"] == kFil[0] && (*adv)["toKey"] == kFil[1], "advanced Fil Un → Fil Deux");
+  // L'état suit l'annonce (Electron : `advanced`, puis l'état regroupé au tour suivant).
+  h.loop.runFor(100);
   h.check(h.key() == kFil[1] && h.status() == "playing", "l'état suit : Fil Deux en lecture, sans « loading »");
   json pl = h.prop("playlist");
   h.check(pl.is_array() && pl.size() == 1, "liste mpv réduite au titre en cours (" + std::to_string(pl.size()) + ")");
@@ -101,7 +109,11 @@ void gapless(Harness& h) {
                 h.prop("playlist").dump().c_str());
   }
   h.check(ended, "fin du dernier titre → ended");
-  h.check(std::fabs(h.pos() - h.lastState.value("durationMs", 0.0)) < 1, "position = durée à la fin");
+  h.loop.runFor(300);  // la dernière position de mpv suit l'état « ended » (règle d'Electron)
+  // Electron dit la position de mpv sur sa fin (`keep-open`) : le début de la dernière trame
+  // décodée (FLAC : 4 096 échantillons, 93 ms à 44,1 kHz), pas la durée — mesuré 6,83 s / 7 s.
+  h.check(std::fabs(h.pos() - h.lastState.value("durationMs", 0.0)) < 300,
+          "position ≈ durée à la fin (" + std::to_string(h.pos()) + " / " + std::to_string(h.lastState.value("durationMs", 0.0)) + ")");
   h.call("audio_control", {{"action", "resume"}});
   h.loop.runFor(600);
   h.check(h.status() == "playing" && h.pos() < 2000, "reprise après la fin : le titre repart du début");
@@ -146,7 +158,7 @@ void guards(Harness& h) {
                                          {"startMs", 0}});
   h.check(!ok && err["code"] == "source_refused", "source d'une autre origine refusée : " + err.dump());
   auto [ok2, lvl] = h.call("audio_level");
-  h.check(ok2 && lvl.is_null(), "audio_level → null (houle non reprise)");
+  h.check(ok2 && lvl.is_null(), "audio_level hors lecture → null");
 }
 
 // Facultatif : le VRAI serveur Tentacle du banc (`OCTAVE_TENTACLE=<origine> <jeton> <id Jellyfin>`),
@@ -189,6 +201,7 @@ int main(int argc, char** argv) {
   startAndSilence(h, argv[2]);
   coverAndControls(h);
   gapless(h);
+  crossfade(h, kFil[0], kEclair);
   formats(h);
   videoClaim(h);
   guards(h);

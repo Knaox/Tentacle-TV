@@ -9,6 +9,7 @@
 // - les rappels arrivent sur le fil principal (celui du `Scheduler`).
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -28,6 +29,11 @@ class Scheduler {
   virtual ~Scheduler() = default;
   virtual void post(std::function<void()> task) = 0;
   virtual void postDelayed(int delayMs, std::function<void()> task) = 0;
+  // Horloge monotone (ms) : celle des minuteries — les bancs la remplacent par un temps virtuel.
+  virtual double nowMs() const {
+    using namespace std::chrono;
+    return duration<double, std::milli>(steady_clock::now().time_since_epoch()).count();
+  }
 };
 
 enum class PropFormat { Flag, Int64, Double, String };

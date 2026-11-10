@@ -43,6 +43,10 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
                  "Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,"
                  "SafeBrowsing,PushMessaging,BackgroundSync,PasswordManager,"
                  "AutofillServerCommunication,SpellCheck,"
+                 // « À l'écoute » est à NOUS (src/media_session) : Chromium ne publie pas sa
+                 // propre session pour un <video> de la page (aperçu de bande-annonce), qui
+                 // se disputerait les touches média et la fiche du système avec mpv.
+                 "HardwareMediaKeyHandling,"
                  "DomStorageSqlite,DomStorageSqliteMigration,DomStorageSqliteNewDatabases,"
                  "IdbSqliteBackingStore,IdbSqliteOnDiskRollout");
   if (processType.empty()) {

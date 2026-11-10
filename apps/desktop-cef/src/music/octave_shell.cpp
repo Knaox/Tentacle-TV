@@ -8,7 +8,7 @@
 #include "music/mpv_audio_backend.h"
 #include "music/player_audio_backend.h"
 #include "music/octave_channels.h"
-#include "music/audio_engine.h"
+#include "music/crossfade_decks.h"
 #include "registry.h"
 #include "shell/ipc.h"
 #include "shell/main_thread.h"
@@ -35,6 +35,15 @@ std::unique_ptr<OctaveChannels>& channels() {
 }
 
 void installDebugChannels();
+
+struct Observers {
+  CallObserver onCall;
+  EventObserver onEvent;
+};
+Observers& observers() {
+  static Observers o;
+  return o;
+}
 
 // Le relevé du banc : ce que le front a demandé, ce que le moteur a dit (borné).
 struct Trace {
@@ -84,6 +93,7 @@ void installInShell(bridge::Registry& registry) {
           if (args.contains("headers") && args["headers"].is_object())
             for (auto& [k, v] : args["headers"].items()) v = "…";
           keep(trace().calls, trace().callBase, {{"t", nowMs()}, {"channel", channel}, {"args", std::move(args)}});
+          if (observers().onCall) observers().onCall(channel, payload);
           handler(payload, r.ok, r.fail);
         });
       },
@@ -92,6 +102,7 @@ void installInShell(bridge::Registry& registry) {
         item["t"] = nowMs();
         keep(trace().events, trace().eventBase, std::move(item));
         registry.emit(event, payload);
+        if (observers().onEvent) observers().onEvent(payload);
       });
   installDebugChannels();
 }
@@ -103,9 +114,15 @@ namespace {
 // « une vidéo démarre ». Jamais appelés par le front.
 void installDebugChannels() {
   ipc::registerHandler("octave.debug.prop", [](const Json& payload, ipc::Responder r) {
-    AudioEngine* engine = channels() ? channels()->engine() : nullptr;
-    if (!engine) return r.reply(nullptr);
-    engine->readProperty(payload.value("name", ""), [r](Json v) { r.reply(std::move(v)); });
+    if (!channels()) return r.reply(nullptr);
+    channels()->readProperty(payload.value("name", ""), [r](Json v) { r.reply(std::move(v)); });
+  });
+  // Chaque instance de la transition douce (`benchDecks` d'Electron) : `{name, index}`.
+  ipc::registerHandler("octave.debug.deckProp", [](const Json& p, ipc::Responder r) {
+    CrossfadeDecks* engine = channels() ? channels()->engine() : nullptr;
+    const size_t index = p.value("index", size_t{0});
+    if (!engine || index >= engine->decks().size()) return r.reply(nullptr);
+    engine->decks()[index]->readProperty(p.value("name", ""), [r](Json v) { r.reply(std::move(v)); });
   });
   // `{calls, events}` depuis les index absolus `fromCall` / `fromEvent`.
   ipc::registerHandler("octave.debug.log", [](const Json& p, ipc::Responder r) {
@@ -126,6 +143,39 @@ void installDebugChannels() {
 }  // namespace
 
 bool videoClaim() { return channels() && channels()->onVideoClaim(); }
+
+void observeMusic(CallObserver onCall, EventObserver onEvent) {
+  observers() = {std::move(onCall), std::move(onEvent)};
+}
+
+void remoteCommand(const std::string& command) {
+  if (channels()) channels()->emitRemote(command);
+}
+
+void seekFromSystem(double positionMs) {
+  if (channels()) channels()->controlNative(Control::of("seek", std::max(0.0, positionMs)));
+}
+
+void setKeptLookup(KeptLookup lookup) {
+  if (channels()) channels()->setKeptLookup(std::move(lookup));
+}
+
+void setDirectAdopter(DirectAdopter adopter) {
+  if (!channels()) return;
+  channels()->setDirectAdopter(std::move(adopter));
+}
+
+void setDirectPrefetch(std::function<void(const DirectSession&)> prefetch) {
+  if (channels()) channels()->setDirectPrefetch(std::move(prefetch));
+}
+
+void sourceCut(const std::string& url) {
+  if (channels()) channels()->sourceCut(url);
+}
+
+void stopAudio() {
+  if (channels()) channels()->stopAudio();
+}
 
 void shutdownMusic() {
   if (channels())

@@ -30,6 +30,7 @@ add_library(tentacle_bridge STATIC
   mpv_policy.cpp
   video_channels.cpp
   window_channels.cpp
+  video_probe.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/shim_source.cpp"
 )
 target_include_directories(tentacle_bridge PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -46,6 +47,13 @@ if(TARGET tentacle_shell AND TARGET tentacle_player)
   add_library(tentacle_bridge_glue STATIC glue/pont_shell.cpp glue/mpv_player_port.cpp)
   target_link_libraries(tentacle_bridge_glue PUBLIC tentacle_bridge tentacle_shell tentacle_player)
   target_compile_options(tentacle_bridge_glue PRIVATE -Wall -Wextra -Wno-unused-parameter)
+  # La sonde de surface (video_surface_probe, video_edr_probe) : macOS, build de développement.
+  if(APPLE AND NOT TENTACLE_DIST)
+    target_sources(tentacle_bridge_glue PRIVATE glue/video_probe_glue.cpp
+                   "${CMAKE_CURRENT_SOURCE_DIR}/../platform/macos/video_probe_mac.mm")
+    target_compile_definitions(tentacle_bridge_glue PRIVATE TENTACLE_VIDEO_PROBES=1)
+    target_compile_options(tentacle_bridge_glue PRIVATE $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+  endif()
 endif()
 if(TARGET tentacle_bridge_glue)
   # `src/app/modules.cpp` (dans tentacle_shell) appelle la colle : lien dans les deux sens,

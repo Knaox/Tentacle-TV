@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "event_loop.h"
-#include "music/audio_engine.h"
+#include "music/crossfade_decks.h"
 #include "music/mpv_audio_backend.h"
 #include "music/octave_channels.h"
 #ifdef TENTACLE_MUSIC_HAS_PLAYER

@@ -1,6 +1,7 @@
 #include "video_channels.h"
 
 #include <cstdio>
+#include <algorithm>
 #include <cstdlib>
 #include <set>
 #include <vector>
@@ -34,8 +35,8 @@ void failWith(Reply& reply, const std::string& code, const std::string& message)
 
 }  // namespace
 
-VideoChannels::VideoChannels(Registry& registry, PlayerPort& player, Clock clock)
-    : registry_(registry), player_(player), clock_(clock ? std::move(clock) : Clock(nowMs)) {
+VideoChannels::VideoChannels(Registry& registry, PlayerPort& player, Clock clock, Defer defer)
+    : registry_(registry), player_(player), clock_(clock ? std::move(clock) : Clock(nowMs)), defer_(std::move(defer)) {
   registry_.event("mpv://event");
   registry_.event("mpv://property-change");
   registry_.command("mpv_init", [this](const Json& p, Reply r) { init(p, std::move(r)); });
@@ -46,7 +47,10 @@ VideoChannels::VideoChannels(Registry& registry, PlayerPort& player, Clock clock
   player_.setListener(this);
 }
 
-VideoChannels::~VideoChannels() { player_.setListener(nullptr); }
+VideoChannels::~VideoChannels() {
+  *alive_ = false;
+  player_.setListener(nullptr);
+}
 
 void VideoChannels::init(const Json& payload, Reply reply) {
   const Json options = payload.value("options", Json::object());
@@ -132,6 +136,7 @@ void VideoChannels::getProperty(const Json& payload, Reply reply) {
 }
 
 void VideoChannels::onProperty(const std::string& name, const Json& value) {
+  if (propertyObserver_) propertyObserver_(name, value);
   const auto id = observedIds_.find(name);
   if (id == observedIds_.end()) return;  // observée pour un autre (vidéo-HDR, sonde EDR)
   const double at = clock_();
@@ -141,6 +146,8 @@ void VideoChannels::onProperty(const std::string& name, const Json& value) {
   if (kThrottled.count(name)) {
     if (at - lastEmitted_[name] < kThrottleMs) {
       held_[name] = std::move(change);
+      // Sans autre mouvement (pause : rien d'autre ne change), la retenue partirait trop tard.
+      scheduleFlush(kThrottleMs - (at - lastEmitted_[name]));
       return;
     }
     held_.erase(name);
@@ -153,6 +160,35 @@ void VideoChannels::onEvent(const Json& event) {
   if (!event.is_object() || !event.contains("event")) return;
   if (event["event"] == "playback-restart") flushHeld();  // seek abouti : la position d'abord
   registry_.emit("mpv://event", event);
+}
+
+void VideoChannels::scheduleFlush(double delayMs) {
+  if (!defer_ || flushScheduled_) return;
+  flushScheduled_ = true;
+  std::weak_ptr<bool> alive = alive_;
+  defer_(static_cast<int>(delayMs) + 1, [this, alive] {
+    if (alive.expired()) return;
+    flushScheduled_ = false;
+    flushDue();
+  });
+}
+
+// Les valeurs retenues dont la fenêtre de 125 ms est passée partent ; les autres attendent.
+void VideoChannels::flushDue() {
+  const double at = clock_();
+  double wait = -1;
+  for (auto it = held_.begin(); it != held_.end();) {
+    const double since = at - lastEmitted_[it->first];
+    if (since < kThrottleMs) {
+      wait = wait < 0 ? kThrottleMs - since : std::min(wait, kThrottleMs - since);
+      ++it;
+      continue;
+    }
+    lastEmitted_[it->first] = it->second["at"].get<double>();
+    registry_.emit("mpv://property-change", it->second);
+    it = held_.erase(it);
+  }
+  if (wait >= 0) scheduleFlush(wait);
 }
 
 void VideoChannels::flushHeld() {

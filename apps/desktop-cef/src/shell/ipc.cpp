@@ -52,10 +52,14 @@ void onMain(std::function<void()> fn) {
 
 }  // namespace
 
+// Vers la page : une chaîne NON UTF-8 venue de mpv (étiquette Latin-1 d'un fichier, titre de
+// piste) ferait lever `dump()` hors de tout `try`, et fermer l'app — elle devient U+FFFD.
+static std::string toWire(const Json& value) { return value.dump(-1, ' ', false, Json::error_handler_t::replace); }
+
 void Responder::reply(Json result) const {
   if (!s_ || s_->done.exchange(true)) return;
   auto s = s_;
-  std::string json = result.dump();
+  std::string json = toWire(result);
   onMain([s, json] { sendReply(s->frame, s->id, true, json, "", ""); });
 }
 
@@ -72,7 +76,7 @@ void registerHandler(std::string channel, Handler handler) {
 void unregisterHandler(const std::string& channel) { handlers().erase(channel); }
 
 void emit(std::string event, Json payload) {
-  std::string json = payload.dump();
+  std::string json = toWire(payload);
   onMain([event = std::move(event), json] {
     for (auto& b : browsers()) {
       auto msg = CefProcessMessage::Create(proto::kEvent);
