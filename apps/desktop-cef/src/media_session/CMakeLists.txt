@@ -28,7 +28,8 @@ add_test(NAME tentacle_media_session_tests COMMAND tentacle_media_session_tests)
 # dans l'app, quand le socle et le pont existent.
 if(TARGET tentacle_shell AND TARGET tentacle_bridge)
   add_library(tentacle_media_session STATIC media_session_shell.cpp artwork_fetch_cef.cpp)
-  target_link_libraries(tentacle_media_session PUBLIC tentacle_media_session_core tentacle_shell tentacle_bridge)
+  # tentacle_net : `net::httpFetch` (axe reseau), le client HTTP natif de l'app.
+  target_link_libraries(tentacle_media_session PUBLIC tentacle_media_session_core tentacle_shell tentacle_bridge tentacle_net)
   if(APPLE)
     target_sources(tentacle_media_session PRIVATE "${_src}/platform/macos/media_session_macos.mm")
     target_link_libraries(tentacle_media_session PUBLIC "-framework MediaPlayer" "-framework AppKit")

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "media_session/artwork_fetch.h"
 #include "media_session/media_session_hub.h"
 
 using namespace tentacle::media_session;
@@ -211,7 +212,23 @@ static void testSessionName() {
   CHECK(w.calls.sessionNames == std::vector<std::string>{"Tentacle TV"});
 }
 
+static void testArtworkRules() {
+  auto bytes = [](std::string s) { return std::vector<uint8_t>(s.begin(), s.end()); };
+  CHECK(sniffImage(bytes("\xFF\xD8\xFF\xE0rest")) == "image/jpeg");
+  CHECK(sniffImage(bytes("\x89PNG\r\n\x1A\nrest")) == "image/png");
+  CHECK(sniffImage(bytes(std::string("RIFF\x10\0\0\0WEBPVP8 ", 16))) == "image/webp");
+  CHECK(sniffImage(bytes("<!DOCTYPE html>")).empty());  // une page d'erreur n'est pas une image
+  CHECK(sniffImage({}).empty());
+  CHECK(artworkUrlAllowed("http://srv:3001/api/music/artwork/1?api_key=x"));
+  CHECK(artworkUrlAllowed("https://jf.example/Items/1/Images/Primary"));
+  CHECK(artworkUrlAllowed("tentacle://art/?o=a&u=b"));
+  CHECK(!artworkUrlAllowed("file:///etc/passwd"));
+  CHECK(!artworkUrlAllowed("data:image/png;base64,AAAA"));
+  CHECK(!artworkUrlAllowed("tentacle://app/index.html"));
+}
+
 int main() {
+  testArtworkRules();
   testShownOnlyWhenDescribed();
   testPlayingSourceWins();
   testPositionOnlyOnJump();
