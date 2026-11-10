@@ -10,6 +10,7 @@
 #include "net/net_shell.h"  // reseau : tentacle://art, tentacle://plugin, relais (src/net)
 #include "update/update_shell.h"  // maj : mise à jour automatique (src/update)
 #include "lifecycle/lifecycle_shell.h"  // systeme : cycle de vie (src/lifecycle)
+#include "offline/glue/offline_shell.h"  // horsligne : titres gardés, session (src/offline)
 
 namespace tentacle {
 
@@ -23,6 +24,7 @@ void initModules(AppContext& ctx) {
   lifecycle::setVideoControls({pont::videoRunning, pont::stopVideo, pont::pauseVideo});  // systeme : le lecteur vu de la fermeture
   lifecycle::onWindowClosed([] { music::stopAudio(); });  // systeme + medias : la musique s'arrête avec la fenêtre (stopAudio d'Electron)
   music::installDirectSources();  // medias : flux directs d'Octave par le relais de reseau (après reseau)
+  offline::installInShell(pont::registry(), ctx);  // horsligne : downloads_*, session_cache_*, avatar_cache_*
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }
@@ -33,6 +35,7 @@ void shutdownModules() {
   music::shutdownMusic();  // octave : la musique s'arrête, la sortie audio est rendue
   reseau::shutdown();  // reseau
   pont::shutdown();
+  offline::shutdown();  // horsligne : transferts arrêtés, base refermée (WAL replié), fil joint
 }
 
 }  // namespace tentacle

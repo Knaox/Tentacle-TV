@@ -1,0 +1,58 @@
+{
+  "//": "Scénario commun du banc de compatibilité (fixture.ts côté Electron, compat_main.cpp côté CEF).",
+  "U1": "c2e997cc19afc07f00000000000000a1",
+  "U2": "c2e997cc19afc07f00000000000000a2",
+  "F1": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1",
+  "E1": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1",
+  "E2": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+  "PROFILE1": "{\"Name\":\"Damien é\",\"Id\":\"c2e997cc19afc07f00000000000000a1\"}",
+  "POLICY1": "{\"IsAdministrator\":true}",
+  "PROFILE2": "{\"Name\":\"Invité 😀\"}",
+  "AVATAR": "/9j/4AAQ/9k=",
+  "ITEMS": [
+    { "itemId": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "mediaSourceId": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "variant": "original",
+      "preset": null, "containerExt": "mkv", "expectedSize": 4, "kind": "movie", "libraryId": "lib-films",
+      "runtimeTicks": 72000000000, "title": "Le Film « é »", "autoDeleteAfterWatch": false },
+    { "itemId": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1", "mediaSourceId": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1", "variant": "light",
+      "preset": "p720", "containerExt": "mkv", "estimatedSize": 1000, "kind": "episode", "seriesId": "5e5e5e5e",
+      "seasonId": "5a5a5a5a", "runtimeTicks": 12000000000, "title": "Épisode 1", "seriesName": "La Série",
+      "indexNumber": 1, "parentIndexNumber": 1, "autoDeleteAfterWatch": true, "autoDeleteDelayMinutes": 15,
+      "audioStreamIndex": 2, "burnSubtitleIndex": null,
+      "subtitles": [{ "index": 3, "format": "srt", "langTag": "fre-forced" }, { "index": 4, "format": "ass", "langTag": "ENG" }] },
+    { "itemId": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2", "mediaSourceId": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2", "variant": "light",
+      "preset": "p480", "containerExt": "mkv", "estimatedSize": 900, "kind": "episode", "seriesId": "5e5e5e5e",
+      "seasonId": "5a5a5a5a", "title": "Épisode 2", "seriesName": "La Série", "indexNumber": 2, "parentIndexNumber": 1,
+      "autoDeleteAfterWatch": false }
+  ],
+  "TRACKS": [
+    { "trackKey": "jf:0123456789abcdef0123456789abcdef", "origin": "library",
+      "sourcePath": "/api/downloads/original/0123456789abcdef0123456789abcdef?mediaSourceId=0123456789abcdef0123456789abcdef",
+      "variant": "original", "preset": null, "containerExt": "flac", "expectedSize": 3, "estimatedSize": null,
+      "title": "Atlantean Twilight", "artist": "Elegant Piano", "album": "Piano é", "albumKey": "jf:album1",
+      "discNumber": 1, "trackNumber": 2, "durationMs": 20000,
+      "artworkPath": "/api/music/artwork/0123456789abcdef0123456789abcdef", "trackJson": "{\"title\":\"Atlantean Twilight\"}" },
+    { "trackKey": "ext:sillon:ytm:t:é😀-dQw4w9WgXcQ", "origin": "external",
+      "sourcePath": "/api/plugins/sillon/music/offline/ytm%3At%3AdQw4w9WgXcQ", "variant": "light", "preset": "a256",
+      "containerExt": "audio", "expectedSize": null, "estimatedSize": 5000000, "title": "Chanson 😀", "artist": null,
+      "album": null, "albumKey": null, "discNumber": null, "trackNumber": null, "durationMs": null,
+      "artworkPath": "https://lh3.googleusercontent.com/abc=w544-h544", "trackJson": "{\"title\":\"Chanson 😀\"}" }
+  ],
+  "COLLECTION": { "key": "album:jf:a1", "kind": "album", "title": "Piano é", "subtitle": null,
+                  "coverItemId": "0123456789abcdef0123456789abcdef",
+                  "trackKeys": ["jf:0123456789abcdef0123456789abcdef", "ext:sillon:ytm:t:é😀-dQw4w9WgXcQ"] },
+  "FILES": [
+    ["media/f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1/original-f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1.mkv", "abcd"],
+    ["media/e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1/light-e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1-p720.mp4", "light-e1"],
+    ["media/e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1/subs/3-fre-forced.srt", "1\n00:00:01,000 --> 00:00:02,000\nSalut\n"],
+    ["media/e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1/subs/4-eng.ass", "[Script Info]\n"],
+    ["media/0123456789abcdef0123456789abcdef/audio-original.flac", "fla"],
+    ["meta/f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1/item.json", "{\"Name\":\"Le Film\"}"]
+  ],
+  "COMPLETE": [[1, 4], [2, 8], [4, 3]],
+  "PAUSED_FILE": 3,
+  "PLAYBACK": [
+    ["f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", 5000, false, 3000],
+    ["e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1", 7000, true, 3500],
+    ["e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2", 123.5, false, 3600]
+  ]
+}

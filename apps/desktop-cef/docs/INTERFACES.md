@@ -261,6 +261,45 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `<profil>/update`), `--update-first-check-ms=`. Sans flux ni clé publique compilée
   (`-DTENTACLE_UPDATE_PUBLIC_KEYS=id:base64`), le moteur est éteint : aucun accès réseau.
 
+### Hors ligne (horsligne) — `src/offline/`
+- Branchement : `offline::installInShell(pont::registry(), ctx)` dans `initModules`, AVANT
+  `pont::installShim` (les commandes entrent dans `capabilities`) ; `offline::shutdown()` à la
+  FIN de `shutdownModules` (le fil hors ligne est joint, la base refermée — WAL replié).
+- Fil : tout le hors ligne vit sur UN fil à lui (`CefThread` « tentacle-offline »,
+  `glue/offline_thread.h`) — base, disque, moteur ; jamais sur le fil de l'interface. Les
+  commandes y sont postées (`glue/commands.h`), la réponse repasse par le socle.
+- Données : celles d'Electron, aux mêmes formats — `<userData>/tentacle-local.db` (schéma
+  `core/schema.cpp`, copie octet pour octet de `packages/offline-core/src/core/schema.ts`,
+  verrouillée par `tests/schema_tests.cpp`), `<userData>/avatars/<id>.jpg`.
+  `<userData>` = `tentacle::paths::userData()` (axe reseau).
+- Canaux (`window.tentacle`, noms et charges d'Electron) : `session_cache_get/set/clear`,
+  `avatar_cache_put/get` ; stockage `downloads_get_root/set_root/background_get/background_set/
+  disk_free/disk_usage/asset_base` ; lecture `downloads_local_source/playback_set/
+  playback_restart/reports_pending/reports_mark_synced/purge_due` ; `downloads_list`,
+  `downloads_state_for_item`, `downloads_set_auto_delete`, `downloads_music_list`,
+  `downloads_music_collections` ; moteur `downloads_engine_start/enqueue/pause/resume/cancel/
+  delete`, `downloads_music_enqueue/remove`. Évènements `downloads://progress`,
+  `downloads://changed`.
+- Moteur (`core/engine.h`, coroutines C++20 sur le fil hors ligne, `core/task.h`) : flux du média
+  par CefURLRequest créé SUR le fil hors ligne (`glue/cef_transfer_net.cpp` : ni cache, ni cookies,
+  ni relance d'un 5xx), petites ressources et DELETE par `net::httpFetch` (axe reseau).
+- Cycle de vie (axe systeme) : `lifecycle::setTransfersProbe` (compteurs atomiques tenus par le
+  fil hors ligne : la fermeture ne touche ni le moteur ni la base), `keepSystemAwake` à chaque
+  bascule occupé / attente du serveur, `onSystemResume` → reprise des pauses système.
+- Pour Octave (axe medias) : `offline::keptAudioPath(userId, trackKey, done)`
+  (`glue/kept_audio.h`, `done` sur le fil principal) — le chemin de la copie gardée, ou rien ;
+  sa variante synchrone bornée (500 ms) est posée par `installInShell` dans la couture
+  `music::setKeptLookup` (appelée par `audio_play` avec `kept`).
+- `tentacle://local/<media|meta>/…` : affiches, JSON, planches, sous-titres (liste FERMÉE de
+  `localAssets.ts`), lus sur le fil hors ligne ; jeton fictif `local` ; CSP de l'application
+  (`appscheme::appCsp()`) sur chaque réponse, comme Electron.
+- Compatibilité prouvée par `bench/offline/compat.sh <tentacle_offline_compat>` : le cœur
+  TypeScript d'Electron (exécuté par Node) et le C++ jouent `scenario.json`, chacun relit la base
+  de l'autre — sorties de la page, lignes et schéma identiques.
+- CMake : `tentacle_offline_core` (pur : SQLite, fichiers, JSON — testé seul,
+  `cmake -S src/offline`), `tentacle_offline_glue` (CEF). SQLite : celui du système (macOS,
+  Linux), amalgamation 3.46.1 épinglée (SHA-256) sous Windows (`src/offline/sqlite.cmake`).
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.
