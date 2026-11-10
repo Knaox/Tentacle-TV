@@ -35,7 +35,11 @@ if(APPLE)
   target_link_libraries(tentacle_player PUBLIC "-framework AppKit" "-framework Metal"
                         "-framework QuartzCore")
 elseif(WIN32)
-  target_sources(tentacle_player PRIVATE "${_src}/platform/windows/video_surface_windows.cpp")
+  # Le matériel DirectComposition de la fenêtre vit ici : la surface vidéo et le compositeur
+  # du socle (tentacle_shell, qui lie tentacle_player) en partagent le périphérique.
+  target_sources(tentacle_player PRIVATE "${_src}/platform/windows/video_surface_windows.cpp"
+                                         "${_src}/platform/windows/dcomp_context_windows.cpp")
+  target_link_libraries(tentacle_player PUBLIC d3d11 dxgi dcomp)
 else()
   target_sources(tentacle_player PRIVATE "${_src}/platform/linux/video_surface_linux.cpp")
 endif()

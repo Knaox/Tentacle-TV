@@ -5,7 +5,9 @@
 // (setVideoLayer → nativeLayer()) et lui donne son cadre (setFrame). mpv y dessine par le
 // contexte `moltenvk` de notre libmpv (--wid = la couche) ; MoltenVK y pose lui-même
 // colorspace (ITUR_2100_PQ…), EDR et métadonnées HDR quand libplacebo choisit une sortie HDR.
-// Linux / Windows : stubs pour l'instant (sous-surface Wayland, visuel DirectComposition).
+// Windows : un visuel DirectComposition du compositeur du socle ; mpv y présente SA chaîne
+// d'échange (`--gpu-context=d3d11 --d3d11-output-mode=composition`), que le lecteur lui remet
+// (`display-swapchain`). Linux : sous-surface Wayland (axe linux).
 //
 // Tous les appels : fil principal (UI) uniquement.
 
@@ -13,6 +15,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace tentacle {
 
@@ -59,6 +63,17 @@ public:
     virtual SurfaceColorState colorState() const = 0;
     // Rappel (fil principal) quand la taille en pixels change (cadre, écran, Retina).
     virtual void onPixelSizeChanged(std::function<void(PixelSize)> cb) = 0;
+
+    // --- Ce que la sortie de mpv demande en plus, par OS (défauts = macOS, inchangé) ---
+    // Options posées à l'attache, AVANT `vo` (Windows : gpu-api=d3d11, mode composition…).
+    virtual std::vector<std::pair<std::string, std::string>> mpvAttachOptions() const { return {}; }
+    // L'option qui porte la taille en pixels de la sortie, suivie à chaque changement.
+    virtual const char* mpvSizeOption() const { return "moltenvk-surface-size"; }
+    // Vrai si mpv crée lui-même la chaîne d'échange que la surface doit afficher (Windows) :
+    // le lecteur lit alors `display-swapchain` à chaque (re)configuration de la sortie et la
+    // remet par setMpvSwapchain (adresse d'un IDXGISwapChain*, 0 : plus de sortie).
+    virtual bool wantsMpvSwapchain() const { return false; }
+    virtual void setMpvSwapchain(int64_t address) {}
 };
 
 // À appeler sur la fenêtre principale AVANT sa première mise à l'écran (fenêtre SDL3 créée

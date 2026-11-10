@@ -187,7 +187,17 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   porteuse : preuves).
 - **`prepareWindowForVideo(nsWindow)`** : à appeler AVANT la 1re mise à l'écran de la fenêtre SDL3
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
-- Linux / Windows : stubs (`createVideoSurface` → `nullptr`, le lecteur reste sans sortie vidéo).
+- Par OS, ce que la sortie de mpv demande en plus (défauts = macOS, inchangé ; lot cef-parite,
+  axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSizeOption()`
+  (`moltenvk-surface-size` ; Windows `d3d11-composition-size`), `wantsMpvSwapchain()` /
+  `setMpvSwapchain(adresse)` : mpv crée lui-même sa chaîne d'échange (Windows, mode composition) ;
+  `MpvPlayerPort` relit `display-swapchain` à chaque `file-loaded` / `video-reconfig` et la remet
+  (0 : plus de sortie). `mpvWid() == 0` : aucun `wid` posé.
+- **Windows** (`src/platform/windows/video_surface_windows.cpp`) : un visuel DirectComposition du
+  compositeur du socle (même périphérique : `win::DcompContext`), contenu = la chaîne de mpv
+  (`gpu-api=d3d11`, `d3d11-output-mode=composition`, `target-colorspace-hint=no` à l'attache —
+  levé par la session HDR, comme Electron). `nativeLayer()` = `IDCompositionVisual*`. Cadre en
+  DIP, × `GetDpiForWindow/96` pour les pixels. Linux : stub (axe linux).
 
 ### Musique (octave) — `src/music/`
 - Canaux page ↔ natif = ceux de Tentacle (`audioBridgeContract.ts`) : commandes `audio_engine_start`,
@@ -224,6 +234,21 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `<profil>/update`), `--update-first-check-ms=`. Sans flux ni clé publique compilée
   (`-DTENTACLE_UPDATE_PUBLIC_KEYS=id:base64`), le moteur est éteint : aucun accès réseau.
 
+### Session vidéo (pont, lot cef-parite) — `src/bridge/glue/video_session.h`
+- `pont::setVideoSessionObserver(VideoSessionObserver*)` (depuis `modules.cpp`, entre `install` et
+  `installShim`) : `onVideoEvent(event, access)` à chaque `file-loaded` / `video-reconfig` de mpv,
+  `access.get(nom, cb)` / `access.set(nom, valeur)` sans effet une fois l'instance arrêtée ;
+  `onVideoStopped()` à `mpv_destroy` ou au remplacement de l'instance. Sert au HDR de l'écran
+  (`src/display`, comme `hdrSession.ts` d'Electron).
+
+### Unités de fenêtre (socle, lot cef-parite) — `src/shell/window_scale.h`
+- Tout ce que le proto appelle « points » est en **DIP**. `windowScale(window)` →
+  `{deviceScale = SDL_GetWindowDisplayScale, windowToDip = densité / deviceScale}` ;
+  `windowSizeDip(window, w, h)`. Identité sur macOS (mesuré : contenu 1, densité 2, échelle 2) ;
+  sous Windows et X11 SDL compte en pixels. `shell.window` → `width/height` en DIP, `scale` =
+  échelle d'affichage. `InputRouter::setWindowToDip` ; `--size` en DIP (× échelle du contenu).
+  `NativeKey::extraModifiers` : drapeaux de position (`EVENTFLAG_IS_LEFT/RIGHT/KEY_PAD`), 0 sur macOS.
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.
@@ -234,6 +259,12 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   par `setVideoLayer(&surface)`.
 - macOS : couche web `CAMetalLayer` BGRA8 sRGB non opaque, z=10 ; conteneur vidéo z=0 ; vue
   hôte qui laisse passer la souris.
+- Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
+  sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
+  CEF (`WebFrame::sharedHandle` = poignée NT, `OpenSharedResource1`, copie GPU) ou pixels
+  (`OnPaint`) dans une chaîne d'échange pour la composition (FLIP séquentiel, `Present(0)`).
+  Pompe CEF : fenêtre de messages cachée (`message_pump_windows.cpp`), distribuée aussi par la
+  boucle modale de Win32 — CEF reste sur le fil principal (pas de `multi_threaded_message_loop`).
 
 ## Règles communes du code
 - Ce qui dépend de l'OS : `src/platform/<macos|linux|windows>/`, derrière une interface. Linux et
