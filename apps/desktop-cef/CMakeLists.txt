@@ -47,6 +47,7 @@ add_library(tentacle_shell STATIC
   src/shell/shell_shortcuts.cpp
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
+  src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
 add_library(tentacle_renderer STATIC

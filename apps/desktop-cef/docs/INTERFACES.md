@@ -224,6 +224,18 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `<profil>/update`), `--update-first-check-ms=`. Sans flux ni clé publique compilée
   (`-DTENTACLE_UPDATE_PUBLIC_KEYS=id:base64`), le moteur est éteint : aucun accès réseau.
 
+### Popups de la page (pip) — `src/shell/client_popup.h`
+- `Client::OnBeforePopup` (fil principal) appelle `popup::route(…)` : chaque module inscrit SON
+  cas par `popup::addHandler(Handler)` (à son init), le premier qui ne rend pas
+  `Decision::pass` décide ; `allow` = il a rempli `windowInfo` (hors écran), `client`,
+  `settings`, `extraInfo`. Aucun preneur → refusée et journalisée (`[shell] popup refusée`),
+  comme avant. Le PiP y prend `window.open("about:blank", "tentacle-pip")` armé par `pip_open` ;
+  l'axe navigateur peut y prendre `target=_blank` (lien externe) sans toucher à `client.cpp`.
+- `Client::DoClose` du navigateur PRINCIPAL appelle `popup::hostClosing()` : la fenêtre se ferme
+  POUR DE BON (une garde de sortie l'a déjà laissée partir) ; les modules inscrits par
+  `popup::addHostClosingListener(cb)` ferment leurs fenêtres AVANT elle (le PiP rend la vidéo
+  à une page encore vivante, `pipQuit.ts`). Retour de CEF inchangé (`false`).
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.

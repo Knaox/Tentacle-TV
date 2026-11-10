@@ -63,7 +63,8 @@ class Client final : public CefClient,
                                 CefProcessId source,
                                 CefRefPtr<CefProcessMessage> message) override;
 
-  // CefLifeSpanHandler
+  // CefLifeSpanHandler — OnBeforePopup et DoClose : client_popup.cpp (aiguillage par module).
+  bool DoClose(CefRefPtr<CefBrowser> browser) override;
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popupId,
                      const CefString& targetUrl, const CefString& targetFrameName,
                      WindowOpenDisposition disposition, bool userGesture,

@@ -14,18 +14,6 @@ bool Client::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   return ipc::onProcessMessage(browser, frame, message);
 }
 
-bool Client::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                           int popupId, const CefString& targetUrl,
-                           const CefString& targetFrameName, WindowOpenDisposition disposition,
-                           bool userGesture, const CefPopupFeatures& features,
-                           CefWindowInfo& windowInfo, CefRefPtr<CefClient>& client,
-                           CefBrowserSettings& settings, CefRefPtr<CefDictionaryValue>& extraInfo,
-                           bool* noJavascriptAccess) {
-  // Pas de seconde fenêtre CEF : window.open / target=_blank est refusé (journalisé).
-  std::fprintf(stderr, "[shell] popup refusée : %s\n", targetUrl.ToString().c_str());
-  return true;
-}
-
 // Le front embarqué (tentacle://app) parle à SON serveur et à Jellyfin, souvent sur le réseau
 // local ou sur la machine même. Chromium 156 classe notre origine « publique » et soumet ces
 // requêtes à la permission d'accès au réseau local ; en rendu hors écran, aucune invite ne
