@@ -34,7 +34,7 @@ export const QuickAddButton = memo(function QuickAddButton({ track, actions, vis
         e.stopPropagation();
         void actions.quickAdd(track);
       }}
-      className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className} ${visible === "hover" ? HOVER_CLASS : ""}`}
+      className={`octave-press flex shrink-0 cursor-pointer items-center justify-center rounded-full hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className} ${visible === "hover" ? HOVER_CLASS : ""}`}
     >
       <ListPlus className="h-4 w-4" aria-hidden />
     </button>

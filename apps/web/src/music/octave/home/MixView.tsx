@@ -50,6 +50,7 @@ export function MixView() {
         kicker={t("octaveHome.mixKicker")}
         title={title}
         art={<PlaylistArtwork urls={urls} label={title} radius="lg" eager className={HEADER_ARTWORK_CLASS} />}
+        tintUrl={urls[0] ?? null}
         meta={
           <>
             {artists && <span className="font-semibold text-content-primary">{artists}</span>}

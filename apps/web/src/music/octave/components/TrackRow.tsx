@@ -3,7 +3,7 @@
  * Un clic lit (la barre se met à jour dans la même image) ; sur le titre en
  * cours de CETTE liste, il met en pause ou reprend — jamais un redémarrage au
  * début. Le survol et l'appui ANTICIPENT (`hover`, `press`). Le titre en cours
- * est marqué en mot (lecteurs d'écran) et en couleur de marque ; en lecture,
+ * est marqué en mot (lecteurs d'écran) et à la teinte franche ; en lecture,
  * une houle qui roule (`motion/OceanSwell`), qui se calme en pause.
  * Au téléphone, la rangée COMPACTE (`compactRows.ts`) : un appui long y entre
  * en sélection.
@@ -154,7 +154,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row ${stage ? "lg-pane-row " : ""}group grid h-14 cursor-pointer select-none items-center ${compact ? "gap-2" : "gap-3"} rounded-[10px] px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
       } ${columns}`}
     >
@@ -167,7 +167,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
           <div title={track.title} className={`flex items-center gap-1.5 truncate text-[15px] font-medium leading-5 ${current ? "text-octave-accent-text" : muted ? "text-content-secondary" : "text-content-primary"}`}>
             <span className="truncate">{track.title}</span>
             {track.explicit && (
-              <span className="shrink-0 rounded-sm bg-fill-medium px-1 text-[10px] font-bold leading-4 text-content-secondary" title={t("track.explicit")}>
+              <span className="shrink-0 rounded-[4px] bg-fill-medium px-1 text-[10px] font-bold leading-4 text-content-secondary" title={t("track.explicit")}>
                 E<span className="sr-only">{t("track.explicit")}</span>
               </span>
             )}

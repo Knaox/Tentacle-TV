@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Icon as IconType } from "@phosphor-icons/react";
 import { ARTWORK_RADIUS } from "./Artwork";
+import { useOctaveSubview } from "../shell/OctaveBackButton";
 import { CardSkeleton } from "./CardRow";
 import { CARD_GRID_CLASS } from "./cardGrid";
 
@@ -48,8 +49,10 @@ export function CardsSkeleton({ count = 6, round = false }: { count?: number; ro
 
 /** La tête d'une collection en attente : image, surtitre, titre, ligne de détails ET la rangée d'actions. */
 export function HeaderSkeleton({ round = false }: { round?: boolean }) {
+  // Sous une rangée « Retour », la même marge resserrée que la vraie tête : rien ne saute à l'arrivée.
+  const sub = useOctaveSubview();
   return (
-    <div aria-hidden className="px-4 pb-6 pt-8 md:px-8">
+    <div aria-hidden className={`px-4 pb-6 md:px-8 ${sub ? "pt-4" : "pt-8"}`}>
       <div className="flex flex-col items-start gap-6 md:flex-row md:items-end">
         <div className="h-44 w-44 shrink-0 bg-fill-soft md:h-56 md:w-56" style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS.lg }} />
         <div className="flex w-full flex-1 flex-col gap-3">
@@ -67,7 +70,7 @@ export function HeaderSkeleton({ round = false }: { round?: boolean }) {
 }
 
 interface EmptyStateProps {
-  /** Une icône (lucide) au-dessus du titre. */
+  /** Une icône (Phosphor) au-dessus du titre. */
   icon?: IconType;
   /** Ce qui manque, en une phrase courte. */
   title?: string;
@@ -81,11 +84,11 @@ export function EmptyState({ icon: Icon, title, children, action }: EmptyStatePr
   return (
     <div className="flex flex-col items-center gap-3 px-4 py-12 text-center md:px-8">
       {Icon && (
-        <span className="mb-1 flex h-14 w-14 items-center justify-center rounded-full bg-fill-subtle text-content-secondary" aria-hidden>
+        <span className="mb-1 flex h-14 w-14 items-center justify-center rounded-full bg-fill-soft text-content-secondary" aria-hidden>
           <Icon className="h-6 w-6" />
         </span>
       )}
-      {title && <h2 className="text-lg font-bold text-content-primary">{title}</h2>}
+      {title && <h2 className="oc-heading text-lg text-content-primary">{title}</h2>}
       {children && <div className="max-w-md text-sm leading-relaxed text-content-tertiary">{children}</div>}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -94,7 +97,7 @@ export function EmptyState({ icon: Icon, title, children, action }: EmptyStatePr
 
 /** Le lien ou bouton d'un état vide : une capsule discrète, cible de 40 px. */
 export const EMPTY_ACTION_CLASS =
-  "inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-press inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-fill-soft px-5 text-sm font-semibold text-content-primary hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export function ErrorState({ onRetry, message }: { onRetry: () => void; message?: string }) {
   const { t } = useTranslation("music");

@@ -44,7 +44,7 @@ interface TrackMenuProps {
 }
 
 const itemClass =
-  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
+  "flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 const HOVER_CLASS = "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100";
 
@@ -64,9 +64,9 @@ export function TrackMenu({ track, actions, onRemove, visible = "hover", buttonC
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${buttonClassName} ${visible === "hover" ? HOVER_CLASS : ""}`}
+        className={`octave-press flex shrink-0 cursor-pointer items-center justify-center rounded-full hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${buttonClassName} ${visible === "hover" ? HOVER_CLASS : ""}`}
       >
-        <MoreHorizontal className="h-4 w-4" />
+        <MoreHorizontal weight="bold" className="h-4 w-4" />
       </button>
       {/* Monté seulement ouvert : une liste de 500 titres ne porte pas 500 requêtes de playlists. */}
       {open && <TrackMenuPanel track={track} actions={actions} onRemove={onRemove} anchor={anchor} onClose={() => setOpen(false)} onNavigate={onNavigate} />}
@@ -102,11 +102,11 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
         side="bottom"
         align="end"
         className="w-64 overflow-y-auto overscroll-contain p-1.5"
-        // Un îlot d'encre PRUNE, opaque (IDENTITE.md) : ni verre ni flou derrière un fond plein.
+        // L'encre de menu du socle, opaque (IDENTITE.md) : ni verre ni flou derrière un fond plein.
         style={{
-          background: "var(--oc-ink-raised)",
-          borderRadius: "var(--oc-radius-panel)",
-          boxShadow: "var(--oc-shadow-panel)",
+          background: "var(--oc-ink-menu)",
+          borderRadius: "var(--oc-radius-menu)",
+          boxShadow: "var(--oc-shadow-menu)",
           maxHeight: 360,
         }}
       >
@@ -191,7 +191,7 @@ function PlaylistPicker({ mode, playlists, favorites = 0, onBack, onPick, onCrea
   onCreate?: () => void;
 }) {
   const { t } = useTranslation(["music", "musicFavorites"]);
-  const heading = (label: string) => <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{label}</p>;
+  const heading = (label: string) => <p className="oc-eyebrow px-3 pb-1 pt-2">{label}</p>;
   return (
     <>
       <button type="button" role="menuitem" className={itemClass} onClick={onBack}>
@@ -221,7 +221,7 @@ function PlaylistPicker({ mode, playlists, favorites = 0, onBack, onPick, onCrea
                 role="menuitem"
                 title={t("playlist.addFirst")}
                 onClick={() => onPick(p, 0)}
-                className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:bg-octave-hover focus-visible:outline-none"
+                className="shrink-0 cursor-pointer rounded-full px-2.5 py-2 text-xs font-semibold text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:bg-octave-hover focus-visible:outline-none"
               >
                 {t("playlist.first")}
               </button>

@@ -5,9 +5,9 @@
  *   renouvelée en fondu à chaque titre ;
  * - des REFLETS : trois flaques de lumière, en haut, qui jouent lentement
  *   comme la surface vue d'en dessous ;
- * - la HOULE : trois bandes d'eau au pied de la scène (violet au fond, la
- *   teinte de la pochette, le rose devant avec une crête de lumière), qui
- *   dérivent en sens contraires et se soulèvent doucement.
+ * - la HOULE : trois bandes d'eau au pied de la scène, TOUTES à la teinte de la
+ *   pochette (la couleur vient d'elle ; celle de devant porte une crête de
+ *   lumière), qui dérivent en sens contraires et se soulèvent doucement.
  *
  * Posée sous le contenu, jamais devant (aucun pointeur), opaque à rien :
  * aucun verre, aucun flou, aucun mélange. Elle ne bouge que si la musique

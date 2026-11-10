@@ -1,6 +1,7 @@
 /**
  * Octave — les cartes : album, artiste, playlist. Pochette carrée (place
- * réservée), titre, sous-titre. Le bouton lecture monte au survol (opacité +
+ * réservée), titre, sous-titre. Au survol, la pochette grandit de 3 % sur place (le geste des
+ * cartes du socle, plus de fond de tuile) et le bouton lecture monte (opacité +
  * transform) — toujours visible sur un écran tactile ; le clic sur la carte
  * ouvre sa vue. Un titre coupé se lit en entier dans l'infobulle. Parmi des
  * albums d'ailleurs, celui que la bibliothèque a porte sa pastille AU REPOS,
@@ -49,7 +50,7 @@ function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) 
         e.stopPropagation();
         void play(refOf);
       }}
-      className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+      className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
       <Play className="ml-0.5 h-5 w-5" />
     </button>
@@ -61,7 +62,7 @@ function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
   const { t } = useTranslation("music");
   const label = t(ownership === "full" ? "availability.albumFull" : "availability.albumPartial");
   return (
-    <span title={label} className="pointer-events-none absolute left-2 top-2 inline-flex h-6 items-center gap-1 rounded-full bg-black/70 px-1.5 text-[11px] font-semibold leading-none text-white shadow-[var(--oc-shadow-art)]">
+    <span title={label} className="pointer-events-none absolute left-2 top-2 inline-flex h-6 items-center gap-1 rounded-chip octave-on-art px-1.5 text-[11px] font-semibold leading-none">
       <Library className="h-3.5 w-3.5 text-status-success-fg" aria-hidden />
       {ownership === "partial" && <span aria-hidden>{t("availability.partlyShort")}</span>}
       <span className="sr-only">{label}</span>
@@ -73,7 +74,7 @@ function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
 function UnavailableBadge() {
   const { t } = useTranslation("music");
   return (
-    <span className="pointer-events-none absolute left-2 top-2 inline-flex h-6 items-center gap-1 rounded-full bg-black/70 px-2 text-[11px] font-semibold leading-none text-white shadow-[var(--oc-shadow-art)]">
+    <span className="pointer-events-none absolute left-2 top-2 inline-flex h-6 items-center gap-1 rounded-chip octave-on-art px-2 text-[11px] font-semibold leading-none">
       <CloudOff className="h-3.5 w-3.5" aria-hidden />
       {t("unavailableAlbum.badge")}
     </span>
@@ -81,7 +82,7 @@ function UnavailableBadge() {
 }
 
 const cardClass =
-  "octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { album: MusicAlbum; ownership?: AlbumOwnership | null }) {
   const { t } = useTranslation("music");
@@ -93,7 +94,7 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
   const warmRef = useAlbumCardWarmup(album.jellyfinId || unavailable ? null : album);
   const content = (
     <>
-      <div className="relative aspect-square w-full">
+      <div className="octave-card-art relative aspect-square w-full">
         <Artwork url={album.artworkUrl} label={album.title} radius="art" className={`h-full w-full shadow-[var(--oc-shadow-art)] ${unavailable ? "opacity-50 grayscale" : ""}`} />
         {unavailable && <UnavailableBadge />}
         {ownership && <OwnershipBadge ownership={ownership} />}
@@ -142,7 +143,7 @@ export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicAr
   const intent = useEntityIntent("artist", target);
   const content = (
     <>
-      <Artwork url={artist.imageUrl} kind="artist" label={artist.name} round className="aspect-square w-full shadow-[var(--oc-shadow-art)]" />
+      <Artwork url={artist.imageUrl} kind="artist" label={artist.name} round className="octave-card-art aspect-square w-full shadow-[var(--oc-shadow-art)]" />
       <div className="min-w-0 px-0.5 text-center">
         <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={artist.name}>
           {artist.name}
@@ -179,7 +180,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
     <CardMenuFrame subject={subject}>
       {(menu) => (
         <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass} {...menu}>
-          <div className="relative aspect-square w-full">
+          <div className="octave-card-art relative aspect-square w-full">
             <PlaylistArtwork urls={playlistCoverUrls(playlist)} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
             <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
             <SharedPlaylistBadge playlist={playlist} />

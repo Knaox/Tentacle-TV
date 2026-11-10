@@ -44,7 +44,7 @@ export const AvailabilityMark = memo(function AvailabilityMark({ availability, f
     );
   }
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-fill-subtle px-2 py-0.5 text-[11px] font-medium ${tone}`} title={hint}>
+    <span className={`inline-flex h-[22px] shrink-0 items-center gap-1 rounded-chip bg-fill-soft px-2 text-[11px] font-semibold ${tone}`} title={hint}>
       <Icon className="h-3 w-3" aria-hidden />
       {label}
     </span>

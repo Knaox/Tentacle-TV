@@ -22,7 +22,7 @@ export const QuickRemoveButton = memo(function QuickRemoveButton({ title, onRemo
         e.stopPropagation();
         onRemove();
       }}
-      className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${HOVER_CLASS}`}
+      className={`octave-press flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${HOVER_CLASS}`}
     >
       <CircleMinus className="h-4 w-4" aria-hidden />
     </button>

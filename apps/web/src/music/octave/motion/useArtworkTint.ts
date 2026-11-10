@@ -1,10 +1,10 @@
 /**
- * Octave — la teinte de la pochette en cours, pour l'eau du lecteur plein
- * écran. Une vignette de 64 px (la taille la plus petite de la route du cœur),
+ * Octave — la teinte d'une pochette : pour l'eau du lecteur plein écran, et
+ * pour le lavis en tête d'une vue (`CollectionHeader`). Une vignette de 64 px (la taille la plus petite de la route du cœur),
  * réduite à 24 × 24 dans un canevas hors document, UNE fois par pochette
  * (mémoire bornée). Une image d'un autre hôte qui refuse la lecture de ses
  * pixels (CORS), une pochette absente ou sans couleur : `null`, et l'eau garde
- * le rose d'Octave.
+ * la teinte franche d'Octave.
  */
 
 import { useEffect, useState } from "react";

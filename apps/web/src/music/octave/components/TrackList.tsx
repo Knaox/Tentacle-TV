@@ -134,18 +134,18 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
       {/* Au téléphone, les rangées compactes n'ont pas de colonnes à nommer. */}
       {compact && showHeader && !selection.selecting && rows.length > 1 && (
         <div className="flex justify-end px-2 pb-1">
-          <button type="button" onClick={selection.start} className="min-h-[44px] cursor-pointer rounded-full px-3 text-sm font-semibold text-octave-accent-text hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+          <button type="button" onClick={selection.start} className="min-h-[44px] cursor-pointer rounded-full px-3 text-sm font-semibold text-content-secondary hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
             {t("selection.start")}
           </button>
         </div>
       )}
       {showHeader && !compact && (
-        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum, reorder !== null)}`}>
+        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-semibold uppercase tracking-[0.06em] text-content-tertiary ${rowColumns(showAlbum, reorder !== null)}`}>
           {reorder && <span role="columnheader" aria-hidden />}
           <span role="columnheader" aria-label={t("selection.column")} className="flex justify-center">
             {/* « Sélectionner » : les cases paraissent, un clic coche (Cmd/Maj-clic restent). */}
             {!selection.selecting && rows.length > 1 && (
-              <button type="button" onClick={selection.start} aria-label={t("selection.start")} title={t("selection.start")} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+              <button type="button" onClick={selection.start} aria-label={t("selection.start")} title={t("selection.start")} className="octave-press flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
                 <ListChecks className="h-4 w-4" aria-hidden />
               </button>
             )}
