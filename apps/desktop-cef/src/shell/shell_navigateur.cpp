@@ -6,7 +6,8 @@
 
 namespace tentacle {
 
-void Shell::setCursor(cef_cursor_type_t type) { setCursorFull(type, nullptr, CefCursorInfo()); }
+// CefCursorHandle{} : un pointeur sous macOS, un entier (Cursor X11) sous Linux.
+void Shell::setCursor(cef_cursor_type_t type) { setCursorFull(type, CefCursorHandle{}, CefCursorInfo()); }
 
 // navigateur : la forme de la page, ou celle du glisser en cours (src/shell/cursors.h).
 void Shell::setCursorFull(cef_cursor_type_t type, CefCursorHandle native,

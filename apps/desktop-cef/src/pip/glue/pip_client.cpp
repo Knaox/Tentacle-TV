@@ -86,6 +86,21 @@ void PipClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
     return;
   }
   controller_->popupCreated(std::make_unique<BrowserPage>(browser), inputFor(browser));
+#ifdef __linux__
+  // Linux (mesuré au banc, sway) : le fond transparent posé dans OnBeforePopup n'atteint pas
+  // Blink pour CE popup — son canevas reste opaque (#121212 en schéma sombre, blanc sinon) et
+  // cache la vidéo prêtée ; le navigateur principal, lui, est transparent. Le fond de base de
+  // l'inspecteur, posé par la session DevTools interne de CEF (tenue tant que le navigateur vit),
+  // le rend transparent : la vidéo paraît sous la page.
+  auto color = CefDictionaryValue::Create();
+  color->SetInt("r", 0);
+  color->SetInt("g", 0);
+  color->SetInt("b", 0);
+  color->SetDouble("a", 0);
+  auto params = CefDictionaryValue::Create();
+  params->SetDictionary("color", color);
+  browser->GetHost()->ExecuteDevToolsMethod(0, "Emulation.setDefaultBackgroundColorOverride", params);
+#endif
 }
 
 bool PipClient::DoClose(CefRefPtr<CefBrowser>) {
@@ -145,6 +160,8 @@ void PipClient::OnAcceleratedPaint(CefRefPtr<CefBrowser>, PaintElementType type,
   WebFrame f;
 #ifdef __APPLE__
   f.sharedHandle = info.shared_texture_io_surface;
+#elif defined(__linux__)
+  f.sharedHandle = &info;  // dmabuf (plans, modificateur) : la pile Linux l'importe (client_render.cpp)
 #endif
   f.width = info.extra.coded_size.width;
   f.height = info.extra.coded_size.height;

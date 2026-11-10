@@ -5,20 +5,59 @@
 #include "app/app.h"
 #include "glue/video_session.h"
 #include "hdr_session.h"
+#include "output_reading.h"
 #include "platform/display_hdr.h"
 #include "registry.h"
 
 namespace tentacle::display {
 namespace {
 
+// La lecture vidéo vue par les deux : la politique de l'écran (Windows) et le relevé de ce que
+// mpv sort (Linux, `linux/hdr.ts`). Un seul observateur au pont : celui-ci les sert tous deux.
+struct Observers final : pont::VideoSessionObserver {
+  HdrSession& session;
+  OutputReader& reader;
+  Observers(HdrSession& s, OutputReader& r) : session(s), reader(r) {}
+  void onVideoEvent(const std::string& event, const pont::VideoSessionAccess& player) override {
+    session.onVideoEvent(event, player);
+#ifdef __linux__
+    reader.onVideoEvent(event, player);
+#endif
+  }
+  void onVideoStopped() override {
+    session.onVideoStopped();
+    reader.onVideoStopped();
+  }
+};
+
 struct State {
   void* nativeWindow = nullptr;
   HdrSession session{systemDisplayOps()};
+  OutputReader reader;
+  Observers observers{session, reader};
 };
 std::unique_ptr<State> g;
 
+bridge::Json orNull(const std::optional<bool>& v) { return v ? bridge::Json(*v) : bridge::Json(nullptr); }
+
 bridge::Json hdrState() {
   const platform::DisplayHdrProbe p = platform::probeDisplayHdr(g ? g->nativeWindow : nullptr);
+#ifdef __linux__
+  // Linux : la question se pose au RENDU, pas à l'écran — ce que mpv sort (video-target-params),
+  // couplé à ce que le film est (video-params). Rien relevé : null, jamais « non ».
+  const std::optional<OutputReading> reading = g ? g->reader.last() : std::nullopt;
+  return {
+      {"supporte", false},
+      {"enabled", outputHdr(reading).value_or(false)},
+      {"bascule", false},
+      {"autoAutorise", g && g->session.toggleAllowed()},
+      {"edrCapable", false},
+      {"coucheHdr", orNull(outputHdr(reading))},
+      {"espaceCouche", reading ? bridge::Json(describeReading(*reading)) : bridge::Json(nullptr)},
+      {"transmission", orNull(hdrTransmission(reading))},
+      {"pic", reading && reading->peak ? bridge::Json(*reading->peak) : bridge::Json(nullptr)},
+  };
+#endif
   return {
       {"supporte", p.supported},
       {"enabled", p.active},
@@ -55,7 +94,7 @@ void install(AppContext& ctx, bridge::Registry& reg) {
   });
   // Electron durcit la fenêtre FILLE de mpv (videoWindow.ts) ; ici mpv n'a pas de fenêtre.
   reg.command("mpv_harden_child_window", [](const bridge::Json&, bridge::Reply r) { r.ok(false); });
-  pont::setVideoSessionObserver(&g->session);
+  pont::setVideoSessionObserver(&g->observers);
   platform::installOsCommands(ctx, reg);
 }
 

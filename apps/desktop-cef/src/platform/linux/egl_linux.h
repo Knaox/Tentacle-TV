@@ -36,6 +36,8 @@ class EglWindow {
   bool hasAlpha() const { return alpha_; }
   int glesMajor() const { return glesMajor_; }
   EGLDisplay display() const { return display_; }
+  // Objets (textures) partagés avec le contexte de la fenêtre principale (le premier créé).
+  bool sharesObjects() const { return shared_; }
   // Extensions EGL (dmabuf : EGL_EXT_image_dma_buf_import).
   bool hasExtension(const char* name) const;
   static void* procAddress(const char* name);
@@ -47,7 +49,7 @@ class EglWindow {
   EGLSurface surface_ = EGL_NO_SURFACE;
   ::wl_egl_window* wlEgl_ = nullptr;
   int width_ = 0, height_ = 0, glesMajor_ = 0;
-  bool alpha_ = false;
+  bool alpha_ = false, shared_ = false;
 };
 
 }  // namespace tentacle::platform

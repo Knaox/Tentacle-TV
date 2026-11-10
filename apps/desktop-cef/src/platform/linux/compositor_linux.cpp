@@ -1,6 +1,7 @@
 // Compositeur Linux : NOTRE contexte EGL sur la surface de la fenêtre SDL3 (Wayland ou X11).
 // Empilement, de bas en haut : vidéo (sous-surface Wayland SOUS la surface, ou texture de
 // l'API de rendu de mpv, ou aplat factice), page CEF (prémultipliée), popup (<select>).
+// La vidéo — son cadre, son prêt à la pile du PiP — est tenue par VideoSlot (video_slot_linux.h).
 // Les images de CEF sont COPIÉES dans nos textures pendant le rappel (le tampon de CEF ne
 // vit que le temps de l'appel), puis une composition regroupée part au prochain tour.
 
@@ -16,6 +17,7 @@
 #include "platform/linux/gl_quad_linux.h"
 #include "platform/linux/linux_window.h"
 #include "platform/linux/video_layer_linux.h"
+#include "platform/linux/video_slot_linux.h"
 #include "shell/main_thread.h"
 #include "shell/window_scale.h"
 
@@ -45,15 +47,17 @@ struct Layer {  // une image de CEF copiée chez nous (octets BGRA)
 class GlCompositor final : public Compositor, public WebLayer, public platform::GlHost {
  public:
   GlCompositor(SDL_Window* window, std::unique_ptr<platform::EglWindow> egl)
-      : window_(window), egl_(std::move(egl)), alive_(std::make_shared<bool>(true)) {
+      : window_(window), egl_(std::move(egl)), alive_(std::make_shared<bool>(true)), slot_(window, this) {
     egl_->makeCurrent();
     quad_.init();
     importer_ = platform::DmabufImporter::create(*egl_);
-    platform::setGlHost(this);
+    // Le contexte du RENDU de mpv : celui de la fenêtre principale, la première pile créée
+    // (la pile du PiP partage ses textures, elle ne le remplace pas).
+    if (!platform::glHost()) platform::setGlHost(this);
   }
   ~GlCompositor() override {
     *alive_ = false;
-    platform::setGlHost(nullptr);
+    if (platform::glHost() == this) platform::setGlHost(nullptr);
     egl_->makeCurrent();
     page_.release();
     popup_.release();
@@ -63,8 +67,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
 
   // --- Compositor ---------------------------------------------------------------------
   void setVideoLayer(VideoSurface* s) override {
-    video_ = s ? static_cast<platform::LinuxVideoLayer*>(s->nativeLayer()) : nullptr;
-    videoSurface_ = s;
+    slot_.set(s);
     requestRedraw();
   }
   WebLayer* webLayer() override { return this; }
@@ -72,13 +75,33 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     int w = 0, h = 0;
     SDL_GetWindowSizeInPixels(window_, &w, &h);
     egl_->resize(w, h);
+    slot_.resized();
+    requestRedraw();
+  }
+  // PiP : sous Wayland seulement — la sous-surface change de parent, la texture de l'API de
+  // rendu passe par les contextes partagés. X11 : pas de PiP, comme Electron (et une fenêtre
+  // transparente y exigerait un gestionnaire composite).
+  bool canLendVideo() const override { return platform::linuxWindow(window_)->wayland; }
+  bool lendVideo(Compositor* borrower, VideoSurface* home) override {
+    if (!borrower || borrower == this || !canLendVideo()) return false;
+    slot_.lend(borrower, home);
+    requestRedraw();
+    return true;
+  }
+  void reclaimVideo() override {
+    slot_.reclaim();
+    requestRedraw();
+  }
+  void setVideoInset(double inset) override {
+    slot_.setInset(inset);
     requestRedraw();
   }
   CompositorStats stats() const override { return stats_; }
   std::string describeLayers() const override {
     std::ostringstream o;
     o << "egl " << egl_->width() << "x" << egl_->height() << (egl_->hasAlpha() ? " alpha" : "")
-      << " | vidéo " << (!video_ ? "aucune" : video_->isSubsurface() ? "sous-surface" : "texture")
+      << " | vidéo " << videoKind()
+      << (slot_.shown() ? " " + frameText(slot_.frame()) : std::string())
       << " | page " << page_.w << "x" << page_.h << " | popup "
       << (popupVisible_ ? std::to_string(popup_.w) + "x" + std::to_string(popup_.h) : "non")
       << " | dmabuf " << (importer_ ? "oui" : "non") << " (" << stats_dmabuf_ << " images)";
@@ -159,7 +182,8 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     SDL_GetWindowSizeInPixels(window_, &w, &h);
     egl_->resize(w, h);
     glViewport(0, 0, egl_->width(), egl_->height());
-    const bool under = video_ && video_->isSubsurface() && videoSurface_ && videoSurface_->visible();
+    platform::LinuxVideoLayer* video = slot_.layer();
+    const bool under = video && video->isSubsurface() && slot_.shown()->visible();
     // Sous-surface : la page doit être transparente au-dessus d'elle ; sinon, fond opaque —
     // jamais le bureau à travers la fenêtre.
     glClearColor(0, 0, 0, under ? 0.0f : 1.0f);
@@ -174,23 +198,26 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     }
     if (egl_->swap()) {
       countPresented();
-      if (video_) video_->reportSwap();
+      if (video) video->reportSwap();
     }
   }
 
   void drawVideo() {
-    if (!video_ || !videoSurface_ || !videoSurface_->visible() || video_->isSubsurface()) return;
+    platform::LinuxVideoLayer* video = slot_.layer();
+    if (!video || !slot_.shown()->visible() || video->isSubsurface()) return;
     const float s = scale();
-    // Le cadre est en points (VideoSurface::setFrame), la cible en pixels.
-    const RectPt f = videoFrame();
+    // Le cadre est en points (VideoSlot), la cible en pixels.
+    const RectPt f = slot_.frame();
     const QuadRect r{float(f.x * s), float(f.y * s), float(f.width * s), float(f.height * s)};
     float rgba[4];
-    if (video_->solidColor(rgba)) {
+    if (video->solidColor(rgba)) {
       quad_.drawColor(r, egl_->width(), egl_->height(), rgba);
       return;
     }
+    // La texture de mpv naît dans le contexte principal : sans partage, rien à montrer ici.
+    if (!egl_->sharesObjects()) return;
     int tw = 0, th = 0;
-    if (GLuint t = video_->renderTexture(tw, th)) {
+    if (GLuint t = video->renderTexture(tw, th)) {
       egl_->makeCurrent();  // mpv a pu changer d'état GL : on reprend la main
       glViewport(0, 0, egl_->width(), egl_->height());
       glEnable(GL_BLEND);
@@ -199,13 +226,18 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     }
   }
 
-  // Le cadre de la vidéo (DIP) : toute la fenêtre tant que la surface ne dit rien d'autre.
-  RectPt videoFrame() const {
-    int w = 0, h = 0;
-    windowSizeDip(window_, w, h);
-    RectPt r{0, 0, double(w), double(h)};
-    if (video_) video_->frame(r);
-    return r;
+  // Diagnostic : ce que la pile montre — l'aplat est la couche de repos (args.h, fakeVideo).
+  const char* videoKind() const {
+    platform::LinuxVideoLayer* v = slot_.layer();
+    float rgba[4];
+    if (!v) return slot_.lent() ? "prêtée" : "aucune";
+    if (v->isSubsurface()) return "sous-surface";
+    return v->solidColor(rgba) ? "aplat" : "texture";
+  }
+  static std::string frameText(const RectPt& f) {
+    std::ostringstream o;
+    o << "(" << f.x << "," << f.y << " " << f.width << "x" << f.height << " DIP)";
+    return o.str();
   }
 
   // Pixels par DIP (shell/window_scale.h) : la densité sous Wayland, l'échelle du contenu
@@ -237,8 +269,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
   Layer page_, popup_;
   PopupRect popupRect_;
   bool popupVisible_ = false, redrawPending_ = false;
-  platform::LinuxVideoLayer* video_ = nullptr;
-  VideoSurface* videoSurface_ = nullptr;
+  platform::VideoSlot slot_;
   CompositorStats stats_;
   uint64_t stats_dmabuf_ = 0, windowFrames_ = 0;
   std::chrono::steady_clock::time_point lastPresent_{}, windowStart_ = std::chrono::steady_clock::now();

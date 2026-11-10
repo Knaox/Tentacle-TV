@@ -18,6 +18,9 @@ class PipClient final : public CefClient,
                         public CefContextMenuHandler,
                         public CefRequestHandler {
  public:
+  // CefLifeSpanHandler ET CefRequestHandler déclarent chacun ce nom : GCC refuse la référence
+  // ambiguë que Clang tolère (comme Client, shell/client.h).
+  using WindowOpenDisposition = cef_window_open_disposition_t;
   explicit PipClient(Controller* controller) : controller_(controller) {}
   /// Le contrôleur s'en va (fermeture de l'app) : plus aucun rappel vers lui.
   void detach() { controller_ = nullptr; }

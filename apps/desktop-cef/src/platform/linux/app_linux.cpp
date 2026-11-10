@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <map>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -41,11 +43,17 @@ bool sdlIsWayland() {
 }
 
 LinuxWindow* linuxWindow(SDL_Window* window) {
-  static LinuxWindow w;
-  if (w.sdl == window && window) return &w;
-  w = {};
+  // UNE description par fenêtre, à adresse stable : le pont garde celle de la fenêtre
+  // principale (createVideoSurface) pendant que le PiP demande la sienne. Clé : l'identifiant
+  // SDL, jamais réutilisé (une adresse de fenêtre libérée peut l'être).
+  static std::map<SDL_WindowID, std::unique_ptr<LinuxWindow>> windows;
+  static LinuxWindow none;
+  if (!window) return &none;
+  auto& slot = windows[SDL_GetWindowID(window)];
+  if (slot) return slot.get();
+  slot = std::make_unique<LinuxWindow>();
+  LinuxWindow& w = *slot;
   w.sdl = window;
-  if (!window) return &w;
   const SDL_PropertiesID p = SDL_GetWindowProperties(window);
   w.wayland = sdlIsWayland();
   if (w.wayland) {

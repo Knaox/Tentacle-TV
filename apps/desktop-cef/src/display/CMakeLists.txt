@@ -17,8 +17,9 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
 endif()
 
 set(_src "${CMAKE_CURRENT_SOURCE_DIR}/..")
-# La règle, sans CEF ni OS : session HDR (hdrSession.ts) et verdict du Store (msixInstallState.ts).
-add_library(tentacle_display_core STATIC hdr_session.cpp msix_rule.cpp)
+# La règle, sans CEF ni OS : session HDR (hdrSession.ts), relevé de la sortie de mpv (linux/hdr.ts)
+# et verdict du Store (msixInstallState.ts).
+add_library(tentacle_display_core STATIC hdr_session.cpp msix_rule.cpp output_reading.cpp)
 target_include_directories(tentacle_display_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" "${_src}" "${_src}/bridge")
 target_link_libraries(tentacle_display_core PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(tentacle_display_core PUBLIC cxx_std_20)

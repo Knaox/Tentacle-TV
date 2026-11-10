@@ -44,6 +44,12 @@ EGLConfig pickConfig(EGLDisplay d, bool alpha, int visualId) {
   return visualId >= 0 ? nullptr : configs.front();
 }
 
+// Le premier contexte créé (fenêtre principale) : ceux qui suivent sur le même affichage (fenêtre
+// PiP) partagent ses objets — la texture de l'API de rendu de mpv se dessine dans l'une ou
+// l'autre pile (Compositor::lendVideo).
+EGLDisplay g_rootDisplay = EGL_NO_DISPLAY;
+EGLContext g_rootContext = EGL_NO_CONTEXT;
+
 }  // namespace
 
 std::unique_ptr<EglWindow> EglWindow::create(const LinuxWindow& w, int widthPx, int heightPx,
@@ -76,13 +82,24 @@ std::unique_ptr<EglWindow> EglWindow::create(const LinuxWindow& w, int widthPx, 
     return nullptr;
   }
   e->alpha_ = alpha;
-  for (int v : {3, 2}) {
-    const EGLint ctx[] = {EGL_CONTEXT_MAJOR_VERSION, v, EGL_NONE};
-    e->context_ = eglCreateContext(e->display_, config, EGL_NO_CONTEXT, ctx);
-    if (e->context_ != EGL_NO_CONTEXT) {
-      e->glesMajor_ = v;
-      break;
+  const EGLContext share = g_rootDisplay == e->display_ ? g_rootContext : EGL_NO_CONTEXT;
+  for (EGLContext with : {share, EGL_NO_CONTEXT}) {
+    for (int v : {3, 2}) {
+      const EGLint ctx[] = {EGL_CONTEXT_MAJOR_VERSION, v, EGL_NONE};
+      e->context_ = eglCreateContext(e->display_, config, with, ctx);
+      if (e->context_ != EGL_NO_CONTEXT) {
+        e->glesMajor_ = v;
+        e->shared_ = with != EGL_NO_CONTEXT;
+        break;
+      }
     }
+    if (e->context_ != EGL_NO_CONTEXT || share == EGL_NO_CONTEXT) break;
+    std::fprintf(stderr, "[egl] partage avec le contexte principal refusé (0x%x)\n", eglGetError());
+  }
+  if (g_rootContext == EGL_NO_CONTEXT && e->context_ != EGL_NO_CONTEXT) {
+    g_rootDisplay = e->display_;
+    g_rootContext = e->context_;
+    e->shared_ = true;  // la racine partage avec elle-même
   }
   if (e->context_ == EGL_NO_CONTEXT) {
     std::fprintf(stderr, "[egl] eglCreateContext a échoué (0x%x)\n", eglGetError());
@@ -104,9 +121,9 @@ std::unique_ptr<EglWindow> EglWindow::create(const LinuxWindow& w, int widthPx, 
   // `frame` du compositeur, qui n'arrive plus quand la fenêtre est cachée — le fil principal
   // (et CEF avec lui) resterait bloqué. Le rythme est celui de CEF et de mpv.
   eglSwapInterval(e->display_, 0);
-  std::fprintf(stderr, "[egl] EGL %d.%d, GLES %d, %s, alpha %s, %dx%d px\n", major, minor,
+  std::fprintf(stderr, "[egl] EGL %d.%d, GLES %d, %s, alpha %s, %dx%d px%s\n", major, minor,
                e->glesMajor_, w.wayland ? "Wayland" : "X11", alpha ? "oui" : "non", e->width_,
-               e->height_);
+               e->height_, e->context_ == g_rootContext ? "" : e->shared_ ? ", partagé" : ", NON partagé");
   return e;
 }
 
@@ -115,6 +132,7 @@ EglWindow::~EglWindow() {
   eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   if (surface_ != EGL_NO_SURFACE) eglDestroySurface(display_, surface_);
   if (wlEgl_) wl_egl_window_destroy(wlEgl_);
+  if (context_ == g_rootContext) g_rootContext = EGL_NO_CONTEXT, g_rootDisplay = EGL_NO_DISPLAY;
   if (context_ != EGL_NO_CONTEXT) eglDestroyContext(display_, context_);
   // eglTerminate : non. Le display EGL est partagé dans le processus (Wayland : la connexion
   // de SDL), le terminer couperait les autres utilisateurs.

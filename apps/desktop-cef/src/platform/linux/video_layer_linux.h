@@ -22,6 +22,8 @@ class Compositor;
 
 namespace tentacle::platform {
 
+struct LinuxWindow;
+
 class LinuxVideoLayer {
  public:
   virtual ~LinuxVideoLayer() = default;
@@ -46,6 +48,15 @@ class GlHost {
   // Fil principal : une image de plus sera composée (regroupé).
   virtual void requestRedraw() = 0;
   virtual void* procAddress(const char* name) = 0;
+};
+
+// Ce que la pile qui MONTRE la couche lui donne (VideoSurface::setHostWindow, nullptr : plus
+// aucune) : sa fenêtre — échelle, et parent de la sous-surface, qui change de parent pendant le
+// PiP — et son GlHost, à qui demander les nouveaux dessins. Le RENDU de l'API de mpv reste dans le
+// contexte de la fenêtre principale (glHost()) : la pile du PiP partage ses textures.
+struct VideoHost {
+  const LinuxWindow* window = nullptr;
+  GlHost* gl = nullptr;
 };
 
 // Compositeur de secours (EGL indisponible) : ne dessine rien, ne plante pas.

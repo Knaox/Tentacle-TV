@@ -114,7 +114,8 @@ else()
                                         src/platform/linux/gl_quad_linux.cpp
                                         src/platform/linux/dmabuf_linux.cpp
                                         src/platform/linux/compositor_linux.cpp
-                                        src/platform/linux/fake_video_linux.cpp)
+                                        src/platform/linux/fake_video_linux.cpp
+                                        src/platform/linux/video_slot_linux.cpp)
   target_link_libraries(tentacle_shell PUBLIC PkgConfig::TENTACLE_LINUX)
   # Règles pures de Linux (session graphique, langues) : sans CEF ni affichage.
   add_executable(tentacle_linux_tests src/platform/linux/tests/linux_rules_tests.cpp

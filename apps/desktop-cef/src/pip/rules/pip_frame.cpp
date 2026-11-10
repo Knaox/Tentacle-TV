@@ -7,7 +7,7 @@ namespace tentacle::pip {
 
 Frame frameFor(Os os) {
   switch (os) {
-    case Os::linux: return {14, 4};
+    case Os::linuxDesktop: return {14, 4};
     case Os::windows: return {0, 0};
     case Os::macos: break;
   }

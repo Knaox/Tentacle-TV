@@ -625,6 +625,16 @@ Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
     l'axe de l'OS : `canLendVideo` / `lendVideo` / `reclaimVideo` / `setVideoInset` dans SON
     compositeur, une pile TRANSPARENTE pour la fenêtre PiP (`Options::makeStack`) ; Wayland : la
     place des fenêtres (le titre de la colle KWin, `pip/rules/pip_captions.h`).
+  - **Linux (fait, Wayland seulement)** : `VideoSlot` (`platform/linux/video_slot_linux.h`) tient la
+    couche de chaque pile, son cadre (à `inset` des bords) et le prêt, sur le modèle de
+    `compositor_mac.mm` ; la pile qui MONTRE la couche lui donne sa fenêtre et son `GlHost`
+    (`VideoHost`, par `setHostWindow`). Sous-surface : la MÊME `wl_surface` de mpv change de parent
+    (`wl_subsurface` détruite puis redonnée sous la surface du PiP) — HDR et lecture gardés. API de
+    rendu : le rendu reste dans le contexte principal, la pile du PiP partage ses textures
+    (contextes EGL partagés, `egl_linux.cpp`). X11 : pas de PiP (`canLendVideo` faux), comme
+    Electron. Le navigateur du PiP reçoit son fond transparent par l'inspecteur
+    (`Emulation.setDefaultBackgroundColorOverride`, `pip_client.cpp`) : sans lui, son canevas
+    restait opaque (#121212) sous Linux. Preuve : `bench/linux/prove-pip.mjs` (sway).
 - **Branchement** : `pip::install(ctx, pont::registry())` avant `pont::installShim`,
   `pip::shutdown()` dans `shutdownModules` (le navigateur du PiP part avant CefShutdown) ;
   `Client::DoClose` du navigateur principal → `popup::hostClosing()` → le PiP part AVANT la fenêtre

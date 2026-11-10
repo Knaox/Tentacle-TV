@@ -151,13 +151,13 @@ void captions() {
 
 void runRulesTests() {
   placementWith(frameFor(Os::macos));
-  placementWith(frameFor(Os::linux));
+  placementWith(frameFor(Os::linuxDesktop));
   placementWith(frameFor(Os::windows));
   motion();
   resizeGuard();
   arming();
   captions();
   CHECK(frameFor(Os::macos).shadow == 4 && frameFor(Os::macos).bezel == 4);
-  CHECK(frameFor(Os::linux).shadow == 14 && frameFor(Os::linux).bezel == 4);
+  CHECK(frameFor(Os::linuxDesktop).shadow == 14 && frameFor(Os::linuxDesktop).bezel == 4);
   CHECK(frameFor(Os::windows).inset() == 0);
 }
