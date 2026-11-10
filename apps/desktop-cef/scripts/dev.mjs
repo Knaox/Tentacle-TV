@@ -76,9 +76,10 @@ async function runApp(rawArgs) {
       "--url=tentacle://app/",
       `--web-root=${path.join(repo, "apps/web/dist")}`,
       `--profile=${cef}`,
-      `--app-version=${version}`,
-      // Dossier de données d'Electron (dataPaths.ts) : tentacle::paths::userData() (axe reseau).
+      // --user-data : le dossier de données des modules natifs (shell/paths.h : octave-art/,
+      // tentacle-local.db…) est le profil d'Electron visé, celui dont le front partage le stockage.
       `--user-data=${electron}`,
+      `--app-version=${version}`,
       ...args,
     ],
     env,
