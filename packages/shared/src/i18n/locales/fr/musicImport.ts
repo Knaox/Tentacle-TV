@@ -139,6 +139,7 @@ export default {
       quota: "Limite du jour atteinte",
       unavailable: "Service momentanément indisponible",
       noExtension: "Aucune source hors bibliothèque sur ce serveur",
+      extensionLimit: "Trop de titres d'un coup pour l'extension de ce serveur",
     },
   },
 };

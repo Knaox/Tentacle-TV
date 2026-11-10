@@ -14,8 +14,6 @@
  * (YouTube) passe par `importRead` d'une extension, ou n'est pas offerte.
  */
 
-import type { ImportSkipped } from "./musicImportSkip";
-
 /**
  * Sources d'import, liste FERMÉE (les clés traversent le réseau : jamais renommées). `tentacle` : le lien de
  * partage d'une playlist d'un AUTRE serveur Tentacle (`musicShare.ts`, capacité `music.playlistShare`).
@@ -40,10 +38,10 @@ export function extensionImportSource(source: MusicImportSource): MusicImportSou
 }
 
 export const MUSIC_IMPORT_LIMITS = {
-  /** Titres lus au plus ; au-delà la lecture s'arrête (`truncated`). */
-  tracks: 1_000,
-  /** Texte collé (liste ou CSV), en caractères. */
-  text: 512_000,
+  /** Garde-fou MÉMOIRE (lot « pg », 10/11 : jamais un plafond qu'un utilisateur rencontre) ; au-delà : `truncated`. */
+  tracks: 100_000,
+  /** Texte collé (liste ou CSV), en caractères : un export CSV de 9 000 titres y tient largement. */
+  text: 16_000_000,
   /** Un champ de titre, d'artiste, d'album. */
   field: 300,
   /** Artistes gardés par titre. */
@@ -67,6 +65,10 @@ export interface ImportedTrack {
   sourceId: string | null;
   /** La source ne le joue pas (1.40.0) : `region` (Deezer `readable: false`), `refused` (Spotify `isPlayable: false`). */
   sourceBlocked?: "region" | "refused";
+  /** La pochette du titre CHEZ la source (https, 1.43.0) : montrée telle quelle, sans attendre aucune résolution. */
+  artworkUrl?: string | null;
+  /** Contenu explicite, si la source le dit (1.43.0). */
+  explicit?: true;
 }
 
 /** Une playlist lue (par le cœur ou par `importRead` d'une extension). */
@@ -271,39 +273,6 @@ export interface MusicImportJob {
   result?: MusicImportResult;
 }
 
-/* ── L'extension (points optionnels `importRead`, `importTracks` du contrat `music`) ── */
+/* ── L'extension (points optionnels `importRead`, `importTracks` du contrat `music`) : `musicImportExtension.ts` ── */
 
-/** Refus de `importRead`, liste FERMÉE (le client les dit comme ceux du cœur). */
-export type ImportReadRefusal = "unsupported" | "notFound" | "private" | "unavailable" | "tooLarge" | "budget";
-
-/** POST `<importTracks>` — les absents d'un import, pour la playlist que le cœur vient de créer au nom du compte. */
-export interface ImportTracksRequest {
-  playlistId: string;
-  source: MusicImportSource;
-  tracks: ImportAbsentTrack[];
-}
-
-/** 202 — l'opération suivie ; `accepted` ≤ le nombre confié (elle peut en refuser d'emblée, quota). */
-export interface ImportTracksAccepted {
-  operationId: string;
-  accepted: number;
-}
-
-/** GET `<importTracks>/<operationId>` — sondé tant que `running`. */
-export interface ImportTracksProgress {
-  operationId: string;
-  state: "running" | "done" | "failed";
-  total: number;
-  /** Titres traités (trouvés + introuvables). */
-  processed: number;
-  /** Titres ENTRÉS dans la playlist (entrées `playlistAdd` en attente, jouables aussitôt). */
-  added: number;
-  /** Les `index` qu'elle n'a pas trouvés. */
-  notFound: number[];
-  /** Raison d'un `failed` ou d'un arrêt partiel (liste fermée `ExternalActionRefusal` du contrat `music`). */
-  reason?: "quota" | "forbidden" | "unavailable" | "notFound" | "failed";
-  /** Les titres non posés et leur motif (1.40.0 ; une extension d'avant : `notFound` seul). */
-  skipped?: ImportSkipped[];
-  /** Parmi `added`, ceux que le COMPTE avait déjà importés (ses fichiers) : pas « en cloud ». */
-  own?: number;
-}
+export type { ImportReadRefusal, ImportTracksAccepted, ImportTracksProgress, ImportTracksRequest } from "./musicImportExtension";
