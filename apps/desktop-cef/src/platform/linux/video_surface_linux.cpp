@@ -59,6 +59,13 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     return s;
   }
   void onPixelSizeChanged(std::function<void(PixelSize)>) override {}
+  // La pile qui la montre (VideoSlot) : son échelle, et c'est elle qui recompose à chaque image.
+  void setHostWindow(void* host) override {
+    const auto* h = static_cast<const platform::VideoHost*>(host);
+    gl_ = h ? h->gl : nullptr;
+    if (h && h->window) window_ = *h->window;
+    redraw();
+  }
 
   bool attachRenderApi(void* mpvHandle) override {
     auto* host = glHost();
@@ -102,7 +109,10 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     return hasFrame_;
   }
   GLuint renderTexture(int& w, int& h) override {
-    if (!ctx_) return 0;
+    // Le rendu reste dans le contexte où vivent les objets de mpv (VAO, FBO : jamais partagés),
+    // celui de la fenêtre principale ; la pile qui dessine la texture (le PiP) la partage.
+    auto* main = glHost();
+    if (!ctx_ || !main || !main->makeCurrent()) return 0;
     const double s = backingScale();
     RectPt f = frame_;
     if (!hasFrame_) {
@@ -151,7 +161,7 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     });
   }
   void redraw() {
-    if (auto* h = glHost()) h->requestRedraw();
+    if (auto* h = gl_ ? gl_ : glHost()) h->requestRedraw();
   }
   bool ensureTarget(int w, int h) {
     if (tex_ && w == texW_ && h == texH_) return false;
@@ -183,6 +193,7 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
   }
 
   platform::LinuxWindow window_;
+  platform::GlHost* gl_ = nullptr;  // la pile qui la montre ; nullptr : la fenêtre principale
   std::shared_ptr<bool> alive_;
   mpv_render_context* ctx_ = nullptr;
   GLuint fbo_ = 0, tex_ = 0;

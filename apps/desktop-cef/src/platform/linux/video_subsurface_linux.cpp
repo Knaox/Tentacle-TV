@@ -93,7 +93,24 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
     if (globals_.compositor) wl_compositor_destroy(globals_.compositor);
     if (registry_) wl_registry_destroy(registry_);
     if (queue_) wl_event_queue_destroy(queue_);
-    if (auto* h = glHost()) h->requestRedraw();  // la page redevient opaque
+    if (auto* h = host()) h->requestRedraw();  // la page redevient opaque
+  }
+
+  // La pile qui la montre (VideoSlot). Une AUTRE fenêtre (le PiP) : la MÊME surface — mpv y
+  // présente sans le savoir, HDR compris — change de parent. Le rôle de sous-surface se retire
+  // (wl_subsurface.destroy : démappée aussitôt) puis se redonne sous la nouvelle surface ; elle
+  // reparaît au prochain commit de ce parent (place() le demande).
+  void setHostWindow(void* host) override {
+    const auto* h = static_cast<const VideoHost*>(host);
+    gl_ = h ? h->gl : nullptr;
+    if (!h || !h->window || !h->window->wlSurface || h->window->wlSurface == window_.wlSurface) return;
+    window_ = *h->window;
+    wl_subsurface_destroy(sub_);
+    sub_ = wl_subcompositor_get_subsurface(globals_.subcompositor, child_, window_.wlSurface);
+    wl_subsurface_set_desync(sub_);
+    wl_subsurface_place_below(sub_, window_.wlSurface);
+    std::fprintf(stderr, "[vidéo] sous-surface rattachée à la fenêtre %u\n", SDL_GetWindowID(window_.sdl));
+    place();
   }
 
   void show() override {
@@ -169,10 +186,13 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
       px_ = px;
       if (sizeCb_) sizeCb_(px_);
     }
-    if (auto* h = glHost()) h->requestRedraw();
+    if (auto* h = host()) h->requestRedraw();
   }
 
+  GlHost* host() const { return gl_ ? gl_ : glHost(); }
+
   LinuxWindow window_;
+  GlHost* gl_ = nullptr;  // la pile qui la montre ; nullptr : la fenêtre principale
   wl_event_queue* queue_ = nullptr;
   wl_registry* registry_ = nullptr;
   Globals globals_;
