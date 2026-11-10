@@ -9,10 +9,6 @@
 namespace tentacle {
 namespace {
 
-// Repli (Linux/Windows) : SDL3 livre des crans ; Chromium compte 40 px par cran. Sur macOS
-// le défilement vient du NSEvent (native_input.h).
-constexpr float kWheelPixels = 40.0f;
-
 cef_mouse_button_type_t cefButton(uint8_t b) {
   switch (b) {
     case SDL_BUTTON_RIGHT: return MBT_RIGHT;
@@ -128,12 +124,13 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
       break;
     }
     case SDL_EVENT_MOUSE_WHEEL:
+      // Repli : SDL3 livre des crans (Linux) ; ailleurs le défilement est natif (native_input.h).
       if (nativeWheel_) break;
       me.x = int(std::lround(e.wheel.mouse_x * windowToDip_));
       me.y = int(std::lround(e.wheel.mouse_y * windowToDip_));
       me.modifiers = mouseModifiers();
-      host->SendMouseWheelEvent(me, int(std::lround(-e.wheel.x * kWheelPixels)),
-                                int(std::lround(e.wheel.y * kWheelPixels)));
+      host->SendMouseWheelEvent(me, int(std::lround(-e.wheel.x * platform::kSdlWheelNotchPixels)),
+                                int(std::lround(e.wheel.y * platform::kSdlWheelNotchPixels)));
       break;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:

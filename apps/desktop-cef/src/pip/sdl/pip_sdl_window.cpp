@@ -8,6 +8,7 @@
 #include "compositor/compositor.h"
 #include "include/internal/cef_types.h"
 #include "pip/sdl/pip_sdl_internal.h"
+#include "shell/native_input.h"
 
 namespace tentacle::pip::sdl {
 namespace {
@@ -168,10 +169,10 @@ class SdlPipWindow final : public Window {
                              e.type == SDL_EVENT_MOUSE_BUTTON_UP, std::max<int>(1, e.button.clicks));
         }
         break;
-      case SDL_EVENT_MOUSE_WHEEL:  // Chromium : 40 px par cran
+      case SDL_EVENT_MOUSE_WHEEL:  // la course de Chromium par cran (native_input.h)
         if (input_.wheel) {
-          input_.wheel(e.wheel.mouse_x / k, e.wheel.mouse_y / k, modifiers(), -e.wheel.x * 40.0,
-                       e.wheel.y * 40.0);
+          input_.wheel(e.wheel.mouse_x / k, e.wheel.mouse_y / k, modifiers(),
+                       -e.wheel.x * platform::kSdlWheelNotchPixels, e.wheel.y * platform::kSdlWheelNotchPixels);
         }
         break;
       case SDL_EVENT_WINDOW_RESIZED:

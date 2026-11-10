@@ -21,6 +21,17 @@ struct NativeWheel {
   bool precise = false;  // trackpad / souris Magic (deltas continus)
 };
 
+// Pixels par cran quand SDL3 est la source (Linux ; la fenêtre PiP partout). Linux : la valeur
+// de Chromium — Wayland, axis_value120 → 120 par cran ; X11, kWheelScrollAmount = 120 depuis
+// crbug.com/1270089 —, celle qu'Electron envoie à la même page (à 40, il fallait trois crans
+// pour un). Une molette haute résolution (fractions de cran chez SDL) garde la même course.
+// Ailleurs, les 40 d'avant (macOS : kScrollbarPixelsPerCocoaTick), pas encore éprouvés.
+#ifdef __linux__
+inline constexpr float kSdlWheelNotchPixels = 120.0f;
+#else
+inline constexpr float kSdlWheelNotchPixels = 40.0f;
+#endif
+
 bool installNativeWheel(SDL_Window* window, std::function<void(const NativeWheel&)> sink);
 void uninstallNativeWheel();
 
