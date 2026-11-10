@@ -273,3 +273,37 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
 - `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
   rendue de n'importe quel fil (`Respond`).
+- `tentacle://plugin/<id>` (`schemes/plugin_scheme.h`) : document d'un greffon déposé par la commande
+  `plugin_document_set {id, html}` → `"tentacle://plugin/<id>"` (`net/plugin_documents.h` : 8 au
+  plus, identifiant `^[a-zA-Z0-9._-]{1,64}$`), servi avec la CSP des greffons.
+- CSP (`net/csp.h`, à l'octet celle de `csp.ts`) : `appscheme::setAppCsp()` / `appCsp()`
+  (`shell/app_scheme.h`) — posée par `reseau::install` d'après l'`index.html` servi, portée par
+  TOUTE réponse de `tentacle://` hors greffons. **horsligne** : `tentacle://local` doit la poser
+  aussi (`Content-Security-Policy: appscheme::appCsp()`), comme Electron.
+- Relais Jellyfin (`net/jellyfin_relay.h`, cible `tentacle_net_commands`, testée sans CEF) :
+  `jellyfin_session_post` (liste FERMÉE `/Sessions/Playing[/Progress|/Stopped]`),
+  `jellyfin_playback_info`, `jellyfin_kill_encodings` — chemins construits côté natif, 20 s, en-têtes
+  `Authorization` (Jellyfin direct) ou `X-Emby-*` (proxy `…/api/jellyfin`). Adieu à Jellyfin :
+  `reseau::connectFarewell` (`net/farewell.h`) appelle `lifecycle::noteSessionPost`,
+  `trackSessionPost` et `setFarewellSender` (axe systeme) dès que la cible `tentacle_lifecycle`
+  existe (expression génératrice CMake, sans ordre d'`add_subdirectory`). `reseau::jellyfinRelay()`.
+- Diagnostic du banc (hors `window.tentacle`) : `__shell.invoke('reseau.debug.trace')` → les 200
+  dernières requêtes natives des relais `{method, url (sans requête), status, error, ms}`.
+- Requêtes déléguées (`plugins.clientFetch`) : `client_fetch_run {serverOrigin, headers, pluginId,
+  request}` → `ClientFetchOutcome`, `client_fetch_log` (`net/client_fetch_commands.h`). Règle à l'octet
+  du contrat partagé (`net/client_fetch_policy.h`), plafond 4/30/300 par extension, manifestes lus par
+  l'app sur `<serverOrigin>/api/plugins/active` (`net/client_fetch_run.h`, 5 min, 4 sessions) ; saut
+  réel `cf::cefHop()` (`net/cef_hop.h`) : résolution par Chromium (`ResolveHost`), une adresse privée
+  → `refused`, puis CefURLRequest sans cookie ni cache, redirections jugées une à une.
+  `reseau::pluginManifests()` (`net/net_shell.h`) : les `mediaHosts` pour les flux directs (axe medias).
+- Flux directs d'Octave (relais local, `net/direct_relay.h`, `net/direct_source.h`) — pour l'axe
+  **medias**, dans `audio_play` / `audio_set_next` comme `checked()` d'`ipc/audio.ts` :
+  `reseau::adoptDirectSource(source, trackKey, session, done(source, adopted))` (`net/net_shell.h`) ;
+  à `audio_engine_start` : `reseau::setDirectCutListener(url → engine.sourceCut(url))` et une lecture
+  d'avance `reseau::pluginManifests()->of(session, "", …)`. mpv lit `http://127.0.0.1:<port>/d/<jeton>`
+  (`reseau::directRelayOrigin()`), direct sans identifiant du compte, repli sur le serveur avec ses
+  en-têtes (`direct=failed` une fois), 502 après une coupure. Banc : `__shell.invoke('reseau.debug.adoptDirect',
+  {source, trackKey, serverOrigin, headers})`, `reseau.debug.directRelay` → `{origin, direct, fallbacks, cuts}`.
+- `media_warm {url, ranges}` (`net/media_warm.h`) : tête et fin du fichier lues par plages (`Range`,
+  206 seulement, 4 Mio au plus, deux en vol, même demande après 10 min, 15 s) pour chauffer le
+  disque du serveur ; rien n'est gardé. Lecture en flux `net::httpStream` (sans cache).
