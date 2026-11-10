@@ -47,6 +47,7 @@ add_library(tentacle_shell STATIC
   src/shell/shell_shortcuts.cpp
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
+  src/shell/paths.cpp  # reseau : dossier de données d'Electron, --user-data
   src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
@@ -106,6 +107,7 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+add_subdirectory(src/net)  # reseau : tentacle://art, tentacle://plugin, relais, requêtes déléguées
 add_subdirectory(src/pip)  # pip : image dans l'image (règles, navigateur du PiP, fenêtre native)
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
