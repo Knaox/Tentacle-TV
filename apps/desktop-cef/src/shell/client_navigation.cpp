@@ -9,6 +9,7 @@
 #include "include/cef_request_context.h"
 #include "shell/app_scheme.h"
 #include "shell/client.h"
+#include "shell/client_popup.h"
 #include "shell/external_url.h"
 #include "shell/navigation_rule.h"
 
@@ -26,6 +27,21 @@ void applyVerdict(Verdict verdict, const std::string& url, const char* what) {
   } else if (verdict == nav::Verdict::deny) {
     std::fprintf(stderr, "[nav] %s refusée : %s\n", what, url.c_str());
   }
+}
+
+void installPopupPolicy() {
+  // Le nom que le front donne à SA fenêtre PiP (`PIP_FRAME_NAME`, PipWindow.tsx) : c'est le
+  // PiP qui l'accepte ou la refuse ; l'ordre d'inscription n'y change donc rien.
+  static constexpr char kPipFrameName[] = "tentacle-pip";
+  static bool installed = false;
+  if (installed) return;
+  installed = true;
+  popup::addHandler([](const popup::Request& request, CefWindowInfo&, CefRefPtr<CefClient>&,
+                       CefBrowserSettings&, CefRefPtr<CefDictionaryValue>&) {
+    if (request.frameName == kPipFrameName) return popup::Decision::pass;
+    applyVerdict(windowOpen(request.url), request.url, "fenêtre");
+    return popup::Decision::deny;
+  });
 }
 
 }  // namespace nav

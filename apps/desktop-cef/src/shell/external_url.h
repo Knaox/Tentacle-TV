@@ -24,6 +24,10 @@ namespace nav {
 void applyVerdict(Verdict verdict, const std::string& url, const char* what);
 /// Horloge monotone en millisecondes (garde des dépôts : `noteDrop`, `isDropNavigation`).
 uint64_t nowMs();
+/// `setWindowOpenHandler` d'Electron, inscrit dans l'aiguillage des popups de pip
+/// (`popup::addHandler`) : la fenêtre « tentacle-pip » passe au PiP, toute autre part dehors
+/// (si son schéma est permis) et est refusée. Une fois, fil principal, avant le navigateur.
+void installPopupPolicy();
 }  // namespace nav
 
 }  // namespace tentacle

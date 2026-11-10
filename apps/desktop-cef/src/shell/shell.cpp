@@ -7,6 +7,7 @@
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/external_url.h"
 #include "shell/navigation_rule.h"
 #include "shell/zoom_guard.h"
 
@@ -53,6 +54,7 @@ Shell::~Shell() {
 
 bool Shell::start() {
   nav::setAppOrigin(options_.url);  // navigateur : l'origine que le cadre principal garde
+  nav::installPopupPolicy();         // navigateur : window.open, target=_blank (Electron)
   CefWindowInfo wi;
   wi.SetAsWindowless(kNullWindowHandle);
   wi.shared_texture_enabled = true;  // IOSurface (macOS) : zéro copie CPU

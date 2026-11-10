@@ -255,9 +255,9 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   `dev:server`). Navigation ailleurs → annulée et ouverte dehors ; redirection ailleurs →
   annulée sans rien ouvrir ; cadres libres. `window.open`, `target=_blank`, clic du milieu,
   ⌘/Ctrl + clic → dehors, jamais une seconde fenêtre CEF.
-- **Fenêtres** : l'aiguillage des popups de pip (`src/shell/client_popup.h`, `popup::addHandler`)
-  décide d'abord ; quand aucun module ne prend la fenêtre, son défaut est la règle d'Electron
-  (`nav::applyVerdict(nav::windowOpen(url))` : dehors si le schéma est permis, puis refusée).
+- **Fenêtres** : la règle d'Electron est un gestionnaire de l'aiguillage de pip
+  (`nav::installPopupPolicy()` → `popup::addHandler`, posé par `Shell::start`) : `pass` pour la
+  fenêtre nommée `tentacle-pip` (le PiP décide), sinon dehors si le schéma est permis, puis `deny`.
 - **Dehors** : `tentacle::openExternalSafely(url)` (`src/shell/external_url.h`, fil principal) —
   liste FERMÉE d'Electron (http, https, mailto, ms-windows-store, macappstore, itms-apps), URL
   canonique (`CefParseURL`), `SDL_OpenURL`. Bancs : `TENTACLE_OPEN_EXTERNAL=log` journalise

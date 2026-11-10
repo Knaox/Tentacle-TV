@@ -4,7 +4,6 @@
 #include <map>
 
 #include "shell/client.h"
-#include "shell/external_url.h"
 
 namespace tentacle {
 namespace popup {
@@ -41,10 +40,8 @@ bool route(const Request& request, CefWindowInfo& windowInfo, CefRefPtr<CefClien
     if (d == Decision::allow && noJavascriptAccess) *noJavascriptAccess = false;
     return d == Decision::deny;
   }
-  // Pas de seconde fenêtre CEF sans un module qui la prenne : la règle d'Electron
-  // (`setWindowOpenHandler` de `lockNavigation`) — l'URL part dans le navigateur du système
-  // si son schéma est permis, et la fenêtre est refusée (navigateur, client_navigation.cpp).
-  nav::applyVerdict(nav::windowOpen(request.url), request.url, "fenêtre");
+  // Pas de seconde fenêtre CEF sans un module qui la prenne : refusée (journalisée).
+  std::fprintf(stderr, "[shell] popup refusée : %s\n", request.url.c_str());
   return true;
 }
 
