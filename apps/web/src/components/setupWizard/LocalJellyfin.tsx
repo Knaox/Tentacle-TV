@@ -9,8 +9,8 @@ import type { LocalJellyfinView } from "./localJellyfinModel";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { LocalJellyfin as LocalJellyfinHost } from "./useLocalJellyfin";
 
-const linkCls = "inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80";
-const panelCls = "space-y-3 rounded-xl border bg-fill-faint p-4 text-sm leading-relaxed text-content-secondary";
+const linkCls = "inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-accent hover:underline";
+const panelCls = "space-y-3 rounded-tile bg-surface-2 p-4 text-sm leading-relaxed text-content-secondary";
 const titleCls = "font-semibold text-content-primary";
 
 function OfficialPage({ url }: { url: string }) {
@@ -18,7 +18,7 @@ function OfficialPage({ url }: { url: string }) {
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className={linkCls}>
       {t("installOpenSite")}
-      <ExternalLink size={14} aria-hidden="true" />
+      <ExternalLink size={14} weight="bold" aria-hidden="true" />
     </a>
   );
 }
@@ -63,7 +63,7 @@ function ViewBody({ view, host, docsUrl }: { view: LocalJellyfinView; host: Loca
     case "ready":
       return (
         <div className="flex items-start gap-3">
-          <CircleCheck size={22} aria-hidden="true" className="mt-0.5 shrink-0 text-status-success-fg" />
+          <CircleCheck size={22} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0 text-status-success-fg" />
           <div className="space-y-1">
             <p className={`text-base ${titleCls}`}>{t("installReadyTitle")}</p>
             <p>{t("installReadyBody")}</p>
@@ -75,7 +75,7 @@ function ViewBody({ view, host, docsUrl }: { view: LocalJellyfinView; host: Loca
     case "starting":
       return (
         <div className="flex items-start gap-3">
-          <LoaderCircle size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--brand-light)] motion-safe:animate-spin" />
+          <LoaderCircle size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-accent motion-safe:animate-spin" />
           <div className="space-y-1">
             <p className={titleCls}>{t("localStarting")}</p>
             <p>{t("localStartWaiting")}</p>
@@ -138,7 +138,7 @@ function ViewBody({ view, host, docsUrl }: { view: LocalJellyfinView; host: Loca
   }
 }
 
-/** Un état qui demande l'attention (installation en cours, prêt) se voit : bordure de marque. */
+/** Un état qui demande l'attention (installation en cours, prêt) se voit : le trait de la teinte franche. */
 function emphasized(view: LocalJellyfinView): boolean {
   return view.kind === "install" || view.kind === "ready" || view.kind === "starting";
 }
@@ -156,7 +156,7 @@ function emphasized(view: LocalJellyfinView): boolean {
 export function LocalJellyfin({ host, view }: { host: LocalJellyfinHost; view: LocalJellyfinView }) {
   const docsUrl = host.local?.docsUrl ?? JELLYFIN_WINDOWS_DOWNLOAD_URL;
   if (view.kind === "running") return null;
-  const border = emphasized(view) ? "border-[rgba(var(--brand-rgb),0.45)]" : "border-line-subtle";
+  const border = emphasized(view) ? "shadow-[inset_0_0_0_1.5px_var(--accent)]" : "";
 
   return (
     <section className={`${panelCls} ${border}`} aria-live="polite">

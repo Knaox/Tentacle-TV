@@ -11,7 +11,7 @@ const STEP_LABEL: Readonly<Record<InstallStage, string>> = {
 
 function StepIcon({ status }: { status: "done" | "active" | "pending" }) {
   if (status === "done") return <Check size={16} aria-hidden="true" className="text-status-success-fg" />;
-  if (status === "active") return <LoaderCircle size={16} aria-hidden="true" className="text-[var(--brand-light)] motion-safe:animate-spin" />;
+  if (status === "active") return <LoaderCircle size={16} aria-hidden="true" className="text-accent motion-safe:animate-spin" />;
   return <span aria-hidden="true" className="block size-2.5 rounded-full border border-line-strong" />;
 }
 
@@ -30,7 +30,7 @@ export function JellyfinInstallSteps({ stage }: { stage: InstallStage | null }) 
         <p className="font-semibold text-content-primary">{t("jfInstallStepsTitle")}</p>
         {stage === null ? <p>{t("jfInstallStepsLead")}</p> : null}
       </div>
-      <ol className="space-y-2.5 rounded-xl border border-line-subtle bg-fill-faint p-4" aria-label={t("installStepsLabel")}>
+      <ol className="ui-panel space-y-2.5 p-4" aria-label={t("installStepsLabel")}>
         {INSTALL_STAGES.map((step) => {
           const status = stage === null ? "pending" : stageStatus(stage, step);
           return (
@@ -47,7 +47,7 @@ export function JellyfinInstallSteps({ stage }: { stage: InstallStage | null }) 
         })}
       </ol>
       {stage === "installer" ? (
-        <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--brand-light)]">
+        <ul className="list-disc space-y-1.5 pl-5 marker:text-content-tertiary">
           <li>{t("installTipConsent")}</li>
           <li className="text-content-primary">{t("installAdvice")}</li>
           <li>{t("installTipHidden")}</li>

@@ -156,7 +156,7 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
             <button
               type="button"
               onClick={() => setPlans((all) => [...all, { name: "", type: "movies", paths: [] }])}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-subtle px-4 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-faint hover:text-content-primary"
+              className="btn btn-soft w-full"
             >
               <Plus size={16} aria-hidden="true" />
               {t("libraryAdd")}

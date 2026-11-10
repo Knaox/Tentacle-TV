@@ -57,7 +57,7 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
 
         <div className={`w-full ${cardWidth} self-center animate-fade-slide-up`}>
           <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-            <TentacleLogo size="lg" variant="glow" />
+            <TentacleLogo size="lg" />
             <p className="ui-eyebrow mt-3">
               {t("tentacle")}
             </p>

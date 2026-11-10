@@ -62,7 +62,7 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
       subtitle={t("recapSubtitle")}
       primary={{ label: t("recapApply"), form: formId, disabled: invalid }}
     >
-      <dl className="divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
+      <dl className="divide-y divide-line-subtle overflow-hidden rounded-tile bg-surface-2">
         {rows.map(([label, value]) => (
           <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4">
             <dt className="text-xs font-semibold text-content-tertiary sm:pt-0.5">{label}</dt>

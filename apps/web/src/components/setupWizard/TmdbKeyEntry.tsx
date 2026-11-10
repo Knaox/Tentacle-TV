@@ -84,14 +84,14 @@ export function TmdbKeyEntry({ frame, onDone }: TmdbKeyEntryProps) {
               autoCorrect="off"
               data-1p-ignore
               data-lpignore="true"
-              className={`${cls.inp} pr-12 aria-[invalid=true]:border-status-error ${value ? "font-mono" : ""}`}
+              className={`${cls.inp} pr-12 ${value ? "font-mono" : ""}`}
             />
             <button
               type="button"
               onClick={() => setReveal((shown) => !shown)}
               aria-label={t(reveal ? "tmdbKeyHide" : "tmdbKeyShow")}
               aria-pressed={reveal}
-              className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="icon-btn btn-sm absolute right-1 top-1"
             >
               {reveal ? <EyeOff aria-hidden size={17} /> : <Eye aria-hidden size={17} />}
             </button>
@@ -105,10 +105,10 @@ export function TmdbKeyEntry({ frame, onDone }: TmdbKeyEntryProps) {
             href={TMDB_API_SETTINGS}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary"
+            className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
           >
             {t("tmdbGetKey")}
-            <ExternalLink aria-hidden size={14} />
+            <ExternalLink aria-hidden size={14} weight="bold" />
           </a>
         </div>
         <SetupErrorLine code={error} />

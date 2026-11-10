@@ -24,18 +24,19 @@ export interface SetupWaitingProps {
  *
  * Annoncé aux lecteurs d'écran (`role="status"`, poli) ; l'anneau est
  * décoratif. Coût GPU : l'anneau ne tourne qu'à l'écran et fenêtre visible
- * (`useInViewport`), la barre avance par `scaleX` — rien n'est repeint.
+ * (`useInViewport`), la barre — une jauge du socle (`.gauge`) — avance par
+ * `scaleX` : rien n'est repeint.
  */
 export function SetupWaiting({ title, detail, progress = null, variant = "panel", children, className = "" }: SetupWaitingProps) {
   const { ref, visible } = useInViewport<HTMLDivElement>();
   const measured = typeof progress === "number" ? Math.min(1, Math.max(0, progress)) : null;
-  const box = variant === "panel" ? "rounded-xl border border-line-subtle bg-fill-faint px-4 py-4 sm:px-5" : "";
+  const box = variant === "panel" ? "rounded-tile bg-surface-2 px-4 py-4 sm:px-5" : "";
   return (
     <div ref={ref} role="status" aria-live="polite" className={`${box} ${className}`} data-testid="setup-waiting">
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
-          className="mt-0.5 inline-block h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-[rgba(var(--brand-rgb),0.2)] border-t-[color:var(--brand)]"
+          className="mt-0.5 inline-block h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-fill-medium border-t-accent"
           style={{ animationPlayState: visible ? undefined : "paused" }}
         />
         <div className="min-w-0 flex-1">
@@ -49,12 +50,9 @@ export function SetupWaiting({ title, detail, progress = null, variant = "panel"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(measured * 100)}
-          className="mt-3 h-1.5 overflow-hidden rounded-full bg-fill-soft"
+          className="gauge mt-3 h-1.5 rounded-full"
         >
-          <div
-            className="h-full origin-left rounded-full transition-transform duration-500 ease-out"
-            style={{ transform: `scaleX(${measured})`, background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
-          />
+          <i className="transition-transform duration-sheet-in ease-out" style={{ transform: `scaleX(${measured})` }} />
         </div>
       ) : null}
       {children ? <div className="mt-3 pl-8">{children}</div> : null}

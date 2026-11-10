@@ -9,8 +9,8 @@ import { WizardFrame, type WizardAction, type WizardFrameBase } from "./WizardFr
 /** Ce qui est déjà fait, dit en toutes lettres (jamais la couleur seule) : un compte créé, une connexion, une clé gardée. */
 export function DoneLine({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-start gap-3 rounded-xl border border-line-subtle bg-status-success-bg px-4 py-3 text-sm leading-relaxed text-content-primary" role="status">
-      <CircleCheck size={18} aria-hidden="true" className="mt-px shrink-0 text-status-success-fg" />
+    <p className="flex items-start gap-3 rounded-tile bg-status-success-bg px-4 py-3 text-sm leading-relaxed text-content-primary" role="status">
+      <CircleCheck size={18} weight="fill" aria-hidden="true" className="mt-px shrink-0 text-status-success-fg" />
       <span>{children}</span>
     </p>
   );

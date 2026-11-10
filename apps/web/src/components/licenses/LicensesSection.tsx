@@ -28,34 +28,34 @@ export const LicensesSection = memo(function LicensesSection({ platform, version
 
   return (
     <section aria-labelledby="licenses-title">
-      <h2 id="licenses-title" className="mt-10 text-lg font-semibold text-content-primary">{t("about:licensesTitle")}</h2>
+      <h2 id="licenses-title" className="mt-10 text-heading-2 text-content-primary">{t("about:licensesTitle")}</h2>
       <p className="mt-3 text-sm leading-relaxed text-content-tertiary">{t("about:tentacleLicense", { version })}</p>
       <p className="mt-2 text-sm text-content-tertiary">{t("about:sourceCode")}</p>
       <p className="text-sm">
         <a href={sourceUrl} target="_blank" rel="noopener noreferrer" onClick={externalLinkHandler(sourceUrl)}
-          className="break-all text-[var(--brand)] hover:underline">{sourceUrl}</a>
+          className="break-all text-accent hover:underline">{sourceUrl}</a>
       </p>
 
-      <h3 className="mt-8 text-base font-semibold text-content-primary">{t("about:thirdPartyTitle")}</h3>
+      <h3 className="mt-8 text-heading-3 text-content-primary">{t("about:thirdPartyTitle")}</h3>
       {groups.map((list, i) => (
         <div key={i} className="mt-3">
-          {i > 0 ? <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-quaternary">Tentacle TV Server</p> : null}
+          {i > 0 ? <p className="ui-eyebrow mb-1">Tentacle TV Server</p> : null}
           <ul className="divide-y divide-line-subtle">
             {list.map((c) => <ComponentRow key={`${c.name}-${c.version ?? ""}`} component={c} />)}
           </ul>
         </div>
       ))}
 
-      <h3 className="mt-8 text-base font-semibold text-content-primary">{t("about:licenseTextsTitle")}</h3>
+      <h3 className="mt-8 text-heading-3 text-content-primary">{t("about:licenseTextsTitle")}</h3>
       <ul className="mt-3 divide-y divide-line-subtle">
         {texts.map((id) => {
           const count = componentsUnder(platform, id).length + (platform === "web" ? componentsUnder("server", id).length : 0);
           return (
             <li key={id}>
               <button type="button" onClick={() => setOpen(id)}
-                className="flex w-full items-center justify-between gap-4 py-2.5 text-left">
-                <span className="text-sm font-medium text-[var(--brand)] hover:underline">{LICENSE_TEXT_TITLES[id]}</span>
-                <span className="shrink-0 text-xs text-content-quaternary">
+                className="group flex w-full items-center justify-between gap-4 rounded-chip py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+                <span className="text-sm font-semibold text-accent group-hover:underline">{LICENSE_TEXT_TITLES[id]}</span>
+                <span className="num shrink-0 text-xs text-content-tertiary">
                   {count > 0 ? t("about:licenseUsedBy", { count }) : t("about:licenseTentacle")}
                 </span>
               </button>

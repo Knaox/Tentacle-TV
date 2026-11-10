@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAutoSubmitPairingCode, useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
 import { accountConnectRefusalOf } from "@tentacle-tv/shared";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { BackButton } from "../components/ui/BackButton";
 import { fetchPairingServerUrl } from "../lib/pairingServerUrl";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
@@ -146,25 +148,30 @@ export function PairDevice() {
   return (
     <div className="px-4 pt-6 pb-12 md:px-12">
       <main className="mx-auto max-w-4xl">
-        <h1 className="mb-2 text-xl font-bold text-content-primary sm:text-2xl">
-          {t("pairing:pairYourTV")}
-        </h1>
-        <p className="mb-6 text-sm text-content-tertiary sm:mb-8">
-          {t("pairing:enterTVCode")}
-        </p>
+        <header className="mb-7 flex items-start gap-3">
+          <BackButton fallback="/" className="-ml-1 shrink-0" />
+          <div className="min-w-0 pt-0.5">
+            <h1 className="text-[1.875rem] font-[650] leading-[1.15] tracking-[-0.02em] text-content-primary">
+              {t("pairing:pairYourTV")}
+            </h1>
+            <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-content-secondary">
+              {t("pairing:enterTVCode")}
+            </p>
+          </div>
+        </header>
 
         {available === false ? (
           <PairingLockedNotice isAdmin={isAdmin} />
         ) : available === null ? (
-          <div className="flex justify-center rounded-xl border border-line-subtle bg-fill-faint p-10">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-line-strong border-t-content-primary" />
+          <div className="ui-panel flex justify-center p-10">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-fill-medium border-t-accent" />
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-line-subtle bg-fill-faint p-4 xs:p-6 sm:p-8">
+            <div className="ui-panel p-4 xs:p-6 sm:p-8">
               {status === "success" ? (
                 <div className="flex flex-col items-center gap-3 py-4">
-                  <div className="text-5xl text-status-success-fg">&#x2713;</div>
+                  <div className="text-status-success-fg"><CheckCircleIcon size={48} weight="fill" aria-hidden /></div>
                   <p className="text-lg font-semibold text-status-success-fg">
                     {t("pairing:tvPairedSuccess")}
                   </p>
@@ -186,13 +193,13 @@ export function PairDevice() {
                         onPaste={i === 0 ? handlePaste : undefined}
                         autoFocus={i === 0}
                         disabled={status === "pairing"}
-                        className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition xs:h-16 xs:w-14 xs:text-2xl ${
+                        className={`h-14 w-12 rounded-card text-center font-mono text-xl font-bold text-content-primary outline-none transition-colors duration-hover xs:h-16 xs:w-14 xs:text-2xl ${
                           status === "error"
-                            ? "bg-danger-surface ring-2 ring-status-error text-content-primary"
+                            ? "bg-danger-surface ring-2 ring-status-error"
                             : char
-                            ? "bg-[rgba(var(--brand-rgb),0.1)] ring-2 ring-[var(--brand)] text-content-primary"
-                            : "bg-fill-faint ring-1 ring-line-subtle text-content-primary"
-                        } focus:ring-2 focus:ring-[var(--brand)] disabled:opacity-50`}
+                            ? "bg-surface-3 ring-1 ring-line-strong"
+                            : "bg-surface-2 ring-1 ring-line-subtle"
+                        } focus:ring-2 focus:ring-line-focus disabled:opacity-50`}
                       />
                     ))}
                   </div>
@@ -209,8 +216,7 @@ export function PairDevice() {
                     {status === "error" ? (
                       <button
                         onClick={handleReset}
-                        className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover"
-                       
+                        className="btn btn-solid"
                       >
                         {t("common:retry")}
                       </button>
@@ -218,12 +224,11 @@ export function PairDevice() {
                       <button
                         onClick={handleSubmit}
                         disabled={!canSubmit}
-                        className="rounded-lg h-11 px-5 bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition hover:bg-cta-primary-bg-hover disabled:cursor-not-allowed disabled:opacity-40"
-                       
+                        className="btn btn-solid"
                       >
                         {status === "pairing" ? (
                           <span className="flex items-center gap-2">
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-cta-primary-fg border-t-transparent" />
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                             {t("pairing:pairing")}
                           </span>
                         ) : (

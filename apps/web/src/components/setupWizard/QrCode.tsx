@@ -16,7 +16,7 @@ export const QrCode = memo(function QrCode({ value, label, size = 176 }: { value
     return { path: d, count: qr.size };
   }, [value]);
   return (
-    <svg role="img" aria-label={label} viewBox={`0 0 ${count} ${count}`} width={size} height={size} shapeRendering="crispEdges" className="rounded-lg bg-white">
+    <svg role="img" aria-label={label} viewBox={`0 0 ${count} ${count}`} width={size} height={size} shapeRendering="crispEdges" className="rounded-field bg-white">
       <path d={path} fill="#000" />
     </svg>
   );

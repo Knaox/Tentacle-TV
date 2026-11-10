@@ -22,7 +22,7 @@ import { WizardFrame } from "./WizardFrame";
 
 /** En natif, tant que rien ne répond (Jellyfin en cours d'installation) : une nouvelle recherche de temps en temps. */
 const NATIVE_RETRY_MS = 15_000;
-const linkBtn = "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary disabled:opacity-60";
+const linkBtn = "btn btn-ghost btn-sm";
 
 /**
  * TOUS les Jellyfin joignables, listés par le serveur (`/jellyfin/discover`),
@@ -173,8 +173,8 @@ export function JellyfinPicker({ wizard, title, subtitle }: { wizard: Wizard; ti
 
         <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
           {installBusy ? null : (
-            <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} gap-1.5`}>
-              <RefreshCw size={14} aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
+            <button type="button" onClick={() => void search()} disabled={searching} className={linkBtn}>
+              <RefreshCw size={14} weight="bold" aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
               {searching ? t("jfSearchingShort") : t("jfRescan")}
             </button>
           )}

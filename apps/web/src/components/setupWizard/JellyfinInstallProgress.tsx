@@ -14,9 +14,6 @@ const STAGE_LEAD: Readonly<Record<InstallStage, string>> = {
   start: "installStageStartLead",
 };
 
-/** Le dégradé de marque, comme les autres barres de l'assistant. */
-const BAR_STYLE = { background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" } as const;
-
 /**
  * L'ÉTAT de l'installation guidée de Jellyfin, dans le panneau de droite :
  * une phrase en grand qui dit ce qui se passe et ce qu'on attend de
@@ -30,7 +27,7 @@ export function JellyfinInstallProgress({ progress }: { progress: InstallProgres
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3">
-        <LoaderCircle size={22} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--brand-light)] motion-safe:animate-spin" />
+        <LoaderCircle size={22} aria-hidden="true" className="mt-0.5 shrink-0 text-accent motion-safe:animate-spin" />
         <div className="space-y-1">
           <p className="text-base font-semibold text-content-primary">{t(STAGE_TITLE[stage])}</p>
           <p>{t(STAGE_LEAD[stage])}</p>
@@ -39,7 +36,7 @@ export function JellyfinInstallProgress({ progress }: { progress: InstallProgres
 
       {stage === "download" ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-content-tertiary">{t(progress.message.key, progress.message.values)}</p>
+          <p className="num text-xs text-content-tertiary">{t(progress.message.key, progress.message.values)}</p>
           {progress.percent !== null ? (
             <div
               role="progressbar"
@@ -47,9 +44,9 @@ export function JellyfinInstallProgress({ progress }: { progress: InstallProgres
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress.percent}
-              className="h-1.5 overflow-hidden rounded-full bg-fill-subtle"
+              className="gauge h-1.5 rounded-full"
             >
-              <div className="h-full origin-left rounded-full transition-transform duration-500" style={{ ...BAR_STYLE, transform: `scaleX(${progress.percent / 100})` }} />
+              <i className="transition-transform duration-sheet-in ease-out" style={{ transform: `scaleX(${progress.percent / 100})` }} />
             </div>
           ) : null}
         </div>

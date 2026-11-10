@@ -19,7 +19,7 @@ export const GuideAdmin = memo(function GuideAdmin({ ctx, touch = false }: { ctx
       <h2 id="guide-admin-title" className="text-heading-1 text-content-primary">
         {t("partAdmin")}
       </h2>
-      <p className={GUIDE_PARAGRAPH}>{t("adminLead")}</p>
+      <p className={`${GUIDE_PARAGRAPH} max-w-[65ch]`}>{t("adminLead")}</p>
       <ol className="mt-5 space-y-3">
         {TRAILER_GUIDE_STEPS.map((step, index) => (
           <GuideStep key={step.id} step={step} number={index + 1} ctx={ctx} touch={touch} packaging={packaging} />

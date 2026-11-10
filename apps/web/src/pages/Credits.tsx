@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { PageTransition } from "../components/PageTransition";
+import { BackButton } from "../components/ui/BackButton";
 import { externalLinkHandler } from "../lib/openExternal";
 import { isDesktopApp } from "../desktop/bridge";
 import { useDesktopVersion } from "../hooks/useDesktopVersion";
@@ -43,47 +45,52 @@ export function Credits() {
 
   return (
     <PageTransition>
-    <div className="mx-auto max-w-2xl px-6 pt-12">
-      <h1 className="text-2xl font-bold text-content-primary">{t("about:creditsTitle")}</h1>
-      <p className="mt-3 text-sm leading-relaxed text-content-tertiary">
-        {t("about:creditsIntro")}
-      </p>
+    <div className="mx-auto max-w-2xl px-6 pb-16 pt-12">
+      <header className="flex items-start gap-3">
+        <BackButton fallback="/" className="-ml-1 shrink-0" />
+        <div className="min-w-0 pt-0.5">
+          <h1 className="text-[1.875rem] font-[650] leading-[1.15] tracking-[-0.02em] text-content-primary">{t("about:creditsTitle")}</h1>
+          <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-content-secondary">
+            {t("about:creditsIntro")}
+          </p>
+        </div>
+      </header>
 
-      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:technologies")}</h2>
+      <h2 className="mt-10 text-heading-2 text-content-primary">{t("about:technologies")}</h2>
       <ul className="mt-3 divide-y divide-line-subtle">
         {TECH_STACK.map((tk) => (
-          <li key={tk.name} className="flex items-center justify-between py-2.5">
+          <li key={tk.name} className="flex items-center justify-between gap-4 py-2.5">
             <div>
               <a href={tk.url} target="_blank" rel="noopener noreferrer"
                 onClick={externalLinkHandler(tk.url)}
-                className="text-sm font-medium text-[var(--brand)] hover:underline">
+                className="text-sm font-semibold text-accent hover:underline">
                 {tk.name}
               </a>
-              <p className="text-xs text-content-quaternary">{tk.desc}</p>
+              <p className="text-xs text-content-tertiary">{tk.desc}</p>
             </div>
             <ExternalIcon />
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:compatibleServices")}</h2>
+      <h2 className="mt-10 text-heading-2 text-content-primary">{t("about:compatibleServices")}</h2>
       <ul className="mt-3 divide-y divide-line-subtle">
         {SERVICES.map((s) => (
-          <li key={s.name} className="flex items-center justify-between py-2.5">
+          <li key={s.name} className="flex items-center justify-between gap-4 py-2.5">
             <div>
               <a href={s.url} target="_blank" rel="noopener noreferrer"
                 onClick={externalLinkHandler(s.url)}
-                className="text-sm font-medium text-[var(--brand)] hover:underline">
+                className="text-sm font-semibold text-accent hover:underline">
                 {s.name}
               </a>
-              <p className="text-xs text-content-quaternary">{s.desc}</p>
+              <p className="text-xs text-content-tertiary">{s.desc}</p>
             </div>
             <ExternalIcon />
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold text-content-primary">{t("about:license")}</h2>
+      <h2 className="mt-10 text-heading-2 text-content-primary">{t("about:license")}</h2>
       <p className="mt-3 text-sm leading-relaxed text-content-tertiary">
         {t("about:licenseText")}
       </p>
@@ -102,9 +109,5 @@ export function Credits() {
 }
 
 function ExternalIcon() {
-  return (
-    <svg className="h-4 w-4 flex-shrink-0 text-content-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-    </svg>
-  );
+  return <ArrowSquareOutIcon size={16} aria-hidden className="flex-shrink-0 text-content-quaternary" />;
 }

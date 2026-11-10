@@ -55,11 +55,11 @@ function TmdbBenefits() {
   const { t } = useTranslation("setupWizard");
   return (
     <>
-      <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">{t("tmdbBenefitsLabel")}</h2>
+      <h2 className="ui-eyebrow font-sans">{t("tmdbBenefitsLabel")}</h2>
       <ul className="space-y-2.5">
         {BENEFITS.map((id) => (
           <li key={id} className="flex items-start gap-2.5">
-            <Check size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--brand-light)]" />
+            <Check size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-content-tertiary" />
             <span>{t(`tmdbBenefit_${id}`)}</span>
           </li>
         ))}

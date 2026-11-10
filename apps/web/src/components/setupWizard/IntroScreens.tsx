@@ -86,12 +86,8 @@ export function WelcomeScreen({ wizard }: { wizard: Wizard }) {
     >
       <div className="space-y-6">
         <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-          <span
-            aria-hidden="true"
-            className="inline-flex h-28 w-28 shrink-0 items-center justify-center rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(var(--brand-rgb), 0.34) 0%, rgba(var(--brand-rgb), 0) 70%)" }}
-          >
-            <TentacleSvg size={88} style={{ filter: "drop-shadow(0 6px 22px rgba(var(--brand-rgb), 0.45))" }} />
+          <span aria-hidden="true" className="inline-flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-surface-2">
+            <TentacleSvg size={88} />
           </span>
           <p className="text-base leading-relaxed text-content-primary">{local ? t("welcomeLocal") : t("welcomeNeed")}</p>
         </div>
@@ -107,13 +103,13 @@ function WelcomePlan() {
   const { t } = useTranslation("setupWizard");
   return (
     <>
-      <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">{t("welcomePlanTitle")}</h2>
+      <h2 className="ui-eyebrow font-sans">{t("welcomePlanTitle")}</h2>
       <ol className="space-y-3">
         {WIZARD_PHASES.slice(1).map((phase, index) => (
           <li key={phase} className="flex items-start gap-3">
             <span
               aria-hidden="true"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(var(--brand-rgb),0.35)] bg-[var(--brand-soft)] text-xs font-semibold tabular-nums text-[var(--brand-light)]"
+              className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-content-secondary"
             >
               {index + 2}
             </span>

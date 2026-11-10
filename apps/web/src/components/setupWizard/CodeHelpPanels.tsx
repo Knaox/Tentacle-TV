@@ -16,10 +16,10 @@ interface PanelProps {
   containerId: string | null;
 }
 
-const mono = "rounded bg-fill-subtle px-1.5 py-0.5 font-mono text-[0.8125rem] text-content-primary";
+const mono = "rounded-chip bg-surface-3 px-1.5 py-0.5 font-mono text-[0.8125rem] text-content-primary";
 
 function Steps({ children }: { children: ReactNode }) {
-  return <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-[var(--brand-light)]">{children}</ol>;
+  return <ol className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-content-tertiary">{children}</ol>;
 }
 
 export function CodeHelpPanel({ tab, commands, containerId }: PanelProps) {
