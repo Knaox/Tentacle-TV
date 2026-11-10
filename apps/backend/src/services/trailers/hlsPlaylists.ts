@@ -8,6 +8,8 @@
 /*  refuser. Ici, rien que du texte : le maître ne garde que le H.264  */
 /*  (que tout Apple TV décode en matériel), sans sous-titres, sa       */
 /*  variante de départ en tête ; chaque URI renvoie vers le relais.    */
+/*  Pour un lecteur sans H.264 ni AAC (`open`) : les variantes VP9 du  */
+/*  même maître, et l'Opus de YouTube en piste audio (`open/`).        */
 /* ------------------------------------------------------------------ */
 
 import { audioTagOf, type AudioChoice, type AudioTag } from "./audioTracks";
@@ -71,6 +73,24 @@ function videoCodec(codecs: string | undefined): string {
 }
 
 const isH264 = (codec: string) => codec === "" || /^avc[13]\./i.test(codec);
+const isVp9 = (codec: string) => /^vp0?9/i.test(codec);
+
+/** La clé et le groupe de la piste Opus d'un maître libre : `p/opus.m3u8`, `s/opus/…`. */
+export const OPUS_KEY = "opus";
+
+/** Ce qui fait d'un maître un maître LIBRE (VP9 + Opus) : la piste Opus retenue (`open/openSource.ts`). */
+export interface OpenMasterOptions {
+  /** Ce que la piste est (originale, doublage humain) ; `null` : une seule piste, rien à en dire. */
+  audioChoice: AudioChoice | null;
+}
+
+/** La ligne d'une variante VP9 dont l'audio devient l'Opus du relais : ses codecs, son groupe. */
+function openInf(line: string, video: string): string {
+  const codecs = `CODECS="${video},opus"`;
+  const withCodecs = /CODECS="[^"]*"/.test(line) ? line.replace(/CODECS="[^"]*"/, codecs) : `${line},${codecs}`;
+  const audio = `AUDIO="${OPUS_KEY}"`;
+  return /,AUDIO="[^"]*"/.test(withCodecs) ? withCodecs.replace(/AUDIO="[^"]*"/, audio) : `${withCodecs},${audio}`;
+}
 
 /** La clé stable d'une URI googlevideo : son itag, le même d'une extraction à l'autre. */
 export function itagOf(url: string): string | undefined {
@@ -88,9 +108,10 @@ function variantAudioTag(line: string, uri: string): AudioTag | undefined {
 /**
  * Lit un maître et n'en garde que ce qu'un Apple TV lit sans faute, et UNE
  * piste audio : jamais un doublage automatique (`hlsAudio.ts`). `null` :
- * aucune variante H.264 jouable.
+ * aucune variante H.264 jouable. Avec `open` : les variantes VP9, leur audio
+ * remplacé par la piste Opus du relais (l'AAC du maître n'est pas gardé).
  */
-export function parseMaster(text: string, base: string, audioContext: MasterAudioContext = {}): RelayMaster | null {
+export function parseMaster(text: string, base: string, audioContext: MasterAudioContext = {}, open?: OpenMasterOptions): RelayMaster | null {
   const lines = text.split(/\r?\n/).map((l) => l.trim());
   if (lines[0] !== "#EXTM3U" || !lines.some((l) => l.startsWith("#EXT-X-STREAM-INF:"))) return null;
   const header = lines.filter((l) => HEADER_TAGS.some((tag) => l.startsWith(tag)));
@@ -107,6 +128,7 @@ export function parseMaster(text: string, base: string, audioContext: MasterAudi
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.startsWith("#EXT-X-MEDIA:") && attribute(line, "TYPE") === "AUDIO") {
+      if (open) continue;  // l'AAC du maître : illisible pour ce lecteur
       const uri = attribute(line, "URI");
       const group = attribute(line, "GROUP-ID");
       if (!uri || !group) continue;
@@ -119,20 +141,28 @@ export function parseMaster(text: string, base: string, audioContext: MasterAudi
       i++;
       const video = videoCodec(attribute(line, "CODECS"));
       const height = Number(/RESOLUTION=\d+x(\d+)/.exec(line)?.[1] ?? 0);
-      if (!isH264(video) || height > MAX_HEIGHT) continue;
+      if (!(open ? isVp9(video) : isH264(video)) || height > MAX_HEIGHT) continue;
       const upstream = new URL(uri, base).href;
+      // Les sous-titres de YouTube ne sont pas relayés : l'écran n'en montre pas.
+      const inf = line.replace(/,SUBTITLES="[^"]*"/, "").replace(/,CLOSED-CAPTIONS="[^"]*"/, "");
       variants.push({
         key: keyFor(upstream, `v${variants.length}`),
-        // Les sous-titres de YouTube ne sont pas relayés : l'écran n'en montre pas.
-        inf: line.replace(/,SUBTITLES="[^"]*"/, "").replace(/,CLOSED-CAPTIONS="[^"]*"/, ""),
+        inf: open ? openInf(inf, video) : inf,
         upstream,
         bandwidth: Number(attribute(line, "BANDWIDTH") ?? 0),
         height,
         video,
-        audioGroup: attribute(line, "AUDIO"),
-        audioTag: variantAudioTag(line, uri),
+        audioGroup: open ? OPUS_KEY : attribute(line, "AUDIO"),
+        audioTag: open ? undefined : variantAudioTag(line, uri),
       });
     }
+  }
+  if (open) {
+    if (!variants.length) return null;
+    // UNE piste : l'Opus que le relais réemballe (`open/openAudio.ts`) — sans amont à relire ici.
+    const line = `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="${OPUS_KEY}",NAME="Opus",DEFAULT=YES,AUTOSELECT=YES,URI=""`;
+    const tag: AudioTag = open.audioChoice ? { content: open.audioChoice.content, lang: open.audioChoice.lang } : { content: "unknown" };
+    return { variants, audio: [{ key: OPUS_KEY, line, upstream: "", group: OPUS_KEY, tag }], header, audioChoice: open.audioChoice };
   }
   const selected = selectMasterAudio(audio, variants, audioContext);
   if (!selected.variants.length) return null;

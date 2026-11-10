@@ -93,7 +93,7 @@ interface Demoted {
  */
 async function decide(
   key: string, target: PreviewTarget, account: string, dailymotion: boolean, lang: string | undefined,
-  known?: { ref: string; version?: TrailerVersion },
+  known?: { ref: string; version?: TrailerVersion }, open = false,
 ): Promise<PreviewOutcome> {
   const started = Date.now();
   const stages = newStages();
@@ -105,7 +105,7 @@ async function decide(
   if (stoppedEarly) return stoppedEarly;
   const catalog = await buildCatalog(target.catalog, account);
   stages.catalog = Date.now() - started;
-  let candidates: PreviewCandidate[] = previewCandidates(catalog.entries, { dailymotion });
+  let candidates: PreviewCandidate[] = previewCandidates(catalog.entries, { dailymotion, open });
   if (candidates.length === 0) {
     console.log(`[trailers] aperçu ${key} : aucune bande-annonce${catalog.complete ? "" : " (catalogue incomplet)"}`);
     // Une source finit encore en fond : la réponse viendra à la demande suivante.
@@ -153,12 +153,15 @@ async function decide(
  * L'aperçu de `target` pour `account` dans la langue `lang` : la décision
  * gardée, partagée ou prise ici. `dailymotion` : le client sait lire un aperçu
  * Dailymotion (`dm=1`) — sa décision est à part de celle d'un client d'avant.
+ * `open` : son lecteur ne décode que le VP9 et l'Opus (`open/delivery.ts`) —
+ * YouTube seul, par les entrées libres du relais ; sa décision est à part.
  */
 export async function decidePreview(
-  target: PreviewTarget, lang: string | undefined, account: string, options: { dailymotion?: boolean } = {},
+  target: PreviewTarget, lang: string | undefined, account: string, options: { dailymotion?: boolean; open?: boolean } = {},
 ): Promise<PreviewOutcome> {
-  const dailymotion = options.dailymotion === true;
-  const key = decisionKey(target, lang, dailymotion);
+  const open = options.open === true;
+  const dailymotion = options.dailymotion === true && !open;
+  const key = decisionKey(target, lang, dailymotion, open);
   const known = knownDecision(key);
   if (known?.kind === "refused") return known;
   const ready = known?.kind === "found" ? peekTrailer(known.ref) : null;
@@ -180,7 +183,7 @@ export async function decidePreview(
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
   // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que le catalogue répond.
   if (!heldReprise && !previewRefusal()) prewarmExtraction();
-  const task = decide(key, target, account, dailymotion, lang, known?.kind === "found" ? known : undefined)
+  const task = decide(key, target, account, dailymotion, lang, known?.kind === "found" ? known : undefined, open)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);
       return refuse(key, "unavailable");

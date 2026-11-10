@@ -26,6 +26,7 @@ import type { JellyfinUser } from "../middleware/auth";
 import { relayedStream } from "../services/trailers/relayPaths";
 import { orderSubtitles } from "../services/trailers/trailerSubtitles";
 import { isDailymotionId, isYouTubeId, refOfQuery, refPathSegment, type VideoRef } from "../services/trailers/videoRef";
+import { deliveryOfQuery, refForDelivery } from "../services/trailers/open/delivery";
 import { refreshTitleLanguage } from "../services/reco/titleLanguage";
 
 /** L'issue d'une lecture, telle que le lecteur la rend (`reportTrailerOutcome`) : `ytId` OU `dmId`. */
@@ -39,6 +40,19 @@ const OUTCOME = z.object({
 
 function refOf(request: FastifyRequest): VideoRef | null {
   return refOfQuery(request.query as { ytId?: unknown; dmId?: unknown });
+}
+
+/**
+ * La vidéo de la requête, dans le flux que le lecteur du client décode
+ * (`?dec=vp9,opus`, `open/delivery.ts`) : son entrée libre pour un lecteur sans
+ * H.264 ni AAC. `unplayable` : rien ne se lirait chez lui (Dailymotion n'existe
+ * qu'en H.264) — pas de flux relayé, le client garde ses autres recours.
+ */
+function playRefOf(request: FastifyRequest): VideoRef | "invalid" | "unplayable" {
+  const ref = refOf(request);
+  if (!ref) return "invalid";
+  const delivery = deliveryOfQuery(request.query as Record<string, unknown>);
+  return (delivery && refForDelivery(ref, delivery)) ?? "unplayable";
 }
 
 const LANG_RE = /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/;
@@ -77,7 +91,10 @@ export async function trailerRoutes(app: FastifyInstance) {
   startYtDlpUpdates();
 
   /**
-   * GET /api/trailers/resolve?ytId=<11 chars>|dmId=<id>[&lang=fr]
+   * GET /api/trailers/resolve?ytId=<11 chars>|dmId=<id>[&lang=fr][&dec=vp9,opus]
+   *   `dec` : ce que le lecteur du client décode, écrit par celui qui ne lit ni
+   *   H.264 ni AAC (bureau CEF) — le flux VP9 + Opus de la vidéo YouTube
+   *   (capacité `trailers.openCodecs`) ; une vidéo Dailymotion : 404.
    * → 200 { url, path, mimeType, expiresAt, qualities, subtitles }  le flux
    *        RELAYÉ par ce serveur :
    *        `path` à poser derrière l'adresse que le client connaît (la TV) ;
@@ -100,8 +117,9 @@ export async function trailerRoutes(app: FastifyInstance) {
    *        une heure si la vidéo est retirée ou privée)
    */
   app.get("/resolve", async (request: FastifyRequest, reply: FastifyReply) => {
-    const ref = refOf(request);
-    if (!ref) return reply.status(400).send({ error: "invalid ytId" });
+    const ref = playRefOf(request);
+    if (ref === "invalid") return reply.status(400).send({ error: "invalid ytId" });
+    if (ref === "unplayable") return reply.status(404).send({ error: "unavailable" });
     const refusal = playbackRefusal(ref, request);
     if (refusal) {
       console.warn(`[trailers] ${ref.key} : lecteur officiel en repli (${refusal.kind})`);
@@ -136,8 +154,9 @@ export async function trailerRoutes(app: FastifyInstance) {
    * plus yt-dlp. Sans effet si elle est déjà prête ou en cours.
    */
   app.get("/prepare", async (request: FastifyRequest, reply: FastifyReply) => {
-    const ref = refOf(request);
-    if (!ref) return reply.status(400).send({ error: "invalid ytId" });
+    const ref = playRefOf(request);
+    if (ref === "invalid") return reply.status(400).send({ error: "invalid ytId" });
+    if (ref === "unplayable") return reply.status(202).send({ status: "skipped" });
     // Jamais pendant une pause de YouTube, et une préparation compte comme la lecture qu'elle annonce.
     if (ref.kind === "youtube" && !holdsSource(ref.key) && (youtubeBreakerOpen() || takeYouTubePlayback(accountOf(request)))) {
       return reply.status(202).send({ status: "skipped" });

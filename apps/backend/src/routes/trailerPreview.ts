@@ -3,6 +3,8 @@
 /*                                                                     */
 /*  GET /api/trailers/preview?itemId=…&lang=fr                         */
 /*  GET /api/trailers/preview?tmdbId=…&mediaType=movie|tv&lang=fr      */
+/*  … &dec=vp9,opus : le lecteur du client ne lit ni H.264 ni AAC (le  */
+/*  bureau CEF) — le flux VP9 + Opus (capacité `trailers.openCodecs`). */
 /*                                                                     */
 /*  La langue qui classe les bandes-annonces est celle du SERVEUR      */
 /*  (`previewLanguage.ts`) ; `lang` ne vaut qu'à défaut.               */
@@ -20,6 +22,7 @@ import { resolveCatalogTitle } from "../services/trailers/catalog/catalogTitle";
 import { titleAllowedFor } from "../services/reco/recoRights";
 import { previewBody } from "../services/trailers/preview/previewBody";
 import { decidePreview, type PreviewTarget } from "../services/trailers/preview/previewDecision";
+import { deliveryFor } from "../services/trailers/open/delivery";
 import { previewLanguage } from "../services/trailers/preview/previewLanguage";
 import {
   type TrailerPreviewRequest, parseTrailerPreviewQuery, type TrailerPreviewRefusal, type TrailerPreviewRefusalBody,
@@ -64,7 +67,10 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
     }
     // La langue du serveur (métadonnées de Jellyfin), celle du client à défaut.
     const lang = await previewLanguage(query.lang);
-    const outcome = await decidePreview(previewTarget(query, lang), lang, userId, { dailymotion: query.dailymotion === true });
+    // Ce que le lecteur du client décode décide du flux (`open/delivery.ts`) : aucun qui se lise, rien à montrer.
+    const delivery = deliveryFor(query.decodes);
+    if (!delivery) return refuse(reply, 404, "unavailable");
+    const outcome = await decidePreview(previewTarget(query, lang), lang, userId, { dailymotion: query.dailymotion === true, open: delivery === "open" });
     if (outcome.kind === "limited") {
       // L'en-tête (exposé au CORS) et le corps disent la même chose : un client lit l'un ou l'autre.
       reply.header("Retry-After", String(outcome.retryAfterS));

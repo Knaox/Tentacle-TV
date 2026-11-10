@@ -34,6 +34,8 @@ export interface WarmJob {
   lang: string | undefined;
   account: string;
   dailymotion: boolean;
+  /** Le lecteur du client ne décode que le VP9 et l'Opus : les entrées libres du relais (`open/delivery.ts`). */
+  open?: boolean;
 }
 
 /**
@@ -96,7 +98,7 @@ export async function warmDecision(job: WarmJob): Promise<WarmOutcome> {
   const { response: catalog, answered } = await buildCatalogDetailed(job.target.catalog, job.account, WARM_CATALOG_BUDGET_MS, { priority: "background" });
   stages.catalog = Date.now() - started;
   if (!answered) return "unanswered";
-  let candidates = previewCandidates(catalog.entries, { dailymotion: job.dailymotion });
+  let candidates = previewCandidates(catalog.entries, { dailymotion: job.dailymotion, open: job.open === true });
   if (candidates.length === 0) {
     rememberRefusal(job.key, "no_trailer");
     return "decided";

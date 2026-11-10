@@ -1,0 +1,91 @@
+/* ------------------------------------------------------------------ */
+/*  Un WebM Opus de test, indexé EN TÊTE comme ceux de YouTube         */
+/*                                                                     */
+/*  2,4 s d'un la à 440 Hz, stéréo, 12 kb/s, trois grappes d'une       */
+/*  seconde, les Cues avant la première (5350 octets). Fabriqué par :    */
+/*    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=2.4" -ac 2 \\  */
+/*      -c:a libopus -b:a 12k -cluster_time_limit 1000 -reserve_index_space 256 -f webm */
+/*  Pour les tests seulement.                                          */
+/* ------------------------------------------------------------------ */
+
+const BASE64 = [
+  "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",
+].join("");
+
+/** Les octets du fichier. */
+export const OPUS_WEBM = new Uint8Array(Buffer.from(BASE64, "base64"));
+
+/** La réponse d'un googlevideo factice à une demande par plage (`bytes=a-b`), ou le fichier entier. */
+export function opusRangeResponse(range: string | null | undefined): Response {
+  const match = /^bytes=(\d+)-(\d*)$/.exec(range ?? "");
+  if (!match) return new Response(OPUS_WEBM, { headers: { "content-type": "audio/webm" } });
+  const start = Number(match[1]);
+  const end = Math.min(match[2] ? Number(match[2]) : OPUS_WEBM.length - 1, OPUS_WEBM.length - 1);
+  return new Response(OPUS_WEBM.slice(start, end + 1), {
+    status: 206, headers: { "content-type": "audio/webm", "content-range": `bytes ${start}-${end}/${OPUS_WEBM.length}` },
+  });
+}

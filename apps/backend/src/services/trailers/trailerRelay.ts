@@ -19,14 +19,15 @@ import { evictEntries } from "./relayEviction";
 import { fetchUpstream, isReadable } from "./relayUpstream";
 import { extractTrailerSource, type ExtractionOptions, type ExtractionResult } from "./ytExtract";
 import { extractDailymotionSource } from "./dailymotionSource";
-import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
 import { parseVideoRef } from "./videoRef";
 import type { SubtitleCandidate } from "./trailerSubtitles";
-import { fixedMaster, loadEntryMaster, loadEntryMedia, playedAudio, resolvedOf, TOKEN_SLOT, type Entry, type ResolvedTrailer } from "./relayEntry";
+import { loadEntryMaster, loadEntryMedia, playedAudio, resolvedOf, servable, TOKEN_SLOT, type Entry, type ResolvedTrailer } from "./relayEntry";
 import type { AudioChoice } from "./audioTracks";
 
 export { fetchUpstream, isReadable, resolvedOf, TOKEN_SLOT };
+// Ce que les routes lisent d'une vidéo résolue (maître, listes, segments, reprises) : `relayTargets.ts`.
+export { masterTemplate, mediaTemplate, opusSegmentOf, progressiveTarget, relayAttempts, segmentTarget } from "./relayTargets";
 export type { Entry, ResolvedTrailer };
 
 /** Un trou de dix minutes avant l'échéance : une bande-annonce entamée doit pouvoir finir. */
@@ -70,6 +71,35 @@ function extractSource(key: string, options: ExtractionOptions): Promise<Extract
     : extractTrailerSource(ref.id, options);
 }
 
+/** L'entrée d'une vidéo fraîchement résolue (ou reprise) : libre si sa clé le dit (`o:<id>`). */
+function newEntry(ref: string, source: TrailerSource, subtitles: SubtitleCandidate[], validUntil: number, extractedAt: number, lastUsed = extractedAt): Entry {
+  const open = parseVideoRef(ref)?.kind === "youtube" && (parseVideoRef(ref) as { open?: true }).open === true;
+  return {
+    source, subtitles, subtitleTexts: new Map(), fixedMasters: new Map(), validUntil, extractedAt, lastUsed,
+    media: new Map(), loading: new Map(), ...(open ? { open: true as const } : {}),
+  };
+}
+
+/**
+ * L'AUTRE entrée de la même vidéo YouTube (H.264 ↔ libre), si le relais la
+ * tient : une extraction dit les deux flux à la fois (`trailerSource.ts`),
+ * elle n'est jamais refaite pour passer de l'un à l'autre.
+ */
+function siblingOf(ref: string): Entry | null {
+  const video = parseVideoRef(ref);
+  if (video?.kind !== "youtube") return null;
+  const sibling = entries.get(video.open ? video.id : `o:${video.id}`);
+  return sibling && sibling.validUntil > Date.now() ? sibling : null;
+}
+
+/** Une vidéo sans flux libre (ni VP9 ni Opus jouable) : son entrée libre n'existe pas — retenu une heure. */
+function refuseUnservable(ref: string, entry: Entry): Entry | null {
+  if (servable(entry)) return entry;
+  misses.set(ref, Date.now() + PERMANENT_MISS_MS);
+  console.warn(`[trailers] ${ref} : aucun flux VP9 + Opus pour cette vidéo`);
+  return null;
+}
+
 async function extract(ref: string, options: ExtractionOptions): Promise<Entry | null> {
   const started = Date.now();
   const result = await extractSource(ref, options);
@@ -88,10 +118,18 @@ async function extract(ref: string, options: ExtractionOptions): Promise<Entry |
   }
   misses.delete(ref);
   const now = Date.now();
-  const entry: Entry = {
-    source: result.source, subtitles: result.subtitles, subtitleTexts: new Map(), fixedMasters: new Map(),
-    validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map(), loading: new Map(),
-  };
+  const entry = refuseUnservable(ref, newEntry(ref, result.source, result.subtitles, result.source.expiresAt - EXPIRY_MARGIN_MS, now));
+  if (!entry) {
+    // Pas de flux libre, mais l'extraction est faite : elle sert l'entrée H.264 de la même vidéo,
+    // qu'un autre client n'aura pas à redemander à YouTube.
+    const video = parseVideoRef(ref);
+    if (video?.kind === "youtube" && video.open && !entries.has(video.id)) {
+      entries.set(video.id, newEntry(video.id, result.source, result.subtitles, result.source.expiresAt - EXPIRY_MARGIN_MS, now));
+      evict();
+      relayChanged();
+    }
+    return null;
+  }
   entries.set(ref, entry);
   evict();
   relayChanged();
@@ -110,7 +148,7 @@ export function resolveEntry(
   ref: string,
   { fresh = false, heldOnly = false, ...extraction }: { fresh?: boolean; heldOnly?: boolean } & ExtractionOptions = {},
 ): Promise<Entry | null> {
-  const known = entries.get(ref);
+  const known = heldEntry(ref);
   if (heldOnly) {
     if (!known || known.validUntil <= Date.now()) return Promise.resolve(null);
     known.lastUsed = Date.now();
@@ -166,60 +204,22 @@ export function heldAudio(ref: string): AudioChoice | undefined {
   return entry && entry.validUntil > Date.now() ? playedAudio(entry) : undefined;
 }
 
-/** La vidéo telle que le relais la tient, sans extraction ni lecture amont (`trailerPrepare.ts`). */
+/**
+ * La vidéo telle que le relais la tient, sans extraction ni lecture amont
+ * (`trailerPrepare.ts`). L'AUTRE entrée de la même vidéo YouTube (H.264 ↔
+ * libre) suffit : sa source dit les deux flux, celle-ci en naît sur place.
+ */
 export function heldEntry(ref: string): Entry | undefined {
-  return entries.get(ref);
-}
-
-/**
- * Les essais d'une lecture amont pour un jeton de cette portée : une lecture
- * (`/resolve`) en a deux — le second après une nouvelle extraction, si
- * googlevideo refuse l'URL ; un aperçu, un seul, sur la vidéo que le relais
- * tient (`relayToken.ts`) : l'oubliée se redemande à `/preview`, gardé.
- */
-export function relayAttempts(scope: RelayScope): Array<{ fresh: boolean; heldOnly: boolean }> {
-  return scope === "preview" ? [{ fresh: false, heldOnly: true }] : [{ fresh: false, heldOnly: false }, { fresh: true, heldOnly: false }];
-}
-
-/**
- * Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est
- * morte. Avec `height`, le maître réduit à cette qualité.
- */
-export async function masterTemplate(ref: string, height?: number, scope: RelayScope = "play"): Promise<string | null> {
-  for (const attempt of relayAttempts(scope)) {
-    const entry = await resolveEntry(ref, attempt);
-    if (!entry) return null;
-    const master = await loadMaster(entry);
-    if (master) return height ? fixedMaster(entry, master, height) : entry.masterText ?? null;
-    if (entry.source.kind !== "hls") return null;
-  }
-  return null;
-}
-
-/** Une liste de segments relayée (gabarit à jeton), avec une reprise si l'URL amont est morte. */
-export async function mediaTemplate(ref: string, key: string, scope: RelayScope = "play"): Promise<string | null> {
-  for (const attempt of relayAttempts(scope)) {
-    const entry = await resolveEntry(ref, attempt);
-    if (!entry) return null;
-    const media = await loadMedia(entry, key);
-    if (media) return media.text;
-  }
-  return null;
-}
-
-/** L'URL amont d'un segment (`index` ou `"init"`) et les en-têtes qui vont avec. */
-export async function segmentTarget(ref: string, key: string, index: number | "init", attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
-  const entry = await resolveEntry(ref, attempt);
-  if (!entry) return null;
-  const media = await loadMedia(entry, key);
-  const url = index === "init" ? media?.init : media?.segments[index];
-  return url ? { url, headers: entry.source.headers } : null;
-}
-
-/** L'URL amont du MP4 progressif (repli des vidéos sans HLS). */
-export async function progressiveTarget(ref: string, attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
-  const entry = await resolveEntry(ref, attempt);
-  return entry?.source.kind === "progressive" ? { url: entry.source.url, headers: entry.source.headers } : null;
+  const known = entries.get(ref);
+  if (known) return known;
+  const sibling = siblingOf(ref);
+  if (!sibling || (misses.get(ref) ?? 0) > Date.now()) return undefined;
+  const shared = refuseUnservable(ref, newEntry(ref, sibling.source, sibling.subtitles, sibling.validUntil, sibling.extractedAt, Date.now()));
+  if (!shared) return undefined;
+  entries.set(ref, shared);
+  evict();
+  relayChanged();
+  return shared;
 }
 
 /** Ce qu'une vidéo résolue garde d'un redémarrage : sa SOURCE seule (`previewMemoryStore.ts`). */
@@ -254,10 +254,7 @@ export function heldSources(now = Date.now()): HeldSource[] {
 export function restoreSources(list: readonly HeldSource[], now = Date.now()): void {
   for (const held of list) {
     if (held.validUntil <= now || entries.has(held.ytId)) continue;
-    entries.set(held.ytId, {
-      source: held.source, subtitles: held.subtitles, subtitleTexts: new Map(), fixedMasters: new Map(),
-      validUntil: held.validUntil, extractedAt: held.extractedAt, lastUsed: held.extractedAt, media: new Map(), loading: new Map(),
-    });
+    entries.set(held.ytId, newEntry(held.ytId, held.source, held.subtitles, held.validUntil, held.extractedAt));
   }
   evict();
 }

@@ -353,6 +353,13 @@ export const SERVER_CAPABILITIES = {
    *  (`/api/music/search-history`) et partagés entre le bureau, le web et le mobile ; effacer un élément ou tout.
    *  Sans elle : l'historique de l'appareil seul, comme avant. */
   "music.searchHistory": "1.41.0",
+  /** Les bandes-annonces en VP9 + Opus pour un lecteur SANS H.264 ni AAC (le bureau CEF : Chromium
+   *  sans codecs propriétaires). Le client DÉCLARE ce qu'il décode (`dec=vp9,opus` sur
+   *  `/api/trailers/preview`, `/preview/warm`, `/resolve`, `/prepare` — `trailers/trailerCodecs.ts`) ;
+   *  le relais lui sert le maître VP9 de YouTube et son Opus, réemballé sans réencodage. Sans elle,
+   *  ce client-là ne demande RIEN : ni aperçu au survol, ni lecteur de bandes-annonces relayé (il
+   *  garde le lecteur officiel de YouTube). Un client qui lit le H.264 ne la regarde pas. */
+  "trailers.openCodecs": "1.41.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

@@ -14,6 +14,7 @@
     "bench:notifications": "tsx test/notif-e2e/run.ts",
     "bench:reco": "tsx --env-file=.env test/reco-bench/run.ts",
     "bench:parental": "tsx test/parental-bench/run.ts",
+    "bench:trailers-open": "tsx test/trailers-open-bench/run.ts",
     "test:jellyfin-compat": "tsx test/jellyfin-compat/run.ts",
     "db:generate": "prisma generate",
     "db:migration": "tsx scripts/new-sqlite-migration.ts",

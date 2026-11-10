@@ -70,6 +70,8 @@ export interface EvictableEntry {
   fixedMasters: Map<number, string>;
   media: Map<string, unknown>;
   subtitleTexts: Map<string, string>;
+  /** La piste Opus d'une entrée libre (index, liste) : elle part avec les listes. */
+  opus?: unknown;
 }
 
 const isFull = (entry: EvictableEntry) => entry.master !== undefined || entry.media.size > 0 || entry.subtitleTexts.size > 0;
@@ -88,5 +90,6 @@ export function evictEntries(entries: Map<string, EvictableEntry>, now: number, 
     entry.fixedMasters.clear();
     entry.media.clear();
     entry.subtitleTexts.clear();
+    entry.opus = undefined;
   }
 }

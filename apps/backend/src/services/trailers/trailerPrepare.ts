@@ -7,7 +7,7 @@
 /*  vidéo (`trailerRelay.ts`) : le lecteur le trouve prêt.             */
 /* ------------------------------------------------------------------ */
 
-import { startVariant } from "./hlsPlaylists";
+import { OPUS_KEY, startVariant } from "./hlsPlaylists";
 
 /** Le plus petit départ d'un aperçu (densité 1, petite mini-carte) : jamais en dessous de 360p. */
 const MIN_START_HEIGHT = 360;
@@ -83,6 +83,8 @@ export async function warmStart(ytId: string): Promise<void> {
   await Promise.all([...keys].map(async (key) => {
     const media = await loadMedia(entry, key);
     if (!media) return;
+    // La piste Opus d'une entrée libre n'a pas d'URL par segment : son premier se lit par sa plage.
+    if (key === OPUS_KEY) return prefetchSegment(ytId, key, 0);
     if (media.init) prefetchSegment(ytId, key, "init");
     if (media.segments.length > 0) prefetchSegment(ytId, key, 0);
   }));

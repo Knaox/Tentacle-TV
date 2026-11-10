@@ -3,10 +3,12 @@
  * (`apps/backend/src/trailers/`, test miroir) : la liste (fusion, langue,
  * type), le contrat de l'aperçu au survol (`/api/trailers/preview`), celui de
  * sa préparation (`/api/trailers/preview/warm`) et celui du catalogue
- * (`/api/trailers/catalog`) avec ses règles.
+ * (`/api/trailers/catalog`) avec ses règles, et ce que le lecteur d'un client
+ * décode (`trailerCodecs.ts` : le flux que le relais lui sert).
  */
 
 export * from "./trailerList";
+export * from "./trailerCodecs";
 export * from "./trailerPreview";
 export * from "./trailerPreviewWarm";
 export * from "./trailerCatalog";

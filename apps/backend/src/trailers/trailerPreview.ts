@@ -18,9 +18,11 @@
  *
  *   cp packages/shared/src/trailers/trailerPreview.ts apps/backend/src/trailers/
  *
- * `trailersMirror.test.ts` (backend) refuse toute divergence. Aucun import :
- * le fichier compile seul des deux côtés.
+ * `trailersMirror.test.ts` (backend) refuse toute divergence. Un seul import,
+ * d'un fichier du même miroir : le fichier compile des deux côtés.
  */
+
+import { parseTrailerDecodes, TRAILER_DECODES_PARAM, trailerDecodesParam, type TrailerCodec } from "./trailerCodecs";
 
 /** La route, préfixe compris. */
 export const TRAILER_PREVIEW_ROUTE = "/api/trailers/preview";
@@ -51,6 +53,13 @@ export type TrailerPreviewRequest = (TrailerPreviewItemTarget | TrailerPreviewTm
    * `ytId`, n'en reçoit jamais.
    */
   dailymotion?: boolean;
+  /**
+   * Ce que le lecteur du client décode (`dec=vp9,opus`, `trailerCodecs.ts`) —
+   * écrit seulement par un client qui ne lit PAS le H.264 et l'AAC (bureau
+   * CEF), face à un serveur qui déclare `trailers.openCodecs`. Absent : le
+   * flux H.264 de toujours.
+   */
+  decodes?: readonly TrailerCodec[];
 };
 
 /** La vidéo retenue, par sa source (additif : un serveur d'avant ne rend que `ytId`). */
@@ -91,7 +100,7 @@ export interface TrailerPreview {
   mimeType: TrailerPreviewMimeType;
   /** Au-delà (ms depuis l'époque), `path` ne s'ouvre plus : redemander l'aperçu. */
   expiresAt: number;
-  /** Les hauteurs H.264 du maître, de la plus haute à la plus basse ; vide pour un MP4. */
+  /** Les hauteurs du maître (H.264, ou VP9 pour un client qui l'a demandé), de la plus haute à la plus basse ; vide pour un MP4. */
   heights: number[];
   /** Un maître RÉDUIT à chaque hauteur, la meilleure en tête ; vide pour un MP4. */
   qualities: TrailerPreviewQuality[];
@@ -173,9 +182,13 @@ export function parseTrailerPreviewQuery(query: Readonly<Record<string, unknown>
   const rawTmdb = single(query.tmdbId);
   const lang = previewLangOf(single(query.lang));
   const dailymotion = single(query.dm) === "1";
+  const rawDecodes = query[TRAILER_DECODES_PARAM];
+  // Deux fois le paramètre : illisible, donc « ne décode rien » — jamais le H.264 par défaut.
+  const decodes = rawDecodes === undefined ? null : parseTrailerDecodes(Array.isArray(rawDecodes) ? "" : rawDecodes);
   const withLang = <T extends object>(target: T) => {
     const withLanguage = lang ? { ...target, lang } : target;
-    return dailymotion ? { ...withLanguage, dailymotion } : withLanguage;
+    const withSource = dailymotion ? { ...withLanguage, dailymotion } : withLanguage;
+    return decodes ? { ...withSource, decodes } : withSource;
   };
   if (rawItem !== undefined && rawItem !== "") {
     if (rawTmdb !== undefined || query.mediaType !== undefined) return null;
@@ -206,6 +219,8 @@ export function trailerPreviewPath(request: TrailerPreviewRequest): string | nul
   }
   if (lang) params.push(`lang=${encodeURIComponent(lang)}`);
   if (request.dailymotion) params.push("dm=1");
+  const decodes = trailerDecodesParam(request.decodes);
+  if (decodes !== null) params.push(`${TRAILER_DECODES_PARAM}=${decodes}`);
   return `${TRAILER_PREVIEW_ROUTE}?${params.join("&")}`;
 }
 

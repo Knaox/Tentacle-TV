@@ -11,7 +11,8 @@
 /*  au-delà, on n'anticipe pas — le relais lira à la demande.          */
 /* ------------------------------------------------------------------ */
 
-import { fetchUpstream, segmentTarget } from "./trailerRelay";
+import { OPUS_KEY } from "./hlsPlaylists";
+import { fetchUpstream, opusSegmentOf, segmentTarget } from "./trailerRelay";
 
 export interface HeldSegment {
   body: Buffer;
@@ -57,6 +58,11 @@ function keep(id: string, segment: HeldSegment): void {
  * que le relais ne tient plus n'est pas anticipée.
  */
 async function readSegment(ytId: string, key: string, index: SegmentIndex): Promise<HeldSegment | null> {
+  // La piste Opus d'une entrée libre : sa grappe lue et réemballée (`open/openAudio.ts`).
+  if (key === OPUS_KEY) {
+    const segment = await opusSegmentOf(ytId, index, { heldOnly: true }, AbortSignal.timeout(FETCH_TIMEOUT_MS));
+    return segment && "body" in segment ? segment : null;
+  }
   const target = await segmentTarget(ytId, key, index, { heldOnly: true });
   if (!target) return null;
   const { res } = await fetchUpstream(target.url, target.headers, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });

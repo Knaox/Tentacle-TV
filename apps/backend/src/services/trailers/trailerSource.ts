@@ -11,9 +11,16 @@
 /*  Mesuré le 2026-10-02 (yt-dlp 2026.08.19) : `visionos` donne le     */
 /*  maître pour 15 bandes-annonces réelles sur 16 ; la 16ᵉ, « pour     */
 /*  enfants », n'a que le format 18 (nightly : 91 à 96).               */
+/*                                                                     */
+/*  La MÊME extraction dit aussi ce qu'un lecteur sans H.264 ni AAC    */
+/*  (le bureau CEF) peut recevoir (`open`) : les variantes VP9 du même */
+/*  maître, et l'Opus — que YouTube ne met PAS dans son HLS (son audio */
+/*  y est de l'AAC) mais sert en WebM à part (`open/openSource.ts`).   */
+/*  Relevé le 2026-11-10 (yt-dlp 2026.10.21, `visionos`).              */
 /* ------------------------------------------------------------------ */
 
 import { audioInventory, audioTagOf, isUnplayableAudio, type AudioInventory } from "./audioTracks";
+import { pickOpenSource, type OpenSource } from "./open/openSource";
 
 /** Les champs d'un format de `yt-dlp -j` dont le choix dépend. */
 export interface YtFormat {
@@ -28,6 +35,8 @@ export interface YtFormat {
   manifest_url?: string;
   http_headers?: Record<string, string>;
   has_drm?: boolean;
+  /** `low, DRC` : une piste à dynamique compressée — jamais prise pour l'Opus (`open/openSource.ts`). */
+  format_note?: string | null;
 }
 
 export type TrailerSource =
@@ -40,6 +49,8 @@ export type TrailerSource =
       heights: number[];
       /** Les pistes audio de la vidéo, quand YouTube en marque plusieurs (`audioTracks.ts`). */
       audio?: AudioInventory;
+      /** La même vidéo en VP9 + Opus, pour un lecteur sans H.264 ni AAC ; absent : YouTube ne l'offre pas ainsi. */
+      open?: OpenSource;
     }
   | { kind: "progressive"; url: string; headers: Record<string, string>; expiresAt: number; audio?: AudioInventory };
 
@@ -95,9 +106,10 @@ export function pickTrailerSource(formats: readonly YtFormat[], now = Date.now()
       const h = f.height ?? 0;
       if (f.manifest_url === masterUrl && isH264(f.vcodec) && h >= MIN_QUALITY_HEIGHT && h <= MAX_HEIGHT) heights.add(h);
     }
+    const open = pickOpenSource(usable, masterUrl, { minHeight: MIN_QUALITY_HEIGHT, maxHeight: MAX_HEIGHT });
     return {
       kind: "hls", masterUrl, headers: headersOf(format), expiresAt: parseExpiry(masterUrl, now),
-      heights: [...heights].sort((a, b) => b - a), ...withAudio,
+      heights: [...heights].sort((a, b) => b - a), ...withAudio, ...(open ? { open } : {}),
     };
   }
 

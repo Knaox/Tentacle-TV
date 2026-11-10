@@ -15,8 +15,9 @@ import { requestSignal } from "./jellyfinProxy/clientAbort";
 import { cutoffReason } from "./jellyfinProxy/streamLog";
 import { relayTokenExpiry, relayTokenScope, type RelayScope } from "../services/trailers/relayToken";
 import {
-  TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, relayAttempts, segmentTarget,
+  TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, opusSegmentOf, progressiveTarget, relayAttempts, segmentTarget,
 } from "../services/trailers/trailerRelay";
+import { OPUS_KEY } from "../services/trailers/hlsPlaylists";
 import { subtitleVtt } from "../services/trailers/trailerSubtitleRelay";
 import { heldSegment, type HeldSegment } from "../services/trailers/trailerSegments";
 import { parseVideoRef } from "../services/trailers/videoRef";
@@ -181,6 +182,17 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
 
     const signal = requestSignal(request, reply, SEGMENT_TIMEOUT_MS);
     try {
+      // La piste Opus d'une entrée libre (`o:<id>`) : sa grappe lue chez googlevideo et réemballée
+      // en MP4 fragmenté — mêmes reprises qu'un segment vidéo.
+      if (key === OPUS_KEY) {
+        for (const attempt of relayAttempts(access.scope)) {
+          const segment = await opusSegmentOf(access.ytId, index, attempt, signal);
+          if (segment && "refused" in segment && !attempt.fresh) continue;
+          if (segment && "body" in segment) return sendHeld(reply, segment, access);
+          break;
+        }
+        return reply.status(404).send({ error: "unavailable" });
+      }
       // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois — jamais pour un aperçu.
       for (const attempt of relayAttempts(access.scope)) {
         const target = await segmentTarget(access.ytId, key, index, attempt);
