@@ -30,10 +30,11 @@ describe("document public d'un partage", () => {
     expect(text).not.toMatch(/"t0"|jf:|api_key|entryId|art\//);
   });
 
-  it("plafonné à 1 000 titres, le reste dit", () => {
-    const doc = sharedDocumentOf(detail(1_003), "D");
-    expect(doc.tracks).toHaveLength(1_000);
-    expect(doc).toMatchObject({ total: 1_003, truncated: true });
+  it("9 000 titres partagés entiers ; au-delà du garde-fou (100 000), le reste dit", () => {
+    expect(sharedDocumentOf(detail(9_000), "D")).toMatchObject({ total: 9_000, truncated: false });
+    const doc = sharedDocumentOf(detail(100_003), "D");
+    expect(doc.tracks).toHaveLength(100_000);
+    expect(doc).toMatchObject({ total: 100_003, truncated: true });
   });
 
   const deps = (over: Partial<ShareDocumentDeps> = {}): ShareDocumentDeps => ({
