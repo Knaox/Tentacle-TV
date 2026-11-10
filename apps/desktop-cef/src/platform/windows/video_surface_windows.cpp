@@ -36,13 +36,15 @@ const char* formatName(DXGI_FORMAT f) {
 
 class WindowsVideoSurface final : public VideoSurface {
  public:
-  explicit WindowsVideoSurface(DcompContext& ctx) : ctx_(ctx) {
-    win::ok(ctx_.dcomp->CreateVisual(&visual_), "CreateVisual vidéo");
+  // Le périphérique DComp est celui du PROCESSUS (le même pour toutes les fenêtres) : la couche
+  // peut changer de fenêtre (PiP, Compositor::lendVideo) ; `hwnd_` dit laquelle la porte.
+  explicit WindowsVideoSurface(DcompContext& ctx) : hwnd_(ctx.hwnd), dcomp_(ctx.dcomp) {
+    win::ok(dcomp_->CreateVisual(&visual_), "CreateVisual vidéo");
   }
 
   ~WindowsVideoSurface() override {
     if (visual_) visual_->SetContent(nullptr);
-    ctx_.commit();
+    dcomp_->Commit();
   }
 
   void show() override {
@@ -60,7 +62,7 @@ class WindowsVideoSurface final : public VideoSurface {
     const double k = backingScale();
     visual_->SetOffsetX(float(std::round(frame.x * k)));
     visual_->SetOffsetY(float(std::round(frame.y * k)));
-    ctx_.commit();
+    dcomp_->Commit();
     const PixelSize px = pixelSize();
     if ((px.w != last_.w || px.h != last_.h) && px.w > 0 && px.h > 0) {
       last_ = px;
@@ -68,8 +70,13 @@ class WindowsVideoSurface final : public VideoSurface {
     }
   }
 
-  double backingScale() const override { return win::dpiScale(ctx_.hwnd); }
+  double backingScale() const override { return win::dpiScale(hwnd_); }
   void* nativeLayer() override { return visual_.Get(); }  // IDCompositionVisual*
+  // La fenêtre qui porte la couche (posée par le compositeur qui l'insère) : son DPI fait la
+  // taille en pixels, donc celle de la chaîne de mpv (d3d11-composition-size).
+  void setHostWindow(void* nativeWindow) override {
+    if (nativeWindow) hwnd_ = static_cast<HWND>(nativeWindow);
+  }
 
   PixelSize pixelSize() const override {
     const double k = backingScale();
@@ -115,13 +122,14 @@ class WindowsVideoSurface final : public VideoSurface {
       s.opaque = d.AlphaMode != DXGI_ALPHA_MODE_PREMULTIPLIED;
     }
     RECT r{};
-    GetWindowRect(ctx_.hwnd, &r);
+    GetWindowRect(hwnd_, &r);
     const double k = backingScale();
     s.windowFrame = {r.left / k, r.top / k, (r.right - r.left) / k, (r.bottom - r.top) / k};
     // Plein écran au sens de SDL3 (fenêtre sans bordure à la taille de l'écran).
-    MONITORINFO mi{sizeof mi};
-    if (GetMonitorInfoW(MonitorFromWindow(ctx_.hwnd, MONITOR_DEFAULTTONEAREST), &mi))
-      s.windowFullscreen = EqualRect(&mi.rcMonitor, &r) && !(GetWindowLongW(ctx_.hwnd, GWL_STYLE) & WS_CAPTION);
+    MONITORINFO mi{};
+    mi.cbSize = sizeof mi;
+    if (GetMonitorInfoW(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &mi))
+      s.windowFullscreen = EqualRect(&mi.rcMonitor, &r) && !(GetWindowLongW(hwnd_, GWL_STYLE) & WS_CAPTION);
     return s;
   }
 
@@ -130,10 +138,11 @@ class WindowsVideoSurface final : public VideoSurface {
  private:
   void applyContent() {
     visual_->SetContent(visible_ ? chain_.Get() : nullptr);
-    ctx_.commit();
+    dcomp_->Commit();
   }
 
-  DcompContext& ctx_;
+  HWND hwnd_;
+  ComPtr<IDCompositionDevice> dcomp_;
   ComPtr<IDCompositionVisual> visual_;
   ComPtr<IDXGISwapChain1> chain_;
   bool visible_ = false;

@@ -33,6 +33,10 @@ class WindowsPartFile final : public PartFile {
       const DWORD chunk = static_cast<DWORD>(length > 0x40000000 ? 0x40000000 : length);
       DWORD written = 0;
       if (!WriteFile(handle_, bytes, chunk, &written, &at)) fail("WriteFile", target_);
+      if (written == 0) {  // réussite sans un octet : jamais attendu, mais la boucle tournerait
+        SetLastError(ERROR_WRITE_FAULT);
+        fail("WriteFile", target_);
+      }
       bytes += written;
       length -= written;
       offset += written;
@@ -57,8 +61,11 @@ class WindowsPartFile final : public PartFile {
 }  // namespace
 
 std::unique_ptr<PartFile> PartFile::open(const std::filesystem::path& target, Mode mode) {
-  // Partage en lecture : le lecteur peut ouvrir un média pendant qu'il s'écrit (comme Node).
-  const HANDLE handle = CreateFileW(target.c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr,
+  // Partage total, comme Node (libuv ouvre avec les trois) : le lecteur lit un média pendant
+  // qu'il s'écrit, une reprise peut rouvrir le `.part` avant que l'ancien descripteur soit
+  // fermé, et le renommage final passe même s'il reste ouvert ailleurs.
+  const DWORD share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+  const HANDLE handle = CreateFileW(target.c_str(), GENERIC_WRITE, share, nullptr,
                                     mode == Mode::Truncate ? CREATE_ALWAYS : OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (handle == INVALID_HANDLE_VALUE) fail("CreateFileW", target);
   return std::make_unique<WindowsPartFile>(handle, target);

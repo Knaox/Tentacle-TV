@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { cache, capture, die, repo, run, say } from "./common.mjs";
-import { download, fetchArchive, verify } from "./fetch.mjs";
+import { download, fetchArchive, tarBinary, verify } from "./fetch.mjs";
 
 /** SDL3 : paquet de développement Visual C++ de la Release officielle (même version que macOS). */
 export const SDL3_VC_PIN = {
@@ -53,6 +53,17 @@ export const MPV_PIN = {
     "render_gl.h": "48662c0ed9872a14dd9e1684105c97f69f94a0414709c254c5d372adc41d2e69",
     "stream_cb.h": "188e58b6d14383e15a5dffdc4ecebbdfbf2e412b9c099ff21b571f747a8ce32d",
   },
+};
+
+/**
+ * SQLite (hors ligne, src/offline/sqlite.cmake) : l'amalgamation officielle 3.46.1, LE MÊME
+ * épinglage que sqlite.cmake (qui la télécharge sinon lui-même, à la configuration). Rangée là
+ * où sqlite.cmake la cherche — archive gardée dans dl/ : CMake en revérifie l'empreinte.
+ */
+export const SQLITE_PIN = {
+  version: "3460100",
+  sha256: "77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784",
+  size: 2764032,
 };
 
 /** vcvarsall.bat de la dernière installation de Visual Studio dotée du C++ (vswhere), ou null. */
@@ -125,6 +136,22 @@ export async function ensureSodium() {
   const lib = path.join(dest, "x64", "Release", "v143", "static", "libsodium.lib");
   if (!fs.existsSync(lib)) die(`libsodium : ${lib} absent de l'archive`);
   return { include: path.join(dest, "include"), lib };
+}
+
+export async function ensureSqlite() {
+  const base = path.join(cache, "deps", "sqlite");
+  const dir = path.join(base, `sqlite-amalgamation-${SQLITE_PIN.version}`);
+  const zip = path.join(base, "dl", `sqlite-amalgamation-${SQLITE_PIN.version}.zip`);
+  if (fs.existsSync(path.join(dir, "sqlite3.c")) && !verify(zip, { sha256: SQLITE_PIN.sha256 })) return dir;
+  if (!fs.existsSync(zip) || verify(zip, { sha256: SQLITE_PIN.sha256 })) {
+    await download(`https://www.sqlite.org/2024/sqlite-amalgamation-${SQLITE_PIN.version}.zip`, zip, SQLITE_PIN.size);
+  }
+  const bad = verify(zip, { sha256: SQLITE_PIN.sha256 });
+  if (bad) die(`SQLite : ${bad}`);
+  run(tarBinary(), ["-xf", zip, "-C", base]);
+  if (!fs.existsSync(path.join(dir, "sqlite3.c"))) die(`SQLite : ${dir}/sqlite3.c absent après extraction`);
+  say(`SQLite ${SQLITE_PIN.version} prêt : ${dir}`);
+  return dir;
 }
 
 /** nlohmann/json : en-têtes + un fichier de configuration CMake (find_package CONFIG). */

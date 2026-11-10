@@ -81,7 +81,7 @@ export async function download(url, dest, sizeHint = 0) {
 }
 
 /** `tar` du système : bsdtar de Windows (System32) en priorité, qui lit bz2 et zip. */
-function tarBinary() {
+export function tarBinary() {
   if (platform === "win32") {
     const sys = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "tar.exe");
     if (fs.existsSync(sys)) return sys;

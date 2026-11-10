@@ -8,7 +8,7 @@ import path from "node:path";
 import { buildName, cache, desktopVersion, die, dry, root, run, say } from "./common.mjs";
 import { ensureCef } from "./cef.mjs";
 import { cefProfileFor } from "./profile.mjs";
-import { ensureJson, ensureMpvPrefix, ensureSdl3, ensureSodium, msvcEnv, vcvarsall, whichIn } from "./windows-deps.mjs";
+import { ensureJson, ensureMpvPrefix, ensureSdl3, ensureSodium, ensureSqlite, msvcEnv, vcvarsall, whichIn } from "./windows-deps.mjs";
 
 export { SDL3_VC_PIN } from "./windows-deps.mjs";
 
@@ -81,6 +81,7 @@ export const windows = {
     state.sodium = await ensureSodium();
     state.jsonDir = await ensureJson();
     state.mpv = await ensureMpvPrefix(state.env);
+    await ensureSqlite();  // hors ligne : l'amalgamation que src/offline/sqlite.cmake lira
     state.ready = true;
   },
   async build() {
