@@ -1,10 +1,11 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   creditRoleKey, formatCalendarDate, type CreditRole, type PersonLife, type SearchMediaItem,
 } from "@tentacle-tv/shared";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { markImageSeen, wasImageSeen } from "../../lib/seenImages";
 import { PersonPortrait } from "./PersonPortrait";
 
 interface PersonHeroProps {
@@ -20,23 +21,29 @@ interface PersonHeroProps {
   countLabel: string | null;
   /** Posé à droite du nom : le cœur « j'aime ». */
   trailing?: React.ReactNode;
+  /** La couleur d'attente du portrait (`itemImageColor`), quand le serveur la donne. */
+  portraitColor?: string | null;
 }
 
 /**
  * L'en-tête de la page d'une personne : le décor emprunté à son titre le mieux
  * noté, son portrait, son nom, ses métiers et ce que Jellyfin sait de sa vie.
  *
- * Le décor est FIXE — ni ken burns ni flou : il ne coûte qu'une image, et le
- * voile qui le recouvre en bas le rend au fond de page, dans les deux thèmes
- * (le texte est thémé, pas posé sur le média).
+ * Le décor est FIXE — ni ken burns ni flou ni lueur : il ne coûte qu'une image,
+ * et le voile qui le recouvre en bas le rend au fond de page, dans les deux
+ * thèmes (le texte est thémé, pas posé sur le média). Il paraît en un seul
+ * fondu ; le portrait, sur sa couleur d'attente.
  */
 export const PersonHero = memo(function PersonHero({
-  id, name, imageTag, life, roles, backdrop, countLabel, trailing,
+  id, name, imageTag, life, roles, backdrop, countLabel, trailing, portraitColor,
 }: PersonHeroProps) {
   const { t, i18n } = useTranslation("media");
   const client = useJellyfinClient();
   const backdropUrl = backdrop ? client.getImageUrl(backdrop.Id, "Backdrop", { width: 1920, quality: 80 }) : null;
   const { broken, reportFailure } = useBrokenImage(backdropUrl);
+  // L'état du décor suit son ADRESSE ; déjà vu pendant la séance, il est posé sans fondu.
+  const [decor, setDecor] = useState(() => ({ url: backdropUrl, loaded: wasImageSeen(backdropUrl), instant: wasImageSeen(backdropUrl) }));
+  if (decor.url !== backdropUrl) setDecor({ url: backdropUrl, loaded: wasImageSeen(backdropUrl), instant: wasImageSeen(backdropUrl) });
   const locale = i18n.language || "fr";
 
   const facts: Array<{ label: string; value: string }> = [];
@@ -54,14 +61,19 @@ export const PersonHero = memo(function PersonHero({
   return (
     <header className="relative">
       <div aria-hidden className="absolute inset-x-0 top-0 h-[52vh] min-h-[320px] overflow-hidden">
+        {/* Le décor paraît en UN fondu, depuis l'encre de la page (déjà vu : là d'emblée). */}
         {backdropUrl !== null && !broken && (
           <img
             src={backdropUrl}
             alt=""
             decoding="async"
             draggable={false}
+            onLoad={() => {
+              markImageSeen(backdropUrl);
+              setDecor((d) => (d.url === backdropUrl ? { ...d, loaded: true } : d));
+            }}
             onError={reportFailure}
-            className="h-full w-full object-cover opacity-60"
+            className={`h-full w-full object-cover ${decor.instant ? "" : "transition-opacity duration-card ease-out"} ${decor.loaded ? "opacity-60" : "opacity-0"}`}
           />
         )}
         {/* Rendu au fond de page par le bas ET par la gauche, où vivent le
@@ -74,12 +86,6 @@ export const PersonHero = memo(function PersonHero({
               "linear-gradient(90deg, color-mix(in srgb, var(--surface-0) 70%, transparent) 0%, transparent 60%)",
           }}
         />
-        {/* Lueur de marque, immobile : la signature violet → rose de l'app.
-            Tenue au-dessus du bord bas de la boîte, qui la couperait net. */}
-        <div
-          className="absolute -left-40 top-[12%] h-[340px] w-[620px] rounded-full opacity-40"
-          style={{ background: "radial-gradient(closest-side, rgba(var(--brand-rgb), 0.35), transparent)" }}
-        />
       </div>
 
       <div className="relative flex flex-col gap-6 px-4 pt-24 sm:flex-row sm:items-end sm:gap-8 md:px-12 md:pt-[22vh]">
@@ -89,28 +95,29 @@ export const PersonHero = memo(function PersonHero({
           imageTag={imageTag}
           height={640}
           eager
-          className="w-36 shrink-0 rounded-[var(--radius-lg)] ring-1 ring-line-subtle sm:w-44 md:w-56"
+          color={portraitColor}
+          className="w-36 shrink-0 rounded-tile shadow-elev-2 sm:w-44 md:w-56"
         />
         <div className="min-w-0 flex-1 pb-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-content-tertiary">
+          <p className="ui-eyebrow">
             {t("personKicker")}
             {roles.length > 0 && (
-              <span className="text-brand-light"> · {roles.slice(0, 3).map((r) => t(creditRoleKey(r))).join(" · ")}</span>
+              <span className="text-content-secondary"> · {roles.slice(0, 3).map((r) => t(creditRoleKey(r))).join(" · ")}</span>
             )}
           </p>
           <div className="mt-2 flex items-center gap-3">
-            <h1 className="min-w-0 break-words text-display-3 font-bold tracking-tight text-content-primary md:text-display-2">
+            <h1 className="min-w-0 break-words text-display-3 text-content-primary md:text-display-2">
               {name}
             </h1>
             {trailing}
           </div>
-          {countLabel && <p className="mt-2 text-sm text-content-tertiary">{countLabel}</p>}
+          {countLabel && <p className="mt-2 text-sm tabular-nums text-content-secondary">{countLabel}</p>}
           {facts.length > 0 && (
             <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
               {facts.map((f) => (
                 <div key={f.label} className="min-w-0">
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{f.label}</dt>
-                  <dd className="mt-0.5 text-sm text-content-secondary">{f.value}</dd>
+                  <dt className="ui-eyebrow text-[11px]">{f.label}</dt>
+                  <dd className="mt-1 text-sm tabular-nums text-content-secondary">{f.value}</dd>
                 </div>
               ))}
             </dl>

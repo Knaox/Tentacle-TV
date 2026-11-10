@@ -25,8 +25,8 @@ export const PersonBiography = memo(function PersonBiography({ overview }: { ove
   const shown = expanded ? paragraphs : paragraphs.slice(0, folded);
 
   return (
-    <section className="max-w-3xl" aria-labelledby="person-bio-title">
-      <h2 id="person-bio-title" className="text-lg font-semibold text-content-primary">{t("media:personBiography")}</h2>
+    <section className="max-w-[65ch]" aria-labelledby="person-bio-title">
+      <h2 id="person-bio-title" className="text-heading-2 text-content-primary">{t("media:personBiography")}</h2>
       <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-content-secondary">
         {shown.map((p, i) => (
           <p key={i} className={!expanded && foldable && i === shown.length - 1 ? "line-clamp-5" : undefined}>{p}</p>
@@ -37,7 +37,7 @@ export const PersonBiography = memo(function PersonBiography({ overview }: { ove
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-2 text-sm font-semibold text-brand-light transition-colors hover:text-content-primary"
+          className="btn btn-ghost btn-sm -ml-3 mt-1.5"
         >
           {expanded ? t("common:showLess") : t("common:showMore")}
         </button>

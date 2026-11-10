@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { creditRoleKey, type CreditRole, type FilmographyFacets, type FilmographyKind } from "@tentacle-tv/shared";
+import { SegmentedControl } from "../library/SegmentedControl";
+import { chipCls } from "../library/filterChip";
 
 interface FilmographyFiltersProps {
   facets: FilmographyFacets;
@@ -11,9 +13,10 @@ interface FilmographyFiltersProps {
 }
 
 /**
- * Films / séries, puis le métier — deux rangées de pastilles, chacune avec son
- * compte. Une rangée qui ne départagerait rien (que des films, un seul rôle)
- * n'est pas affichée : un filtre sans choix n'est qu'un bruit.
+ * Films / séries en contrôle segmenté (trois états exclusifs, chacun avec son
+ * compte), puis le métier en pastilles de filtre — les mêmes que celles des
+ * bibliothèques. Une rangée qui ne départagerait rien (que des films, un seul
+ * rôle) n'est pas affichée : un filtre sans choix n'est qu'un bruit.
  */
 export const FilmographyFilters = memo(function FilmographyFilters({ facets, kind, role, onKind, onRole }: FilmographyFiltersProps) {
   const { t } = useTranslation("media");
@@ -27,25 +30,15 @@ export const FilmographyFilters = memo(function FilmographyFilters({ facets, kin
   if (!showKinds && !showRoles) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
       {showKinds && (
-        <div role="group" aria-label={t("personInLibraryTitle")} className="inline-flex rounded-full border border-line-subtle bg-fill-subtle p-1">
-          {kinds.map((k) => (
-            <button
-              key={k.value}
-              type="button"
-              aria-pressed={kind === k.value}
-              onClick={() => onKind(k.value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                kind === k.value
-                  ? "bg-[rgba(var(--brand-rgb),0.2)] text-content-primary ring-1 ring-[rgba(var(--brand-rgb),0.45)]"
-                  : "text-content-tertiary hover:text-content-primary"
-              }`}
-            >
-              {k.label} <span className="tabular-nums text-content-quaternary">{k.count}</span>
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label={t("personInLibraryTitle")}
+          markerId="person-kind-marker"
+          options={kinds}
+          value={kind}
+          onChange={onKind}
+        />
       )}
       {showRoles && (
         <div role="group" aria-label={t("personFilterRoleAll")} className="flex flex-wrap gap-2">
@@ -65,20 +58,12 @@ export const FilmographyFilters = memo(function FilmographyFilters({ facets, kin
   );
 });
 
+/** Une pastille de métier : la pastille de filtre des bibliothèques (`chipCls`), avec son compte. */
 function Chip({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count?: number }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "border-[rgba(var(--brand-rgb),0.55)] bg-[rgba(var(--brand-rgb),0.16)] text-content-primary"
-          : "border-line-subtle text-content-tertiary hover:border-line-strong hover:text-content-primary"
-      }`}
-    >
+    <button type="button" aria-pressed={active} onClick={onClick} className={`${chipCls(active)} inline-flex items-center`}>
       {label}
-      {count !== undefined && <span className="ml-1.5 tabular-nums text-content-quaternary">{count}</span>}
+      {count !== undefined && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
     </button>
   );
 }
