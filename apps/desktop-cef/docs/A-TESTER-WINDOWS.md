@@ -57,10 +57,9 @@ Le lanceur trouve Visual Studio (vswhere), télécharge et **vérifie** les dép
 d'Electron** (`%APPDATA%\com.tentacle.media`). L'exécutable :
 `%USERPROFILE%\.cache\tentacle-cef\build\tv\app\Tentacle.exe`.
 
-⚠️ Au premier téléchargement de CEF, le lanceur imprime « SHA-256 pas encore épinglée — … » : la
-SHA-1 du CDN a concordé ; **recopier cette ligne** (l'empreinte SHA-256) pour qu'elle soit épinglée
-dans `scripts/dev/cef.mjs` (le Mac du lot était en partage de connexion, sans droit de télécharger
-175 Mo).
+Toutes les dépendances sont épinglées par SHA-256 : CEF windows64 l'a été le 10/11 sur
+l'archive téléchargée sur réseau fixe (`371efdf0…`, SHA-1 du CDN concordante). Une archive qui
+diffère est refusée, sans rien extraire.
 
 Quitter par **Alt+F4 ou la croix** : Ctrl+C dans le terminal perd ce que la page vient d'écrire.
 
@@ -117,7 +116,6 @@ Envoyer : la sortie du terminal (build ou app), et le journal de CEF
 - Horloge d'images : le minuteur de CEF à la fréquence de l'écran (pas de vsync DWM dédiée).
 - Diagnostic HDR : DXGI ne relit pas l'espace d'une chaîne ; `pont.debug.surface` donne le format
   (RGB10A2 = sortie HDR) mais pas l'espace.
-- Taille minimale 900×600 d'Electron : à l'axe systeme (fenêtre, sur les trois OS).
 - Cas limite : une fin de fichier exactement pendant la relecture de `display-swapchain` (adresse
   lue dans mpv, puis gardée) — jamais vu, signalé dans `MpvPlayerPort::onPlayerEvent`.
 

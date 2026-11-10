@@ -30,7 +30,11 @@ export const CEF_PINS = {
     sha256: "806663a9eca2a8f7be185480ce7e779c5864b5cdd52bd77489053bdb1933feb8",  // 10/11, banc Fedora 44
     size: 431229830,
   },
-  windows64: { sha1: "b690e035689ee20ba9d2500ac8953815bc7ed46a", sha256: null, size: 174836914 },
+  windows64: {
+    sha1: "b690e035689ee20ba9d2500ac8953815bc7ed46a",
+    sha256: "371efdf09dce30569d9a0880727be79fea96ab5ba6f7be533c9332bb0790385a",  // 10/11, axe windows
+    size: 174836914,
+  },
   windowsarm64: { sha1: "446515cfaed802200749083ea64f8718e885c91f", sha256: null, size: 170136968 },
 };
 

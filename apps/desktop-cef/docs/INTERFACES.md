@@ -212,7 +212,6 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   par les espaces de couleur de la WSI Vulkan. **Sinon** : API de rendu OpenGL de libmpv dans une
   texture de NOTRE contexte EGL, posée sous la page (SDR). `TENTACLE_VIDEO_RENDER_API=1` force ce
   second chemin sous Wayland.
-- Windows : stubs (axe windows).
 
 - Par OS, ce que la sortie de mpv demande en plus (défauts = macOS, inchangé ; lot cef-parite,
   axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSizeOption()`
