@@ -68,6 +68,8 @@ textarea.field {
 
 .field:focus,
 .field:focus-visible {
+  /* L'anneau du champ est cette ombre : celui de la base (`:focus-visible`, écrit après) le doublait. */
+  outline: none;
   box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 3px rgba(var(--accent-rgb), 0.22);
 }
 

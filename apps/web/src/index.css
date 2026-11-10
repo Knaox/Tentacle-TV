@@ -54,6 +54,12 @@
   :focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
+  }
+
+  /* Le rayon de l'anneau ne vaut que pour ce qui n'a pas le sien (`:where` : spécificité nulle).
+     Écrit à la spécificité d'une classe, il passait après les feuilles du thème, importées plus
+     haut : au focus clavier, toute pilule (`.btn`, `.icon-btn`) devenait un rectangle. */
+  :where(:focus-visible) {
     border-radius: 4px;
   }
 
