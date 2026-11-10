@@ -9,6 +9,7 @@
 #include "offline/core/schema.h"
 #include "offline/glue/channels.h"
 #include "offline/glue/commands.h"
+#include "offline/glue/engine_runtime.h"
 #include "offline/glue/runtime.h"
 
 namespace tentacle::offline {
@@ -40,6 +41,7 @@ void registerStorageChannels(bridge::Registry& registry) {
   addCommand(registry, "downloads_background_set", [](const Json& p) {
     const bool on = args::boolean(p, "on");
     settingSet(runtime().db(), kBackgroundKey, on ? "1" : "0");
+    noteBackgroundSetting(on);  // la fermeture le lit sans toucher la base
     return Json(on);
   });
   addCommand(registry, "downloads_disk_free", [](const Json&) { return Json(freeSpace(runtime().volume())); });

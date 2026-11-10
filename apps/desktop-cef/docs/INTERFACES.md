@@ -240,7 +240,17 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   disk_free/disk_usage/asset_base` ; lecture `downloads_local_source/playback_set/
   playback_restart/reports_pending/reports_mark_synced/purge_due` ; `downloads_list`,
   `downloads_state_for_item`, `downloads_set_auto_delete`, `downloads_music_list`,
-  `downloads_music_collections`. Évènements `downloads://progress`, `downloads://changed`.
+  `downloads_music_collections` ; moteur `downloads_engine_start/enqueue/pause/resume/cancel/
+  delete`, `downloads_music_enqueue/remove`. Évènements `downloads://progress`,
+  `downloads://changed`.
+- Moteur (`core/engine.h`, coroutines C++20 sur le fil hors ligne, `core/task.h`) : flux du média
+  par CefURLRequest créé SUR le fil hors ligne (`glue/cef_transfer_net.cpp` : ni cache, ni cookies,
+  ni relance d'un 5xx), petites ressources et DELETE par `net::httpFetch` (axe reseau).
+- Cycle de vie (axe systeme) : `lifecycle::setTransfersProbe` (compteurs atomiques tenus par le
+  fil hors ligne : la fermeture ne touche ni le moteur ni la base), `keepSystemAwake` à chaque
+  bascule occupé / attente du serveur, `onSystemResume` → reprise des pauses système.
+- Pour Octave (axe medias) : `offline::keptAudioPath(userId, trackKey, done)`
+  (`glue/kept_audio.h`, `done` sur le fil principal) — le chemin de la copie gardée, ou rien.
 - `tentacle://local/<media|meta>/…` : affiches, JSON, planches, sous-titres (liste FERMÉE de
   `localAssets.ts`), lus sur le fil hors ligne ; jeton fictif `local` ; CSP de l'application
   (`appscheme::appCsp()`) sur chaque réponse, comme Electron.

@@ -5,6 +5,7 @@
 #include "app/app.h"
 #include "offline/core/utf8_path.h"
 #include "offline/glue/channels.h"
+#include "offline/glue/engine_runtime.h"
 #include "offline/glue/local_scheme.h"
 #include "offline/glue/offline_thread.h"
 #include "offline/glue/runtime.h"
@@ -35,15 +36,20 @@ void installInShell(bridge::Registry& registry, const AppContext& ctx) {
   registerStorageChannels(registry);
   registerPlaybackChannels(registry);
   registerMusicListChannels(registry);
+  registerEngineChannels(registry);
   registerListChannels(registry);
   registry.event("downloads://progress");
   registry.event("downloads://changed");
   serveLocalScheme();
+  installEngineRuntime();
   std::fprintf(stderr, "[offline] dossier de données : %s\n", pathToUtf8(userData).c_str());
 }
 
 void shutdown() {
-  thread::stop([] { runtime().closeDb(); });
+  thread::stop([] {
+    shutdownEngineRuntime();
+    runtime().closeDb();
+  });
 }
 
 }  // namespace tentacle::offline

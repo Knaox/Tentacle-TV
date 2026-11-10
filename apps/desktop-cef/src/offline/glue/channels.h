@@ -25,6 +25,10 @@ void registerListChannels(bridge::Registry& registry);
 /// `downloads_music_list`, `downloads_music_collections`.
 void registerMusicListChannels(bridge::Registry& registry);
 
+/// Le moteur : `downloads_engine_start`, `enqueue`, `pause`, `resume`, `cancel`, `delete`,
+/// `downloads_music_enqueue`, `downloads_music_remove`.
+void registerEngineChannels(bridge::Registry& registry);
+
 /// « Continuer en arrière-plan » (réglage de l'appareil, allumé par défaut). Fil hors ligne.
 bool backgroundTransfersOn();
 

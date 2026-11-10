@@ -85,9 +85,14 @@ target_link_libraries(tentacle_offline_compat PRIVATE tentacle_offline_core)
 target_compile_definitions(tentacle_offline_compat PRIVATE TENTACLE_REPO_ROOT="${TENTACLE_REPO_ROOT}")
 
 # --- Colle avec l'app : fil hors ligne, commandes de `window.tentacle`, schéma local ------
-if(TARGET tentacle_shell AND TARGET tentacle_bridge)
+if(TARGET tentacle_shell AND TARGET tentacle_bridge AND TARGET tentacle_net AND TARGET tentacle_lifecycle)
   add_library(tentacle_offline_glue STATIC
+    glue/cef_transfer_net.cpp
     glue/commands.cpp
+    glue/engine_channels.cpp
+    glue/engine_runtime.cpp
+    glue/fetchers.cpp
+    glue/kept_audio.cpp
     glue/list_channels.cpp
     glue/local_scheme.cpp
     glue/offline_shell.cpp
@@ -96,8 +101,9 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge)
     glue/session_channels.cpp
     glue/storage_channels.cpp
   )
-  target_link_libraries(tentacle_offline_glue PUBLIC tentacle_offline_core tentacle_shell tentacle_bridge)
-  target_compile_options(tentacle_offline_glue PRIVATE -Wall -Wextra -Wno-unused-parameter)
+  target_link_libraries(tentacle_offline_glue PUBLIC tentacle_offline_core tentacle_shell tentacle_bridge tentacle_net
+                                                    tentacle_lifecycle)
+  target_compile_options(tentacle_offline_glue PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
   # `src/app/modules.cpp` (dans tentacle_shell) appelle la colle : lien dans les deux sens.
   target_link_libraries(tentacle_shell PUBLIC tentacle_offline_glue)
 endif()
