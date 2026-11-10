@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import { UNSAFE_LocationContext as LocationContext, useLocation, useNavigationType, useOutlet } from "react-router-dom";
+import { PageEntranceContext } from "./PageEntranceContext";
+import { pageEntranceId } from "./pageEntranceMemory";
 import { RouteExit } from "./RouteExit";
 import { shellSectionKey } from "./routeKeys";
 
@@ -25,7 +27,10 @@ export function AnimatedOutlet() {
   return (
     <AnimatePresence initial={false}>
       <RouteExit key={shellSectionKey(location.pathname)}>
-        <LocationContext.Provider value={frozen}>{outlet}</LocationContext.Provider>
+        <LocationContext.Provider value={frozen}>
+          {/* L'identité d'entrée de la page (`PageTransition`) : figée avec son adresse. */}
+          <PageEntranceContext.Provider value={pageEntranceId(location)}>{outlet}</PageEntranceContext.Provider>
+        </LocationContext.Provider>
       </RouteExit>
     </AnimatePresence>
   );

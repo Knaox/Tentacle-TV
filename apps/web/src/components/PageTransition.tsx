@@ -1,8 +1,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useContext, useEffect, useState, type ReactNode } from "react";
-import { UNSAFE_LocationContext as LocationContext } from "react-router-dom";
 import { duration, pageTransition } from "../theme/motion";
-import { hasPageEntered, markPageEntered, pageEntranceId } from "./routeTransition/pageEntranceMemory";
+import { PageEntranceContext } from "./routeTransition/PageEntranceContext";
+import { hasPageEntered, markPageEntered } from "./routeTransition/pageEntranceMemory";
 
 /** Le fondu d'entrée, et une image de marge : passé ce délai, la page a été VUE. */
 const ENTERED_AFTER_MS = duration.page * 1000 + 20;
@@ -34,10 +34,10 @@ interface PageTransitionProps {
  */
 export function PageTransition({ children, className, skip = false }: PageTransitionProps) {
   const reduced = useReducedMotion();
-  // L'adresse sous laquelle la page est rendue (figée par `AnimatedOutlet` pour une page qui
-  // sort). Lue au montage seulement ; `null` hors routeur (bancs, tests) : rien n'est retenu.
-  const location = useContext(LocationContext)?.location;
-  const [entranceId] = useState(() => pageEntranceId(location));
+  // L'identité de la page (son adresse, figée pour une page qui sort), lue au montage
+  // seulement ; absente hors des enveloppes de route (tests) : rien n'est retenu.
+  const routeId = useContext(PageEntranceContext);
+  const [entranceId] = useState(routeId);
   const [seen] = useState(() => hasPageEntered(entranceId));
   // Retenue une fois le fondu allé au bout — par une minuterie, pas par la fin de l'animation :
   // la toute première page de l'application n'en joue aucune (`AnimatePresence initial={false}`),
