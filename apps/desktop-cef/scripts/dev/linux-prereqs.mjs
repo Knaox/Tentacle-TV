@@ -42,6 +42,9 @@ const PKG = {
   egl: ["libglvnd-devel", "libegl-dev libgles-dev", "libglvnd", "Mesa-libEGL-devel Mesa-libGLESv2-devel"],
   x11: ["libX11-devel", "libx11-dev", "libx11", "libX11-devel"],
   dbus: ["dbus-devel", "libdbus-1-dev", "dbus", "dbus-1-devel"],
+  // Moteur de mise à jour (src/update) : libcurl (pile de l'OS) et libsodium (ed25519).
+  curl: ["libcurl-devel", "libcurl4-openssl-dev", "curl", "libcurl-devel"],
+  sodium: ["libsodium-devel", "libsodium-dev", "libsodium", "libsodium-devel"],
   // Notre libmpv (fork + correctifs) : ses dépendances de build.
   ffmpeg: [
     "ffmpeg-free-devel",
@@ -99,6 +102,8 @@ export function checkBuildPrereqs() {
     ["egl", "glesv2"],
     ["x11", "x11"],
     ["dbus", "dbus-1"],
+    ["curl", "libcurl"],
+    ["sodium", "libsodium"],
   ];
   if (which("pkg-config") || which("pkgconf")) {
     for (const [key, mod] of libs) if (!pkgVersion(mod) && !missing.includes(key)) missing.push(key);

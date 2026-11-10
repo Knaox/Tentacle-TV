@@ -4,7 +4,7 @@
 #   --dist : paquet de distribution autonome (dylibs embarquées, voir docs/PAQUET.md) ;
 #            à donner à la PREMIÈRE configuration du dossier (l'option reste ensuite) ;
 #            sur un dossier déjà configuré en dev, build.sh refuse au lieu de construire le dev.
-# Respecte la règle du lot : ninja -j4 au plus.
+# Respecte la règle du lot : ninja -j4 au plus (TENTACLE_JOBS=<n> pour moins : lot cef-parite, -j3).
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cache="${TENTACLE_CEF_CACHE:-$HOME/.cache/tentacle-cef}"
@@ -39,5 +39,5 @@ if [[ ! -f "$build/build.ninja" ]]; then
   cmake -G Ninja -S "$root" -B "$build" -DCMAKE_BUILD_TYPE=Release -DTENTACLE_DIST="$dist" \
     ${extra[@]+"${extra[@]}"}
 fi
-ninja -C "$build" -j4 "$@"
+ninja -C "$build" -j"${TENTACLE_JOBS:-4}" "$@"
 echo "Paquet : $build/Tentacle.app"

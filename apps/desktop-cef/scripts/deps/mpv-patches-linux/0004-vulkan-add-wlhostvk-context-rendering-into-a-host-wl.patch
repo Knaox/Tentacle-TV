@@ -1,0 +1,273 @@
+From a6d45ac207d399f423e3af57120dc02d750c516c Mon Sep 17 00:00:00 2001
+From: Knaox <djamvn@gmail.com>
+Date: Tue, 10 Nov 2026 10:00:00 +0100
+Subject: [PATCH] vulkan: add wlhostvk context rendering into a host wl_surface
+
+--gpu-context=wlhostvk takes a struct mpv_wlhost_target (wl_display and
+wl_surface of the embedding application) from --wid and renders into the
+surface with no Wayland connection, window or input of its own;
+--wlhostvk-surface-size sets the swapchain size (VOCTRL_EXTERNAL_RESIZE).
+HDR goes through the Vulkan WSI color spaces.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ DOCS/man/options.rst              |  13 +++
+ meson.build                       |   3 +-
+ options/options.c                 |   3 +
+ options/options.h                 |   1 +
+ player/command.c                  |   3 +-
+ video/out/gpu/context.c           |   4 +
+ video/out/vulkan/context_wlhost.c | 134 ++++++++++++++++++++++++++++++
+ 7 files changed, 159 insertions(+), 2 deletions(-)
+ create mode 100644 video/out/vulkan/context_wlhost.c
+
+diff --git a/DOCS/man/options.rst b/DOCS/man/options.rst
+index e9569e5fae..d49b5a1223 100644
+--- a/DOCS/man/options.rst
++++ b/DOCS/man/options.rst
+@@ -7144,6 +7144,13 @@ them.
+ 
+     macOS with ``--gpu-context=moltenvk`` only.
+ 
++``--wlhostvk-surface-size=<WxH>``
++    Size, in pixels, of the swapchain for ``--gpu-context=wlhostvk``. There is
++    no window: the embedding application owns the ``wl_surface`` passed with
++    ``--wid`` (its role, position, scale and viewport) and must set its size.
++
++    Wayland with ``--gpu-context=wlhostvk`` only.
++
+ ``--gpu-sw``
+     Continue even if a software renderer is detected. This only works with
+     OpenGL/Vulkan backends. For d3d11, see ``--d3d11-warp``.
+@@ -7198,6 +7205,12 @@ them.
+         Vulkan on macOS (MoltenVK) into a ``CAMetalLayer`` owned by the
+         embedding application. Requires ``--wid`` be set to that layer; see
+         ``--moltenvk-surface-size``.
++    wlhostvk
++        Vulkan on Wayland into a ``wl_surface`` owned by the embedding
++        application (usually a subsurface below its own surface). Requires
++        ``--wid`` be set to a pointer to ``struct mpv_wlhost_target``
++        (``video/out/vulkan/context_wlhost.c``); see
++        ``--wlhostvk-surface-size``. Never auto-probed.
+ 
+     This is an object settings list option. See `List Options`_ for details.
+ 
+diff --git a/meson.build b/meson.build
+index 928436c08e..04bd0deb88 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1336,7 +1336,8 @@ if features['vulkan'] and features['android']
+ endif
+ 
+ if features['vulkan'] and features['wayland']
+-    sources += files('video/out/vulkan/context_wayland.c')
++    sources += files('video/out/vulkan/context_wayland.c',
++                     'video/out/vulkan/context_wlhost.c')
+ endif
+ 
+ if features['vulkan'] and features['win32-desktop']
+diff --git a/options/options.c b/options/options.c
+index 803513e235..3045b7bc46 100644
+--- a/options/options.c
++++ b/options/options.c
+@@ -256,6 +256,9 @@ static const m_option_t mp_vo_opt_list[] = {
+ #endif
+ #if HAVE_COCOA && HAVE_VULKAN
+     {"moltenvk-surface-size", OPT_SIZE_BOX(moltenvk_surface_size)},
++#endif
++#if HAVE_WAYLAND && HAVE_VULKAN
++    {"wlhostvk-surface-size", OPT_SIZE_BOX(wlhostvk_surface_size)},
+ #endif
+     {"swapchain-depth", OPT_INT(swapchain_depth), M_RANGE(1, VO_MAX_SWAPCHAIN_DEPTH)},
+     {"override-display-fps", OPT_REPLACED("display-fps-override")},
+diff --git a/options/options.h b/options/options.h
+index 0bb6363200..33d9574bdf 100644
+--- a/options/options.h
++++ b/options/options.h
+@@ -89,6 +89,7 @@ typedef struct mp_vo_opts {
+ 
+     struct m_geometry d3d11_composition_size;
+     struct m_geometry moltenvk_surface_size;
++    struct m_geometry wlhostvk_surface_size;
+ 
+     int swapchain_depth;  // max number of images to render ahead
+ 
+diff --git a/player/command.c b/player/command.c
+index a1adc76ca4..c40d86dda9 100644
+--- a/player/command.c
++++ b/player/command.c
+@@ -8348,7 +8348,8 @@ void mp_option_run_callback(struct MPContext *mpctx, struct mp_option_callback *
+     }
+ 
+     if (opt_ptr == &opts->vo->android_surface_size || opt_ptr == &opts->vo->d3d11_composition_size ||
+-        opt_ptr == &opts->vo->moltenvk_surface_size) {
++        opt_ptr == &opts->vo->moltenvk_surface_size ||
++        opt_ptr == &opts->vo->wlhostvk_surface_size) {
+         if (mpctx->video_out)
+             vo_control(mpctx->video_out, VOCTRL_EXTERNAL_RESIZE, NULL);
+     }
+diff --git a/video/out/gpu/context.c b/video/out/gpu/context.c
+index 62c1774f1c..088abb96b5 100644
+--- a/video/out/gpu/context.c
++++ b/video/out/gpu/context.c
+@@ -51,6 +51,7 @@ extern const struct ra_ctx_fns ra_ctx_vulkan_android;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_display;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_mac;
+ extern const struct ra_ctx_fns ra_ctx_vulkan_moltenvk;
++extern const struct ra_ctx_fns ra_ctx_vulkan_wlhost;
+ 
+ /* Direct3D 11 */
+ extern const struct ra_ctx_fns ra_ctx_d3d11;
+@@ -100,6 +101,9 @@ static const struct ra_ctx_fns *const contexts[] = {
+ #if HAVE_COCOA
+     &ra_ctx_vulkan_moltenvk,
+ #endif
++#if HAVE_WAYLAND
++    &ra_ctx_vulkan_wlhost,
++#endif
+ #endif
+ 
+ // OpenGL contexts:
+diff --git a/video/out/vulkan/context_wlhost.c b/video/out/vulkan/context_wlhost.c
+new file mode 100644
+index 0000000000..65f6f51cce
+--- /dev/null
++++ b/video/out/vulkan/context_wlhost.c
+@@ -0,0 +1,134 @@
++/*
++ * This file is part of mpv.
++ *
++ * mpv is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * mpv is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++// Vulkan context rendering into a wl_surface owned by the host application
++// (typically a wl_subsurface placed below the host's own surface). --wid is a
++// pointer to a struct mpv_wlhost_target (below) living in the host process.
++// mpv opens no Wayland connection, creates no window, binds no global and
++// handles no input: the host owns the surface, its role, its position, its
++// scale and its viewport. The swapchain size comes from
++// --wlhostvk-surface-size. HDR goes through the Vulkan WSI: when libplacebo
++// picks an HDR swapchain color space (see --target-colorspace-hint), the
++// driver describes the surface to the compositor (color-management-v1).
++
++#include <stdint.h>
++
++#include <wayland-client.h>
++
++#include "options/options.h"
++#include "video/out/gpu/context.h"
++
++#include "common.h"
++#include "context.h"
++#include "utils.h"
++
++#define MPV_WLHOST_MAGIC 0x574c4854u /* "THLW" */
++
++// Must match the host's definition (version 1).
++struct mpv_wlhost_target {
++    uint32_t magic;
++    uint32_t version;
++    struct wl_display *display;
++    struct wl_surface *surface;
++};
++
++struct priv {
++    struct mpvk_ctx vk;
++};
++
++static void wlhost_uninit(struct ra_ctx *ctx)
++{
++    struct priv *p = ctx->priv;
++
++    ra_vk_ctx_uninit(ctx);
++    mpvk_uninit(&p->vk);
++}
++
++static bool wlhost_init(struct ra_ctx *ctx)
++{
++    struct priv *p = ctx->priv = talloc_zero(ctx, struct priv);
++    struct mpvk_ctx *vk = &p->vk;
++
++    // Never auto-probed: --wid would be read as a pointer.
++    if (ctx->opts.probing)
++        goto error;
++
++    int64_t wid = ctx->vo->opts->WinID;
++    const struct mpv_wlhost_target *t = (const void *)(intptr_t)wid;
++    if (wid <= 0 || t->magic != MPV_WLHOST_MAGIC || t->version < 1 ||
++        !t->display || !t->surface)
++    {
++        MP_ERR(ctx, "wlhostvk: --wid must point to a struct mpv_wlhost_target\n");
++        goto error;
++    }
++
++    if (!mpvk_init(vk, ctx, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME))
++        goto error;
++
++    VkWaylandSurfaceCreateInfoKHR info = {
++        .sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
++        .display = t->display,
++        .surface = t->surface,
++    };
++    VkResult res = vkCreateWaylandSurfaceKHR(vk->vkinst->instance, &info, NULL,
++                                             &vk->surface);
++    if (res != VK_SUCCESS) {
++        MP_ERR(ctx, "wlhostvk: failed creating Wayland surface\n");
++        goto error;
++    }
++
++    // MAILBOX: a hidden surface gets no frame callbacks, and FIFO would block
++    // the VO thread until it is shown again (see context_wayland.c).
++    struct ra_ctx_params params = {0};
++    if (!ra_vk_ctx_init(ctx, vk, params, VK_PRESENT_MODE_MAILBOX_KHR))
++        goto error;
++
++    ra_add_native_resource(ctx->ra, "wl", t->display);
++    MP_VERBOSE(ctx, "wlhostvk: rendering into host wl_surface %p\n",
++               (void *)t->surface);
++    return true;
++
++error:
++    wlhost_uninit(ctx);
++    return false;
++}
++
++static bool wlhost_reconfig(struct ra_ctx *ctx)
++{
++    struct m_geometry *g = &ctx->vo->opts->wlhostvk_surface_size;
++    if (g->w <= 0 || g->h <= 0) {
++        MP_ERR(ctx, "wlhostvk: unknown surface size, set --wlhostvk-surface-size\n");
++        return false;
++    }
++    return ra_vk_ctx_resize(ctx, g->w, g->h);
++}
++
++// VOCTRL_EXTERNAL_RESIZE is handled by the VO itself (reconfig).
++static int wlhost_control(struct ra_ctx *ctx, int *events, int request, void *arg)
++{
++    return VO_NOTIMPL;
++}
++
++const struct ra_ctx_fns ra_ctx_vulkan_wlhost = {
++    .type           = "vulkan",
++    .name           = "wlhostvk",
++    .description    = "Wayland/Vulkan into a host wl_surface (--wid)",
++    .reconfig       = wlhost_reconfig,
++    .control        = wlhost_control,
++    .init           = wlhost_init,
++    .uninit         = wlhost_uninit,
++};
+-- 
+2.53.0
+

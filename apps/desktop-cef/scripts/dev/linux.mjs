@@ -2,7 +2,7 @@
 // build natif dans $cache/build/<nom>/ — l'exécutable et les ressources de CEF dans app/.
 import fs from "node:fs";
 import path from "node:path";
-import { buildName, cache, die, dry, root, run, say, warn, which } from "./common.mjs";
+import { buildName, cache, desktopVersion, die, dry, root, run, say, warn, which } from "./common.mjs";
 import { ensureCef } from "./cef.mjs";
 import { fetchArchive } from "./fetch.mjs";
 import { cefRuntimeLine, checkBuildPrereqs, missingCefRuntime, systemSdl3 } from "./linux-prereqs.mjs";
@@ -84,6 +84,8 @@ export const linux = {
     const defs = [
       "-DCMAKE_BUILD_TYPE=Release",
       `-DCEF_ROOT=${state.cef}`,
+      // Version courante du moteur de mise à jour (sans Info.plist hors macOS).
+      `-DTENTACLE_APP_VERSION=${desktopVersion()}`,
       state.mpv.kind === "fork" ? `-DMPV_PREFIX=${state.mpv.prefix}` : "-DTENTACLE_MPV_SYSTEM=ON",
       ...(state.sdl ? [`-DCMAKE_PREFIX_PATH=${state.sdl}`] : []),
     ];
