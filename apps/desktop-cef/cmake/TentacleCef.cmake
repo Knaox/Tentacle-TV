@@ -32,6 +32,15 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$" AND NOT APPLE)
 else()
   set(PROJECT_ARCH "arm64")
 endif()
+if(WIN32)
+  # Windows : PAS de bac à sable — avec lui (défaut de CEF), le wrapper se compile pour une app
+  # chargée par bootstrap.exe (CEF_USE_BOOTSTRAP) et contre l'API versionnée
+  # (CEF_API_VERSION_LAST), quand notre exe se lance seul, no_sandbox, sur l'API de nos
+  # en-têtes. Ni ATL : la recherche d'atlmfc remonte depuis cl.exe (inutile ici, et sans fin
+  # hors de l'arborescence de Visual Studio). Une valeur passée par -D l'emporte.
+  set(USE_SANDBOX OFF CACHE BOOL "Bac à sable de CEF (Windows : jamais, voir TentacleCef.cmake)")
+  set(USE_ATL OFF CACHE BOOL "ATL pour les exemples de CEF (Windows : jamais)")
+endif()
 find_package(CEF REQUIRED)
 if(OS_LINUX)
   # Les drapeaux du wrapper sont réglés pour le Clang de Chromium ; GCC (Fedora, Debian) y
