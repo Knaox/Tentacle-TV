@@ -21,6 +21,18 @@ export async function drive() {
   const d = await connect();
   const { cdp } = d;
   const extra = {
+    /** La fiche, puis « Lecture » — ou « Reprendre » quand une passe d'avant a laissé une position. */
+    async playFromDetail(id) {
+      await cdp.eval(`localStorage.setItem("tentacle_language", "fr"); location.assign("/media/${id}")`);
+      await sleep(2500);
+      await d.dismissModals();
+      if (!(await d.clickText("Lecture")) && !(await d.clickText("Reprendre"))) {
+        throw new Error("ni « Lecture » ni « Reprendre » sur la fiche");
+      }
+      await d.waitFor(async () => (await d.path()).startsWith("/watch/"));
+      await sleep(500);
+      await d.probe();
+    },
     /** Le diagnostic natif (hors window.tentacle). */
     state: () => cdp.eval("__shell.invoke('pip.debug.state')"),
     layers: () => cdp.eval("__shell.invoke('shell.debug.layers')"),
