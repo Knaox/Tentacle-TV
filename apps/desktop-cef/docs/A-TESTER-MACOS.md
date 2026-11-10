@@ -1,9 +1,11 @@
-# À tester sous macOS, à la main — Tentacle CEF
+# À essayer à la main sous macOS
 
-Ce que les bancs ne prouvent pas sans voler le focus ni faire surgir une fenêtre du système
-(`--background`). Une ligne par cas : le geste, l'attendu (Electron 1.42.0 fait de même).
+Ce que les bancs du lot (fenêtre en arrière-plan, `--background`, sans le vrai curseur ni le vrai
+clavier, sans voler le focus) ne pouvaient pas prouver. Une ligne par cas : le geste, puis l'attendu
+— le comportement d'Electron 1.42.0. Une section par axe ; chaque axe tient la sienne. Lancer :
+`pnpm dev:cef` à la racine du monorepo.
 
-## Cycle de vie et fenêtre (axe systeme)
+## systeme — cycle de vie et fenêtre
 
 - **Glisser la fenêtre** par la bande du haut (38 pt) → la fenêtre suit ; les boutons de la bande (et les feux) restent cliquables ; double-clic sur la bande → l'action du système (Zoom par défaut).
 - **Feux** : à gauche dans la bande, à 16 pt du bord, centrés ; après un plein écran (⌃⌘F puis sortie) et un redimensionnement, ils reviennent au même endroit.
@@ -17,9 +19,6 @@ Ce que les bancs ne prouvent pas sans voler le focus ni faire surgir une fenêtr
 - **Réglages › Téléchargements › Changer de dossier** → panneau en feuille, « Nouveau dossier » présent ; le choix est rendu à la page.
 - **Lecture d'un film, ne rien toucher 10 min** → l'écran ne s'éteint pas ; en pause/hors lecture il s'éteint au délai du système (`pmset -g assertions` : « Prevent display sleep » pendant la lecture seulement).
 - **Quitter en pleine lecture** → dans Jellyfin, la session n'est plus « en lecture » et la position de reprise est celle de la sortie (relais `jellyfin_session_post` de l'axe reseau branché).
-# À essayer sur le Mac, à la main
-
-Ce que les bancs ne peuvent pas prouver (ils relisent ce que macOS tient, sans presser de touche).
 
 ## medias — « À l'écoute », touches média
 
@@ -28,53 +27,46 @@ Ce que les bancs ne peuvent pas prouver (ils relisent ce que macOS tient, sans p
 - AirPods : retirer un écouteur → pause (si l'option est active) ; double tape → suivant.
 - Un film → « À l'écoute » montre le titre du film, la barre sans saut ; Suivant grisé sauf épisode suivant ; quitter le lecteur → la fiche disparaît.
 - Musique (Apple) joue, puis Tentacle → les touches vont à Tentacle ; Tentacle quitté → elles reviennent à Musique.
-# À essayer sur le Mac, à la main (lot cef-parite)
 
-Ce que les bancs ne prouvent pas sans le vrai curseur ni le vrai clavier. Une ligne par cas :
-geste → attendu (le comportement d'Electron).
-
-## PiP (axe pip)
+## pip — l'image dans l'image
 
 Lancer `pnpm dev:cef`, ouvrir un film, « Lecture en incrustation » (bouton du lecteur, ou `I`).
 
-- [ ] Survoler le PiP, application au premier plan → les contrôles paraissent ; la souris quitte le PiP → ils s'effacent.
-- [ ] Survoler le PiP alors qu'une AUTRE application est au premier plan → les contrôles paraissent aussi (aucun clic).
-- [ ] Premier clic sur « Pause » du PiP, Tentacle en arrière-plan → la lecture se met en pause du premier coup.
-- [ ] Après un clic dans le PiP, cliquer un bouton de la fenêtre principale → il répond du premier clic (le focus est revenu à la fenêtre principale).
-- [ ] Glisser l'image du PiP (flottant) → la fenêtre suit la main, le point saisi reste sous le curseur ; relâcher → elle reste là.
-- [ ] Tirer un coin du PiP (poignée de la page) → il grandit ou rétrécit au ratio de l'image, le coin opposé fixe.
-- [ ] Tirer un BORD ou un coin extérieur (zone du système, ~4 à 8 points) → le curseur de redimensionnement paraît sans clic ; le ratio et les bornes tiennent (256 × 144 au moins, 60 % de l'écran au plus).
-- [ ] Molette / pincement du pavé sur le PiP → la taille glisse, le coin le plus proche du bord reste fixe.
-- [ ] Double-clic sur l'image → retour au lecteur, l'image regagne sa place sans saut.
-- [ ] Ancré, réduire la fenêtre principale dans le Dock → le PiP disparaît ; la rouvrir → il revient à son coin.
-- [ ] Ancré, déplacer ou redimensionner la fenêtre principale → le PiP la suit, collé à son coin bas-droit.
-- [ ] Flottant, passer la fenêtre principale en plein écran puis changer de bureau → le PiP reste visible, au-dessus.
-- [ ] Ancré, Tentacle en arrière-plan sous une autre application → l'autre application couvre aussi le PiP.
-- [ ] Deux écrans d'échelles différentes : le PiP glissé sur l'autre écran → image nette, cadre à la bonne taille.
-- [ ] Cmd+Q pendant le PiP → l'app se ferme sans boîte d'erreur ; relancée, aucune lecture fantôme.
-- [ ] « Réduire les animations » (Réglages › Accessibilité › Affichage) → le PiP entre et revient sans animation.
-- [ ] PiP d'une vidéo HDR10 / Dolby Vision → l'image reste en HDR (plus lumineuse que l'interface), comme dans le lecteur.
-# À essayer à la main sur macOS (une ligne par cas : geste → attendu)
+- Survoler le PiP, application au premier plan → les contrôles paraissent ; la souris quitte le PiP → ils s'effacent.
+- Survoler le PiP alors qu'une AUTRE application est au premier plan → les contrôles paraissent aussi (aucun clic).
+- Premier clic sur « Pause » du PiP, Tentacle en arrière-plan → la lecture se met en pause du premier coup.
+- Après un clic dans le PiP, cliquer un bouton de la fenêtre principale → il répond du premier clic (le focus est revenu à la fenêtre principale).
+- Glisser l'image du PiP (flottant) → la fenêtre suit la main, le point saisi reste sous le curseur ; relâcher → elle reste là.
+- Tirer un coin du PiP (poignée de la page) → il grandit ou rétrécit au ratio de l'image, le coin opposé fixe.
+- Tirer un BORD ou un coin extérieur (zone du système, ~4 à 8 points) → le curseur de redimensionnement paraît sans clic ; le ratio et les bornes tiennent (256 × 144 au moins, 60 % de l'écran au plus).
+- Molette / pincement du pavé sur le PiP → la taille glisse, le coin le plus proche du bord reste fixe.
+- Double-clic sur l'image → retour au lecteur, l'image regagne sa place sans saut.
+- Ancré, réduire la fenêtre principale dans le Dock → le PiP disparaît ; la rouvrir → il revient à son coin.
+- Ancré, déplacer ou redimensionner la fenêtre principale → le PiP la suit, collé à son coin bas-droit.
+- Flottant, passer la fenêtre principale en plein écran puis changer de bureau → le PiP reste visible, au-dessus.
+- Ancré, Tentacle en arrière-plan sous une autre application → l'autre application couvre aussi le PiP.
+- Deux écrans d'échelles différentes : le PiP glissé sur l'autre écran → image nette, cadre à la bonne taille.
+- Cmd+Q pendant le PiP → l'app se ferme sans boîte d'erreur ; relancée, aucune lecture fantôme.
+- « Réduire les animations » (Réglages › Accessibilité › Affichage) → le PiP entre et revient sans animation.
+- PiP d'une vidéo HDR10 / Dolby Vision → l'image reste en HDR (plus lumineuse que l'interface), comme dans le lecteur.
 
-Ce que les bancs en arrière-plan ne peuvent pas jouer (vrai Finder, touches, app active).
-
-## navigateur (lot cef-parite)
+## navigateur — fichiers, glisser-déposer, bulles, sélecteurs
 
 - Glisser un fichier audio du Finder sur Octave → la boîte d'import s'ouvre avec ce fichier ; le glisser hors de la fenêtre puis le lâcher dans le Finder → rien ne change dans l'app.
 - Glisser une affiche ou un lien de Tentacle et le lâcher ailleurs dans la page → rien (ni navigation, ni onglet) ; Échap pendant un glisser d'un titre d'Octave → le glisser s'arrête, l'image fantôme disparaît.
 - App au premier plan : survoler un bouton-icône sans bouger ~1 s → bulle macOS (même délai que les autres apps) ; la bulle part au clic et quand l'app passe derrière.
 - Réglages › photo de profil › « Importer une photo » → feuille NSOpenPanel attachée à la fenêtre, « Afficher les options » → « Format: Image Files / All Files ».
 
-## Liquid Glass (axe verre) — macOS 26, Apple Silicon
+## verre — Liquid Glass (macOS 26, Apple Silicon)
 
 `pnpm dev:cef`, Réglages › Apparence › « Liquid Glass dans Tentacle » allumé, puis un film.
 
-- [ ] Contrôles du lecteur affichés → capsules en verre (retour, son, ±10/30 s, pause, vitesse, réglages, PiP, plein écran) : la vidéo se voit À TRAVERS, déformée au bord, comme sous Electron.
-- [ ] Bouger la souris après quelques secondes d'immobilité → les capsules MONTENT et s'allument en même temps que leurs glyphes (aucun décalage verre / icône) ; elles s'effacent plus vite qu'elles ne viennent.
-- [ ] Passage d'une scène très claire (neige) à une scène sombre → les glyphes des capsules passent du sombre au clair en une à deux secondes.
-- [ ] Fenêtre active puis inactive (cliquer une autre app) → le verre fonce et pâlit comme le verre du système, rien ne clignote.
-- [ ] Plein écran et retour, redimensionner la fenêtre pendant la lecture → les capsules restent collées à leurs boutons.
-- [ ] Film HDR10 ou Dolby Vision, verre posé → l'image reste en HDR (plus lumineuse que l'interface).
-- [ ] « Lecture en incrustation » (PiP) → aucun verre dans la fenêtre PiP ; retour au lecteur → le verre revient.
-- [ ] Réglage coupé → plus aucun verre natif, le lecteur d'avant ; macOS < 26 ou Intel : l'option n'existe pas / pas de verre du lecteur.
-- [ ] Coût, FENÊTRE VISIBLE (le banc refuse une fenêtre cachée) : `PONT_CDP_PORT=<port> node bench/glass/gpu.mjs 12 3` → WindowServer avec/sans verre (Electron : +3 à +5 points), 0 image perdue.
+- Contrôles du lecteur affichés → capsules en verre (retour, son, ±10/30 s, pause, vitesse, réglages, PiP, plein écran) : la vidéo se voit À TRAVERS, déformée au bord, comme sous Electron.
+- Bouger la souris après quelques secondes d'immobilité → les capsules MONTENT et s'allument en même temps que leurs glyphes (aucun décalage verre / icône) ; elles s'effacent plus vite qu'elles ne viennent.
+- Passage d'une scène très claire (neige) à une scène sombre → les glyphes des capsules passent du sombre au clair en une à deux secondes.
+- Fenêtre active puis inactive (cliquer une autre app) → le verre fonce et pâlit comme le verre du système, rien ne clignote.
+- Plein écran et retour, redimensionner la fenêtre pendant la lecture → les capsules restent collées à leurs boutons.
+- Film HDR10 ou Dolby Vision, verre posé → l'image reste en HDR (plus lumineuse que l'interface).
+- « Lecture en incrustation » (PiP) → aucun verre dans la fenêtre PiP ; retour au lecteur → le verre revient.
+- Réglage coupé → plus aucun verre natif, le lecteur d'avant ; macOS < 26 ou Intel : l'option n'existe pas / pas de verre du lecteur.
+- Coût, FENÊTRE VISIBLE (le banc refuse une fenêtre cachée) : `PONT_CDP_PORT=<port> node bench/glass/gpu.mjs 12 3` → WindowServer avec/sans verre (Electron : +3 à +5 points), 0 image perdue.
