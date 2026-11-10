@@ -39,14 +39,7 @@ import { ByFormFactor } from "./mirror/ByFormFactor";
 import { RECO_REFINE_PATH } from "./lib/recoSections";
 import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
 import { webPluginRoutes } from "./hooks/pluginNavPages";
-import { DevGlassLab } from "./dev/glassLab/devRoute";
-import { DevSocleLab } from "./dev/socleLab/devRoute";
-import { DevFichesLab } from "./dev/fichesLab/devRoute";
-import { DevHorsLigneLab } from "./dev/horsLigneLab/devRoute";
-import { DevLecteurLab } from "./dev/lecteurLab/devRoute";
-import { DevReglagesLab } from "./dev/reglagesLab/devRoute";
-import { DevOctaveLab } from "./dev/octaveLab/devRoute";
-import { DevAccueilLab } from "./dev/accueilLab/devRoute";
+import { devLabRoutes, devShellLabRoutes } from "./dev/devLabRoutes";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -158,17 +151,8 @@ export function App() {
 
           {/* Protected — immersive. Avec le PiP, `PlayerStage` rend le lecteur hors des routes. */}
           <Route path="/watch/:itemId" element={guard(playerOnStage ? <></> : <Watch />)} />
-          {DevGlassLab ? <Route path="/dev/verre" element={guard(<DevGlassLab />)} /> : null}
-          {/* Le labo du socle : sans garde — il ne lit aucune donnée (paquets de développement seulement). */}
-          {DevSocleLab ? <Route path="/dev/socle" element={<DevSocleLab />} /> : null}
-          {DevFichesLab ? <Route path="/dev/fiches/*" element={<DevFichesLab />} /> : null}
-          {/* Le labo du hors ligne : il ne monte ses écrans qu'avec le pont factice de son banc. */}
-          {DevHorsLigneLab ? <Route path="/dev/hors-ligne/*" element={<DevHorsLigneLab />} /> : null}
-          {/* Le labo du lecteur : l'habillage sur une image fixe, données factices (paquets de développement seulement). */}
-          {DevLecteurLab ? <Route path="/dev/lecteur" element={<DevLecteurLab />} /> : null}
-          {/* Le labo des réglages et de l'administration : les vrais écrans sur un faux serveur, sans garde. */}
-          {DevReglagesLab ? <Route path="/dev/reglages" element={<DevReglagesLab />} /> : null}
-          {DevOctaveLab ? <Route path="/dev/octave" element={<DevOctaveLab />} /> : null}
+          {/* Les labos de développement (paquets de développement seulement). */}
+          {devLabRoutes(guard)}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
@@ -316,8 +300,7 @@ export function App() {
                   />
                 ))
             )}
-            {/* Le labo de l'accueil, DANS la coquille : sa barre du haut est la vraie (paquets de développement seulement). */}
-            {DevAccueilLab ? <Route path="dev/accueil" element={<DevAccueilLab />} /> : null}
+            {devShellLabRoutes()}
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
