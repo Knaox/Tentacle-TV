@@ -31,7 +31,7 @@ import { DownloadGlyph } from "./DownloadGlyph";
 import { requestDownload } from "./downloadRequest";
 import { useDownloadsVisibility } from "./useDownloadState";
 import { useDeviceGroupState, useDeviceItemState } from "./useDeviceState";
-import { useLiquidGlassMode, useLiquidGlassSurface } from "../theme/glass";
+import { useLiquidGlassSurface } from "../theme/glass";
 import { useTrayGlassAllowed } from "../components/cards/CardTrayParts";
 
 /** Mêmes boîtes que `CardQuickActions` : les pastilles s'alignent au pixel. */
@@ -85,19 +85,24 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   // (`inline`), une pastille de verre clair comme ses voisines ; le vert de
   // « gardé » reste.
   const trayAllowed = useTrayGlassAllowed();
-  const native = useLiquidGlassMode() === "native";
   const roundGlass = (tone === "tray" && trayAllowed) || (tone === "chip" && variant === "inline");
+  // La peau hors verre : dans le plateau, un glyphe sans fond (ses voisins n'en
+  // ont pas) ; seul, une pastille d'encre posée sur l'image — sans liseré. La
+  // pression répond à 97 %, le survol ne change que la couleur.
+  const skin = `rounded-full transition-[color,background-color,transform] duration-hover ease-out active:scale-[0.97] ${
+    tone === "tray"
+      ? `hover:bg-white/10 ${kept ? "" : "text-white/80 hover:text-white"}`
+      : `bg-[rgba(11,11,12,0.72)] hover:bg-[rgba(11,11,12,0.88)] ${kept ? "" : "text-white"}`
+  }`;
+  // « Sur cette machine » : le vert CONSTANT de la pastille des cartes (posé sur média).
+  const keptStyle = kept ? { color: "var(--media-badge-success-fg)" } : undefined;
   const glass = useLiquidGlassSurface({
     level: "clear",
     shape: "circle",
     interactive: true,
     className: `${box} relative flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white`,
-    fallbackClassName: `rounded-full ${tone === "tray"
-      ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`
-      : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${kept ? "border-emerald-400 text-emerald-400" : "border-white/40 text-white hover:border-white"}`}`,
-    // Le vert de « gardé » par-dessus la couleur adaptée du verre — en natif
-    // seulement : ailleurs, `text-emerald-400` du rendu d'avant.
-    style: native && kept ? { color: "var(--media-badge-success-fg)" } : undefined,
+    fallbackClassName: skin,
+    style: keptStyle,
   });
 
   if (!supportsDownloads()) return null;
@@ -131,8 +136,8 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   const { dot } = VARIANT_STYLE[variant];
   const { icon } = tray ?? VARIANT_STYLE[variant];
 
-  // Posé sur l'affiche : verre sombre et blancs CONSTANTS dans les deux thèmes,
-  // comme le reste du cluster. Pas de `backdrop-filter` — ce serait une passe de
+  // Posé sur l'affiche : encre et blancs CONSTANTS dans les deux thèmes, comme
+  // le reste du cluster. Pas de `backdrop-filter` — ce serait une passe de
   // compositing de plus sur le chemin de survol. L'anneau de focus est blanc lui
   // aussi : un jeton thémé disparaîtrait sur une affiche claire.
   return (
@@ -141,19 +146,16 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
       onClick={handleClick}
       aria-label={label}
       title={label}
+      data-state={kept ? "kept" : isActive ? "active" : "idle"}
       {...(roundGlass ? glass.props : {})}
-      className={roundGlass ? glass.props.className : `${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
-        tone === "tray"
-          ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`
-          : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
-              kept ? "border-emerald-400 text-emerald-400" : "border-white/40 text-white hover:border-white"
-            }`
-      }`}
+      className={roundGlass ? glass.props.className : `${box} relative flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${skin}`}
+      style={roundGlass ? glass.props.style : keptStyle}
     >
       {roundGlass && glass.layers}
-      <DownloadGlyph done={kept} className={icon} strokeWidth={1.8} />
+      <DownloadGlyph done={kept || isActive} className={icon} strokeWidth={1.8} />
+      {/* En route : un point au dégradé de jauge, immobile — rien ne bat sur une carte. */}
       {isActive && (
-        <span className={`${dot} absolute -right-0.5 -top-0.5 rounded-full bg-brand animate-pulse-glow`} />
+        <span aria-hidden className={`${dot} absolute -right-0.5 -top-0.5 rounded-full`} style={{ background: "var(--gauge-gradient)" }} />
       )}
     </button>
   );

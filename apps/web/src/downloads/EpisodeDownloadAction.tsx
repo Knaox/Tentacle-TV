@@ -53,15 +53,13 @@ export function EpisodeDownloadAction({ episode }: { episode: MediaItem }) {
         onClick={handleClick}
         aria-label={label}
         title={label}
-        className={`relative flex-shrink-0 transition-colors ${
-          isComplete
-            ? "text-status-success-fg hover:text-content-secondary"
-            : "text-content-tertiary hover:text-content-primary"
-        }`}
+        data-state={isComplete ? "kept" : isActive ? "active" : "idle"}
+        className={`icon-btn btn-sm relative ${isComplete ? "text-status-success-fg" : ""}`}
       >
-        <DownloadGlyph done={isComplete} strokeWidth={1.8} />
+        <DownloadGlyph done={isComplete || isActive} className="h-[18px] w-[18px]" strokeWidth={1.8} />
+        {/* En route : un point au dégradé de jauge, immobile. */}
         {isActive && (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand animate-pulse-glow" />
+          <span aria-hidden className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full" style={{ background: "var(--gauge-gradient)" }} />
         )}
       </button>
       {open && (

@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
@@ -20,11 +21,8 @@ export function SeasonDownloadAction({ episodes }: { episodes: MediaItem[] }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
-      >
+      <button type="button" onClick={() => setOpen(true)} className="btn btn-soft btn-sm lg-content-control">
+        <DownloadSimpleIcon size={16} aria-hidden />
         {t("seasonDownload")}
       </button>
       {open && <DownloadDialog items={episodes} mode="season" onClose={() => setOpen(false)} />}
