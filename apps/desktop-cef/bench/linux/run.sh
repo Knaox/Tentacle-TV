@@ -29,7 +29,7 @@ volume=tentacle-cef-linux-cache
 die() { echo "banc linux : $*" >&2; exit 1; }
 docker info >/dev/null 2>&1 || die "Docker injoignable (colima arrêtée ?)"
 
-container_env=(-e TENTACLE_CEF_CACHE=/cache -e TENTACLE_BUILD=cef-linux -e TENTACLE_JOBS=3
+container_env=(-e TENTACLE_CEF_CACHE=/cache -e TENTACLE_BUILD=cef-linux -e TENTACLE_JOBS="${TENTACLE_JOBS:-2}"
                -e TENTACLE_ALLOW_TETHERING="${TENTACLE_ALLOW_TETHERING:-0}")
 
 case "${1:-}" in
