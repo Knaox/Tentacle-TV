@@ -47,6 +47,7 @@ add_library(tentacle_shell STATIC
   src/shell/shell_shortcuts.cpp
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
+  src/shell/paths.cpp  # reseau : dossier de données d'Electron, --user-data
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
 add_library(tentacle_renderer STATIC
@@ -108,6 +109,7 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+add_subdirectory(src/net)  # reseau : tentacle://art, tentacle://plugin, relais, requêtes déléguées
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"

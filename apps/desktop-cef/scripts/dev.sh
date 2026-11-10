@@ -166,8 +166,10 @@ run() {
   # Chromium diffère l'écriture du stockage et ne la termine qu'à une fermeture normale :
   # Ctrl+C tue aussi ses helpers, le service de stockage avec (mesuré : écriture perdue).
   echo "dev : quitter par Cmd+Q ou la fenêtre — Ctrl+C perd ce que le front vient d'écrire"
+  # --user-data : le dossier de données des modules natifs (shell/paths.h : octave-art/,
+  # tentacle-local.db…) est le profil d'Electron visé, celui dont le front partage le stockage.
   exec "$app/Contents/MacOS/Tentacle" --url=tentacle://app/ --web-root="$repo/apps/web/dist" \
-    --profile="$cef" --app-version="$version" ${args[@]+"${args[@]}"}
+    --profile="$cef" --user-data="$electron" --app-version="$version" ${args[@]+"${args[@]}"}
 }
 
 # Le serveur répond-il ? Pour le banc, on dit quoi faire (colima, banc.sh up).
