@@ -316,3 +316,16 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   existe (expression génératrice CMake, sans ordre d'`add_subdirectory`). `reseau::jellyfinRelay()`.
 - Diagnostic du banc (hors `window.tentacle`) : `__shell.invoke('reseau.debug.trace')` → les 200
   dernières requêtes natives des relais `{method, url (sans requête), status, error, ms}`.
+### Cycle de vie (systeme) — `src/lifecycle/lifecycle.h` (cibles `tentacle_lifecycle_core`, pure, et `tentacle_lifecycle`, colle)
+Règles d'Electron portées à l'identique et testées seules (`cmake -S src/lifecycle`, `ctest`) :
+`backgroundDrain`, `quitGuard`, `closeSequence`, `playbackFarewell`, `powerSave` (+ renfort logind),
+`appLinks`, régions `app-region`. Ce que les autres modules appellent, fil principal :
+- **horsligne** : `setTransfersProbe({inFlight, busy, backgroundEnabled})` (fermeture : garde de
+  sortie, fin des transferts fenêtre fermée) ; `keepSystemAwake(bool)` à chaque `onBusy`/`onHeld`
+  (anti-suspension, rendue à la sortie) ; `onSystemResume(cb)` (`powerMonitor` « resume »).
+- **tous** : `onWindowClosed(cb)` — la fenêtre est partie pour de bon (musique arrêtée).
+- **reseau** (relais `jellyfin_session_post`) : `noteSessionPost(post)` AVANT l'envoi,
+  `auto done = trackSessionPost()` puis `done()` (n'importe quel fil) à la fin de l'envoi ;
+  `setFarewellSender(fn(stop, done))` : POST `/Sessions/Playing/Stopped` à la sortie (1,5 s au plus).
+- **pont** : `preventDisplaySleep(bool)` derrière `prevent_display_sleep_start/stop`.
+Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/lifecycle_*`.
