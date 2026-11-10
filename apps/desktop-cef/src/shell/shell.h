@@ -15,6 +15,7 @@
 #include "shell/drag_drop.h"
 #include "shell/frame_clock.h"
 #include "shell/input.h"
+#include "shell/render_recovery.h"
 #include "shell/tooltip.h"
 
 namespace tentacle {
@@ -72,6 +73,8 @@ class Shell final : public ViewHost {
     if (dragDrop_->internalActive()) applyCursor(cursors_.forDrag(operation));
   }
   void showTooltip(const std::string& text) override { tooltip_->setText(text); }
+  // shell_recovery.cpp : la page perdue est rechargée (render_recovery.h).
+  void onRenderProcessGone(int status, int errorCode, const std::string& errorText) override;
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
   void wakeFrameClock();
   // La page annonce un changement (canal shell.wake) : UN BeginFrame tout de suite, sans
@@ -102,6 +105,8 @@ class Shell final : public ViewHost {
   int lastCursor_ = -1;
   uint64_t lastActivityMs_ = 0;  // dernière image peinte ou saisie (veille de l'horloge)
   platform::FrameClockMode clockMode_ = platform::FrameClockMode::full;
+  recovery::CrashPolicy crashPolicy_;  // chutes du processus de rendu (render_recovery.h)
+  std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);  // tâches différées après nous
   CursorSet cursors_;              // navigateur (cursors.h)
   SDL_Cursor* pageCursor_ = nullptr;  // le dernier curseur de la page (hors glisser)
 };

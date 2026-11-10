@@ -47,6 +47,7 @@ add_library(tentacle_shell STATIC
   src/shell/ipc.cpp
   src/shell/main_thread.cpp
   src/shell/stall_meter.cpp
+  src/shell/render_recovery.cpp src/shell/page_rescue.cpp src/shell/shell_recovery.cpp  # la page perdue, le secours d'affichage
   src/shell/shell.cpp
   src/shell/builtin_handlers.cpp
   src/shell/shell_shortcuts.cpp
@@ -74,6 +75,11 @@ add_test(NAME tentacle_navigateur_tests COMMAND tentacle_navigateur_tests)
 add_executable(tentacle_stall_meter_tests src/shell/tests/stall_meter_tests.cpp src/shell/stall_meter.cpp)
 target_include_directories(tentacle_stall_meter_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 add_test(NAME tentacle_stall_meter_tests COMMAND tentacle_stall_meter_tests)
+# La page perdue (chutes du rendu) et le secours d'affichage (témoin, refus d'import) : règles pures.
+add_executable(tentacle_page_rescue_tests src/shell/tests/page_rescue_tests.cpp src/shell/render_recovery.cpp src/shell/page_rescue.cpp)
+target_include_directories(tentacle_page_rescue_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_link_libraries(tentacle_page_rescue_tests PRIVATE nlohmann_json::nlohmann_json)
+add_test(NAME tentacle_page_rescue_tests COMMAND tentacle_page_rescue_tests)
 if(APPLE)
   target_sources(tentacle_shell PRIVATE
     src/platform/macos/app_mac.mm

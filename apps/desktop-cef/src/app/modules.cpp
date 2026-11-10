@@ -5,6 +5,7 @@
 
 #include "app/app.h"
 #include "glue/pont_shell.h"  // pont : window.tentacle (src/bridge)
+#include "shell/page_events.h"  // socle : la page perdue (processus de rendu tombé)
 #include "music/octave_shell.h"  // octave : mode musique (src/music)
 #include "media_session/media_session_shell.h"  // medias : « À l'écoute », touches média
 #include "net/net_shell.h"  // reseau : tentacle://art, tentacle://plugin, relais (src/net)
@@ -31,6 +32,7 @@ void initModules(AppContext& ctx) {
   pip::install(ctx, pont::registry());  // pip : commandes pip_*, fenêtre PiP
   display::install(ctx, pont::registry());  // windows : display_hdr_*, mpv_harden_child_window, Store
   glass::install(ctx);  // verre : window.tentacle.liquidGlass (macOS 26), avant le shim
+  addPageLostListener([] { pont::stopVideo([] {}); });  // socle + pont : pas de vidéo qui joue sous une page morte, sans commandes
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }

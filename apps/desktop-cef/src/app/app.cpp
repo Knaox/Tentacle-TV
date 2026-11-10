@@ -7,6 +7,7 @@
 #include "app/app.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <string_view>
@@ -18,6 +19,7 @@
 #include "shell/browser_app.h"
 #include "shell/builtin_handlers.h"
 #include "shell/message_pump.h"
+#include "shell/page_rescue.h"
 #include "shell/paths.h"
 #include "shell/shell.h"
 #include "shell/stall_meter.h"
@@ -150,6 +152,7 @@ int runApp(int argc, char** argv) {
     // Instance unique : une instance tourne déjà sur ce profil et a reçu notre ligne de
     // commande (lien, focus) — on sort sans bruit, comme la seconde instance d'Electron.
     if (lifecycle::app::handedToRunningInstance()) {
+      rescue::startupHandedOff(opts.profileDir);  // ce lancement n'essayait rien : ni témoin ni décompte
       std::fprintf(stderr, "[app] une instance tourne déjà sur ce profil : elle prend le relais\n");
       return 0;
     }
@@ -173,6 +176,15 @@ int runApp(int argc, char** argv) {
   so.url = opts.url;
   so.frameRate = opts.frameRate > 0 ? opts.frameRate : displayRefreshRate(window);
   so.fixedFrameRate = opts.frameRate > 0;
+  // Le garde-fou de l'affichage (page_rescue.h) : la première image importée efface le témoin ;
+  // un import refusé image après image, et l'app se relance en peinture logicielle.
+  compositor->setSharedTextureListener([profile = opts.profileDir](bool imported) {
+    if (imported) return rescue::pageShown(profile);
+    if (std::getenv("TENTACLE_DEBUG_NO_RESCUE")) return;  // banc : l'état d'AVANT (page noire)
+    rescue::acceleratedRefused(profile, "le pilote refuse l'import de la page (dmabuf)");
+    std::fprintf(stderr, "[rendu] l'image de la page est refusée par le pilote (dmabuf) : relance en peinture logicielle\n");
+    lifecycle::app::requestRelaunch();
+  });
   auto shell = std::make_unique<Shell>(window, compositor.get(), so);
   setBuiltinShell(shell.get());
   SDL_AddEventWatch(onWindowEvent, shell.get());

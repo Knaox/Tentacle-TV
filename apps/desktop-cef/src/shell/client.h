@@ -53,6 +53,9 @@ class ViewHost {
   virtual void updateDragCursor(cef_drag_operations_mask_t operation) {}
   // navigateur : bulle d'aide (`title=`), texte vide = aucune (src/shell/tooltip.h).
   virtual void showTooltip(const std::string& text) {}
+  // Le processus de rendu de la page est tombé (`cef_termination_status_t`, code et texte de
+  // Chromium) : l'hôte recharge (shell/render_recovery.h).
+  virtual void onRenderProcessGone(int status, int errorCode, const std::string& errorText) {}
 };
 
 class Client final : public CefClient,
@@ -163,6 +166,14 @@ class Client final : public CefClient,
   bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                         const CefString& targetUrl, WindowOpenDisposition disposition,
                         bool userGesture) override;
+
+  // CefRequestHandler (shell_recovery.cpp) : la page perdue ou muette — rechargée, et dite au
+  // journal. Sans cela, une page morte reste la dernière image reçue, ou noire.
+  void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status,
+                                 int errorCode, const CefString& errorString) override;
+  bool OnRenderProcessUnresponsive(CefRefPtr<CefBrowser> browser,
+                                   CefRefPtr<CefUnresponsiveProcessCallback> callback) override;
+  void OnRenderProcessResponsive(CefRefPtr<CefBrowser> browser) override;
 
   // CefRequestHandler / CefResourceRequestHandler : seulement la fin des chargements, pour
   // réveiller l'horloge d'images en veille (iframes comprises, où le script de réveil de la

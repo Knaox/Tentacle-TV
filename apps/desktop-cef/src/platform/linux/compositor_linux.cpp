@@ -17,9 +17,11 @@
 #include "platform/linux/gl_quad_linux.h"
 #include "platform/linux/linux_window.h"
 #include "platform/linux/overlay_linux.h"
+#include "platform/linux/present_clock_linux.h"
 #include "platform/linux/video_layer_linux.h"
 #include "platform/linux/video_slot_linux.h"
 #include "shell/main_thread.h"
+#include "shell/page_rescue.h"
 #include "shell/window_scale.h"
 
 namespace tentacle {
@@ -99,6 +101,8 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     slot_.setInset(inset);
     requestRedraw();
   }
+  bool acceptsSharedTextures() const override { return importer_ != nullptr; }
+  void setSharedTextureListener(std::function<void(bool)> listener) override { sharedListener_ = std::move(listener); }
   CompositorStats stats() const override { return stats_; }
   std::string describeLayers() const override {
     std::ostringstream o;
@@ -172,11 +176,19 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, f.width, f.height, GL_RGBA, GL_UNSIGNED_BYTE, f.pixels);
       return true;
     }
-    if (f.sharedHandle && importer_ && importer_->copyInto(f.sharedHandle, layer.tex, f.width, f.height, quad_)) {
-      stats_dmabuf_++;
-      return true;
-    }
-    return false;
+    if (!f.sharedHandle) return false;
+    const bool imported = importer_ && importer_->copyInto(f.sharedHandle, layer.tex, f.width, f.height, quad_);
+    if (imported) stats_dmabuf_++;
+    if (&layer == &page_) noteImport(imported);
+    return imported;
+  }
+
+  // La première image importée est la preuve d'affichage ; des refus d'affilée, le constat que
+  // cette voie ne donne rien (page noire sinon) : l'hôte l'apprend, hors du rappel de peinture.
+  void noteImport(bool imported) {
+    const bool first = imported && !health_.everImported();
+    if (!(health_.note(imported) || first) || !sharedListener_) return;
+    postToMain([listener = sharedListener_, imported] { listener(imported); });
   }
 
   void compose() {
@@ -201,7 +213,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     }
     overlays_.draw(quad_, egl_->width(), egl_->height());  // bulle d'aide, vignette du glisser
     if (egl_->swap()) {
-      countPresented();
+      presentClock_.tick(stats_);
       if (video) video->reportSwap();
     }
   }
@@ -248,23 +260,6 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
   // (Xft.dpi…) sous X11, où SDL compte la fenêtre en pixels.
   float scale() const { return windowScale(window_).deviceScale; }
 
-  void countPresented() {
-    const auto now = std::chrono::steady_clock::now();
-    stats_.presentedFrames++;
-    if (lastPresent_.time_since_epoch().count()) {
-      const double ms = std::chrono::duration<double, std::milli>(now - lastPresent_).count();
-      if (ms > stats_.presentIntervalMaxMs) stats_.presentIntervalMaxMs = ms;
-      stats_.presentIntervalMeanMs = stats_.presentIntervalMeanMs * 0.95 + ms * 0.05;
-    }
-    lastPresent_ = now;
-    if (now - windowStart_ >= std::chrono::seconds(1)) {
-      stats_.presentedFps = double(stats_.presentedFrames - windowFrames_) /
-                            std::chrono::duration<double>(now - windowStart_).count();
-      windowStart_ = now;
-      windowFrames_ = stats_.presentedFrames;
-    }
-  }
-
   SDL_Window* window_;
   std::unique_ptr<platform::EglWindow> egl_;
   std::unique_ptr<platform::DmabufImporter> importer_;
@@ -276,8 +271,10 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
   platform::VideoSlot slot_;
   platform::OverlayStack overlays_;
   CompositorStats stats_;
-  uint64_t stats_dmabuf_ = 0, windowFrames_ = 0;
-  std::chrono::steady_clock::time_point lastPresent_{}, windowStart_ = std::chrono::steady_clock::now();
+  platform::PresentClock presentClock_;
+  uint64_t stats_dmabuf_ = 0;
+  rescue::ImportHealth health_;  // la voie accélérée donne-t-elle des images ? (page_rescue.h)
+  std::function<void(bool)> sharedListener_;
 };
 
 }  // namespace

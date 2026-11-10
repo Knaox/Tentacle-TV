@@ -13,6 +13,7 @@
 #include "shell/ipc_protocol.h"
 #include "shell/external_url.h"
 #include "shell/navigation_rule.h"
+#include "shell/page_rescue.h"
 #include "shell/zoom_guard.h"
 #include "shell/window_scale.h"
 
@@ -52,6 +53,7 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
 }
 
 Shell::~Shell() {
+  *alive_ = false;
   dialogs_->detach();
   platform::uninstallNativeWheel();
   platform::stopFrameClock();
@@ -70,7 +72,14 @@ bool Shell::start() {
 #endif
   // IOSurface (macOS), dmabuf (Linux), D3D11 (Windows) : zéro copie CPU. Repli de diagnostic :
   // TENTACLE_NO_SHARED_TEXTURE=1 → OnPaint (pilote dont l'import dmabuf échouerait, Linux).
-  wi.shared_texture_enabled = std::getenv("TENTACLE_NO_SHARED_TEXTURE") == nullptr;
+  // Sans import possible (EGL sans dma_buf_import), la page serait NOIRE : chaque image
+  // accélérée serait refusée. Su avant de créer la page : elle est peinte en logiciel.
+  const bool importable = compositor_->acceptsSharedTextures();
+  if (!importable) std::fprintf(stderr, "[rendu] texture partagée inutilisable ici : la page est peinte en logiciel (OnPaint)\n");
+  // Le secours d'affichage (page_rescue.h, décidé avant CEF) ; TENTACLE_NO_SHARED_TEXTURE=1 le
+  // force (essai) — lu ici aussi pour macOS et Windows, où le secours ne se décide pas.
+  wi.shared_texture_enabled = importable && rescue::current().mode == rescue::Mode::accelerated &&
+                              std::getenv("TENTACLE_NO_SHARED_TEXTURE") == nullptr;
   wi.external_begin_frame_enabled = platform::frameClockSupported();  // vsync (frame_clock.h)
   CefBrowserSettings bs;
   bs.windowless_frame_rate = options_.frameRate;

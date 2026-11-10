@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -32,7 +33,7 @@ bool glHasExtension(const char* name) {
 
 std::unique_ptr<DmabufImporter> DmabufImporter::create(EglWindow& egl) {
   if (!egl.hasExtension("EGL_EXT_image_dma_buf_import") || !glHasExtension("GL_OES_EGL_image")) {
-    std::fprintf(stderr, "[dmabuf] import indisponible (EGL/GL) : la page passera par OnPaint\n");
+    std::fprintf(stderr, "[dmabuf] import indisponible (EGL/GL) : la page sera peinte en logiciel (OnPaint)\n");
     return nullptr;
   }
   std::unique_ptr<DmabufImporter> d(new DmabufImporter());
@@ -52,6 +53,9 @@ DmabufImporter::~DmabufImporter() {
 bool DmabufImporter::copyInto(const void* paintInfo, GLuint dst, int w, int h, GlQuad& quad) {
   const auto* info = static_cast<const cef_accelerated_paint_info_t*>(paintInfo);
   if (info->plane_count <= 0) return false;
+  // Banc (bench/noir) : un pilote qui refuse chaque import, pour rejouer le secours d'affichage.
+  static const bool refuseForBench = std::getenv("TENTACLE_DEBUG_DMABUF_REFUSE") != nullptr;
+  if (refuseForBench) return false;
   const uint32_t format = info->format == CEF_COLOR_TYPE_RGBA_8888 ? kDrmAbgr8888 : kDrmArgb8888;
   std::vector<EGLAttrib> a = {EGL_WIDTH, w, EGL_HEIGHT, h, EGL_LINUX_DRM_FOURCC_EXT, EGLAttrib(format)};
   static const EGLint kFd[] = {EGL_DMA_BUF_PLANE0_FD_EXT, EGL_DMA_BUF_PLANE1_FD_EXT,
