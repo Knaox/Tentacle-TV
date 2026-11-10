@@ -1,6 +1,6 @@
 /**
  * Octave — une playlist (ou un album) DEEZER, par son API PUBLIQUE
- * (`api.deezer.com`, sans clé) : la playlist ENTIÈRE, pages de 1 000 en
+ * (`api.deezer.com`, sans clé) : la playlist ENTIÈRE, pages de 500 en
  * parallèle borné (`pagedRead.ts`), avec l'ISRC, la pochette et le contenu
  * explicite de chaque titre (la liste d'un album n'en donne pas l'ISRC). Une erreur de
  * l'API (`{ error: { code } }`) : 800 = introuvable ou privée, 4 = quota.
@@ -11,10 +11,13 @@ import type { ImportFetcher } from "../importFetch";
 import { artistList, durationOf, field, ImportReadFailure, isrcOf, list, numbered, record } from "./readerKit";
 import { readAllPages } from "./pagedRead";
 
-/** Une page de l'API (mesuré le 10/11 : `limit=1000` admis, ~2 Mo et ~2 s la page). */
-const PAGE = 1_000;
+/**
+ * Une page de l'API (mesuré le 10/11 : `limit=1000` admis, ~2 Mo et ~2 s la page — la durée suit la taille) : des
+ * pages de 500, six en vol, lisent 9 000 titres en trois vagues d'une seconde, bien sous le plafond de débit.
+ */
+const PAGE = 500;
 /** Pages EN MÊME TEMPS, et le plafond de l'API (50 requêtes par 5 s, gardé à 40). */
-const PARALLEL_PAGES = 4;
+const PARALLEL_PAGES = 6;
 const RATE = { requests: 40, windowMs: 5_000 };
 
 type Raw = Record<string, unknown>;
