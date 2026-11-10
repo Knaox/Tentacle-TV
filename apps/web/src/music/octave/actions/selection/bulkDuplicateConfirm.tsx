@@ -14,7 +14,7 @@ import { answerBulkDuplicates, askBulkDuplicates, useBulkDuplicateAsk } from "@t
 export { askBulkDuplicates, answerBulkDuplicates };
 
 const BUTTON = "inline-flex h-11 items-center justify-center px-5 text-sm font-semibold disabled:opacity-50";
-const QUIET_FALLBACK = "rounded-lg border border-line-subtle bg-fill-soft text-content-primary transition hover:bg-fill-medium";
+const QUIET_FALLBACK = "rounded-full bg-fill-soft text-content-primary transition-colors hover:bg-fill-strong";
 
 export function BulkDuplicateHost() {
   const { t } = useTranslation("music");
@@ -26,7 +26,7 @@ export function BulkDuplicateHost() {
     <Modal open={ask !== null} onClose={() => answerBulkDuplicates("cancel")} maxWidth={540} labelledBy={titleId} describedBy={descId}>
       {ask && (
         <div className="p-6">
-          <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("playlist.duplicateTitle")}</h2>
+          <h2 id={titleId} className="oc-heading text-lg text-content-primary">{t("playlist.duplicateTitle")}</h2>
           <p id={descId} className="mt-2 text-sm leading-relaxed text-content-tertiary">
             {allThere ? t("selection.allDuplicates", { count: ask.total, name: ask.playlist }) : t("selection.someDuplicates", { count: ask.duplicates, total: ask.total, name: ask.playlist })}
           </p>
@@ -44,7 +44,7 @@ export function BulkDuplicateHost() {
               onClick={() => answerBulkDuplicates("all")}
               appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
               className={`${BUTTON} font-bold`}
-              fallbackClassName="rounded-lg bg-cta-primary-bg text-cta-primary-fg transition hover:bg-cta-primary-bg-hover"
+              fallbackClassName="octave-solid rounded-full"
             >
               {t("playlist.duplicateConfirm")}
             </GlassButton>

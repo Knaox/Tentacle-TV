@@ -32,7 +32,7 @@ function AlbumOption({ album, selected, onSelect }: { album: MusicAlbum; selecte
         role="radio"
         aria-checked={selected}
         onClick={onSelect}
-        className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-xl px-2 py-1.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${selected ? "bg-octave-hover" : "hover:bg-octave-hover"}`}
+        className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-[10px] px-2 py-1.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${selected ? "bg-octave-hover" : "hover:bg-octave-hover"}`}
       >
         <Artwork url={album.artworkUrl} alt="" label={album.title} radius="xs" thumb className="h-11 w-11 shrink-0" />
         <span className="min-w-0 flex-1">
@@ -49,7 +49,7 @@ function Group({ label, albums, selected, onSelect }: { label?: string; albums: 
   if (albums.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      {label && <p className="px-2 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{label}</p>}
+      {label && <p className="oc-eyebrow px-2">{label}</p>}
       <ul className="flex flex-col">
         {albums.map((album) => (
           <AlbumOption key={album.key} album={album} selected={selected === album.key} onSelect={() => onSelect(album)} />
@@ -97,7 +97,7 @@ export function ImportAlbumPane({ into, onStart, onCancel }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={t("albumPlaceholder")}
-          className="min-h-[44px] w-full rounded-xl border border-line-subtle bg-fill-subtle py-2.5 pl-9 pr-3 text-sm text-content-primary placeholder:text-content-quaternary focus-visible:border-line-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="field field-pill w-full pl-9"
         />
       </div>
       <div role="radiogroup" aria-label={t("albumSearch")} className="-mx-2 flex max-h-[320px] flex-col gap-3 overflow-y-auto overscroll-contain">
@@ -109,7 +109,7 @@ export function ImportAlbumPane({ into, onStart, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="min-h-[44px] cursor-pointer rounded-full px-4 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("cancel")}
         </button>
-        <button type="submit" disabled={!chosen} className="octave-brand-fill min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="submit" disabled={!chosen} className="octave-solid min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t(into ? "albumStartInto" : "albumStart")}
         </button>
       </div>

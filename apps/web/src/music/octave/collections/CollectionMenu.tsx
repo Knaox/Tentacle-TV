@@ -17,7 +17,7 @@ import { COLLECTION_ACTION_LABELS } from "./collectionLabels";
 import { useShelfScope } from "./shelfContext";
 
 const itemClass =
-  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
+  "flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 export function subjectName(subject: MusicShelfSubject): string {
   if (subject.section === "albums") return subject.item.title;
@@ -66,8 +66,8 @@ export function CollectionMenuPanel({ subject, anchor, onClose, ariaLabel }: Pan
       side="bottom"
       align="end"
       className="w-60 p-1.5"
-      // Un îlot d'encre PRUNE, opaque, comme le menu d'un titre (IDENTITE.md).
-      style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)" }}
+      // L'encre de menu, opaque, comme le menu d'un titre (docs/REFONTE-UI.md).
+      style={{ background: "var(--oc-ink-menu)", borderRadius: "var(--oc-radius-menu)", boxShadow: "var(--oc-shadow-menu)" }}
     >
       {groups.map((group, i) => (
         <Fragment key={group[0]!.group}>

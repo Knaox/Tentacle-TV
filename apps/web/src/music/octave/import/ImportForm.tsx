@@ -57,7 +57,7 @@ export function ImportForm({ titleId, value, onChange, extensionSources, tentacl
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="oc-heading text-lg text-content-primary">
             {t("title")}
           </h2>
           <p className="text-sm text-content-secondary">{t("intro")}</p>
@@ -84,9 +84,9 @@ export function ImportForm({ titleId, value, onChange, extensionSources, tentacl
           }
         }}
         placeholder={t("placeholder")}
-        className="min-h-[56px] w-full resize-y rounded-xl border border-line-subtle bg-fill-subtle px-3 py-2.5 font-mono text-[13px] leading-relaxed text-content-primary placeholder:font-sans placeholder:text-content-quaternary focus-visible:border-line-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="field min-h-[56px] w-full resize-y font-mono text-[13px] leading-relaxed placeholder:font-sans"
       />
-      <p id={hintId} aria-live="polite" className={`flex min-h-[24px] items-center gap-2 text-sm ${hint.tone === "warn" ? "text-amber-300" : hint.tone === "ok" ? "text-content-primary" : "text-content-tertiary"}`}>
+      <p id={hintId} aria-live="polite" className={`flex min-h-[24px] items-center gap-2 text-sm ${hint.tone === "warn" ? "text-status-warning-fg" : hint.tone === "ok" ? "text-content-primary" : "text-content-tertiary"}`}>
         {hint.source && <SourceMark source={hint.source} className="h-5 w-5" />}
         {hint.text}
       </p>
@@ -95,7 +95,7 @@ export function ImportForm({ titleId, value, onChange, extensionSources, tentacl
         <button type="button" onClick={onCancel} className="min-h-[44px] cursor-pointer rounded-full px-4 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("cancel")}
         </button>
-        <button type="submit" disabled={!input} className="octave-brand-fill min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="submit" disabled={!input} className="octave-solid min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("start")}
         </button>
       </div>

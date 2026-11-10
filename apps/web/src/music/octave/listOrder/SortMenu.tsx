@@ -13,7 +13,7 @@ import { MUSIC_LIST_SORT_KEYS, defaultDirection, type MusicListDirection, type M
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 
 const itemClass =
-  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
+  "flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 interface SortMenuProps {
   prefs: MusicListPrefs;
@@ -55,9 +55,9 @@ export function SortMenu({ prefs, sorts = MUSIC_LIST_SORT_KEYS, onSort }: SortMe
           side="bottom"
           align="end"
           className="w-64 overflow-y-auto overscroll-contain p-1.5"
-          style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)", maxHeight: 460 }}
+          style={{ background: "var(--oc-ink-menu)", borderRadius: "var(--oc-radius-menu)", boxShadow: "var(--oc-shadow-menu)", maxHeight: 460 }}
         >
-          <div className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-content-quaternary" aria-hidden>
+          <div className="oc-eyebrow px-3 pb-1 pt-2" aria-hidden>
             {t("listOrder.sortMenu")}
           </div>
           {sorts.map((sort) => (

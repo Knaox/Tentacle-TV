@@ -65,7 +65,7 @@ export function ShelfReorderDialog({ rows, onMove, onClose }: Props) {
               return (
                 <li
                   key={row.key}
-                  className={`absolute inset-x-0 top-0 flex items-center gap-3 px-1 ${drag && !lifted ? "transition-transform duration-150 ease-out motion-reduce:transition-none" : ""} ${lifted ? "z-10 rounded-md bg-[var(--oc-ink-raised)] shadow-[var(--oc-shadow-panel)]" : ""}`}
+                  className={`absolute inset-x-0 top-0 flex items-center gap-3 px-1 ${drag && !lifted ? "transition-transform duration-150 ease-out motion-reduce:transition-none" : ""} ${lifted ? "z-10 rounded-[10px] bg-[var(--oc-ink-menu)] shadow-[var(--oc-shadow-menu)]" : ""}`}
                   style={{ height: ROW_HEIGHT, transform: `translateY(${index * ROW_HEIGHT + shift}px)` }}
                 >
                   <button
@@ -77,7 +77,7 @@ export function ShelfReorderDialog({ rows, onMove, onClose }: Props) {
                     {...handleProps(index)}
                     // Au doigt, la poignée tire la rangée au lieu de faire défiler la liste.
                     style={{ touchAction: "none" }}
-                    className="flex h-11 w-8 shrink-0 cursor-grab items-center justify-center rounded text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:cursor-grabbing"
+                    className="flex h-11 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:cursor-grabbing"
                   >
                     <GripVertical className="h-4 w-4" aria-hidden />
                   </button>
@@ -106,7 +106,7 @@ export function ShelfReorderDialog({ rows, onMove, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="octave-brand-fill inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="octave-solid inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             {t("reorder.done")}
           </button>

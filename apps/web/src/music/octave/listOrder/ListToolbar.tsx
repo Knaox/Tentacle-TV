@@ -60,7 +60,7 @@ export const ListToolbar = memo(function ListToolbar({ query, onQuery, filter, f
           placeholder={t("listOrder.searchPlaceholder")}
           autoComplete="off"
           spellCheck={false}
-          className="h-9 w-full rounded-full border border-transparent bg-fill-subtle pl-9 pr-9 text-sm text-content-primary placeholder:text-content-tertiary transition-colors duration-150 hover:bg-fill-medium focus:border-line-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="field field-pill h-9 w-full pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
         />
         {text && (
           <button
@@ -86,7 +86,7 @@ export const ListToolbar = memo(function ListToolbar({ query, onQuery, filter, f
               aria-checked={f === filter}
               onClick={() => onFilter(f)}
               className={`octave-pill h-8 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-                f === filter ? "bg-content-primary text-surface-0" : "bg-fill-subtle text-content-secondary hover:bg-fill-medium hover:text-content-primary"
+                f === filter ? "bg-surface-4 text-content-primary shadow-edge" : "bg-fill-subtle text-content-secondary hover:bg-fill-medium hover:text-content-primary"
               }`}
             >
               {t(`listOrder.filter.${f}`)}

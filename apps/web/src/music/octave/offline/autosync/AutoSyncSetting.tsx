@@ -40,7 +40,7 @@ export function AutoSyncSetting({ variant, badge }: { variant: "section" | "inli
     );
   }
   return (
-    <div className="mx-2 rounded-xl border border-octave-line bg-octave-hover">
+    <div className="mx-2 rounded-panel bg-octave-hover">
       <Row />
     </div>
   );

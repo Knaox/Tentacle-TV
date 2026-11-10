@@ -27,7 +27,7 @@ export function ImportModeTabs({ modes, value, onChange }: Props) {
     refs.current[at]?.focus();
   };
   return (
-    <div role="tablist" aria-label={t("mode.label")} className="flex rounded-full border border-line-subtle bg-fill-subtle p-1">
+    <div role="tablist" aria-label={t("mode.label")} className="flex rounded-full bg-fill-subtle p-1">
       {modes.map((mode, i) => {
         const selected = mode === value;
         return (
@@ -47,7 +47,7 @@ export function ImportModeTabs({ modes, value, onChange }: Props) {
               e.preventDefault();
               move(step);
             }}
-            className={`min-h-[36px] flex-1 cursor-pointer rounded-full px-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${selected ? "bg-octave-hover text-content-primary" : "text-content-tertiary hover:text-content-primary"}`}
+            className={`min-h-[36px] flex-1 cursor-pointer rounded-full px-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${selected ? "bg-surface-4 text-content-primary shadow-edge" : "text-content-tertiary hover:text-content-primary"}`}
           >
             {t(`mode.${mode}`)}
           </button>

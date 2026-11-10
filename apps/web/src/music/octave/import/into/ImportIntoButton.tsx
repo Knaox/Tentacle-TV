@@ -26,7 +26,7 @@ export function ImportIntoButton({ playlistId, name, canAdd, variant = "icon", c
   const label = t("intoTitle", { name });
   if (variant === "pill") {
     return (
-      <button type="button" onClick={open} className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-line-subtle px-4 text-sm font-semibold text-content-primary hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}>
+      <button type="button" onClick={open} className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full bg-fill-soft px-4 text-sm font-semibold text-content-primary hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}>
         <Import className="h-4 w-4" aria-hidden />
         {t("entryShort")}
       </button>

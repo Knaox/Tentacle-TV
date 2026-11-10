@@ -1,7 +1,7 @@
 /**
  * Octave — la barre d'une sélection : combien de titres, puis les gestes groupés, tels que les décrit le modèle
  * partagé (`selectionActions`, le même que le mobile) — ajouter à une playlist, lire ensuite, ajouter à la file,
- * aimer, et (dans une playlist modifiable, ou dans la file) les retirer d'ici. Un îlot d'encre prune
+ * aimer, et (dans une playlist modifiable, ou dans la file) les retirer d'ici. Un îlot d'encre de menu
  * qui flotte au bas de la liste ; « × » ou Échap sortent de la sélection. Sous `sm`, les gestes ne gardent que
  * leur icône (nom accessible et bulle gardés).
  */
@@ -87,8 +87,8 @@ export function SelectionBar({ count, total, tracks, onClear, onSelectAll, onRem
       <div
         role="toolbar"
         aria-label={t("selection.toolbar")}
-        className="octave-selection-bar pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-line-subtle p-1"
-        style={{ background: "var(--oc-ink-raised)", boxShadow: "var(--oc-shadow-panel)" }}
+        className="octave-selection-bar pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-1"
+        style={{ background: "var(--oc-ink-menu)", boxShadow: "var(--oc-shadow-menu)" }}
       >
         <button type="button" onClick={onClear} aria-label={t("selection.clear")} title={t("selection.clear")} className={`${ACTION} w-11 justify-center px-0`}>
           <X className="h-4 w-4" aria-hidden />

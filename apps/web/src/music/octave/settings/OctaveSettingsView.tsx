@@ -45,7 +45,7 @@ export function OctaveSettingsView() {
         <AutoSyncSetting variant="section" badge={octaveOnly} />
       </div>
       <div className="mt-10" data-octave-settings-part="shared">
-        <h2 className="text-lg font-bold tracking-tight text-content-primary">{t("settings.shared")}</h2>
+        <h2 className="oc-heading text-lg text-content-primary">{t("settings.shared")}</h2>
         <p className="mb-5 mt-1 text-sm leading-relaxed text-content-tertiary">{t("settings.sharedLead")}</p>
         <LanguageSetting badge={account} />
         <OctaveProfilesSettings badge={account} />

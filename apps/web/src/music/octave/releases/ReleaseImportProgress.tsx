@@ -25,12 +25,12 @@ function FileLine({ file, active }: { file: ReleaseJobFile; active: boolean }) {
   return (
     <li className={`flex items-center gap-2.5 text-sm ${active ? "text-content-primary" : "text-content-secondary"}`}>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-        {Icon ? <Icon className={`h-4 w-4 ${Icon === Loader2 ? "animate-spin motion-reduce:animate-none" : ""} ${file.state === "refused" ? "text-amber-300" : file.state === "read" ? "text-octave-accent-text" : ""}`} aria-hidden /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-50" aria-hidden />}
+        {Icon ? <Icon className={`h-4 w-4 ${Icon === Loader2 ? "animate-spin motion-reduce:animate-none" : ""} ${file.state === "refused" ? "text-status-warning-fg" : file.state === "read" ? "text-octave-accent-text" : ""}`} aria-hidden /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-50" aria-hidden />}
       </span>
       <span className="min-w-0 flex-1 truncate" title={file.name}>
         {file.name}
       </span>
-      <span className={`shrink-0 text-xs ${file.state === "refused" ? "text-amber-300" : "text-content-tertiary"}`} title={file.refusal ? t(`refusal.${file.refusal}`) : undefined}>
+      <span className={`shrink-0 text-xs ${file.state === "refused" ? "text-status-warning-fg" : "text-content-tertiary"}`} title={file.refusal ? t(`refusal.${file.refusal}`) : undefined}>
         {t(`file.${file.state}`)}
       </span>
     </li>
@@ -64,9 +64,9 @@ export function ReleaseImportProgress({ titleId, state, onHide, onCancel, onResu
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
-        {paused ? <PauseCircle className="h-6 w-6 shrink-0 text-amber-300" aria-hidden /> : <Loader2 className="h-6 w-6 shrink-0 animate-spin text-content-tertiary motion-reduce:animate-none" aria-hidden />}
+        {paused ? <PauseCircle className="h-6 w-6 shrink-0 text-status-warning-fg" aria-hidden /> : <Loader2 className="h-6 w-6 shrink-0 animate-spin text-content-tertiary motion-reduce:animate-none" aria-hidden />}
         <div className="min-w-0">
-          <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="oc-heading text-lg text-content-primary">
             {t(`phase.${state.phase}`)}
           </h2>
           <p className="truncate text-sm text-content-tertiary tabular-nums" aria-live="polite">
@@ -84,7 +84,7 @@ export function ReleaseImportProgress({ titleId, state, onHide, onCancel, onResu
         </div>
       )}
       <div className="h-1.5 overflow-hidden rounded-full bg-fill-subtle" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)} aria-labelledby={titleId}>
-        <div className="octave-brand-fill h-full w-full origin-left transition-transform duration-300 ease-out motion-reduce:transition-none" style={{ transform: `scaleX(${fraction})` }} />
+        <div className="octave-gauge-fill h-full w-full origin-left transition-transform duration-300 ease-out motion-reduce:transition-none" style={{ transform: `scaleX(${fraction})` }} />
       </div>
       {files.length > 0 && (
         <ul className="flex max-h-[40vh] flex-col gap-2 overflow-y-auto pr-1">
@@ -98,11 +98,11 @@ export function ReleaseImportProgress({ titleId, state, onHide, onCancel, onResu
           {t("cancel")}
         </button>
         {paused ? (
-          <button type="button" autoFocus onClick={onResume} className={`${BUTTON} octave-brand-fill px-6`}>
+          <button type="button" autoFocus onClick={onResume} className={`${BUTTON} octave-solid px-6`}>
             {t("resume")}
           </button>
         ) : (
-          <button type="button" onClick={onHide} className={`${BUTTON} border border-line-subtle text-content-primary hover:bg-octave-hover`}>
+          <button type="button" onClick={onHide} className={`${BUTTON} bg-fill-soft text-content-primary hover:bg-fill-strong`}>
             {t("hide")}
           </button>
         )}

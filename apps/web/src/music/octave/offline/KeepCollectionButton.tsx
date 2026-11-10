@@ -39,10 +39,10 @@ interface KeepCollectionButtonProps {
 }
 
 const ROUND =
-  "flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-octave-line bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default";
+  "flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default";
 
 const ITEM =
-  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
+  "flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 export function KeepCollectionButton(props: KeepCollectionButtonProps) {
   const surface = useOfflineSurface();
@@ -121,8 +121,8 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
           side="bottom"
           align="start"
           className="w-64 p-1.5"
-          // L'îlot d'encre opaque des menus d'Octave (IDENTITE.md) : jamais de verre sur du verre.
-          style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)" }}
+          // L'encre opaque des menus d'Octave (docs/REFONTE-UI.md) : jamais de verre sur du verre.
+          style={{ background: "var(--oc-ink-menu)", borderRadius: "var(--oc-radius-menu)", boxShadow: "var(--oc-shadow-menu)" }}
         >
           <p className="px-3 py-2 text-xs tabular-nums text-content-tertiary">
             {t("keptCount", { count: summary.done })} · {formatBytes(collectionBytes(keys, kept.byKey))}

@@ -57,7 +57,7 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
       }}
     >
       <div className="flex flex-col gap-1">
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+        <h2 id={titleId} className="oc-heading text-lg text-content-primary">
           {t("title")}
         </h2>
         <p className="text-sm text-content-secondary">{t("intro")}</p>
@@ -81,17 +81,17 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
               onChange={(e) => onLinkChange(e.target.value)}
               placeholder={t("linkPlaceholder")}
               aria-describedby={hintId}
-              className="h-11 w-full rounded-xl border border-line-subtle bg-fill-subtle pl-9 pr-3 text-sm text-content-primary placeholder:text-content-quaternary focus-visible:border-line-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
+              className="field w-full pl-9"
             />
           </div>
-          <p id={hintId} aria-live="polite" className={`min-h-5 text-sm ${recognized ? "text-content-primary" : link.trim() ? "text-amber-300" : "text-content-tertiary"}`}>
+          <p id={hintId} aria-live="polite" className={`min-h-5 text-sm ${recognized ? "text-content-primary" : link.trim() ? "text-status-warning-fg" : "text-content-tertiary"}`}>
             {recognized ? t(recognized.kind === "album" ? "linkRecognizedAlbum" : "linkRecognizedTrack") : link.trim() ? t("linkUnknown") : ""}
           </p>
         </div>
       )}
 
       {allowLink && allowFiles && (
-        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-content-quaternary" aria-hidden>
+        <div className="oc-eyebrow flex items-center gap-3" aria-hidden>
           <span className="h-px flex-1 bg-line-subtle" />
           {t("or")}
           <span className="h-px flex-1 bg-line-subtle" />
@@ -108,12 +108,12 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
             onDragOver={(e) => e.preventDefault()}
             onDragLeave={() => setOver(false)}
             onDrop={onDrop}
-            className={`flex flex-col items-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors duration-150 ${over ? "border-line-focus bg-octave-hover" : "border-line-subtle"}`}
+            className={`flex flex-col items-center gap-3 rounded-panel border border-dashed px-4 py-6 text-center transition-colors duration-150 ${over ? "border-line-focus bg-octave-hover" : "border-line-subtle"}`}
           >
             <Upload className="h-6 w-6 text-content-tertiary" aria-hidden />
             <p className="text-sm font-semibold text-content-primary">{t(over ? "dropActive" : "dropHere")}</p>
             <p className="max-w-sm text-xs text-content-tertiary">{t("filesHint")}</p>
-            <button type="button" onClick={() => input.current?.click()} className={`${BUTTON} border border-line-subtle text-content-primary hover:bg-octave-hover`}>
+            <button type="button" onClick={() => input.current?.click()} className={`${BUTTON} bg-fill-soft text-content-primary hover:bg-fill-strong`}>
               {t("chooseFiles")}
             </button>
             <input
@@ -132,7 +132,7 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
           {picked && (
             <div className="flex flex-col gap-1" aria-live="polite">
               {files.length > 0 && (
-                <div className="flex items-center gap-2 rounded-xl bg-fill-subtle px-3 py-2 text-sm text-content-primary">
+                <div className="flex items-center gap-2 rounded-[10px] bg-fill-subtle px-3 py-2 text-sm text-content-primary">
                   <FileAudio className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
                   <span className="min-w-0 flex-1 truncate" title={files.map((f) => f.name).join("\n")}>
                     {t("selected", { count: files.length, size: formatBytes(bytes, i18n.language) })}
@@ -143,8 +143,8 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
                 </div>
               )}
               {picked.covers > 0 && <p className="text-xs text-content-tertiary">{t("coverNote")}</p>}
-              {picked.ignored > 0 && <p className="text-xs text-amber-300">{t("ignored", { count: picked.ignored })}</p>}
-              {picked.truncated && <p className="text-xs text-amber-300">{t("tooMany", { max: RELEASE_FILES_PER_JOB })}</p>}
+              {picked.ignored > 0 && <p className="text-xs text-status-warning-fg">{t("ignored", { count: picked.ignored })}</p>}
+              {picked.truncated && <p className="text-xs text-status-warning-fg">{t("tooMany", { max: RELEASE_FILES_PER_JOB })}</p>}
             </div>
           )}
         </div>
@@ -154,7 +154,7 @@ export function ReleaseImportForm({ titleId, sources, link, onLinkChange, picked
         <button type="button" onClick={onCancel} className={`${BUTTON} text-content-tertiary hover:text-content-primary`}>
           {t("cancel")}
         </button>
-        <button type="submit" disabled={!files.length && !recognized} className={`${BUTTON} octave-brand-fill px-6`}>
+        <button type="submit" disabled={!files.length && !recognized} className={`${BUTTON} octave-solid px-6`}>
           {t(files.length ? "importFiles" : "importLink")}
         </button>
       </div>

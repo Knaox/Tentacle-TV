@@ -146,7 +146,7 @@ export function ImportPlaylistHost() {
   } else {
     body = (
       <div className="flex flex-col gap-4">
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+        <h2 id={titleId} className="oc-heading text-lg text-content-primary">
           {target ? t("intoTitle", { name: target.name }) : t("title")}
         </h2>
         {tabs}

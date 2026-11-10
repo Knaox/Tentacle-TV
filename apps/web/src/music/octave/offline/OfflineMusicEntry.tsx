@@ -48,9 +48,10 @@ function OfflineMusicEntryCard() {
       <button
         type="button"
         onClick={() => navigate(octavePaths.device)}
-        className="flex w-full max-w-xl cursor-pointer items-center gap-4 rounded-2xl border border-line-subtle bg-fill-faint p-4 text-left transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="flex w-full max-w-xl cursor-pointer items-center gap-4 rounded-tile bg-fill-subtle p-4 text-left transition-colors duration-150 hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--brand-dark),var(--brand-accent))] text-white" aria-hidden>
+        {/* L'emblème d'Octave (`.octave-emblem`) en classes du socle : cette entrée vit dans Tentacle, octave.css n'y est pas chargé. */}
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent" aria-hidden>
           <Music className="h-7 w-7" />
         </span>
         <span className="min-w-0">

@@ -58,7 +58,7 @@ export const OctaveProfileSheet = memo(function OctaveProfileSheet({ profiles, c
       ) : (
         <div className="flex flex-col gap-4 p-5" data-octave-profile-sheet>
           <div>
-            <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("profile.whoListens")}</h2>
+            <h2 id={titleId} className="oc-heading text-lg text-content-primary">{t("profile.whoListens")}</h2>
             <p className="mt-1 text-sm text-content-tertiary">{t("profile.choose")}</p>
           </div>
           <ul className="grid grid-cols-3 gap-2">
@@ -96,7 +96,7 @@ function ProfileChoice({ profile, opening, disabled, onPick }: { profile: Picker
       aria-current={profile.current ? "true" : undefined}
       disabled={disabled}
       onClick={() => onPick(profile.id)}
-      className={`flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default ${opening ? "bg-octave-hover" : ""} ${disabled && !opening ? "opacity-50" : ""}`}
+      className={`flex w-full cursor-pointer flex-col items-center gap-2 rounded-tile px-2 py-3 text-center transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default ${opening ? "bg-octave-hover" : ""} ${disabled && !opening ? "opacity-50" : ""}`}
     >
       <span className={`relative rounded-full ${profile.current ? "ring-2 ring-octave-accent-text ring-offset-2 ring-offset-[var(--oc-ink-raised)]" : ""}`}>
         <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={56} />

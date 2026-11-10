@@ -26,7 +26,7 @@ export const SharedPlaylistBadge = memo(function SharedPlaylistBadge({ playlist 
       // toute pochette ; jamais en style en ligne, que la garde du client LG refuse.
       className="octave-shared-badge pointer-events-auto absolute bottom-2 left-2 z-[1] inline-flex items-center gap-1.5 rounded-full py-1 pl-1.5 pr-1"
     >
-      <span className="octave-brand-fill flex h-[22px] w-[22px] items-center justify-center rounded-full">
+      <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full">
         <Users className="h-3 w-3" aria-hidden />
       </span>
       <PeopleStack people={rules.people} size={22} max={3} />

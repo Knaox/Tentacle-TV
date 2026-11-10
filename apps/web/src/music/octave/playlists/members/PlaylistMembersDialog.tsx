@@ -32,10 +32,10 @@ export function PlaylistMembersDialog({ playlist, onClose }: { playlist: MusicPl
     <Modal open onClose={onClose} maxWidth={520} labelledBy={titleId}>
       <div className="flex max-h-[80vh] flex-col p-6">
         <div className="flex items-center gap-3">
-          <span className="octave-brand-fill flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden>
+          <span className="octave-emblem flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden>
             <Users className="h-5 w-5" />
           </span>
-          <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="oc-heading text-lg text-content-primary">
             {owner ? t("title", { name: playlist.name }) : t("peopleTitle", { name: playlist.name })}
           </h2>
         </div>
@@ -46,7 +46,7 @@ export function PlaylistMembersDialog({ playlist, onClose }: { playlist: MusicPl
           {members.unreadable && <p className="py-4 text-sm text-content-tertiary">{t("unavailable")}</p>}
           {sharing && (
             <>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{t("members")}</h3>
+              <h3 className="oc-eyebrow mb-1">{t("members")}</h3>
               <ul className="divide-y divide-line-subtle">
                 {!owner && <PersonRow person={sharing.owner} caption={t("owner")} />}
                 {sharing.members.map((m) =>
@@ -64,7 +64,7 @@ export function PlaylistMembersDialog({ playlist, onClose }: { playlist: MusicPl
           {owner && (
             <section className="mt-5" aria-labelledby={`${titleId}-add`}>
               <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                <h3 id={`${titleId}-add`} className="text-xs font-semibold uppercase tracking-wide text-content-tertiary">{t("addTitle")}</h3>
+                <h3 id={`${titleId}-add`} className="oc-eyebrow">{t("addTitle")}</h3>
                 <RightSelect value={newRight} onChange={setNewRight} label={t("addAs")} disabled={busy} />
               </div>
               {candidates.loading && <p className="py-3 text-sm text-content-tertiary">{t("loading")}</p>}
@@ -87,7 +87,7 @@ export function PlaylistMembersDialog({ playlist, onClose }: { playlist: MusicPl
               onClick={() => requestPlaylistManage({ kind: "leave", playlist })}
               appearance={{ level: "regular", shape: "capsule" }}
               className="mr-auto inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-semibold text-status-error-fg"
-              fallbackClassName="rounded-lg border border-line-subtle bg-fill-soft transition hover:bg-fill-medium"
+              fallbackClassName="rounded-full bg-fill-soft transition-colors hover:bg-fill-strong"
             >
               <LogOut className="h-4 w-4" aria-hidden />
               {t("leave")}
@@ -97,7 +97,7 @@ export function PlaylistMembersDialog({ playlist, onClose }: { playlist: MusicPl
             type="button"
             autoFocus
             onClick={onClose}
-            className="octave-brand-fill inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="octave-solid inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             {t("close")}
           </button>

@@ -53,10 +53,10 @@ export function ImportFilesPane({ into, onStart, onCancel }: Props) {
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
-        className={`flex flex-col items-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors duration-150 ${over ? "border-line-focus bg-octave-hover" : "border-line-subtle"}`}
+        className={`flex flex-col items-center gap-3 rounded-panel border border-dashed px-4 py-6 text-center transition-colors duration-150 ${over ? "border-line-focus bg-octave-hover" : "border-line-subtle"}`}
       >
         <Upload className="h-6 w-6 text-content-tertiary" aria-hidden />
-        <button type="button" onClick={() => input.current?.click()} className={`${BUTTON} border border-line-subtle text-content-primary hover:bg-octave-hover`}>
+        <button type="button" onClick={() => input.current?.click()} className={`${BUTTON} bg-fill-soft text-content-primary hover:bg-fill-strong`}>
           {t(files.length > 0 ? "filesChange" : "filesChoose")}
         </button>
         <p className="text-xs text-content-tertiary">{t("filesDrop")}</p>
@@ -76,14 +76,14 @@ export function ImportFilesPane({ into, onStart, onCancel }: Props) {
       {picked && (
         <div className="flex flex-col gap-1" aria-live="polite">
           {files.length > 0 && (
-            <p className="flex items-center gap-2 rounded-xl bg-fill-subtle px-3 py-2 text-sm text-content-primary">
+            <p className="flex items-center gap-2 rounded-[10px] bg-fill-subtle px-3 py-2 text-sm text-content-primary">
               <FileAudio className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
               <span className="min-w-0 flex-1 truncate" title={files.map((f) => f.name).join("\n")}>
                 {t("filesPicked", { count: files.length, size: formatBytes(bytes, i18n.language) })}
               </span>
             </p>
           )}
-          {picked.ignored > 0 && <p className="text-xs text-amber-300">{t("filesIgnored", { count: picked.ignored })}</p>}
+          {picked.ignored > 0 && <p className="text-xs text-status-warning-fg">{t("filesIgnored", { count: picked.ignored })}</p>}
         </div>
       )}
       {!into && (
@@ -97,7 +97,7 @@ export function ImportFilesPane({ into, onStart, onCancel }: Props) {
             maxLength={200}
             onChange={(e) => setName(e.target.value)}
             placeholder={t("namePlaceholder")}
-            className="min-h-[44px] w-full rounded-xl border border-line-subtle bg-fill-subtle px-3 py-2.5 text-sm text-content-primary placeholder:text-content-quaternary focus-visible:border-line-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="field w-full"
           />
         </div>
       )}
@@ -105,7 +105,7 @@ export function ImportFilesPane({ into, onStart, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="min-h-[44px] cursor-pointer rounded-full px-4 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("cancel")}
         </button>
-        <button type="submit" disabled={files.length === 0} className="octave-brand-fill min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="submit" disabled={files.length === 0} className="octave-solid min-h-[44px] cursor-pointer rounded-full px-6 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("filesStart")}
         </button>
       </div>

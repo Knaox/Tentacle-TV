@@ -25,7 +25,7 @@ import { useBulkTrackActions } from "./selection/useBulkTrackActions";
 import { useTrackActions } from "./useTrackActions";
 
 const actionClass =
-  "flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-50";
+  "flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-50";
 
 export function UnavailableAlbumHost() {
   const album = useSyncExternalStore(subscribeUnavailableAlbum, unavailableAlbumSnapshot, () => null);
@@ -66,7 +66,7 @@ function UnavailableAlbumDialog({ album, target }: { album: MusicAlbum; target: 
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <h2 id={titleId} className="flex items-center gap-2 text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="oc-heading flex items-center gap-2 text-lg text-content-primary">
             <CloudOff className="h-5 w-5 text-content-tertiary" aria-hidden />
             {t("unavailableAlbum.title")}
           </h2>
@@ -79,14 +79,14 @@ function UnavailableAlbumDialog({ album, target }: { album: MusicAlbum; target: 
         </p>
         <div className="flex flex-col gap-2">
           {phase === "failed" ? (
-            <button type="button" className={`${actionClass} octave-brand-fill`} onClick={() => void loaded.refetch()}>
+            <button type="button" className={`${actionClass} octave-solid`} onClick={() => void loaded.refetch()}>
               {t("common.retry")}
             </button>
           ) : (
             <>
               <button
                 type="button"
-                className={`${actionClass} octave-brand-fill`}
+                className={`${actionClass} octave-solid`}
                 disabled={likable.length === 0 || allLiked}
                 onClick={() => {
                   bulk.like(likable);
