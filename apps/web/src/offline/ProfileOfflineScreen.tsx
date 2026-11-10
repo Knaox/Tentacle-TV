@@ -23,13 +23,13 @@ export function ProfileOfflineScreen() {
   const cause = connectivityCopy(connectivityCaseOf(reason) ?? "server");
   return (
     <PageTransition className="px-4 pb-24 pt-10 md:px-8">
-      <div className="mt-16 flex flex-col items-center text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-line-subtle bg-fill-faint text-[var(--brand-light)]">
-          <WifiOff className="h-7 w-7" aria-hidden />
+      <div className="mt-16 flex flex-col items-center gap-3 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-tile bg-surface-2 text-content-secondary">
+          <WifiOff size={26} aria-hidden />
         </span>
-        <h1 className="mt-5 text-lg font-semibold text-content-primary">{t(cause.titleKey)}</h1>
-        <p className="mt-2 max-w-md text-sm leading-relaxed text-content-tertiary">{t(cause.hintKey)}</p>
-        <p className="mt-1 max-w-md text-sm leading-relaxed text-content-tertiary">{t("profilePicker:session.offlineMessage")}</p>
+        <h1 className="font-display text-heading-3 text-content-primary">{t(cause.titleKey)}</h1>
+        <p className="max-w-[52ch] text-sm leading-relaxed text-content-secondary">{t(cause.hintKey)}</p>
+        <p className="max-w-[52ch] text-sm leading-relaxed text-content-secondary">{t("profilePicker:session.offlineMessage")}</p>
       </div>
     </PageTransition>
   );

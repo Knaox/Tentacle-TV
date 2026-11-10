@@ -42,7 +42,7 @@ export function DownloadsQueueActions({ entries }: { entries: readonly DownloadE
       {(running.length > 0 || held.length > 0) && (
         <QueueButton
           label={pausing ? t("pauseAll") : t("resumeAll")}
-          icon={pausing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          icon={pausing ? <Pause className="h-3.5 w-3.5" aria-hidden /> : <Play className="h-3.5 w-3.5" aria-hidden />}
           disabled={busy}
           onClick={() => void apply(pausing ? running : held, pausing ? pauseDownload : resumeDownload)}
         />
@@ -50,7 +50,7 @@ export function DownloadsQueueActions({ entries }: { entries: readonly DownloadE
       {failed.length > 0 && (
         <QueueButton
           label={t("retryAll")}
-          icon={<RotateCw className="h-3.5 w-3.5" />}
+          icon={<RotateCw className="h-3.5 w-3.5" aria-hidden />}
           disabled={busy}
           onClick={() => void apply(failed, resumeDownload)}
         />
@@ -61,13 +61,8 @@ export function DownloadsQueueActions({ entries }: { entries: readonly DownloadE
 
 function QueueButton({ label, icon, disabled, onClick }: { label: string; icon: React.ReactNode; disabled: boolean; onClick: () => void }) {
   return (
-    // Un geste du CONTENU : un remplissage, pas un verre sur la page (lot lg2).
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="lg-content-control inline-flex h-8 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:opacity-50"
-    >
+    // Un geste du CONTENU : la pilule douce du socle ; en verre natif, un remplissage (lot lg2).
+    <button type="button" onClick={onClick} disabled={disabled} className="btn btn-soft btn-sm lg-content-control">
       {icon}
       {label}
     </button>

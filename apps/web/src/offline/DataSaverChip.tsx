@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LeafIcon } from "@phosphor-icons/react/dist/csr/Leaf";
 import { FloatingLayer } from "../components/floating/FloatingLayer";
 import { useConnectivity } from "./useConnectivity";
 import { useDataSaverActive, useDataSaverSetting } from "./useDataSaver";
@@ -40,9 +41,9 @@ export function DataSaverChip() {
         onClick={() => setOpen((p) => !p)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="lgc-status flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-opacity duration-150 hover:opacity-80"
+        className="lgc-status btn btn-soft btn-sm"
       >
-        <span className="lgc-status-dot h-2 w-2 rounded-full bg-content-tertiary" />
+        <LeafIcon size={16} aria-hidden className="lgc-status-dot" />
         <span className="hidden sm:inline">{t("saverChip")}</span>
       </button>
 
@@ -53,38 +54,31 @@ export function DataSaverChip() {
         onDismiss={() => setOpen(false)}
         role="dialog"
         ariaLabel={t("saverPopoverTitle")}
-        className="lg-menu w-72 overflow-y-auto overscroll-contain"
-        style={{
-          background: "var(--surface-dropdown)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-dropdown)",
-          backdropFilter: "blur(var(--blur-dropdown))",
-          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
-        }}
+        // Le menu du socle : opaque, sans flou derrière (docs/REFONTE-UI.md, § 4).
+        className="ui-menu lg-menu w-80 overflow-y-auto overscroll-contain !p-0"
       >
-        <div className="lg-sep border-b border-line-subtle px-4 py-3">
-          <p className="text-sm font-semibold text-content-primary">{t("saverPopoverTitle")}</p>
-          <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+        <div className="lg-sep flex flex-col gap-1.5 border-b border-line-subtle px-4 pb-3.5 pt-4">
+          <p className="text-[15px] font-semibold text-content-primary">{t("saverPopoverTitle")}</p>
+          <p className="text-[13px] leading-relaxed text-content-secondary">
             {setting === "on" ? t("saverForcedReason") : t("saverAutoReason")}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
+          <p className="text-[13px] leading-relaxed text-content-tertiary">
             {t("saverEffects")}
           </p>
           {setting === "auto" && (
-            <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
+            <p className="text-[13px] leading-relaxed text-content-tertiary">
               {t("saverAutoHint")}
             </p>
           )}
         </div>
-        <div className="px-4 py-3">
+        <div className="p-3">
           <button
             type="button"
             onClick={() => {
               setOpen(false);
               setSetting("off");
             }}
-            className="inline-flex w-full items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+            className="btn btn-soft btn-sm w-full"
           >
             {t("saverDisable")}
           </button>

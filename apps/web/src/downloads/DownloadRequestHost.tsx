@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useMediaItem, useSeriesEpisodes } from "@tentacle-tv/api-client";
 import { DownloadDialog } from "./DownloadDialog";
+import { SheetResolvingVeil } from "./OfflineSheetFrame";
 import { clearDownloadRequest, useDownloadRequest } from "./downloadRequest";
 import { useToast } from "../contexts/ToastContext";
 
@@ -61,12 +62,12 @@ export function DownloadRequestHost() {
 
   if (isSeries) {
     if (seriesFailed || seriesEmpty) return null;
-    if (episodes === undefined) return <ResolvingVeil label={t("common:loading")} />;
+    if (episodes === undefined) return <SheetResolvingVeil label={t("common:loading")} />;
     return <DownloadDialog items={episodes} mode="series" onClose={clearDownloadRequest} />;
   }
 
   const resolved = needsFull ? (full ?? (fullFailed ? item : null)) : item;
-  if (resolved === null) return <ResolvingVeil label={t("common:loading")} />;
+  if (resolved === null) return <SheetResolvingVeil label={t("common:loading")} />;
   return <DownloadDialog items={[resolved]} onClose={clearDownloadRequest} />;
 }
 
@@ -75,15 +76,3 @@ export function DownloadRequestHost() {
  * d'origine a pu disparaître sous la souris, il ne peut donc pas se griser
  * lui-même — sans ce voile, rien n'empêcherait un deuxième clic.
  */
-function ResolvingVeil({ label }: { label: string }) {
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30"
-      role="status"
-      aria-busy="true"
-      aria-label={label}
-    >
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-    </div>
-  );
-}

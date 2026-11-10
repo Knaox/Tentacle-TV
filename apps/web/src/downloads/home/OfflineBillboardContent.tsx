@@ -24,7 +24,7 @@ const LOGO = ["logo.png"] as const;
  * `HeroContent`, mêmes classes et même cascade : sur-titre (Continuer, le
  * code de l'épisode, ou « Sur cet appareil » avec la version gardée), logo du
  * snapshot sinon le titre, ligne de faits (qualité du FICHIER), synopsis,
- * avancement au dégradé de marque, puis Reprendre / Lecture et Plus d'infos,
+ * avancement sur la jauge du socle, puis Reprendre / Lecture et Plus d'infos,
  * qui ouvre la fiche locale.
  *
  * Posé sur les voiles noirs constants de la bannière : jetons `on-media` dans
@@ -92,15 +92,9 @@ export function OfflineBillboardContent({ entry, animationKey }: { entry: Downlo
 
         {hasProgress && (
           <motion.div variants={itemVariants} className="mb-5 flex max-w-md items-center gap-3">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-on-media-muted">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${percent}%`,
-                  background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
-                  boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.55)",
-                }}
-              />
+            {/* La jauge du socle, posée sur l'image : `scaleX`, jamais une largeur ; plus de lueur. */}
+            <div className="gauge flex-1" style={{ backgroundColor: "var(--on-media-muted)" }}>
+              <i style={{ transform: `scaleX(${percent / 100})` }} />
             </div>
             <span className="text-xs font-medium tabular-nums text-on-media-secondary">{Math.round(percent)}%</span>
           </motion.div>

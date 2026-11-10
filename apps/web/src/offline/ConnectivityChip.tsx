@@ -4,12 +4,13 @@
  * Clic → popover d'état (cause, joignabilité) + actions : réessayer,
  * rester hors ligne (mode manuel), repasser en ligne.
  *
- * Animations en CSS pur (`animate-scale-in`, `animate-pulse-glow`) — pas de
- * Framer Motion dans la feature téléchargements/hors-ligne, par contrainte.
+ * La pilule et le menu du socle (refonte de nov. 2026) : opaques, sans flou,
+ * et plus rien qui bat dans la barre — l'icône suffit à dire l'état.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { WifiSlashIcon } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { FloatingLayer } from "../components/floating/FloatingLayer";
 import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { isDesktopApp } from "../desktop/bridge";
@@ -41,9 +42,11 @@ export function ConnectivityChip() {
         onClick={() => setOpen((p) => !p)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="lgc-status flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-status-warning-bg px-3 text-xs font-semibold text-status-warning-fg transition-opacity duration-150 hover:opacity-80"
+        // La pilule du socle, à la teinte de l'avertissement ; le point ne bat plus (la barre
+        // est affichée sur toutes les pages : rien d'animé n'y dure).
+        className="lgc-status btn btn-sm bg-status-warning-bg text-status-warning-fg"
       >
-        <span className="lgc-status-dot h-2 w-2 rounded-full bg-status-warning animate-pulse-glow" />
+        <WifiSlashIcon size={16} weight="fill" aria-hidden className="lgc-status-dot" />
         <span className="hidden sm:inline">{t(manual ? "offlineChipManual" : "offlineChip")}</span>
       </button>
 
@@ -54,19 +57,12 @@ export function ConnectivityChip() {
         onDismiss={() => setOpen(false)}
         role="dialog"
         ariaLabel={t("offlinePopoverTitle")}
-        className="lg-menu w-72 overflow-y-auto overscroll-contain"
-        style={{
-          background: "var(--surface-dropdown)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-dropdown)",
-          backdropFilter: "blur(var(--blur-dropdown))",
-          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
-        }}
+        // Le menu du socle : opaque, sans flou derrière (docs/REFONTE-UI.md, § 4).
+        className="ui-menu lg-menu w-80 overflow-y-auto overscroll-contain !p-0"
       >
-        <div className="lg-sep border-b border-line-subtle px-4 py-3">
-          <p className="text-sm font-semibold text-content-primary">{t("offlinePopoverTitle")}</p>
-          <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+        <div className="lg-sep flex flex-col gap-1.5 border-b border-line-subtle px-4 pb-3.5 pt-4">
+          <p className="text-[15px] font-semibold text-content-primary">{t("offlinePopoverTitle")}</p>
+          <p className="text-[13px] leading-relaxed text-content-secondary">
             {manual
               ? `${t("offlineManualEnabled")} ${
                   snap.reachable ? t("offlineServerReachable") : t("offlineServerUnreachable")
@@ -74,12 +70,12 @@ export function ConnectivityChip() {
               : `${t(offlineCause.titleKey)}. ${t(offlineCause.hintKey)}`}
           </p>
           {!manual && (
-            <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
+            <p className="text-[13px] leading-relaxed text-content-tertiary">
               {t("offlineAutoHint")}
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-2 px-4 py-3">
+        <div className="flex flex-col gap-2 p-3">
           {manual ? (
             <button
               type="button"
@@ -87,7 +83,7 @@ export function ConnectivityChip() {
                 setOpen(false);
                 setManualOffline(false);
               }}
-              className="inline-flex items-center justify-center rounded-md bg-cta-primary-bg px-3 py-2 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+              className="btn btn-solid btn-sm"
             >
               {t("offlineGoOnline")}
             </button>
@@ -96,7 +92,7 @@ export function ConnectivityChip() {
               <button
                 type="button"
                 onClick={() => probeNow(true)}
-                className="inline-flex items-center justify-center rounded-md border border-line-strong bg-fill-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft"
+                className="btn btn-soft btn-sm"
               >
                 {t("offlineRetry")}
               </button>
@@ -109,7 +105,7 @@ export function ConnectivityChip() {
                     setOpen(false);
                     setManualOffline(true);
                   }}
-                  className="inline-flex items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+                  className="btn btn-ghost btn-sm"
                 >
                   {t("offlineStayOffline")}
                 </button>

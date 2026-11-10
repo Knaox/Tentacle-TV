@@ -33,12 +33,8 @@ export function AutoDeleteSelect({
       onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
       aria-label={t("autoDeleteAfterWatch")}
       title={t("autoDeleteAfterWatch")}
-      className={
-        compact
-          ? "max-w-32 rounded-md border border-line-subtle px-1.5 py-1 text-[10px] font-medium text-content-tertiary"
-          : "rounded-lg border border-line-subtle px-3 py-2 text-sm text-content-primary"
-      }
-      style={{ background: "var(--surface-2)" }}
+      // Le champ du socle (`.field`), à la largeur de son contenu ; `compact` : une ligne de liste.
+      className={compact ? "field h-8 w-auto max-w-36 px-2.5 text-xs" : "field h-9 w-auto"}
     >
       <option value="">{t("autoDeleteOff")}</option>
       {AUTO_DELETE_DELAYS.map((minutes) => (

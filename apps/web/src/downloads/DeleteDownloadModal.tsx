@@ -6,7 +6,10 @@
 
 import { GlassButton } from "../components/ui/glass/GlassButton";
 import { useTranslation } from "react-i18next";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { SHEET_BUTTON_LAYOUT } from "./DownloadDialogParts";
 import { OfflineSheetFrame } from "./OfflineSheetFrame";
+import { useSheetExit } from "./ui/useSheetExit";
 
 interface DeleteDownloadModalProps {
   /** Ce qui va partir. Omis quand l'en-tête le dit déjà (suppression groupée). */
@@ -26,26 +29,27 @@ export function DeleteDownloadModal({
   const { t } = useTranslation(["downloads", "common"]);
   const header = heading ?? t("downloads:deleteConfirmTitle");
 
-  // Le cadre : la feuille de `Modal` en verre natif, celui d'avant ailleurs
-  // (portail dans les deux cas : `OfflineSheetFrame`).
+  const exit = useSheetExit(onClose);
+
+  // Le cadre : la feuille du socle, en portail (`OfflineSheetFrame`).
   return (
-    <OfflineSheetFrame label={header} onClose={onClose} role="alertdialog" width="sm" legacyLayer="z-[210]">
-      <div className="px-5 py-4">
-        <h2 className="text-base font-bold text-content-primary">{header}</h2>
-        {title && (
-          <p className="mt-1 truncate text-sm font-semibold text-content-secondary">{title}</p>
-        )}
-        <p className="mt-2 text-xs leading-relaxed text-content-tertiary">
+    <OfflineSheetFrame label={header} open={exit.open} onClose={exit.close} role="alertdialog" width="sm">
+      <div className="flex flex-col gap-2 px-6 pb-5 pt-6">
+        <h2 className="font-display text-heading-3 text-content-primary">{header}</h2>
+        {title && <p className="truncate text-sm font-semibold text-content-secondary">{title}</p>}
+        <p className="text-[13px] leading-relaxed text-content-tertiary">
           {message ?? t("downloads:deleteConfirmMessage")}
         </p>
       </div>
-      <div className="flex justify-end gap-2 border-t border-line-subtle px-5 py-3.5">
+      <div className="lg-sep flex flex-wrap justify-end gap-2 border-t border-line-subtle px-6 pb-5 pt-4">
         <GlassButton
           inSurface
-          onClick={onClose}
+          onClick={exit.close}
+          // Une confirmation destructive : le focus arrive sur « Annuler ».
+          data-sheet-focus
           appearance={{ level: "regular", shape: "capsule" }}
-          className="px-4 py-2 text-sm font-semibold"
-          fallbackClassName="rounded-md bg-cta-ghost-bg text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+          className={SHEET_BUTTON_LAYOUT}
+          fallbackClassName="btn btn-ghost"
         >
           {t("common:cancel")}
         </GlassButton>
@@ -55,9 +59,10 @@ export function DeleteDownloadModal({
           onClick={onConfirm}
           disabled={busy}
           appearance={{ level: "regular", shape: "capsule" }}
-          className="px-4 py-2 text-sm font-bold disabled:opacity-50"
-          fallbackClassName="lg-shape-capsule rounded-md border border-danger-border bg-danger-surface text-status-error-fg transition-colors duration-150 hover:bg-danger-surface-hover"
+          className={`${SHEET_BUTTON_LAYOUT} disabled:opacity-45`}
+          fallbackClassName="lg-shape-capsule btn btn-danger"
         >
+          <TrashIcon size={16} aria-hidden />
           {t("downloads:deleteConfirm")}
         </GlassButton>
       </div>

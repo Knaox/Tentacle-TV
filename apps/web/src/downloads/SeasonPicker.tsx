@@ -7,6 +7,7 @@
 
 import { useTranslation } from "react-i18next";
 import { seasonLabel, type OfflineSeasonGroup } from "@tentacle-tv/offline-core";
+import { SheetSegments } from "./ui/SheetSegments";
 
 interface SeasonPickerProps {
   seasons: OfflineSeasonGroup[];
@@ -19,26 +20,20 @@ export function SeasonPicker({ seasons, activeKey, onSelect }: SeasonPickerProps
   if (seasons.length < 2) return null;
 
   return (
-    <div className="mb-5 flex flex-wrap gap-2">
-      {seasons.map((season) => {
-        const active = season.key === activeKey;
-        return (
-          <button
-            key={season.key}
-            type="button"
-            aria-current={active ? "true" : undefined}
-            onClick={() => onSelect(season.key)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              active
-                ? "bg-fill-medium text-content-primary"
-                : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-            }`}
-          >
+    <SheetSegments
+      className="mb-5"
+      label={t("detailEpisodesOnDevice")}
+      value={activeKey}
+      onChange={onSelect}
+      options={seasons.map((season) => ({
+        value: season.key,
+        label: (
+          <>
             {seasonLabel(t, season.seasonNumber)}
-            <span className="ml-1.5 text-xs text-content-quaternary">{season.episodes.length}</span>
-          </button>
-        );
-      })}
-    </div>
+            <span className="num ml-1.5 text-xs font-medium text-content-tertiary">{season.episodes.length}</span>
+          </>
+        ),
+      }))}
+    />
   );
 }

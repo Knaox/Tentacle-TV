@@ -1,8 +1,9 @@
 /**
- * Ligne d'un téléchargement : affiche locale (protocole asset Tauri), titre,
- * méta (variante/palier/taille), progression LIVE (store de progression, hors
- * TanStack), badge d'état en jetons status-*, actions par statut (pause,
- * reprise, annulation, suppression, auto-suppression).
+ * Ligne d'un téléchargement : vignette locale 16:9, titre, puce d'état, méta
+ * (variante/palier/taille), progression LIVE (store de progression, hors
+ * TanStack) sur la jauge du hors ligne, actions par statut (pause, reprise,
+ * annulation, suppression, auto-suppression). Une ligne de PANNEAU : la
+ * séparation est un filet, plus une carte bordée par titre.
  *
  * La ligne DIT ce qui se passe, comme celle du téléphone : l'étape en cours
  * (transfert puis finalisation), le débit et le temps restant, la CAUSE exacte
@@ -11,7 +12,7 @@
  * octet reçu la laissait figée à 100 %, sans un mot.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   cancelDownload,
@@ -19,10 +20,10 @@ import {
   resumeDownload,
   type DownloadEntry,
 } from "./api";
-import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { AutoDeleteControl } from "./AutoDeleteControl";
 import { episodeCode, RetryAction, RowProgress, SmallAction, StatusBadge } from "./DownloadRowParts";
-import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
+import { RowThumb } from "./ui/RowThumb";
 import { formatBytes } from "./presets";
 import { formatRate, formatTimeLeft, useRetryCountdown } from "./transferText";
 import { useFileProgress } from "@tentacle-tv/offline-core/react";
@@ -42,9 +43,6 @@ interface DownloadRowProps {
 
 export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSeries = false }: DownloadRowProps) {
   const { t } = useTranslation("downloads");
-  const [posterFailed, setPosterFailed] = useState(false);
-  useDownloadsRootReady(); // re-rend quand la racine locale est résolue
-  const posterUrl = localResourceUrl(`meta/${entry.itemId}/primary.jpg`);
   const live = useFileProgress(entry.id);
 
   const bytesDone = live?.bytesDone ?? entry.bytesDone;
@@ -55,11 +53,14 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
   // Le remux dure parfois des minutes APRÈS le dernier octet : sans ce mot, la
   // ligne semblait figée. Débit et temps restant n'ont de sens qu'en transfert.
   const finalizing = entry.status === "downloading" && entry.phase === "finalize";
+  // Le serveur prépare le fichier (`files.phase = 'prepare'`) : rien ne transite encore, la
+  // barre reste vide au lieu de feindre un début de transfert.
+  const preparing = entry.status === "downloading" && entry.phase === "prepare";
   // Le débit du store SURVIT à la fin du transfert (dernière mesure gardée) :
   // sans cette garde, une ligne terminée affichait encore « 75 Mio/s · moins
   // d'une minute ». Il n'a de sens que pendant un transfert qui court.
   const pace =
-    entry.status !== "downloading" || finalizing
+    entry.status !== "downloading" || finalizing || preparing
       ? []
       : [formatRate(t, live?.rateBps ?? null), formatTimeLeft(t, live?.etaMs ?? null)].filter(
           (part): part is string => part !== null,
@@ -80,86 +81,74 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
     entry.status === "complete" ? formatBytes(entry.bytesDone) : expected ? formatBytes(expected) : null,
   ].filter(Boolean);
 
+  const progressText = [
+    `${formatBytes(bytesDone)}${expected ? ` / ${formatBytes(expected)}` : ""}`,
+    pct !== null && !finalizing ? `${Math.round(pct)} %` : null,
+  ].filter((part): part is string => part !== null);
+  const pending = retryIn !== null ? (retryIn > 0 ? t("retryIn", { seconds: retryIn }) : t("retryNow")) : null;
+
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-        selection?.selected
-          ? "border-[rgba(var(--brand-rgb),0.45)] bg-[rgba(var(--brand-rgb),0.1)]"
-          : entry.status === "error"
-            ? "border-status-error-bg bg-fill-faint hover:bg-fill-subtle"
-            : "border-transparent bg-fill-faint hover:bg-fill-subtle"
+      data-status={entry.status}
+      className={`flex items-center gap-3.5 px-5 py-3 transition-colors duration-hover ${
+        selection?.selected ? "bg-accent-soft" : selection ? "hover:bg-fill-faint" : ""
       } ${selection ? "cursor-pointer" : ""}`}
-      // Toute la ligne bascule la case : viser un carré de 16 px sur une liste
+      // Toute la ligne bascule la case : viser un carré de 20 px sur une liste
       // de vingt-quatre épisodes est un supplice.
       onClick={selection ? () => selection.onToggle(entry.id) : undefined}
     >
       {selection && (
-        <input
-          type="checkbox"
-          checked={selection.selected}
-          onChange={() => selection.onToggle(entry.id)}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={selection.selected}
+          aria-label={displayTitle}
           // La ligne porte déjà le clic : sans ceci il compterait DEUX fois et
           // la case reviendrait aussitôt à son état d'avant.
-          onClick={(e) => e.stopPropagation()}
-          aria-label={displayTitle}
-          className="h-4 w-4 flex-shrink-0 accent-[var(--brand)]"
-        />
+          onClick={(e) => {
+            e.stopPropagation();
+            selection.onToggle(entry.id);
+          }}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
+        >
+          <span className="ui-check">
+            <CheckIcon size={13} weight="bold" aria-hidden />
+          </span>
+        </button>
       )}
-      <div className="flex h-16 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-2 ring-1 ring-inset ring-line-subtle">
-        {posterUrl && !posterFailed ? (
-          <img
-            src={posterUrl}
-            alt=""
-            loading="lazy" decoding="async"
-            className="h-full w-full object-cover"
-            onError={() => setPosterFailed(true)}
-          />
-        ) : (
-          // Sans affiche locale, un repère plutôt qu'un rectangle vide.
-          <Film className="h-4 w-4 text-content-quaternary" aria-hidden />
-        )}
-      </div>
+      <RowThumb itemId={entry.itemId} episode={entry.kind === "episode"} />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => onPlay?.(entry)}
             disabled={entry.status !== "complete" || !onPlay || !!selection}
-            className="truncate text-left text-sm font-semibold text-content-primary disabled:cursor-default"
+            className="min-w-0 truncate rounded-chip text-left text-[15px] font-semibold leading-snug text-content-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] disabled:cursor-default"
           >
             {displayTitle}
           </button>
           <StatusBadge status={entry.status} errorCode={entry.errorCode} phase={entry.phase} />
-        </div>
-        <p className="mt-0.5 text-xs text-content-quaternary">{meta.join(" · ")}</p>
-        {isActive && (
-          <div className="mt-2 flex items-center gap-2">
-            <RowProgress
-              ratio={(finalizing ? 100 : pct ?? (entry.status === "downloading" ? 8 : 0)) / 100}
-              status={entry.status}
-            />
-            {/* En fenêtre étroite, les tailles cèdent la place au titre : le
-                pourcentage suffit à dire où en est la ligne. */}
-            <span className="flex-shrink-0 text-right text-[10px] tabular-nums text-content-quaternary sm:w-28">
-              <span className="hidden sm:inline">
-                {formatBytes(bytesDone)}
-                {expected ? ` / ${formatBytes(expected)}` : ""}
-                {pct !== null && !finalizing ? " · " : ""}
-              </span>
-              {pct !== null && !finalizing ? `${Math.round(pct)} %` : ""}
+          {/* En fenêtre étroite, les tailles cèdent la place au titre : le
+              pourcentage suffit à dire où en est la ligne. */}
+          {/* Un titre qui n'a encore rien reçu (en attente, en pause) : sa puce le dit, pas « 0 Kio · 0 % ». */}
+          {isActive && ((entry.status === "downloading" && !preparing) || bytesDone > 0) && (
+            <span className="num ml-auto flex-shrink-0 text-right text-xs text-content-tertiary">
+              <span className="hidden sm:inline">{progressText.join(" · ")}</span>
+              <span className="sm:hidden">{progressText[1] ?? ""}</span>
             </span>
-          </div>
+          )}
+        </div>
+        {isActive && (
+          <RowProgress
+            ratio={(finalizing ? 100 : pct ?? (entry.status === "downloading" && !preparing ? 8 : 0)) / 100}
+            status={entry.status}
+            label={displayTitle}
+          />
         )}
-        {(pace.length > 0 || retryIn !== null) && (
-          <p className="mt-1 text-[10px] tabular-nums text-content-quaternary">
-            {retryIn !== null
-              ? retryIn > 0
-                ? t("retryIn", { seconds: retryIn })
-                : t("retryNow")
-              : pace.join(" · ")}
-          </p>
-        )}
+        <p className="num text-xs text-content-tertiary">
+          {[meta.join(" · "), pending ?? (pace.length > 0 ? pace.join(" · ") : null)].filter(Boolean).join(" — ")}
+        </p>
       </div>
 
       {/*
@@ -167,7 +156,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
         la case, et une corbeille posée là-dessus se cliquerait par accident.
         La barre groupée porte les mêmes gestes pendant ce temps.
       */}
-      <div className={`flex flex-shrink-0 items-center gap-1.5 ${selection ? "hidden" : ""}`}>
+      <div className={`flex flex-shrink-0 items-center gap-1 ${selection ? "hidden" : ""}`}>
         {entry.status === "downloading" || entry.status === "queued" ? (
           <SmallAction label={t("pause")} onClick={() => void pauseDownload(entry.id)} glyph="pause" />
         ) : null}

@@ -13,6 +13,7 @@
 
 import { useTranslation } from "react-i18next";
 import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
+import { ToggleSwitch } from "../components/settings/ToggleSwitch";
 import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
 
@@ -24,39 +25,23 @@ export function OfflineModeToggle() {
   const on = manual || forced;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-fill-faint px-3 py-2.5">
+    <div className="ui-panel lg-panel flex items-center gap-3.5 px-5 py-4" data-offline-mode={on ? "on" : "off"}>
       <span
-        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-          on ? "bg-status-warning-bg text-status-warning-fg" : "bg-fill-subtle text-content-tertiary"
+        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-pill ${
+          on ? "bg-status-warning-bg text-status-warning-fg" : "bg-fill-soft text-content-secondary"
         }`}
         aria-hidden
       >
-        <WifiOff className="h-4 w-4" />
+        <WifiOff size={18} weight={on ? "fill" : "regular"} />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-content-primary">{t("offlineModeLabel")}</p>
-        <p className="text-xs leading-snug text-content-tertiary">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="text-[15px] font-semibold text-content-primary">{t("offlineModeLabel")}</p>
+        <p className="max-w-[65ch] text-[13px] leading-snug text-content-secondary">
           {forced ? t("offlineAutoHint") : on ? t("offlineModeOnHint") : t("offlineModeOffHint")}
         </p>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label={t("offlineModeLabel")}
-        disabled={forced}
-        onClick={() => setManualOffline(!manual)}
-        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-60 ${
-          on ? "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]" : "bg-fill-soft"
-        }`}
-      >
-        {/* Le curseur glisse par `transform` : aucune peinture par image. */}
-        <span
-          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 motion-reduce:transition-none ${
-            on ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
+      {/* L'interrupteur du socle : allumé, la teinte franche ; le pouce glisse par `transform`. */}
+      <ToggleSwitch checked={on} onChange={() => setManualOffline(!manual)} label={t("offlineModeLabel")} disabled={forced} />
     </div>
   );
 }

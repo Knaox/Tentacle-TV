@@ -9,17 +9,25 @@
  * Variante Original (taille exacte) ou Allégé (3 paliers + estimation), piste
  * audio / incrustation (Allégé, titre seul), « supprimer après visionnage ».
  * Refus d'espace : message précis demandé vs disponible (renvoyé par le moteur,
- * marge 2 Gio comprise). Animations CSS pures, jetons de thème seulement.
+ * marge 2 Gio comprise).
+ *
+ * La feuille du socle (refonte de nov. 2026) : opaque, en portail, 320 ms à
+ * l'entrée et 200 à la sortie ; l'en-tête dit QUOI, le pied dit COMBIEN ça
+ * pèse et ce que le bouton va lancer (« Télécharger 8 épisodes »).
  */
 
-import { GlassButton } from "../components/ui/glass/GlassButton";
 import { useTranslation } from "react-i18next";
+import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { LIGHT_PRESETS, formatBytes } from "./presets";
+import { ModalHeader } from "../components/ui/ModalHeader";
+import { LIGHT_PRESETS, formatBytes, type LightPresetId } from "./presets";
 import { AutoDeleteSelect } from "./AutoDeleteSelect";
 import { EpisodeChecklist, SeasonChecklist } from "./DownloadChecklists";
+import { DialogFooter, SpaceRefusal, TrackSelect, VariantTile } from "./DownloadDialogParts";
 import { OfflineSheetFrame } from "./OfflineSheetFrame";
 import { ScopeChoice } from "./ScopeChoice";
+import { SheetSegments } from "./ui/SheetSegments";
+import { useSheetExit } from "./ui/useSheetExit";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
 import { useDownloadDialogState } from "./useDownloadDialogState";
 import { useDiskInfo } from "./useDownloadState";
@@ -34,11 +42,32 @@ interface DownloadDialogProps {
   onClose: () => void;
 }
 
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** Sous le titre : de quoi l'on parle — le film, « Série — Épisode », « Série · Saison 2 ». */
+function subjectOf(t: Translate, mode: DownloadMode, items: readonly MediaItem[]): string {
+  const first = items[0];
+  if (first === undefined) return "";
+  if (mode === "single") return first.Type === "Episode" && first.SeriesName ? `${first.SeriesName} — ${first.Name}` : (first.Name ?? "");
+  const series = first.SeriesName ?? "";
+  const seasons = new Set(items.map((item) => item.ParentIndexNumber ?? null));
+  const only = seasons.size === 1 ? first.ParentIndexNumber : null;
+  return mode === "season" && only != null ? `${series} · ${t("downloads:seasonLabel", { num: only })}` : series;
+}
+
+/** Ce que le bouton lance, en toutes lettres. */
+function startLabelOf(t: Translate, mode: DownloadMode, items: readonly MediaItem[]): string {
+  if (items.length === 0) return t("downloads:start");
+  if (mode !== "single") return t("downloads:dialogStartEpisodes", { count: items.length });
+  return items[0]?.Type === "Episode" ? t("downloads:episodeDownload") : t("downloads:dialogStartMovie");
+}
+
 export function DownloadDialog({ items: requested, mode: requestedMode = "single", batchTitle, onClose }: DownloadDialogProps) {
   const { t } = useTranslation(["downloads", "common"]);
   const { capabilities } = useDownloadCapabilities();
   const { freeBytes } = useDiskInfo();
-  const state = useDownloadDialogState(requested, requestedMode, onClose);
+  const exit = useSheetExit(onClose);
+  const state = useDownloadDialogState(requested, requestedMode, exit.close);
   const { scope, mode, items, sourceItems, onDevice, selected, unchecked, single, variant, preset } = state;
 
   const title =
@@ -48,19 +77,13 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
       : mode === "season"
         ? t("downloads:dialogTitleSeason", { count: items.length })
         : t("downloads:dialogTitle"));
+  const tight = state.size !== null && freeBytes !== null && state.size > freeBytes;
 
-  // Le cadre : la feuille de `Modal` en verre natif, celui d'avant ailleurs
-  // (portail dans les deux cas : `OfflineSheetFrame`).
   return (
-    <OfflineSheetFrame label={title} onClose={onClose} width="md" legacyLayer="z-[200]">
-      <div className="border-b border-line-subtle px-5 py-4">
-        <h2 className="text-base font-bold text-content-primary">{title}</h2>
-        <p className="mt-0.5 truncate text-sm text-content-tertiary">
-          {mode === "single" ? sourceItems[0]?.Name ?? "" : sourceItems[0]?.SeriesName ?? ""}
-        </p>
-      </div>
+    <OfflineSheetFrame label={title} open={exit.open} onClose={exit.close} width="md">
+      <ModalHeader title={title} subtitle={subjectOf(t as Translate, mode, sourceItems)} onClose={exit.close} />
 
-      <div className="max-h-[60vh] space-y-4 overflow-y-auto px-5 py-4">
+      <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto px-6 py-5">
         {/* Périmètre : seulement quand la demande part d'un épisode. */}
         {scope.scope !== null && (
           <ScopeChoice
@@ -72,7 +95,7 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
             }}
           />
         )}
-        {scope.failed && <p className="text-xs text-content-tertiary">{t("downloads:scopeFailed")}</p>}
+        {scope.failed && <p className="text-[13px] text-content-tertiary">{t("downloads:scopeFailed")}</p>}
         {mode === "series" && (
           <SeasonChecklist
             episodes={sourceItems}
@@ -92,55 +115,41 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
           />
         )}
 
-        {/* Variante */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <VariantCard
-            selected={variant === "original"}
-            onSelect={() => state.setVariant("original")}
-            label={t("downloads:variantOriginal")}
-            description={t("downloads:variantOriginalDesc")}
-          />
-          <VariantCard
-            selected={variant === "light"}
-            onSelect={() => capabilities.lightDownloads && state.setVariant("light")}
-            label={t("downloads:variantLight")}
-            description={t("downloads:variantLightDesc")}
-            hidden={!capabilities.lightDownloads}
-          />
-        </div>
-
-        {/* Paliers Allégé */}
-        {variant === "light" && (
-          <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
-              {t("downloads:presetLabel")}
-            </p>
-            <div className="flex gap-2">
-              {LIGHT_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => state.setPreset(p.id)}
-                  aria-pressed={preset === p.id}
-                  className={`lg-choice-tile flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors duration-150 ${
-                    preset === p.id
-                      ? "border-line-focus bg-fill-medium text-content-primary"
-                      : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft"
-                  }`}
-                >
-                  {p.maxHeight}p
-                  <span className="mt-0.5 block text-[10px] font-normal text-content-quaternary">
-                    {Math.round(p.videoBitRate / 1_000_000)} Mb/s
-                  </span>
-                </button>
-              ))}
-            </div>
+        {/* Qualité : la variante, puis les paliers de l'Allégé. */}
+        <div className="flex flex-col gap-2.5">
+          <span className="ui-eyebrow">{t("downloads:presetLabel")}</span>
+          <div className="flex flex-wrap items-stretch gap-2.5">
+            <VariantTile
+              selected={variant === "original"}
+              onSelect={() => state.setVariant("original")}
+              label={t("downloads:variantOriginal")}
+              description={t("downloads:variantOriginalDesc")}
+            />
+            <VariantTile
+              selected={variant === "light"}
+              onSelect={() => capabilities.lightDownloads && state.setVariant("light")}
+              label={t("downloads:variantLight")}
+              description={t("downloads:variantLightDesc")}
+              hidden={!capabilities.lightDownloads}
+            />
           </div>
-        )}
+          {variant === "light" && (
+            <SheetSegments<LightPresetId>
+              label={t("downloads:presetLabel")}
+              value={preset}
+              onChange={state.setPreset}
+              options={LIGHT_PRESETS.map((p) => ({
+                value: p.id,
+                label: `${p.maxHeight}p`,
+                hint: `${Math.round(p.videoBitRate / 1_000_000)} Mb/s`,
+              }))}
+            />
+          )}
+        </div>
 
         {/* Piste audio + incrustation (Allégé, titre seul) */}
         {variant === "light" && single && state.audio.length > 1 && (
-          <SelectRow
+          <TrackSelect
             label={t("downloads:audioTrack")}
             value={state.audioIndex === undefined ? "" : String(state.audioIndex)}
             onChange={(value) => state.setAudioIndex(value === "" ? undefined : Number(value))}
@@ -152,7 +161,7 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
           />
         )}
         {variant === "light" && single && state.imageSubs.length > 0 && (
-          <SelectRow
+          <TrackSelect
             label={t("downloads:burnSubtitle")}
             value={state.burnIndex === undefined ? "" : String(state.burnIndex)}
             onChange={(value) => state.setBurnIndex(value === "" ? undefined : Number(value))}
@@ -165,120 +174,37 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
         )}
 
         {/* Supprimer après visionnage : délai au choix */}
-        <div className="flex items-center justify-between gap-3 rounded-lg bg-fill-faint px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-tile bg-surface-2 py-2.5 pl-3.5 pr-2.5">
           <span className="text-sm text-content-secondary">{t("downloads:autoDeleteAfterWatch")}</span>
           <AutoDeleteSelect value={state.autoDeleteDelay} onChange={state.setAutoDeleteDelay} />
         </div>
 
-        {/* Tailles + espace */}
-        <div className="space-y-1 text-xs text-content-tertiary">
-          <p>
-            {variant === "original"
-              ? t("downloads:exactSize", { size: formatBytes(state.size) })
-              : t("downloads:estimatedSize", { size: formatBytes(state.size) })}
-          </p>
-          <p>{t("downloads:freeSpace", { size: formatBytes(freeBytes) })}</p>
-        </div>
+        {mode !== "single" && items.length === 0 && !scope.loading && (
+          <p className="text-[13px] text-content-tertiary">{t("downloads:dialogNothingToStart")}</p>
+        )}
 
         {state.spaceError && (
-          <p className="rounded-lg border border-danger-border bg-danger-surface px-3 py-2 text-xs leading-relaxed text-status-error-fg">
+          <SpaceRefusal>
             {t("downloads:notEnoughSpace", {
               needed: formatBytes(state.spaceError.needed),
               free: formatBytes(state.spaceError.free),
             })}
-          </p>
+          </SpaceRefusal>
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-line-subtle px-5 py-3.5">
-        <GlassButton
-          inSurface
-          onClick={onClose}
-          appearance={{ level: "regular", shape: "capsule" }}
-          className="px-4 py-2 text-sm font-semibold"
-          fallbackClassName="rounded-md bg-cta-ghost-bg text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
-        >
-          {t("common:cancel")}
-        </GlassButton>
-        <GlassButton
-          inSurface
-          onClick={() => void state.start()}
-          disabled={state.submitting || scope.loading || items.length === 0}
-          appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
-          className="px-5 py-2 text-sm font-bold disabled:opacity-50"
-          fallbackClassName="rounded-md bg-cta-primary-bg text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
-        >
-          {t("downloads:start")}
-        </GlassButton>
-      </div>
+      <DialogFooter
+        size={formatBytes(state.size)}
+        sizeCaption={t(variant === "original" ? "downloads:dialogSizeExact" : "downloads:dialogSizeEstimated")}
+        freeCaption={t("downloads:dialogFreeSpace", { size: formatBytes(freeBytes) })}
+        tight={tight}
+        cancelLabel={t("common:cancel")}
+        startLabel={startLabelOf(t as Translate, mode, items)}
+        startIcon={<DownloadSimpleIcon size={16} weight="bold" aria-hidden />}
+        startDisabled={state.submitting || scope.loading || items.length === 0}
+        onCancel={exit.close}
+        onStart={() => void state.start()}
+      />
     </OfflineSheetFrame>
-  );
-}
-
-function VariantCard({
-  selected,
-  onSelect,
-  label,
-  description,
-  hidden,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  label: string;
-  description: string;
-  hidden?: boolean;
-}) {
-  // Invisibilité stricte : sans droit Allégé, la carte n'est PAS rendue
-  // (ni grisée, ni cadenassée).
-  if (hidden) return null;
-  return (
-    // `lg-choice-tile` : en verre natif, un remplissage, la choisie à l'accent
-    // uni, sans liseré (`lgSurfaceButtons.css`).
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={`lg-choice-tile rounded-xl border px-3 py-3 text-left transition-colors duration-150 ${
-        selected
-          ? "border-line-focus bg-fill-medium"
-          : "border-line-subtle bg-fill-subtle hover:bg-fill-soft"
-      }`}
-    >
-      <span className="block text-sm font-bold text-content-primary">{label}</span>
-      <span className="mt-0.5 block text-xs leading-snug text-content-tertiary">{description}</span>
-    </button>
-  );
-}
-
-function SelectRow({
-  label,
-  value,
-  onChange,
-  emptyLabel,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  emptyLabel: string;
-  options: Array<{ value: string; label: string }>;
-}) {
-  return (
-    <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-content-quaternary">{label}</p>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-primary"
-        style={{ background: "var(--surface-2)" }}
-      >
-        <option value="">{emptyLabel}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }
