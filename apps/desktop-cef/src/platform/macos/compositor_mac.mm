@@ -39,7 +39,7 @@ class CompositorMac final : public Compositor {
  public:
   // `transparent` : la pile de la fenêtre PiP — rien sous la page que la vidéo prêtée, le
   // bureau se voit autour (la marge d'ombre du cadre).
-  explicit CompositorMac(NSWindow* window, bool transparent = false) {
+  explicit CompositorMac(NSWindow* window, bool transparent = false) : window_(window) {
     NSView* content = window.contentView;
     host_ = [[TentacleLayerHostView alloc] initWithFrame:content.bounds];
     root_ = [CALayer layer];
@@ -181,6 +181,7 @@ class CompositorMac final : public Compositor {
     return {inset_, inset_, std::max(1.0, width_ - 2 * inset_), std::max(1.0, height_ - 2 * inset_)};
   }
   void attach(VideoSurface* surface) {
+    surface->setHostWindow((__bridge void*)window_);  // échelle et écran de CETTE fenêtre
     CALayer* layer = (__bridge CALayer*)surface->nativeLayer();
     [videoContainer_ addSublayer:layer];
     surface->setFrame(videoFrame());
@@ -193,6 +194,7 @@ class CompositorMac final : public Compositor {
     if (shown_ == surface) shown_ = nullptr;
   }
 
+  __weak NSWindow* window_ = nil;
   TentacleLayerHostView* host_ = nil;
   NSArray* observers_ = nil;
   CALayer* root_ = nil;

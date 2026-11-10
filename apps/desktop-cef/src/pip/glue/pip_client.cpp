@@ -70,6 +70,14 @@ bool PipClient::OnBeforePopup(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, int,
   return true;
 }
 
+bool PipClient::OnBeforeBrowse(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>,
+                               CefRefPtr<CefRequest> request, bool, bool) {
+  const std::string url = request->GetURL().ToString();
+  if (url == "about:blank") return false;
+  std::fprintf(stderr, "[pip] navigation du PiP refusée : %s\n", url.c_str());
+  return true;
+}
+
 void PipClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
   if (!controller_) {

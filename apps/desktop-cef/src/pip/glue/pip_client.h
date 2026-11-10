@@ -6,6 +6,7 @@
 
 #include "compositor/compositor.h"
 #include "include/cef_client.h"
+#include "include/cef_request_handler.h"
 #include "pip/pip_controller.h"
 
 namespace tentacle::pip {
@@ -14,7 +15,8 @@ class PipClient final : public CefClient,
                         public CefLifeSpanHandler,
                         public CefRenderHandler,
                         public CefDisplayHandler,
-                        public CefContextMenuHandler {
+                        public CefContextMenuHandler,
+                        public CefRequestHandler {
  public:
   explicit PipClient(Controller* controller) : controller_(controller) {}
   /// Le contrôleur s'en va (fermeture de l'app) : plus aucun rappel vers lui.
@@ -24,6 +26,11 @@ class PipClient final : public CefClient,
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
+  CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+
+  // CefRequestHandler : la page du PiP ne quitte jamais about:blank (`lockNavigation`).
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request, bool userGesture, bool isRedirect) override;
 
   // CefLifeSpanHandler
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popupId,
