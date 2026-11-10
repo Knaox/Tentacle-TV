@@ -104,7 +104,9 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge AND TARGET tentacle_net AND 
   )
   target_link_libraries(tentacle_offline_glue PUBLIC tentacle_offline_core tentacle_shell tentacle_bridge tentacle_net
                                                     tentacle_lifecycle tentacle_music)
-  target_compile_options(tentacle_offline_glue PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
+  if(NOT MSVC)
+    target_compile_options(tentacle_offline_glue PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
+  endif()
   # `src/app/modules.cpp` (dans tentacle_shell) appelle la colle : lien dans les deux sens.
   target_link_libraries(tentacle_shell PUBLIC tentacle_offline_glue)
 endif()
