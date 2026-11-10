@@ -174,6 +174,7 @@ std::unique_ptr<Player> Player::create(PlayerOptions options, std::string* error
         set("vid", "no");
         set("audio-display", "no");
     }
+    if (options.eagerVideoOutput) set("force-window", "yes");
     std::string callerAo;
     for (auto& [k, v] : options.options) {
         if (kReserved.count(k)) continue;

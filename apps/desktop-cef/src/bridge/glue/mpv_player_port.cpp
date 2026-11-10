@@ -12,6 +12,10 @@
 #include "player/player.h"
 #include "shell/main_thread.h"
 #include "shell/window_scale.h"
+#ifdef __linux__
+#include "platform/linux/linux_window.h"
+#include "platform/linux/video_subsurface_linux.h"
+#endif
 
 namespace tentacle::pont {
 namespace {
@@ -43,7 +47,10 @@ MpvPlayerPort::MpvPlayerPort(SDL_Window* window, void* nativeWindow, tentacle::C
 }
 
 MpvPlayerPort::~MpvPlayerPort() {
-  if (compositor_ && surface_) compositor_->setVideoLayer(restingLayer_);
+  if (compositor_ && surface_ && surfaceRevealed_) compositor_->setVideoLayer(restingLayer_);
+  // L'instance préchauffée d'abord, et comme l'autre : le lecteur AVANT sa surface.
+  warmPlayer_.reset();
+  warmSurface_.reset();
   // Fermeture de l'app en pleine lecture : le lecteur AVANT sa surface (`Player::destroy` la
   // détache encore). Les membres partiraient dans l'ordre inverse : surface libérée, puis
   // `~Player` qui la touche (SIGSEGV à la sortie).
@@ -53,9 +60,10 @@ MpvPlayerPort::~MpvPlayerPort() {
 
 bool MpvPlayerPort::running() const { return player_ != nullptr; }
 
-void MpvPlayerPort::start(const Json& options, Done done) {
+std::unique_ptr<tentacle::Player> MpvPlayerPort::createPlayer(const Json& options, bool eager, std::string* error) {
   tentacle::PlayerOptions opts;
   opts.post = [](std::function<void()> fn) { tentacle::postToMain(std::move(fn)); };
+  opts.eagerVideoOutput = eager;
   for (const auto& [name, value] : options.items()) opts.options.emplace_back(name, value.get<std::string>());
   // Le son (sortie native, ou `ao=null` + `mute=yes` sous `--mute`) : `player/sound_policy.h`.
   // Journal de mpv pour les bancs (commandes, sortie audio, démuxeur) : jamais par la page.
@@ -71,9 +79,10 @@ void MpvPlayerPort::start(const Json& options, Done done) {
     for (std::string kv; in >> kv;)
       if (const auto eq = kv.find('='); eq != std::string::npos) opts.options.emplace_back(kv.substr(0, eq), kv.substr(eq + 1));
   }
-  std::string error;
-  player_ = tentacle::Player::create(std::move(opts), &error);
-  if (!player_) return done(error.empty() ? "libmpv refuse de demarrer" : error);
+  return tentacle::Player::create(std::move(opts), error);
+}
+
+void MpvPlayerPort::adoptCurrent() {
   const int gen = ++*generation_;
   std::weak_ptr<int> alive = generation_;
   player_->onEvent([this, gen, alive](const Json& event) {
@@ -82,23 +91,70 @@ void MpvPlayerPort::start(const Json& options, Done done) {
     onPlayerEvent(event, gen);
     if (listener_) listener_->onEvent(event);
   });
+}
+
+void MpvPlayerPort::start(const Json& options, Done done) {
+  // L'instance préchauffée est reprise si elle est née des MÊMES options ; sinon elle part.
+  if (warmPlayer_ && warmKey_ == options.dump()) {
+    player_ = std::move(warmPlayer_);
+    surface_ = std::move(warmSurface_);
+    surfaceRevealed_ = false;
+    std::fprintf(stderr, "[lecteur] instance préchauffée reprise\n");
+    adoptCurrent();
+    return done(std::nullopt);
+  }
+  dropWarm();
+  std::string error;
+  player_ = createPlayer(options, false, &error);
+  if (!player_) return done(error.empty() ? "libmpv refuse de demarrer" : error);
+  adoptCurrent();
   done(std::nullopt);
 }
 
-void MpvPlayerPort::stop(std::function<void()> done) {
-  if (player_ && tentacle::pont::g_sessionObserver) tentacle::pont::g_sessionObserver->onVideoStopped();
-  ++*generation_;  // plus aucun rappel de l'instance qui part
-  // La couche quitte l'empilement tout de suite : la page reprend la main à l'écran.
-  if (compositor_ && surface_) compositor_->setVideoLayer(restingLayer_);
-  if (surface_ && surfaceListener_) surfaceListener_(false);
-  if (!player_) {
-    surface_.reset();
-    return done();
+bool MpvPlayerPort::canPrewarm() const {
+#ifdef __linux__
+  // La sous-surface Wayland seulement : c'est elle dont la sortie (Vulkan) coûte à naître. L'API
+  // de rendu (X11, libmpv de la distribution) dessine dans NOTRE contexte, déjà là.
+  const auto* window = static_cast<const tentacle::platform::LinuxWindow*>(nativeWindow_);
+  return window && tentacle::platform::videoSubsurfaceAvailable(*window);
+#else
+  return false;
+#endif
+}
+
+bool MpvPlayerPort::prewarm(const Json& options) {
+  if (!canPrewarm() || player_ || warmPlayer_) return false;
+  std::string error;
+  auto player = createPlayer(options, true, &error);
+  if (!player) {
+    std::fprintf(stderr, "[lecteur] préchauffage : %s\n", error.empty() ? "libmpv refuse de démarrer" : error.c_str());
+    return false;
   }
+  auto surface = tentacle::createVideoSurface(nativeWindow_);
+  // Attachée, donc sa sortie naît (`force-window`), mais ni rangée dans l'empilement ni
+  // montrée : le compositeur garde son fond opaque, rien ne paraît (ensureSurface le fera).
+  if (!surface || (surface->setFrame({0, 0, widthPt_, heightPt_}), !player->attachVideoSurface(*surface))) {
+    retire(std::move(player), std::move(surface), [] {});
+    return false;
+  }
+  warmPlayer_ = std::move(player);
+  warmSurface_ = std::move(surface);
+  warmKey_ = options.dump();
+  return true;
+}
+
+void MpvPlayerPort::dropWarm() {
+  if (!warmPlayer_) return;
+  retire(std::move(warmPlayer_), std::move(warmSurface_), [] {});
+  warmKey_.clear();
+}
+
+void MpvPlayerPort::retire(std::unique_ptr<tentacle::Player> player, std::unique_ptr<tentacle::VideoSurface> surface,
+                           std::function<void()> done) {
   // `Player::destroy` coupe la sortie (mpv garde sa référence sur la couche jusqu'à la
   // fin de son VO) : la surface part APRÈS. L'instance et SA surface sont mises de côté —
   // une nouvelle lecture peut naître pendant ce temps avec les siennes.
-  auto dying = std::make_shared<Dying>(Dying{std::move(player_), std::move(surface_)});
+  auto dying = std::make_shared<Dying>(Dying{std::move(player), std::move(surface)});
   dying_.push_back(dying);
   dying->player->destroy([this, dying, done]() {
     done();
@@ -107,9 +163,25 @@ void MpvPlayerPort::stop(std::function<void()> done) {
   });
 }
 
+void MpvPlayerPort::stop(std::function<void()> done) {
+  if (player_ && tentacle::pont::g_sessionObserver) tentacle::pont::g_sessionObserver->onVideoStopped();
+  ++*generation_;  // plus aucun rappel de l'instance qui part
+  // La couche quitte l'empilement tout de suite : la page reprend la main à l'écran.
+  if (compositor_ && surface_ && surfaceRevealed_) compositor_->setVideoLayer(restingLayer_);
+  if (surface_ && surfaceRevealed_ && surfaceListener_) surfaceListener_(false);
+  surfaceRevealed_ = false;
+  if (!player_) {
+    surface_.reset();
+    return done();
+  }
+  retire(std::move(player_), std::move(surface_), std::move(done));
+}
+
 bool MpvPlayerPort::ensureSurface(std::string* error) {
-  if (surface_) return true;
-  surface_ = nativeWindow_ ? tentacle::createVideoSurface(nativeWindow_) : nullptr;
+  if (surface_ && surfaceRevealed_) return true;
+  // Une instance préchauffée arrive avec sa couche déjà attachée : il ne reste qu'à la montrer.
+  const bool attached = surface_ != nullptr;
+  if (!attached) surface_ = nativeWindow_ ? tentacle::createVideoSurface(nativeWindow_) : nullptr;
   if (!surface_) {
     *error = "aucune surface video sur cette plateforme";
     return false;
@@ -117,9 +189,10 @@ bool MpvPlayerPort::ensureSurface(std::string* error) {
   surface_->setFrame({0, 0, widthPt_, heightPt_});
   if (compositor_) compositor_->setVideoLayer(surface_.get());
   surface_->show();
+  surfaceRevealed_ = true;
   // Comme `macosSurface.ts` d'Electron : la page laisse voir la vidéo dès que la couche est là.
   if (surfaceListener_) surfaceListener_(true);
-  if (!player_->attachVideoSurface(*surface_)) {
+  if (!attached && !player_->attachVideoSurface(*surface_)) {
     *error = "le lecteur refuse la surface video";
     return false;
   }

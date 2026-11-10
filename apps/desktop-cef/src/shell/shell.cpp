@@ -11,6 +11,7 @@
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/main_thread.h"
 #include "shell/external_url.h"
 #include "shell/navigation_rule.h"
 #include "shell/page_rescue.h"
@@ -243,6 +244,17 @@ void Shell::wakeFrameClock() {
   if (clockMode_ == platform::FrameClockMode::full) return;
   clockMode_ = platform::FrameClockMode::full;
   platform::setFrameClockMode(clockMode_);
+}
+
+void Shell::whenIdle(uint64_t quietMs, std::function<void()> task) {
+  const uint64_t quiet = SDL_GetTicks() - lastActivityMs_;
+  if (quiet >= quietMs) return task();
+  // Pas encore : on revient quand le repos SERAIT atteint si plus rien ne bougeait d'ici là.
+  postToMainDelayed(
+      [this, alive = alive_, quietMs, task = std::move(task)]() mutable {
+        if (*alive && !closed_) whenIdle(quietMs, std::move(task));
+      },
+      int64_t(quietMs - quiet));
 }
 
 void Shell::onBrowserClosed() {

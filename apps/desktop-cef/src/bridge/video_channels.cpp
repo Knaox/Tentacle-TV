@@ -91,7 +91,10 @@ void VideoChannels::init(const Json& payload, Reply reply) {
 void VideoChannels::destroy(Reply reply) {
   trace("mpv_destroy", Json::array());
   flushHeld();
-  player_.stop([reply]() { reply.ok(nullptr); });
+  player_.stop([this, alive = alive_, reply]() {
+    reply.ok(nullptr);
+    if (*alive && onPlaybackEnded_) onPlaybackEnded_();
+  });
 }
 
 void VideoChannels::command(const Json& payload, Reply reply) {

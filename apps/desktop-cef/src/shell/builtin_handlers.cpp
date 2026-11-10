@@ -39,6 +39,10 @@ void notifyWindowState() {
   for (auto& l : g_windowListeners) l(state);
 }
 
+void runWhenPageIdle(uint64_t quietMs, std::function<void()> task) {
+  if (g_shell) g_shell->whenIdle(quietMs, std::move(task));
+}
+
 void addWindowStateListener(std::function<void(const Json&)> listener) {
   g_windowListeners.push_back(std::move(listener));
 }

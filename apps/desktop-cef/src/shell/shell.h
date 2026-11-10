@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -77,6 +78,10 @@ class Shell final : public ViewHost {
   void onRenderProcessGone(int status, int errorCode, const std::string& errorText) override;
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
   void wakeFrameClock();
+  // Exécute `task` quand la page est au REPOS depuis `quietMs` : ni image peinte, ni saisie. Pour
+  // ce qui retient le fil GL (le préchauffage du lecteur : ~0,6 s de pilote sur NVIDIA) — à un
+  // moment où rien ne bouge à l'écran et où personne ne clique. Un seul minuteur par attente.
+  void whenIdle(uint64_t quietMs, std::function<void()> task);
   // La page annonce un changement (canal shell.wake) : UN BeginFrame tout de suite, sans
   // relancer le délai — si elle peint, l'image reçue fait le reste (wakeFrameClock).
   void nudgeFrameClock();

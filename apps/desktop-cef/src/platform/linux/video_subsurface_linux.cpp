@@ -21,6 +21,7 @@ namespace tentacle::platform {
 
 #ifndef TENTACLE_MPV_WAYLAND_HOST
 std::unique_ptr<VideoSurface> createVideoSubsurface(const LinuxWindow&) { return nullptr; }
+bool videoSubsurfaceAvailable(const LinuxWindow&) { return false; }
 #else
 namespace {
 
@@ -208,9 +209,14 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
 
 }  // namespace
 
+bool videoSubsurfaceAvailable(const LinuxWindow& w) {
+  if (!w.wayland || !w.wlDisplay || !w.wlSurface) return false;
+  const char* v = std::getenv("TENTACLE_VIDEO_RENDER_API");
+  return !(v && std::strcmp(v, "1") == 0);
+}
+
 std::unique_ptr<VideoSurface> createVideoSubsurface(const LinuxWindow& w) {
-  if (!w.wayland || !w.wlDisplay || !w.wlSurface) return nullptr;
-  if (const char* v = std::getenv("TENTACLE_VIDEO_RENDER_API"); v && std::strcmp(v, "1") == 0) return nullptr;
+  if (!videoSubsurfaceAvailable(w)) return nullptr;
   return VideoSubsurface::create(w);
 }
 #endif

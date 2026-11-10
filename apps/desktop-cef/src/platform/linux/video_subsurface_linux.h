@@ -18,5 +18,9 @@ struct LinuxWindow;
 // distribution : API de rendu), si TENTACLE_VIDEO_RENDER_API=1, ou si le compositeur n'offre
 // pas wl_subcompositor.
 std::unique_ptr<VideoSurface> createVideoSubsurface(const LinuxWindow& window);
+// La vidéo passera-t-elle par une sous-surface ? Mêmes conditions, sans rien créer (le
+// compositeur sans wl_subcompositor mis à part) — le préchauffage du lecteur ne vaut que là
+// (bridge/video_prewarm.h).
+bool videoSubsurfaceAvailable(const LinuxWindow& window);
 
 }  // namespace tentacle::platform

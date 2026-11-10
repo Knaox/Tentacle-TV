@@ -22,6 +22,7 @@
 #include "platform/linux/video_slot_linux.h"
 #include "shell/main_thread.h"
 #include "shell/page_rescue.h"
+#include "shell/stall_meter.h"
 #include "shell/window_scale.h"
 
 namespace tentacle {
@@ -117,6 +118,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
 
   // --- WebLayer -----------------------------------------------------------------------
   void presentView(const WebFrame& f) override {
+    stall::Scope step("copie de l'image de la page (GL)", true);
     const auto t0 = std::chrono::steady_clock::now();
     if (!copyFrame(f, page_)) return;
     stats_.viewFrames++;
@@ -192,6 +194,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
   }
 
   void compose() {
+    stall::Scope step("composition de la fenêtre (GL)", true);
     if (!egl_->makeCurrent()) return;
     int w = 0, h = 0;
     SDL_GetWindowSizeInPixels(window_, &w, &h);

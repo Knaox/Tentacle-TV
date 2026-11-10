@@ -29,6 +29,7 @@ add_library(tentacle_bridge STATIC
   registry.cpp
   mpv_policy.cpp
   video_channels.cpp
+  video_prewarm.cpp
   window_channels.cpp
   video_probe.cpp
   "${CMAKE_CURRENT_BINARY_DIR}/shim_source.cpp"
@@ -40,6 +41,9 @@ target_compile_features(tentacle_bridge PUBLIC cxx_std_20)
 add_executable(tentacle_bridge_tests tests/bridge_tests.cpp tests/fakes.h)
 target_link_libraries(tentacle_bridge_tests PRIVATE tentacle_bridge)
 add_test(NAME tentacle_bridge_tests COMMAND tentacle_bridge_tests)
+add_executable(tentacle_prewarm_tests tests/prewarm_tests.cpp tests/fakes.h)
+target_link_libraries(tentacle_prewarm_tests PRIVATE tentacle_bridge)
+add_test(NAME tentacle_prewarm_tests COMMAND tentacle_prewarm_tests)
 
 # La colle avec le proto (IPC du socle, fenêtre SDL3, compositeur, lecteur de vidéo-HDR) :
 # seulement quand ces cibles existent — le module reste constructible seul pour ses tests.

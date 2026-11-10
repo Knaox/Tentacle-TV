@@ -42,6 +42,9 @@ struct PlayerOptions {
     std::vector<std::pair<std::string, std::string>> options;
     // Audio seul (mode musique) : vid=no, audio-display=no ; attachVideoSurface() refusée.
     bool audioOnly = false;
+    // Préchauffage (bridge/video_prewarm.h) : la sortie vidéo naît dès la surface attachée,
+    // sans attendre un fichier (`force-window=yes`). Jamais demandé par la page.
+    bool eagerVideoOutput = false;
     std::string logFile;           // journal libmpv (vide : aucun)
     std::string logLevel = "info"; // niveau du journal libmpv si logFile est posé
 };
