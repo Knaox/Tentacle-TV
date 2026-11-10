@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewSettled, useServerCapability } from "@tentacle-tv/api-client";
+import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewSettled, useServerCapability, useTrailerDelivery } from "@tentacle-tv/api-client";
 import { uiLanguage } from "@tentacle-tv/shared";
 import { usePipSession } from "../pictureInPicture/pictureInPictureStore";
 import { useTrailerPreviewBlock } from "./previewEnvironment";
@@ -34,7 +34,9 @@ function whenIdle(task: () => void, delayMs: number): () => void {
  * le premier survol ne l'attend pas. Montée UNE fois, par la liaison racine.
  */
 export function usePreviewWarm(): void {
-  const capable = useServerCapability("trailers.previewWarm");
+  // Rien à préparer pour un lecteur qui ne lirait pas ce que ce serveur relaie (`previewDecode.ts`).
+  const deliverable = useTrailerDelivery() !== null;
+  const capable = useServerCapability("trailers.previewWarm") && deliverable;
   const block = useTrailerPreviewBlock();
   const pip = usePipSession();
   const queryClient = useQueryClient();

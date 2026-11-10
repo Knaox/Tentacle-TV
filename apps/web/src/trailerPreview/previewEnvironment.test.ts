@@ -43,7 +43,10 @@ g.document = fakeDocument;
   };
 };
 
-const { getTrailerPreviewBlock, setTrailerPreviewHostState, subscribeTrailerPreviewBlock } = await import("./previewEnvironment");
+const {
+  getTrailerPreviewBlock, reportTrailerPreviewCodecRefusal, setTrailerPreviewDecodes, setTrailerPreviewHostState,
+  subscribeTrailerPreviewBlock, trailerPreviewCodecBlocked,
+} = await import("./previewEnvironment");
 const { trailerPreviewsFlag } = await import("./previewSettings");
 
 const FINE = "(hover: hover) and (pointer: fine)";
@@ -56,10 +59,43 @@ beforeEach(() => {
   h.dataSaver = false;
   trailerPreviewsFlag.set(true);
   setTrailerPreviewHostState({ offline: false, mirror: false });
+  setTrailerPreviewDecodes(null);
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("le lecteur qui ne décode rien de ce que le relais sert", () => {
+  it("rien à dire (pas de sonde), H.264 + AAC, ou VP9 + Opus (le bureau CEF) : rien ne bloque ici", () => {
+    expect(getTrailerPreviewBlock()).toBeNull();
+    setTrailerPreviewDecodes(["h264", "aac", "vp9", "opus"]);
+    expect(getTrailerPreviewBlock()).toBeNull();
+    // Le bureau CEF : c'est le SERVEUR qui tranche ensuite (`trailers.openCodecs`, crochet de la carte).
+    setTrailerPreviewDecodes(["vp9", "opus"]);
+    expect(getTrailerPreviewBlock()).toBeNull();
+    expect(trailerPreviewCodecBlocked()).toBe(false);
+  });
+
+  it("ni H.264 + AAC ni VP9 + Opus : aucun aperçu sur cet appareil, quel que soit le serveur", () => {
+    setTrailerPreviewDecodes(["vp9"]);
+    expect(getTrailerPreviewBlock()).toBe("codec");
+    setTrailerPreviewDecodes([]);
+    expect(getTrailerPreviewBlock()).toBe("codec");
+    expect(trailerPreviewCodecBlocked()).toBe(true);
+  });
+
+  it("un refus de codecs en pleine lecture coupe les aperçus de la session, et prévient les cartes", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    setTrailerPreviewDecodes(["h264", "aac"]);
+    const listener = vi.fn();
+    const unsubscribe = subscribeTrailerPreviewBlock(listener);
+    reportTrailerPreviewCodecRefusal();
+    reportTrailerPreviewCodecRefusal();
+    expect(getTrailerPreviewBlock()).toBe("codec");
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
 });
 
 describe("le blocage de l'aperçu sur l'appareil", () => {

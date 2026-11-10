@@ -3,6 +3,7 @@ import {
   type RelayedTrailerPlayback, type TrailerStream,
 } from "@tentacle-tv/shared";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
+import { trailerDecodesQuery } from "./trailerDecodes";
 
 /**
  * Ce que le lecteur complet des bandes-annonces (web, bureau) demande au
@@ -37,7 +38,8 @@ export async function fetchTrailerResolve(
   signal?: AbortSignal,
 ): Promise<TrailerResolveResult> {
   try {
-    const raw = await tentacleApiFetch<unknown>(`/api/trailers/resolve?${trailerResolveQuery(playback)}`, { signal });
+    // `&dec=vp9,opus` pour un lecteur sans H.264 ni AAC (`trailerDecodes.ts`) ; rien pour les autres.
+    const raw = await tentacleApiFetch<unknown>(`/api/trailers/resolve?${trailerResolveQuery(playback)}${trailerDecodesQuery()}`, { signal });
     const stream = parseTrailerResolve(raw, serverUrl);
     return stream ? { status: "ready", stream } : { status: "unavailable" };
   } catch (error) {
@@ -56,7 +58,7 @@ export async function fetchTrailerResolve(
  * sans erreur (le lancement refera ce qui manque).
  */
 export function prepareTrailerPlayback(playback: RelayedTrailerPlayback): void {
-  void tentacleApiFetch(`/api/trailers/prepare?${trailerResolveQuery(playback)}`).catch(() => undefined);
+  void tentacleApiFetch(`/api/trailers/prepare?${trailerResolveQuery(playback)}${trailerDecodesQuery()}`).catch(() => undefined);
 }
 
 /**

@@ -1,8 +1,18 @@
 import { useEffect } from "react";
+import { declareTrailerDecodes } from "@tentacle-tv/api-client";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useFormFactor } from "../mirror/useFormFactor";
-import { setTrailerPreviewHostState } from "./previewEnvironment";
+import { probePreviewDecodes } from "./previewDecode";
+import { setTrailerPreviewDecodes, setTrailerPreviewHostState } from "./previewEnvironment";
 import { usePreviewWarm } from "./usePreviewWarm";
+
+// Ce que le lecteur de ce navigateur décode, déclaré UNE fois, au chargement — avant le premier
+// rendu : la première requête d'une bande-annonce (aperçu, préparation, lecteur de la fiche) le
+// porte déjà. Sans H.264 ni AAC (le bureau CEF), le relais sert du VP9 + Opus s'il sait ; un
+// lecteur qui ne lirait rien ne demande rien (`previewDecode.ts`).
+const decodes = probePreviewDecodes();
+declareTrailerDecodes(decodes);
+setTrailerPreviewDecodes(decodes);
 
 /**
  * Pousse dans le magasin de l'aperçu ce que l'app sait et que lui ne lit pas

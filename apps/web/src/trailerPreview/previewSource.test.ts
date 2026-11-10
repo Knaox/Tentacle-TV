@@ -96,6 +96,30 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
+  it("un refus de CODECS est dit à part, avant l'échec : la cause est l'appareil, pas la vidéo", async () => {
+    // Mesuré dans le bureau CEF face au maître H.264 : `manifestIncompatibleCodecsError`, fatale.
+    for (const details of ["manifestIncompatibleCodecsError", "bufferIncompatibleCodecsError", "bufferAddCodecError"]) {
+      const video = new FakeVideo();
+      const { HlsClass, instances } = fakeHlsClass();
+      const order: string[] = [];
+      attachPreviewSource(video as never, HLS, {
+        onReady: vi.fn(), onError: () => order.push("échec"), onCodecRefused: () => order.push("codecs"),
+      }, async () => HlsClass);
+      await flush();
+      instances[0].fire(EVENTS.ERROR, { fatal: true, details });
+      expect(order).toEqual(["codecs", "échec"]);
+    }
+    // Une panne de réseau n'accuse pas l'appareil ; un refus de codecs passager non plus.
+    const video = new FakeVideo();
+    const { HlsClass, instances } = fakeHlsClass();
+    const onCodecRefused = vi.fn();
+    attachPreviewSource(video as never, HLS, { onReady: vi.fn(), onError: vi.fn(), onCodecRefused }, async () => HlsClass);
+    await flush();
+    instances[0].fire(EVENTS.ERROR, { fatal: true, details: "manifestLoadError" });
+    instances[0].fire(EVENTS.ERROR, { fatal: false, details: "bufferAddCodecError" });
+    expect(onCodecRefused).not.toHaveBeenCalled();
+  });
+
   it("à la sortie : hls.js détruit, l'élément vidé, plus aucun rappel", async () => {
     const frames: Array<() => void> = [];
     const cancelFrame = vi.fn();

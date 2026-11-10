@@ -16,7 +16,7 @@ import {
 } from "@tentacle-tv/shared";
 import { usePipSession } from "../pictureInPicture/pictureInPictureStore";
 import { trailerPreviewArbiter } from "./previewArbiterInstance";
-import { useTrailerPreviewBlock } from "./previewEnvironment";
+import { trailerPreviewCodecBlocked, useTrailerPreviewBlock } from "./previewEnvironment";
 import { rememberTrailerPreviewFailure, trailerPreviewRecentlyFailed } from "./previewFailures";
 import { useTrailerPreviewMuted, useTrailerPreviewVolume } from "./previewSettings";
 import { loadPreviewHls } from "./previewSource";
@@ -143,7 +143,9 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     handledFailure.current = state.cycle;
     title.forget();
     const reused = consumed.current.cycle === state.cycle && since !== null && consumed.current.at < since;
-    if (!reused) rememberTrailerPreviewFailure(title.key);
+    // Un refus de CODECS est l'affaire de l'appareil (`previewEnvironment.ts`, blocage `codec`) :
+    // le titre n'y est pour rien, il n'est pas ignoré dix minutes.
+    if (!reused && !trailerPreviewCodecBlocked()) rememberTrailerPreviewFailure(title.key);
   }, [state.phase, state.failure, state.cycle, since]);
 
   // Un seul aperçu à la fois : la place se prend à la demande, se rend à la fin.

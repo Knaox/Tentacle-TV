@@ -1,4 +1,5 @@
 import type { MediaItem } from "../../types/media";
+import type { TrailerCodec } from "../trailerCodecs";
 import { trailerPreviewPath, type TrailerPreviewMediaType } from "../trailerPreview";
 
 /**
@@ -69,14 +70,16 @@ export function trailerPreviewSubjectKey(subject: TrailerPreviewSubject): string
  * Le chemin de la demande pour ce sujet et la langue de l'interface — `null`
  * pour un sujet que le contrat refuse d'avance (identifiant illisible) : rien
  * à demander, aucune requête. `dailymotion` : le client lit aussi un aperçu
- * Dailymotion (AlloCiné).
+ * Dailymotion (AlloCiné). `decodes` : ce que son lecteur décode
+ * (`trailerCodecs.ts`) — écrit dans la requête seulement s'il ne lit pas le
+ * H.264 et l'AAC.
  */
 export function trailerPreviewSubjectPath(
   subject: TrailerPreviewSubject,
   lang: string | undefined,
-  options: { dailymotion?: boolean } = {},
+  options: { dailymotion?: boolean; decodes?: readonly TrailerCodec[] } = {},
 ): string | null {
-  const extra = options.dailymotion ? { dailymotion: true } : {};
+  const extra = { ...(options.dailymotion ? { dailymotion: true } : {}), ...(options.decodes ? { decodes: options.decodes } : {}) };
   return subject.kind === "item"
     ? trailerPreviewPath({ itemId: subject.itemId, lang, ...extra })
     : trailerPreviewPath({ tmdbId: subject.tmdbId, mediaType: subject.mediaType, lang, ...extra });

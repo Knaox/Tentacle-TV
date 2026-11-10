@@ -61,11 +61,24 @@ export function keepsStartOffset(details: Pick<LevelDetails, "totalduration" | "
   return details.totalduration >= startOffsetMinDurationS && first !== undefined && first.duration >= startOffsetS + 0.5;
 }
 
+/**
+ * Les erreurs de hls.js qui disent « ce lecteur ne décode pas ces codecs » —
+ * mesuré dans le bureau CEF face au maître H.264 : `manifestIncompatibleCodecsError`.
+ */
+const CODEC_REFUSALS = new Set(["manifestIncompatibleCodecsError", "bufferIncompatibleCodecsError", "bufferAddCodecError"]);
+export const isCodecRefusal = (details: string | undefined) => details !== undefined && CODEC_REFUSALS.has(details);
+
 export interface PreviewSourceHandlers {
   /** La première image est décodée (et présentée, quand le navigateur sait le dire). */
   onReady: () => void;
   /** Échec fatal : réseau, média, format illisible. */
   onError: () => void;
+  /**
+   * Avant `onError`, quand l'échec est un refus de CODECS (le maître ou un
+   * tampon que ce lecteur ne décode pas) : la cause est l'appareil, pas la
+   * vidéo — l'appelant ne retient pas d'échec contre le titre.
+   */
+  onCodecRefused?: () => void;
   /**
    * Le premier fragment VIDÉO est reçu : le flux coule, la première image suit
    * de près (la révélation sur l'image du titre l'attend). Un flux bloqué
@@ -240,7 +253,9 @@ export function attachPreviewSource(
         if (data.frag.type === "main") markFlowing();
       });
       instance.on(HlsCtor.Events.ERROR, (_event, data) => {
-        if (data.fatal) fail();
+        if (!data.fatal) return;
+        if (!released && isCodecRefusal(data.details)) handlers.onCodecRefused?.();
+        fail();
       });
       instance.loadSource(stream.src);
       instance.attachMedia(video);
