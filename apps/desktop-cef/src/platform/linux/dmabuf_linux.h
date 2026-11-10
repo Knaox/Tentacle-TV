@@ -25,7 +25,7 @@ class DmabufImporter {
   DmabufImporter() = default;
   EglWindow* egl_ = nullptr;
   bool modifiers_ = false;
-  GLuint fbo_ = 0, fboTex_ = 0;
+  GLuint fbo_ = 0;  // la destination y est rattachée à chaque copie (copyInto)
   void* createImage_ = nullptr;   // eglCreateImageKHR
   void* destroyImage_ = nullptr;  // eglDestroyImageKHR
   void* targetTexture_ = nullptr; // glEGLImageTargetTexture2DOES

@@ -91,21 +91,22 @@ bool DmabufImporter::copyInto(const void* paintInfo, GLuint dst, int w, int h, G
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   target(GL_TEXTURE_2D, image);
-  if (fboTex_ != dst) {
-    if (fbo_) glDeleteFramebuffers(1, &fbo_);
-    fbo_ = createFramebuffer(dst);
-    fboTex_ = fbo_ ? dst : 0;
-  }
-  bool ok = fbo_ != 0;
+  if (!fbo_) glGenFramebuffers(1, &fbo_);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+  // Rattachée à CHAQUE copie, jamais retenue par son nom : le compositeur recrée sa texture à
+  // chaque changement de taille (autre écran, autre échelle) et GL redonne le MÊME nom. Une
+  // attache gardée d'après le nom visait l'ancienne texture, orpheline mais vivante : la page
+  // restait transparente sur l'aplat vidéo (écran vert en passant d'un écran à l'autre, mesuré).
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
+  const bool ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
   if (ok) {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
     glViewport(0, 0, w, h);
     glDisable(GL_BLEND);
     // Échantillonnée en RGBA logique (EGL suit le fourcc), rangée en BGRA comme OnPaint :
     // le compositeur n'a ensuite qu'un chemin de dessin.
     quad.drawTexture(src, {0, 0, float(w), float(h)}, w, h, true, true);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDeleteTextures(1, &src);
   destroy(egl_->display(), image);
   return ok;
