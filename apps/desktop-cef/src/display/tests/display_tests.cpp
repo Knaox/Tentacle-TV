@@ -1,13 +1,16 @@
-// La règle du module écran, sans OS ni lecteur : session HDR (hdrSession.ts d'Electron) et
-// verdict du Microsoft Store (msixInstallState.test.ts, cas repris un à un). Sans dépendance
+// La règle du module écran, sans OS ni lecteur : session HDR (hdrSession.ts d'Electron), relevé
+// de la sortie de mpv sous Linux (linux/hdr.ts) et verdict du Microsoft Store (msixInstallState.test.ts, cas repris un à un). Sans dépendance
 // de test, comme ceux du pont : un échec imprime sa ligne, le code de sortie compte les échecs.
+#include <cmath>
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "hdr_session.h"
 #include "msix_rule.h"
+#include "output_reading.h"
 
 using namespace tentacle;
 
@@ -145,11 +148,72 @@ void msixRule() {
   CHECK(opensStorePage("store-unavailable"));
 }
 
+// Un lecteur dont les propriétés sont une table (absente : mpv ne dit rien).
+pont::VideoSessionAccess props(std::map<std::string, bridge::Json>& table) {
+  pont::VideoSessionAccess a;
+  a.get = [&table](const std::string& name, std::function<void(std::optional<bridge::Json>)> cb) {
+    auto it = table.find(name);
+    cb(it == table.end() ? std::nullopt : std::optional<bridge::Json>(it->second));
+  };
+  a.set = [](const std::string&, const bridge::Json&) {};
+  return a;
+}
+
+void outputReading() {
+  using display::OutputReading;
+  // La forme du panneau F9 (linux/hdr.ts › describeReading), verdict compris.
+  CHECK(display::describeReading({"pq", "pq", "bt.2020", 3.813229}) == "contenu pq → sortie pq/bt.2020 · pic 3.81×");
+  CHECK(display::describeReading({"pq", "bt.1886", "bt.709", std::nullopt}) == "contenu pq → sortie bt.1886/bt.709 — TONE-MAPPÉ");
+  CHECK(display::describeReading({"bt.1886", "pq", "bt.2020", std::nullopt}) == "contenu bt.1886 → sortie pq/bt.2020 — SDR converti");
+  // Contenu inconnu : comme Electron (isHdr(null) faux), une sortie HDR se dit « SDR converti ».
+  CHECK(display::describeReading({std::nullopt, "hlg", std::nullopt, std::nullopt}) == "contenu ? → sortie hlg/? — SDR converti");
+  // Rien relevé : null, jamais « non ». Film SDR : la transmission ne se pose pas.
+  CHECK(!display::outputHdr(std::nullopt) && !display::hdrTransmission(std::nullopt));
+  CHECK(display::outputHdr(OutputReading{"bt.1886", "pq", {}, {}}) == true);  // écran laissé en HDR
+  CHECK(!display::hdrTransmission(OutputReading{"bt.1886", "pq", {}, {}}));
+  CHECK(display::hdrTransmission(OutputReading{"pq", "pq", {}, {}}) == true);
+  CHECK(display::hdrTransmission(OutputReading{"hlg", "bt.1886", {}, {}}) == false);  // aplati : la seule alerte
+
+  std::vector<std::string> log;
+  display::OutputReader reader([&log](const std::string& l) { log.push_back(l); });
+  std::map<std::string, bridge::Json> table{{"video-params/gamma", "pq"}};
+  // À file-loaded, la sortie n'existe pas encore : rien de relevé, rien de journalisé.
+  reader.onVideoEvent("file-loaded", props(table));
+  CHECK(!reader.last() && log.empty());
+  table["video-target-params/gamma"] = "";
+  reader.onVideoEvent("video-reconfig", props(table));
+  CHECK(!reader.last());
+  // Puis la sortie : le pic arrive en texte ou en nombre.
+  table["video-target-params/gamma"] = "pq";
+  table["video-target-params/primaries"] = "bt.2020";
+  table["video-target-params/sig-peak"] = "3.813229";
+  reader.onVideoEvent("video-reconfig", props(table));
+  CHECK(reader.last() && reader.last()->peak && std::abs(*reader.last()->peak - 3.813229) < 1e-6);
+  CHECK(log.size() == 1 && log[0] == "contenu pq → sortie pq/bt.2020 · pic 3.81×");
+  table["video-target-params/sig-peak"] = 2.5;
+  reader.onVideoEvent("video-reconfig", props(table));
+  CHECK(reader.last()->peak == 2.5 && log.size() == 1);  // même couple : une ligne, pas deux
+  reader.onVideoEvent("playback-restart", props(table));  // autre évènement : ignoré
+  // Arrêt : le relevé s'oublie (ne décrit jamais une lecture finie).
+  reader.onVideoStopped();
+  CHECK(!reader.last());
+  // Une réponse arrivée APRÈS l'arrêt est ignorée.
+  std::function<void(std::optional<bridge::Json>)> late;
+  pont::VideoSessionAccess slow;
+  slow.get = [&late](const std::string&, std::function<void(std::optional<bridge::Json>)> cb) { late = std::move(cb); };
+  slow.set = [](const std::string&, const bridge::Json&) {};
+  reader.onVideoEvent("video-reconfig", slow);
+  reader.onVideoStopped();
+  late(bridge::Json("pq"));
+  CHECK(!reader.last());
+}
+
 }  // namespace
 
 int main() {
   hdrSession();
   msixRule();
+  outputReading();
   if (failures == 0) std::printf("display : tous les tests passent\n");
   return failures;
 }

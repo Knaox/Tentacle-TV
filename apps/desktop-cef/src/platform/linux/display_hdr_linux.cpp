@@ -1,7 +1,7 @@
 // Linux : l'état HDR de l'écran (platform/display_hdr.h). Rien à basculer : sous Wayland le
-// compositeur alloue l'espace colorimétrique surface par surface, X11 n'a rien. Electron y
-// répond par ce que mpv SORT (`linux/hdr.ts`, video-target-params) : à reprendre par l'axe
-// linux s'il le faut — posé par l'axe windows avec les réponses « rien constaté ».
+// compositeur alloue l'espace colorimétrique surface par surface, X11 n'a rien. Comme Electron
+// (`linux/hdr.ts`), `display_hdr_state` répond par ce que mpv SORT : le relevé du couple
+// video-params / video-target-params (src/display/output_reading.h), pas par cette sonde.
 
 #include "display/display_channels.h"
 #include "platform/display_hdr.h"
