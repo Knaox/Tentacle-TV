@@ -55,7 +55,12 @@ WakeLock& systemLock() {
 void setTransfersProbe(TransfersProbe probe) { hubState().probe = std::move(probe); }
 void setFarewellSender(FarewellSender sender) { hubState().sender = std::move(sender); }
 void onWindowClosed(std::function<void()> cb) { hubState().windowClosed.push_back(std::move(cb)); }
-void onSystemResume(std::function<void()> cb) { hubState().systemResume.push_back(std::move(cb)); }
+void onSystemResume(std::function<void()> cb) {
+  auto& h = hubState();
+  // L'écoute du système naît avec le premier abonné (`connectWake` d'Electron).
+  if (h.systemResume.empty()) platform::watchSystemResume(hub::fireSystemResume);
+  h.systemResume.push_back(std::move(cb));
+}
 
 void keepSystemAwake(bool on) {
   if (on) systemLock().prevent();

@@ -44,6 +44,7 @@ std::string Registry::injectedScript(const std::string& shimSource, const ShimCo
       {"version", config.version},
       {"platform", config.platform},
       {"titleBarHeight", config.titleBarHeight},
+      {"windowFocus", config.windowFocus},
       {"commands", commands_},
       {"events", events_},
   };

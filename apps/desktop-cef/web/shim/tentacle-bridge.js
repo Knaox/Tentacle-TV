@@ -14,7 +14,7 @@
 // Le jeton de la dernière ligne (UNE seule occurrence dans ce fichier : le natif la
 // remplace une fois) devient un objet JSON, sérialisé par la bibliothèque JSON du
 // natif, jamais à la main :
-//   { origins, serverUrl, version, platform, titleBarHeight, commands, events }
+//   { origins, serverUrl, version, platform, titleBarHeight, windowFocus, commands, events }
 (function installTentacleBridge(config) {
   "use strict";
   if (window.top !== window) return; // greffons en iframe : jamais de pont
@@ -42,6 +42,39 @@
     }
   } catch (e) {
     console.warn("[tentacle-bridge] stockage local indisponible", e);
+  }
+
+  // Le focus de la FENÊTRE vu par le natif (`windowFocusBridge.ts` d'Electron), macOS
+  // seulement : la page ternit la fenêtre inactive à la façon du système, et
+  // `document.hasFocus()` ment. Sans lecture synchrone possible ici, la valeur de départ
+  // (inactive) est corrigée par une lecture asynchrone au chargement, puis suivie à chaque
+  // changement ; un abonné ne reçoit que les CHANGEMENTS.
+  function createWindowFocus() {
+    let focused = false;
+    const listeners = new Set();
+    const apply = (value) => {
+      if (typeof value !== "boolean" || value === focused) return;
+      focused = value;
+      for (const listener of listeners) {
+        try {
+          listener(value);
+        } catch (e) {
+          // l'erreur appartient à la page : les autres abonnés reçoivent quand même la nouvelle
+        }
+      }
+    };
+    shell.on("lifecycle.windowFocus", apply);
+    Promise.resolve(shell.invoke("lifecycle.windowFocus.get", {})).then(apply, () => undefined);
+    return Object.freeze({
+      isFocused: () => focused,
+      subscribe(listener) {
+        if (typeof listener !== "function") return () => undefined;
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    });
   }
 
   function refuse(command) {
@@ -73,18 +106,21 @@
     version: String(config.version),
     platform: config.platform,
     capabilities: commands,
-    titleBarHeight: Number.isFinite(config.titleBarHeight) ? config.titleBarHeight : 0,
+    titleBarHeight: Number.isFinite(config.titleBarHeight) && config.titleBarHeight > 0 ? config.titleBarHeight : 0,
+    // Capacités nommées de la coquille, hors de `capabilities` (comme le preload d'Electron).
     openExternal(url) {
-      // Le schéma est filtré côté natif : une liste blanche dans la page ne protège de rien.
-      return commandSet.has("open-external") ? call(PREFIX + "open-external", { url }) : refuse("open-external");
+      // Le schéma est filtré côté natif (liste fermée) : une liste blanche dans la page ne
+      // protège de rien. Rend `undefined`, ouvert ou refusé.
+      return call(PREFIX + "open-external", { url: String(url) }).then(() => undefined);
     },
     pickFolder() {
-      return Promise.resolve(null); // pas de téléchargements dans le proto
+      return call(PREFIX + "pick-folder", {}).then((path) => (typeof path === "string" ? path : null));
     },
     relaunch() {
-      return refuse("relaunch");
+      return call(PREFIX + "relaunch", {}).then(() => undefined);
     },
   };
+  if (config.windowFocus === true) bridge.windowFocus = createWindowFocus();
 
   Object.defineProperty(window, "tentacle", {
     value: Object.freeze(bridge),

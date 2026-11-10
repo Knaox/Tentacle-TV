@@ -97,6 +97,8 @@ bool ExitFlow::reopen() {
 }
 
 void ExitFlow::browserClosed() {
+  // Une page partie sans demande (fermée par le moteur lui-même) : la même suite qu'une croix.
+  if (phase_ == Phase::Running) phase_ = Phase::Closing;
   if (phase_ != Phase::Closing) return;
   // `closed` : la musique s'arrête avec la fenêtre, même si l'app reste pour ses transferts.
   if (p_.windowClosed) p_.windowClosed();

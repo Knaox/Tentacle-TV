@@ -19,9 +19,11 @@ add_library(tentacle_lifecycle_core STATIC
   close_sequence.cpp
   drag_regions.cpp
   exit_flow.cpp
+  external_url.cpp
   playback_farewell.cpp
   power_save.cpp
   quit_guard.cpp
+  texts.cpp
 )
 target_include_directories(tentacle_lifecycle_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(tentacle_lifecycle_core PUBLIC nlohmann_json::nlohmann_json)
@@ -33,6 +35,7 @@ add_executable(tentacle_lifecycle_tests
   tests/app_links_tests.cpp
   tests/exit_flow_tests.cpp
   tests/exit_rules_tests.cpp
+  tests/external_url_tests.cpp
   tests/playback_farewell_tests.cpp
   tests/power_save_tests.cpp
 )
@@ -42,23 +45,39 @@ add_test(NAME tentacle_lifecycle_tests COMMAND tentacle_lifecycle_tests)
 
 # La colle (CEF, SDL3, OS) : seulement dans l'app, quand le socle existe.
 if(TARGET tentacle_shell)
-  set(lifecycle_os "")
+  set(platform_dir "${CMAKE_CURRENT_SOURCE_DIR}/../platform")
   if(APPLE)
-    set(lifecycle_os
-      ${CMAKE_CURRENT_SOURCE_DIR}/../platform/macos/lifecycle_power_mac.mm)
+    set(lifecycle_os ${platform_dir}/macos/lifecycle_power_mac.mm
+                     ${platform_dir}/macos/lifecycle_system_mac.mm
+                     ${platform_dir}/macos/lifecycle_window_mac.mm)
   elseif(WIN32)
-    set(lifecycle_os
-      ${CMAKE_CURRENT_SOURCE_DIR}/../platform/windows/lifecycle_power_windows.cpp)
+    set(lifecycle_os ${platform_dir}/windows/lifecycle_power_windows.cpp
+                     ${platform_dir}/windows/lifecycle_system_windows.cpp
+                     sdl_system.cpp)
   else()
-    set(lifecycle_os
-      ${CMAKE_CURRENT_SOURCE_DIR}/../platform/linux/lifecycle_power_linux.cpp)
+    set(lifecycle_os ${platform_dir}/linux/lifecycle_power_linux.cpp
+                     ${platform_dir}/linux/lifecycle_system_linux.cpp
+                     sdl_system.cpp)
   endif()
-  add_library(tentacle_lifecycle STATIC hub.cpp ${lifecycle_os})
-  target_link_libraries(tentacle_lifecycle PUBLIC tentacle_lifecycle_core tentacle_shell)
+  add_library(tentacle_lifecycle STATIC
+    drag_hit_test.cpp
+    hub.cpp
+    lifecycle_app.cpp
+    lifecycle_shell.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shell/client_drag_regions.cpp  # CefDragHandler du Client
+    ${lifecycle_os})
+  target_link_libraries(tentacle_lifecycle PUBLIC tentacle_lifecycle_core tentacle_shell tentacle_bridge)
   target_compile_options(tentacle_lifecycle PRIVATE -Wall -Wextra -Wno-unused-parameter
-                         $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+                         -Wno-missing-field-initializers $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+  # L'icône partagée des bureaux (`appIcon.ts`), pour la fenêtre en développement (Linux, Windows).
+  target_compile_definitions(tentacle_lifecycle PRIVATE
+    TENTACLE_DEV_ICON="${CMAKE_CURRENT_SOURCE_DIR}/../../../desktop-electron/icons/icon.png")
   if(APPLE)
-    target_link_libraries(tentacle_lifecycle PUBLIC "-framework IOKit")
+    target_link_libraries(tentacle_lifecycle PUBLIC "-framework IOKit" "-framework UserNotifications")
+  elseif(WIN32)
+    target_link_libraries(tentacle_lifecycle PUBLIC shell32)
+  else()
+    target_link_libraries(tentacle_lifecycle PUBLIC ${CMAKE_DL_LIBS})
   endif()
   # `src/app/modules.cpp` (dans tentacle_shell) appelle la colle : lien dans les deux sens.
   target_link_libraries(tentacle_shell PUBLIC tentacle_lifecycle)

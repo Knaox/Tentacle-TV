@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "lifecycle/power_save.h"
+#include "lifecycle/texts.h"
 
 namespace tentacle::lifecycle::platform {
 
@@ -27,10 +28,6 @@ bool systemLocaleIsFrench();
 /// Une notification du système, silencieuse (la SEULE de l'app : transferts en arrière-plan).
 void notify(const std::string& title, const std::string& body);
 
-/// Les textes de la boîte « quitter quand même ? » (`quitGuard.ts`).
-struct QuitTexts {
-  std::string title, message, detail, quitApp, cancelLabel;
-};
 /// La boîte native, « Annuler » par défaut (Entrée et Échap). `answer(true)` = quitter ;
 /// rappelée UNE fois, plus tard ; une boîte qui ne peut pas s'afficher vaut `answer(true)`.
 void askQuit(SDL_Window* window, const QuitTexts& texts, std::function<void(bool quit)> answer);
@@ -62,7 +59,14 @@ void prepareMainWindow(SDL_Window* window);
 double titleBarHeight();
 /// Panneau « À propos » (`setAboutPanelOptions`) : nom, version, icône. macOS seulement.
 void setAboutPanel(const std::string& name, const std::string& version);
+/// La page reçoit-elle le focus de la fenêtre (`window.tentacle.windowFocus`) ? macOS seulement,
+/// comme Electron : la page y ternit la fenêtre inactive à la façon du système.
+bool hasWindowFocusBridge();
 /// Ramène la fenêtre au premier plan (seconde instance, lien reçu) : restaurée si réduite.
+/// Sous `--background` (bancs, sessions), jamais d'activation : `setNoActivation(true)`.
 void focusWindow(SDL_Window* window);
+void setNoActivation(bool on);
+/// Diagnostic des bancs (`lifecycle.debug.window`) : cadre, feux, ombre — JSON ; "{}" hors macOS.
+std::string windowDebug(SDL_Window* window);
 
 }  // namespace tentacle::lifecycle::platform

@@ -12,6 +12,7 @@
 
 #include "app/platform_app.h"
 #include "include/cef_app.h"
+#include "lifecycle/lifecycle_app.h"
 #include "shell/app_scheme.h"
 #include "shell/browser_app.h"
 #include "shell/builtin_handlers.h"
@@ -71,6 +72,9 @@ int runApp(int argc, char** argv) {
   if (opts.url.empty()) opts.url = platform::resourceUrl("page.html");
 
   platform::initApplication();
+  // Cycle de vie (axe systeme) : ligne de commande gardée, relance, liens du système, et la
+  // dernière fenêtre fermée qui ne vaut pas « quitter ».
+  lifecycle::app::beforeSdl(argc, argv, opts);
   SDL_SetAppMetadata("Tentacle", "0.1.0", "tv.tentacle.proto.cef");
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     std::fprintf(stderr, "SDL_Init : %s\n", SDL_GetError());
@@ -87,6 +91,7 @@ int runApp(int argc, char** argv) {
   // on le rend AVANT le premier affichage (vidéo-HDR, INTEGRATION 01:55), sans quoi la
   // création de la surface vidéo devrait retirer/remettre la fenêtre (scintillement).
   prepareWindowForVideo(platform::nativeWindow(window));
+  lifecycle::app::prepareWindow(window);  // cadre d'Electron, 900×600 au moins, régions déplaçables
   auto compositor = Compositor::create(window);
   std::unique_ptr<VideoSurface> fake;
   if (opts.fakeVideoEdr > 0) {
@@ -105,6 +110,12 @@ int runApp(int argc, char** argv) {
   CefMainArgs mainArgs(argc, argv);
   CefSettings settings = makeSettings(opts);
   if (!CefInitialize(mainArgs, settings, app, nullptr)) {
+    // Instance unique : une instance tourne déjà sur ce profil et a reçu notre ligne de
+    // commande (lien, focus) — on sort sans bruit, comme la seconde instance d'Electron.
+    if (lifecycle::app::handedToRunningInstance()) {
+      std::fprintf(stderr, "[app] une instance tourne déjà sur ce profil : elle prend le relais\n");
+      return 0;
+    }
     std::fprintf(stderr, "CefInitialize a échoué (code %d)\n", CefGetExitCode());
     return 1;
   }
@@ -134,28 +145,32 @@ int runApp(int argc, char** argv) {
   shell->syncWindowGeometry();
   std::fprintf(stderr, "[app] %s — %d Hz, DevTools %d, profil %s\n", so.url.c_str(),
                so.frameRate, opts.devtoolsPort, opts.profileDir.c_str());
+  lifecycle::app::attach(shell.get(), window);
   if (!shell->start()) {
     std::fprintf(stderr, "CreateBrowser a échoué\n");
     return 1;
   }
 
-  bool quitting = false;
-  while (!shell->isClosed()) {
+  // Fermer, quitter, finir les transferts sans fenêtre, dire au revoir à Jellyfin : le cycle de
+  // vie décide quand la boucle s'arrête (src/lifecycle/exit_flow.h).
+  while (lifecycle::app::running()) {
     SDL_Event e;
-    if (!(quitting ? SDL_WaitEventTimeout(&e, 20) : SDL_WaitEvent(&e))) continue;
+    const int timeout = lifecycle::app::waitTimeoutMs();
+    if (!(timeout < 0 ? SDL_WaitEvent(&e) : SDL_WaitEventTimeout(&e, timeout))) {
+      lifecycle::app::afterEvents();
+      continue;
+    }
     do {
       if (pump->handleSdlEvent(e.type)) continue;
-      if (e.type == SDL_EVENT_QUIT || e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-        if (!quitting) shell->requestClose();
-        quitting = true;
-      } else if (!quitting) {
-        shell->handleEvent(e);
-        if (e.type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN ||
-            e.type == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN || e.type == SDL_EVENT_WINDOW_RESIZED) {
-          notifyWindowState();
-        }
+      if (lifecycle::app::handleEvent(e)) continue;
+      if (!lifecycle::app::windowAlive()) continue;
+      shell->handleEvent(e);
+      if (e.type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN ||
+          e.type == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN || e.type == SDL_EVENT_WINDOW_RESIZED) {
+        notifyWindowState();
       }
     } while (SDL_PollEvent(&e));
+    lifecycle::app::afterEvents();
   }
 
   SDL_RemoveEventWatch(onWindowEvent, shell.get());
@@ -169,6 +184,7 @@ int runApp(int argc, char** argv) {
   compositor.reset();
   SDL_DestroyWindow(window);
   SDL_Quit();
+  lifecycle::app::afterShutdown();  // anti-veille et anti-suspension rendues au système
   return 0;
 }
 
