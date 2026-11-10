@@ -24,8 +24,12 @@ add_library(tentacle_offline_core STATIC
   core/args.cpp
   core/base64.cpp
   core/database.cpp
+  core/engine.cpp
+  core/engine_end.cpp
+  core/engine_work.cpp
   core/enqueue.cpp
   core/files.cpp
+  core/heal.cpp
   core/listing.cpp
   core/local_assets.cpp
   core/meta.cpp
@@ -36,27 +40,40 @@ add_library(tentacle_offline_core STATIC
   core/queue.cpp
   core/schema.cpp
   core/session_cache.cpp
+  core/snapshot.cpp
   core/sqlite.cpp
   core/store.cpp
+  core/stream_driver.cpp
   core/subs.cpp
+  core/transfer.cpp
+  core/transfer_support.cpp
+  core/trickplay.cpp
 )
+# Le `.part` à écritures positionnelles : POSIX (macOS, Linux) ou Windows (chemins larges).
+if(WIN32)
+  target_sources(tentacle_offline_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../platform/windows/offline_part_file_windows.cpp")
+else()
+  target_sources(tentacle_offline_core PRIVATE core/part_file_posix.cpp)
+endif()
 # Les en-têtes s'incluent en `offline/…` depuis `src/`.
 target_include_directories(tentacle_offline_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(tentacle_offline_core PUBLIC nlohmann_json::nlohmann_json tentacle_sqlite3)
 target_compile_features(tentacle_offline_core PUBLIC cxx_std_20)
 if(NOT MSVC)
-  target_compile_options(tentacle_offline_core PRIVATE -Wall -Wextra -Wno-unused-parameter)
+  target_compile_options(tentacle_offline_core PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
 endif()
 
 # Tests de règle (le pendant des tests vitest d'Electron) ; les sources TypeScript de
 # référence sont relues pour comparer ce qui doit l'être octet pour octet.
 get_filename_component(TENTACLE_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." ABSOLUTE)
 add_executable(tentacle_offline_tests
+  tests/engine_tests.cpp
   tests/library_tests.cpp
   tests/main.cpp
   tests/schema_tests.cpp
   tests/session_tests.cpp
   tests/store_tests.cpp
+  tests/transfer_tests.cpp
 )
 target_link_libraries(tentacle_offline_tests PRIVATE tentacle_offline_core)
 target_include_directories(tentacle_offline_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
