@@ -69,7 +69,7 @@ export function DeleteTitlesDialog({ open, entries, onClose, onFinished }: Props
           />
         ) : (
           <>
-            <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+            <h2 id={titleId} className="text-heading-2 text-content-primary">
               {single ? t("confirmTitleOne", { name: single.name }) : t("confirmTitle", { count: entries.length })}
             </h2>
             {!single && (
@@ -79,7 +79,7 @@ export function DeleteTitlesDialog({ open, entries, onClose, onFinished }: Props
                 more={preview.more}
               />
             )}
-            <div id={descId} className="mt-4 flex gap-3 rounded-xl border border-danger-border bg-danger-surface p-3.5">
+            <div id={descId} className="mt-4 flex gap-3 rounded-tile bg-danger-surface p-3.5">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--status-error-fg)]" aria-hidden />
               <div className="text-sm leading-relaxed text-content-primary">
                 <p className="font-semibold">{t("diskWarning")}</p>

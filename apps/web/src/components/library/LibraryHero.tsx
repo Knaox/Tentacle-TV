@@ -108,6 +108,14 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             dégradé — d'où une SIXIÈME couche quantifiée sur huit bits empilée
             sur les cinq autres, dans la zone la plus sombre de l'image. */}
         <HeroScrims bottom="h-[62%]" />
+        {/* Thème CLAIR seulement : le raccord vers la page (`--hero-page-fade`). Sans lui, l'assise
+            noire du bas de l'image s'arrêtait net sous le panneau d'outils. Masqué en sombre —
+            donc sur le téléviseur, toujours sombre — : aucune couche de plus à y composer. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[240px] [[data-theme=light]_&]:block"
+          style={{ background: "var(--hero-page-fade)" }}
+        />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée en fusion `screen` par-dessus le

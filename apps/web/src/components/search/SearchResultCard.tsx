@@ -38,7 +38,7 @@ export function SearchResultCard({
   index?: number;
   onSelect: (it: MediaItem) => void;
 }) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "media"]);
   const client = useJellyfinClient();
   const rootRef = useRef<HTMLLIElement>(null);
   // Ici la carte est atteignable au clavier : le survol suit aussi le focus
@@ -68,6 +68,8 @@ export function SearchResultCard({
   const type =
     item.Type === "Movie" ? t("common:movie") :
     item.Type === "Series" ? t("common:series") :
+    // Une collection disait « BoxSet », le nom de son type chez Jellyfin.
+    item.Type === "BoxSet" ? t("media:kindCollection") :
     item.Type;
 
   const open = (range = false) => {

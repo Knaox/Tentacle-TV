@@ -40,7 +40,7 @@ function OneLanguageMenu({ labelKey, options, value, onChange }: {
   if (options.length === 0) return null;
   const name = (code: string) => languageName(code, i18n.language);
   return (
-    <FilterMenu label={t(`common:${labelKey}`)} value={value ? name(value) : null} onClear={() => onChange(null)} width={220}>
+    <FilterMenu label={t(`common:${labelKey}`)} value={value ? `${t(`common:${labelKey}`)} · ${name(value)}` : null} onClear={() => onChange(null)} width={220}>
       <div className="flex max-h-72 flex-col overflow-y-auto" role="menu">
         {options.map((o) => (
           <CheckRow key={o.code} mark="check" label={name(o.code)} checked={value === o.code} onClick={() => onChange(value === o.code ? null : o.code)} />

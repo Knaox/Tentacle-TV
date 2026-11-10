@@ -37,20 +37,18 @@ export function DeletionProgressView({ titleId, descId, state, onStop }: {
   const percent = state.total === 0 ? 0 : Math.round((state.processed / state.total) * 100);
   return (
     <>
-      <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("progressTitle")}</h2>
+      <h2 id={titleId} className="text-heading-2 text-content-primary">{t("progressTitle")}</h2>
       <div
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={state.total}
         aria-valuenow={state.processed}
         aria-labelledby={titleId}
-        className="mt-5 h-2 overflow-hidden rounded-full bg-fill-soft"
+        // La jauge du socle : ce qui se MESURE porte son dégradé ; une échelle, jamais une largeur.
+        className="gauge mt-5 h-2 rounded-full"
+        data-live="true"
       >
-        {/* Une échelle, pas une largeur animée : seul `transform` bouge (règle « Coût GPU »). */}
-        <div
-          className="h-full origin-left rounded-full bg-[var(--brand)] transition-transform duration-300 ease-out"
-          style={{ transform: `scaleX(${percent / 100})` }}
-        />
+        <i style={{ transform: `scaleX(${percent / 100})` }} />
       </div>
       <p className="mt-2 text-sm tabular-nums text-content-secondary" aria-live="polite">
         {t("progress", { done: state.processed, total: state.total })}
@@ -92,7 +90,7 @@ export function DeletionSummaryView({ titleId, descId, summary, nameOf, onRetry,
     <>
       <div className="flex items-center gap-2.5">
         <Icon className={`h-6 w-6 shrink-0 ${complete ? "text-[var(--status-success-fg)]" : "text-[var(--status-warning-fg)]"}`} aria-hidden />
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+        <h2 id={titleId} className="text-heading-2 text-content-primary">
           {t(complete ? "doneTitle" : "partialTitle")}
         </h2>
       </div>

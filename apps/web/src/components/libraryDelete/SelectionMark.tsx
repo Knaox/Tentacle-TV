@@ -18,7 +18,7 @@ export const SelectionMark = memo(function SelectionMark({ mark }: { mark: Selec
     return (
       <span
         aria-hidden
-        className="pointer-events-none absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white/80"
+        className="pointer-events-none absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-pill bg-[rgba(var(--scrim-media-rgb),0.6)] text-on-media-secondary"
       >
         <Lock weight="bold" className="h-3.5 w-3.5" />
       </span>
@@ -28,12 +28,14 @@ export const SelectionMark = memo(function SelectionMark({ mark }: { mark: Selec
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border transition-[background-color,border-color,transform] duration-150 ${
+      // Cochée : l'aplat de la teinte franche et son encre (`--accent` / `--on-accent`), comme une
+      // case du socle. Sinon un rond d'encre sur l'image, à liseré clair.
+      className={`pointer-events-none absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-pill border transition-[background-color,border-color] duration-hover ${
         checked
-          ? "scale-100 border-transparent bg-[var(--brand)] text-white shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
+          ? "border-transparent bg-accent text-accent-on shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
           : mark === "pending"
-            ? "border-white/25 bg-black/30"
-            : "border-white/80 bg-black/45 group-hover/card:border-white"
+            ? "border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.3)]"
+            : "border-on-media-secondary bg-[rgba(var(--scrim-media-rgb),0.45)] group-hover/card:border-on-media-primary"
       }`}
     >
       {checked && <Check weight="bold" className="h-4 w-4" />}
@@ -48,7 +50,7 @@ export function SelectedRing() {
       aria-hidden
       /* Le ratio en CLASSE : `aspect-ratio` en style en ligne échappe à la passe
          qui le traduit pour les moteurs d'avant Chrome 88. */
-      className="pointer-events-none absolute inset-x-0 top-0 z-10 aspect-[2/3] rounded-[var(--radius-lg)] ring-2 ring-[var(--brand)]"
+      className="pointer-events-none absolute inset-x-0 top-0 z-10 aspect-[2/3] rounded-[var(--radius-lg)] ring-2 ring-accent"
     />
   );
 }
