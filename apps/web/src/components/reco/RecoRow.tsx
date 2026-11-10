@@ -10,7 +10,7 @@ import { useRowWindow } from "../rows/useRowWindow";
 import { rowIntrinsicHeight } from "../rows/rowTrackReserve";
 import { useRowTrackReserve } from "../rows/useRowTrackReserve";
 import { useRowEntrance } from "../rows/useRowEntrance";
-import { rowEntranceId } from "../rows/rowEntranceMemory";
+import { hasRowEntered, rowEntranceId } from "../rows/rowEntranceMemory";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -42,13 +42,14 @@ interface RecoRowProps {
 export function RecoRow({ title, items, headerTrailing, reasonRow }: RecoRowProps) {
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const rowRef = useRef<HTMLElement | null>(null);
-  const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   const cardWidth = useRowCardWidth(scrollRef, "poster");
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   // L'entrée, une fois (cf. MediaRow, `rowEntrance`).
   // La même rangée sur l'accueil et sur « Pour vous » : entrée une fois pour ce contenu.
   const entranceId = useMemo(() => rowEntranceId(title, items.map((item) => item.key)), [title, items]);
+  // Déjà entrée pendant la session : ses cartes sont là dès le premier rendu (cf. `MediaRow`).
+  const [visible, setVisible] = useState(() => hasRowEntered(entranceId));
   const holdEntrance = useRowEntrance(scrollRef, visible, entranceId);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;

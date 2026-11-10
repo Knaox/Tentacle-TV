@@ -17,7 +17,7 @@ import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useRowEntrance } from "./useRowEntrance";
-import { rowEntranceId } from "./rowEntranceMemory";
+import { hasRowEntered, rowEntranceId } from "./rowEntranceMemory";
 
 export type CardVariant = "poster" | "episode";
 
@@ -53,7 +53,6 @@ export function MediaRow({ title, items: served, variant = "poster", href, poste
   const { t } = useTranslation("common");
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const rowRef = useRef<HTMLElement | null>(null);
-  const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   // Largeur calée sur la rangée : un nombre entier de cartes la remplit
   // exactement, plus aucune n'est tronquée au bord droit.
@@ -68,6 +67,10 @@ export function MediaRow({ title, items: served, variant = "poster", href, poste
   // L'entrée (titre, puis cartes de la première vue) : une fois, cf. `rowEntrance`.
   // Revenue avec le même contenu (changement de page), elle ne la rejoue pas.
   const entranceId = useMemo(() => rowEntranceId(title, served.map(mediaKey)), [title, served]);
+  // Une rangée déjà entrée pendant la session (retour d'une fiche : la coquille est remontée)
+  // monte ses cartes DÈS le premier rendu — attendre l'observateur la laissait vide le temps
+  // d'une image, sous des affiches déjà vues (banc `bench/accueil/return.mjs`).
+  const [visible, setVisible] = useState(() => hasRowEntered(entranceId));
   const holdEntrance = useRowEntrance(scrollRef, visible, entranceId);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;
