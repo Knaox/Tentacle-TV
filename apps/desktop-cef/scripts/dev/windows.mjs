@@ -1,89 +1,118 @@
-// Windows : prérequis (Visual Studio Build Tools, CMake, Ninja), CEF de l'architecture, SDL3
-// (paquet VC officiel), libmpv, puis le build natif dans un environnement MSVC (vcvarsall).
-// Charpente posée par l'axe linux ; l'axe windows la complète (libmpv, ressources, garde du
-// profil) — jamais lancée ni construite sur le Mac du lot.
+// Windows : prérequis (Visual Studio Build Tools avec le C++, CMake et Ninja — ceux de Visual
+// Studio conviennent), CEF de l'architecture, SDL3 (paquet VC officiel), libmpv (la DLL
+// d'Electron), libsodium et nlohmann/json épinglés, puis le build natif dans l'environnement de
+// Visual Studio (vcvarsall x64). Aucun bash. Écrit par l'axe windows sur la charpente de l'axe
+// linux ; jamais lancé depuis le Mac du lot : la recette est docs/A-TESTER-WINDOWS.md.
 import fs from "node:fs";
 import path from "node:path";
-import { buildName, cache, capture, die, root, run, say, which } from "./common.mjs";
+import { buildName, cache, desktopVersion, die, dry, root, run, say } from "./common.mjs";
 import { ensureCef } from "./cef.mjs";
-import { fetchArchive } from "./fetch.mjs";
+import { cefProfileFor } from "./profile.mjs";
+import { ensureJson, ensureMpvPrefix, ensureSdl3, ensureSodium, msvcEnv, vcvarsall, whichIn } from "./windows-deps.mjs";
 
-/** SDL3 : paquet de développement Visual C++ de la Release officielle (même version que macOS). */
-export const SDL3_VC_PIN = {
-  version: "3.4.16",
-  sha256: "1a784cb2a5c64d56fe7a62090fe9d242d9865f235e4ea9678f1a6ba4e693e7de", // digest GitHub
-  size: 16864776,
-};
+export { SDL3_VC_PIN } from "./windows-deps.mjs";
 
 const state = {};
 
-/** vcvarsall.bat de la dernière installation de Visual Studio (vswhere), ou null. */
-function vcvarsall() {
-  const pf = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
-  const vswhere = path.join(pf, "Microsoft Visual Studio", "Installer", "vswhere.exe");
-  if (!fs.existsSync(vswhere)) return null;
-  const install = capture(vswhere, ["-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-property", "installationPath"]);
-  if (!install) return null;
-  const bat = path.join(install, "VC", "Auxiliary", "Build", "vcvarsall.bat");
-  return fs.existsSync(bat) ? bat : null;
-}
-
 function checkPrereqs() {
+  if (process.arch !== "x64") {
+    die(`Windows ${process.arch} : seul x64 est pris en charge (la libmpv-2.dll d'Electron est x64)`);
+  }
+  const bat = vcvarsall();
+  if (!bat) {
+    die("Visual Studio introuvable (vswhere) : installer Visual Studio Build Tools, charge « Développement Desktop en C++ »\n" +
+      "  winget install Microsoft.VisualStudio.2022.BuildTools --override \"--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive\"");
+  }
+  state.env = msvcEnv(bat);
   const missing = [];
-  if (!which("cmake")) missing.push("CMake (winget install Kitware.CMake)");
-  if (!which("ninja")) missing.push("Ninja (winget install Ninja-build.Ninja)");
-  state.vcvars = vcvarsall();
-  if (!state.vcvars) missing.push("Visual Studio Build Tools, charge « Développement Desktop en C++ » (winget install Microsoft.VisualStudio.2022.BuildTools)");
-  if (missing.length) die(`prérequis manquants :\n  - ${missing.join("\n  - ")}`);
+  // CMake et Ninja : ceux de Visual Studio (composant « Outils CMake C++ », inclus dans la
+  // charge recommandée), sinon ceux du PATH (winget install Kitware.CMake Ninja-build.Ninja).
+  for (const tool of ["cl", "link", "rc", "lib", "dumpbin", "cmake", "ninja"]) {
+    if (!whichIn(state.env, tool)) missing.push(tool);
+  }
+  if (missing.length) {
+    die(`introuvables dans l'environnement de Visual Studio : ${missing.join(", ")}\n` +
+      "  cmake/ninja : winget install Kitware.CMake Ninja-build.Ninja, ou le composant « Outils CMake C++ pour Windows »");
+  }
+  say(`Visual Studio : ${bat}`);
 }
 
-async function ensureSdl3() {
-  return fetchArchive({
-    url: `https://github.com/libsdl-org/SDL/releases/download/release-${SDL3_VC_PIN.version}/SDL3-devel-${SDL3_VC_PIN.version}-VC.zip`,
-    pin: { sha256: SDL3_VC_PIN.sha256 },
-    dest: path.join(cache, "deps", "sdl3", `${SDL3_VC_PIN.version}-vc`),
-    inner: `SDL3-${SDL3_VC_PIN.version}`,
-    marker: "cmake/SDL3Config.cmake",
-    sizeHint: SDL3_VC_PIN.size,
-    what: `SDL3 ${SDL3_VC_PIN.version} (Visual C++)`,
-    small: true,
-  });
+/**
+ * Jamais Electron (ou un autre Tentacle CEF) sur le même stockage. Sous Windows, ni lien
+ * SingletonLock ni lsof : Chromium tient `lockfile` à la racine de son profil, ouvert en
+ * écriture SANS partage tant que le processus vit (ProcessSingleton, supprimé à la fermeture),
+ * et LevelDB verrouille ses LOCK (LockFileEx). Un fichier qu'on ne peut ouvrir est tenu.
+ */
+function heldOnWindows(file) {
+  if (!fs.existsSync(file)) return false;
+  let fd;
+  try {
+    fd = fs.openSync(file, "r+");
+    const buf = Buffer.alloc(1);
+    fs.readSync(fd, buf, 0, 1, 0);  // une plage verrouillée par un autre : EBUSY
+    return false;
+  } catch (e) {
+    return ["EBUSY", "EPERM", "EACCES"].includes(e.code);
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
 }
 
-/** Une commande dans l'environnement MSVC (cl.exe, link.exe, SDK Windows). */
-function inMsvc(cmd) {
-  const arch = process.arch === "arm64" ? "arm64" : "x64";
-  run("cmd.exe", ["/d", "/s", "/c", `"call "${state.vcvars}" ${arch} >nul && ${cmd}"`], { windowsVerbatimArguments: true });
+function extraHolders(profile, locks) {
+  const out = [];
+  for (const f of [path.join(profile, "lockfile"), path.join(cefProfileFor(profile), "lockfile"), ...locks]) {
+    if (heldOnWindows(f)) out.push(`(fichier tenu : ${f})`);
+  }
+  return out;
 }
 
 export const windows = {
   quitHint: "Alt+F4 ou la fenêtre",
+  extraHolders,
   async prepare() {
     if (state.ready) return;
+    if (dry) {
+      state.ready = true;
+      return;
+    }
     checkPrereqs();
     state.cef = await ensureCef();
-    state.sdl = await ensureSdl3();
-    // libmpv (axe windows) : en attendant, un préfixe fourni (include/, lib/ avec mpv.lib et
-    // libmpv-2.dll), par exemple un paquet mpv-dev de shinchiro, épinglé par l'axe windows.
-    state.mpv = process.env.TENTACLE_MPV_PREFIX;
-    if (!state.mpv) die("libmpv : TENTACLE_MPV_PREFIX=<préfixe> requis pour l'instant (à épingler par l'axe windows)");
+    state.sdl3Dir = await ensureSdl3();
+    state.sodium = await ensureSodium();
+    state.jsonDir = await ensureJson();
+    state.mpv = await ensureMpvPrefix(state.env);
     state.ready = true;
   },
   async build() {
     await windows.prepare();
     const build = path.join(cache, "build", buildName());
-    const q = (s) => `"${s}"`;
-    if (!fs.existsSync(path.join(build, "build.ninja"))) {
-      inMsvc(["cmake", "-G", "Ninja", "-S", q(root), "-B", q(build), "-DCMAKE_BUILD_TYPE=Release",
-        q(`-DCEF_ROOT=${state.cef}`), q(`-DMPV_PREFIX=${state.mpv}`), q(`-DCMAKE_PREFIX_PATH=${state.sdl}`)].join(" "));
+    const binary = path.join(build, "app", "Tentacle.exe");
+    if (dry) {
+      console.log(`DRY build Windows → ${binary}`);
+      return binary;
     }
-    inMsvc(`ninja -C ${q(build)}`);
-    const binary = path.join(build, "app", "tentacle.exe");
+    const opts = { env: state.env };
+    if (!fs.existsSync(path.join(build, "build.ninja"))) {
+      run("cmake", ["-G", "Ninja", "-S", root, "-B", build,
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",  // le CRT statique de CEF, wrapper compris
+        `-DCEF_ROOT=${state.cef}`,
+        `-DSDL3_DIR=${state.sdl3Dir}`,
+        `-Dnlohmann_json_DIR=${state.jsonDir}`,
+        `-DMPV_PREFIX=${state.mpv}`,
+        `-DSODIUM_INCLUDE_DIR=${state.sodium.include}`,
+        `-DSODIUM_LIBRARY=${state.sodium.lib}`,
+        `-DTENTACLE_APP_VERSION=${desktopVersion()}`,
+      ], opts);
+    }
+    run("ninja", ["-C", build], opts);
     if (!fs.existsSync(binary)) die(`exécutable absent après le build : ${binary}`);
     say(`build : ${binary}`);
     return binary;
   },
   env(env) {
-    return env;
+    // Sous Windows, HOME n'existe pas hors Git Bash : le cache de l'app (args.cpp) est le même
+    // dossier que celui du lanceur.
+    return { ...env, TENTACLE_CEF_CACHE: cache };
   },
 };
