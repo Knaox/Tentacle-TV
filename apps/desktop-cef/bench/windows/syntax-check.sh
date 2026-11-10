@@ -5,6 +5,10 @@
 #            officielle, ~16 Mo, épinglée), libc++ du SDK en configuration Windows ;
 #   --gcc    GCC 12 de mingw-w64 (Debian bookworm, libstdc++, en-têtes mingw-w64 v10) dans le
 #            conteneur du banc croisé de maj (tentacle-cef-maj-cross:bookworm, colima, 2 cœurs).
+#            ⚠️ Les en-têtes WinRT C++ de mingw-w64 v10 (windows.foundation.h, windows.media.h)
+#            ne passent pas GCC : un fichier qui les inclut (SMTC de l'axe medias) ne se juge
+#            qu'en mode clang (mingw-w64 v14). Les sources doivent être sous $HOME (colima ne
+#            partage que lui avec la VM).
 # En-têtes de CEF : la distribution windows64 si le lanceur l'a téléchargée
 # ($cache/deps/cef-windows64/<version>), sinon ceux de macOS + les 4 propres à Windows au même
 # commit (épinglés). SDL3 : le paquet VC si présent, sinon Homebrew. mpv : en-têtes du cache.
