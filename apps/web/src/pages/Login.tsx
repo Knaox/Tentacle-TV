@@ -77,7 +77,7 @@ export function Login() {
             {t("haveInviteKey")}{" "}
             <Link
               to="/register"
-              className="rounded font-semibold text-[var(--brand-light)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+              className="rounded font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
             >
               {t("createAccount")}
             </Link>

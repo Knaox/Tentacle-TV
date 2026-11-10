@@ -63,7 +63,7 @@ export function Register() {
           {t("alreadyHaveAccount")}{" "}
           <Link
             to={loginPath}
-            className="rounded font-semibold text-[var(--brand-light)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+            className="rounded font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             {t("signIn")}
           </Link>

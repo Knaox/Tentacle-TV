@@ -6,9 +6,9 @@ import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 type Tone = "error" | "success" | "info";
 
 const TONES: Record<Tone, { icon: typeof Info; className: string }> = {
-  error: { icon: AlertCircle, className: "border-status-error bg-status-error-bg text-status-error-fg" },
-  success: { icon: CheckCircle2, className: "border-status-success bg-status-success-bg text-status-success-fg" },
-  info: { icon: Info, className: "border-line-subtle bg-fill-subtle text-content-secondary" },
+  error: { icon: AlertCircle, className: "bg-status-error-bg text-status-error-fg" },
+  success: { icon: CheckCircle2, className: "bg-status-success-bg text-status-success-fg" },
+  info: { icon: Info, className: "bg-surface-2 text-content-secondary" },
 };
 
 /**
@@ -20,7 +20,7 @@ export function AuthAlert({ tone, children, className }: { tone: Tone; children:
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] leading-relaxed ${toneClass} ${className ?? ""}`}
+      className={`flex items-start gap-2.5 rounded-tile px-3.5 py-3 text-[13px] leading-relaxed ${toneClass} ${className ?? ""}`}
     >
       <Icon aria-hidden size={17} className="mt-px shrink-0" />
       <div className="min-w-0 flex-1">{children}</div>

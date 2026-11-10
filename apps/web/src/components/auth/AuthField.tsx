@@ -37,7 +37,7 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
 
   return (
     <div>
-      <label htmlFor={fieldId} className="mb-1.5 block text-[13px] font-medium text-content-secondary">
+      <label htmlFor={fieldId} className="mb-1.5 block text-[13px] font-semibold text-content-secondary">
         {label}
       </label>
       <div className="relative">
@@ -53,13 +53,8 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
           id={fieldId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={`h-12 w-full rounded-xl border bg-fill-subtle text-base text-content-primary outline-none transition-colors placeholder:text-content-quaternary focus:ring-2 sm:text-sm ${
-            Icon ? "pl-11" : "pl-4"
-          } ${trailing ? "pr-12" : "pr-4"} ${
-            error
-              ? "border-status-error focus:border-status-error focus:ring-danger-border"
-              : "border-line-subtle hover:border-line-strong focus:border-[var(--brand)] focus:ring-[rgba(var(--brand-rgb),0.3)]"
-          } ${className ?? ""}`}
+          // Le champ du socle, en 48 px : on y tape au doigt aussi (16 px sous `sm`, sinon iOS zoome).
+          className={`field h-12 text-base sm:text-sm ${Icon ? "pl-11" : "pl-4"} ${trailing ? "pr-12" : "pr-4"} ${className ?? ""}`}
           {...input}
         />
         {trailing && <div className="absolute inset-y-0 right-1 flex items-center">{trailing}</div>}
@@ -99,7 +94,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           aria-label={visible ? t("hidePassword") : t("showPassword")}
           aria-pressed={visible}
           aria-controls={props.id}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-content-tertiary transition-colors hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+          className="icon-btn"
         >
           <Toggle aria-hidden size={18} />
         </button>

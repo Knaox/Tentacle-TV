@@ -35,16 +35,6 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
 
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip bg-surface-0">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(80% 60% at 12% 0%, rgba(var(--brand-rgb), 0.22) 0%, rgba(var(--brand-rgb), 0.05) 45%, transparent 72%)," +
-            "radial-gradient(60% 55% at 100% 100%, rgba(var(--brand-accent-rgb), 0.14) 0%, transparent 70%)",
-        }}
-      />
-
       {/* Barre haute : la langue, seule, à droite — la gauche reste libre pour
           les feux de fenêtre de macOS dans la coquille de bureau. */}
       <div className="flex justify-end px-4 pt-[max(env(safe-area-inset-top),1rem)] sm:px-6">
@@ -60,28 +50,22 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
         <section aria-hidden className="hidden max-w-md flex-1 lg:block">
           <div className="sticky top-0 flex h-full max-h-dvh flex-col justify-center animate-fade-slide-up">
             <HeroMark />
-            <p className="mt-8 text-5xl font-extrabold leading-[1.05] tracking-tight text-content-primary">
-              {t("tentacle")}
-            </p>
-            <p className="mt-4 text-lg leading-relaxed text-content-secondary">{t("brandTagline")}</p>
-            <div
-              className="mt-8 h-1 w-24 rounded-full"
-              style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
-            />
+            <p className="mt-8 font-display text-display-2 text-content-primary">{t("tentacle")}</p>
+            <p className="mt-4 max-w-[34ch] text-lg leading-relaxed text-content-secondary">{t("brandTagline")}</p>
           </div>
         </section>
 
         <div className={`w-full ${cardWidth} self-center animate-fade-slide-up`}>
           <div className="mb-6 flex flex-col items-center text-center lg:hidden">
             <TentacleLogo size="lg" variant="glow" />
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-content-tertiary">
+            <p className="ui-eyebrow mt-3">
               {t("tentacle")}
             </p>
           </div>
 
           <GlassCard className="p-6 sm:p-8">
             {header}
-            <h1 className="text-2xl font-extrabold tracking-tight text-content-primary">{title}</h1>
+            <h1 className="text-heading-1 text-content-primary">{title}</h1>
             {subtitle && <p className="mt-1.5 text-sm leading-relaxed text-content-tertiary">{subtitle}</p>}
             <div className="mt-6">{children}</div>
           </GlassCard>
@@ -100,11 +84,6 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
  */
 function HeroMark() {
   return (
-    <span
-      className="inline-flex h-40 w-40 items-center justify-center rounded-full"
-      style={{ background: "radial-gradient(circle, rgba(var(--brand-rgb), 0.38) 0%, rgba(var(--brand-rgb), 0) 70%)" }}
-    >
-      <TentacleSvg size={136} style={{ filter: "drop-shadow(0 6px 28px rgba(var(--brand-rgb), 0.5))" }} />
-    </span>
+    <TentacleSvg size={136} />
   );
 }

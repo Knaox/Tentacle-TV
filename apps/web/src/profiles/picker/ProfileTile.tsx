@@ -1,7 +1,6 @@
 import { forwardRef, memo, type CSSProperties, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
-import { profileColorStops } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 import type { PickerProfile } from "./pickerTypes";
 
@@ -45,7 +44,6 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
   ref,
 ) {
   const { t } = useTranslation(["profilePicker", "family"]);
-  const [glowFrom] = profileColorStops(profile.color);
   const locked = profile.lockedLabel !== null;
   // Pas de « Vous » : devant l'écran, ce n'est pas forcément le compte (comme sur la TV).
   const caption = locked
@@ -59,9 +57,9 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
 
   const motionStyle: CSSProperties =
     role === "chosen"
-      ? { transform: `translateX(${shiftX}px) scale(1.1)`, transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)" }
+      ? { transform: `translateX(${shiftX}px) scale(1.1)`, transition: "transform 420ms cubic-bezier(0.23, 1, 0.32, 1)" }
       : role === "receding"
-        ? { transform: "scale(0.92)", opacity: 0, transition: "transform 300ms cubic-bezier(0.4, 0, 1, 1), opacity 260ms linear" }
+        ? { transform: "scale(0.96)", opacity: 0, transition: "transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 260ms linear" }
         : {};
 
   return (
@@ -77,13 +75,9 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
         onFocus={() => onFocus(profile.id)}
         className="group flex w-[9.5rem] flex-col items-center gap-3 rounded-2xl p-2 outline-none disabled:cursor-default"
       >
-        <span className="relative block transition-transform duration-200 ease-out group-hover:-translate-y-1.5 group-focus-visible:-translate-y-1.5 group-disabled:translate-y-0">
-          {/* Le halo : peint une fois, seule son opacité varie. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -inset-7 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
-            style={{ background: `radial-gradient(circle, ${glowFrom}8c 0%, ${glowFrom}26 45%, transparent 70%)` }}
-          />
+        {/* Le survol grandit la tuile de 3 % SUR PLACE (le geste des cartes), la pression la
+            rend à 97 % : plus de levée ni de halo coloré (refonte de nov. 2026). */}
+        <span className="relative block transition-transform duration-card ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[0.97] group-disabled:scale-100">
           {/* L'anneau du focus clavier : un calque peint une fois, seule son
               opacité varie — jamais une ombre (`box-shadow`) animée (règle
               « Coût GPU » 3, comme `theme/cards.css`). */}
@@ -102,7 +96,7 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
           {profile.pinLock && (
             <span
               aria-hidden
-              className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border border-line-subtle bg-surface-2 text-content-primary"
+              className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-surface-3 text-content-primary shadow-edge"
             >
               <Lock weight="bold" size={15} data-icon="lock" />
             </span>

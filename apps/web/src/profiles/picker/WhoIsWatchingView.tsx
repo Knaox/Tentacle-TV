@@ -27,10 +27,8 @@ export interface WhoIsWatchingViewProps {
   exits?: PickerExits;
 }
 
-/** Un bouton secondaire de l'écran. Pas de couleur animée (règle « Coût GPU » 3) :
- *  le survol change le fond d'un coup. */
-const SECONDARY =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+/** Un bouton secondaire de l'écran : la pilule du socle. */
+const SECONDARY = "btn btn-soft";
 
 /**
  * « Qui regarde ? » sur le bureau — plein écran, AVANT l'application : rien
@@ -53,15 +51,6 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
   const { t } = useTranslation("profilePicker");
   return (
     <div className="lg-screen relative isolate flex min-h-screen flex-col overflow-x-clip bg-surface-0">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(70% 55% at 50% 0%, rgba(var(--brand-rgb), 0.20) 0%, rgba(var(--brand-rgb), 0.04) 50%, transparent 75%)," +
-            "radial-gradient(55% 50% at 50% 100%, rgba(var(--brand-accent-rgb), 0.12) 0%, transparent 70%)",
-        }}
-      />
       {/* Au-dessus de <main> : son animation d'entrée lui laisse un `transform`,
           donc un contexte d'empilement peint APRÈS ce bouton — sans `z-10`, la
           colonne pleine largeur le recouvrait et le clic n'y arrivait jamais. */}
@@ -160,7 +149,7 @@ function CancelButton({ onCancel, disabled }: { onCancel: () => void; disabled: 
 function Status({ text, busy }: { text: string; busy?: boolean }) {
   return (
     <div role="status" className="flex flex-col items-center gap-4 text-sm text-content-tertiary">
-      {busy && <span aria-hidden className="h-8 w-8 animate-spin rounded-full border-[3px] border-line-subtle border-t-[var(--brand)]" />}
+      {busy && <span aria-hidden className="h-8 w-8 animate-spin rounded-full border-[3px] border-line-subtle border-t-accent" />}
       {text}
     </div>
   );
