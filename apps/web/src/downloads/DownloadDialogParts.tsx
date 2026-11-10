@@ -8,8 +8,12 @@ import type { ReactNode } from "react";
 import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
 import { GlassButton } from "../components/ui/glass/GlassButton";
 
-/** La mise en page d'un bouton de feuille : le verre natif retire la peau (`.btn`), pas elle. */
-const SHEET_BUTTON = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap px-[18px] text-sm font-semibold";
+/**
+ * La mise en page d'un bouton de feuille : le verre natif retire la peau (`.btn`), pas elle.
+ * `rounded-pill` ICI aussi : la règle globale de focus (`index.css`, `:focus-visible`) pose un
+ * rayon de 4 px qui l'emporte sur `.btn` — la pilule devenait un rectangle au focus clavier.
+ */
+const SHEET_BUTTON = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-pill px-[18px] text-sm font-semibold";
 
 export function VariantTile({
   selected,

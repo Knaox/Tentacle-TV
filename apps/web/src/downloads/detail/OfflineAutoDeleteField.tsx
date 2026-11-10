@@ -36,7 +36,7 @@ export function OfflineAutoDeleteField({ entry }: { entry: DownloadEntry }) {
           }}
         />
       </div>
-      <span className="text-xs text-content-quaternary">
+      <span className="text-xs text-content-tertiary">
         {scheduledAt != null
           ? <span className="font-medium text-status-warning-fg">{scheduleText(scheduledAt, t as Translate, i18n.language)}</span>
           : t("detailAutoDeleteHint")}

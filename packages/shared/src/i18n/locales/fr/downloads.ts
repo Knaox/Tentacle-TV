@@ -248,4 +248,5 @@ export default {
   playTargetStart: "Commence par l'épisode {{episode}} de la saison {{season}} — {{title}}",
   playTargetAgain: "Tout est vu : repart de l'épisode {{episode}} de la saison {{season}} — {{title}}",
   playTargetTitle: "Lance « {{title}} »",
+  statusPreparing: "Préparation sur le serveur…",
 } as const;

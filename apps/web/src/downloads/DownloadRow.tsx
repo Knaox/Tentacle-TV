@@ -53,11 +53,14 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
   // Le remux dure parfois des minutes APRÈS le dernier octet : sans ce mot, la
   // ligne semblait figée. Débit et temps restant n'ont de sens qu'en transfert.
   const finalizing = entry.status === "downloading" && entry.phase === "finalize";
+  // Le serveur prépare le fichier (`files.phase = 'prepare'`) : rien ne transite encore, la
+  // barre reste vide au lieu de feindre un début de transfert.
+  const preparing = entry.status === "downloading" && entry.phase === "prepare";
   // Le débit du store SURVIT à la fin du transfert (dernière mesure gardée) :
   // sans cette garde, une ligne terminée affichait encore « 75 Mio/s · moins
   // d'une minute ». Il n'a de sens que pendant un transfert qui court.
   const pace =
-    entry.status !== "downloading" || finalizing
+    entry.status !== "downloading" || finalizing || preparing
       ? []
       : [formatRate(t, live?.rateBps ?? null), formatTimeLeft(t, live?.etaMs ?? null)].filter(
           (part): part is string => part !== null,
@@ -129,7 +132,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
           {/* En fenêtre étroite, les tailles cèdent la place au titre : le
               pourcentage suffit à dire où en est la ligne. */}
           {/* Un titre qui n'a encore rien reçu (en attente, en pause) : sa puce le dit, pas « 0 Kio · 0 % ». */}
-          {isActive && (entry.status === "downloading" || bytesDone > 0) && (
+          {isActive && ((entry.status === "downloading" && !preparing) || bytesDone > 0) && (
             <span className="num ml-auto flex-shrink-0 text-right text-xs text-content-tertiary">
               <span className="hidden sm:inline">{progressText.join(" · ")}</span>
               <span className="sm:hidden">{progressText[1] ?? ""}</span>
@@ -138,7 +141,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSe
         </div>
         {isActive && (
           <RowProgress
-            ratio={(finalizing ? 100 : pct ?? (entry.status === "downloading" ? 8 : 0)) / 100}
+            ratio={(finalizing ? 100 : pct ?? (entry.status === "downloading" && !preparing ? 8 : 0)) / 100}
             status={entry.status}
             label={displayTitle}
           />

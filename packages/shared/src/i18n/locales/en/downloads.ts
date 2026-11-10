@@ -245,4 +245,5 @@ export default {
   playTargetStart: "Starts with episode {{episode}} of season {{season}} — {{title}}",
   playTargetAgain: "All watched: starts over from episode {{episode}} of season {{season}} — {{title}}",
   playTargetTitle: "Plays “{{title}}”",
+  statusPreparing: "Preparing on the server…",
 } as const;

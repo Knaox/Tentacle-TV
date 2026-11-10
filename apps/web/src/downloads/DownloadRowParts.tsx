@@ -44,7 +44,8 @@ export function StatusBadge({
   const map: Record<string, { label: string; className: string }> = {
     queued: { label: t("statusQueued"), className: "" },
     downloading: {
-      label: phase === "finalize" ? t("statusFinalizing") : t("statusDownloading"),
+      // Le serveur prépare encore le fichier (aucun octet reçu) : le dire pour ce que c'est.
+      label: phase === "finalize" ? t("statusFinalizing") : phase === "prepare" ? t("statusPreparing") : t("statusDownloading"),
       className: "chip-accent",
     },
     paused: { label: t("statusPaused"), className: "chip-warning" },
