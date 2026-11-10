@@ -38,7 +38,7 @@ void Client::OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
 bool Client::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
                             cef_cursor_type_t type, const CefCursorInfo& custom) {
-  host_->setCursor(type);
+  host_->setCursorFull(type, cursor, custom);
   return true;  // nous gérons le curseur (OSR : CEF ne touche pas à la fenêtre)
 }
 

@@ -21,6 +21,12 @@ class ViewHost {
   virtual WebLayer* webLayer() = 0;
   virtual void viewToScreen(int x, int y, int& sx, int& sy) = 0;
   virtual void setCursor(cef_cursor_type_t type) = 0;
+  // navigateur : le curseur avec ce que CEF fournit en plus (natif, image de `cursor: url`) ;
+  // par défaut, la forme seule (src/shell/cursors.h).
+  virtual void setCursorFull(cef_cursor_type_t type, CefCursorHandle native,
+                             const CefCursorInfo& custom) {
+    setCursor(type);
+  }
   virtual void setTitle(const std::string& title) = 0;
   virtual void setImeRect(const CefRect& caretDip) = 0;
   virtual void onBrowserCreated(CefRefPtr<CefBrowser> browser) = 0;

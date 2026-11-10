@@ -11,6 +11,7 @@
 #include "compositor/compositor.h"
 #include "shell/browser_dialogs.h"
 #include "shell/client.h"
+#include "shell/cursors.h"
 #include "shell/drag_drop.h"
 #include "shell/frame_clock.h"
 #include "shell/input.h"
@@ -45,6 +46,8 @@ class Shell final : public ViewHost {
   WebLayer* webLayer() override { return compositor_->webLayer(); }
   void viewToScreen(int x, int y, int& sx, int& sy) override;
   void setCursor(cef_cursor_type_t type) override;
+  void setCursorFull(cef_cursor_type_t type, CefCursorHandle native,
+                     const CefCursorInfo& custom) override;
   void setTitle(const std::string& title) override;
   void setImeRect(const CefRect& caretDip) override;
   int lastCursor() const { return lastCursor_; }
@@ -65,6 +68,7 @@ class Shell final : public ViewHost {
   }
   void updateDragCursor(cef_drag_operations_mask_t operation) override {
     dragDrop_->updateOperation(operation);
+    if (dragDrop_->internalActive()) applyCursor(cursors_.forDrag(operation));
   }
   void showTooltip(const std::string& text) override { tooltip_->setText(text); }
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
@@ -78,6 +82,7 @@ class Shell final : public ViewHost {
   // Raccourcis gérés AVANT la page (shell_shortcuts.cpp) : vrai = évènement consommé.
   bool interceptKey(const SDL_KeyboardEvent& k);
   void toggleFullscreenF11();
+  void applyCursor(SDL_Cursor* c);  // nullptr : caché
   SDL_Window* window_;
   Compositor* compositor_;
   ShellOptions options_;
@@ -95,7 +100,8 @@ class Shell final : public ViewHost {
   int lastCursor_ = -1;
   uint64_t lastActivityMs_ = 0;  // dernière image peinte ou saisie (veille de l'horloge)
   platform::FrameClockMode clockMode_ = platform::FrameClockMode::full;
-  std::map<int, SDL_Cursor*> cursors_;
+  CursorSet cursors_;              // navigateur (cursors.h)
+  SDL_Cursor* pageCursor_ = nullptr;  // le dernier curseur de la page (hors glisser)
 };
 
 }  // namespace tentacle

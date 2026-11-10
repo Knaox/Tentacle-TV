@@ -286,6 +286,11 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   sous le curseur, retirée au clic/frappe/molette/sortie ; fenêtre au premier plan seulement.
   macOS : panneau sans focus au matériau `ToolTip` (API publiques) ; Windows : `TOOLTIPS_CLASS`
   en suivi ; Linux : bulle SDL dessinée par Pango/Cairo (dlopen). Banc : `navigateur.debug.tooltip`.
+- **Curseurs** (`src/shell/cursors.h`) : `ViewHost::setCursorFull(type, natif, custom)` (défaut :
+  `setCursor(type)`) ; formes connues de SDL → curseur système ; les autres (grab, grabbing, zoom,
+  help, copy…) → image du curseur natif fourni par CEF (macOS NSCursor, Windows HCURSOR), Linux
+  → forme SDL la plus proche ; `cursor: url(…)` → son image ; glisser interne → curseur de
+  l'opération (`forDrag`). SDL reste seul à poser le curseur.
 - **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
   « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
   MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de

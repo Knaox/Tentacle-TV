@@ -17,35 +17,6 @@ namespace {
 constexpr uint64_t kFrameClockIdleAfterMs = 250;
 constexpr uint64_t kFrameClockDeepIdleAfterMs = 3000;
 
-SDL_SystemCursor systemCursor(cef_cursor_type_t t) {
-  switch (t) {
-    case CT_CROSS: return SDL_SYSTEM_CURSOR_CROSSHAIR;
-    case CT_HAND: return SDL_SYSTEM_CURSOR_POINTER;
-    case CT_IBEAM:
-    case CT_VERTICALTEXT: return SDL_SYSTEM_CURSOR_TEXT;
-    case CT_WAIT: return SDL_SYSTEM_CURSOR_WAIT;
-    case CT_PROGRESS: return SDL_SYSTEM_CURSOR_PROGRESS;
-    case CT_EASTRESIZE:
-    case CT_WESTRESIZE:
-    case CT_EASTWESTRESIZE:
-    case CT_COLUMNRESIZE: return SDL_SYSTEM_CURSOR_EW_RESIZE;
-    case CT_NORTHRESIZE:
-    case CT_SOUTHRESIZE:
-    case CT_NORTHSOUTHRESIZE:
-    case CT_ROWRESIZE: return SDL_SYSTEM_CURSOR_NS_RESIZE;
-    case CT_NORTHEASTRESIZE:
-    case CT_SOUTHWESTRESIZE:
-    case CT_NORTHEASTSOUTHWESTRESIZE: return SDL_SYSTEM_CURSOR_NESW_RESIZE;
-    case CT_NORTHWESTRESIZE:
-    case CT_SOUTHEASTRESIZE:
-    case CT_NORTHWESTSOUTHEASTRESIZE: return SDL_SYSTEM_CURSOR_NWSE_RESIZE;
-    case CT_MOVE: return SDL_SYSTEM_CURSOR_MOVE;
-    case CT_NOTALLOWED:
-    case CT_NODROP: return SDL_SYSTEM_CURSOR_NOT_ALLOWED;
-    default: return SDL_SYSTEM_CURSOR_DEFAULT;
-  }
-}
-
 }  // namespace
 
 Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
@@ -77,7 +48,6 @@ Shell::~Shell() {
   dialogs_->detach();
   platform::uninstallNativeWheel();
   platform::stopFrameClock();
-  for (auto& [_, c] : cursors_) SDL_DestroyCursor(c);
 }
 
 bool Shell::start() {
@@ -108,8 +78,11 @@ void Shell::handleEvent(const SDL_Event& e) {
   // navigateur : la bulle suit la souris et part au premier geste ; puis une session de
   // glisser interne en cours, ou un dépôt venu de l'OS, prend l'évènement.
   tooltip_->onEvent(e);
+  const bool dragging = dragDrop_->internalActive();
   if (dragDrop_->handleEvent(e, browser_)) {
     if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) input_.noteButtonUp(e.button.button);
+    // Fin du glisser : la page retrouve son curseur.
+    if (dragging && !dragDrop_->internalActive() && pageCursor_) applyCursor(pageCursor_);
     wakeFrameClock();
     return;
   }
@@ -199,9 +172,24 @@ void Shell::setImeRect(const CefRect& r) {
   SDL_SetTextInputArea(window_, &area, 0);
 }
 
-void Shell::setCursor(cef_cursor_type_t type) {
+void Shell::setCursor(cef_cursor_type_t type) { setCursorFull(type, nullptr, CefCursorInfo()); }
+
+// navigateur : la forme de la page, ou celle du glisser en cours (src/shell/cursors.h).
+void Shell::setCursorFull(cef_cursor_type_t type, CefCursorHandle native,
+                          const CefCursorInfo& custom) {
   lastCursor_ = int(type);
-  if (type == CT_NONE) {
+  SDL_Cursor* c = cursors_.forPage(type, native, custom);
+  static const bool trace = SDL_getenv("TENTACLE_INPUT_LOG") != nullptr;
+  if (trace) {
+    std::fprintf(stderr, "[curseur] type %d natif %s → %p\n", int(type), native ? "oui" : "non",
+                 static_cast<void*>(c));
+  }
+  if (dragDrop_->internalActive()) return;  // le curseur du glisser l'emporte
+  applyCursor(c);
+}
+
+void Shell::applyCursor(SDL_Cursor* c) {
+  if (!c) {
     SDL_HideCursor();
     cursorHidden_ = true;
     return;
@@ -210,10 +198,8 @@ void Shell::setCursor(cef_cursor_type_t type) {
     SDL_ShowCursor();
     cursorHidden_ = false;
   }
-  const SDL_SystemCursor sc = systemCursor(type);
-  auto& c = cursors_[int(sc)];
-  if (!c) c = SDL_CreateSystemCursor(sc);
   SDL_SetCursor(c);
+  pageCursor_ = c;
 }
 
 void Shell::setTitle(const std::string& title) {
