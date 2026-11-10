@@ -82,7 +82,9 @@ export function gateAfterInputs(gate: PreviewGate, inputs: { hovered: boolean; e
  * une carte sans bande-annonce possible, un aperçu coupé (menu contextuel,
  * sélection), refusé (porte fermée), ou la main posée sur un BOUTON du plateau
  * de la carte — focus clavier ou souris (« Marquer comme vu ») : on n'agrandit
- * pas sous les doigts de qui s'en sert. Revenue sur l'image, l'intention repart.
+ * pas sous les doigts de qui s'en sert. Ni la souris hors de l'IMAGE (la légende
+ * d'une carte que seule la souris survole) : l'aperçu ne part que sur l'image.
+ * Revenue sur l'image, l'intention repart.
  */
 export function engineHovered(input: {
   hovered: boolean;
@@ -91,10 +93,11 @@ export function engineHovered(input: {
   gate: PreviewGate;
   keyboardInCard: boolean;
   pointerOnControl: boolean;
+  pointerOffImage: boolean;
 }): boolean {
   return (
     input.hovered && input.hasSubject && !input.disabled && !input.gate.dismissed && !input.keyboardInCard
-    && !input.pointerOnControl
+    && !input.pointerOnControl && !input.pointerOffImage
   );
 }
 

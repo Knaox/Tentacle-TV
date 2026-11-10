@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
 import { attachPreviewSource, type PreviewSourceSession } from "./previewSource";
+import { reportTrailerPreviewCodecRefusal } from "./previewEnvironment";
 import { rampVolume, startPreviewPlayback, watchPreviewStall } from "./previewPlayback";
 import { openPreviewBench } from "./previewBench";
 import { measureVideoCrop } from "./previewFrameCrop";
@@ -51,6 +52,10 @@ export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: Trai
       onFragment: () => {
         bench.record("fragment");
         latest.current.onFragment();
+      },
+      onCodecRefused: () => {
+        bench.record("codec-refused");
+        reportTrailerPreviewCodecRefusal();
       },
       onError: () => {
         bench.record("failed");

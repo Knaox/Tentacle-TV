@@ -5,6 +5,7 @@
 // Fil : tout appel se fait sur le fil principal (UI) du processus navigateur.
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -76,6 +77,14 @@ class Compositor {
   virtual CompositorStats stats() const = 0;
   // Diagnostic : l'arbre de couches tel que Core Animation le voit (ordre, visibilité, cadres).
   virtual std::string describeLayers() const = 0;
+
+  // --- La voie accélérée de la page (shell/page_rescue.h) ----------------------------------
+  // La page peut-elle arriver par texture partagée ? Linux : faux sans import dmabuf (EGL) —
+  // le navigateur est alors créé en peinture logicielle (OnPaint), au lieu d'une page noire.
+  virtual bool acceptsSharedTextures() const { return true; }
+  // Appelé (fil principal) avec `true` à la première image de la page importée — la preuve
+  // d'affichage —, et `false`, une fois, quand l'import est refusé image après image.
+  virtual void setSharedTextureListener(std::function<void(bool imported)> listener) {}
 
   // --- PiP (src/pip) : la vidéo prêtée à la pile d'une AUTRE fenêtre, puis rendue ----------
   // La couche vidéo courante — et toute couche posée par setVideoLayer() pendant le prêt, sauf

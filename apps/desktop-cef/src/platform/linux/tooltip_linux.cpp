@@ -1,9 +1,12 @@
 // Bulle d'aide Linux. Sous X11 et Wayland, Chromium DESSINE sa bulle (`TooltipAura`, un widget
-// de views) : il n'y a pas de bulle « du système » à appeler. On fait de même : une fenêtre
-// bulle de SDL (xdg_popup sous Wayland, override-redirect sous X11, sans focus), le texte mis en
-// page par Pango et dessiné par Cairo — chargés à la demande (dlopen), présents partout où GTK
-// l'est. Sans eux : pas de bulle (la page marche sans). Délai et couleurs : ceux de Chromium
-// (500 ms ; fond gris foncé translucide, texte blanc, coins de 4).
+// de views) : il n'y a pas de bulle « du système » à appeler. On fait de même : le texte mis en
+// page par Pango et dessiné par Cairo — chargés au DÉMARRAGE (dlopen dans createTooltipWindow,
+// jamais au premier survol), présents partout où GTK l'est —, puis posé comme une image
+// par-dessus la page, dans le contexte GL du compositeur (overlay_linux.h). Jamais une fenêtre
+// ni un contexte GL à elle : créés à chaque bulle et détruits au premier clic, ils emportaient
+// l'affichage EGL du compositeur (image figée, 9a99daaf6). Elle ne sort donc pas de la fenêtre
+// (overlay_place_linux.h). Sans Cairo ni Pango : pas de bulle (la page marche sans). Délai et
+// couleurs : ceux de Chromium (500 ms ; fond gris foncé translucide, texte blanc, coins de 4).
 
 #include <SDL3/SDL.h>
 #include <dlfcn.h>
@@ -12,12 +15,15 @@
 #include <cmath>
 #include <string>
 
+#include "platform/linux/overlay_linux.h"
+#include "platform/linux/overlay_place_linux.h"
 #include "shell/tooltip.h"
+#include "shell/window_scale.h"
 
 namespace tentacle::platform {
 namespace {
 
-constexpr int kPadX = 8, kPadY = 4, kMaxWidth = 400, kBelowCursor = 20, kRadius = 4;
+constexpr int kPadX = 8, kPadY = 4, kMaxWidth = 400, kBelowCursor = 20, kAboveCursor = 8, kMargin = 4, kRadius = 4;
 constexpr int kCairoArgb32 = 0;  // CAIRO_FORMAT_ARGB32
 constexpr int kPangoScale = 1024;
 constexpr int kPangoWrapWordChar = 2;
@@ -105,8 +111,12 @@ class LinuxTooltip final : public TooltipWindow {
   void show(const std::string& text, float x, float y) override {
     hide();
     if (!(SDL_GetWindowFlags(parent_) & SDL_WINDOW_INPUT_FOCUS)) return;  // fenêtre au premier plan
+    OverlayHost* host = overlayHost(parent_);
+    if (!host) return;
     const Libs& L = libs();
-    const float density = std::max(1.0f, SDL_GetWindowPixelDensity(parent_));
+    // Pixels par DIP (shell/window_scale.h) : la bulle a la taille de celle de Chromium sous
+    // Wayland comme sous X11, où SDL compte la fenêtre en pixels.
+    const float scale = std::max(1.0f, windowScale(parent_).deviceScale);
     // Mise en page sur une surface d'essai, puis dessin à la bonne taille.
     void* probe = L.image_surface_create(kCairoArgb32, 1, 1);
     void* pcr = L.create(probe);
@@ -118,11 +128,11 @@ class LinuxTooltip final : public TooltipWindow {
     L.layout_set_text(layout, text.c_str(), -1);
     int tw = 0, th = 0;
     L.layout_pixel_size(layout, &tw, &th);
-    const int w = tw + 2 * kPadX, h = th + 2 * kPadY;  // unités de la fenêtre
-    const int pw = int(std::ceil(w * density)), ph = int(std::ceil(h * density));
+    const int w = tw + 2 * kPadX, h = th + 2 * kPadY;  // DIP
+    const int pw = int(std::ceil(w * scale)), ph = int(std::ceil(h * scale));
     void* surface = L.image_surface_create(kCairoArgb32, pw, ph);
     void* cr = L.create(surface);
-    L.scale(cr, density, density);
+    L.scale(cr, scale, scale);
     // Fond arrondi, puis le texte.
     L.set_source_rgba(cr, 60 / 255.0, 64 / 255.0, 67 / 255.0, 0.91);
     L.new_sub_path(cr);
@@ -137,24 +147,16 @@ class LinuxTooltip final : public TooltipWindow {
     L.show_layout(cr, layout);
     L.surface_flush(surface);
 
-    window_ = SDL_CreatePopupWindow(parent_, int(x), int(y) + kBelowCursor, w, h,
-                                    SDL_WINDOW_TOOLTIP | SDL_WINDOW_TRANSPARENT |
-                                        SDL_WINDOW_HIGH_PIXEL_DENSITY);
-    if (window_) renderer_ = SDL_CreateRenderer(window_, nullptr);
-    if (renderer_) {
-      // ARGB32 de Cairo = ARGB8888 dans l'ordre natif, prémultiplié.
-      SDL_Texture* tex = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888,
-                                           SDL_TEXTUREACCESS_STATIC, pw, ph);
-      if (tex) {
-        SDL_UpdateTexture(tex, nullptr, L.surface_data(surface), L.surface_stride(surface));
-        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
-        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 0);
-        SDL_RenderClear(renderer_);
-        SDL_RenderTexture(renderer_, tex, nullptr, nullptr);
-        SDL_RenderPresent(renderer_);
-        SDL_DestroyTexture(tex);
-      }
-    }
+    // ARGB32 de Cairo = octets BGRA dans l'ordre natif, prémultipliés : tels quels dans la
+    // texture de l'emplacement (overlay_linux.h). Ni fenêtre, ni contexte GL de plus.
+    int winW = 0, winH = 0;
+    SDL_GetWindowSizeInPixels(parent_, &winW, &winH);
+    const float density = std::max(1.0f, SDL_GetWindowPixelDensity(parent_));
+    const auto at = placeTooltip(int(std::lround(x * density)), int(std::lround(y * density)), pw, ph,
+                                 winW, winH, int(std::lround(kBelowCursor * scale)),
+                                 int(std::lround(kAboveCursor * scale)), int(std::lround(kMargin * scale)));
+    shown_ = host->setOverlay(OverlaySlot::tooltip, L.surface_data(surface), pw, ph,
+                              L.surface_stride(surface), at.x, at.y);
     L.destroy(cr);
     L.surface_destroy(surface);
     L.font_free(font);
@@ -164,18 +166,17 @@ class LinuxTooltip final : public TooltipWindow {
   }
 
   void hide() override {
-    if (renderer_) SDL_DestroyRenderer(renderer_);
-    if (window_) SDL_DestroyWindow(window_);
-    renderer_ = nullptr;
-    window_ = nullptr;
+    if (!shown_) return;
+    shown_ = false;
+    // Le compositeur peut être parti avant nous (fermeture) : plus rien à cacher.
+    if (OverlayHost* host = overlayHost(parent_)) host->clearOverlay(OverlaySlot::tooltip);
   }
 
-  bool visible() const override { return window_ != nullptr; }
+  bool visible() const override { return shown_; }
 
  private:
   SDL_Window* parent_;
-  SDL_Window* window_ = nullptr;
-  SDL_Renderer* renderer_ = nullptr;
+  bool shown_ = false;
 };
 
 }  // namespace

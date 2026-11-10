@@ -2,7 +2,8 @@
 // L'image fantôme d'un glisser interne : celle que Blink fournit (déjà translucide), dans une
 // petite fenêtre « bulle » de SDL (sans focus, transparente à la souris) qui suit le curseur,
 // comme l'image de la session de glisser d'AppKit ou d'OLE sous Electron. Elle naît et meurt
-// avec le geste.
+// avec le geste. Linux : une image par-dessus la page, dans le contexte GL du compositeur
+// (`window_` y désigne la fenêtre PARENTE, jamais une fenêtre à elle) — drag_ghost.cpp.
 
 #include <SDL3/SDL.h>
 

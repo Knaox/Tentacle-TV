@@ -38,10 +38,11 @@ export const RULES_VERSION = "r6";
 /**
  * La clé de la décision : le titre, la langue, les règles, et le client —
  * celui qui lit Dailymotion (`dm=1`) a sa décision à part de celle d'un client
- * d'avant.
+ * d'avant, celui qui ne lit que le VP9 et l'Opus (`open`) aussi : ses vidéos
+ * sont les entrées libres du relais, jamais Dailymotion.
  */
-export function decisionKey(target: PreviewTarget, lang: string | undefined, dailymotion: boolean): string {
-  return `${target.key}|${lang ?? "-"}|${RULES_VERSION}${dailymotion ? "|dm" : ""}`;
+export function decisionKey(target: PreviewTarget, lang: string | undefined, dailymotion: boolean, open = false): string {
+  return `${target.key}|${lang ?? "-"}|${RULES_VERSION}${open ? "|o" : dailymotion ? "|dm" : ""}`;
 }
 
 /** Où passe le temps d'une décision (ms), pour le journal : de quoi savoir quoi accélérer. */

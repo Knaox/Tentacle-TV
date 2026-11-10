@@ -48,6 +48,9 @@ void afterEvents();
 int waitTimeoutMs();
 /// Faux quand il est temps de nettoyer et de sortir.
 bool running();
+/// Une nouvelle instance, puis la sortie sans question (`window.tentacle.relaunch()` ; le
+/// secours d'affichage, shell/page_rescue.h).
+void requestRelaunch();
 /// Après CefShutdown : rend ce qui est tenu pour tout le système (anti-veille, anti-suspension).
 void afterShutdown();
 

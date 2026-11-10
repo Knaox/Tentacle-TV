@@ -18,6 +18,7 @@
 #include "glue/video_probe_glue.h"
 #include "player/sound_policy.h"
 #include "video_channels.h"
+#include "video_prewarm.h"
 #include "window_channels.h"
 #ifdef __linux__
 #include "platform/linux/graphics_session.h"
@@ -60,6 +61,7 @@ struct State {
   std::unique_ptr<SdlWindow> window;
   std::unique_ptr<bridge::MpvPlayerPort> player;
   std::unique_ptr<bridge::VideoChannels> video;
+  std::unique_ptr<bridge::VideoPrewarm> prewarm;  // Linux (sous-surface Wayland) : mpv_prewarm
   std::unique_ptr<bridge::WindowChannels> windowChannels;
   Json liquidGlass;  // axe verre : configuration du pont du verre (null : absent)
 };
@@ -93,6 +95,18 @@ void install(AppContext& ctx) {
   state->video = std::make_unique<bridge::VideoChannels>(
       state->registry, *state->player, bridge::VideoChannels::Clock{},
       [](int ms, std::function<void()> task) { postToMainDelayed(std::move(task), ms); });
+  // Le préchauffage du lecteur (Electron : `videoPrewarm.ts`) — la commande n'existe que là où
+  // le lecteur sait préchauffer ; jamais sur batterie, jamais à travers une veille.
+  state->prewarm = std::make_unique<bridge::VideoPrewarm>(
+      state->registry, *state->player,
+      [](int ms, std::function<void()> task) { postToMainDelayed(std::move(task), ms); },
+      [](int quietMs, std::function<void()> task) { tentacle::runWhenPageIdle(uint64_t(quietMs), std::move(task)); },
+      [] { return bridge::onBattery(); });
+  state->video->setOnPlaybackEnded([] { if (state && state->prewarm) state->prewarm->afterPlayback(); });
+  tentacle::lifecycle::onSystemResume([] { if (state && state->prewarm) state->prewarm->onSystemResume(); });
+  ipc::registerHandler("pont.debug.prewarm", [](const Json&, ipc::Responder r) {
+    r.reply(Json{{"warm", state && state->player->warm()}, {"last", state && state->prewarm ? state->prewarm->lastOutcome() : ""}});
+  });
   state->windowChannels = std::make_unique<bridge::WindowChannels>(state->registry, *state->window);
 #ifdef TENTACLE_VIDEO_PROBES
   // Sonde de surface du panneau de dev (Electron : macOS hors paquet livré).

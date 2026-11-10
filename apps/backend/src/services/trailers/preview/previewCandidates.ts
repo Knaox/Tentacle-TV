@@ -11,7 +11,7 @@
 /* ------------------------------------------------------------------ */
 
 import { trailerScopeKey, type TrailerEntry, type TrailerVersion } from "../../../trailers/trailerCatalog";
-import { dailymotionRef, youtubeRef } from "../videoRef";
+import { dailymotionRef, openYoutubeRef, youtubeRef } from "../videoRef";
 
 export interface PreviewCandidate {
   /** La clé du relais : l'identifiant YouTube nu, ou `dm:<id>` (`videoRef.ts`). */
@@ -54,15 +54,20 @@ const LANG_RANK: Record<TrailerVersion, number> = { localized: 0, subtitled: 1, 
 /** Le rang de langue d'une version : 0 dans la langue du serveur, 1 sous-titrée, 2 autre. */
 export const langRankOf = (version: TrailerVersion) => LANG_RANK[version];
 
-/** Les vidéos du catalogue que l'aperçu peut essayer, la meilleure d'abord, sans doublon. */
-export function previewCandidates(entries: readonly TrailerEntry[], options: { dailymotion: boolean }): PreviewCandidate[] {
+/**
+ * Les vidéos du catalogue que l'aperçu peut essayer, la meilleure d'abord, sans
+ * doublon. `open` : pour un lecteur sans H.264 ni AAC — l'entrée LIBRE de
+ * chaque vidéo YouTube (`o:<id>`, VP9 + Opus), et jamais Dailymotion, qui
+ * n'existe qu'en H.264.
+ */
+export function previewCandidates(entries: readonly TrailerEntry[], options: { dailymotion: boolean; open?: boolean }): PreviewCandidate[] {
   const seen = new Set<string>();
   const candidates: PreviewCandidate[] = [];
   for (const entry of entries) {
     const { playback } = entry;
     const ref = playback.kind === "youtube"
-      ? youtubeRef(playback.ytId).key
-      : playback.kind === "dailymotion" && options.dailymotion ? dailymotionRef(playback.videoId).key : null;
+      ? (options.open ? openYoutubeRef(playback.ytId) : youtubeRef(playback.ytId)).key
+      : playback.kind === "dailymotion" && options.dailymotion && !options.open ? dailymotionRef(playback.videoId).key : null;
     if (!ref || seen.has(ref)) continue;
     seen.add(ref);
     candidates.push({

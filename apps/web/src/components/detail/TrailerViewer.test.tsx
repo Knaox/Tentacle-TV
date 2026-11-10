@@ -8,9 +8,9 @@ import { renderToStaticMarkup } from "react-dom/server";
  * officiel sinon — et pour une liste sans vidéo YouTube.
  */
 
-const state = vi.hoisted(() => ({ capable: true }));
+const state = vi.hoisted(() => ({ capable: true, delivery: "h264" as "h264" | "open" | null }));
 
-vi.mock("@tentacle-tv/api-client", () => ({ useServerCapability: () => state.capable }));
+vi.mock("@tentacle-tv/api-client", () => ({ useServerCapability: () => state.capable, useTrailerDelivery: () => state.delivery }));
 vi.mock("../trailerPlayer", () => ({
   TRAILER_PLAYER_AVAILABLE: true,
   TrailerPlayer: ({ queue, startIndex }: { queue: Array<{ playback: { ytId: string } }>; startIndex: number }) =>
@@ -39,6 +39,16 @@ describe("lecteur des bandes-annonces distantes", () => {
     expect(html).toContain('data-player="Way9Dexny3w,FFUGtw7uzB4"');
     expect(html).toContain('data-start="0"');
     expect(renderToStaticMarkup(createElement(TrailerViewer, { open: false, onClose: () => {}, trailers: TRAILERS }))).toBe("");
+  });
+
+  it("un lecteur sans H.264 ni AAC (le bureau CEF) : le lecteur complet si le serveur sert le VP9, la modale sinon", () => {
+    state.capable = true;
+    state.delivery = "open";
+    expect(renderToStaticMarkup(createElement(TrailerViewer, { open: true, onClose: () => {}, trailers: TRAILERS }))).toContain("data-player");
+    // Aucun flux du relais ne se lirait : jamais un lecteur complet qui échouerait sur chaque vidéo.
+    state.delivery = null;
+    expect(renderToStaticMarkup(createElement(TrailerViewer, { open: true, onClose: () => {}, trailers: TRAILERS }))).toContain("data-modal");
+    state.delivery = "h264";
   });
 
   it("la modale face à un serveur d'avant, ou sans vidéo YouTube", () => {

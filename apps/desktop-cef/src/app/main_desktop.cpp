@@ -17,7 +17,11 @@
 #include <cstdlib>
 #include <map>
 
+#include <cstdio>
+
+#include "app/args.h"
 #include "platform/linux/graphics_session.h"
+#include "shell/page_rescue.h"
 #include "shell/paths.h"
 
 namespace {
@@ -64,6 +68,21 @@ int main(int argc, char* argv[]) {
   // à l'échelle 2 ; même constat chez jellium). BrowserApp fusionne avec ses disable-features.
   if (session.montage == tentacle::platform::DisplayServer::kWayland) {
     extra.push_back("--disable-features=WaylandFractionalScaleV1");
+  }
+  // Le garde-fou de l'affichage (shell/page_rescue.h), avant CEF : un lancement précédent qui
+  // n'a jamais montré la page, ou un import refusé, et celui-ci ne dépend plus du pilote.
+  {
+    tentacle::AppOptions probe;  // --profile seulement ; runApp relit tout
+    tentacle::parseArgs(argc, argv, probe);
+    const bool forced = std::getenv("TENTACLE_NO_SHARED_TEXTURE") != nullptr;
+    // TENTACLE_DEBUG_NO_RESCUE : banc, l'état d'AVANT (ni témoin ni secours).
+    const auto rescue = std::getenv("TENTACLE_DEBUG_NO_RESCUE")
+                            ? tentacle::rescue::Decision{}
+                            : tentacle::rescue::atStartup(probe.profileDir, forced);
+    if (rescue.mode != tentacle::rescue::Mode::accelerated) {
+      std::fprintf(stderr, "%s\n", tentacle::rescue::describe(rescue).c_str());
+    }
+    if (rescue.mode == tentacle::rescue::Mode::noGpu) extra.push_back("--disable-gpu");
   }
   std::vector<char*> argvx(argv, argv + argc);
   for (auto& s : extra) argvx.push_back(s.data());

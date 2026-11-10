@@ -28,6 +28,15 @@ function hasNativeCommand(command: string): boolean {
   return window.tentacle?.capabilities.includes(command) ?? false;
 }
 
+/**
+ * Préchauffage du lecteur natif (`playerWarmup.ts`). La coquille ne déclare la
+ * commande que là où elle sait le faire (Linux : Electron sur le montage collé,
+ * CEF en sous-surface Wayland) — ailleurs, la page ne demande rien.
+ */
+export function supportsPlayerPrewarm(): boolean {
+  return hasNativeCommand("mpv_prewarm");
+}
+
 /** Préchargement du fichier que « Lire » jouerait (`lib/mediaWarmup.ts`). */
 export function supportsMediaWarm(): boolean {
   return hasNativeCommand("media_warm");

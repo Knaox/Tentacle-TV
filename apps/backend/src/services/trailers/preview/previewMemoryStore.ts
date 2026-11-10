@@ -42,7 +42,11 @@ interface Snapshot {
   sources: HeldSource[];
 }
 
-const YT_ID = /^[\w-]{11}$/;
+/** La clé d'une vidéo YouTube du relais : son identifiant nu, ou `o:<id>` pour son entrée libre (`videoRef.ts`). */
+const YT_ID = /^(?:o:)?[\w-]{11}$/;
+/** Le flux libre d'une source (`open/openSource.ts`), s'il y est : des listes, ou la source est abîmée. */
+const validOpen = (open: unknown) =>
+  open === undefined || (!!open && Array.isArray((open as { heights?: unknown }).heights) && Array.isArray((open as { opus?: unknown }).opus));
 const isUrl = (value: unknown) => typeof value === "string" && /^https?:\/\//.test(value);
 
 /** Lecture défensive : le fichier vient de ce serveur, mais un disque se corrompt. */
@@ -51,7 +55,7 @@ function validSource(value: unknown): value is HeldSource {
   const source = held?.source as Record<string, unknown> | undefined;
   if (!held || !YT_ID.test(String(held.ytId)) || typeof held.validUntil !== "number" || typeof held.extractedAt !== "number") return false;
   if (!source || typeof source !== "object" || !Array.isArray(held.subtitles)) return false;
-  return (source.kind === "hls" && isUrl(source.masterUrl) && Array.isArray(source.heights))
+  return (source.kind === "hls" && isUrl(source.masterUrl) && Array.isArray(source.heights) && validOpen(source.open))
     // Un MP4 choisi avant la règle des doublages : jamais un doublage automatique repris.
     || (source.kind === "progressive" && isUrl(source.url) && !isUnplayableAudio(audioTagOf({ uri: String(source.url) })));
 }

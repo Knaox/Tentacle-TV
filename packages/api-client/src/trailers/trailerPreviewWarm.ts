@@ -7,6 +7,7 @@ import {
   type TrailerPreviewWarmSubject,
 } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "../hooks/usePreferences";
+import { trailerDecodesBody } from "./trailerDecodes";
 import {
   isTransientPreviewRefusal, trailerPreviewQueryKey, trailerPreviewResultTtl, type TrailerPreviewStreamResult,
 } from "./trailerPreviewStream";
@@ -35,7 +36,8 @@ function subjectOf(subject: TrailerPreviewWarmSubject): TrailerPreviewSubject {
  */
 export async function fetchTrailerPreviewWarm(subjects: readonly TrailerPreviewSubject[], lang: string): Promise<TrailerPreviewWarmResponse | null> {
   try {
-    const body = { subjects: subjects.map(trailerPreviewWarmSubject), lang, dailymotion: true };
+    const decodes = trailerDecodesBody();
+    const body = { subjects: subjects.map(trailerPreviewWarmSubject), lang, dailymotion: true, ...(decodes ? { decodes } : {}) };
     const raw = await tentacleApiFetch<unknown>(TRAILER_PREVIEW_WARM_ROUTE, { method: "POST", body: JSON.stringify(body) });
     return readTrailerPreviewWarmResponse(raw);
   } catch {

@@ -68,6 +68,18 @@ class PlayerPort {
   /// envoie sa valeur initiale, puis chaque changement.
   virtual void observe(const std::string& name, const std::string& format) = 0;
   virtual void setListener(PlayerListener* listener) = 0;
+
+  // --- Préchauffage (video_prewarm.h) : sans objet par défaut ---------------------------------
+  /// Ce lecteur sait-il faire naître une instance d'avance ? (Linux, sous-surface Wayland.)
+  virtual bool canPrewarm() const { return false; }
+  /// Fait naître une instance MINCE aux options que `start` recevra (déjà filtrées), sa sortie
+  /// vidéo montée, cachée sous la page. `start` la reprend si ses options sont les mêmes, la
+  /// jette sinon. Faux si rien n'a pu naître.
+  virtual bool prewarm(const Json& options) { return false; }
+  /// Une instance préchauffée attend.
+  virtual bool warm() const { return false; }
+  /// Arrête l'instance préchauffée, s'il y en a une.
+  virtual void dropWarm() {}
 };
 
 /// La fenêtre (SDL3 côté socle) et ce que la plateforme offre autour.

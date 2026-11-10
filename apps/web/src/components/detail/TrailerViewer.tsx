@@ -10,7 +10,7 @@
  */
 
 import { useMemo } from "react";
-import { useServerCapability } from "@tentacle-tv/api-client";
+import { useServerCapability, useTrailerDelivery } from "@tentacle-tv/api-client";
 import { parseYouTubeId, type TrailerQueueItem } from "@tentacle-tv/shared";
 import { TRAILER_PLAYER_AVAILABLE, TrailerPlayer } from "../trailerPlayer";
 import { TrailerModal } from "./TrailerModal";
@@ -40,10 +40,17 @@ export function remoteTrailerQueue(trailers: readonly RemoteTrailer[], initialIn
   return { queue, start };
 }
 
-/** Le lecteur complet est-il celui de ces bandes-annonces ? */
+/**
+ * Le lecteur complet est-il celui de ces bandes-annonces ? Il lit le RELAIS :
+ * un lecteur sans H.264 ni AAC (le bureau CEF) ne l'a que face à un serveur qui
+ * sert le VP9 et l'Opus (`trailers.openCodecs`, `useTrailerDelivery`) ; sinon
+ * la modale d'avant, et le lecteur officiel de YouTube — jamais un lecteur
+ * complet qui échouerait sur chaque vidéo.
+ */
 export function useFullTrailerPlayer(): boolean {
   const capable = useServerCapability("trailers.player");
-  return TRAILER_PLAYER_AVAILABLE && capable;
+  const deliverable = useTrailerDelivery() !== null;
+  return TRAILER_PLAYER_AVAILABLE && capable && deliverable;
 }
 
 export function TrailerViewer({ open, onClose, trailers, initialIndex = 0 }: Props) {

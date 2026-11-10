@@ -11,8 +11,10 @@
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/main_thread.h"
 #include "shell/external_url.h"
 #include "shell/navigation_rule.h"
+#include "shell/page_rescue.h"
 #include "shell/zoom_guard.h"
 #include "shell/window_scale.h"
 
@@ -52,6 +54,7 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
 }
 
 Shell::~Shell() {
+  *alive_ = false;
   dialogs_->detach();
   platform::uninstallNativeWheel();
   platform::stopFrameClock();
@@ -70,7 +73,14 @@ bool Shell::start() {
 #endif
   // IOSurface (macOS), dmabuf (Linux), D3D11 (Windows) : zéro copie CPU. Repli de diagnostic :
   // TENTACLE_NO_SHARED_TEXTURE=1 → OnPaint (pilote dont l'import dmabuf échouerait, Linux).
-  wi.shared_texture_enabled = std::getenv("TENTACLE_NO_SHARED_TEXTURE") == nullptr;
+  // Sans import possible (EGL sans dma_buf_import), la page serait NOIRE : chaque image
+  // accélérée serait refusée. Su avant de créer la page : elle est peinte en logiciel.
+  const bool importable = compositor_->acceptsSharedTextures();
+  if (!importable) std::fprintf(stderr, "[rendu] texture partagée inutilisable ici : la page est peinte en logiciel (OnPaint)\n");
+  // Le secours d'affichage (page_rescue.h, décidé avant CEF) ; TENTACLE_NO_SHARED_TEXTURE=1 le
+  // force (essai) — lu ici aussi pour macOS et Windows, où le secours ne se décide pas.
+  wi.shared_texture_enabled = importable && rescue::current().mode == rescue::Mode::accelerated &&
+                              std::getenv("TENTACLE_NO_SHARED_TEXTURE") == nullptr;
   wi.external_begin_frame_enabled = platform::frameClockSupported();  // vsync (frame_clock.h)
   CefBrowserSettings bs;
   bs.windowless_frame_rate = options_.frameRate;
@@ -234,6 +244,17 @@ void Shell::wakeFrameClock() {
   if (clockMode_ == platform::FrameClockMode::full) return;
   clockMode_ = platform::FrameClockMode::full;
   platform::setFrameClockMode(clockMode_);
+}
+
+void Shell::whenIdle(uint64_t quietMs, std::function<void()> task) {
+  const uint64_t quiet = SDL_GetTicks() - lastActivityMs_;
+  if (quiet >= quietMs) return task();
+  // Pas encore : on revient quand le repos SERAIT atteint si plus rien ne bougeait d'ici là.
+  postToMainDelayed(
+      [this, alive = alive_, quietMs, task = std::move(task)]() mutable {
+        if (*alive && !closed_) whenIdle(quietMs, std::move(task));
+      },
+      int64_t(quietMs - quiet));
 }
 
 void Shell::onBrowserClosed() {

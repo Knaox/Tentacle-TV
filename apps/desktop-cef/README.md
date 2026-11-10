@@ -62,6 +62,42 @@ connecter dans l'un, c'est être connecté dans l'autre.
   connexion, un réglage — ne revient ni dans CEF ni dans Electron (mesuré).
 - `TENTACLE_URL=<URL>` pose l'adresse du serveur dans le front s'il n'en a aucune.
 
+## Ce que la coquille surveille d'elle-même (Linux)
+
+- **Le fil principal** (`src/shell/stall_meter.h`) : chaque étape de la boucle est chronométrée ;
+  au-delà de 50 ms, `[fil] fil principal retenu N ms — étape (geste)` au journal. Un « gel » se
+  lit là : `shell.debug.stalls` pour les bancs.
+- **La page perdue** (`src/shell/render_recovery.h`) : le processus de rendu qui tombe est
+  remplacé — la même page rechargée, l'accueil si elle retombe dans la minute, puis 2, 5, 10,
+  30 s ; `[rendu] le processus de rendu est tombé (…)`. Une vidéo en cours est arrêtée.
+- **Le secours d'affichage** (`src/shell/page_rescue.h`) : la page arrive par une texture
+  partagée (dmabuf). Import impossible : peinture logicielle d'emblée. Import refusé image
+  après image : l'app se relance en peinture logicielle. Lancement qui n'a jamais montré la
+  page (témoin `<profil>/page-essai`) : le suivant part sans GPU (`--disable-gpu`). Le secours
+  vaut cinq lancements (`<profil>/page-secours.json` ; le supprimer retente tout de suite).
+  `TENTACLE_NO_SHARED_TEXTURE=1` force la peinture logicielle (essai).
+- **La bulle d'aide et la vignette du glisser** sont des images du compositeur
+  (`src/platform/linux/overlay_linux.h`) : aucune fenêtre ni contexte GL de plus — c'est leur
+  destruction qui figeait l'image au premier clic.
+- **Le lecteur préchauffé** (`src/bridge/video_prewarm.h`, sous-surface Wayland) : une instance
+  mpv mince naît au REPOS de la page (3 s sans image ni saisie) et `mpv_init` la reprend —
+  première image 0,83 s → 0,18 s. Jamais sur batterie.
+
+Bancs rejouables : `bench/gel` (bulle + clic, KWin virtuel, souris factice), `bench/noir` (rendu
+tué, import refusé, lancement sans image), `bench/lecteur/depart.mjs` (départ du lecteur),
+`bench/survol/hoverlag.mjs` (bouton remplacé sous une souris immobile).
+
+## Bandes-annonces : ni H.264 ni AAC
+
+Les binaires publics de CEF n'ont pas les codecs propriétaires (`MediaSource.isTypeSupported` :
+`avc1` et `mp4a` faux ; VP9, AV1, Opus vrais). La page le DÉCLARE au serveur (`dec=vp9,opus`),
+qui lui relaie du VP9 + Opus s'il déclare `trailers.openCodecs` (serveur 1.41.0) : aperçus au
+survol et lecteur de la fiche jouent sans rien ajouter à l'installation. Face à un serveur plus
+ancien : aucun aperçu, aucune requête ; la fiche garde le lecteur officiel de YouTube. Restent
+hors d'atteinte sans les codecs : les bandes-annonces AlloCiné (Dailymotion, H.264 seul), les
+vidéos « pour enfants » (MP4 seul) et ce qu'une extension jouerait en H.264. Détail et mesures :
+`docs/BANDES-ANNONCES.md`, « Sans H.264 ni AAC — le bureau CEF ».
+
 ## Autres commandes
 
 Depuis `apps/desktop-cef` (ou `pnpm --filter @tentacle-tv/desktop-cef <script>`) :

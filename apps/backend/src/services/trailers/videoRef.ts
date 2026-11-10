@@ -8,8 +8,12 @@
 /*     l'aperçu, sa mémoire durable et les téléviseurs livrés n'en     */
 /*     connaissent pas d'autre ; `yt:<id>` est accepté et ramené à lui ;*/
 /*   - Dailymotion : `dm:<id>` (AlloCiné publie ses bandes-annonces    */
-/*     sur sa chaîne Dailymotion).                                     */
-/*  Jamais deux clés pour la même vidéo. Module pur.                   */
+/*     sur sa chaîne Dailymotion) ;                                    */
+/*   - YouTube en CODECS LIBRES : `o:<id>` — la même vidéo, servie en  */
+/*     VP9 + Opus à un lecteur sans H.264 ni AAC (le bureau CEF,       */
+/*     `trailers/trailerCodecs.ts`). Une AUTRE entrée du relais : son  */
+/*     maître, ses listes et ses jetons sont à elle.                   */
+/*  Jamais deux clés pour le même flux. Module pur.                    */
 /* ------------------------------------------------------------------ */
 
 /** Même contrainte que `parseYouTubeId` (@tentacle-tv/shared) : 11 caractères. */
@@ -18,9 +22,11 @@ const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const DM_ID_RE = /^[a-zA-Z0-9]{5,16}$/;
 const DM_PREFIX = "dm:";
 const YT_PREFIX = "yt:";
+const OPEN_PREFIX = "o:";
 
 export type VideoRef =
-  | { kind: "youtube"; id: string; key: string }
+  /** `open` : le flux VP9 + Opus de cette vidéo (clé `o:<id>`) ; absent : le H.264 de toujours. */
+  | { kind: "youtube"; id: string; key: string; open?: true }
   | { kind: "dailymotion"; id: string; key: string };
 
 export const isYouTubeId = (value: unknown): value is string => typeof value === "string" && YT_ID_RE.test(value);
@@ -28,6 +34,11 @@ export const isDailymotionId = (value: unknown): value is string => typeof value
 
 export function youtubeRef(id: string): VideoRef {
   return { kind: "youtube", id, key: id };
+}
+
+/** La même vidéo YouTube, en VP9 + Opus (`trailerSource.ts` → `pickOpenSource`). */
+export function openYoutubeRef(id: string): VideoRef {
+  return { kind: "youtube", id, key: `${OPEN_PREFIX}${id}`, open: true };
 }
 
 export function dailymotionRef(id: string): VideoRef {
@@ -41,6 +52,7 @@ export function parseVideoRef(value: unknown): VideoRef | null {
   const id = value.slice(3);
   if (value.startsWith(YT_PREFIX) && YT_ID_RE.test(id)) return youtubeRef(id);
   if (value.startsWith(DM_PREFIX) && DM_ID_RE.test(id)) return dailymotionRef(id);
+  if (value.startsWith(OPEN_PREFIX) && YT_ID_RE.test(value.slice(2))) return openYoutubeRef(value.slice(2));
   return null;
 }
 

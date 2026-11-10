@@ -42,11 +42,18 @@ if (typeof window !== "undefined") {
   );
 }
 
-/** Élément réellement sous le curseur, ou `null` si on ne sait pas où il est. */
+/**
+ * Élément réellement sous le curseur, ou `null` si on ne sait pas où il est.
+ * Exporté sous le nom `elementUnderPointer` : l'aperçu d'une carte y lit si la
+ * souris est sur son image ou sur un bouton, là où l'état `:hover` retarde
+ * (`components/cards/preview/usePreviewPointer.ts`).
+ */
 function pointerTarget(): Element | null {
   if (lastX < 0 || typeof document === "undefined") return null;
   return document.elementFromPoint(lastX, lastY);
 }
+
+export { pointerTarget as elementUnderPointer };
 
 /**
  * Le curseur est-il encore sur cet élément ?

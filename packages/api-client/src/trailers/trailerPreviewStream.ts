@@ -11,6 +11,7 @@ import {
   type TrailerPreviewSubject,
 } from "@tentacle-tv/shared";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
+import { trailerDecodesBody } from "./trailerDecodes";
 
 /**
  * La bande-annonce d'un aperçu au survol, telle que le serveur l'a choisie et
@@ -134,7 +135,9 @@ export async function fetchTrailerPreviewStream(
   timeoutMs: number = TRAILER_PREVIEW_TIMING.fetchTimeoutMs,
 ): Promise<TrailerPreviewStreamResult> {
   // Le moteur du web lit tout flux relayé : un aperçu AlloCiné (Dailymotion) compris.
-  const path = trailerPreviewSubjectPath(subject, lang, { dailymotion: true });
+  // Ce que le lecteur décode n'est écrit que s'il ne lit pas le H.264 (`trailerDecodes.ts`).
+  const decodes = trailerDecodesBody();
+  const path = trailerPreviewSubjectPath(subject, lang, { dailymotion: true, ...(decodes ? { decodes } : {}) });
   if (!path) return { status: "missing", reason: "invalid_request" };
 
   const controller = new AbortController();

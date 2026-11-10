@@ -22,6 +22,7 @@ import { previewBody } from "../services/trailers/preview/previewBody";
 import { previewLanguage } from "../services/trailers/preview/previewLanguage";
 import { decisionKey } from "../services/trailers/preview/previewSteps";
 import { readyPreview, warmPreviews, type WarmJob } from "../services/trailers/preview/previewWarm";
+import { deliveryFor } from "../services/trailers/open/delivery";
 import { TokenBuckets } from "../services/trailers/sourceGuard";
 import { prewarmExtraction } from "../services/trailers/ytExtract";
 import { previewRefusal } from "../services/trailers/youtubeGuard";
@@ -46,15 +47,15 @@ async function subjectVisible(subject: TrailerPreviewWarmSubject, userId: string
   return titleAllowedFor(userId, { mediaType: subject.mediaType, tmdbId: subject.tmdbId });
 }
 
-async function planFor(subject: TrailerPreviewWarmSubject, lang: string | undefined, dailymotion: boolean, userId: string): Promise<Plan> {
+async function planFor(subject: TrailerPreviewWarmSubject, lang: string | undefined, dailymotion: boolean, userId: string, open = false): Promise<Plan> {
   // Une décision est partagée par tous ceux qui voient le titre : jamais rendue — ni préparée — pour un
   // compte qui ne le voit pas. Par TMDB aussi : un autre compte l'avait-il déjà prévisualisé, elle lui
   // revenait (titre caché par sa note, sa bibliothèque ou sa classification TMDB).
   if (!(await subjectVisible(subject, userId))) return { kind: "none" };
   const target = previewTarget(subject, lang);
-  const key = decisionKey(target, lang, dailymotion);
+  const key = decisionKey(target, lang, dailymotion, open);
   const ready = readyPreview(key);
-  if (!ready) return { kind: "warm", job: { key, target, lang, account: userId, dailymotion } };
+  if (!ready) return { kind: "warm", job: { key, target, lang, account: userId, dailymotion, ...(open ? { open } : {}) } };
   return { kind: "ready", ready: { subject, preview: previewBody(ready.ref, ready.resolved, ready.version) } };
 }
 
@@ -76,8 +77,12 @@ export const trailerPreviewWarmRoutes: FastifyPluginAsync = async (app) => {
     // Quelqu'un parcourt des titres : un survol suivra sans doute — l'ouvrier yt-dlp se garde chaud.
     if (!previewRefusal()) prewarmExtraction();
     const lang = await previewLanguage(body.lang);
-    const dailymotion = body.dailymotion === true;
-    const plans = await Promise.all(body.subjects.map((subject) => planFor(subject, lang, dailymotion, userId)));
+    // Ce que le lecteur du client décode décide du flux (`open/delivery.ts`) : aucun qui se lise, rien à préparer.
+    const delivery = deliveryFor(body.decodes);
+    if (!delivery) return { ready: [], queued: 0 } satisfies TrailerPreviewWarmResponse;
+    const open = delivery === "open";
+    const dailymotion = body.dailymotion === true && !open;
+    const plans = await Promise.all(body.subjects.map((subject) => planFor(subject, lang, dailymotion, userId, open)));
     const response: TrailerPreviewWarmResponse = {
       ready: plans.flatMap((plan) => (plan.kind === "ready" ? [plan.ready] : [])),
       queued: warmPreviews(plans.flatMap((plan) => (plan.kind === "warm" ? [plan.job] : []))),

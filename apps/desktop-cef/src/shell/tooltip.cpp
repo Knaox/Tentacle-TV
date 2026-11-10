@@ -5,16 +5,20 @@
 #include "shell/ipc.h"
 #include "shell/json.h"
 #include "shell/main_thread.h"
+#include "shell/stall_meter.h"
 
 namespace tentacle {
 
 TooltipController::TooltipController(SDL_Window* window)
     : native_(platform::createTooltipWindow(window)),
       alive_(std::make_shared<bool>(true)) {
-  // Banc : `navigateur.debug.tooltip` → `{text, shown}` (texte reçu de CEF, bulle affichée).
+  // Banc : `navigateur.debug.tooltip` → `{text, shown}` (texte reçu de CEF, bulle affichée) et ce
+  // qu'afficher et retirer la bulle ont coûté au fil principal (ms : dernier, pire).
   if (!std::getenv("TENTACLE_DEBUG_NAVIGATEUR")) return;
   ipc::registerHandler("navigateur.debug.tooltip", [this](const Json&, ipc::Responder r) {
-    r.reply(Json{{"text", text_}, {"shown", shownText()}});
+    r.reply(Json{{"text", text_}, {"shown", shownText()}, {"shows", shows_},
+                 {"lastShowMs", lastShowMs_}, {"maxShowMs", maxShowMs_},
+                 {"lastHideMs", lastHideMs_}, {"maxHideMs", maxHideMs_}});
   });
 }
 
@@ -30,9 +34,14 @@ void TooltipController::setText(const std::string& text) {
   suppressed_ = false;
   ++generation_;
   timerPending_ = false;
-  if (native_ && native_->visible()) native_->hide();
+  if (native_ && native_->visible()) hideNative();
   shown_.clear();
   if (!text_.empty()) schedule();
+}
+
+void TooltipController::hideNative() {
+  lastHideMs_ = stall::timedInner("bulle d'aide : retirer", [this] { native_->hide(); });
+  if (lastHideMs_ > maxHideMs_) maxHideMs_ = lastHideMs_;
 }
 
 void TooltipController::schedule() {
@@ -59,7 +68,9 @@ void TooltipController::arm(uint64_t delayMs) {
         const uint64_t delay = uint64_t(platform::tooltipDelayMs());
         if (quiet < delay) return arm(delay - quiet);
         timerPending_ = false;
-        native_->show(text_, x_, y_);
+        lastShowMs_ = stall::timedInner("bulle d'aide : afficher", [this] { native_->show(text_, x_, y_); });
+        if (lastShowMs_ > maxShowMs_) maxShowMs_ = lastShowMs_;
+        ++shows_;
         shown_ = text_;
       },
       int64_t(delayMs));
@@ -83,7 +94,7 @@ void TooltipController::onEvent(const SDL_Event& e) {
       // Un geste retire la bulle ; elle ne revient qu'avec un autre survol (texte nouveau).
       ++generation_;
       timerPending_ = false;
-      if (native_ && native_->visible()) native_->hide();
+      if (native_ && native_->visible()) hideNative();
       shown_.clear();
       suppressed_ = true;
       return;

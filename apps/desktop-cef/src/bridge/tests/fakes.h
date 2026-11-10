@@ -56,7 +56,19 @@ class FakePlayer : public PlayerPort {
   }
   void observe(const std::string& name, const std::string& format) override { observed.push_back({name, format}); }
   void setListener(PlayerListener* l) override { listener = l; }
+  bool canPrewarm() const override { return prewarmable; }
+  bool prewarm(const Json& options) override {
+    if (!prewarmable || live || warmOptions) return false;
+    warmOptions = options;
+    prewarms++;
+    return true;
+  }
+  bool warm() const override { return warmOptions.has_value(); }
+  void dropWarm() override { warmOptions.reset(); }
 
+  bool prewarmable = false;
+  int prewarms = 0;
+  std::optional<Json> warmOptions;
   bool live = false;
   int stops = 0;
   std::optional<std::string> startError, commandError;

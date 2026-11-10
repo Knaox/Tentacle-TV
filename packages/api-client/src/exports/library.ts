@@ -62,6 +62,9 @@ export {
 export {
   fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached, trailerPreviewSettled, trailerPreviewWarmSubject,
 } from "../trailers/trailerPreviewWarm";
+// Ce que le lecteur de l'appareil décode (déclaré par la plateforme) et le flux qui en découle :
+// H.264, VP9 + Opus (bureau CEF, capacité `trailers.openCodecs`), ou rien à demander.
+export { declareTrailerDecodes, declaredTrailerDecodes, trailerDeliveryHere, useTrailerDelivery } from "../trailers/trailerDecodes";
 // Le lecteur complet des bandes-annonces (web, bureau) : le flux relayé, sa
 // préparation à l'intention et le compte rendu de la lecture.
 export {

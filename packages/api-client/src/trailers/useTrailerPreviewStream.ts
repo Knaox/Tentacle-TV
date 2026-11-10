@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
 import { useServerCapability } from "../hooks/useServerCapabilities";
+import { useTrailerDelivery } from "./trailerDecodes";
 import {
   fetchTrailerPreviewStream,
   trailerPreviewQueryKey,
@@ -27,7 +28,10 @@ export interface TrailerPreviewStreamState {
   receivedAt: number;
   /** Une demande est en vol. */
   loading: boolean;
-  /** Le serveur déclare `trailers.preview` : sans elle, rien n'est jamais demandé. */
+  /**
+   * Le serveur déclare `trailers.preview` ET ce lecteur lirait ce qu'il relaie
+   * (H.264, ou VP9 + Opus avec `trailers.openCodecs`) : sinon, rien n'est jamais demandé.
+   */
   capable: boolean;
   /** Redemande maintenant (le survol tient après un refus passager) — jamais une seconde demande en vol. */
   retry: () => void;
@@ -69,7 +73,10 @@ export function useTrailerPreviewStream(
   lang: string,
   options: { enabled: boolean },
 ): TrailerPreviewStreamState {
-  const capable = useServerCapability("trailers.preview");
+  // Le serveur sait faire l'aperçu, ET ce lecteur pourrait lire ce qu'il relaie (`trailerDecodes.ts`) :
+  // un lecteur sans H.264 face à un serveur sans flux libre ne demande rien — aucune requête, aucune erreur.
+  const deliverable = useTrailerDelivery() !== null;
+  const capable = useServerCapability("trailers.preview") && deliverable;
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => trailerPreviewQueryKey(subject, lang), [subject, lang]);
   // La fraîcheur de la réponse gardée, en durée depuis son arrivée — ce que

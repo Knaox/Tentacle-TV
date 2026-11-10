@@ -39,6 +39,8 @@ class VideoChannels : public PlayerListener {
   /// Chaque propriété observée, telle que mpv la donne (avant étranglement) — « À l'écoute »
   /// y lit la position et la durée de la vidéo (medias).
   void setPropertyObserver(std::function<void(const std::string&, const Json&)> cb) { propertyObserver_ = std::move(cb); }
+  /// Une lecture vient de s'arrêter (`mpv_destroy` rendu) — le préchauffage y recycle (video_prewarm.h).
+  void setOnPlaybackEnded(std::function<void()> cb) { onPlaybackEnded_ = std::move(cb); }
 
   // PlayerListener
   void onProperty(const std::string& name, const Json& value) override;
@@ -58,6 +60,7 @@ class VideoChannels : public PlayerListener {
   PlayerPort& player_;
   Clock clock_;
   std::function<void()> onVideoClaim_;
+  std::function<void()> onPlaybackEnded_;
   std::function<void(const std::string&, const Json&)> propertyObserver_;
   std::map<std::string, int> observedIds_;      // nom → id (rang dans la liste de la page)
   std::map<std::string, double> lastEmitted_;   // étranglement par propriété

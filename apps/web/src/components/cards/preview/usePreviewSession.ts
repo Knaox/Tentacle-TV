@@ -20,7 +20,7 @@ import { usePreviewScrolling } from "./previewScrolling";
 import { navBottom, usePreviewFollow } from "./usePreviewFollow";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
-import { usePointerOnControl } from "./usePointerOnControl";
+import { usePreviewPointer } from "./usePreviewPointer";
 import { usePreviewRoom } from "./room/usePreviewRoom";
 import { roomOffset } from "./room/previewRoom";
 import type { CardPreviewSession } from "./useCardPreview";
@@ -75,7 +75,7 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
 
   const [gate, setGate] = useState(OPEN_GATE);
   const keyboardInCard = useKeyboardInCard(anchorRef, hovered);
-  const pointerOnControl = usePointerOnControl(anchorRef, hovered);
+  const { onControl: pointerOnControl, offImage: pointerOffImage } = usePreviewPointer(anchorRef, hovered);
   // Le silence après une mini-carte fermée : un survol sans vrai mouvement ne
   // commence pas d'aperçu ; un aperçu déjà demandé n'est pas interrompu.
   const quiet = usePreviewQuiet();
@@ -84,7 +84,7 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   const [revealed, setRevealed] = useState(false);
   const [engaged, setEngaged] = useState(false);
   const nextEngaged = engineEngaged({
-    wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard, pointerOnControl }),
+    wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard, pointerOnControl, pointerOffImage }),
     engaged,
     quiet,
     scrolling,

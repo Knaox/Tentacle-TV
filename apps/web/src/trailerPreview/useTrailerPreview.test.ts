@@ -6,12 +6,12 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, WEB_TRAILER_PREVIEW_PACE, trailerPreviewTimingFor,
+  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, WEB_TRAILER_PREVIEW_PACE, trailerPreviewSubjectKey, trailerPreviewTimingFor,
 } from "@tentacle-tv/shared";
 
 /** Les temps de la machine au délai par défaut (800 ms) : ceux que l'appareil neuf applique. */
 const T = trailerPreviewTimingFor(TRAILER_PREVIEW_TIMING, DEFAULT_TRAILER_PREVIEW_DELAY, WEB_TRAILER_PREVIEW_PACE);
-import { FOUND, KID, createPreviewRig } from "./previewTestRig";
+import { FOUND, KID, METROPOLIS, createPreviewRig } from "./previewTestRig";
 
 const h = vi.hoisted(() => ({
   result: undefined as unknown,
@@ -45,12 +45,12 @@ vi.mock("@tentacle-tv/api-client", async () => {
   };
 });
 vi.mock("../pictureInPicture/pictureInPictureStore", () => ({ usePipSession: () => h.pip }));
-vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => h.block }));
+vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => h.block, trailerPreviewCodecBlocked: () => h.block === "codec" }));
 vi.mock("../lib/backendBase", () => ({ getBackendBase: () => "http://serveur:3001" }));
 vi.mock("./previewSource", () => ({ loadPreviewHls: h.loadHls }));
 
 const { useTrailerPreview } = await import("./useTrailerPreview");
-const { forgetTrailerPreviewFailures } = await import("./previewFailures");
+const { forgetTrailerPreviewFailures, trailerPreviewRecentlyFailed } = await import("./previewFailures");
 const { handles, render, wait, serve, cleanup } = createPreviewRig(useTrailerPreview, h);
 
 beforeEach(() => {
@@ -213,6 +213,25 @@ describe("useTrailerPreview — quand montrer", () => {
     expect(handles.a.phase).toBe("failed");
     // La requête ne s'est même pas activée : rien n'est parti vers le serveur.
     expect(h.enabled.some(Boolean)).toBe(false);
+  });
+
+  it("un refus de CODECS n'est pas la faute du titre : il n'est pas ignoré dix minutes", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await serve(FOUND);
+    // Le lecteur refuse les codecs du flux : l'appareil est bloqué (`previewEnvironment.ts`) AVANT l'échec.
+    h.block = "codec";
+    await act(async () => handles.a.onError());
+    expect(handles.a.phase).not.toBe("visible");
+    expect(trailerPreviewRecentlyFailed(trailerPreviewSubjectKey(METROPOLIS))).toBe(false);
+    // Le blocage levé (un autre lecteur, une autre session) : le titre se redemande aussitôt.
+    h.block = null;
+    await render("a", { hovered: false });
+    h.enabled = [];
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await render("a");
+    expect(h.enabled.some(Boolean)).toBe(true);
   });
 
   it("une réponse GARDÉE d'un survol précédent qui lâche (jeton mort au redémarrage du serveur) : le survol suivant redemande au serveur", async () => {

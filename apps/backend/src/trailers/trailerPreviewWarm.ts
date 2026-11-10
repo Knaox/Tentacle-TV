@@ -25,6 +25,7 @@ import {
   isTrailerPreview, previewItemIdOf, previewLangOf, previewTmdbIdOf,
   type TrailerPreview, type TrailerPreviewItemTarget, type TrailerPreviewMediaType,
 } from "./trailerPreview";
+import { parseTrailerDecodes, type TrailerCodec } from "./trailerCodecs";
 
 /** La route, préfixe compris. */
 export const TRAILER_PREVIEW_WARM_ROUTE = "/api/trailers/preview/warm";
@@ -35,11 +36,17 @@ export const TRAILER_PREVIEW_WARM_MAX_SUBJECTS = 40;
 /** Un titre à préparer : de la bibliothèque (`itemId`), ou hors bibliothèque (TMDB). */
 export type TrailerPreviewWarmSubject = TrailerPreviewItemTarget | { tmdbId: number; mediaType: TrailerPreviewMediaType };
 
-/** Le corps de la demande. `dailymotion` : le client lit un aperçu AlloCiné (le `dm=1` de `GET /preview`). */
+/**
+ * Le corps de la demande. `dailymotion` : le client lit un aperçu AlloCiné (le
+ * `dm=1` de `GET /preview`). `decodes` : ce que son lecteur décode, écrit
+ * seulement par un client qui ne lit pas le H.264 et l'AAC (le `dec=` de
+ * `GET /preview`, `trailerCodecs.ts`).
+ */
 export interface TrailerPreviewWarmRequest {
   subjects: TrailerPreviewWarmSubject[];
   lang?: string;
   dailymotion?: boolean;
+  decodes?: readonly TrailerCodec[];
 }
 
 /** Un aperçu déjà prêt : son titre (sous la forme de la demande, normalisée) et le corps de `GET /preview`. */
@@ -80,7 +87,7 @@ export function trailerPreviewWarmSubjectOf(value: unknown): TrailerPreviewWarmS
  */
 export function parseTrailerPreviewWarmBody(body: unknown): TrailerPreviewWarmRequest | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  const raw = body as { subjects?: unknown; lang?: unknown; dailymotion?: unknown };
+  const raw = body as { subjects?: unknown; lang?: unknown; dailymotion?: unknown; decodes?: unknown };
   if (!Array.isArray(raw.subjects)) return null;
   const seen = new Set<string>();
   const subjects: TrailerPreviewWarmSubject[] = [];
@@ -99,6 +106,8 @@ export function parseTrailerPreviewWarmBody(body: unknown): TrailerPreviewWarmRe
     subjects,
     ...(lang ? { lang } : {}),
     ...(raw.dailymotion === true ? { dailymotion: true } : {}),
+    // Présent mais illisible : « ne décode rien » — jamais le H.264 par défaut.
+    ...(raw.decodes === undefined ? {} : { decodes: parseTrailerDecodes(Array.isArray(raw.decodes) ? raw.decodes.join(",") : "") ?? [] }),
   };
 }
 

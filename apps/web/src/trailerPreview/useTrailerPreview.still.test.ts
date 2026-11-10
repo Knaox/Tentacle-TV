@@ -30,7 +30,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
   };
 });
 vi.mock("../pictureInPicture/pictureInPictureStore", () => ({ usePipSession: () => null }));
-vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => null }));
+vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => null, trailerPreviewCodecBlocked: () => false }));
 vi.mock("../lib/backendBase", () => ({ getBackendBase: () => "http://serveur:3001" }));
 vi.mock("./previewSource", () => ({ loadPreviewHls: async () => undefined }));
 
