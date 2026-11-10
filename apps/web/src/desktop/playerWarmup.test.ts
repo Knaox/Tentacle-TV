@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   platform: "linux" as string,
   mpv: true,
+  prewarm: true,
   fallback: false,
   debugOff: false,
   invoke: vi.fn(() => Promise.resolve("préchauffée")),
@@ -11,6 +12,7 @@ const h = vi.hoisted(() => ({
 vi.mock("./bridge", () => ({
   desktopPlatform: () => h.platform,
   supportsMpv: () => h.mpv,
+  supportsPlayerPrewarm: () => h.prewarm,
   invoke: h.invoke,
 }));
 vi.mock("../lib/fallbackPlayer", () => ({ isFallbackActive: () => h.fallback }));
@@ -29,6 +31,7 @@ const later = (): number => (clock += 60_000);
 beforeEach(() => {
   h.platform = "linux";
   h.mpv = true;
+  h.prewarm = true;
   h.fallback = false;
   h.debugOff = false;
   h.invoke.mockClear();
@@ -57,11 +60,15 @@ describe("le préchauffage du lecteur natif", () => {
       () => (h.platform = "windows"),
       () => (h.platform = "web"),
       () => (h.mpv = false),
+      // Une coquille qui ne déclare pas `mpv_prewarm` (CEF hors sous-surface Wayland) : la page
+      // renonce — ni morceau du lecteur chargé, ni commande refusée.
+      () => (h.prewarm = false),
       () => (h.fallback = true),
       () => (h.debugOff = true),
     ]) {
       h.platform = "linux";
       h.mpv = true;
+      h.prewarm = true;
       h.fallback = false;
       h.debugOff = false;
       setup();

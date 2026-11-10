@@ -12,11 +12,15 @@
  * reste — batterie, montage, instance déjà là, recyclage après une lecture —
  * est décidé par la coquille ; ici on ne fait que demander, sans jamais
  * attendre ni échouer : un préchauffage manqué ne coûte que l'attente d'avant.
+ *
+ * Seulement à une coquille qui DÉCLARE `mpv_prewarm` : une coquille qui ne sait
+ * pas (CEF hors sous-surface Wayland) refuserait la commande après que la page
+ * a chargé pour rien le morceau du lecteur.
  */
 
 import { isFallbackActive } from "../lib/fallbackPlayer";
 import { mpvDisabledByDebug } from "../lib/nativePlayer";
-import { desktopPlatform, invoke, supportsMpv } from "./bridge";
+import { desktopPlatform, invoke, supportsMpv, supportsPlayerPrewarm } from "./bridge";
 
 /** Une demande suffit : la coquille garde l'instance, et se souvient des options. */
 const MIN_INTERVAL_MS = 30_000;
@@ -24,7 +28,13 @@ let lastAsked = 0;
 
 /** Les cas où le lecteur ouvert ensuite serait bien mpv (voir `pages/Watch.tsx`). */
 export function playerWarmupWanted(): boolean {
-  return desktopPlatform() === "linux" && supportsMpv() && !isFallbackActive() && !mpvDisabledByDebug();
+  return (
+    desktopPlatform() === "linux" &&
+    supportsMpv() &&
+    supportsPlayerPrewarm() &&
+    !isFallbackActive() &&
+    !mpvDisabledByDebug()
+  );
 }
 
 /** Demande à la coquille une instance mpv prête d'avance. Sans effet ailleurs. */

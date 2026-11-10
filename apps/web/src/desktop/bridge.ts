@@ -31,6 +31,7 @@ export {
   supportsDownloads,
   supportsMediaWarm,
   supportsMpv,
+  supportsPlayerPrewarm,
   supportsNativeAudio,
   supportsOfflineSession,
   supportsSmtc,
