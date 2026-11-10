@@ -55,7 +55,7 @@ export function SettingItem({ setting, label: labelOverride, trailing, children,
       {...settingAnchor(setting)}
       role="group"
       aria-labelledby={labelId}
-      className={`scroll-mt-24 border-line-subtle px-5 py-4 transition-colors duration-700 [&:not(:first-child)]:border-t ${highlight ? "bg-fill-soft" : ""}`}
+      className={`scroll-mt-24 border-line-subtle px-5 py-4 transition-colors duration-300 [&:not(:first-child)]:border-t ${highlight ? "bg-fill-soft" : ""}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2.5">
         {/* min-w-0 et une base : une phrase longue se replie, le contrôle passe dessous plutôt que de sortir. */}

@@ -6,7 +6,6 @@ import { cacheLibrariesList, cacheLibraryPrefs, readLibrariesList, readLibraryPr
 import { queuePendingPref } from "../../offline/pendingPrefs";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { PageTransition } from "../../components/PageTransition";
-import { Spinner } from "../../components/ui/Spinner";
 import { LibraryPrefCard } from "../preferences/LibraryPrefCard";
 import { INTERFACE_LANGUAGES, LANGUAGE_CODES, LANGUAGE_KEYS } from "../preferences/languageOptions";
 import { SETTING_FIELD } from "../../components/settings/SettingToggleRow";
@@ -120,7 +119,7 @@ export function SettingsLanguages() {
           <SettingItem setting="libraryTracks">
             {!offline && !libraries && (
               <div className="flex justify-center py-8">
-                <Spinner size="md" tone="neutral" />
+                <span aria-hidden className="h-6 w-6 animate-spin rounded-full border-[3px] border-line-subtle border-t-accent" />
               </div>
             )}
             {offline && displayLibraries.length === 0 && (
