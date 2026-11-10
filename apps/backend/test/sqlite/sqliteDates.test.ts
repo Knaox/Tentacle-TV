@@ -109,6 +109,8 @@ describe("DateTime en SQLite : des millisecondes entières, partout", () => {
     const reviewed = new Set([
       // L'index de la musique (Octave) : `COLUMN_LIST` liste `dateCreated` et `syncedAt` ; la table FTS5 n'a pas de date.
       join(src, "music/index/indexStore.ts"),
+      // Les dates d'entrée d'Octave (lot « pg ») : `("scope", "itemId", "addedAt")`, la seule date liée en `Date`.
+      join(src, "music/listOrder/addedDates.ts"),
     ]);
     const offenders = files.filter((file) => !reviewed.has(file) && /(queryRaw|executeRaw)[\s\S]{0,200}?\bINSERT\s+INTO/i.test(readFileSync(file, "utf-8")));
     expect(offenders).toEqual([]);
