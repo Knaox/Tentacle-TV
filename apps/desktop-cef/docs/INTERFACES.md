@@ -585,39 +585,6 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 - `media_warm {url, ranges}` (`net/media_warm.h`) : tête et fin du fichier lues par plages (`Range`,
   206 seulement, 4 Mio au plus, deux en vol, même demande après 10 min, 15 s) pour chauffer le
   disque du serveur ; rien n'est gardé. Lecture en flux `net::httpStream` (sans cache).
-### Cycle de vie (systeme) — `src/lifecycle/lifecycle.h` (cibles `tentacle_lifecycle_core`, pure, et `tentacle_lifecycle`, colle)
-Règles d'Electron portées à l'identique et testées seules (`cmake -S src/lifecycle`, `ctest`) :
-`backgroundDrain`, `quitGuard`, `closeSequence`, `playbackFarewell`, `powerSave` (+ renfort logind),
-`appLinks`, régions `app-region`. Ce que les autres modules appellent, fil principal :
-- **horsligne** : `setTransfersProbe({inFlight, busy, backgroundEnabled})` (fermeture : garde de
-  sortie, fin des transferts fenêtre fermée) ; `keepSystemAwake(bool)` à chaque `onBusy`/`onHeld`
-  (anti-suspension, rendue à la sortie) ; `onSystemResume(cb)` (`powerMonitor` « resume »).
-- **tous** : `onWindowClosed(cb)` — la fenêtre est partie pour de bon (musique arrêtée).
-- **reseau** (relais `jellyfin_session_post`) : `noteSessionPost(post)` AVANT l'envoi,
-  `auto done = trackSessionPost()` puis `done()` (n'importe quel fil) à la fin de l'envoi ;
-  `setFarewellSender(fn(stop, done))` : POST `/Sessions/Playing/Stopped` à la sortie (1,5 s au plus).
-- **pont** : `preventDisplaySleep(bool)` derrière `prevent_display_sleep_start/stop`.
-Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/lifecycle_*`.
-- **Dans l'app** (`src/app/app.cpp`, `lifecycle_app.h`) : `beforeSdl` (argv gardé, `--relaunch-after`,
-  Apple events, `SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE=0`, `SDL_HINT_VIDEO_ALLOW_SCREENSAVER=1`),
-  `prepareWindow` (cadre, 900×600 DIP au moins, test de clic des régions), `handedToRunningInstance`
-  (CefInitialize faux + `CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED` → sortie 0), `attach`, puis la
-  boucle : `handleEvent` (croix, Cmd+Q, réveil, lien devenu dépôt SDL), `windowAlive`, `afterEvents`,
-  `waitTimeoutMs`, `running` ; `afterShutdown`. Fermer la dernière fenêtre n'est plus quitter : tout
-  passe par le déroulé `exit_flow.h` (garde → séquence → `closed` → transferts sans fenêtre → adieu).
-- **Instance unique** : le verrou de profil de CEF (`root_cache_path`) ; la seconde instance transmet
-  sa ligne de commande (`BrowserApp::OnAlreadyRunningAppRelaunch` → `setSecondInstanceHandler`).
-- **`modules.cpp`** : `lifecycle::install(ctx, pont::registry())` (avant `installShim`),
-  `setVideoControls({pont::videoRunning, pont::stopVideo, pont::pauseVideo})`, `onWindowClosed(…)`.
-- **Canaux** : `app_link_take` + évènement `app-link` (dans la liste) ; HORS liste, comme le preload :
-  `tentacle:open-external {url}` (liste fermée), `tentacle:pick-folder`, `tentacle:relaunch` ;
-  `lifecycle.windowFocus` (évènement) / `.get`, `lifecycle.pageStarted` (posé par le shim).
-- **Régions** : `CefDragHandler::OnDraggableRegionsChanged` (`src/shell/client_drag_regions.cpp`,
-  cadre principal) → `SDL_SetWindowHitTest` (unités de fenêtre converties en DIP).
-- **Bancs** : `--debug-lifecycle` ouvre `lifecycle.debug.{state,transfers,close,focus,note,sheet,awake}`
-  (`lifecycle_debug.cpp`) ; sous `--background`, ni activation ni notification (journalisées) ;
-  `TENTACLE_LIFECYCLE_TRACE=1` trace GetURL, dépôts et `app_link_take`.
-
 ## Image dans l'image — PiP (axe pip, lot cef-parite)
 
 Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
