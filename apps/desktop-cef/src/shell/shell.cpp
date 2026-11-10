@@ -53,6 +53,7 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
   client_ = new Client(this);
   dialogs_ = new BrowserDialogs(window_);
   dragDrop_ = std::make_unique<DragDrop>(window_);
+  tooltip_ = std::make_unique<TooltipController>(window_);
   syncWindowGeometry();
   platform::installAppMenu([this](platform::EditCommand c) {
     if (!browser_) return;
@@ -104,7 +105,9 @@ bool Shell::start() {
 }
 
 void Shell::handleEvent(const SDL_Event& e) {
-  // navigateur : session de glisser interne en cours, ou dépôt venu de l'OS.
+  // navigateur : la bulle suit la souris et part au premier geste ; puis une session de
+  // glisser interne en cours, ou un dépôt venu de l'OS, prend l'évènement.
+  tooltip_->onEvent(e);
   if (dragDrop_->handleEvent(e, browser_)) {
     if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) input_.noteButtonUp(e.button.button);
     wakeFrameClock();
@@ -256,6 +259,7 @@ void Shell::wakeFrameClock() {
 }
 
 void Shell::onBrowserClosed() {
+  tooltip_->setText("");
   dialogs_->detach();
   platform::stopFrameClock();
   platform::setPageReceivesShortcuts(false);

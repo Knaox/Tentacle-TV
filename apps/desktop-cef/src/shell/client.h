@@ -44,6 +44,8 @@ class ViewHost {
     return false;
   }
   virtual void updateDragCursor(cef_drag_operations_mask_t operation) {}
+  // navigateur : bulle d'aide (`title=`), texte vide = aucune (src/shell/tooltip.h).
+  virtual void showTooltip(const std::string& text) {}
 };
 
 class Client final : public CefClient,
@@ -119,6 +121,8 @@ class Client final : public CefClient,
   bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
                       cef_cursor_type_t type, const CefCursorInfo& custom) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) override;
+  // navigateur (client_drag.cpp) : en rendu hors écran, l'hôte dessine la bulle.
+  bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level,
                         const CefString& message, const CefString& source, int line) override;
 

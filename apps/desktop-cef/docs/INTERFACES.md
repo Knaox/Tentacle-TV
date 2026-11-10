@@ -281,6 +281,11 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   `DragDrop::handleEvent`. `InputRouter` suit les boutons d'après ses évènements (`pressed_`) et
   expose `lastMouse`/`leftHeld`/`noteButtonUp`. Non porté : un glisser qui SORT vers le Finder.
   Bancs : `navigateur.debug.drop {files, text, x, y, leave}` (avec `TENTACLE_DEBUG_NAVIGATEUR=1`).
+- **Bulles `title=`** (`src/shell/tooltip.h`, `OnTooltip` → `ViewHost::showTooltip`) : délai de
+  survol immobile (macOS `NSInitialToolTipDelay`, Windows durée du double-clic, Linux 500 ms),
+  sous le curseur, retirée au clic/frappe/molette/sortie ; fenêtre au premier plan seulement.
+  macOS : panneau sans focus au matériau `ToolTip` (API publiques) ; Windows : `TOOLTIPS_CLASS`
+  en suivi ; Linux : bulle SDL dessinée par Pango/Cairo (dlopen). Banc : `navigateur.debug.tooltip`.
 - **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
   « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
   MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de

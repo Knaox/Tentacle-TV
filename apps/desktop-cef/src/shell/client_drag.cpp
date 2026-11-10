@@ -1,5 +1,5 @@
-// Glisser-déposer rendu (navigateur) : CEF demande à l'hôte de jouer la session de glisser que
-// la fenêtre native jouerait seule (src/shell/drag_drop.h).
+// Ce que la fenêtre native ferait seule et que l'hôte rejoue (navigateur) : la session de
+// glisser (src/shell/drag_drop.h) et la bulle d'aide (src/shell/tooltip.h).
 
 #include <cstdio>
 #include <cstdlib>
@@ -18,6 +18,11 @@ bool Client::StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData>
 
 void Client::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) {
   host_->updateDragCursor(operation);
+}
+
+bool Client::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) {
+  host_->showTooltip(text.ToString());
+  return true;
 }
 
 }  // namespace tentacle

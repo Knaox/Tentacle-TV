@@ -14,6 +14,7 @@
 #include "shell/drag_drop.h"
 #include "shell/frame_clock.h"
 #include "shell/input.h"
+#include "shell/tooltip.h"
 
 namespace tentacle {
 
@@ -65,6 +66,7 @@ class Shell final : public ViewHost {
   void updateDragCursor(cef_drag_operations_mask_t operation) override {
     dragDrop_->updateOperation(operation);
   }
+  void showTooltip(const std::string& text) override { tooltip_->setText(text); }
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
   void wakeFrameClock();
   // La page annonce un changement (canal shell.wake) : UN BeginFrame tout de suite, sans
@@ -82,6 +84,7 @@ class Shell final : public ViewHost {
   CefRefPtr<Client> client_;
   CefRefPtr<BrowserDialogs> dialogs_;  // navigateur
   std::unique_ptr<DragDrop> dragDrop_;  // navigateur
+  std::unique_ptr<TooltipController> tooltip_;  // navigateur
   CefRefPtr<CefBrowser> browser_;
   InputRouter input_;
   int widthPt_ = 0, heightPt_ = 0;

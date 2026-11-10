@@ -9,3 +9,4 @@
 - Machine SANS GTK 3 → boîte de SDL à la place (X11 : dessinée par SDL ; Wayland : zenity/kdialog), mêmes réponses.
 - Un lien externe (Crédits › un lien) → s'ouvre dans le navigateur par défaut (xdg-open), l'app reste sur sa page.
 - Glisser un fichier audio depuis le gestionnaire de fichiers sur Octave → la boîte d'import s'ouvre avec ce fichier.
+- Survoler un bouton-icône (Octave, lecteur) sans bouger ½ s → une bulle sombre avec le texte de `title=`, sous le curseur ; un clic la retire. Sans Pango/Cairo : aucune bulle (attendu).

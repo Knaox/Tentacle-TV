@@ -8,3 +8,4 @@
 - Si la TaskDialog n'apparaît pas mais une MessageBox classique oui → le manifeste de l'exe n'a pas les Common Controls 6 (axe windows).
 - Un lien externe → navigateur par défaut ; un téléchargement lancé par la page → boîte « Enregistrer sous » dans Téléchargements, titre = l'URL ; Annuler → aucun fichier.
 - Glisser un fichier audio depuis l'Explorateur sur Octave → la boîte d'import s'ouvre avec ce fichier.
+- Survoler un bouton-icône sans bouger → bulle native de Windows (le délai du double-clic), sous le curseur ; un clic la retire ; aucune bulle quand la fenêtre n'est pas au premier plan.
