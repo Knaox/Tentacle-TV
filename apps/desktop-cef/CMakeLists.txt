@@ -106,6 +106,7 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+add_subdirectory(src/display)  # windows : écran HDR, mpv_harden_child_window, Microsoft Store
 add_subdirectory(src/net)  # reseau : tentacle://art, tentacle://plugin, relais, requêtes déléguées
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC

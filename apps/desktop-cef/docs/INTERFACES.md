@@ -249,6 +249,24 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   échelle d'affichage. `InputRouter::setWindowToDip` ; `--size` en DIP (× échelle du contenu).
   `NativeKey::extraModifiers` : drapeaux de position (`EVENTFLAG_IS_LEFT/RIGHT/KEY_PAD`), 0 sur macOS.
 
+### Écran (axe windows, lot cef-parite) — `src/display/`
+- `display::install(ctx, pont::registry())` dans `modules.cpp` (avant `installShim`),
+  `display::shutdown()` APRÈS `pont::shutdown()`. Canaux d'Electron, sur les TROIS OS (comme
+  `ipc/videoHdr.ts`, `ipc/video.ts`) : `display_hdr_state {}` → `{supporte, enabled, bascule,
+  autoAutorise, edrCapable, coucheHdr, espaceCouche, transmission, pic}` ; `display_hdr_auto {on}`
+  → `null` (rejet `bad_payload` sans booléen) ; `mpv_harden_child_window {}` → `false`.
+- OS (`src/platform/display_hdr.h`, `src/platform/<os>/display_hdr_<os>.*`) : `probeDisplayHdr`,
+  `displayHdrNegotiated`, `enableDisplayHdr`, `restoreDisplayHdr`, `displayHdrToggled` ; Windows :
+  `QueryDisplayConfig` + `SET_ADVANCED_COLOR_STATE` (`hdr.ts`) ; macOS : headroom EDR de l'écran ;
+  Linux : rien constaté (à l'axe linux d'y mettre `video-target-params` s'il le veut).
+- Session HDR (`hdr_session.h`, règle testée `tentacle_display_tests`) : `hdrSession.ts` — Windows
+  seul ; bascule si la page l'autorise, `target-colorspace-hint=yes` si l'écran est (ou devient)
+  HDR, à la fin la transmission tombe PUIS l'écran est rendu.
+- Commandes propres à l'OS : `platform::installOsCommands(ctx, registry)` — Windows :
+  `check_msix_update` → `{version:"", mandatory}` | `null`, `download_and_install_msix_update` →
+  `null` ou rejet (code de `msix_rule.h`, `store-page-opened` après repli sur la page du Store),
+  évènement `msix-update-progress {progress, indeterminate}` ; macOS, Linux : rien.
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.

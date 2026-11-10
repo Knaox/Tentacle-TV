@@ -7,6 +7,7 @@
 #include "glue/pont_shell.h"  // pont : window.tentacle (src/bridge)
 #include "music/octave_shell.h"  // octave : mode musique (src/music)
 #include "update/update_shell.h"  // maj : mise à jour automatique (src/update)
+#include "display/display_channels.h"  // windows : écran HDR, annexes du lecteur, Store (src/display)
 
 namespace tentacle {
 
@@ -14,6 +15,7 @@ void initModules(AppContext& ctx) {
   pont::install(ctx);  // pont — octave déclare ses canaux entre ces deux lignes
   music::installInShell(pont::registry());  // octave : canaux audio_*
   pont::setOnVideoClaim([] { music::videoClaim(); });  // octave : une vidéo met la musique en pause
+  display::install(ctx, pont::registry());  // windows : display_hdr_*, mpv_harden_child_window, Store
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }
@@ -22,6 +24,7 @@ void shutdownModules() {
   maj::shutdown();  // maj : une mise à jour prête s'applique en silence à la fermeture
   music::shutdownMusic();  // octave : la musique s'arrête, la sortie audio est rendue
   pont::shutdown();
+  display::shutdown();  // windows : APRÈS le pont — l'écran HDR est rendu en dernier
 }
 
 }  // namespace tentacle
