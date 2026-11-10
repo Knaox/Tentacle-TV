@@ -2,7 +2,6 @@
 
 #include <cstdio>
 
-#include "shell/app_scheme.h"
 #include "shell/ipc.h"
 #include "shell/main_thread.h"
 
@@ -14,33 +13,8 @@ bool Client::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   return ipc::onProcessMessage(browser, frame, message);
 }
 
-// Le front embarqué (tentacle://app) parle à SON serveur et à Jellyfin, souvent sur le réseau
-// local ou sur la machine même. Chromium 156 classe notre origine « publique » et soumet ces
-// requêtes à la permission d'accès au réseau local ; en rendu hors écran, aucune invite ne
-// s'affiche : la demande restait en attente et CHAQUE requête pendait (mesuré, banc sur
-// 127.0.0.1 : « le serveur met trop de temps à répondre »). Accordée à tentacle://app seul, et
-// seulement quand la demande ne porte que sur le réseau local ; toute autre demande garde le
-// traitement par défaut de CEF. (Electron, `security.ts`, n'accorde que le presse-papiers.)
-bool Client::OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
-                                    const CefString& requestingOrigin,
-                                    uint32_t requestedPermissions,
-                                    CefRefPtr<CefPermissionPromptCallback> callback) {
-  // L'ancien type unique (1 << 25, « _DEPRECATED » dans cette API) et les deux qui l'ont
-  // remplacé : réseau local et machine même.
-  constexpr uint32_t kLocalNetwork = CEF_PERMISSION_TYPE_LOCAL_NETWORK_ACCESS_DEPRECATED |
-                                     CEF_PERMISSION_TYPE_LOCAL_NETWORK |
-                                     CEF_PERMISSION_TYPE_LOOPBACK_NETWORK;
-  std::string origin = requestingOrigin.ToString();
-  if (!origin.empty() && origin.back() == '/') origin.pop_back();
-  if (origin != appscheme::kAppOrigin || requestedPermissions == 0 ||
-      (requestedPermissions & ~kLocalNetwork) != 0) {
-    return false;
-  }
-  callback->Continue(CEF_PERMISSION_RESULT_ACCEPT);
-  return true;
-}
-
 void Client::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+  applyPermissionDefaults(browser);
   ipc::attachBrowser(browser);
   host_->onBrowserCreated(browser);
 }
@@ -64,7 +38,7 @@ void Client::OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
 bool Client::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
                             cef_cursor_type_t type, const CefCursorInfo& custom) {
-  host_->setCursor(type);
+  host_->setCursorFull(type, cursor, custom);
   return true;  // nous gérons le curseur (OSR : CEF ne touche pas à la fenêtre)
 }
 

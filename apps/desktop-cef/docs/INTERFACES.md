@@ -323,6 +323,55 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - macOS : couche web `CAMetalLayer` BGRA8 sRGB non opaque, z=10 ; conteneur vidéo z=0 ; vue
   hôte qui laisse passer la souris.
 
+### Navigateur (axe navigateur, lot cef-parite) — ce qu'un navigateur hors écran ne fait pas seul
+Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `restrictPermissions`).
+- **Navigation** (`src/shell/client_navigation.cpp`, règle pure `src/shell/navigation_rule.h`,
+  tests `tentacle_navigateur_tests`) : le cadre principal garde l'origine de l'URL de départ
+  (`nav::setAppOrigin`, posée par `Shell::start` : `tentacle://app`, ou le serveur en
+  `dev:server`). Navigation ailleurs → annulée et ouverte dehors ; redirection ailleurs →
+  annulée sans rien ouvrir ; cadres libres. `window.open`, `target=_blank`, clic du milieu,
+  ⌘/Ctrl + clic → dehors, jamais une seconde fenêtre CEF.
+- **Fenêtres** : la règle d'Electron est un gestionnaire de l'aiguillage de pip
+  (`nav::installPopupPolicy()` → `popup::addHandler`, posé par `Shell::start`) : `pass` pour la
+  fenêtre nommée `tentacle-pip` (le PiP décide), sinon dehors si le schéma est permis, puis `deny`.
+- **Dehors** : `tentacle::openExternalSafely(url)` (`src/shell/external_url.h`, fil principal) —
+  liste FERMÉE d'Electron (http, https, mailto, ms-windows-store, macappstore, itms-apps), URL
+  canonique (`CefParseURL`), `SDL_OpenURL`. Bancs : `TENTACLE_OPEN_EXTERNAL=log` journalise
+  `[externe] …` sans rien ouvrir.
+- **Boîtes de la page** (`src/shell/browser_dialogs.h`, objets à part donnés par `ViewHost::
+  dialogHandler()/jsDialogHandler()/downloadHandler()` ; règle pure `src/shell/dialog_rule.h` ;
+  natif `src/shell/native_dialogs.h` → `src/platform/<os>/dialogs_<os>.*`) : `<input type=file>`
+  (filtres d'Electron « Image Files »/« Custom Files » + « All Files », dernier dossier retenu),
+  `alert`/`confirm` (NSAlert en feuille / TaskDialog / GTK ; « OK », « Cancel »), `prompt` →
+  `null` sans boîte, `beforeunload` → la page reste sans question, téléchargement → boîte
+  d'enregistrement (titre = URL, Téléchargements puis dernier dossier), annulée = téléchargement
+  annulé. Linux : panneaux de fichiers = ceux de Chromium (portail XDG), comme Electron.
+  Bancs : `TENTACLE_DEBUG_NAVIGATEUR=1` → canal `navigateur.debug.dialogs` (`state`, `answer`,
+  `queue` : réponses d'avance, un dialogue JavaScript bloquant la page).
+- **Glisser-déposer** (`src/shell/drag_drop.h`, `drag_ghost.h`, `client_drag.cpp`) : `StartDragging`
+  ouvre une session interne (souris SDL → `DragTarget*`, Échap l'abandonne, image fantôme dans
+  une fenêtre bulle SDL qui suit le curseur) ; fichiers et texte venus de l'OS par
+  `SDL_EVENT_DROP_*` (survol avec un fichier fictif, dépôt rejoué avec les vrais fichiers,
+  `DROP_COMPLETE` sans fichier = sortie). Un dépôt ne fait jamais naviguer (`navigateOnDragDrop`
+  d'Electron : `nav::noteDrop`/`isDropNavigation`). `Shell::handleEvent` passe d'abord par
+  `DragDrop::handleEvent`. `InputRouter` suit les boutons d'après ses évènements (`pressed_`) et
+  expose `lastMouse`/`leftHeld`/`noteButtonUp`. Non porté : un glisser qui SORT vers le Finder.
+  Bancs : `navigateur.debug.drop {files, text, x, y, leave}` (avec `TENTACLE_DEBUG_NAVIGATEUR=1`).
+- **Bulles `title=`** (`src/shell/tooltip.h`, `OnTooltip` → `ViewHost::showTooltip`) : délai de
+  survol immobile (macOS `NSInitialToolTipDelay`, Windows durée du double-clic, Linux 500 ms),
+  sous le curseur, retirée au clic/frappe/molette/sortie ; fenêtre au premier plan seulement.
+  macOS : panneau sans focus au matériau `ToolTip` (API publiques) ; Windows : `TOOLTIPS_CLASS`
+  en suivi ; Linux : bulle SDL dessinée par Pango/Cairo (dlopen). Banc : `navigateur.debug.tooltip`.
+- **Curseurs** (`src/shell/cursors.h`) : `ViewHost::setCursorFull(type, natif, custom)` (défaut :
+  `setCursor(type)`) ; formes connues de SDL → curseur système ; les autres (grab, grabbing, zoom,
+  help, copy…) → image du curseur natif fourni par CEF (macOS NSCursor, Windows HCURSOR), Linux
+  → forme SDL la plus proche ; `cursor: url(…)` → son image ; glisser interne → curseur de
+  l'opération (`forDrag`). SDL reste seul à poser le curseur.
+- **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
+  « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
+  MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de
+  Chromium). Exception propre à CEF : réseau local pour `tentacle://app`.
+
 ## Règles communes du code
 - Ce qui dépend de l'OS : `src/platform/<macos|linux|windows>/`, derrière une interface. Linux et
   Windows ont au moins des stubs qui compilent dans l'esprit (pas forcément construits ici).

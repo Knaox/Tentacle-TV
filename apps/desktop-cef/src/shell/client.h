@@ -5,6 +5,9 @@
 #include "compositor/compositor.h"
 #include "include/cef_client.h"
 #include "include/cef_drag_handler.h"
+#include "include/cef_dialog_handler.h"
+#include "include/cef_download_handler.h"
+#include "include/cef_jsdialog_handler.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_resource_request_handler.h"
@@ -19,6 +22,12 @@ class ViewHost {
   virtual WebLayer* webLayer() = 0;
   virtual void viewToScreen(int x, int y, int& sx, int& sy) = 0;
   virtual void setCursor(cef_cursor_type_t type) = 0;
+  // navigateur : le curseur avec ce que CEF fournit en plus (natif, image de `cursor: url`) ;
+  // par défaut, la forme seule (src/shell/cursors.h).
+  virtual void setCursorFull(cef_cursor_type_t type, CefCursorHandle native,
+                             const CefCursorInfo& custom) {
+    setCursor(type);
+  }
   virtual void setTitle(const std::string& title) = 0;
   virtual void setImeRect(const CefRect& caretDip) = 0;
   virtual void onBrowserCreated(CefRefPtr<CefBrowser> browser) = 0;
@@ -32,6 +41,18 @@ class ViewHost {
   // Une ressource a fini de charger (n'importe quel cadre, iframes comprises) : la page va
   // sans doute peindre. Appelé sur le fil principal.
   virtual void onResourceLoaded() {}
+  // navigateur : boîtes de la page — fichiers, JavaScript, téléchargements
+  // (src/shell/browser_dialogs.h). nullptr : le défaut de CEF.
+  virtual CefRefPtr<CefDialogHandler> dialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefJSDialogHandler> jsDialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefDownloadHandler> downloadHandler() { return nullptr; }
+  // navigateur : glisser-déposer rendu (src/shell/drag_drop.h).
+  virtual bool startDragging(CefRefPtr<CefDragData> data, cef_drag_operations_mask_t allowed) {
+    return false;
+  }
+  virtual void updateDragCursor(cef_drag_operations_mask_t operation) {}
+  // navigateur : bulle d'aide (`title=`), texte vide = aucune (src/shell/tooltip.h).
+  virtual void showTooltip(const std::string& text) {}
 };
 
 class Client final : public CefClient,
@@ -46,13 +67,21 @@ class Client final : public CefClient,
                      public CefPermissionHandler,
                      public CefDragHandler {
  public:
+  // CefLifeSpanHandler ET CefRequestHandler déclarent chacun ce nom : GCC (Linux) refuse la
+  // référence ambiguë que Clang tolère. Un alias de la classe tranche, pour tous les fichiers.
+  using WindowOpenDisposition = cef_window_open_disposition_t;
   explicit Client(ViewHost* host) : host_(host) {}
 
   CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
-  // CefPermissionHandler : l'accès au réseau local, pour tentacle://app seul (client.cpp).
+  // CefPermissionHandler (navigateur, client_navigation.cpp) : tout refusé comme Electron,
+  // sauf l'accès au réseau local pour tentacle://app seul.
   bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
                               const CefString& requestingOrigin, uint32_t requestedPermissions,
                               CefRefPtr<CefPermissionPromptCallback> callback) override;
+  bool OnRequestMediaAccessPermission(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                      const CefString& requestingOrigin,
+                                      uint32_t requestedPermissions,
+                                      CefRefPtr<CefMediaAccessCallback> callback) override;
 
   // CefDragHandler (client_drag_regions.cpp, axe systeme) : les régions `app-region: drag` de
   // la page deviennent le test de clic de la fenêtre (déplacer la fenêtre, sur les trois OS).
@@ -67,11 +96,16 @@ class Client final : public CefClient,
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+  // navigateur : objets à part, tenus par l'hôte (src/shell/browser_dialogs.h).
+  CefRefPtr<CefDialogHandler> GetDialogHandler() override { return host_->dialogHandler(); }
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return host_->jsDialogHandler(); }
+  CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return host_->downloadHandler(); }
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                 CefProcessId source,
                                 CefRefPtr<CefProcessMessage> message) override;
 
-  // CefLifeSpanHandler — OnBeforePopup et DoClose : client_popup.cpp (aiguillage par module).
+  // CefLifeSpanHandler — OnBeforePopup et DoClose : client_popup.cpp (aiguillage par module ;
+  // défaut = règle d'Electron, navigateur : dehors et refusée).
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popupId,
                      const CefString& targetUrl, const CefString& targetFrameName,
@@ -95,11 +129,17 @@ class Client final : public CefClient,
                           const RectList& dirty, const CefAcceleratedPaintInfo& info) override;
   void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& range,
                                     const RectList& characterBounds) override;
+  // navigateur (client_drag.cpp) : glisser-déposer HTML5 rejoué par l'hôte.
+  bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> dragData,
+                     DragOperationsMask allowedOps, int x, int y) override;
+  void UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) override;
 
   // CefDisplayHandler
   bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
                       cef_cursor_type_t type, const CefCursorInfo& custom) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) override;
+  // navigateur (client_drag.cpp) : en rendu hors écran, l'hôte dessine la bulle.
+  bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level,
                         const CefString& message, const CefString& source, int line) override;
 
@@ -112,6 +152,14 @@ class Client final : public CefClient,
                   CefEventHandle osEvent) override;
 
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) override;
+
+  // CefRequestHandler (navigateur, client_navigation.cpp) : `will-navigate`, `will-redirect`,
+  // ouvertures « nouvel onglet » d'Electron (`lockNavigation`).
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request, bool userGesture, bool isRedirect) override;
+  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                        const CefString& targetUrl, WindowOpenDisposition disposition,
+                        bool userGesture) override;
 
   // CefRequestHandler / CefResourceRequestHandler : seulement la fin des chargements, pour
   // réveiller l'horloge d'images en veille (iframes comprises, où le script de réveil de la
@@ -132,6 +180,8 @@ class Client final : public CefClient,
                            CefRefPtr<CefMenuModel> model) override;
 
  private:
+  // Contrôles de permission refusés comme Electron (réglages de contenu par défaut).
+  static void applyPermissionDefaults(CefRefPtr<CefBrowser> browser);
   ViewHost* host_;
   PopupRect popupDip_;
   bool popupVisible_ = false;

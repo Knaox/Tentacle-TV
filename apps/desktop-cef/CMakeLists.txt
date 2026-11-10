@@ -2,6 +2,7 @@
 # Construire avec scripts/build.sh (Ninja, ninja -j4), jamais dans le dépôt.
 cmake_minimum_required(VERSION 3.24)
 project(tentacle_cef LANGUAGES C CXX)
+enable_testing()  # ctest : tests de règle (web_root, navigateur…)
 if(APPLE)
   enable_language(OBJC OBJCXX)
 endif()
@@ -48,6 +49,7 @@ add_library(tentacle_shell STATIC
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
   src/shell/paths.cpp  # reseau : dossier de données d'Electron, --user-data
+  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp src/shell/browser_dialogs.cpp src/shell/client_drag.cpp src/shell/drag_drop.cpp src/shell/drag_ghost.cpp src/shell/tooltip.cpp src/shell/cursors.cpp src/shell/zoom_guard.cpp src/shell/shell_navigateur.cpp  # navigateur
   src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
@@ -60,6 +62,10 @@ add_library(tentacle_renderer STATIC
 add_executable(tentacle_web_root_tests src/shell/tests/web_root_tests.cpp src/shell/web_root.cpp)
 target_include_directories(tentacle_web_root_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 add_test(NAME tentacle_web_root_tests COMMAND tentacle_web_root_tests)
+# navigateur : règles de navigation, d'ouverture externe et des boîtes (sans CEF ni OS).
+add_executable(tentacle_navigateur_tests src/shell/tests/navigateur_tests.cpp src/shell/navigation_rule.cpp src/shell/dialog_rule.cpp)
+target_include_directories(tentacle_navigateur_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+add_test(NAME tentacle_navigateur_tests COMMAND tentacle_navigateur_tests)
 if(APPLE)
   target_sources(tentacle_shell PRIVATE
     src/platform/macos/app_mac.mm
@@ -81,6 +87,18 @@ else()
   target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
                                         src/platform/linux/shell_stubs_linux.cpp
                                         src/platform/linux/compositor_linux.cpp)
+endif()
+
+# navigateur : boîtes natives, glisser-déposer, bulles, curseurs — un fichier par fonction et par OS.
+if(APPLE)
+  target_sources(tentacle_shell PRIVATE src/platform/macos/dialogs_mac.mm src/platform/macos/tooltip_mac.mm src/platform/macos/cursor_mac.mm)
+  target_link_libraries(tentacle_shell PUBLIC "-framework UniformTypeIdentifiers")
+elseif(WIN32)
+  target_sources(tentacle_shell PRIVATE src/platform/windows/dialogs_windows.cpp src/platform/windows/tooltip_windows.cpp src/platform/windows/cursor_windows.cpp)
+  target_link_libraries(tentacle_shell PUBLIC ole32 shell32 uuid comctl32)
+else()
+  target_sources(tentacle_shell PRIVATE src/platform/linux/dialogs_linux.cpp src/platform/linux/tooltip_linux.cpp src/platform/linux/cursor_linux.cpp)
+  target_link_libraries(tentacle_shell PUBLIC ${CMAKE_DL_LIBS})  # GTK chargé à la demande
 endif()
 
 foreach(lib tentacle_shell tentacle_renderer)

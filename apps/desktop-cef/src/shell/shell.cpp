@@ -7,6 +7,9 @@
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/external_url.h"
+#include "shell/navigation_rule.h"
+#include "shell/zoom_guard.h"
 
 namespace tentacle {
 namespace {
@@ -16,40 +19,14 @@ namespace {
 constexpr uint64_t kFrameClockIdleAfterMs = 250;
 constexpr uint64_t kFrameClockDeepIdleAfterMs = 3000;
 
-SDL_SystemCursor systemCursor(cef_cursor_type_t t) {
-  switch (t) {
-    case CT_CROSS: return SDL_SYSTEM_CURSOR_CROSSHAIR;
-    case CT_HAND: return SDL_SYSTEM_CURSOR_POINTER;
-    case CT_IBEAM:
-    case CT_VERTICALTEXT: return SDL_SYSTEM_CURSOR_TEXT;
-    case CT_WAIT: return SDL_SYSTEM_CURSOR_WAIT;
-    case CT_PROGRESS: return SDL_SYSTEM_CURSOR_PROGRESS;
-    case CT_EASTRESIZE:
-    case CT_WESTRESIZE:
-    case CT_EASTWESTRESIZE:
-    case CT_COLUMNRESIZE: return SDL_SYSTEM_CURSOR_EW_RESIZE;
-    case CT_NORTHRESIZE:
-    case CT_SOUTHRESIZE:
-    case CT_NORTHSOUTHRESIZE:
-    case CT_ROWRESIZE: return SDL_SYSTEM_CURSOR_NS_RESIZE;
-    case CT_NORTHEASTRESIZE:
-    case CT_SOUTHWESTRESIZE:
-    case CT_NORTHEASTSOUTHWESTRESIZE: return SDL_SYSTEM_CURSOR_NESW_RESIZE;
-    case CT_NORTHWESTRESIZE:
-    case CT_SOUTHEASTRESIZE:
-    case CT_NORTHWESTSOUTHEASTRESIZE: return SDL_SYSTEM_CURSOR_NWSE_RESIZE;
-    case CT_MOVE: return SDL_SYSTEM_CURSOR_MOVE;
-    case CT_NOTALLOWED:
-    case CT_NODROP: return SDL_SYSTEM_CURSOR_NOT_ALLOWED;
-    default: return SDL_SYSTEM_CURSOR_DEFAULT;
-  }
-}
-
 }  // namespace
 
 Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
     : window_(window), compositor_(compositor), options_(std::move(options)) {
   client_ = new Client(this);
+  dialogs_ = new BrowserDialogs(window_);
+  dragDrop_ = std::make_unique<DragDrop>(window_);
+  tooltip_ = std::make_unique<TooltipController>(window_);
   syncWindowGeometry();
   platform::installAppMenu([this](platform::EditCommand c) {
     if (!browser_) return;
@@ -70,12 +47,14 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
 }
 
 Shell::~Shell() {
+  dialogs_->detach();
   platform::uninstallNativeWheel();
   platform::stopFrameClock();
-  for (auto& [_, c] : cursors_) SDL_DestroyCursor(c);
 }
 
 bool Shell::start() {
+  nav::setAppOrigin(options_.url);  // navigateur : l'origine que le cadre principal garde
+  nav::installPopupPolicy();         // navigateur : window.open, target=_blank (Electron)
   CefWindowInfo wi;
   wi.SetAsWindowless(kNullWindowHandle);
   wi.shared_texture_enabled = true;  // IOSurface (macOS) : zéro copie CPU
@@ -99,6 +78,18 @@ bool Shell::start() {
 }
 
 void Shell::handleEvent(const SDL_Event& e) {
+  // navigateur : la bulle suit la souris et part au premier geste ; puis une session de
+  // glisser interne en cours, ou un dépôt venu de l'OS, prend l'évènement.
+  tooltip_->onEvent(e);
+  guardZoom(e, browser_);
+  const bool dragging = dragDrop_->internalActive();
+  if (dragDrop_->handleEvent(e, browser_)) {
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) input_.noteButtonUp(e.button.button);
+    // Fin du glisser : la page retrouve son curseur.
+    if (dragging && !dragDrop_->internalActive() && pageCursor_) applyCursor(pageCursor_);
+    wakeFrameClock();
+    return;
+  }
   switch (e.type) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
@@ -185,23 +176,6 @@ void Shell::setImeRect(const CefRect& r) {
   SDL_SetTextInputArea(window_, &area, 0);
 }
 
-void Shell::setCursor(cef_cursor_type_t type) {
-  lastCursor_ = int(type);
-  if (type == CT_NONE) {
-    SDL_HideCursor();
-    cursorHidden_ = true;
-    return;
-  }
-  if (cursorHidden_) {
-    SDL_ShowCursor();
-    cursorHidden_ = false;
-  }
-  const SDL_SystemCursor sc = systemCursor(type);
-  auto& c = cursors_[int(sc)];
-  if (!c) c = SDL_CreateSystemCursor(sc);
-  SDL_SetCursor(c);
-}
-
 void Shell::setTitle(const std::string& title) {
   SDL_SetWindowTitle(window_, title.empty() ? "Tentacle" : title.c_str());
 }
@@ -245,6 +219,8 @@ void Shell::wakeFrameClock() {
 }
 
 void Shell::onBrowserClosed() {
+  tooltip_->setText("");
+  dialogs_->detach();
   platform::stopFrameClock();
   platform::setPageReceivesShortcuts(false);
   browser_ = nullptr;

@@ -76,7 +76,10 @@ uint32_t cefModifiers(SDL_Keymod mod) {
 
 uint32_t InputRouter::mouseModifiers() const {
   uint32_t m = cefModifiers(SDL_GetModState());
-  SDL_MouseButtonFlags b = SDL_GetMouseState(nullptr, nullptr);
+  // L'état réel de SDL, complété par ce que les évènements reçus disent (navigateur : un bouton
+  // injecté par un banc — shell.debug.native — n'apparaît pas dans SDL_GetMouseState ; sans
+  // lui, Chromium prend un déplacement bouton enfoncé pour un survol et aucun glisser ne naît).
+  SDL_MouseButtonFlags b = SDL_GetMouseState(nullptr, nullptr) | pressed_;
   if (b & SDL_BUTTON_LMASK) m |= EVENTFLAG_LEFT_MOUSE_BUTTON;
   if (b & SDL_BUTTON_MMASK) m |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
   if (b & SDL_BUTTON_RMASK) m |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
@@ -91,6 +94,8 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
   CefMouseEvent me;
   switch (e.type) {
     case SDL_EVENT_MOUSE_MOTION:
+      rawMouseX_ = e.motion.x;
+      rawMouseY_ = e.motion.y;
       mouseX_ = e.motion.x;
       mouseY_ = e.motion.y;
       me.x = int(std::lround(mouseX_));
@@ -107,6 +112,8 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP: {
       const bool up = e.type == SDL_EVENT_MOUSE_BUTTON_UP;
+      if (up) pressed_ &= ~SDL_BUTTON_MASK(e.button.button);
+      else pressed_ |= SDL_BUTTON_MASK(e.button.button);
       me.x = int(std::lround(e.button.x));
       me.y = int(std::lround(e.button.y));
       me.modifiers = mouseModifiers();
