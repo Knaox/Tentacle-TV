@@ -18,11 +18,14 @@
 // serveur posée dans le front s'il n'en a aucune), TENTACLE_BUILD (dossier de build),
 // TENTACLE_DEV_DRY=1 (imprime la commande de l'app sans la lancer).
 // Par OS : scripts/dev/{macos,linux,windows}.mjs (prérequis, dépendances, build, lancement).
+// Linux immuable (Bazzite, Silverblue…) : tapé sur l'hôte, le lanceur se rejoue dans la boîte
+// distrobox qui porte les paquets de développement (scripts/dev/linux-box.mjs, TENTACLE_CEF_BOX).
 import fs from "node:fs";
 import path from "node:path";
 import {
   DevError, bancUrl, buildWeb, cache, capture, checkServer, desktopVersion, die, launch, platform, repo, root, run, say, soundEnv,
 } from "./dev/common.mjs";
+import { reenterInBox } from "./dev/linux-box.mjs";
 import { cefProfileFor, electronProfile, guardProfileFree, prepareProfile } from "./dev/profile.mjs";
 
 async function osModule() {
@@ -115,8 +118,15 @@ async function banc(rawArgs) {
   return 0;
 }
 
+/** Ce qui construit ou lance l'app : sur un Linux immuable, cela se joue dans la boîte. */
+const BOXED_COMMANDS = new Set(["build", "deps", "run", "run-server"]);
+
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
+  if (BOXED_COMMANDS.has(cmd)) {
+    const boxed = await reenterInBox(process.argv[1], process.argv.slice(2));
+    if (boxed !== null) return boxed;
+  }
   switch (cmd) {
     case "build": {
       const os = await osModule();

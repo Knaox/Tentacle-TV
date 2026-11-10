@@ -35,6 +35,12 @@ Le lanceur est `scripts/dev.mjs` (Node seul, aucune dépendance), le même sur l
   correctifs) — à défaut, celle de la distribution, avec un avertissement à l'écran. Build dans
   `~/.cache/tentacle-cef/build/<nom>/app/tentacle`. `node scripts/dev.mjs deps` : les
   dépendances seules. Ce qu'il reste à essayer : [docs/A-TESTER-LINUX.md](docs/A-TESTER-LINUX.md).
+- **Linux immuable** (Bazzite, Silverblue, Kinoite… : `sudo dnf install` y est impossible) : les
+  paquets de développement vivent dans une boîte distrobox, `tentacle-cef` par défaut
+  (`distrobox create --name tentacle-cef --image registry.fedoraproject.org/fedora:44`, `--nvidia`
+  avec une carte NVIDIA). `pnpm dev:cef` tapé sur l'hôte se REJOUE dans la boîte, tel quel
+  (`scripts/dev/linux-box.mjs`) ; `TENTACLE_CEF_BOX=<nom>` choisit une autre boîte (et force ce
+  passage sur un hôte ordinaire), `TENTACLE_CEF_BOX=off` le coupe.
 - **Windows** : Visual Studio Build Tools, CMake, Ninja ; CEF et SDL3 épinglés (axe windows).
 - `TENTACLE_DEV_DRY=1` imprime les builds et la commande de l'app sans rien lancer.
 
