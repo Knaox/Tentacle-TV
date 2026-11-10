@@ -21,6 +21,7 @@ namespace tentacle::platform {
 
 void installLinuxCommands(bridge::Registry& registry) {
   std::fprintf(stderr, "[session] écran HDR branché (EDID) : %s\n", hdrDisplayConnected() ? "oui" : "non");
+  installClipboardBridge();
   registry.command("linux_session_get", [](const bridge::Json&, bridge::Reply reply) {
     const DecidedSession& d = startupSession();
     reply.ok({{"choice", sessionChoiceName(d.choice)},

@@ -101,6 +101,7 @@ else()
                                         src/platform/linux/locale_linux.cpp
                                         src/platform/linux/edid_linux.cpp
                                         src/platform/linux/linux_commands.cpp
+                                        src/platform/linux/clipboard_linux.cpp
                                         src/platform/linux/glib_pump_linux.cpp
                                         src/platform/linux/egl_linux.cpp
                                         src/platform/linux/gl_quad_linux.cpp

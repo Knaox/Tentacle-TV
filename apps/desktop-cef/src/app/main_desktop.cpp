@@ -59,6 +59,12 @@ int main(int argc, char* argv[]) {
       // Keyring, KWallet) — l'équivalent de use-mock-keychain sous macOS.
       "--password-store=basic",
   };
+  // Hors écran sous Wayland, l'échelle de GetScreenInfo n'est honorée que SANS le protocole
+  // d'échelle fractionnaire (sinon Ozone impose la sienne : 1 en hors écran, mesuré sous sway
+  // à l'échelle 2 ; même constat chez jellium). BrowserApp fusionne avec ses disable-features.
+  if (session.montage == tentacle::platform::DisplayServer::kWayland) {
+    extra.push_back("--disable-features=WaylandFractionalScaleV1");
+  }
   std::vector<char*> argvx(argv, argv + argc);
   for (auto& s : extra) argvx.push_back(s.data());
   argvx.push_back(nullptr);

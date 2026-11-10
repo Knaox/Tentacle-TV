@@ -31,7 +31,8 @@ case "$comp" in
     export WAYLAND_DISPLAY=wayland-banc XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6
     unset DISPLAY ;;
   sway)
-    printf 'output HEADLESS-1 resolution 1920x1080\nxwayland disable\n' > /tmp/sway.cfg
+    # SWAY_SCALE=2 (BANC_ENV) : écran HiDPI dès le départ.
+    printf 'output HEADLESS-1 resolution 1920x1080 scale %s\nxwayland disable\n' "${SWAY_SCALE:-1}" > /tmp/sway.cfg
     WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=pixman sway -c /tmp/sway.cfg \
       > /tmp/banc/compositor.log 2>&1 &
     sleep 3
