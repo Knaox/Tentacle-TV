@@ -11,7 +11,6 @@
 #define _WIN32_WINNT 0x0602
 #endif
 #include <windows.h>
-#include <powrprof.h>
 #include <shellapi.h>
 
 #include <iterator>
@@ -73,6 +72,14 @@ ULONG CALLBACK onPowerEvent(PVOID, ULONG type, PVOID) {
   return 0;
 }
 
+// `DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS` et `DEVICE_NOTIFY_CALLBACK`, écrits ici : les en-têtes de
+// MSVC et de mingw-w64 ne les déclarent pas sous les mêmes conditions (même disposition binaire).
+struct NotifySubscribe {
+  ULONG(CALLBACK* callback)(PVOID context, ULONG type, PVOID setting);
+  PVOID context;
+};
+constexpr DWORD kDeviceNotifyCallback = 2;
+
 }  // namespace
 
 bool systemLocaleIsFrench() { return PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_FRENCH; }
@@ -86,7 +93,7 @@ void notify(const std::string& title, const std::string& body) {
   data.uID = kTrayId;
   data.uFlags = NIF_ICON | NIF_INFO | NIF_TIP;
   data.hIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(1));
-  if (!data.hIcon) data.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+  if (!data.hIcon) data.hIcon = LoadIconW(nullptr, MAKEINTRESOURCEW(32512));  // IDI_APPLICATION
   wcsncpy_s(data.szTip, L"Tentacle TV", _TRUNCATE);
   wcsncpy_s(data.szInfoTitle, wide(title).c_str(), _TRUNCATE);
   wcsncpy_s(data.szInfo, wide(body).c_str(), _TRUNCATE);
@@ -114,14 +121,14 @@ void pickFolder(SDL_Window* window, std::function<void(std::optional<std::string
 
 void watchSystemResume(std::function<void()> onResume) {
   g_resume = std::move(onResume);
-  using Register = DWORD(WINAPI*)(DWORD, HANDLE, PHPOWERNOTIFY);
+  using Register = DWORD(WINAPI*)(DWORD, HANDLE, PVOID*);
   HMODULE powrprof = LoadLibraryW(L"powrprof.dll");
-  auto reg = powrprof ? reinterpret_cast<Register>(GetProcAddress(powrprof, "PowerRegisterSuspendResumeNotification"))
-                      : nullptr;
-  if (!reg) return;
-  static DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS params{onPowerEvent, nullptr};
-  static HPOWERNOTIFY handle = nullptr;
-  reg(DEVICE_NOTIFY_CALLBACK, &params, &handle);
+  FARPROC proc = powrprof ? GetProcAddress(powrprof, "PowerRegisterSuspendResumeNotification") : nullptr;
+  if (!proc) return;
+  auto reg = reinterpret_cast<Register>(reinterpret_cast<void*>(proc));
+  static NotifySubscribe params{onPowerEvent, nullptr};
+  static PVOID handle = nullptr;
+  reg(kDeviceNotifyCallback, &params, &handle);
 }
 
 bool spawnSuccessor(const std::vector<std::string>&) {
