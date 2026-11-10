@@ -7,6 +7,7 @@
 #include "shell/ipc.h"
 #include "shell/native_input.h"
 #include "shell/shell.h"
+#include "shell/window_scale.h"
 
 namespace tentacle {
 namespace {
@@ -17,12 +18,12 @@ std::vector<std::function<void(const Json&)>> g_windowListeners;
 
 Json windowState() {
   int w = 0, h = 0;
-  SDL_GetWindowSize(g_ctx.window, &w, &h);
+  windowSizeDip(g_ctx.window, w, h);  // DIP (shell/window_scale.h) : points sur macOS
   const SDL_DisplayMode* m = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(g_ctx.window));
   return {{"fullscreen", (SDL_GetWindowFlags(g_ctx.window) & SDL_WINDOW_FULLSCREEN) != 0},
           {"width", w},
           {"height", h},
-          {"scale", SDL_GetWindowPixelDensity(g_ctx.window)},
+          {"scale", windowScale(g_ctx.window).deviceScale},
           {"refreshRate", m ? m->refresh_rate : 0.0f}};
 }
 

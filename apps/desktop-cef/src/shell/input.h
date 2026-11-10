@@ -1,6 +1,7 @@
 #pragma once
 // Saisie : évènements SDL3 → CefBrowserHost (souris, molette, clavier, texte, IME).
-// Coordonnées : SDL3 livre la souris en points de fenêtre, c'est l'unité (DIP) de CEF.
+// Coordonnées : SDL3 livre la souris en unités de fenêtre, ramenées en DIP (l'unité de CEF) ;
+// identiques sur macOS, des pixels sous Windows (shell/window_scale.h).
 
 #include <SDL3/SDL.h>
 
@@ -25,6 +26,8 @@ class InputRouter {
   bool leftHeld() const {
     return ((SDL_GetMouseState(nullptr, nullptr) | pressed_) & SDL_BUTTON_LMASK) != 0;
   }
+  // DIP par unité de fenêtre SDL (shell/window_scale.h) : 1 sur macOS, 1/échelle sous Windows.
+  void setWindowToDip(float k) { windowToDip_ = k; }
 
  private:
   uint32_t mouseModifiers() const;
@@ -32,7 +35,8 @@ class InputRouter {
   void text(const char* utf8, CefRefPtr<CefBrowser> browser);
   void editing(const SDL_TextEditingEvent& t, CefRefPtr<CefBrowser> browser);
 
-  float mouseX_ = 0, mouseY_ = 0;
+  float mouseX_ = 0, mouseY_ = 0;  // DIP
+  float windowToDip_ = 1.0f;
   SDL_MouseButtonFlags pressed_ = 0;  // boutons enfoncés d'après les évènements reçus
   float rawMouseX_ = 0, rawMouseY_ = 0;  // position brute du dernier mouvement (navigateur)
   int lastNativeKey_ = 0;

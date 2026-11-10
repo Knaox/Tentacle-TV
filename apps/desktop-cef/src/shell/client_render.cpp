@@ -1,4 +1,5 @@
-// Rendu hors écran : CEF peint dans une IOSurface partagée (OnAcceleratedPaint, GPU) ;
+// Rendu hors écran : CEF peint dans une texture partagée (OnAcceleratedPaint, GPU : IOSurface
+// sous macOS, texture D3D11 sous Windows) ;
 // le compositeur la copie et la présente. OnPaint (logiciel) reste comme repli.
 
 #include <algorithm>
@@ -71,8 +72,12 @@ void Client::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
 void Client::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
                                 const RectList& dirty, const CefAcceleratedPaintInfo& info) {
   WebFrame f;
-#ifdef __APPLE__
+#if defined(__APPLE__)
   f.sharedHandle = info.shared_texture_io_surface;
+#elif defined(__linux__)
+  f.sharedHandle = &info;  // dmabuf : const cef_accelerated_paint_info_t* (platform/linux)
+#elif defined(_WIN32)
+  f.sharedHandle = info.shared_texture_handle;  // poignée NT d'une texture D3D11 (sans mutex à clé)
 #endif
   // La taille réelle de la texture vient de l'IOSurface ; à défaut, de la vue.
   f.width = info.extra.coded_size.width;

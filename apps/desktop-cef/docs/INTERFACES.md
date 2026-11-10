@@ -196,7 +196,35 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   porteuse : preuves).
 - **`prepareWindowForVideo(nsWindow)`** : à appeler AVANT la 1re mise à l'écran de la fenêtre SDL3
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
-- Linux / Windows : stubs (`createVideoSurface` → `nullptr`, le lecteur reste sans sortie vidéo).
+- **Deux chemins d'attache** (lot cef-parite, axe linux) — le lecteur choisit (`player.cpp`) :
+  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSizeOption()` (défaut
+    `moltenvk-surface-size` ; Linux `wlhostvk-surface-size`), puis `gpu-context`, `wid`, `vo=gpu-next` ;
+  - **API de rendu** (Linux : X11, ou libmpv de la distribution) : `attachRenderApi(mpv_handle*)`
+    vrai → la surface a créé son `mpv_render_context` (OpenGL, contexte du compositeur) et le
+    lecteur pose `vo=libmpv` ; `detachRenderApi()` après `vo=null` (et avant `mpv_terminate_destroy`).
+    Défaut : `false` / rien (macOS, Windows inchangés).
+- Linux (`src/platform/linux/video_*`) : `nativeWindow` est un `platform::LinuxWindow*`
+  (`linux_window.h` : Wayland `wl_display`/`wl_surface`, ou X11 `Display*`/`Window`) ;
+  `nativeLayer()` rend un `platform::LinuxVideoLayer*` (`video_layer_linux.h`) que le compositeur
+  lit. **Wayland + notre libmpv** : `wl_subsurface` SOUS la surface de la page (désynchronisée,
+  sans région de saisie, `wp_viewport` pour l'échelle), mpv y dessine par `--gpu-context=wlhostvk`
+  (correctif `scripts/deps/mpv-patches-linux/0004`, `--wid` = `struct mpv_wlhost_target*`) ; HDR
+  par les espaces de couleur de la WSI Vulkan. **Sinon** : API de rendu OpenGL de libmpv dans une
+  texture de NOTRE contexte EGL, posée sous la page (SDR). `TENTACLE_VIDEO_RENDER_API=1` force ce
+  second chemin sous Wayland.
+- Windows : stubs (axe windows).
+
+- Par OS, ce que la sortie de mpv demande en plus (défauts = macOS, inchangé ; lot cef-parite,
+  axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSizeOption()`
+  (`moltenvk-surface-size` ; Windows `d3d11-composition-size`), `wantsMpvSwapchain()` /
+  `setMpvSwapchain(adresse)` : mpv crée lui-même sa chaîne d'échange (Windows, mode composition) ;
+  `MpvPlayerPort` relit `display-swapchain` à chaque `file-loaded` / `video-reconfig` et la remet
+  (0 : plus de sortie). `mpvWid() == 0` : aucun `wid` posé.
+- **Windows** (`src/platform/windows/video_surface_windows.cpp`) : un visuel DirectComposition du
+  compositeur du socle (même périphérique : `win::DcompContext`), contenu = la chaîne de mpv
+  (`gpu-api=d3d11`, `d3d11-output-mode=composition`, `target-colorspace-hint=no` à l'attache —
+  levé par la session HDR, comme Electron). `nativeLayer()` = `IDCompositionVisual*`. Cadre en
+  DIP, × `GetDpiForWindow/96` pour les pixels. Linux : stub (axe linux).
 
 ### Musique (octave → medias, lot cef-parite) — `src/music/`
 - **À l'identique d'Electron** (`apps/desktop-electron/src/main/audio/`, port fichier par fichier) :
@@ -311,6 +339,38 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   POUR DE BON (une garde de sortie l'a déjà laissée partir) ; les modules inscrits par
   `popup::addHostClosingListener(cb)` ferment leurs fenêtres AVANT elle (le PiP rend la vidéo
   à une page encore vivante, `pipQuit.ts`). Retour de CEF inchangé (`false`).
+### Session vidéo (pont, lot cef-parite) — `src/bridge/glue/video_session.h`
+- `pont::setVideoSessionObserver(VideoSessionObserver*)` (depuis `modules.cpp`, entre `install` et
+  `installShim`) : `onVideoEvent(event, access)` à chaque `file-loaded` / `video-reconfig` de mpv,
+  `access.get(nom, cb)` / `access.set(nom, valeur)` sans effet une fois l'instance arrêtée ;
+  `onVideoStopped()` à `mpv_destroy` ou au remplacement de l'instance. Sert au HDR de l'écran
+  (`src/display`, comme `hdrSession.ts` d'Electron).
+
+### Unités de fenêtre (socle, lot cef-parite) — `src/shell/window_scale.h`
+- Tout ce que le proto appelle « points » est en **DIP**. `windowScale(window)` →
+  `{deviceScale = SDL_GetWindowDisplayScale, windowToDip = densité / deviceScale}` ;
+  `windowSizeDip(window, w, h)`. Identité sur macOS (mesuré : contenu 1, densité 2, échelle 2) ;
+  sous Windows et X11 SDL compte en pixels. `shell.window` → `width/height` en DIP, `scale` =
+  échelle d'affichage. `InputRouter::setWindowToDip` ; `--size` en DIP (× échelle du contenu).
+  `NativeKey::extraModifiers` : drapeaux de position (`EVENTFLAG_IS_LEFT/RIGHT/KEY_PAD`), 0 sur macOS.
+
+### Écran (axe windows, lot cef-parite) — `src/display/`
+- `display::install(ctx, pont::registry())` dans `modules.cpp` (avant `installShim`),
+  `display::shutdown()` APRÈS `pont::shutdown()`. Canaux d'Electron, sur les TROIS OS (comme
+  `ipc/videoHdr.ts`, `ipc/video.ts`) : `display_hdr_state {}` → `{supporte, enabled, bascule,
+  autoAutorise, edrCapable, coucheHdr, espaceCouche, transmission, pic}` ; `display_hdr_auto {on}`
+  → `null` (rejet `bad_payload` sans booléen) ; `mpv_harden_child_window {}` → `false`.
+- OS (`src/platform/display_hdr.h`, `src/platform/<os>/display_hdr_<os>.*`) : `probeDisplayHdr`,
+  `displayHdrNegotiated`, `enableDisplayHdr`, `restoreDisplayHdr`, `displayHdrToggled` ; Windows :
+  `QueryDisplayConfig` + `SET_ADVANCED_COLOR_STATE` (`hdr.ts`) ; macOS : headroom EDR de l'écran ;
+  Linux : rien constaté (à l'axe linux d'y mettre `video-target-params` s'il le veut).
+- Session HDR (`hdr_session.h`, règle testée `tentacle_display_tests`) : `hdrSession.ts` — Windows
+  seul ; bascule si la page l'autorise, `target-colorspace-hint=yes` si l'écran est (ou devient)
+  HDR, à la fin la transmission tombe PUIS l'écran est rendu.
+- Commandes propres à l'OS : `platform::installOsCommands(ctx, registry)` — Windows :
+  `check_msix_update` → `{version:"", mandatory}` | `null`, `download_and_install_msix_update` →
+  `null` ou rejet (code de `msix_rule.h`, `store-page-opened` après repli sur la page du Store),
+  évènement `msix-update-progress {progress, indeterminate}` ; macOS, Linux : rien.
 
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
@@ -322,6 +382,51 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   par `setVideoLayer(&surface)`.
 - macOS : couche web `CAMetalLayer` BGRA8 sRGB non opaque, z=10 ; conteneur vidéo z=0 ; vue
   hôte qui laisse passer la souris.
+- Linux (`src/platform/linux/compositor_linux.cpp`) : NOTRE contexte EGL (GLES 3, sinon 2) sur la
+  surface de la fenêtre SDL3 (`wl_egl_window` sous Wayland, la `Window` et son visuel sous X11 ;
+  `SDL_HINT_VIDEO_FORCE_EGL`), sans `SDL_WINDOW_OPENGL`. Pile : vidéo (sous-surface, texture de
+  l'API de rendu, ou aplat factice), page, popup, prémultipliées. Les images de CEF sont COPIÉES
+  pendant le rappel : `OnPaint` (octets) ou `OnAcceleratedPaint` — `WebFrame::sharedHandle` =
+  `const cef_accelerated_paint_info_t*` sous Linux (`client_render.cpp`), dmabuf importé en
+  `EGLImage` puis copié par le GPU (`dmabuf_linux.cpp`). Une composition regroupée par tour de
+  boucle, `eglSwapInterval(0)` (jamais bloqué sur un rappel `frame` de Wayland). Fenêtre
+  `SDL_WINDOW_TRANSPARENT` sous Wayland seulement (`app.cpp`) : sans lui SDL déclare la surface
+  opaque et la sous-surface vidéo disparaît.
+
+### Linux (axe linux) — `src/platform/linux/`
+- **Session graphique** (`graphics_session.h`) : décidée AVANT CEF et SDL (`main_desktop.cpp`
+  ajoute `--ozone-platform=<montage>` et `--password-store=basic` à argv ; `app_linux.cpp` pose
+  `SDL_HINT_VIDEO_DRIVER`). Même fichier qu'Electron (`session-graphique.json` du dossier de
+  données, `{ "session": … }`), même variable d'essai `TENTACLE_LINUX_SESSION`. `auto` = la
+  session du bureau (la vidéo suit la fenêtre partout : pas de détour XWayland). Pour le pont :
+  `platform::linuxMontage()` (`"wayland"`/`"x11"`) et `platform::linuxWindowing()` (`"libre"`
+  sous Wayland, `""` ailleurs) → `window.tentacle.montage` / `.fenetrage` (shim : axe systeme).
+- **Commandes** (`linux_commands.h`, une ligne `#ifdef __linux__` dans `modules.cpp`) :
+  `linux_session_get` → `{ choice, montage, bureau }`, `linux_session_set { choice }` → `null`.
+- Règles pures et tests (`tentacle_linux_tests`, ctest) : session, langues
+  (`locale_linux.h` : LANGUAGE/LC_ALL/LC_MESSAGES/LANG → Accept-Language), EDID HDR (`edid_linux.h`).
+- Clavier (`shell_linux.cpp`) : `native_key_code` = keycode XKB (evdev + 8 sous Wayland, tel quel
+  sous X11), `windows_key_code` commun, caractères par SDL ; IME par les évènements texte de SDL.
+- **Pompe** (`shell/message_pump_sdl.cpp`, Linux ET Windows) : même logique que macOS — repli à
+  250 ms, relance immédiate après une passe de CEF de 9 ms et plus (« pump wedge » : sans elle
+  l'app se figeait au démarrage, mesuré). Linux : le contexte GLib par défaut (la pompe UI de
+  Chromium est une `MessagePumpGlib`) est servi à chaque passe par `glib_pump_linux.h` (un fil
+  guetteur attend ses descripteurs, le fil principal fait check/dispatch). Diagnostic :
+  `TENTACLE_PUMP_TRACE=1`.
+- **Presse-papiers** (`clipboard_linux.cpp`) : Chromium hors écran ne l'atteint pas sous Wayland ;
+  pont par la fenêtre SDL (canaux internes `linux.clipboard.set|get` + script injecté) ; lecture
+  seulement dans la seconde qui suit une vraie frappe de collage (droits d'Electron).
+- **HiDPI** : `--disable-features=WaylandFractionalScaleV1` sous Wayland (sinon Ozone impose son
+  échelle, 1, à celle de `GetScreenInfo`). Unités : DIP de `shell/window_scale.h` (axe windows).
+- `postToMain` rend `false` quand la tâche n'a pas pu partir (avant `CefInitialize`, après
+  `CefShutdown`) ; `TENTACLE_NO_SHARED_TEXTURE=1` force le repli `OnPaint` (tous OS).
+
+- Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
+  sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
+  CEF (`WebFrame::sharedHandle` = poignée NT, `OpenSharedResource1`, copie GPU) ou pixels
+  (`OnPaint`) dans une chaîne d'échange pour la composition (FLIP séquentiel, `Present(0)`).
+  Pompe CEF : fenêtre de messages cachée (`message_pump_windows.cpp`), distribuée aussi par la
+  boucle modale de Win32 — CEF reste sur le fil principal (pas de `multi_threaded_message_loop`).
 
 ### Navigateur (axe navigateur, lot cef-parite) — ce qu'un navigateur hors écran ne fait pas seul
 Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `restrictPermissions`).
@@ -394,6 +499,40 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   (`cacheRoot()`, `~/.cache/tentacle-cef`) donne `<profil>/user-data` — jamais le dossier d'Electron ;
   hors de ce cache (l'app installée), la règle d'Electron. `pnpm dev:server` : `$cache/profiles/dev-data`.
 - Règle pure testée : `dataRoot(env)`, `dataFolder(env)`, la garde (`src/net/tests/paths_tests.cpp`).
+- Règle pure testée : `dataRoot(env)`, `dataFolder(env)` (`src/net/tests/paths_tests.cpp`).
+
+### Cycle de vie (systeme) — `src/lifecycle/lifecycle.h` (cibles `tentacle_lifecycle_core`, pure, et `tentacle_lifecycle`, colle)
+Règles d'Electron portées à l'identique et testées seules (`cmake -S src/lifecycle`, `ctest`) :
+`backgroundDrain`, `quitGuard`, `closeSequence`, `playbackFarewell`, `powerSave` (+ renfort logind),
+`appLinks`, régions `app-region`. Ce que les autres modules appellent, fil principal :
+- **horsligne** : `setTransfersProbe({inFlight, busy, backgroundEnabled})` (fermeture : garde de
+  sortie, fin des transferts fenêtre fermée) ; `keepSystemAwake(bool)` à chaque `onBusy`/`onHeld`
+  (anti-suspension, rendue à la sortie) ; `onSystemResume(cb)` (`powerMonitor` « resume »).
+- **tous** : `onWindowClosed(cb)` — la fenêtre est partie pour de bon (musique arrêtée).
+- **reseau** (relais `jellyfin_session_post`) : `noteSessionPost(post)` AVANT l'envoi,
+  `auto done = trackSessionPost()` puis `done()` (n'importe quel fil) à la fin de l'envoi ;
+  `setFarewellSender(fn(stop, done))` : POST `/Sessions/Playing/Stopped` à la sortie (1,5 s au plus).
+- **pont** : `preventDisplaySleep(bool)` derrière `prevent_display_sleep_start/stop`.
+Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/lifecycle_*`.
+- **Dans l'app** (`src/app/app.cpp`, `lifecycle_app.h`) : `beforeSdl` (argv gardé, `--relaunch-after`,
+  Apple events, `SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE=0`, `SDL_HINT_VIDEO_ALLOW_SCREENSAVER=1`),
+  `prepareWindow` (cadre, 900×600 DIP au moins, test de clic des régions), `handedToRunningInstance`
+  (CefInitialize faux + `CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED` → sortie 0), `attach`, puis la
+  boucle : `handleEvent` (croix, Cmd+Q, réveil, lien devenu dépôt SDL), `windowAlive`, `afterEvents`,
+  `waitTimeoutMs`, `running` ; `afterShutdown`. Fermer la dernière fenêtre n'est plus quitter : tout
+  passe par le déroulé `exit_flow.h` (garde → séquence → `closed` → transferts sans fenêtre → adieu).
+- **Instance unique** : le verrou de profil de CEF (`root_cache_path`) ; la seconde instance transmet
+  sa ligne de commande (`BrowserApp::OnAlreadyRunningAppRelaunch` → `setSecondInstanceHandler`).
+- **`modules.cpp`** : `lifecycle::install(ctx, pont::registry())` (avant `installShim`),
+  `setVideoControls({pont::videoRunning, pont::stopVideo, pont::pauseVideo})`, `onWindowClosed(…)`.
+- **Canaux** : `app_link_take` + évènement `app-link` (dans la liste) ; HORS liste, comme le preload :
+  `tentacle:open-external {url}` (liste fermée), `tentacle:pick-folder`, `tentacle:relaunch` ;
+  `lifecycle.windowFocus` (évènement) / `.get`, `lifecycle.pageStarted` (posé par le shim).
+- **Régions** : `CefDragHandler::OnDraggableRegionsChanged` (`src/shell/client_drag_regions.cpp`,
+  cadre principal) → `SDL_SetWindowHitTest` (unités de fenêtre converties en DIP).
+- **Bancs** : `--debug-lifecycle` ouvre `lifecycle.debug.{state,transfers,close,focus,note,sheet,awake}`
+  (`lifecycle_debug.cpp`) ; sous `--background`, ni activation ni notification (journalisées) ;
+  `TENTACLE_LIFECYCLE_TRACE=1` trace GetURL, dépôts et `app_link_take`.
 
 ### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
 - Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`

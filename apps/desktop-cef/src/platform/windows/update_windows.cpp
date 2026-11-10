@@ -1,6 +1,6 @@
 // Windows : l'implémentation système du moteur de mise à jour.
-// ⚠️ ÉCRITE, NON CONSTRUITE NI TESTÉE (aucune machine ni chaîne Windows dans ce lot) : à
-// compiler (MSVC, vcpkg libsodium:x64-windows-static) et à éprouver avant toute livraison.
+// ⚠️ ÉCRITE, NON EXÉCUTÉE (aucune machine Windows) : liée au build Windows de l'app (lot
+// cef-parite : CMakeLists, libsodium MSVC du lanceur) et compilée à blanc ; à éprouver.
 //
 // Deux installations :
 //  - MSIX (Microsoft Store ou fichier .appinstaller) : Windows tient la mise à jour ; le
@@ -25,6 +25,7 @@ extern "C" LONG WINAPI GetCurrentPackageFullName(UINT32* packageFullNameLength, 
 #include <filesystem>
 #include <thread>
 
+#include "platform/windows/update_signature_windows.h"
 #include "update/system.h"
 
 #ifndef TENTACLE_APP_VERSION
@@ -159,9 +160,15 @@ class WindowsPlatform : public Platform {
     // tar.exe (bsdtar) lit le zip ; `..` et chemins absolus refusés.
     const std::wstring cmd = L"tar.exe -xf \"" + wide(archive) + L"\" -C \"" + next.wstring() + L"\"";
     if (run(cmd) != 0) return "extract";
-    // À FAIRE sur machine : WinVerifyTrust sur tentacle.exe + même éditeur que l'app en cours
-    // (CertGetNameString du signataire), comme l'équipe Apple côté macOS.
     if (!fs::exists(next / L"Tentacle.exe")) return "layout";
+    // Même éditeur que l'app en cours (Authenticode), comme l'équipe Apple côté macOS ; refait
+    // par l'assistant juste avant l'échange.
+    for (const wchar_t* exe : {L"Tentacle.exe", L"tentacle-update.exe"}) {
+      if (std::string bad = win::checkPublisher((dir / exe).wstring(), (next / exe).wstring()); !bad.empty()) {
+        fs::remove_all(next, ec);
+        return bad;
+      }
+    }
     *staged = next.string();
     return {};
   }

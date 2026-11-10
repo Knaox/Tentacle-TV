@@ -94,10 +94,10 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
   CefMouseEvent me;
   switch (e.type) {
     case SDL_EVENT_MOUSE_MOTION:
-      rawMouseX_ = e.motion.x;
+      rawMouseX_ = e.motion.x;  // unités de fenêtre SDL (navigateur : glisser)
       rawMouseY_ = e.motion.y;
-      mouseX_ = e.motion.x;
-      mouseY_ = e.motion.y;
+      mouseX_ = e.motion.x * windowToDip_;  // DIP (shell/window_scale.h)
+      mouseY_ = e.motion.y * windowToDip_;
       me.x = int(std::lround(mouseX_));
       me.y = int(std::lround(mouseY_));
       me.modifiers = mouseModifiers();
@@ -114,8 +114,8 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
       const bool up = e.type == SDL_EVENT_MOUSE_BUTTON_UP;
       if (up) pressed_ &= ~SDL_BUTTON_MASK(e.button.button);
       else pressed_ |= SDL_BUTTON_MASK(e.button.button);
-      me.x = int(std::lround(e.button.x));
-      me.y = int(std::lround(e.button.y));
+      me.x = int(std::lround(e.button.x * windowToDip_));
+      me.y = int(std::lround(e.button.y * windowToDip_));
       me.modifiers = mouseModifiers();
       if (!up) host->SetFocus(true);
       if (e.button.button == SDL_BUTTON_X1 || e.button.button == SDL_BUTTON_X2) {
@@ -129,8 +129,8 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
     }
     case SDL_EVENT_MOUSE_WHEEL:
       if (nativeWheel_) break;
-      me.x = int(std::lround(e.wheel.mouse_x));
-      me.y = int(std::lround(e.wheel.mouse_y));
+      me.x = int(std::lround(e.wheel.mouse_x * windowToDip_));
+      me.y = int(std::lround(e.wheel.mouse_y * windowToDip_));
       me.modifiers = mouseModifiers();
       host->SendMouseWheelEvent(me, int(std::lround(-e.wheel.x * kWheelPixels)),
                                 int(std::lround(e.wheel.y * kWheelPixels)));
@@ -184,7 +184,7 @@ void InputRouter::key(const SDL_KeyboardEvent& k, CefRefPtr<CefBrowser> browser)
   ke.windows_key_code = nk.windowsCode;
   ke.character = nk.character;
   ke.unmodified_character = nk.unmodified;
-  ke.modifiers = cefModifiers(k.mod);
+  ke.modifiers = cefModifiers(k.mod) | nk.extraModifiers;
   if (k.repeat) ke.modifiers |= EVENTFLAG_IS_REPEAT;
   if (k.down) {
     lastNativeKey_ = nk.nativeCode;

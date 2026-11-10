@@ -26,6 +26,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(TentacleCef)          # CEF épinglé + libcef_dll_wrapper (cible tentacle::cef)
+if(WIN32)
+  include(TentacleWindows)    # windows : MSVC, CRT statique de CEF, Tentacle.exe et ses ressources
+endif()
 # Notre code vise macOS 14+ (EDR moderne, ProMotion) ; le wrapper CEF garde ses 13.0.
 set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
 
@@ -80,13 +83,47 @@ if(APPLE)
     src/platform/macos/compositor_fake_video_mac.mm
   )
 elseif(WIN32)
-  target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
+  # windows : pompe native (fenêtre de messages, servie aussi par la boucle modale de Win32),
+  # DirectComposition, saisie. Le contexte DComp et la surface vidéo sont dans tentacle_player.
+  target_sources(tentacle_shell PRIVATE src/platform/windows/message_pump_windows.cpp
+                                        src/platform/windows/app_windows.cpp
+                                        src/platform/windows/keymap_windows.cpp
+                                        src/platform/windows/native_input_windows.cpp
                                         src/platform/windows/shell_stubs_windows.cpp
+                                        src/platform/windows/composition_chain_windows.cpp
+                                        src/platform/windows/web_layer_windows.cpp
+                                        src/platform/windows/fake_video_windows.cpp
                                         src/platform/windows/compositor_windows.cpp)
+  target_link_libraries(tentacle_shell PUBLIC d3d11 dxgi dcomp dwmapi imm32)
 else()
+  # Linux (axe linux) : fenêtre SDL3 (Wayland ou X11), NOTRE contexte EGL pour la page,
+  # vidéo en sous-surface Wayland ou par l'API de rendu de libmpv (src/platform/linux/).
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(TENTACLE_LINUX REQUIRED IMPORTED_TARGET
+                    wayland-client wayland-egl egl glesv2 x11 glib-2.0)
   target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
-                                        src/platform/linux/shell_stubs_linux.cpp
-                                        src/platform/linux/compositor_linux.cpp)
+                                        src/platform/linux/app_linux.cpp
+                                        src/platform/linux/shell_linux.cpp
+                                        src/platform/linux/graphics_session.cpp
+                                        src/platform/linux/locale_linux.cpp
+                                        src/platform/linux/edid_linux.cpp
+                                        src/platform/linux/linux_commands.cpp
+                                        src/platform/linux/clipboard_linux.cpp
+                                        src/platform/linux/glib_pump_linux.cpp
+                                        src/platform/linux/egl_linux.cpp
+                                        src/platform/linux/gl_quad_linux.cpp
+                                        src/platform/linux/dmabuf_linux.cpp
+                                        src/platform/linux/compositor_linux.cpp
+                                        src/platform/linux/fake_video_linux.cpp)
+  target_link_libraries(tentacle_shell PUBLIC PkgConfig::TENTACLE_LINUX)
+  # Règles pures de Linux (session graphique, langues) : sans CEF ni affichage.
+  add_executable(tentacle_linux_tests src/platform/linux/tests/linux_rules_tests.cpp
+                 src/platform/linux/tests/edid_linux_tests.cpp
+                 src/platform/linux/graphics_session.cpp src/platform/linux/locale_linux.cpp
+                 src/platform/linux/edid_linux.cpp src/shell/paths.cpp)
+  target_include_directories(tentacle_linux_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+  target_link_libraries(tentacle_linux_tests PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME tentacle_linux_tests COMMAND tentacle_linux_tests)
 endif()
 
 # navigateur : boîtes natives, glisser-déposer, bulles, curseurs — un fichier par fonction et par OS.
@@ -134,6 +171,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/src/offline/CMakeLists.txt")
   add_subdirectory(src/offline)  # horsligne : titres gardés, session, tentacle://local
 endif()
 add_subdirectory(src/pip)  # pip : image dans l'image (règles, navigateur du PiP, fenêtre native)
+add_subdirectory(src/display)  # windows : écran HDR, mpv_harden_child_window, Microsoft Store
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"
@@ -151,8 +189,19 @@ if(APPLE)
     RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
               "${CMAKE_SOURCE_DIR}/../desktop-electron/icons/icon.icns"  # systeme : l'icône d'Electron (Dock, « À propos »)
   )
-else()
-  # Ébauche Linux/Windows : un exécutable unique, ressources CEF copiées à côté.
+elseif(WIN32)
+  # Windows (axe windows) : un exécutable unique, ressources CEF copiées à côté.
   add_executable(tentacle_app src/app/main_desktop.cpp)
   target_link_libraries(tentacle_app PRIVATE tentacle_shell)
+  tentacle_windows_app(tentacle_app)  # windows : <build>/app/Tentacle.exe, manifeste, DLL à côté
+else()
+  include(LinuxApp)
+  tentacle_add_linux_app(
+    NAME "tentacle"
+    SOURCES src/app/main_desktop.cpp
+    RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
+  )
+endif()
+if(WIN32)
+  tentacle_windows_finalize()  # windows : retire les drapeaux de clang (-W…, -f…) que cl ignore
 endif()

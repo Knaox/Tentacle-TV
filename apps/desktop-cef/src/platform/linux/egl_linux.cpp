@@ -1,0 +1,152 @@
+#include "platform/linux/egl_linux.h"
+
+#include <EGL/eglext.h>
+#include <X11/Xlib.h>
+#include <wayland-egl.h>
+
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <vector>
+
+#include "platform/linux/linux_window.h"
+
+namespace tentacle::platform {
+namespace {
+
+EGLDisplay platformDisplay(EGLenum platform, void* native) {
+  auto getDisplay = reinterpret_cast<PFNEGLGETPLATFORMDISPLAYEXTPROC>(
+      eglGetProcAddress("eglGetPlatformDisplayEXT"));
+  if (!getDisplay) return eglGetDisplay(static_cast<EGLNativeDisplayType>(native));
+  return getDisplay(platform, native, nullptr);
+}
+
+// X11 : la config dont le visuel natif est CELUI de la fenêtre de SDL (sinon BadMatch).
+EGLConfig pickConfig(EGLDisplay d, bool alpha, int visualId) {
+  const EGLint attrs[] = {EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                          EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
+                          EGL_ALPHA_SIZE, alpha ? 8 : 0, EGL_NONE};
+  EGLint n = 0;
+  eglChooseConfig(d, attrs, nullptr, 0, &n);
+  std::vector<EGLConfig> configs(size_t(std::max(n, 0)));
+  if (n <= 0 || !eglChooseConfig(d, attrs, configs.data(), n, &n)) return nullptr;
+  for (EGLConfig c : configs) {
+    EGLint r, g, b, a, vid;
+    eglGetConfigAttrib(d, c, EGL_RED_SIZE, &r);
+    eglGetConfigAttrib(d, c, EGL_GREEN_SIZE, &g);
+    eglGetConfigAttrib(d, c, EGL_BLUE_SIZE, &b);
+    eglGetConfigAttrib(d, c, EGL_ALPHA_SIZE, &a);
+    eglGetConfigAttrib(d, c, EGL_NATIVE_VISUAL_ID, &vid);
+    if (r != 8 || g != 8 || b != 8 || (alpha ? a != 8 : a != 0 && visualId < 0)) continue;
+    if (visualId >= 0 && vid != visualId) continue;
+    return c;
+  }
+  return visualId >= 0 ? nullptr : configs.front();
+}
+
+}  // namespace
+
+std::unique_ptr<EglWindow> EglWindow::create(const LinuxWindow& w, int widthPx, int heightPx,
+                                             bool alpha) {
+  std::unique_ptr<EglWindow> e(new EglWindow());
+  e->width_ = std::max(widthPx, 1);
+  e->height_ = std::max(heightPx, 1);
+  int visualId = -1;
+  if (w.wayland) {
+    if (!w.wlDisplay || !w.wlSurface) return nullptr;
+    e->display_ = platformDisplay(EGL_PLATFORM_WAYLAND_KHR, w.wlDisplay);
+  } else {
+    if (!w.x11Display || !w.x11Window) return nullptr;
+    XWindowAttributes attrs{};
+    XGetWindowAttributes(static_cast<Display*>(w.x11Display), Window(w.x11Window), &attrs);
+    visualId = attrs.visual ? int(XVisualIDFromVisual(attrs.visual)) : -1;
+    alpha = alpha && attrs.depth == 32;  // une fenêtre X11 24 bits n'a pas d'alpha
+    e->display_ = platformDisplay(EGL_PLATFORM_X11_KHR, w.x11Display);
+  }
+  EGLint major = 0, minor = 0;
+  if (e->display_ == EGL_NO_DISPLAY || !eglInitialize(e->display_, &major, &minor)) {
+    std::fprintf(stderr, "[egl] eglInitialize a échoué (0x%x)\n", eglGetError());
+    return nullptr;
+  }
+  eglBindAPI(EGL_OPENGL_ES_API);
+  EGLConfig config = pickConfig(e->display_, alpha, visualId);
+  if (!config && alpha) config = pickConfig(e->display_, alpha = false, visualId);
+  if (!config) {
+    std::fprintf(stderr, "[egl] aucune configuration RGBA8 (visuel 0x%x)\n", visualId);
+    return nullptr;
+  }
+  e->alpha_ = alpha;
+  for (int v : {3, 2}) {
+    const EGLint ctx[] = {EGL_CONTEXT_MAJOR_VERSION, v, EGL_NONE};
+    e->context_ = eglCreateContext(e->display_, config, EGL_NO_CONTEXT, ctx);
+    if (e->context_ != EGL_NO_CONTEXT) {
+      e->glesMajor_ = v;
+      break;
+    }
+  }
+  if (e->context_ == EGL_NO_CONTEXT) {
+    std::fprintf(stderr, "[egl] eglCreateContext a échoué (0x%x)\n", eglGetError());
+    return nullptr;
+  }
+  if (w.wayland) {
+    e->wlEgl_ = wl_egl_window_create(w.wlSurface, e->width_, e->height_);
+    e->surface_ = eglCreateWindowSurface(e->display_, config,
+                                         reinterpret_cast<EGLNativeWindowType>(e->wlEgl_), nullptr);
+  } else {
+    e->surface_ = eglCreateWindowSurface(e->display_, config,
+                                         static_cast<EGLNativeWindowType>(w.x11Window), nullptr);
+  }
+  if (e->surface_ == EGL_NO_SURFACE || !e->makeCurrent()) {
+    std::fprintf(stderr, "[egl] surface impossible (0x%x)\n", eglGetError());
+    return nullptr;
+  }
+  // Jamais d'attente de la vsync dans eglSwapBuffers : sous Wayland elle attend le rappel
+  // `frame` du compositeur, qui n'arrive plus quand la fenêtre est cachée — le fil principal
+  // (et CEF avec lui) resterait bloqué. Le rythme est celui de CEF et de mpv.
+  eglSwapInterval(e->display_, 0);
+  std::fprintf(stderr, "[egl] EGL %d.%d, GLES %d, %s, alpha %s, %dx%d px\n", major, minor,
+               e->glesMajor_, w.wayland ? "Wayland" : "X11", alpha ? "oui" : "non", e->width_,
+               e->height_);
+  return e;
+}
+
+EglWindow::~EglWindow() {
+  if (display_ == EGL_NO_DISPLAY) return;
+  eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+  if (surface_ != EGL_NO_SURFACE) eglDestroySurface(display_, surface_);
+  if (wlEgl_) wl_egl_window_destroy(wlEgl_);
+  if (context_ != EGL_NO_CONTEXT) eglDestroyContext(display_, context_);
+  // eglTerminate : non. Le display EGL est partagé dans le processus (Wayland : la connexion
+  // de SDL), le terminer couperait les autres utilisateurs.
+}
+
+bool EglWindow::makeCurrent() {
+  return eglMakeCurrent(display_, surface_, surface_, context_) == EGL_TRUE;
+}
+
+void EglWindow::resize(int widthPx, int heightPx) {
+  widthPx = std::max(widthPx, 1);
+  heightPx = std::max(heightPx, 1);
+  if (widthPx == width_ && heightPx == height_) return;
+  width_ = widthPx;
+  height_ = heightPx;
+  if (wlEgl_) wl_egl_window_resize(wlEgl_, width_, height_, 0, 0);
+}
+
+bool EglWindow::swap() { return eglSwapBuffers(display_, surface_) == EGL_TRUE; }
+
+bool EglWindow::hasExtension(const char* name) const {
+  const char* exts = eglQueryString(display_, EGL_EXTENSIONS);
+  if (!exts) return false;
+  const size_t n = std::strlen(name);
+  for (const char* p = exts; (p = std::strstr(p, name)); p += n) {
+    if ((p == exts || p[-1] == ' ') && (p[n] == ' ' || p[n] == 0)) return true;
+  }
+  return false;
+}
+
+void* EglWindow::procAddress(const char* name) {
+  return reinterpret_cast<void*>(eglGetProcAddress(name));
+}
+
+}  // namespace tentacle::platform

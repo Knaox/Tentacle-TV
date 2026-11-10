@@ -167,8 +167,14 @@ sur les trois. `helper-test.sh` et `dev-update.mjs` restent propres à macOS (Pl
 codesign, paquet `.app`).
 
 Linux (AppImage) :
-1. Brancher `tentacle_update_system` dans un build Linux de l'app — qui n'existe pas encore
-   (fenêtre, compositeur, vidéo : ébauches) ; version par `-DTENTACLE_APP_VERSION=X.Y.Z`.
+1. ~~Brancher `tentacle_update_system` dans un build Linux de l'app~~ — fait (lot cef-parite,
+   axe linux) : l'app Linux existe, la colle lie l'implémentation Linux (libcurl, libsodium),
+   `pnpm dev:cef` passe `-DTENTACLE_APP_VERSION` (versions.json → desktop) ; au banc Fedora 44,
+   `[maj] désactivée (flux, clé ou version absents)` comme sur macOS en développement. Les
+   commandes d'Electron `detect_linux_install_format`, `download_update`, `install_linux_update`
+   ne sont PAS déclarées : le front masque son propre programme de mise à jour Linux
+   (`supportsAppUpdate`), le moteur CEF et sa surcouche le remplacent — AppImage seulement ;
+   un `.deb`/`.rpm` relève du gestionnaire de paquets (Electron, lui, l'installait par `pkexec`).
 2. Une vraie AppImage (runtime type 2, squashfs monté) : relance par `$APPIMAGE`, arguments de
    `/proc/self/cmdline` vus depuis l'AppRun, profil CEF libéré avant la relance.
 3. x86_64 (le banc a tourné en aarch64), ext4/btrfs/xfs, le repli à deux `rename`, un dossier
@@ -178,12 +184,15 @@ Linux (AppImage) :
    croisé tourne tel quel sur un exécuteur Linux.
 
 Windows (installation par utilisateur ; MSIX laissé à Windows) :
-1. Construire avec MSVC (`vcpkg install libsodium:x64-windows-static`) dans un build Windows de
-   l'app, qui n'existe pas encore ; version idéalement depuis la ressource VERSIONINFO.
+1. ~~Construire avec MSVC dans un build Windows de l'app~~ — **branché** (lot cef-parite, axe
+   windows) : `pnpm dev:cef` lie `tentacle_update_system` et l'assistant (`app/tentacle-update.exe`),
+   libsodium 1.0.22 MSVC statique épinglée par le lanceur, version = celle du bureau
+   (`-DTENTACLE_APP_VERSION`, aussi dans VERSIONINFO). Compilé à blanc, jamais construit par MSVC.
 2. Exécuter : `tentacle_update_tests.exe` (le premier passage réel), puis l'assistant.
-3. Écrire le contrôle d'éditeur à la préparation : `WinVerifyTrust` sur `Tentacle.exe` et
-   `tentacle-update.exe`, même certificat que l'app en cours (pendant du Team ID macOS), et le
-   refaire dans l'assistant avant l'échange.
+3. ~~Contrôle d'éditeur~~ — **écrit** (`src/platform/windows/update_signature_windows.cpp`) :
+   `WinVerifyTrust` sur `Tentacle.exe` et `tentacle-update.exe`, même sujet de certificat que l'app
+   en cours (pendant du Team ID macOS ; une app en cours non signée n'exige rien de plus), refait
+   par l'assistant avant l'échange (code 6). À éprouver avec un paquet signé.
 4. Éprouver : sous-processus de CEF qui retiennent le dossier, chemins longs, antivirus qui
    verrouille les fichiers fraîchement extraits, relance par la ligne de commande d'origine,
    `tar.exe` absent (Windows < 10 1803 : extraire en interne).

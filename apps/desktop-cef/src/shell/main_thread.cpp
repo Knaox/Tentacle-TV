@@ -21,7 +21,7 @@ class FunctionTask final : public CefTask {
 
 bool onMainThread() { return CefCurrentlyOn(TID_UI); }
 
-void postToMain(std::function<void()> fn) { CefPostTask(TID_UI, new FunctionTask(std::move(fn))); }
+bool postToMain(std::function<void()> fn) { return CefPostTask(TID_UI, new FunctionTask(std::move(fn))); }
 
 void postToMainDelayed(std::function<void()> fn, int64_t delayMs) {
   CefPostDelayedTask(TID_UI, new FunctionTask(std::move(fn)), delayMs);

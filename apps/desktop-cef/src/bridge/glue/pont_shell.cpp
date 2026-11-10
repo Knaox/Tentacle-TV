@@ -19,6 +19,9 @@
 #include "player/sound_policy.h"
 #include "video_channels.h"
 #include "window_channels.h"
+#ifdef __linux__
+#include "platform/linux/graphics_session.h"
+#endif
 
 namespace tentacle::pont {
 namespace {
@@ -136,6 +139,10 @@ void installShim(AppContext& ctx) {
   config.platform = "win32";
 #else
   config.platform = "linux";
+  // Le montage vidéo et le fenêtré (preload d'Electron) : sous CEF la vidéo suit la fenêtre
+  // (sous-surface Wayland), d'où « libre » sous Wayland, rien sous X11 (src/platform/linux).
+  config.montage = tentacle::platform::linuxMontage();
+  config.windowing = tentacle::platform::linuxWindowing();
 #endif
   // La bande d'hôte que la page dessine (`macosTitleBar.ts` : 38 sur macOS, 0 ailleurs) et le
   // focus de la fenêtre (macOS) : le cadre est celui d'Electron (src/lifecycle, axe systeme).

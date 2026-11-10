@@ -49,7 +49,7 @@ Conséquences :
 | `relaunch()` | `app.relaunch` | rejet | S ; sert à Linux et à la fin d'une MAJ MSIX |
 | `liquidGlass` | macOS 26, `NSGlassEffectView` par koffi | absent (option cachée) | voir § 3 |
 | `windowFocus` | focus/blur relayés (macOS) | absent (repli `document.hasFocus()`) | S |
-| `montage`, `fenetrage` | Linux | absents | Linux, plus tard |
+| `montage`, `fenetrage` | Linux | ✅ (cef-parite) : `wayland`+`libre` sous Wayland (la vidéo, sous-surface, suit la fenêtre : jamais le plein écran forcé), `x11` sous X11 | `src/platform/linux/graphics_session.h` |
 | restauration synchrone du `localStorage` | `migration-take` (Tauri) | `tentacle_server_url` posé par le shim | voir § 1.2 |
 
 ## 3. Commandes et fonctions, par domaine
@@ -89,7 +89,7 @@ appelé sans garde ou indispensable.
 | Mises à jour | Windows : `check_msix_update`, `download_and_install_msix_update` (WinRT `StoreContext`) ; Linux : `detect_linux_install_format`, `download_update`, `install_linux_update` (SHA-256, `pkexec`) ; macOS : **rien côté natif**, le front (build appstore) lit `updates/store-versions.json` et ouvre `macappstore://` | G | ❌ | axe `maj` (`src/update/`) | (axe `maj`) | — |
 | Écran des nouveautés | entièrement dans le front (`apps/web/src/whatsNew/`, clé `tentacle_whats_new_seen`) | — | ✅ s'il a la bonne `version` | — | — | ≈ 386 Kio de JS chargés au démarrage (`NETTOYAGE-DEPS.md`) |
 | Watch Together | entièrement dans le front (socket) ; rien côté principal | — | ✅ (rien à faire) | — | — | — |
-| Session graphique Linux | `linux_session_get/set`, `relaunch` | G | ❌ | Linux, plus tard | M | — |
+| Session graphique Linux | `linux_session_get/set`, `relaunch` | G | ✅ (cef-parite) : même fichier `session-graphique.json`, `auto` = session du bureau ; `relaunch` : axe systeme | `src/platform/linux/` | — | — |
 | Fenêtres | une principale (1280×800, min 900×600, **aucune mémorisation** de taille), + PiP ; fermer la fenêtre = quitter (macOS compris) | — | ✅ une fenêtre | — | — | — |
 | Fin de lecture à la sortie | `quitFarewell.ts`, `playbackFarewell.ts` : à `will-quit`, pause mpv + `Sessions/Playing/Stopped` | — | ❌ (la position peut se perdre si l'on quitte en lecture) | `src/bridge/` | S | nul |
 | Diagnostic | `heartbeat.ts` (dev), journal mpv dans `app.getPath("logs")`, `debug_mark` (banc de gel, **refusé même par Electron** : absent de `channels.ts`) | — | `shell.stats`, `pont.debug.*` | — | — | — |

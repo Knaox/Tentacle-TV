@@ -90,7 +90,7 @@ bool serveWebRoot(const std::string& webRoot) {
     std::lock_guard lock(g_mutex);
     g_webRoot = root.string();
   }
-  std::fprintf(stderr, "[app] %s sert %s\n", kAppOrigin, root.c_str());
+  std::fprintf(stderr, "[app] %s sert %s\n", kAppOrigin, root.string().c_str());  // wchar_t sous Windows
   return true;
 }
 

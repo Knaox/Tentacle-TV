@@ -8,6 +8,7 @@ namespace tentacle {
 std::string cacheRoot() {
   if (const char* c = std::getenv("TENTACLE_CEF_CACHE"); c && *c) return c;
   const char* home = std::getenv("HOME");
+  if (!home || !*home) home = std::getenv("USERPROFILE");  // Windows : pas de HOME hors Git Bash
   return std::string(home ? home : ".") + "/.cache/tentacle-cef";
 }
 
