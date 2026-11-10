@@ -56,9 +56,9 @@
 
   /* Voile de marque : c'est LUI qui fait le violet-noir. Alphas très bas —
    * au-delà de ~0.28 l'affiche vire au monochrome violet. */
-  --hero-brand-wash:
-    radial-gradient(118% 88% at 2% 98%, rgba(var(--brand-rgb), 0.26) 0%, rgba(var(--brand-rgb), 0.09) 38%, transparent 66%),
-    radial-gradient(72% 62% at 98% 2%, rgba(var(--brand-accent-rgb), 0.13) 0%, transparent 62%);
+  /* Plus de lavis de marque dans les coins (refonte de nov. 2026 : le dégradé ne décore plus). Le
+   * jeton reste — la bannière et la fiche le posent encore — et vaut « rien ». */
+  --hero-brand-wash: none;
 
   /* ── Cadre de la bannière + halo « ambilight » ───────────────────────
    * La bannière n'est plus à fond perdu : elle est posée dans un cadre dont le
@@ -115,9 +115,7 @@
     rgba(var(--scrim-media-rgb), 0.18) 52%,
     transparent 74%
   );
-  --detail-brand-wash:
-    radial-gradient(110% 82% at 3% 97%, rgba(var(--brand-rgb), 0.2) 0%, rgba(var(--brand-rgb), 0.06) 40%, transparent 68%),
-    radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.1) 0%, transparent 64%);
+  --detail-brand-wash: none;
 
   /* ── Cartes ──────────────────────────────────────────────────────────
    *
@@ -148,8 +146,8 @@
    * bannière d'accueil (`HeroContent`) : dégradé violet → rose, à dominante
    * rose, avec un halo rose (`--brand-accent-rgb`) plutôt que violet. Un seul
    * token, une seule couleur partout où l'on marque une progression. */
-  --progress-fill: linear-gradient(90deg, var(--brand), var(--brand-accent));
-  --progress-glow: 0 0 8px rgba(var(--brand-accent-rgb), 0.55);
+  --progress-fill: var(--gauge-gradient);
+  --progress-glow: none;
 
   /* Assise de la barre d'actions révélée en bas de l'affiche — noire dans les
    * deux schémas (posée sur média). */
@@ -193,15 +191,6 @@
 }
 
 :root[data-theme="light"] {
-  /* Le voile de marque doit être BEAUCOUP plus discret sur fond nacré : les
-   * mêmes alphas y produisaient un halo mauve sale autour du texte. */
-  --hero-brand-wash:
-    radial-gradient(118% 88% at 2% 98%, rgba(var(--brand-rgb), 0.12) 0%, rgba(var(--brand-rgb), 0.04) 40%, transparent 68%),
-    radial-gradient(72% 62% at 98% 2%, rgba(var(--brand-accent-rgb), 0.06) 0%, transparent 64%);
-  --detail-brand-wash:
-    radial-gradient(110% 82% at 3% 97%, rgba(var(--brand-rgb), 0.09) 0%, transparent 66%),
-    radial-gradient(66% 58% at 97% 3%, rgba(var(--brand-accent-rgb), 0.05) 0%, transparent 64%);
-
   /* Scrims de bannière : restent NOIRS, alphas ×0.7 (recette mobile — le texte
    * on-media est blanc, l'affiche garde ses couleurs). */
   --hero-scrim-diagonal: linear-gradient(

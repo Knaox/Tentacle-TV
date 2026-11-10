@@ -45,6 +45,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       s1: "--surface-1",
       s2: "--surface-2",
       s3: "--surface-3",
+      s4: "--surface-4",
       overlay: "--surface-overlay",
       modal: "--surface-modal",
       dropdown: "--surface-dropdown",
@@ -63,6 +64,15 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       accentRgb: "--brand-accent-rgb",
       accentLight: "--brand-accent-light",
       accentDark: "--brand-accent-dark",
+    },
+    accent: {
+      base: "--accent",
+      rgb: "--accent-rgb",
+      soft: "--accent-soft",
+      on: "--on-accent",
+    },
+    gauge: {
+      track: "--gauge-track",
     },
     text: {
       primary: "--text-primary",
@@ -151,6 +161,8 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
     elev2: "--elev-2",
     elev3: "--elev-3",
     cardHover: "--elev-card-hover",
+    edge: "--shadow-edge",
+    imageEdge: "--shadow-image-edge",
   },
   radius: {
     xs: "--radius-xs",
@@ -158,6 +170,8 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
     md: "--radius-md",
     lg: "--radius-lg",
     xl: "--radius-xl",
+    xl2: "--radius-2xl",
+    xl3: "--radius-3xl",
     pill: "--radius-pill",
   },
   motion: {
@@ -165,6 +179,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       out: "--ease-out",
       inOut: "--ease-in-out",
       spring: "--ease-spring",
+      drawer: "--ease-drawer",
     },
     duration: {
       instant: "--duration-instant",
@@ -172,9 +187,18 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       base: "--duration-base",
       slow: "--duration-slow",
       page: "--duration-page",
+      press: "--duration-press",
+      hover: "--duration-hover",
+      menuIn: "--duration-menu-in",
+      menuOut: "--duration-menu-out",
+      card: "--duration-card",
+      sheetIn: "--duration-sheet-in",
+      sheetOut: "--duration-sheet-out",
     },
     hoverDelay: "--hover-delay",
     hoverScale: "--hover-scale",
+    pressScale: "--press-scale",
+    cardHoverScale: "--card-hover-scale",
   },
   layout: {
     topnavHeight: "--topnav-height",

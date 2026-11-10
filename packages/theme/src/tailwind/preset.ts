@@ -27,6 +27,44 @@ export const tentacleTailwindPreset: Partial<Config> = {
         // Tailwind lit : corriger le jeton seul ne changeait rien au CSS
         // produit. Le doublon a coûté une police embarquée qui ne servait pas.
         sans: DEFAULT_TYPOGRAPHY_TOKENS.fontFamily.sans.split(", "),
+        // Les titres (Bricolage Grotesque). Par la VARIABLE, pas par la pile : le client LG la
+        // redéfinit sur la police de sa dalle, et une classe `font-display` doit le suivre.
+        display: ["var(--font-display)"],
+      },
+      // Les rayons de la refonte, par RÔLE (cf. docs/REFONTE-UI.md) — à préférer aux paliers de
+      // Tailwind dans tout code nouveau. `lg` passe de 8 à 10 px : c'est le rayon des champs.
+      borderRadius: {
+        lg: "10px",
+        chip: cssVar(CSS_VAR_NAMES.radius.sm),
+        field: cssVar(CSS_VAR_NAMES.radius.md),
+        card: cssVar(CSS_VAR_NAMES.radius.lg),
+        tile: cssVar(CSS_VAR_NAMES.radius.xl),
+        panel: cssVar(CSS_VAR_NAMES.radius.xl2),
+        sheet: cssVar(CSS_VAR_NAMES.radius.xl3),
+        pill: cssVar(CSS_VAR_NAMES.radius.pill),
+      },
+      boxShadow: {
+        edge: cssVar(CSS_VAR_NAMES.shadow.edge),
+        "image-edge": cssVar(CSS_VAR_NAMES.shadow.imageEdge),
+        menu: cssVar(CSS_VAR_NAMES.shadow.dropdown),
+        sheet: cssVar(CSS_VAR_NAMES.shadow.modal),
+        "elev-1": cssVar(CSS_VAR_NAMES.shadow.elev1),
+        "elev-2": cssVar(CSS_VAR_NAMES.shadow.elev2),
+        "elev-3": cssVar(CSS_VAR_NAMES.shadow.elev3),
+      },
+      transitionTimingFunction: {
+        out: cssVar(CSS_VAR_NAMES.motion.easing.out),
+        "in-out": cssVar(CSS_VAR_NAMES.motion.easing.inOut),
+        drawer: cssVar(CSS_VAR_NAMES.motion.easing.drawer),
+      },
+      transitionDuration: {
+        press: cssVar(CSS_VAR_NAMES.motion.duration.press),
+        hover: cssVar(CSS_VAR_NAMES.motion.duration.hover),
+        "menu-in": cssVar(CSS_VAR_NAMES.motion.duration.menuIn),
+        "menu-out": cssVar(CSS_VAR_NAMES.motion.duration.menuOut),
+        card: cssVar(CSS_VAR_NAMES.motion.duration.card),
+        "sheet-in": cssVar(CSS_VAR_NAMES.motion.duration.sheetIn),
+        "sheet-out": cssVar(CSS_VAR_NAMES.motion.duration.sheetOut),
       },
       colors: {
         surface: {
@@ -34,6 +72,7 @@ export const tentacleTailwindPreset: Partial<Config> = {
           1: cssVar(CSS_VAR_NAMES.color.surface.s1),
           2: cssVar(CSS_VAR_NAMES.color.surface.s2),
           3: cssVar(CSS_VAR_NAMES.color.surface.s3),
+          4: cssVar(CSS_VAR_NAMES.color.surface.s4),
           // Paliers de chrome flottant. Ils existaient dans tokens.css mais pas
           // en classe, ce qui obligeait à écrire `bg-[var(--surface-dropdown)]`.
           modal: cssVar(CSS_VAR_NAMES.color.surface.modal),
@@ -46,6 +85,16 @@ export const tentacleTailwindPreset: Partial<Config> = {
           DEFAULT: cssVar(CSS_VAR_NAMES.color.brand.base),
           light: cssVar(CSS_VAR_NAMES.color.brand.light),
           dark: cssVar(CSS_VAR_NAMES.color.brand.dark),
+        },
+        /**
+         * La teinte franche des états actifs. `<alpha-value>` : `bg-accent/20` compose son
+         * opacité ; `soft` et `on` sont des `var()` — sur eux, jamais de `/opacité`
+         * (cf. apps/web/src/theme/alphaModifier.test.ts).
+         */
+        accent: {
+          DEFAULT: `rgba(var(${CSS_VAR_NAMES.color.accent.rgb}), <alpha-value>)`,
+          soft: cssVar(CSS_VAR_NAMES.color.accent.soft),
+          on: cssVar(CSS_VAR_NAMES.color.accent.on),
         },
         tentacle: {
           bg: cssVar(CSS_VAR_NAMES.color.surface.s0),
@@ -166,27 +215,27 @@ export const tentacleTailwindPreset: Partial<Config> = {
       fontSize: {
         "display-1": [
           "4.5rem",
-          { lineHeight: "1.05", fontWeight: "800", letterSpacing: "-0.025em" },
+          { lineHeight: "0.98", fontWeight: "780", letterSpacing: "-0.035em" },
         ],
         "display-2": [
           "3rem",
-          { lineHeight: "1.1", fontWeight: "700", letterSpacing: "-0.022em" },
+          { lineHeight: "1.02", fontWeight: "740", letterSpacing: "-0.03em" },
         ],
         "display-3": [
           "2rem",
-          { lineHeight: "1.15", fontWeight: "700", letterSpacing: "-0.02em" },
+          { lineHeight: "1.1", fontWeight: "700", letterSpacing: "-0.025em" },
         ],
         "heading-1": [
           "1.5rem",
-          { lineHeight: "1.25", fontWeight: "600" },
+          { lineHeight: "1.15", fontWeight: "650", letterSpacing: "-0.02em" },
         ],
         "heading-2": [
           "1.25rem",
-          { lineHeight: "1.3", fontWeight: "600" },
+          { lineHeight: "1.2", fontWeight: "650", letterSpacing: "-0.015em" },
         ],
         "heading-3": [
           "1.125rem",
-          { lineHeight: "1.4", fontWeight: "600" },
+          { lineHeight: "1.3", fontWeight: "600", letterSpacing: "-0.01em" },
         ],
       },
       backdropBlur: {

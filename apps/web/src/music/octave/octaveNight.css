@@ -19,19 +19,19 @@
 
 :root[data-theme="light"] .octave-night {
   color-scheme: dark;
-  --surface-0: #000000;
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.78);
-  --text-tertiary: rgba(255, 255, 255, 0.55);
-  --text-quaternary: rgba(255, 255, 255, 0.34);
-  --text-disabled: rgba(255, 255, 255, 0.22);
+  --surface-0: #0B0B0C;
+  --text-primary: #F4F2EE;
+  --text-secondary: rgba(244, 242, 238, 0.74);
+  --text-tertiary: rgba(244, 242, 238, 0.55);
+  --text-quaternary: rgba(244, 242, 238, 0.36);
+  --text-disabled: rgba(244, 242, 238, 0.24);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
   --fill-faint: rgba(255, 255, 255, 0.03);
   --fill-subtle: rgba(255, 255, 255, 0.05);
-  --fill-soft: rgba(255, 255, 255, 0.08);
-  --fill-medium: rgba(255, 255, 255, 0.12);
-  --fill-strong: rgba(255, 255, 255, 0.28);
+  --fill-soft: rgba(255, 255, 255, 0.09);
+  --fill-medium: rgba(255, 255, 255, 0.13);
+  --fill-strong: rgba(255, 255, 255, 0.24);
   --brand: #8B5CF6;
   --brand-rgb: 139, 92, 246;
   --brand-light: #A78BFA;
@@ -44,8 +44,18 @@
   --status-error-fg: #F87171;
   --status-warning-fg: #FBBF24;
   --status-info-fg: #60A5FA;
-  --border-focus: rgba(var(--brand-rgb), 0.85);
+  --accent: #E58CF0;
+  --accent-rgb: 229, 140, 240;
+  --accent-soft: rgba(var(--accent-rgb), 0.16);
+  --on-accent: #27062E;
+  --surface-1: #131315;
+  --surface-2: #1B1B1E;
+  --surface-3: #242428;
+  --surface-4: #303036;
+  --gauge-track: rgba(255, 255, 255, 0.18);
+  --border-focus: rgba(var(--accent-rgb), 0.9);
   --cta-brand-gradient: linear-gradient(120deg, var(--brand-dark) 0%, var(--brand-accent-dark) 100%);
+  --gauge-gradient: linear-gradient(90deg, var(--brand) 0%, var(--brand-accent) 100%);
   /* Au-dessus d'une page CLAIRE, le verre de nuit s'épaissit pour rester
    * encre (blanc dessus ≥ 15:1, rose ≥ 5:1, texte tertiaire ≥ 4,5:1) ; son
    * ombre, plus courte, prend la teinte prune des ombres du clair. */

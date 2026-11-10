@@ -1,9 +1,11 @@
 import type { ColorTokens } from "../types";
 
 /**
- * Default color tokens — verbatim from `apps/web/src/theme/tokens.css`.
- * Any change here must keep a 1:1 mapping with that file until the canonical
- * source is migrated in a later phase.
+ * ⚠️ Depuis la refonte du web (nov. 2026), ces valeurs ne sont PLUS la copie de
+ * `apps/web/src/theme/tokens.css` : le web et le bureau ont leur peau dans cette feuille, et ce
+ * que voici reste ce que l'Apple TV et Android TV lisent (`native/tvTokens.ts`) — elles n'ont pas
+ * été redessinées. Seuls les NOMS sont tenus en miroir (`cssVars.test.ts`) ; les clés ajoutées par
+ * la refonte portent, elles, les valeurs du web.
  */
 export const DEFAULT_COLOR_TOKENS: ColorTokens = {
   surface: {
@@ -11,6 +13,7 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     s1: "#0a0a0a",
     s2: "#141414",
     s3: "#1f1f1f",
+    s4: "#303036",
     overlay: "rgba(0, 0, 0, 0.7)",
     modal: "rgba(15, 15, 21, 0.96)",
     dropdown: "rgba(20, 20, 26, 0.95)",
@@ -29,6 +32,15 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     accentRgb: "236, 72, 153",
     accentLight: "#F472B6",
     accentDark: "#DB2777",
+  },
+  accent: {
+    base: "#E58CF0",
+    rgb: "229, 140, 240",
+    soft: "rgba(229, 140, 240, 0.16)",
+    on: "#27062E",
+  },
+  gauge: {
+    track: "rgba(255, 255, 255, 0.18)",
   },
   text: {
     primary: "#FFFFFF",

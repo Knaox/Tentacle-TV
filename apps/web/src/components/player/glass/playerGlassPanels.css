@@ -35,6 +35,7 @@
      faire sous des libellés blancs. */
   --season-tab-border: transparent;
   --season-tab-gradient: var(--lg-player-accent);
+  --season-tab-on-fg: var(--cta-brand-fg);
   --glass-tint-strong: rgb(0 0 0 / 0.22);
   /* La lueur violette d'une pastille choisie : une ombre colorée sur la surface à alpha. */
   --ctl-glow-segment: none;

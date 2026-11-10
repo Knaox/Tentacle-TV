@@ -10,7 +10,7 @@
  * varNames, catalogue, Zod). Ce sont des variables de présentation, pas des
  * tokens de design. */
 :root {
-  --scrim-page-rgb: 0, 0, 0;
+  --scrim-page-rgb: 11, 11, 12;
 
   /* SOMBRE — géométrie cinéma historique : voiles larges, fondu bas vers la
    * page (`--surface-0` = noir, donc le raccord est invisible). Rendu
@@ -59,7 +59,7 @@
 
 :root[data-theme="light"] {
   /* Réservé au scrim TOP (assise nav) — seul voile clair autorisé. */
-  --scrim-page-rgb: 244, 244, 247;
+  --scrim-page-rgb: 243, 242, 239;
 
   /* CLAIR — les scrims qui adossent le texte restent NOIRS (recette mobile,
    * alphas sombres ×0.7) : l'affiche garde ses couleurs, le texte on-media
