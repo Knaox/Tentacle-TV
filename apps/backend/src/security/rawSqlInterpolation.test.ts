@@ -65,6 +65,15 @@ const REVIEWED: Record<string, Record<string, string>> = {
   "music/index/indexQueries.ts": {
     "ORDER_SQL[order]": "tri tiré d'une table fermée de constantes ; `order` est un type fermé validé par la route",
   },
+  // Lot « pg » (10/11) : le rapprochement groupé d'un import géant — N fois la MÊME sélection constante, jointe par
+  // UNION ALL ; recherche, rang, type et borne passent tous en paramètres liés.
+  "music/index/matchQueries.ts": {
+    sql: "gabarit constant répété (`part.map(() => …)`), aucune valeur : toutes en marques `?`",
+  },
+  // Lot « pg » (10/11) : les dates d'entrée en INSERT groupés ; la clause de conflit est l'une de deux constantes.
+  "music/listOrder/addedDates.ts": {
+    'replace ? `UPDATE SET "addedAt" = excluded."addedAt"` : "NOTHING"': "booléen interne choisissant entre deux textes constants",
+  },
   "dbMigration/legacySource/mariadbReader.ts": {
     select: "colonnes passées par quoteId ; le fuseau de CONVERT_TZ en paramètre lié",
     order: "colonnes de clé passées par quoteId",
