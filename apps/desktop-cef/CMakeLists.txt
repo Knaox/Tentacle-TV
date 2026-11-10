@@ -105,6 +105,7 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+add_subdirectory(src/lifecycle)  # systeme : cycle de vie, fenêtre d'Electron, instance unique, liens
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"
