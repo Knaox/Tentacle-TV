@@ -17,6 +17,7 @@
 #include "platform/linux/linux_window.h"
 #include "platform/linux/video_layer_linux.h"
 #include "shell/main_thread.h"
+#include "shell/window_scale.h"
 
 namespace tentacle {
 namespace {
@@ -195,19 +196,18 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     }
   }
 
-  // Le cadre de la vidéo : toute la fenêtre tant que la surface ne dit rien d'autre.
+  // Le cadre de la vidéo (DIP) : toute la fenêtre tant que la surface ne dit rien d'autre.
   RectPt videoFrame() const {
     int w = 0, h = 0;
-    SDL_GetWindowSize(window_, &w, &h);
+    windowSizeDip(window_, w, h);
     RectPt r{0, 0, double(w), double(h)};
     if (video_) video_->frame(r);
     return r;
   }
 
-  float scale() const {
-    const float d = SDL_GetWindowPixelDensity(window_);
-    return d > 0 ? d : 1.0f;
-  }
+  // Pixels par DIP (shell/window_scale.h) : la densité sous Wayland, l'échelle du contenu
+  // (Xft.dpi…) sous X11, où SDL compte la fenêtre en pixels.
+  float scale() const { return windowScale(window_).deviceScale; }
 
   void countPresented() {
     const auto now = std::chrono::steady_clock::now();
