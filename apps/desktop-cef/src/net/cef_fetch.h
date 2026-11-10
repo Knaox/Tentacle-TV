@@ -49,3 +49,20 @@ using HttpDone = std::function<void(HttpResponse)>;
 std::function<void()> httpFetch(HttpRequest request, HttpDone done);
 
 }  // namespace tentacle::net
+
+namespace tentacle::net {
+
+/// Une réponse lue AU FIL de son arrivée (relais des flux directs) : `onHead` une fois, avant
+/// toute donnée (ou à la fin pour un corps vide) ; `onData` par morceau ; `onEnd` une fois —
+/// `complete` faux si la réponse n'est pas arrivée entière (coupure, refus, délai). Sans octet
+/// pendant `idleTimeoutMs` (0 : jamais) : abandon. Le corps n'est jamais gardé en entier.
+struct StreamHandler {
+  std::function<void(int status, HeaderList headers)> onHead;
+  std::function<void(std::string_view chunk)> onData;
+  std::function<void(bool complete)> onEnd;
+};
+
+/// Rappels sur le fil UI de CEF ; rend l'annulation (sûre depuis tout fil ; `onEnd(false)` suit).
+std::function<void()> httpStream(HttpRequest request, int idleTimeoutMs, StreamHandler handler);
+
+}  // namespace tentacle::net

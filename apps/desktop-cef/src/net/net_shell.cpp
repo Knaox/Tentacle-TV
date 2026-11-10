@@ -123,6 +123,22 @@ void install(AppContext& ctx) {
     std::lock_guard lock(g_traceMutex);
     r.reply(bridge::Json(std::vector<bridge::Json>(g_trace.begin(), g_trace.end())));
   });
+  // Banc : adopter une source directe comme le moteur audio (`{source, trackKey, serverOrigin, headers}`).
+  ipc::registerHandler("reseau.debug.adoptDirect", [](const Json& a, ipc::Responder r) {
+    std::optional<net::cf::ServerSession> session;
+    if (a.contains("serverOrigin")) {
+      session = net::cf::ServerSession{a["serverOrigin"].get<std::string>(), {}};
+      const Json headers = a.value("headers", Json::object());  // jamais `.items()` d'un temporaire
+      for (const auto& [k, v] : headers.items()) session->headers.emplace_back(k, v.get<std::string>());
+    }
+    adoptDirectSource(a.value("source", Json::object()), a.value("trackKey", ""), session,
+                      [r](Json source, bool adopted) { r.reply(Json{{"source", source}, {"adopted", adopted}}); });
+  });
+  // Le relais des flux directs, pour le banc : `{origin, direct, fallbacks, cuts}`.
+  ipc::registerHandler("reseau.debug.directRelay", [](const Json&, ipc::Responder r) {
+    const auto st = directRelayStats();
+    r.reply(bridge::Json{{"origin", directRelayOrigin()}, {"direct", st.direct}, {"fallbacks", st.fallbacks}, {"cuts", st.cuts}});
+  });
 }
 
 void shutdown() {}

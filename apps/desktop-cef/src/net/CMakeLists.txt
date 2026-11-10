@@ -27,10 +27,14 @@ if(TARGET tentacle_bridge)
     client_fetch_policy.cpp
     client_fetch_run.cpp
     client_fetch_commands.cpp
+    local_socket.cpp
+    direct_relay.cpp
+    direct_relay_serve.cpp
+    direct_source.cpp
   )
   target_link_libraries(tentacle_net_commands PUBLIC tentacle_net_core tentacle_bridge)
   target_compile_options(tentacle_net_commands PRIVATE -Wall -Wextra -Wno-unused-parameter)
-  foreach(t jellyfin client_fetch client_fetch_policy)
+  foreach(t jellyfin client_fetch client_fetch_policy direct_relay)
     add_executable(tentacle_${t}_tests tests/${t}_tests.cpp)
     target_link_libraries(tentacle_${t}_tests PRIVATE tentacle_net_commands)
     add_test(NAME tentacle_${t}_tests COMMAND tentacle_${t}_tests)
@@ -53,7 +57,9 @@ target_link_libraries(tentacle_art_key_probe PRIVATE tentacle_net_core)
 if(TARGET tentacle_shell AND TARGET tentacle_bridge)
   add_library(tentacle_net STATIC
     cef_fetch.cpp
+    cef_stream.cpp
     cef_hop.cpp
+    direct_shell.cpp
     net_shell.cpp
     ../schemes/buffered_handler.cpp
     ../schemes/art_scheme.cpp

@@ -296,3 +296,11 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   réel `cf::cefHop()` (`net/cef_hop.h`) : résolution par Chromium (`ResolveHost`), une adresse privée
   → `refused`, puis CefURLRequest sans cookie ni cache, redirections jugées une à une.
   `reseau::pluginManifests()` (`net/net_shell.h`) : les `mediaHosts` pour les flux directs (axe medias).
+- Flux directs d'Octave (relais local, `net/direct_relay.h`, `net/direct_source.h`) — pour l'axe
+  **medias**, dans `audio_play` / `audio_set_next` comme `checked()` d'`ipc/audio.ts` :
+  `reseau::adoptDirectSource(source, trackKey, session, done(source, adopted))` (`net/net_shell.h`) ;
+  à `audio_engine_start` : `reseau::setDirectCutListener(url → engine.sourceCut(url))` et une lecture
+  d'avance `reseau::pluginManifests()->of(session, "", …)`. mpv lit `http://127.0.0.1:<port>/d/<jeton>`
+  (`reseau::directRelayOrigin()`), direct sans identifiant du compte, repli sur le serveur avec ses
+  en-têtes (`direct=failed` une fois), 502 après une coupure. Banc : `__shell.invoke('reseau.debug.adoptDirect',
+  {source, trackKey, serverOrigin, headers})`, `reseau.debug.directRelay` → `{origin, direct, fallbacks, cuts}`.
