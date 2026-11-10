@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "app/platform_app.h"
 #include "shell/app_menu.h"
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
@@ -79,7 +80,13 @@ Shell::~Shell() {
 
 bool Shell::start() {
   CefWindowInfo wi;
+#if defined(_WIN32)
+  // Windows : la fenêtre hôte désigne l'écran (DPI, window.screen) et sert de parente aux
+  // dialogues que CEF ouvre lui-même ; sans elle, l'écran principal et des dialogues orphelins.
+  wi.SetAsWindowless(static_cast<CefWindowHandle>(platform::nativeWindow(window_)));
+#else
   wi.SetAsWindowless(kNullWindowHandle);
+#endif
   wi.shared_texture_enabled = true;  // IOSurface (macOS) : zéro copie CPU
   wi.external_begin_frame_enabled = platform::frameClockSupported();  // vsync (frame_clock.h)
   CefBrowserSettings bs;
