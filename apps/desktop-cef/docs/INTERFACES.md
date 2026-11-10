@@ -187,7 +187,23 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   porteuse : preuves).
 - **`prepareWindowForVideo(nsWindow)`** : à appeler AVANT la 1re mise à l'écran de la fenêtre SDL3
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
-- Linux / Windows : stubs (`createVideoSurface` → `nullptr`, le lecteur reste sans sortie vidéo).
+- **Deux chemins d'attache** (lot cef-parite, axe linux) — le lecteur choisit (`player.cpp`) :
+  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSurfaceSizeOption()` (défaut
+    `moltenvk-surface-size` ; Linux `wlhostvk-surface-size`), puis `gpu-context`, `wid`, `vo=gpu-next` ;
+  - **API de rendu** (Linux : X11, ou libmpv de la distribution) : `attachRenderApi(mpv_handle*)`
+    vrai → la surface a créé son `mpv_render_context` (OpenGL, contexte du compositeur) et le
+    lecteur pose `vo=libmpv` ; `detachRenderApi()` après `vo=null` (et avant `mpv_terminate_destroy`).
+    Défaut : `false` / rien (macOS, Windows inchangés).
+- Linux (`src/platform/linux/video_*`) : `nativeWindow` est un `platform::LinuxWindow*`
+  (`linux_window.h` : Wayland `wl_display`/`wl_surface`, ou X11 `Display*`/`Window`) ;
+  `nativeLayer()` rend un `platform::LinuxVideoLayer*` (`video_layer_linux.h`) que le compositeur
+  lit. **Wayland + notre libmpv** : `wl_subsurface` SOUS la surface de la page (désynchronisée,
+  sans région de saisie, `wp_viewport` pour l'échelle), mpv y dessine par `--gpu-context=wlhostvk`
+  (correctif `scripts/deps/mpv-patches-linux/0004`, `--wid` = `struct mpv_wlhost_target*`) ; HDR
+  par les espaces de couleur de la WSI Vulkan. **Sinon** : API de rendu OpenGL de libmpv dans une
+  texture de NOTRE contexte EGL, posée sous la page (SDR). `TENTACLE_VIDEO_RENDER_API=1` force ce
+  second chemin sous Wayland.
+- Windows : stubs (axe windows).
 
 ### Musique (octave) — `src/music/`
 - Canaux page ↔ natif = ceux de Tentacle (`audioBridgeContract.ts`) : commandes `audio_engine_start`,
@@ -234,6 +250,31 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   par `setVideoLayer(&surface)`.
 - macOS : couche web `CAMetalLayer` BGRA8 sRGB non opaque, z=10 ; conteneur vidéo z=0 ; vue
   hôte qui laisse passer la souris.
+- Linux (`src/platform/linux/compositor_linux.cpp`) : NOTRE contexte EGL (GLES 3, sinon 2) sur la
+  surface de la fenêtre SDL3 (`wl_egl_window` sous Wayland, la `Window` et son visuel sous X11 ;
+  `SDL_HINT_VIDEO_FORCE_EGL`), sans `SDL_WINDOW_OPENGL`. Pile : vidéo (sous-surface, texture de
+  l'API de rendu, ou aplat factice), page, popup, prémultipliées. Les images de CEF sont COPIÉES
+  pendant le rappel : `OnPaint` (octets) ou `OnAcceleratedPaint` — `WebFrame::sharedHandle` =
+  `const cef_accelerated_paint_info_t*` sous Linux (`client_render.cpp`), dmabuf importé en
+  `EGLImage` puis copié par le GPU (`dmabuf_linux.cpp`). Une composition regroupée par tour de
+  boucle, `eglSwapInterval(0)` (jamais bloqué sur un rappel `frame` de Wayland). Fenêtre
+  `SDL_WINDOW_TRANSPARENT` sous Wayland seulement (`app.cpp`) : sans lui SDL déclare la surface
+  opaque et la sous-surface vidéo disparaît.
+
+### Linux (axe linux) — `src/platform/linux/`
+- **Session graphique** (`graphics_session.h`) : décidée AVANT CEF et SDL (`main_desktop.cpp`
+  ajoute `--ozone-platform=<montage>` et `--password-store=basic` à argv ; `app_linux.cpp` pose
+  `SDL_HINT_VIDEO_DRIVER`). Même fichier qu'Electron (`session-graphique.json` du dossier de
+  données, `{ "session": … }`), même variable d'essai `TENTACLE_LINUX_SESSION`. `auto` = la
+  session du bureau (la vidéo suit la fenêtre partout : pas de détour XWayland). Pour le pont :
+  `platform::linuxMontage()` (`"wayland"`/`"x11"`) et `platform::linuxWindowing()` (`"libre"`
+  sous Wayland, `""` ailleurs) → `window.tentacle.montage` / `.fenetrage` (shim : axe systeme).
+- **Commandes** (`linux_commands.h`, une ligne `#ifdef __linux__` dans `modules.cpp`) :
+  `linux_session_get` → `{ choice, montage, bureau }`, `linux_session_set { choice }` → `null`.
+- Règles pures et tests (`tentacle_linux_tests`, ctest) : session, langues
+  (`locale_linux.h` : LANGUAGE/LC_ALL/LC_MESSAGES/LANG → Accept-Language), EDID HDR (`edid_linux.h`).
+- Clavier (`shell_linux.cpp`) : `native_key_code` = keycode XKB (evdev + 8 sous Wayland, tel quel
+  sous X11), `windows_key_code` commun, caractères par SDL ; IME par les évènements texte de SDL.
 
 ## Règles communes du code
 - Ce qui dépend de l'OS : `src/platform/<macos|linux|windows>/`, derrière une interface. Linux et

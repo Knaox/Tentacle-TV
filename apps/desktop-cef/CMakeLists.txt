@@ -77,9 +77,32 @@ elseif(WIN32)
                                         src/platform/windows/shell_stubs_windows.cpp
                                         src/platform/windows/compositor_windows.cpp)
 else()
+  # Linux (axe linux) : fenêtre SDL3 (Wayland ou X11), NOTRE contexte EGL pour la page,
+  # vidéo en sous-surface Wayland ou par l'API de rendu de libmpv (src/platform/linux/).
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(TENTACLE_LINUX REQUIRED IMPORTED_TARGET
+                    wayland-client wayland-egl egl glesv2 x11)
   target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
-                                        src/platform/linux/shell_stubs_linux.cpp
-                                        src/platform/linux/compositor_linux.cpp)
+                                        src/platform/linux/app_linux.cpp
+                                        src/platform/linux/shell_linux.cpp
+                                        src/platform/linux/graphics_session.cpp
+                                        src/platform/linux/locale_linux.cpp
+                                        src/platform/linux/edid_linux.cpp
+                                        src/platform/linux/linux_commands.cpp
+                                        src/platform/linux/egl_linux.cpp
+                                        src/platform/linux/gl_quad_linux.cpp
+                                        src/platform/linux/dmabuf_linux.cpp
+                                        src/platform/linux/compositor_linux.cpp
+                                        src/platform/linux/fake_video_linux.cpp)
+  target_link_libraries(tentacle_shell PUBLIC PkgConfig::TENTACLE_LINUX)
+  # Règles pures de Linux (session graphique, langues) : sans CEF ni affichage.
+  add_executable(tentacle_linux_tests src/platform/linux/tests/linux_rules_tests.cpp
+                 src/platform/linux/tests/edid_linux_tests.cpp
+                 src/platform/linux/graphics_session.cpp src/platform/linux/locale_linux.cpp
+                 src/platform/linux/edid_linux.cpp src/shell/paths.cpp)
+  target_include_directories(tentacle_linux_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+  target_link_libraries(tentacle_linux_tests PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME tentacle_linux_tests COMMAND tentacle_linux_tests)
 endif()
 
 foreach(lib tentacle_shell tentacle_renderer)
@@ -123,8 +146,15 @@ if(APPLE)
     HELPER_SOURCES src/app/helper_main_mac.mm
     RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
   )
-else()
-  # Ébauche Linux/Windows : un exécutable unique, ressources CEF copiées à côté.
+elseif(WIN32)
+  # Ébauche Windows (axe windows) : un exécutable unique, ressources CEF copiées à côté.
   add_executable(tentacle_app src/app/main_desktop.cpp)
   target_link_libraries(tentacle_app PRIVATE tentacle_shell)
+else()
+  include(LinuxApp)
+  tentacle_add_linux_app(
+    NAME "tentacle"
+    SOURCES src/app/main_desktop.cpp
+    RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
+  )
 endif()

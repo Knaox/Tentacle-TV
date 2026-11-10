@@ -44,6 +44,9 @@ class Client final : public CefClient,
                      public CefResourceRequestHandler,
                      public CefPermissionHandler {
  public:
+  // CefLifeSpanHandler ET CefRequestHandler déclarent chacun ce nom : GCC (Linux) refuse la
+  // référence ambiguë que Clang tolère. Un alias de la classe tranche, pour tous les fichiers.
+  using WindowOpenDisposition = cef_window_open_disposition_t;
   explicit Client(ViewHost* host) : host_(host) {}
 
   CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }

@@ -5,7 +5,9 @@
 // (setVideoLayer → nativeLayer()) et lui donne son cadre (setFrame). mpv y dessine par le
 // contexte `moltenvk` de notre libmpv (--wid = la couche) ; MoltenVK y pose lui-même
 // colorspace (ITUR_2100_PQ…), EDR et métadonnées HDR quand libplacebo choisit une sortie HDR.
-// Linux / Windows : stubs pour l'instant (sous-surface Wayland, visuel DirectComposition).
+// Linux : sous-surface Wayland SOUS la page (mpv en Vulkan par le contexte `wlhostvk` de notre
+// libmpv, HDR possible), sinon l'API de rendu OpenGL de libmpv (X11, libmpv de la distribution).
+// Windows : visuel DirectComposition (axe windows).
 //
 // Tous les appels : fil principal (UI) uniquement.
 
@@ -59,6 +61,17 @@ public:
     virtual SurfaceColorState colorState() const = 0;
     // Rappel (fil principal) quand la taille en pixels change (cadre, écran, Retina).
     virtual void onPixelSizeChanged(std::function<void(PixelSize)> cb) = 0;
+
+    // Option de mpv qui porte la taille du swapchain (--wid sans fenêtre de mpv) : macOS
+    // « moltenvk-surface-size » ; Linux (sous-surface Wayland) « wlhostvk-surface-size ».
+    virtual const char* mpvSurfaceSizeOption() const { return "moltenvk-surface-size"; }
+    // API de rendu de libmpv (Linux : X11, ou libmpv sans contexte d'intégration Wayland).
+    // Vrai = la surface a créé son contexte de rendu sur ce cœur de mpv (`mpv_handle*`) et le
+    // compositeur y dessinera : le lecteur pose alors vo=libmpv, jamais gpu-context ni wid.
+    // Faux (défaut : macOS, Windows) = chemin --wid. Fil principal.
+    virtual bool attachRenderApi(void* mpvHandle) { return false; }
+    // Avant de rendre la surface au lecteur (vo=null posé) : libère le contexte de rendu.
+    virtual void detachRenderApi() {}
 };
 
 // À appeler sur la fenêtre principale AVANT sa première mise à l'écran (fenêtre SDL3 créée

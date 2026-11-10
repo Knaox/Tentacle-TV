@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <memory>
+#include <string_view>
 
 #include "app/platform_app.h"
 #include "include/cef_app.h"
@@ -78,9 +79,15 @@ int runApp(int argc, char** argv) {
     std::fprintf(stderr, "SDL_Init : %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Window* window = SDL_CreateWindow(
-      "Tentacle", opts.width, opts.height,
-      SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN);
+  SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN;
+#ifdef __linux__
+  // Wayland : la page est transparente au-dessus de la sous-surface vidéo — sans ce drapeau,
+  // SDL déclare la surface opaque et le compositeur ne dessine plus ce qu'elle couvre.
+  if (const char* d = SDL_GetCurrentVideoDriver(); d && std::string_view(d) == "wayland") {
+    flags |= SDL_WINDOW_TRANSPARENT;
+  }
+#endif
+  SDL_Window* window = SDL_CreateWindow("Tentacle", opts.width, opts.height, flags);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow : %s\n", SDL_GetError());
     return 1;
