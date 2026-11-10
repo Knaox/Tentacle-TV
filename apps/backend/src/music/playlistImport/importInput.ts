@@ -12,7 +12,7 @@ import {
   type ImportedTrack,
   type MusicImportSource,
 } from "../contract/musicImport";
-import { artistList, durationOf, field, isrcOf, list, numbered, record } from "./readers/readerKit";
+import { artistList, durationOf, field, httpsUrl, isrcOf, list, numbered, record } from "./readers/readerKit";
 import type { ImportInput } from "./readSource";
 
 export interface ImportRequestParsed {
@@ -44,16 +44,20 @@ export function sanitizePlaylist(raw: ImportedPlaylist): ImportedPlaylist {
         durationMs: durationOf(t.durationMs),
         isrc: isrcOf(t.isrc),
         sourceId: field(t.sourceId),
+        // Ce que la source dit en plus (lot « pg ») : la pochette, le contenu explicite, ce qu'elle ne joue pas.
+        artworkUrl: httpsUrl(t.artworkUrl),
+        ...(t.explicit === true ? { explicit: true as const } : {}),
+        ...(t.sourceBlocked === "region" || t.sourceBlocked === "refused" ? { sourceBlocked: t.sourceBlocked } : {}),
       }),
     );
   const numberedTracks = numbered(tracks);
-  const artwork = field(raw.artworkUrl);
+  const artwork = httpsUrl(raw.artworkUrl);
   return {
     source: raw.source,
     name: nameOf(raw.name) ?? "",
     tracks: numberedTracks.tracks,
     truncated: raw.truncated === true || numberedTracks.truncated || list(raw.tracks).length > MUSIC_IMPORT_LIMITS.tracks,
-    artworkUrl: artwork && artwork.startsWith("https://") ? artwork : null,
+    artworkUrl: artwork,
   };
 }
 

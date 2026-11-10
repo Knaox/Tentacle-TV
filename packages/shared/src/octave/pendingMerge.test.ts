@@ -147,3 +147,20 @@ describe("playlistTrackTotal", () => {
     expect(playlistTrackTotal(154, [], "p1")).toBe(154);
   });
 });
+
+describe("une playlist importée de 9 000 titres (lot « pg »)", () => {
+  it("3 000 entrées + 6 000 attentes : chaque attente à son rang, en quelques dizaines de ms", () => {
+    const entries = Array.from({ length: 3_000 }, (_, k) => ({ entryId: `e${k}`, position: k, track: libraryTrack(`l${k}`), sourceIndex: k * 3 }));
+    const waiting = Array.from({ length: 6_000 }, (_, i) => {
+      const rank = Math.floor(i / 2) * 3 + 1 + (i % 2);
+      return pendingItem(`w${rank}`, { kind: "playlistAdd", playlistId: "pl", sourceIndex: rank, imported: true });
+    });
+    const t = performance.now();
+    const rows = mergePlaylist(entries, waiting.reverse(), "pl");
+    const took = performance.now() - t;
+    expect(rows).toHaveLength(9_000);
+    // L'ordre de la source, rang après rang : l0, w1, w2, l1, w4, w5…
+    expect(rows.slice(0, 6).map((r) => r.rowKey)).toEqual(["e0", "pending:op-w1", "pending:op-w2", "e1", "pending:op-w4", "pending:op-w5"]);
+    expect(took).toBeLessThan(400);
+  });
+});

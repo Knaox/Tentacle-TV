@@ -35,6 +35,16 @@ export function durationOf(ms: unknown): number | null {
   return typeof ms === "number" && Number.isFinite(ms) && ms > 0 && ms < 24 * 3_600_000 ? Math.round(ms) : null;
 }
 
+/** Une adresse d'image venue d'une source ou d'une extension : https, bornée, sans espace ; sinon `null`. */
+export function httpsUrl(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > MUSIC_IMPORT_LIMITS.url || /\s/.test(value)) return null;
+  try {
+    return new URL(value).protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 const ISRC = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 
 export function isrcOf(value: unknown): string | null {

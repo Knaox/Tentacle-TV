@@ -63,7 +63,7 @@ describe("POST /import — gardes", () => {
   it("corps mal formé : deux sources, aucune, texte trop long", async () => {
     expect((await call("POST", "/import", { url: "https://www.deezer.com/playlist/1", text: "A - B" })).statusCode).toBe(400);
     expect((await call("POST", "/import", {})).statusCode).toBe(400);
-    expect((await call("POST", "/import", { text: "x".repeat(600_000) })).statusCode).toBe(400);
+    expect((await call("POST", "/import", { text: "x".repeat(16_000_001) })).statusCode).toBe(400);
     expect((await call("POST", "/import", { playlist: { source: "myspace", tracks: [] } })).statusCode).toBe(400);
   });
 

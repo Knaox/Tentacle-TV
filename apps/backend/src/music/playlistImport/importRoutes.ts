@@ -19,6 +19,12 @@ import { mayUsePlaylistShares } from "../playlistShare/shareRight";
 
 const gate = capabilityGate("music.playlistImport");
 
+/**
+ * Le corps le plus gros admis : un texte collé au plafond (`MUSIC_IMPORT_LIMITS.text`) ou une playlist déjà lue de
+ * 100 000 titres (~400 o chacun). Dit ICI, jamais hérité : le défaut de Fastify (1 Mo) ne tient pas 9 000 titres.
+ */
+export const IMPORT_BODY_LIMIT = 48 * 1024 * 1024;
+
 const deps: ImportDeps & { mayImportShare: typeof mayUsePlaylistShares } = {
   fetcher: networkFetcher,
   view: userView,
@@ -30,7 +36,7 @@ const deps: ImportDeps & { mayImportShare: typeof mayUsePlaylistShares } = {
 export function musicImportRoutes(app: FastifyInstance, overrides: Partial<typeof deps> = {}): void {
   const used = { ...deps, ...overrides };
 
-  app.post("/import", { onRequest: gate, config: { rateLimit: { max: 20, timeWindow: 10 * 60_000 } } }, async (request, reply) => {
+  app.post("/import", { onRequest: gate, bodyLimit: IMPORT_BODY_LIMIT, config: { rateLimit: { max: 20, timeWindow: 10 * 60_000 } } }, async (request, reply) => {
     // « Voir en tant que » regarde : il ne crée rien au nom de l'autre compte.
     if (userOf(request).session === "impersonation") return reply.status(403).send({ error: "forbidden" });
     const parsed = parseImportRequest(request.body);

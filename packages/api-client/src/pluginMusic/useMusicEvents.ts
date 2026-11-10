@@ -3,6 +3,7 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { MUSIC_EVENT_TYPES, type MusicEvent } from "@tentacle-tv/shared/music";
 import { acquireSocket, onSocketStatus, subscribeSocket, type SocketStatus } from "../socket/tentacleSocket";
 import { musicPendingKey } from "./useMusicActions";
+import { coalesced } from "../music/eventCoalesce";
 
 /**
  * Les événements `music:*` du canal des comptes (`/api/ws`), additifs : un
@@ -24,7 +25,8 @@ export function isMusicEvent(msg: { type: string }): msg is MusicEvent {
 
 export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
   if (event.type === "music:pending" || event.type === "music:resolved") {
-    void qc.invalidateQueries({ queryKey: musicPendingKey(event.pluginId) });
+    // La liste d'attente ENTIÈRE du compte : une relecture par fenêtre, jamais une par titre résolu.
+    coalesced(qc, `pending:${event.pluginId}`, () => void qc.invalidateQueries({ queryKey: musicPendingKey(event.pluginId) }));
   } else if (event.type === "music:provider") {
     for (const key of ACTIVE_PLUGINS_KEYS) void qc.invalidateQueries({ queryKey: [...key] });
     void qc.invalidateQueries({ queryKey: ["music"] });

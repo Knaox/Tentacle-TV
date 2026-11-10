@@ -35,7 +35,9 @@ export interface PluginMusicManifest {
   mood?: string;
   importRead?: string;
   importSources?: MusicImportSource[];
+  importReadFirst?: MusicImportSource[];
   importTracks?: string;
+  importBatches?: boolean;
   releases?: string;
   releaseSources?: ("bandcamp" | "files")[];
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
@@ -65,6 +67,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     if (path) out[key] = path;
   }
   if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
+  if (m.importBatches === true && out.importTracks) out.importBatches = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
@@ -72,6 +75,10 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
+  }
+  if (Array.isArray(m.importReadFirst) && out.importSources) {
+    const first = out.importSources.filter((k) => k !== "youtube" && (m.importReadFirst as unknown[]).includes(k));
+    if (first.length > 0) out.importReadFirst = first;
   }
   if (Array.isArray(m.releaseSources)) {
     const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));
