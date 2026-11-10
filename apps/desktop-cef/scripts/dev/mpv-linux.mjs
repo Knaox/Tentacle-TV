@@ -28,12 +28,14 @@ function setId(patches) {
   return h.digest("hex").slice(0, 8);
 }
 
-function mesonDepsMissing() {
+/** Ce qui manque pour construire notre libmpv (clés de linux-prereqs.mjs). */
+export function mesonDepsMissing() {
   const missing = [];
   if (!which("meson")) missing.push("meson");
   const need = { ffmpeg: ["libavcodec", "libavformat", "libavfilter", "libswresample", "libswscale"], placebo: ["libplacebo"], ass: ["libass"], vulkan: ["vulkan"] };
   for (const [key, mods] of Object.entries(need)) if (mods.some((m) => !pkgVersion(m))) missing.push(key);
   if (!pkgVersion("libpipewire-0.3") && !pkgVersion("libpulse") && !pkgVersion("alsa")) missing.push("audio");
+  if (!pkgVersion("libva")) missing.push("va");  // décodage matériel VA-API (facultatif pour meson)
   return missing;
 }
 
