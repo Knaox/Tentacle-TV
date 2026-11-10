@@ -7,6 +7,7 @@
 #include "shell/frame_clock.h"
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
+#include "shell/navigation_rule.h"
 
 namespace tentacle {
 namespace {
@@ -76,6 +77,7 @@ Shell::~Shell() {
 }
 
 bool Shell::start() {
+  nav::setAppOrigin(options_.url);  // navigateur : l'origine que le cadre principal garde
   CefWindowInfo wi;
   wi.SetAsWindowless(kNullWindowHandle);
   wi.shared_texture_enabled = true;  // IOSurface (macOS) : zéro copie CPU

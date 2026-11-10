@@ -235,6 +235,26 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - macOS : couche web `CAMetalLayer` BGRA8 sRGB non opaque, z=10 ; conteneur vidéo z=0 ; vue
   hôte qui laisse passer la souris.
 
+### Navigateur (axe navigateur, lot cef-parite) — ce qu'un navigateur hors écran ne fait pas seul
+Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `restrictPermissions`).
+- **Navigation** (`src/shell/client_navigation.cpp`, règle pure `src/shell/navigation_rule.h`,
+  tests `tentacle_navigateur_tests`) : le cadre principal garde l'origine de l'URL de départ
+  (`nav::setAppOrigin`, posée par `Shell::start` : `tentacle://app`, ou le serveur en
+  `dev:server`). Navigation ailleurs → annulée et ouverte dehors ; redirection ailleurs →
+  annulée sans rien ouvrir ; cadres libres. `window.open`, `target=_blank`, clic du milieu,
+  ⌘/Ctrl + clic → dehors, jamais une seconde fenêtre CEF.
+- **PiP** : `nav::setPopupClaim(fn)` (`src/shell/popup_claim.h`) — `fn(PopupRequest, CefWindowInfo&,
+  CefRefPtr<CefClient>&, CefBrowserSettings&, CefRefPtr<CefDictionaryValue>&)` rend vrai pour
+  prendre la fenêtre (CEF la crée telle que remplie) ; faux : règle d'Electron.
+- **Dehors** : `tentacle::openExternalSafely(url)` (`src/shell/external_url.h`, fil principal) —
+  liste FERMÉE d'Electron (http, https, mailto, ms-windows-store, macappstore, itms-apps), URL
+  canonique (`CefParseURL`), `SDL_OpenURL`. Bancs : `TENTACLE_OPEN_EXTERNAL=log` journalise
+  `[externe] …` sans rien ouvrir.
+- **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
+  « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
+  MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de
+  Chromium). Exception propre à CEF : réseau local pour `tentacle://app`.
+
 ## Règles communes du code
 - Ce qui dépend de l'OS : `src/platform/<macos|linux|windows>/`, derrière une interface. Linux et
   Windows ont au moins des stubs qui compilent dans l'esprit (pas forcément construits ici).

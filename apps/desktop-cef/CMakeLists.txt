@@ -2,6 +2,7 @@
 # Construire avec scripts/build.sh (Ninja, ninja -j4), jamais dans le dépôt.
 cmake_minimum_required(VERSION 3.24)
 project(tentacle_cef LANGUAGES C CXX)
+enable_testing()  # ctest : tests de règle (web_root, navigateur…)
 if(APPLE)
   enable_language(OBJC OBJCXX)
 endif()
@@ -47,6 +48,7 @@ add_library(tentacle_shell STATIC
   src/shell/shell_shortcuts.cpp
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
+  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp  # navigateur
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
 add_library(tentacle_renderer STATIC
@@ -58,6 +60,10 @@ add_library(tentacle_renderer STATIC
 add_executable(tentacle_web_root_tests src/shell/tests/web_root_tests.cpp src/shell/web_root.cpp)
 target_include_directories(tentacle_web_root_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 add_test(NAME tentacle_web_root_tests COMMAND tentacle_web_root_tests)
+# navigateur : règles de navigation, d'ouverture externe et des boîtes (sans CEF ni OS).
+add_executable(tentacle_navigateur_tests src/shell/tests/navigateur_tests.cpp src/shell/navigation_rule.cpp src/shell/dialog_rule.cpp)
+target_include_directories(tentacle_navigateur_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+add_test(NAME tentacle_navigateur_tests COMMAND tentacle_navigateur_tests)
 if(APPLE)
   target_sources(tentacle_shell PRIVATE
     src/platform/macos/app_mac.mm

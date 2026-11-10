@@ -47,10 +47,15 @@ class Client final : public CefClient,
   explicit Client(ViewHost* host) : host_(host) {}
 
   CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
-  // CefPermissionHandler : l'accès au réseau local, pour tentacle://app seul (client.cpp).
+  // CefPermissionHandler (navigateur, client_navigation.cpp) : tout refusé comme Electron,
+  // sauf l'accès au réseau local pour tentacle://app seul.
   bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
                               const CefString& requestingOrigin, uint32_t requestedPermissions,
                               CefRefPtr<CefPermissionPromptCallback> callback) override;
+  bool OnRequestMediaAccessPermission(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                      const CefString& requestingOrigin,
+                                      uint32_t requestedPermissions,
+                                      CefRefPtr<CefMediaAccessCallback> callback) override;
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
@@ -63,7 +68,7 @@ class Client final : public CefClient,
                                 CefProcessId source,
                                 CefRefPtr<CefProcessMessage> message) override;
 
-  // CefLifeSpanHandler
+  // CefLifeSpanHandler — OnBeforePopup : politique d'Electron (client_navigation.cpp)
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popupId,
                      const CefString& targetUrl, const CefString& targetFrameName,
                      WindowOpenDisposition disposition, bool userGesture,
@@ -104,6 +109,14 @@ class Client final : public CefClient,
 
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) override;
 
+  // CefRequestHandler (navigateur, client_navigation.cpp) : `will-navigate`, `will-redirect`,
+  // ouvertures « nouvel onglet » d'Electron (`lockNavigation`).
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request, bool userGesture, bool isRedirect) override;
+  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                        const CefString& targetUrl, WindowOpenDisposition disposition,
+                        bool userGesture) override;
+
   // CefRequestHandler / CefResourceRequestHandler : seulement la fin des chargements, pour
   // réveiller l'horloge d'images en veille (iframes comprises, où le script de réveil de la
   // page n'est pas injecté — shell/frame_wake.h).
@@ -123,6 +136,8 @@ class Client final : public CefClient,
                            CefRefPtr<CefMenuModel> model) override;
 
  private:
+  // Contrôles de permission refusés comme Electron (réglages de contenu par défaut).
+  static void applyPermissionDefaults(CefRefPtr<CefBrowser> browser);
   ViewHost* host_;
   PopupRect popupDip_;
   bool popupVisible_ = false;

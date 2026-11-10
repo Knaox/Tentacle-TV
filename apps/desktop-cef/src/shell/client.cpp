@@ -2,7 +2,6 @@
 
 #include <cstdio>
 
-#include "shell/app_scheme.h"
 #include "shell/ipc.h"
 #include "shell/main_thread.h"
 
@@ -14,45 +13,8 @@ bool Client::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   return ipc::onProcessMessage(browser, frame, message);
 }
 
-bool Client::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                           int popupId, const CefString& targetUrl,
-                           const CefString& targetFrameName, WindowOpenDisposition disposition,
-                           bool userGesture, const CefPopupFeatures& features,
-                           CefWindowInfo& windowInfo, CefRefPtr<CefClient>& client,
-                           CefBrowserSettings& settings, CefRefPtr<CefDictionaryValue>& extraInfo,
-                           bool* noJavascriptAccess) {
-  // Pas de seconde fenêtre CEF : window.open / target=_blank est refusé (journalisé).
-  std::fprintf(stderr, "[shell] popup refusée : %s\n", targetUrl.ToString().c_str());
-  return true;
-}
-
-// Le front embarqué (tentacle://app) parle à SON serveur et à Jellyfin, souvent sur le réseau
-// local ou sur la machine même. Chromium 156 classe notre origine « publique » et soumet ces
-// requêtes à la permission d'accès au réseau local ; en rendu hors écran, aucune invite ne
-// s'affiche : la demande restait en attente et CHAQUE requête pendait (mesuré, banc sur
-// 127.0.0.1 : « le serveur met trop de temps à répondre »). Accordée à tentacle://app seul, et
-// seulement quand la demande ne porte que sur le réseau local ; toute autre demande garde le
-// traitement par défaut de CEF. (Electron, `security.ts`, n'accorde que le presse-papiers.)
-bool Client::OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
-                                    const CefString& requestingOrigin,
-                                    uint32_t requestedPermissions,
-                                    CefRefPtr<CefPermissionPromptCallback> callback) {
-  // L'ancien type unique (1 << 25, « _DEPRECATED » dans cette API) et les deux qui l'ont
-  // remplacé : réseau local et machine même.
-  constexpr uint32_t kLocalNetwork = CEF_PERMISSION_TYPE_LOCAL_NETWORK_ACCESS_DEPRECATED |
-                                     CEF_PERMISSION_TYPE_LOCAL_NETWORK |
-                                     CEF_PERMISSION_TYPE_LOOPBACK_NETWORK;
-  std::string origin = requestingOrigin.ToString();
-  if (!origin.empty() && origin.back() == '/') origin.pop_back();
-  if (origin != appscheme::kAppOrigin || requestedPermissions == 0 ||
-      (requestedPermissions & ~kLocalNetwork) != 0) {
-    return false;
-  }
-  callback->Continue(CEF_PERMISSION_RESULT_ACCEPT);
-  return true;
-}
-
 void Client::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+  applyPermissionDefaults(browser);
   ipc::attachBrowser(browser);
   host_->onBrowserCreated(browser);
 }
