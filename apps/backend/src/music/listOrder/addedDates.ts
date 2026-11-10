@@ -120,16 +120,17 @@ export async function noteArrival(playlistId: string, before: readonly string[],
     const prisma = getPrisma();
     const rows = await prisma.musicListAdded.findMany({ where: { scope }, select: { itemId: true, addedAt: true } });
     let known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
+    const when = addedAt === undefined ? undefined : Math.min(addedAt, Date.now());
     if (known.size === 0) {
-      if (addedAt === undefined || before.length === 0) return;
-      known = await addedDatesFor(scope, before, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
+      if (when === undefined || before.length === 0) return;
+      // Les entrées d'avant sont estimées AVANT l'arrivée, jamais après elle : l'horloge a avancé depuis `addedAt`.
+      known = await addedDatesFor(scope, before, (_id, index) => when - (before.length - index), { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
     }
     const index = await rowsByIds([...new Set([...before, ...inserted])]);
     const identity = (id: string): string | null => {
       const row = index.get(id);
       return row ? listAlias(row.recordingMbid, row.name, row.artists[0]?.name ?? row.albumArtist ?? "") : null;
     };
-    const when = addedAt === undefined ? undefined : Math.min(addedAt, Date.now());
     const dates = planArrivalDates({ known, before, inserted, at, identity, addedAt: when });
     if (dates.size === 0) return;
     await prisma.$transaction(
