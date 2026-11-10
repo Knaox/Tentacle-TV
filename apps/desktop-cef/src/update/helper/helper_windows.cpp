@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 
+#include "platform/windows/update_signature_windows.h"
 #include "update/state.h"
 
 using namespace tentacle::update;
@@ -81,6 +82,14 @@ int apply(const Args& a) {
   const size_t slash = app.find_last_of(L"\\/");
   const std::wstring previous = app.substr(0, slash + 1) + L"." + app.substr(slash + 1) + L".previous";
   RemoveDirectoryW(previous.c_str());  // (vide seulement ; l'app efface l'ancienne copie pleine)
+  // Le contrôle d'éditeur de la préparation, refait juste avant l'échange : entre les deux, la
+  // copie préparée est restée sur le disque de l'utilisateur.
+  for (const wchar_t* exe : {L"\\Tentacle.exe", L"\\tentacle-update.exe"}) {
+    if (const std::string bad = tentacle::update::win::checkPublisher(app + exe, staged + exe); !bad.empty()) {
+      std::fprintf(stderr, "copie préparée refusée (%s)\n", bad.c_str());
+      return 6;
+    }
+  }
   // Les sous-processus de CEF (GPU, rendu) survivent un instant à l'app : leurs fichiers
   // ouverts bloquent le renommage du dossier. On réessaie 30 s.
   bool moved = false;
