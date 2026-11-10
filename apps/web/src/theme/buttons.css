@@ -11,6 +11,7 @@
  *   .btn-on-media        l'action secondaire posée sur une image
  *   .btn-ghost           l'action discrète : rien au repos, un voile au survol
  *   .btn-danger          l'action destructive
+ *   .btn-accent          l'action intermédiaire, à la teinte franche
  *   .icon-btn            le bouton rond d'une icône (mêmes tailles : .btn-sm, .btn-lg)
  *   [data-on="true"]     un bouton d'icône ALLUMÉ (favori, vu…) : la teinte franche
  *
@@ -122,6 +123,12 @@
   color: var(--status-error-fg);
 }
 
+/* L'action intermédiaire : à la teinte franche, en fond doux (jamais un aplat d'accent). */
+.btn-accent {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
 /* Un bouton d'icône ALLUMÉ : la teinte franche, et l'icône passe en plein (côté composant). */
 .icon-btn[data-on="true"],
 .icon-btn[aria-pressed="true"] {
@@ -155,6 +162,10 @@
 
   .btn-danger:hover {
     background-color: var(--danger-surface-hover);
+  }
+
+  .btn-accent:hover {
+    background-color: rgba(var(--accent-rgb), 0.26);
   }
 
   .icon-btn[data-on="true"]:hover,

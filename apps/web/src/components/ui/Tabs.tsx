@@ -70,10 +70,10 @@ export function Tabs<T extends string>({ idPrefix, label, items, active, onChang
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
-                ? "lg-glass-btn lg-glass-selected border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                : "lg-glass-btn border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
+                ? "lg-glass-btn lg-glass-selected border-transparent bg-surface-4 font-semibold text-content-primary"
+                : "lg-glass-btn border-transparent bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
             }`}
           >
             {item.icon ? (
@@ -85,7 +85,7 @@ export function Tabs<T extends string>({ idPrefix, label, items, active, onChang
             {item.count !== undefined ? (
               <span
                 className={`min-w-[1.25rem] rounded-full px-1.5 text-center text-[11px] font-semibold tabular-nums ${
-                  selected ? "bg-[rgba(var(--brand-rgb),0.2)]" : "bg-fill-soft text-content-tertiary"
+                  selected ? "bg-fill-medium" : "bg-fill-soft text-content-tertiary"
                 }`}
               >
                 {item.count}

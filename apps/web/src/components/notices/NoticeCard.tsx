@@ -39,7 +39,7 @@ const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {
  */
 const SURFACES = {
   app: {
-    root: "border-line-strong bg-surface-3 text-content-primary",
+    root: "border-transparent bg-surface-3 text-content-primary",
     meta: "text-content-tertiary",
     line: "text-content-secondary",
     secondary: "border-line-strong text-content-secondary hover:bg-fill-soft hover:text-content-primary",
@@ -137,7 +137,7 @@ export const NoticeCard = memo(function NoticeCard({
               <button
                 type="button"
                 onClick={primary.onClick}
-                className="inline-flex min-h-[36px] cursor-pointer items-center rounded-[18px] border border-cta-primary-border bg-cta-primary-bg px-4 py-1.5 text-sm font-semibold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus"
+                className="inline-flex min-h-[36px] cursor-pointer items-center rounded-full border border-cta-primary-border bg-cta-primary-bg px-4 py-1.5 text-sm font-semibold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus"
               >
                 {primary.label}
               </button>
@@ -146,7 +146,7 @@ export const NoticeCard = memo(function NoticeCard({
               <button
                 type="button"
                 onClick={secondary.onClick}
-                className={`inline-flex min-h-[36px] cursor-pointer items-center rounded-[18px] border px-4 py-1.5 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus ${look.secondary}`}
+                className={`inline-flex min-h-[36px] cursor-pointer items-center rounded-full border px-4 py-1.5 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus ${look.secondary}`}
               >
                 {secondary.label}
               </button>
@@ -158,7 +158,7 @@ export const NoticeCard = memo(function NoticeCard({
         type="button"
         onClick={onClose}
         aria-label={t("notices:close")}
-        className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center self-start rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-line-focus ${look.close}`}
+        className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center self-start rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-line-focus ${look.close}`}
       >
         <X size={18} aria-hidden />
       </button>
@@ -185,7 +185,7 @@ export const NoticeCard = memo(function NoticeCard({
       ref={glass.ref}
       {...glass.props}
       role={severity === "blocking" ? "alert" : "status"}
-      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
+      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-tile border py-3 pl-3 pr-1 shadow-menu ${look.root}`}
     >
       {glass.layers}
       {content}

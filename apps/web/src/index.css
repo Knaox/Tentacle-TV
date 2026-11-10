@@ -16,6 +16,8 @@
 @import "./theme/liquidGlassContent.css";
 @import "./theme/cards.css";
 @import "./theme/controls.css";
+@import "./theme/buttons.css";
+@import "./theme/overlays.css";
 @import "./theme/heroCta.css";
 @import "./theme/seasonTabs.css";
 @import "./theme/rendering.css";

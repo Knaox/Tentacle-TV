@@ -54,7 +54,6 @@
  * barre des utilisateurs, à côté de `lg-segmented` (que le verre natif reprend, lgControls.css). */
 .ctl-segmented {
   border-radius: var(--radius-pill);
-  border-color: transparent;
   background: var(--surface-2);
   padding: 3px;
 }
