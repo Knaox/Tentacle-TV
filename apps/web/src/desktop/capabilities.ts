@@ -117,6 +117,14 @@ export function supportsAppUpdates(): boolean {
   return hasNativeCommand("check_msix_update") || hasNativeCommand("detect_linux_install_format");
 }
 
+/**
+ * La coquille sait appliquer l'état de lecture lu sur le serveur
+ * (`offline/playbackSync.ts`) ; une coquille d'avant ne fait que pousser.
+ */
+export function supportsPlaybackReconcile(): boolean {
+  return hasNativeCommand("downloads_playback_reconcile");
+}
+
 /** Session hors ligne conservée par le natif (cache de session, avatars). */
 export function supportsOfflineSession(): boolean {
   return hasNativeCommand("session_cache_get");
