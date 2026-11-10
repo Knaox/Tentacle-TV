@@ -57,6 +57,8 @@ export const SCENES = [
   { name: "wt-invitations", query: "vue=wt&etat=invitations", themes: BOTH, settle: 900 },
   { name: "wt-lecteur", query: "vue=wt&etat=lecteur", settle: 1200 },
   { name: "wt-chat", query: "vue=wt&etat=chat", settle: 1200 },
+  { name: "wt-chat-emojis", query: "vue=wt&etat=chat", widths: [[1440, 810]], settle: 900, steps: [(page) => page.waitForTimeout(600), (page) => page.locator('button[aria-pressed]').first().click()] },
+  { name: "wt-chat-gif", query: "vue=wt&etat=chat", widths: [[1440, 810]], settle: 900, steps: [(page) => page.waitForTimeout(600), (page) => page.locator('button[aria-pressed]').nth(1).click()] },
   { name: "wt-ailleurs", query: "vue=wt&etat=ailleurs", themes: BOTH, widths: [[1024, 640]], settle: 700 },
   { name: "wt-groupe-en-cours", query: "vue=wt&etat=groupe-en-cours", themes: BOTH, widths: [[1024, 640]], settle: 700 },
   { name: "wt-match", query: "vue=wt&etat=match", themes: BOTH, widths: [[1440, 810]], settle: 1200 },
