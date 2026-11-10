@@ -6,6 +6,7 @@
 //   shell.debug.webPixel {x,y}  → {b,g,r,a} du pixel (en pixels physiques) de la dernière
 //                                 image de la page — preuve de transparence/prémultiplié
 //   shell.debug.layers          → arbre de couches Core Animation (texte)
+//   shell.debug.stalls {reset?} → arrêts du fil principal : {maxMs, maxWhat, count, recent[]}
 //   shell.debug.native {type…}  → (seulement avec --debug-input) poste un évènement natif
 //                                 dans la file de l'app : mouse {kind,x,y,button,clicks},
 //                                 key {keyCode,chars,charsIgnoring,mods,down}, scroll

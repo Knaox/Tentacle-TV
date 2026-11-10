@@ -42,6 +42,7 @@ class TooltipController {
  private:
   void schedule();
   void arm(uint64_t delayMs);
+  void hideNative();
   std::unique_ptr<platform::TooltipWindow> native_;
   std::string text_;
   std::string shown_;
@@ -50,6 +51,9 @@ class TooltipController {
   uint64_t generation_ = 0;
   uint64_t lastMoveMs_ = 0;
   bool timerPending_ = false;
+  // Banc : le coût d'afficher et de retirer la bulle, sur le fil principal.
+  double lastShowMs_ = 0, maxShowMs_ = 0, lastHideMs_ = 0, maxHideMs_ = 0;
+  uint64_t shows_ = 0;
   std::shared_ptr<bool> alive_;
 };
 

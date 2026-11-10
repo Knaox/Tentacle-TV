@@ -16,6 +16,7 @@
 #include "platform/linux/egl_linux.h"
 #include "platform/linux/gl_quad_linux.h"
 #include "platform/linux/linux_window.h"
+#include "platform/linux/overlay_linux.h"
 #include "platform/linux/video_layer_linux.h"
 #include "platform/linux/video_slot_linux.h"
 #include "shell/main_thread.h"
@@ -47,7 +48,8 @@ struct Layer {  // une image de CEF copiée chez nous (octets BGRA)
 class GlCompositor final : public Compositor, public WebLayer, public platform::GlHost {
  public:
   GlCompositor(SDL_Window* window, std::unique_ptr<platform::EglWindow> egl)
-      : window_(window), egl_(std::move(egl)), alive_(std::make_shared<bool>(true)), slot_(window, this) {
+      : window_(window), egl_(std::move(egl)), alive_(std::make_shared<bool>(true)), slot_(window, this),
+        overlays_(window, this) {
     egl_->makeCurrent();
     quad_.init();
     importer_ = platform::DmabufImporter::create(*egl_);
@@ -61,6 +63,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     egl_->makeCurrent();
     page_.release();
     popup_.release();
+    overlays_.release();
     importer_.reset();
     quad_.destroy();
   }
@@ -104,7 +107,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
       << (slot_.shown() ? " " + frameText(slot_.frame()) : std::string())
       << " | page " << page_.w << "x" << page_.h << " | popup "
       << (popupVisible_ ? std::to_string(popup_.w) + "x" + std::to_string(popup_.h) : "non")
-      << " | dmabuf " << (importer_ ? "oui" : "non") << " (" << stats_dmabuf_ << " images)";
+      << " | dmabuf " << (importer_ ? "oui" : "non") << " (" << stats_dmabuf_ << " images)" << overlays_.describe();
     return o.str();
   }
 
@@ -196,6 +199,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
       quad_.drawTexture(popup_.tex, {float(popupRect_.x), float(popupRect_.y), float(popup_.w), float(popup_.h)},
                         egl_->width(), egl_->height(), true);
     }
+    overlays_.draw(quad_, egl_->width(), egl_->height());  // bulle d'aide, vignette du glisser
     if (egl_->swap()) {
       countPresented();
       if (video) video->reportSwap();
@@ -270,6 +274,7 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
   PopupRect popupRect_;
   bool popupVisible_ = false, redrawPending_ = false;
   platform::VideoSlot slot_;
+  platform::OverlayStack overlays_;
   CompositorStats stats_;
   uint64_t stats_dmabuf_ = 0, windowFrames_ = 0;
   std::chrono::steady_clock::time_point lastPresent_{}, windowStart_ = std::chrono::steady_clock::now();

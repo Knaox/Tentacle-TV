@@ -7,6 +7,7 @@
 #include "shell/ipc.h"
 #include "shell/native_input.h"
 #include "shell/shell.h"
+#include "shell/stall_meter.h"
 #include "shell/window_scale.h"
 
 namespace tentacle {
@@ -94,6 +95,15 @@ void registerBuiltinHandlers(AppContext& ctx) {
     j["presentIntervalMeanMs"] = s.presentIntervalMeanMs;
     j["presentIntervalMaxMs"] = s.presentIntervalMaxMs;
     j["cursor"] = g_shell ? g_shell->lastCursor() : -1;
+    r.reply(j);
+  });
+  // Les arrêts du fil principal (stall_meter.h) ; `{reset:true}` remet le compteur à zéro.
+  ipc::registerHandler("shell.debug.stalls", [](const Json& p, ipc::Responder r) {
+    stall::Meter& m = stall::meter();
+    Json recent = Json::array();
+    for (const auto& s : m.recent()) recent.push_back({{"what", s.what}, {"detail", s.detail}, {"ms", s.ms}});
+    Json j{{"maxMs", m.maxMs()}, {"maxWhat", m.maxWhat()}, {"count", m.count()}, {"recent", recent}};
+    if (p.is_object() && p.value("reset", false)) m.reset();
     r.reply(j);
   });
   ipc::registerHandler("shell.debug.webPixel", [](const Json& p, ipc::Responder r) {

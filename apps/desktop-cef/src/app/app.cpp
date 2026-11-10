@@ -20,6 +20,7 @@
 #include "shell/message_pump.h"
 #include "shell/paths.h"
 #include "shell/shell.h"
+#include "shell/stall_meter.h"
 
 namespace tentacle {
 namespace {
@@ -31,6 +32,24 @@ bool onWindowEvent(void* userdata, SDL_Event* e) {
     static_cast<Shell*>(userdata)->syncWindowGeometry();
   }
   return true;
+}
+
+/// Le nom d'une étape de la boucle, pour le journal des arrêts du fil principal.
+const char* stepName(uint32_t type) {
+  if (type >= SDL_EVENT_USER) return "travail de CEF";  // la pompe et ses tâches postées
+  switch (type) {
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: return "clic (appui)";
+    case SDL_EVENT_MOUSE_BUTTON_UP: return "clic (relâche)";
+    case SDL_EVENT_MOUSE_MOTION: return "mouvement de la souris";
+    case SDL_EVENT_MOUSE_WHEEL: return "molette";
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP: return "touche";
+    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: return "fenêtre redimensionnée";
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+    case SDL_EVENT_WINDOW_FOCUS_LOST: return "focus de la fenêtre";
+    default: return "évènement de la fenêtre";
+  }
 }
 
 int displayRefreshRate(SDL_Window* window) {
@@ -179,6 +198,8 @@ int runApp(int argc, char** argv) {
       continue;
     }
     do {
+      // Chaque étape est chronométrée : une étape longue, c'est l'app figée (stall_meter.h).
+      stall::Scope step(stepName(e.type));
       if (pump->handleSdlEvent(e.type)) continue;
       if (lifecycle::app::handleEvent(e)) continue;
       if (!lifecycle::app::windowAlive()) continue;

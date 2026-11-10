@@ -10,6 +10,7 @@
 
 #include "platform/linux/graphics_session.h"
 #include "platform/linux/locale_linux.h"
+#include "platform/linux/overlay_place_linux.h"
 
 using namespace tentacle::platform;
 
@@ -81,7 +82,25 @@ void localeTests() {
 
 void edidTests();  // edid_linux_tests.cpp
 
+// La bulle d'aide est dessinée DANS la fenêtre (overlay_linux.h) : elle n'en sort jamais.
+void tooltipPlaceTests() {
+  const auto place = [](int cx, int cy, int w, int h) { return placeTooltip(cx, cy, w, h, 1280, 800, 20, 8, 4); };
+  auto p = place(300, 200, 120, 24);
+  check(p.x == 300 && p.y == 220, "bulle sous le curseur");
+  p = place(1250, 200, 120, 24);
+  check(p.x == 1280 - 4 - 120 && p.y == 220, "bord droit : ramenée dans la fenêtre");
+  p = place(300, 790, 120, 24);
+  check(p.y == 790 - 8 - 24, "bas de la fenêtre : au-dessus du curseur");
+  p = place(-50, 5, 120, 24);
+  check(p.x == 4, "curseur hors de la fenêtre à gauche : marge");
+  p = placeTooltip(10, 10, 400, 60, 300, 50, 20, 8, 4);
+  check(p.x == 0 && p.y == 0, "bulle plus grande que la fenêtre : calée en haut à gauche");
+  p = placeTooltip(600, 20, 200, 30, 1280, 60, 20, 8, 4);
+  check(p.y >= 4 && p.y + 30 <= 60 - 4, "fenêtre basse : la bulle tient entière");
+}
+
 int main() {
+  tooltipPlaceTests();
   sessionTests();
   localeTests();
   edidTests();

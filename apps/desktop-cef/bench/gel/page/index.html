@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>banc gel</title>
+<!-- Page du banc « gel au clic » : une barre de boutons à bulle d'aide (title=), comme la barre
+     de navigation de l'app, et ce que la page a vécu : clics reçus, plus long trou entre deux
+     images (requestAnimationFrame). Servie sous tentacle://app par --web-root. -->
+<style>
+  html, body { margin: 0; height: 100%; background: #14121c; color: #ddd; font: 14px sans-serif; }
+  nav { display: flex; gap: 12px; padding: 40px; }
+  button { width: 160px; height: 60px; border-radius: 30px; border: 0; background: #7c3aed; color: #fff; }
+  #spin { width: 40px; height: 40px; margin: 40px; background: #db2777; animation: turn 1s linear infinite; }
+  @keyframes turn { to { transform: rotate(360deg); } }
+</style>
+<nav>
+  <button id="b0" title="Accueil — première bulle d'aide">Accueil</button>
+  <button id="b1" title="Bibliothèques">Bibliothèques</button>
+  <button id="b2" title="Recherche (Ctrl+K)">Recherche</button>
+  <button id="b3">Sans bulle</button>
+</nav>
+<div id="spin"></div>
+<!-- Un glisser interne : sa vignette est, elle aussi, une image du compositeur (drag_ghost.cpp). -->
+<div id="drag" draggable="true" style="width:160px;height:60px;margin:40px;border-radius:12px;background:#0e7490;line-height:60px;text-align:center">À glisser</div>
+<script>
+  const bench = (window.__bench = { clicks: [], moves: 0, last: null, maxGapMs: 0, gaps: [] });
+  addEventListener("mousemove", (e) => { bench.moves++; bench.last = { x: e.clientX, y: e.clientY }; }, true);
+  addEventListener("click", (e) => bench.clicks.push({ id: e.target.id, t: performance.now() }), true);
+  let prev = performance.now();
+  (function tick(now) {
+    const gap = now - prev;
+    prev = now;
+    if (gap > bench.maxGapMs) bench.maxGapMs = gap;
+    if (gap > 50) bench.gaps.push(Math.round(gap));
+    requestAnimationFrame(tick);
+  })(prev);
+  bench.drags = [];
+  for (const type of ["dragstart", "dragend", "drop"]) addEventListener(type, () => bench.drags.push(type), true);
+  addEventListener("dragover", (e) => e.preventDefault(), true);
+  bench.reset = () => { bench.clicks = []; bench.maxGapMs = 0; bench.gaps = []; };
+  bench.rect = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+</script>
