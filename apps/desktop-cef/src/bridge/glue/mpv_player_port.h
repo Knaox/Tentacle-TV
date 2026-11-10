@@ -46,6 +46,11 @@ class MpvPlayerPort : public PlayerPort {
   /// La fenêtre a changé de taille (points) : la surface suit, plein cadre.
   void windowResized(double widthPt, double heightPt);
 
+  /// Verre natif (axe verre) : le lecteur en cours (nullptr sans lecture), et l'avis « la vraie
+  /// couche vidéo est posée sous la page » (vrai) / « elle part » (faux).
+  tentacle::Player* currentPlayer() const { return player_.get(); }
+  void setSurfaceListener(std::function<void(bool)> listener) { surfaceListener_ = std::move(listener); }
+
  private:
   bool ensureSurface(std::string* error);
 
@@ -62,6 +67,7 @@ class MpvPlayerPort : public PlayerPort {
   std::unique_ptr<tentacle::Player> player_;
   std::unique_ptr<tentacle::VideoSurface> surface_;
   PlayerListener* listener_ = nullptr;
+  std::function<void(bool)> surfaceListener_;
   double widthPt_ = 0, heightPt_ = 0;
   // Génération de l'instance : un rappel d'une instance arrêtée est ignoré.
   std::shared_ptr<int> generation_ = std::make_shared<int>(0);

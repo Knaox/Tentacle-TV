@@ -27,6 +27,7 @@ struct ShimConfig {
   bool windowFocus = false;          // `window.tentacle.windowFocus` (macOS, axe systeme)
   std::string montage;               // Linux : "wayland" | "x11" (`window.tentacle.montage`), "" ailleurs
   std::string windowing;             // Linux : "libre" | "plein-ecran" (`window.tentacle.fenetrage`)
+  Json liquidGlass;                  // macOS 26 : {refractsVideo} (`window.tentacle.liquidGlass`, axe verre) ; null : absent
 };
 
 class Registry {

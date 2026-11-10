@@ -40,7 +40,12 @@ WindowChannels::WindowChannels(Registry& registry, WindowPort& window)
 
   // Le front ne l'appelle que hors macOS ; notre page est TOUJOURS composée en
   // transparence au-dessus de la vidéo (compositeur du socle) : rien à faire.
-  registry_.command("player_surface_transparent", [](const Json&, Reply reply) { reply.ok(nullptr); });
+  // Le verre natif (axe verre) suit seulement la fin de lecture, que la page annonce partout.
+  registry_.command("player_surface_transparent", [this](const Json& payload, Reply reply) {
+    if (surfaceListener_ && payload.is_object() && payload.contains("on") && payload["on"].is_boolean())
+      surfaceListener_(payload["on"].get<bool>());
+    reply.ok(nullptr);
+  });
 
   // `open-external` n'est pas ici : capacité nommée de la coquille, hors liste comme sous
   // Electron (`registerShellCapabilities`), avec la liste fermée des schémas — src/lifecycle.
