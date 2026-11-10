@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 
 #include "platform/linux/linux_window.h"
@@ -114,12 +115,22 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     const uint64_t flags = mpv_render_context_update(ctx_);
     if (resized || (flags & MPV_RENDER_UPDATE_FRAME)) {
       mpv_opengl_fbo fbo{int(fbo_), pw, ph, GL_RGBA8};
-      int flip = 1;  // première ligne de l'image en haut de la texture (convention du compositeur)
+      // 0 : la texture tient l'image dans le sens où le compositeur la lit (uv (0,0) en haut) —
+      // mesuré sous X11 : avec 1, la mire s'affichait à l'envers (timecode en bas).
+      int flip = 0;
       mpv_render_param p[] = {{MPV_RENDER_PARAM_OPENGL_FBO, &fbo},
                               {MPV_RENDER_PARAM_FLIP_Y, &flip},
                               {MPV_RENDER_PARAM_INVALID, nullptr}};
       mpv_render_context_render(ctx_, p);
       restoreGlState();
+      if (trace_ && traced_++ < 5) {
+        uint8_t px[4] = {};
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+        glReadPixels(pw / 2, ph / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        std::fprintf(stderr, "[vidéo] rendu %dx%d (flags %llu) centre RGBA %u,%u,%u,%u, erreur GL 0x%x\n", pw, ph,
+                     (unsigned long long)flags, px[0], px[1], px[2], px[3], glGetError());
+      }
     }
     w = texW_;
     h = texH_;
@@ -175,6 +186,9 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
   std::shared_ptr<bool> alive_;
   mpv_render_context* ctx_ = nullptr;
   GLuint fbo_ = 0, tex_ = 0;
+  // TENTACLE_VIDEO_TRACE=1 : les premiers rendus de mpv et le pixel central (diagnostic).
+  const bool trace_ = std::getenv("TENTACLE_VIDEO_TRACE") != nullptr;
+  int traced_ = 0;
   int texW_ = 0, texH_ = 0;
   bool visible_ = true, hasFrame_ = false;
   RectPt frame_;
