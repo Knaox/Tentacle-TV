@@ -34,7 +34,8 @@ class DragDrop {
   explicit DragDrop(SDL_Window* window);
   ~DragDrop();
 
-  /// CefRenderHandler::StartDragging, à la dernière position de la souris (points) ;
+  /// CefRenderHandler::StartDragging, à la dernière position de la souris (unités de fenêtre
+  /// SDL, comme les évènements ; converties en DIP pour CEF) ;
   /// `buttonHeld` faux : le bouton est déjà relâché, le dépôt se fait aussitôt.
   bool startInternal(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> data,
                      cef_drag_operations_mask_t allowed, float x, float y, bool buttonHeld);

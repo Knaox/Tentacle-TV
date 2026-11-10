@@ -94,6 +94,8 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
   CefMouseEvent me;
   switch (e.type) {
     case SDL_EVENT_MOUSE_MOTION:
+      rawMouseX_ = e.motion.x;
+      rawMouseY_ = e.motion.y;
       mouseX_ = e.motion.x;
       mouseY_ = e.motion.y;
       me.x = int(std::lround(mouseX_));

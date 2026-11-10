@@ -84,9 +84,17 @@ void DragDrop::inject(const std::string& payloadJson) {
 }
 
 CefMouseEvent DragDrop::mouseAt(float x, float y) const {
+  // Unités de fenêtre SDL (points sur macOS et Wayland, PIXELS sous Windows et X11) → DIP de
+  // CEF : densité de pixels / échelle d'affichage, la règle de `shell/window_scale.h` (axe
+  // windows) ; l'identité sur macOS.
+  float density = SDL_GetWindowPixelDensity(window_);
+  if (!(density > 0.0f)) density = 1.0f;
+  float display = SDL_GetWindowDisplayScale(window_);
+  if (!(display > 0.0f)) display = density;
+  const float k = density / display;
   CefMouseEvent me;
-  me.x = int(std::lround(x));
-  me.y = int(std::lround(y));
+  me.x = int(std::lround(x * k));
+  me.y = int(std::lround(y * k));
   me.modifiers = cefModifiers(SDL_GetModState());
   if (internal_) me.modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
   return me;
@@ -165,7 +173,8 @@ void DragDrop::endInternal(CefRefPtr<CefBrowser> browser, float x, float y, bool
   delete ghost_;
   ghost_ = nullptr;
   data_ = nullptr;
-  host->DragSourceEndedAt(int(std::lround(x)), int(std::lround(y)), result);
+  const CefMouseEvent at = mouseAt(x, y);
+  host->DragSourceEndedAt(at.x, at.y, result);
   host->DragSourceSystemDragEnded();
 }
 
