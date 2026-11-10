@@ -137,16 +137,22 @@ export function useEpisodes(seriesId: string | undefined, seasonId: string | und
 export const MEDIA_ITEM_FIELDS =
   "Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status";
 
+/** La fiche d'un titre — la requête de `["item", id]`, pour qui la demande hors crochet. */
+export function fetchMediaItem(
+  client: { fetch: <T>(path: string) => Promise<T> },
+  userId: string | null,
+  itemId: string,
+): Promise<MediaItem> {
+  return client.fetch<MediaItem>(`/Users/${userId}/Items/${itemId}?Fields=${MEDIA_ITEM_FIELDS}&EnableUserData=true`);
+}
+
 export function useMediaItem(itemId: string | undefined, options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
 
   return useQuery({
     queryKey: ["item", itemId],
-    queryFn: () =>
-      client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=${MEDIA_ITEM_FIELDS}&EnableUserData=true`
-      ),
+    queryFn: () => fetchMediaItem(client, userId, itemId as string),
     enabled: !!userId && !!itemId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
   });

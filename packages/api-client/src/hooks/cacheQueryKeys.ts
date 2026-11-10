@@ -27,6 +27,12 @@ export const LIST_QUERY_PREFIXES = [
   "saga-items",
   "seasons",
   "series-watch-state",
+  // Tous les épisodes d'une série : la feuille « garder hors ligne »
+  // (`useSeriesEpisodes`) et la navigation du lecteur (`useEpisodeNavigation`).
+  "series-episodes",
+  "all-episodes",
+  // Les bonus d'un titre ou d'une saison (`useSpecialFeatures`).
+  "special-features",
 ] as const;
 
 /**

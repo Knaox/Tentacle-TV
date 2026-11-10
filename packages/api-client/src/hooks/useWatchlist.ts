@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
-import { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet, addItemToLists, removeItemFromLists } from "./cacheUtils";
+import { invalidateAllMediaQueries, addItemToLists, removeItemFromLists, type CacheTarget } from "./cacheUtils";
+import { fetchMediaItem } from "./useLibrary";
+import {
+  beginUserDataGesture, failUserDataGesture, settleUserDataGesture, type UserDataGestureContext,
+} from "./userDataGesture";
 import { WATCHLIST_SERIES_IDS_KEY, WATCHLIST_LIST_KEYS, resetWatchedIfFullyWatchedOnAdd } from "./watchlistEffects";
 import { forgetAutoRetired } from "./watchlistAutoRetired";
 
@@ -57,14 +61,20 @@ export function useToggleWatchlist(
   const seriesId = opts?.seriesId;
   const listItem = opts?.listItem;
 
-  const settle = () => {
+  const target: CacheTarget = { matchId: itemId, matchSeriesId: seriesId };
+
+  const settle = (context: UserDataGestureContext | undefined) => {
     invalidateAllMediaQueries(qc, {
       itemId,
       seriesContext: seriesId ? { seriesId } : undefined,
     });
     // Carrousel/page « Ma liste » : refetch immédiat (l'item apparaît/disparaît).
     qc.invalidateQueries({ queryKey: ["watchlist"], refetchType: "active" });
-    qc.invalidateQueries({ queryKey: WATCHLIST_SERIES_IDS_KEY });
+    const set = qc.invalidateQueries({ queryKey: WATCHLIST_SERIES_IDS_KEY });
+    // Le geste tient jusqu'à ce que l'ensemble (une série) ou la fiche disent la vérité.
+    void settleUserDataGesture(qc, context, {
+      itemId, fetchItem: (id) => fetchMediaItem(client, userId, id), refetches: seriesId ? [set] : [],
+    });
   };
 
   const add = useMutation({
@@ -73,20 +83,18 @@ export function useToggleWatchlist(
     // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
     meta: { failureTitle: "errors:toastWatchlistFailed" },
     onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["item", itemId] });
-      const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ Likes: true }));
-      patchSeriesIdSet(qc, WATCHLIST_SERIES_IDS_KEY, seriesId, true, snapshot);
+      const context = await beginUserDataGesture(qc, {
+        itemId, target, patch: { Likes: true }, seriesSet: { key: WATCHLIST_SERIES_IDS_KEY, seriesId, add: true },
+      });
       // Insertion optimiste dans le carrousel (Movie/Series direct ; un ajout
       // via épisode n'a pas l'item série → couvert par le refetch de settle).
       if (listItem) {
         const optimistic: MediaItem = { ...listItem, UserData: { ...listItem.UserData, Likes: true } as MediaItem["UserData"] };
-        addItemToLists(qc, WATCHLIST_LIST_KEYS, optimistic, snapshot);
+        addItemToLists(qc, WATCHLIST_LIST_KEYS, optimistic, context.snapshot);
       }
-      return { snapshot };
+      return context;
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
-    },
+    onError: (_err, _vars, ctx) => failUserDataGesture(qc, ctx),
     // Ajouté à Ma liste alors que c'est déjà vu à 100% → on remet à zéro
     // (re-regarder à neuf). Si seulement commencé, on laisse la reprise.
     onSuccess: () => {
@@ -94,7 +102,7 @@ export function useToggleWatchlist(
       // L'utilisateur a repris la main : la série ne reviendra plus d'elle-même.
       void forgetAutoRetired(seriesId);
     },
-    onSettled: settle,
+    onSettled: (_data, error, _vars, ctx) => settle(error ? undefined : ctx),
   });
 
   const remove = useMutation({
@@ -102,22 +110,20 @@ export function useToggleWatchlist(
       client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }),
     meta: { failureTitle: "errors:toastWatchlistFailed" },
     onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["item", itemId] });
-      const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ Likes: false }));
-      patchSeriesIdSet(qc, WATCHLIST_SERIES_IDS_KEY, seriesId, false, snapshot);
+      const context = await beginUserDataGesture(qc, {
+        itemId, target, patch: { Likes: false }, seriesSet: { key: WATCHLIST_SERIES_IDS_KEY, seriesId, add: false },
+      });
       // Retrait optimiste du carrousel/page « Ma liste ».
-      removeItemFromLists(qc, WATCHLIST_LIST_KEYS, itemId, snapshot);
-      return { snapshot };
+      removeItemFromLists(qc, WATCHLIST_LIST_KEYS, itemId, context.snapshot);
+      return context;
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
-    },
+    onError: (_err, _vars, ctx) => failUserDataGesture(qc, ctx),
     // Un retrait manuel n'a pas de suivi en principe — sauf remise serveur qui
     // aurait croisé le geste : on efface par précaution, le geste prime.
     onSuccess: () => {
       void forgetAutoRetired(seriesId);
     },
-    onSettled: settle,
+    onSettled: (_data, error, _vars, ctx) => settle(error ? undefined : ctx),
   });
 
   return { add, remove };
