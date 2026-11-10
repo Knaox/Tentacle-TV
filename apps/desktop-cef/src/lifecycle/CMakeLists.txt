@@ -18,6 +18,7 @@ add_library(tentacle_lifecycle_core STATIC
   background_drain.cpp
   close_sequence.cpp
   drag_regions.cpp
+  exit_flow.cpp
   playback_farewell.cpp
   power_save.cpp
   quit_guard.cpp
@@ -30,6 +31,7 @@ target_compile_options(tentacle_lifecycle_core PRIVATE -Wall -Wextra -Wno-unused
 add_executable(tentacle_lifecycle_tests
   tests/main.cpp
   tests/app_links_tests.cpp
+  tests/exit_flow_tests.cpp
   tests/exit_rules_tests.cpp
   tests/playback_farewell_tests.cpp
   tests/power_save_tests.cpp
