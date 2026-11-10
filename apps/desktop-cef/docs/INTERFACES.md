@@ -240,3 +240,17 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   Windows ont au moins des stubs qui compilent dans l'esprit (pas forcément construits ici).
 - Aucun chemin absolu dans le code ; les chemins viennent de variables d'environnement
   (`TENTACLE_CEF_CACHE`, défaut `~/.cache/tentacle-cef`) ou d'arguments.
+
+## Réseau et données (axe reseau, lot cef-parite)
+
+### Dossier de données — `src/shell/paths.h` (lié à `tentacle_shell`)
+- `tentacle::paths::userData()` → `std::filesystem::path` absolu : le dossier de données
+  d'Electron (`dataPaths.ts`) — macOS `~/Library/Application Support/com.tentacle.media`,
+  Windows `%APPDATA%\com.tentacle.media`, Linux `$XDG_DATA_HOME` (absolu seulement) ou
+  `~/.local/share` + `/com.tentacle.media`. Sûr depuis n'importe quel fil ; ne crée rien.
+  Tout fichier partagé avec Electron (`octave-art/`, `tentacle-local.db`, médias gardés) se
+  range sous ce dossier, aux mêmes noms.
+- `--user-data=<dossier>` le remplace (lu par `paths::configure(opts.extra)`, juste après
+  `parseArgs` dans `src/app/app.cpp`). `pnpm dev:cef` passe `--user-data=<profil d'Electron visé>`
+  (`TENTACLE_ELECTRON_PROFILE`, sinon la règle) : stockage du front et données natives au même endroit.
+- Règle pure testée : `dataRoot(env)`, `dataFolder(env)` (`src/net/tests/paths_tests.cpp`).

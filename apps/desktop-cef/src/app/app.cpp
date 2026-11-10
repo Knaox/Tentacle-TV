@@ -16,6 +16,7 @@
 #include "shell/browser_app.h"
 #include "shell/builtin_handlers.h"
 #include "shell/message_pump.h"
+#include "shell/paths.h"
 #include "shell/shell.h"
 
 namespace tentacle {
@@ -68,6 +69,7 @@ void restoreFakeVideo(const AppContext& ctx) { ctx.compositor->setVideoLayer(g_f
 int runApp(int argc, char** argv) {
   AppOptions opts;
   if (!parseArgs(argc, argv, opts)) return 2;
+  paths::configure(opts.extra);  // reseau : --user-data (shell/paths.h)
   if (opts.url.empty()) opts.url = platform::resourceUrl("page.html");
 
   platform::initApplication();
