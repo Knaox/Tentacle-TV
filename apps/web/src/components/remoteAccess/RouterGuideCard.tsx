@@ -6,7 +6,7 @@ import { AdminNotice } from "../admin/kit";
 import { cls } from "../../pages/adminUtils";
 
 const OTHER = "other";
-const linkCls = "inline-flex items-center gap-1 font-semibold text-content-primary underline underline-offset-4 hover:opacity-80";
+const linkCls = "inline-flex items-center gap-1 rounded-chip font-semibold text-content-primary underline underline-offset-4 hover:opacity-80";
 
 /**
  * La box : l'opérateur choisi (gardé dans les réglages), son guide officiel
@@ -20,7 +20,7 @@ export function RouterGuideCard({ routerId, onChange }: { routerId: string | nul
   const value = guide ? guide.id : routerId === OTHER ? OTHER : "";
 
   return (
-    <div className="rounded-xl border border-line-subtle bg-fill-faint p-4">
+    <div className="rounded-tile bg-surface-2 p-4">
       <h3 className="text-sm font-semibold text-content-primary">{t("routerTitle")}</h3>
       <label htmlFor={selectId} className={`${cls.lbl} mt-3`}>
         {t("routerChoose")}

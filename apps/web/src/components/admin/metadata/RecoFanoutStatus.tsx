@@ -69,18 +69,18 @@ export const RecoFanoutStatus = memo(function RecoFanoutStatus({ fanout, readAt 
   const running = view.kind === "running";
   const ratio = running ? view.processed / view.total : 0;
   return (
-    <div ref={ref} className="space-y-2.5 rounded-lg border border-line-subtle bg-fill-faint p-4">
+    <div ref={ref} className="space-y-2.5 rounded-tile bg-surface-2 p-4">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
         <span className="flex items-center gap-2 font-medium text-content-primary">
           <LoaderCircle
             aria-hidden
             size={16}
-            className="animate-spin text-brand-light"
+            className="animate-spin text-accent"
             style={{ animationPlayState: visible ? "running" : "paused" }}
           />
           {t("fanoutTitle")}
         </span>
-        <span className="tabular-nums text-content-tertiary">
+        <span className="num text-content-tertiary">
           {running ? t("fanoutProgress", { count: view.total, processed: view.processed }) : t("fanoutPreparing")}
         </span>
       </div>
@@ -90,12 +90,10 @@ export const RecoFanoutStatus = memo(function RecoFanoutStatus({ fanout, readAt 
         aria-valuemin={0}
         aria-valuemax={running ? view.total : undefined}
         aria-valuenow={running ? view.processed : undefined}
-        className="h-1.5 overflow-hidden rounded-full bg-fill-soft"
+        className="gauge"
+        data-live="true"
       >
-        <div
-          className="h-full origin-left rounded-full bg-brand transition-transform duration-700 ease-out"
-          style={{ transform: `scaleX(${ratio})` }}
-        />
+        <i style={{ transform: `scaleX(${ratio})` }} />
       </div>
       <p className="text-xs leading-relaxed text-content-tertiary">{t("fanoutRunningHint")}</p>
     </div>

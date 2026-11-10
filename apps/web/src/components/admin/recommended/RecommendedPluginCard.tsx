@@ -35,8 +35,7 @@ const PILL: Record<RecommendedStatus["kind"], { tone: StatusTone; key: string } 
   ready: { tone: "success", key: "statusReady" },
 };
 
-const linkClass =
-  "inline-flex h-9 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-medium text-content-primary transition hover:border-line-strong hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+const linkClass = "btn btn-soft btn-sm";
 
 export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
   const { t } = useTranslation("adminRecommended");
@@ -63,7 +62,7 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
   let footer: ReactNode = null;
   switch (status.kind) {
     case "loading":
-      footer = <div aria-hidden="true" className="skeleton-shimmer h-9 w-40 rounded-full" />;
+      footer = <div aria-hidden="true" className="skeleton-shimmer h-8 w-40 rounded-full" />;
       break;
     case "catalog-error":
       footer = <p className="text-sm text-content-tertiary">{t("catalogError")}</p>;
@@ -118,7 +117,7 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
       footer = status.plugin.setup ? (
         <div className="space-y-3">
           <PluginSetupForm pluginId={status.plugin.pluginId} meta={status.plugin.setup} name={name} onSaved={onSaved} />
-          {adminPath && <Link to={adminPath} className="text-xs font-medium text-content-secondary underline-offset-4 hover:text-content-primary hover:underline">{t("setupOtherSettings")}</Link>}
+          {adminPath && <Link to={adminPath} className="rounded-chip text-xs font-medium text-content-secondary underline-offset-4 transition-colors duration-hover hover:text-content-primary hover:underline">{t("setupOtherSettings")}</Link>}
         </div>
       ) : adminPath ? (
         // Une extension sans formulaire déclaré se règle sur sa propre page.
@@ -142,9 +141,9 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
 
   const compact = status.kind === "ready";
   return (
-    <article aria-labelledby={`rec-${rec.pluginId}`} className="lg-content rounded-xl border border-line-subtle bg-fill-subtle p-4">
+    <article aria-labelledby={`rec-${rec.pluginId}`} className="lg-content rounded-tile bg-surface-2 p-4">
       <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-light)]">
+        <span aria-hidden="true" className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-field bg-surface-3 text-content-primary">
           <Icon size={22} />
         </span>
         <div className="min-w-0 flex-1">
@@ -158,7 +157,7 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
               <ul className="mt-2 grid gap-1 sm:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: rec.benefits }, (_, i) => (
                   <li key={i} className="flex items-start gap-1.5 text-xs leading-relaxed text-content-secondary">
-                    <Check size={13} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-[var(--brand-light)]" />
+                    <Check size={13} weight="bold" aria-hidden="true" className="mt-0.5 flex-shrink-0 text-content-tertiary" />
                     {t(`rec_${rec.pluginId}_benefit${String(i + 1)}`)}
                   </li>
                 ))}

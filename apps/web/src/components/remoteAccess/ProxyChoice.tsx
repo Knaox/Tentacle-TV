@@ -24,8 +24,8 @@ export const ProxyChoice = memo(function ProxyChoice({ value, onChange }: { valu
           return (
             <label
               key={kind}
-              className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors duration-150 focus-within:ring-2 focus-within:ring-line-focus ${
-                selected ? "border-[rgba(var(--brand-rgb),0.55)] bg-[var(--brand-soft)]" : "border-line-subtle bg-fill-faint hover:bg-fill-subtle"
+              className={`flex cursor-pointer gap-3 rounded-tile p-4 transition-colors duration-hover focus-within:ring-2 focus-within:ring-line-focus ${
+                selected ? "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--accent)]" : "bg-surface-2 hover:bg-surface-3"
               }`}
             >
               <input
@@ -34,7 +34,7 @@ export const ProxyChoice = memo(function ProxyChoice({ value, onChange }: { valu
                 value={kind}
                 checked={selected}
                 onChange={() => onChange(kind)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand)]"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
               />
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-content-primary">

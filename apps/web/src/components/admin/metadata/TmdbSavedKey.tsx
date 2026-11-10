@@ -29,7 +29,7 @@ export const TmdbSavedKey = memo(function TmdbSavedKey({
   return (
     // Les boutons passent sous la clé quand la place manque : ce sont les
     // quatre derniers caractères qu'on vient lire, ils ne se tronquent jamais.
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-line-subtle bg-fill-faint p-4">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-tile bg-surface-2 p-4">
       <div className="flex min-w-[14rem] flex-1 items-center gap-3">
         <KeyRound aria-hidden size={18} className="shrink-0 text-content-tertiary" />
         <div className="min-w-0">

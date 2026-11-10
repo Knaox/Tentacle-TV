@@ -34,7 +34,7 @@ export const PublicIpCard = memo(function PublicIpCard({ state, report, loading 
         <p className="text-sm text-content-tertiary" aria-live="polite">{t("publicIpLoading")}</p>
       ) : ip ? (
         <p>
-          <span className="break-all font-mono text-lg font-semibold tabular-nums text-content-primary" data-testid="public-ip">{ip}</span>{" "}
+          <span className="break-all font-mono text-lg font-semibold num text-content-primary" data-testid="public-ip">{ip}</span>{" "}
           <span className="text-xs text-content-tertiary">{t(report?.source === "check" ? "publicIpFromCheck" : "publicIpDetected")}</span>
         </p>
       ) : (

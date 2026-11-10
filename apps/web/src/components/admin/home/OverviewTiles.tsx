@@ -21,7 +21,7 @@ import {
  * mène à la section où l'on agit.
  *
  * Le ton suit l'attention due, pas le contenu : trois tickets ouverts ou une
- * mise à jour de plugin passent en ambre ; des sessions en cours, en violet —
+ * mise à jour de plugin passent en ambre ; des sessions en cours, à la teinte d'accent —
  * il se passe quelque chose, rien n'est à corriger.
  */
 

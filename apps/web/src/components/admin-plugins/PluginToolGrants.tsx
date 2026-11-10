@@ -18,8 +18,8 @@ export const PluginToolGrants = memo(function PluginToolGrants({ plugin }: { plu
   const titleId = useId();
   if (tools.length === 0) return null;
   return (
-    <section aria-labelledby={titleId} className="mt-3 rounded-lg border border-line-subtle bg-fill-soft px-3 py-2.5">
-      <h4 id={titleId} className="text-xs font-semibold uppercase tracking-wide text-content-tertiary">{t("toolGrantTitle")}</h4>
+    <section aria-labelledby={titleId} className="mt-3 rounded-field bg-surface-2 px-3 py-2.5">
+      <h4 id={titleId} className="ui-eyebrow">{t("toolGrantTitle")}</h4>
       <ul className="mt-2 flex flex-col gap-3">
         {tools.map((entry) => (
           <ToolGrantRow key={entry.tool} pluginId={plugin.id} tool={entry.tool} granted={entry.granted} />

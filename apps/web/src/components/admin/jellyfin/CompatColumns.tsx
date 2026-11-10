@@ -30,8 +30,8 @@ const GAPS_SHOWN = 3;
 
 function Column({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 rounded-xl bg-fill-subtle px-4 py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">{label}</p>
+    <div className="min-w-0 rounded-tile bg-surface-2 px-4 py-4">
+      <p className="ui-eyebrow">{label}</p>
       <div className="mt-1.5 space-y-2">{children}</div>
     </div>
   );
@@ -148,7 +148,7 @@ export function LatestColumn({ report }: { report: JellyfinCompatReport }) {
           href={latest.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 font-medium text-content-secondary underline-offset-4 hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="inline-flex items-center gap-1 rounded-chip font-medium text-content-secondary underline-offset-4 transition-colors duration-hover hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {t("releaseNotes")}
           <ExternalLink size={12} aria-hidden="true" />

@@ -73,12 +73,12 @@ export function AttentionPanel({ attention, context }: { attention: AdminAttenti
                 aria-expanded={showHidden}
                 aria-controls={hiddenListId}
                 onClick={() => setShowHidden((value) => !value)}
-                className="flex min-h-[48px] w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
+                className="flex min-h-[48px] w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition-colors duration-hover hover:bg-fill-faint focus-visible:bg-fill-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
               >
                 <span className="text-content-tertiary">{t("hiddenCount", { count: hiddenCount })}</span>
                 <span className="inline-flex items-center gap-1 font-medium text-content-secondary">
                   {showHidden ? t("hiddenCollapse") : t("hiddenShow")}
-                  <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${showHidden ? "rotate-180" : ""}`} />
+                  <ChevronDown size={14} weight="bold" aria-hidden="true" className={`transition-transform duration-hover ease-out ${showHidden ? "rotate-180" : ""}`} />
                 </span>
               </button>
               {showHidden ? (

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TargetIcon as Radar } from "@phosphor-icons/react/dist/csr/Target";
+import { BroadcastIcon as Radar } from "@phosphor-icons/react/dist/csr/Broadcast";
 import type { RemoteAccessState } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { CheckResults } from "./CheckResults";

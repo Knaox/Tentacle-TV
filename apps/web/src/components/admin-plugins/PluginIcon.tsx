@@ -14,13 +14,13 @@ interface PluginIconProps {
 }
 
 const SIZE = {
-  md: { box: "h-11 w-11 rounded-xl text-base", icon: "h-5 w-5" },
-  lg: { box: "h-16 w-16 rounded-2xl text-2xl", icon: "h-7 w-7" },
+  md: { box: "h-11 w-11 rounded-card text-base", icon: "h-5 w-5" },
+  lg: { box: "h-16 w-16 rounded-tile text-2xl", icon: "h-7 w-7" },
 } as const;
 
 /**
  * La tuile d'un plugin : l'image de son registre, sinon l'icône qu'il montre
- * dans la navigation, sinon son initiale — sur le dégradé de la marque. Le
+ * dans la navigation, sinon son initiale — sur une plaque d'encre neutre. Le
  * registre officiel ne publie pas d'image (`icon: ""`) : sans ce repli, toutes
  * les cartes se ressembleraient.
  *
@@ -37,7 +37,7 @@ export const PluginIcon = memo(function PluginIcon({ name, image, lucide, size =
 
   if (src && broken !== src) {
     return (
-      <span aria-hidden className={`flex shrink-0 overflow-hidden border border-line-subtle bg-fill-soft ${dims.box} ${tone}`}>
+      <span aria-hidden className={`flex shrink-0 overflow-hidden bg-surface-3 ${dims.box} ${tone}`}>
         <img
           src={src}
           alt=""
@@ -54,9 +54,9 @@ export const PluginIcon = memo(function PluginIcon({ name, image, lucide, size =
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] font-bold text-cta-brand-fg shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)] ${dims.box} ${tone}`}
+      className={`flex shrink-0 items-center justify-center bg-surface-3 font-display font-bold text-content-primary ${dims.box} ${tone}`}
     >
-      {Icon ? <Icon strokeWidth={2.2} className={dims.icon} /> : monogram(name)}
+      {Icon ? <Icon className={dims.icon} /> : monogram(name)}
     </span>
   );
 });

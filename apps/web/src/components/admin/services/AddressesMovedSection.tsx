@@ -25,7 +25,7 @@ export function AddressesMovedSection() {
 
   return (
     <AdminSection id="addresses-moved" title={t("movedTitle")} description={t("movedBody")}>
-      <Link to={TARGET} className={`${cls.bs} inline-flex items-center gap-2`}>
+      <Link to={TARGET} className={cls.bs}>
         {t("movedLink")}
         <ArrowRight size={16} aria-hidden="true" />
       </Link>

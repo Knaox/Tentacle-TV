@@ -170,7 +170,7 @@ function AddressesFormBody({ publicConfig, direct, variant }: BodyProps) {
           <p className="text-sm leading-relaxed text-content-tertiary">{t("wizardJellyfinLater")}</p>
         ) : (
           <>
-            <div className="flex items-start justify-between gap-4 rounded-xl bg-fill-subtle p-4">
+            <div className="flex items-start justify-between gap-4 rounded-tile bg-surface-2 p-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-content-primary">{t("directLabel")}</p>
                 <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{t("directHint")}</p>

@@ -63,7 +63,7 @@ export function SetupChecklist() {
             )
           ) : (
             <div aria-hidden="true" className="space-y-3">
-              {[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-16 rounded-xl" />)}
+              {[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-16 rounded-tile" />)}
             </div>
           )}
         </div>
@@ -78,7 +78,7 @@ function Progress({ done, total }: { done: number; total: number }) {
   const ratio = total === 0 ? 1 : done / total;
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium tabular-nums text-content-secondary">
+      <span className="num text-sm font-medium text-content-secondary">
         {done === total ? t("setupAllDone") : t("setupProgress", { done, total })}
       </span>
       <div
@@ -87,10 +87,10 @@ function Progress({ done, total }: { done: number; total: number }) {
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={done}
-        className="h-1.5 w-24 overflow-hidden rounded-full bg-fill-soft"
+        className="gauge w-24"
       >
-        {/* Une largeur posée, jamais animée : la barre ne repeint rien. */}
-        <div className={`h-full rounded-full ${done === total ? "bg-status-success" : "bg-[var(--brand)]"}`} style={{ width: `${String(Math.round(ratio * 100))}%` }} />
+        {/* La jauge du socle : une échelle posée, jamais une largeur animée. Tout réglé : le vert. */}
+        <i style={{ transform: `scaleX(${String(ratio)})`, background: done === total ? "var(--status-success)" : undefined }} />
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ function ExternalAction({ href, children }: { href: string; children: string }) 
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
+      className="inline-flex items-center gap-1 rounded-chip text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80"
     >
       {children}
       <ExternalLink size={14} aria-hidden="true" />
@@ -115,7 +115,7 @@ function ExternalAction({ href, children }: { href: string; children: string }) 
 function RetryButton({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("adminJellyfin");
   return (
-    <button type="button" onClick={onRetry} className="text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80">
+    <button type="button" onClick={onRetry} className="btn btn-soft btn-sm">
       {t("retry")}
     </button>
   );

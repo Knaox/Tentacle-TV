@@ -74,9 +74,9 @@ function AddSourceForm({ titleId, onClose, onSubmit, onAdded }: Omit<AddSourceSh
           type="button"
           onClick={onClose}
           aria-label={t("common:close")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-tertiary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="icon-btn btn-sm"
         >
-          <X aria-hidden className="h-5 w-5" />
+          <X aria-hidden size={18} />
         </button>
       </div>
 

@@ -21,7 +21,7 @@ type Tone = "success" | "error" | "brand" | "neutral";
 const BOX: Record<Tone, string> = {
   success: "bg-status-success-bg text-status-success-fg",
   error: "bg-status-error-bg text-status-error-fg",
-  brand: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+  brand: "bg-accent-soft text-accent",
   neutral: "bg-fill-subtle text-content-secondary",
 };
 

@@ -126,7 +126,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
             openList();
           }
         }}
-        className={`${cls.inp} flex cursor-pointer items-center gap-3 text-left hover:bg-fill-soft disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`${cls.inp} flex cursor-pointer items-center gap-3 text-left hover:bg-fill-soft`}
       >
         <CountryFlag code={value} flags={flags} />
         <span className="min-w-0 flex-1 truncate">{selected?.name ?? value}</span>
@@ -134,7 +134,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
         <ChevronDown
           aria-hidden
           size={16}
-          className={`shrink-0 text-content-tertiary transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-content-tertiary transition-transform duration-hover ease-out ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -146,7 +146,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: duration.fast, ease: easeOut }}
           // Fond à 95 % d'opacité : un flou d'arrière-plan n'y verrait rien.
-          className="lg-menu lg-menu-list absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
+          className="lg-menu lg-menu-list absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-tile bg-surface-dropdown"
           style={{ boxShadow: "var(--shadow-dropdown)", ...glass.props.style }}
         >
           {glass.layers}
@@ -169,7 +169,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
               onKeyDown={onSearchKeyDown}
               autoComplete="off"
               spellCheck={false}
-              className="h-10 w-full rounded-lg border border-line-subtle bg-fill-subtle pl-9 pr-3 text-sm text-content-primary outline-none placeholder:text-content-quaternary focus:border-[var(--brand)]"
+              className="field pl-9 pr-3"
             />
           </div>
           <ul id={listId} role="listbox" aria-labelledby={labelId} className="max-h-72 overflow-y-auto overscroll-contain py-1">
@@ -198,10 +198,10 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
                   <CountryFlag code={option.code} flags={flags} />
                   <span className="min-w-0 flex-1 truncate">{option.name}</span>
                   {option.providers !== null && (
-                    <span className="text-xs tabular-nums text-content-quaternary">{option.providers}</span>
+                    <span className="num text-xs text-content-quaternary">{option.providers}</span>
                   )}
                   <span className="flex w-4 shrink-0 justify-center">
-                    {isSelected && <Check aria-hidden size={16} className="text-brand-light" />}
+                    {isSelected && <Check aria-hidden size={16} weight="bold" className="text-accent" />}
                   </span>
                 </li>
               );

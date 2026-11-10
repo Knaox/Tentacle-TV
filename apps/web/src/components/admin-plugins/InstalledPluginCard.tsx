@@ -62,7 +62,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
   return (
     <article
       aria-labelledby={titleId}
-      className="flex flex-col rounded-2xl border border-line-subtle bg-fill-faint p-5 transition-colors duration-150 hover:border-line-strong"
+      className="ui-panel flex flex-col p-5"
     >
       <div className="flex items-start gap-4">
         <PluginIcon name={plugin.name} image={entry?.icon} lucide={navIconName(plugin)} muted={!enabled} />
@@ -75,7 +75,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
               <p className="mt-0.5 truncate text-xs text-content-tertiary">
                 <span className="font-mono">{plugin.pluginId}</span>
                 <span aria-hidden> · </span>
-                <span className="tabular-nums">v{plugin.version}</span>
+                <span className="num">v{plugin.version}</span>
                 {installedOn && (
                   <>
                     <span aria-hidden> · </span>
@@ -97,7 +97,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
             <ServerModulePill plugin={plugin} />
             {official ? (
               <StatusPill tone="neutral" size="sm" dot={false}>
-                <ShieldCheck aria-hidden size={12} />
+                <ShieldCheck aria-hidden size={12} weight="bold" />
                 {t("official")}
               </StatusPill>
             ) : source ? (
@@ -112,17 +112,17 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
       {entry?.description && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-content-tertiary">{entry.description}</p>}
 
       {requires ? (
-        <div className="mt-3 rounded-lg bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
+        <div className="mt-3 rounded-tile bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
           <p className="font-semibold">{t("versionRefusedTitle", { version: requires })}</p>
           <p className="mt-0.5 text-content-secondary">{t("versionRefusedBody")}</p>
         </div>
       ) : refused ? (
-        <div className="mt-3 rounded-lg bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
+        <div className="mt-3 rounded-tile bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
           <p className="font-semibold">{t("storageRefusedTitle")}</p>
           <p className="mt-0.5 text-content-secondary">{t("storageRefusedBody")}</p>
         </div>
       ) : failed && (
-        <div className="mt-3 rounded-lg bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
+        <div className="mt-3 rounded-tile bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
           <p className="font-semibold">{t("serverModuleFailedTitle")}</p>
           {plugin.serverModule?.detail && (
             <p className="mt-0.5 break-words font-mono text-[11px] text-content-secondary">{plugin.serverModule.detail}</p>
@@ -136,9 +136,9 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
         {configureTo && (
           <Link
             to={configureTo}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:border-line-strong hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="btn btn-soft"
           >
-            <Settings2 aria-hidden className="h-4 w-4 text-content-secondary" />
+            <Settings2 aria-hidden size={16} className="text-content-secondary" />
             {t("configure")}
           </Link>
         )}

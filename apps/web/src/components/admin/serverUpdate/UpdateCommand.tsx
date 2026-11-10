@@ -85,7 +85,7 @@ function CommandLine({ command, onCopied }: { command: string; onCopied: () => v
       <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
         <code
           ref={code}
-          className="min-w-0 flex-1 select-all whitespace-pre-wrap break-words rounded-lg border border-line-subtle bg-fill-faint px-3 py-2.5 font-mono text-[13px] leading-relaxed text-content-primary"
+          className="min-w-0 flex-1 select-all whitespace-pre-wrap break-words rounded-field bg-surface-2 px-3 py-2.5 font-mono text-[13px] leading-relaxed text-content-primary"
         >
           {command}
         </code>
