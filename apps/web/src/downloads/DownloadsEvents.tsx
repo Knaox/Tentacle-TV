@@ -15,12 +15,14 @@ import {
   DOWNLOAD_STATE_QUERY_KEY,
   DISK_INFO_QUERY_KEY,
 } from "./useDownloadState";
-import { usePullOnKeep } from "../offline/usePlaybackPull";
+import { usePullOnKeep, usePullOnWatchedGesture } from "../offline/usePlaybackPull";
 
 export function DownloadsEvents() {
   const queryClient = useQueryClient();
   // Un titre qui finit d'arriver reçoit l'état de lecture du serveur.
   usePullOnKeep();
+  // « Vu » basculé en ligne : la base locale des titres gardés suit.
+  usePullOnWatchedGesture();
 
   useEffect(() => {
     if (!supportsDownloads()) return;

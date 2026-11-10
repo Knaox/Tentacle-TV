@@ -36,7 +36,7 @@ vi.mock("../desktop/capabilities", () => ({
   supportsPlaybackReconcile: () => state.commands.includes("downloads_playback_reconcile"),
 }));
 
-const { freshlyKept, resetPlaybackSync, syncPlaybackState } = await import("./playbackSync");
+const { freshlyKept, isWatchedGestureSuccess, resetPlaybackSync, syncPlaybackState } = await import("./playbackSync");
 
 const requests: Array<{ url: string; method: string }> = [];
 let serverItems: unknown[] = [];
@@ -147,5 +147,15 @@ describe("freshlyKept", () => {
     expect(freshlyKept(null, new Set(["a"]))).toEqual([]);
     expect(freshlyKept(new Set(["a"]), new Set(["a", "b"]))).toEqual(["b"]);
     expect(freshlyKept(new Set(["a", "b"]), new Set(["a"]))).toEqual([]);
+  });
+});
+
+describe("isWatchedGestureSuccess", () => {
+  it("ne reconnaît que la réussite d'une bascule « vu »", () => {
+    const event = (type: string, meta?: Record<string, unknown>) => ({ type: "updated", action: { type }, mutation: { options: { meta } } });
+    expect(isWatchedGestureSuccess(event("success", { userDataGesture: "watched" }))).toBe(true);
+    expect(isWatchedGestureSuccess(event("error", { userDataGesture: "watched" }))).toBe(false);
+    expect(isWatchedGestureSuccess(event("success", { failureTitle: "errors:toastFavoriteFailed" }))).toBe(false);
+    expect(isWatchedGestureSuccess({ type: "added" })).toBe(false);
   });
 });

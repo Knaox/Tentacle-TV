@@ -179,3 +179,12 @@ export function freshlyKept(known: ReadonlySet<string> | null, complete: Readonl
   if (known === null) return [];
   return [...complete].filter((itemId) => !known.has(itemId));
 }
+
+/** Une bascule « vu » que le serveur vient d'accepter (`WATCHED_GESTURE_META`, api-client). */
+export function isWatchedGestureSuccess(event: {
+  type: string;
+  action?: { type?: string };
+  mutation?: { options: { meta?: Record<string, unknown> } };
+}): boolean {
+  return event.type === "updated" && event.action?.type === "success" && event.mutation?.options.meta?.userDataGesture === "watched";
+}
