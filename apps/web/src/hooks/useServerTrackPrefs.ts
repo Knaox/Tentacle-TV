@@ -10,9 +10,10 @@
  */
 
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { useResolveMediaTracks } from "@tentacle-tv/api-client";
+import { useLibraryPreference, useResolveMediaTracks } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import { needsBurnIn } from "./useWebPlaybackFallbacks";
+import { resolveScopeOf, seriesIdOf, seriesPrefStateOf } from "./trackPrefScope";
 
 interface Options {
   item: MediaItem | undefined;
@@ -45,6 +46,12 @@ export function useServerTrackPrefs({
   setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
 }: Options): void {
   const resolveTracks = useResolveMediaTracks();
+  // « Appliquer à cette série » cochée ? La série l'emporte alors sur le choix
+  // propre à l'épisode et sur la saison (`trackPrefScope`). Même clé de cache
+  // que la case du lecteur : une seule requête, déjà en mémoire d'un épisode
+  // au suivant.
+  const seriesId = isLocalPlayback ? undefined : seriesIdOf(item);
+  const seriesPref = seriesPrefStateOf(seriesId, useLibraryPreference(seriesId));
   // « La requête est partie », à distinguer de « les préférences sont
   // appliquées ». Les deux étaient confondues dans `prefsApplied`, et un
   // /resolve en échec laissait donc le client croire que ses préférences
@@ -63,11 +70,10 @@ export function useServerTrackPrefs({
       return;
     }
     if ((item.Type === "Episode" || item.Type === "Season") && ancestors === undefined) return;
-    const parentId = item.ParentId;
-    const seriesId = item.SeriesId;
-    const ancestorIds = (ancestors ?? []).map((a) => a.Id);
-    const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
-    if (allCandidates.length === 0) { setPrefsReady(true); return; }
+    // La préférence de série n'a pas encore répondu : on attend de savoir qui l'emporte.
+    if (seriesPref === "pending") return;
+    const scope = resolveScopeOf(item, (ancestors ?? []).map((a) => a.Id), seriesPref);
+    if (scope === null) { setPrefsReady(true); return; }
     requestSent.current = item.Id;
     const aTracks = streams.filter((s) => s.Type === "Audio")
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, isOriginal: s.IsOriginal, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
@@ -75,9 +81,10 @@ export function useServerTrackPrefs({
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     // `itemId` en premier : le backend s'arrête au premier niveau trouvé, donc le
     // choix fait la dernière fois qu'on a regardé CE contenu bat la saison, la
-    // série et la bibliothèque (cf. `preferences.resolve.ts`).
+    // série et la bibliothèque (cf. `preferences.resolve.ts`) — sauf série
+    // cochée : `scope` ne porte alors qu'elle.
     resolveTracks.mutate({
-      libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks,
+      ...scope, audioTracks: aTracks, subtitleTracks: sTracks,
       originalLanguage: item.OriginalLanguage ?? null,
     }, {
       onSuccess: (result) => {
@@ -114,5 +121,5 @@ export function useServerTrackPrefs({
       },
       onError: () => setPrefsReady(true),
     });
-  }, [streams, item, ancestors, isLocalPlayback]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streams, item, ancestors, isLocalPlayback, seriesPref]); // eslint-disable-line react-hooks/exhaustive-deps
 }

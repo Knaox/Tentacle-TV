@@ -19,8 +19,7 @@ import { resolveMediaTracks, type LibraryPreference } from "@tentacle-tv/shared"
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import type { MpvTrack } from "./useDesktopPlayer";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
-import { prefForLibrary } from "../offline/localTrackPrefs";
-import { itemTracksFor } from "../offline/localItemTracks";
+import { localTrackPrefFor } from "../offline/seriesTrackPref";
 import {
   buildLocalAudioTracks,
   buildLocalSubtitleTracks,
@@ -45,6 +44,8 @@ interface Options {
    * comme côté serveur (`preferences.resolve.ts`).
    */
   itemId?: string | null;
+  /** Série de l'épisode : « Appliquer à cette série » l'emporte sur le contenu. */
+  seriesId?: string | null;
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
   /** Clé de source : réinitialise l'application des préférences. */
@@ -62,7 +63,7 @@ function baseLang(lang: string | undefined): string | undefined {
 export function useLocalPlaybackTracks({
   isLocalPlayback, fileLoaded, ready,
   audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
-  localLibraryId, itemId, onAudioChange, onSubtitleChange, sourceKey,
+  localLibraryId, itemId, seriesId, onAudioChange, onSubtitleChange, sourceKey,
 }: Options): { displayAudio: AudioTrack[]; displaySubs: SubtitleTrack[] } {
   const userId = useUserId();
   const { t, i18n } = useTranslation("player");
@@ -97,11 +98,11 @@ export function useLocalPlaybackTracks({
     if (!isLocalPlayback || !fileLoaded || !ready || !userId) return;
     if (displayAudio.length === 0 && displaySubs.length === 0) return;
     if (appliedForSource.current === sourceKey) return;
-    // Le contenu d'abord, la bibliothèque ensuite — même ordre de priorité que
-    // la résolution serveur. Sans cela, un titre disponible hors connexion
-    // oubliait le choix de langue fait la dernière fois qu'on l'a regardé.
-    const clean = itemTracksFor(itemId);
-    const cached = clean ?? prefForLibrary(userId, localLibraryId);
+    // La série cochée d'abord, puis le contenu, puis la bibliothèque — même
+    // ordre de priorité que la résolution en ligne. Sans cela, un titre
+    // disponible hors connexion oubliait le choix de langue fait pour lui, et
+    // « Appliquer à cette série » n'était jamais consultée.
+    const cached = localTrackPrefFor({ userId, seriesId, itemId, libraryId: localLibraryId });
     if (!cached) return;
     appliedForSource.current = sourceKey;
 
@@ -134,7 +135,7 @@ export function useLocalPlaybackTracks({
     if (audioIndex != null) onAudioChange(audioIndex);
     onSubtitleChange(subtitleIndex);
   }, [isLocalPlayback, fileLoaded, ready, userId, displayAudio, displaySubs,
-      mpvAudio, localLibraryId, itemId, sourceKey, onAudioChange, onSubtitleChange]);
+      mpvAudio, localLibraryId, itemId, seriesId, sourceKey, onAudioChange, onSubtitleChange]);
 
   return { displayAudio, displaySubs };
 }

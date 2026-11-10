@@ -2,6 +2,7 @@ import { useEffect, useMemo, type MutableRefObject } from "react";
 import { useSetItemTrackPreference } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import { rememberItemTracks } from "../offline/localItemTracks";
+import { trackChoiceOf } from "./trackChoice";
 
 /**
  * Mémorise, pour CE contenu, les langues choisies dans les réglages du lecteur.
@@ -38,6 +39,7 @@ export function useRememberItemTracks({
   subtitleIndex,
   audioOverrideRef,
   subtitleOverrideRef,
+  sideCars,
 }: {
   item: MediaItem | undefined;
   streams: JfStream[];
@@ -45,6 +47,8 @@ export function useRememberItemTracks({
   subtitleIndex: number | null;
   audioOverrideRef: MutableRefObject<boolean>;
   subtitleOverrideRef: MutableRefObject<boolean>;
+  /** Side-cars de la lecture locale : la langue d'un sous-titre externe (+1000). */
+  sideCars?: ReadonlyArray<{ fileName: string }>;
 }): void {
   const setPref = useSetItemTrackPreference();
   const itemId = item?.Id;
@@ -52,28 +56,14 @@ export function useRememberItemTracks({
   /**
    * Langues courantes, plus le MODE de sous-titres déduit de la piste choisie.
    *
-   * Le mode est conservé dans toute sa finesse — `forced` et `signs` compris.
-   * La case « Appliquer à cette série » le réduit, elle, à `none | always`, si
-   * bien qu'un utilisateur en mode « forcés » qui touchait à une piste voyait son
-   * réglage se transformer en « toujours ». Ici la piste retenue dit d'elle-même
-   * ce qu'elle est.
+   * Le mode est conservé dans toute sa finesse — `forced` et `signs` compris :
+   * la piste retenue dit d'elle-même ce qu'elle est (`trackChoiceOf`, la règle
+   * que « Appliquer à cette série » suit aussi).
    */
-  const choice = useMemo(() => {
-    const audioLang =
-      streams.find((s) => s.Type === "Audio" && s.Index === audioIndex)?.Language ?? null;
-    if (subtitleIndex === null) {
-      return { audioLang, subtitleLang: null, subtitleMode: "none" as const };
-    }
-    const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex);
-    const title = [sub?.Title, sub?.DisplayTitle].filter(Boolean).join(" ");
-    const forced = !!sub?.IsForced || /\bforc(ed|é)e?s?(?![a-z0-9_à-öø-ÿ])/i.test(title);
-    const signes = /\b(sign|songs)\b/i.test(title);
-    return {
-      audioLang,
-      subtitleLang: sub?.Language ?? null,
-      subtitleMode: (signes ? "signs" : forced ? "forced" : "always") as "signs" | "forced" | "always",
-    };
-  }, [streams, audioIndex, subtitleIndex]);
+  const choice = useMemo(
+    () => trackChoiceOf({ streams, audioIndex, subtitleIndex, sideCars }),
+    [streams, audioIndex, subtitleIndex, sideCars],
+  );
 
   useEffect(() => {
     if (!itemId || setPref.isPending) return;
