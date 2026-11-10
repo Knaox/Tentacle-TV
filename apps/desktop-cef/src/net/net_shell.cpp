@@ -10,7 +10,6 @@
 #include <mutex>
 #include <sstream>
 
-#include "app/app.h"
 #include "glue/pont_shell.h"
 #include "net/arg_check.h"
 #include "net/cef_fetch.h"
