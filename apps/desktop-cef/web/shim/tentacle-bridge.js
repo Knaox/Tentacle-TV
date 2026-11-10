@@ -15,7 +15,7 @@
 // remplace une fois) devient un objet JSON, sérialisé par la bibliothèque JSON du
 // natif, jamais à la main :
 //   { origins, serverUrl, version, platform, titleBarHeight, windowFocus, montage, windowing,
-//     commands, events }
+//     liquidGlass, commands, events }
 (function installTentacleBridge(config) {
   "use strict";
   if (window.top !== window) return; // greffons en iframe : jamais de pont
@@ -78,6 +78,85 @@
     });
   }
 
+  // Le verre natif de macOS 26 (`window.tentacle.liquidGlass`, axe verre), ABSENT partout où il
+  // n'existe pas : c'est son absence qui cache l'option de Réglages › Apparence
+  // (`theme/liquidGlassMode.ts`). Le verdict vient du natif, au démarrage (`src/glass/`). Les
+  // changements d'une même tâche partent en UN message, vidé en microtâche (`batcher.ts` du
+  // preload d'Electron, à l'identique) : le dernier mot gagne, région par région, et seuls les
+  // champs du protocole traversent — le natif revalide tout.
+  function createLiquidGlass(settings) {
+    const ease = (value) => (Array.isArray(value) ? [...value] : value);
+    const pickMaterialize = (m) => ({
+      rise: m.rise, scale: m.scale, originX: m.originX, originY: m.originY, delay: m.delay, exit: m.exit,
+      enterEase: ease(m.enterEase), exitEase: ease(m.exitEase),
+    });
+    const pick = (r) => {
+      const out = {
+        id: r.id, x: r.x, y: r.y, width: r.width, height: r.height, radius: r.radius,
+        level: r.level, tint: r.tint, interactive: r.interactive, z: r.z,
+      };
+      if (r.group !== undefined) out.group = r.group;
+      if (r.spacing !== undefined) out.spacing = r.spacing;
+      if (r.transition !== undefined) out.transition = r.transition;
+      if (r.spring !== undefined) out.spring = { response: r.spring.response, dampingFraction: r.spring.dampingFraction };
+      if (r.appearance !== undefined) out.appearance = r.appearance;
+      if (r.materialize !== undefined) out.materialize = pickMaterialize(r.materialize);
+      return out;
+    };
+    let enabled;
+    const upserts = new Map();
+    const removes = new Set();
+    let armed = false;
+    const flush = () => {
+      armed = false;
+      if (enabled === undefined && upserts.size === 0 && removes.size === 0) return;
+      const batch = { upserts: [...upserts.values()], removes: [...removes] };
+      if (enabled !== undefined) batch.enabled = enabled;
+      enabled = undefined;
+      upserts.clear();
+      removes.clear();
+      Promise.resolve(shell.invoke("liquidGlass.batch", batch)).catch(() => undefined);
+    };
+    const arm = () => {
+      if (armed) return;
+      armed = true;
+      queueMicrotask(flush);
+    };
+    // Un nouveau document : le verre de la page précédente part (`did-navigate` d'Electron).
+    Promise.resolve(shell.invoke("liquidGlass.pageStarted", {})).catch(() => undefined);
+    return Object.freeze({
+      supported: true,
+      refractsVideo: settings.refractsVideo === true,
+      setEnabled(value) {
+        enabled = value === true;
+        arm();
+      },
+      upsert(regions) {
+        if (!Array.isArray(regions)) return;
+        // La page n'est pas crue sur son type : un `null` dans le tableau est ignoré.
+        for (const raw of regions) {
+          if (typeof raw !== "object" || raw === null || typeof raw.id !== "string") continue;
+          removes.delete(raw.id);
+          upserts.set(raw.id, pick(raw));
+        }
+        arm();
+      },
+      remove(ids) {
+        if (!Array.isArray(ids)) return;
+        for (const id of ids) {
+          if (typeof id !== "string") continue;
+          upserts.delete(id);
+          removes.add(id);
+        }
+        arm();
+      },
+      // Avec réponse : des nombres seulement, le natif revalide les rectangles.
+      sample(rects) {
+        return Array.isArray(rects) ? Promise.resolve(shell.invoke("liquidGlass.sample", rects)) : Promise.resolve([]);
+      },
+    });
+  }
+
   // Un nouveau document : il n'écoute pas encore les liens d'app (`app-link`) — le natif les
   // garde pour `app_link_take` jusqu'à ce qu'il les demande.
   Promise.resolve(shell.invoke("lifecycle.pageStarted", {})).catch(() => undefined);
@@ -130,6 +209,7 @@
   // montage vidéo et le fenêtré Wayland. ⚠️ La CLÉ reste `fenetrage` : la page la lit par chaîne.
   if (config.montage === "wayland" || config.montage === "x11") bridge.montage = config.montage;
   if (config.windowing === "libre" || config.windowing === "plein-ecran") bridge.fenetrage = config.windowing;
+  if (config.liquidGlass !== null && typeof config.liquidGlass === "object") bridge.liquidGlass = createLiquidGlass(config.liquidGlass);
 
   Object.defineProperty(window, "tentacle", {
     value: Object.freeze(bridge),
