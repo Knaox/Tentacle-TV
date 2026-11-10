@@ -69,7 +69,7 @@ void restoreFakeVideo(const AppContext& ctx) { ctx.compositor->setVideoLayer(g_f
 int runApp(int argc, char** argv) {
   AppOptions opts;
   if (!parseArgs(argc, argv, opts)) return 2;
-  paths::configure(opts.extra);  // reseau : --user-data (shell/paths.h)
+  paths::configure(opts.extra, opts.profileDir, cacheRoot());  // reseau : --user-data, garde des bancs
   if (opts.url.empty()) opts.url = platform::resourceUrl("page.html");
 
   platform::initApplication();

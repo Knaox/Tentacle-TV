@@ -76,15 +76,25 @@ DataEnvironment currentEnvironment() {
   return e;
 }
 
-void configure(const std::map<std::string, std::string>& extraOptions) {
+void configure(const std::map<std::string, std::string>& extraOptions, const fs::path& cefProfileDir,
+               const fs::path& devCacheRoot) {
   std::lock_guard lock(g_mutex);
   g_override.reset();
   g_resolved.reset();
+  std::error_code ec;
   if (auto it = extraOptions.find("user-data"); it != extraOptions.end() && !it->second.empty()) {
-    std::error_code ec;
     const fs::path given = fromUtf8(it->second);
     const fs::path p = fs::absolute(given, ec);
     g_override = ec ? given : p.lexically_normal();
+    return;
+  }
+  if (cefProfileDir.empty() || devCacheRoot.empty()) return;
+  // Comparés après résolution des liens (un ~/.cache lié ailleurs reste le cache).
+  const fs::path profile = fs::weakly_canonical(fs::absolute(cefProfileDir, ec), ec);
+  const fs::path root = fs::weakly_canonical(fs::absolute(devCacheRoot, ec), ec);
+  const fs::path inside = profile.lexically_relative(root);
+  if (!inside.empty() && *inside.begin() != ".." && inside != ".") {
+    g_override = fs::absolute(cefProfileDir, ec).lexically_normal() / "user-data";
   }
 }
 

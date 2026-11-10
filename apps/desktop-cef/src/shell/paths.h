@@ -49,7 +49,14 @@ DataEnvironment currentEnvironment();
 
 /// À appeler une fois, juste après la lecture des arguments : lit `--user-data` dans les
 /// options `--clé=valeur` restantes (`AppOptions::extra`). Sans elle, la règle seule.
-void configure(const std::map<std::string, std::string>& extraOptions);
+///
+/// GARDE DES BANCS : sans `--user-data`, un profil CEF (`--profile`) rangé sous la racine du
+/// cache de développement (`devCacheRoot`, `~/.cache/tentacle-cef`) prend `<profil>/user-data`,
+/// jamais le dossier d'Electron — un lancement direct de Tentacle.app par un script de banc ne
+/// touche pas aux vraies données. Hors de ce cache (l'app installée), la règle d'Electron.
+void configure(const std::map<std::string, std::string>& extraOptions,
+               const std::filesystem::path& cefProfileDir = {},
+               const std::filesystem::path& devCacheRoot = {});
 
 /// Le dossier de données (absolu). Sûr depuis n'importe quel fil. Ne le crée pas.
 std::filesystem::path userData();

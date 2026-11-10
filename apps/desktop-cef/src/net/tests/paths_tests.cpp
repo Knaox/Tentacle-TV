@@ -66,6 +66,23 @@ int main() {
   configure({{"user-data", ""}});
   CHECK(userData() == dataFolder(currentEnvironment()));
 
+  // Garde des bancs : un profil CEF sous le cache de développement, sans --user-data, prend
+  // <profil>/user-data — jamais le dossier d'Electron ; hors du cache, la règle d'Electron.
+  configure({}, "/tmp/tentacle-cache/profiles/banc", "/tmp/tentacle-cache");
+  CHECK(userData() == fs::path("/tmp/tentacle-cache/profiles/banc/user-data"));
+  configure({}, "/tmp/tentacle-cache/profiles/../profiles/x/", "/tmp/tentacle-cache/");
+  CHECK(userData() == fs::path("/tmp/tentacle-cache/profiles/x/user-data"));
+  configure({}, "/tmp/tentacle-cache-autre/profil", "/tmp/tentacle-cache");  // préfixe, pas un dossier parent
+  CHECK(userData() == dataFolder(currentEnvironment()));
+  configure({}, "/Applications/Tentacle/profil", "/tmp/tentacle-cache");      // l'app installée
+  CHECK(userData() == dataFolder(currentEnvironment()));
+  configure({}, "/tmp/tentacle-cache", "/tmp/tentacle-cache");                 // la racine elle-même
+  CHECK(userData() == dataFolder(currentEnvironment()));
+  configure({{"user-data", "/tmp/choisi"}}, "/tmp/tentacle-cache/profiles/banc", "/tmp/tentacle-cache");
+  CHECK(userData() == fs::path("/tmp/choisi"));                                // --user-data l'emporte
+  configure({}, "/tmp/tentacle-cache/profiles/banc", "");
+  CHECK(userData() == dataFolder(currentEnvironment()));
+
   if (failures == 0) std::printf("paths : OK\n");
   return failures == 0 ? 0 : 1;
 }
