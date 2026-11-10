@@ -280,3 +280,12 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (`shell/app_scheme.h`) — posée par `reseau::install` d'après l'`index.html` servi, portée par
   TOUTE réponse de `tentacle://` hors greffons. **horsligne** : `tentacle://local` doit la poser
   aussi (`Content-Security-Policy: appscheme::appCsp()`), comme Electron.
+- Relais Jellyfin (`net/jellyfin_relay.h`, cible `tentacle_net_commands`, testée sans CEF) :
+  `jellyfin_session_post` (liste FERMÉE `/Sessions/Playing[/Progress|/Stopped]`),
+  `jellyfin_playback_info`, `jellyfin_kill_encodings` — chemins construits côté natif, 20 s, en-têtes
+  `Authorization` (Jellyfin direct) ou `X-Emby-*` (proxy `…/api/jellyfin`). Adieu à Jellyfin :
+  `reseau::connectFarewell` (`net/farewell.h`) appelle `lifecycle::noteSessionPost`,
+  `trackSessionPost` et `setFarewellSender` (axe systeme) dès que la cible `tentacle_lifecycle`
+  existe (expression génératrice CMake, sans ordre d'`add_subdirectory`). `reseau::jellyfinRelay()`.
+- Diagnostic du banc (hors `window.tentacle`) : `__shell.invoke('reseau.debug.trace')` → les 200
+  dernières requêtes natives des relais `{method, url (sans requête), status, error, ms}`.

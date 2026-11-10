@@ -7,9 +7,17 @@ namespace tentacle {
 struct AppContext;
 }
 
+namespace tentacle::net::jellyfin {
+class Relay;
+}
+
 namespace tentacle::reseau {
 
 void install(AppContext& ctx);
 void shutdown();
+
+/// Les relais Jellyfin (adieu à la sortie, axe systeme : `setSessionObserver`, `postStop`) ;
+/// nul avant `install`.
+net::jellyfin::Relay* jellyfinRelay();
 
 }  // namespace tentacle::reseau
