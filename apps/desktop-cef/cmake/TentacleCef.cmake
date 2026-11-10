@@ -33,6 +33,12 @@ else()
   set(PROJECT_ARCH "arm64")
 endif()
 find_package(CEF REQUIRED)
+if(OS_LINUX)
+  # Les drapeaux du wrapper sont réglés pour le Clang de Chromium ; GCC (Fedora, Debian) y
+  # trouve d'autres avertissements, que -Werror rendrait bloquants pour du code qui n'est pas
+  # le nôtre. Linux seulement : macOS et Windows inchangés.
+  list(REMOVE_ITEM CEF_COMPILER_FLAGS -Werror)
+endif()
 add_subdirectory("${CEF_LIBCEF_DLL_WRAPPER_PATH}" libcef_dll_wrapper EXCLUDE_FROM_ALL)
 
 # macOS 13 minimum comme CEF ; notre code vise macOS 14+ en pratique (EDR, ProMotion).
