@@ -54,4 +54,20 @@ describe("DownloadsNavButton", () => {
     expect(percentOf(html)).toBe("50");
     expect(html).toContain('aria-label="downloads 50"');
   });
+
+  it("montre le lot par un anneau, en rotations seules — et rien au repos", () => {
+    state.entries = [{ id: 1, status: "complete", bytesDone: 100, expectedSize: 100 }];
+    expect(renderToStaticMarkup(<DownloadsNavButton />)).not.toContain("data-ring-right");
+
+    state.entries = [
+      { id: 1, status: "downloading", bytesDone: 150, expectedSize: 200 },
+      { id: 2, status: "paused", bytesDone: 0, expectedSize: 0 },
+    ];
+    // Une taille inconnue : l'avancement se lit en titres (0,75 sur 2 = 37,5 %) → 135° à droite.
+    const html = renderToStaticMarkup(<DownloadsNavButton />);
+    expect(html).toContain('data-ring-right="135"');
+    expect(html).toContain('data-ring-left="0"');
+    expect(html).toContain("rotate(135deg)");
+    expect(html).not.toMatch(/stroke-dashoffset|animate-pulse/);
+  });
 });

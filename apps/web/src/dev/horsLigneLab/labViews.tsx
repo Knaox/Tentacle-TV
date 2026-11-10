@@ -130,7 +130,7 @@ function Notices() {
     };
   }, []);
   return (
-    <div className="mx-auto flex max-w-[900px] flex-col gap-6 px-6 pb-16 pt-48" data-lab-ready={ready}>
+    <div className="mx-auto flex max-w-[900px] flex-col gap-6 px-6 pb-16 pt-72" data-lab-ready={ready}>
       <TopBarStrip />
       <OfflineSwitchBanner />
       <h1 className="font-display text-display-3">Le mode hors ligne</h1>

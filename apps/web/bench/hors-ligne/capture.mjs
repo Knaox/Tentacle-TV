@@ -97,6 +97,46 @@ const fileOf = (name, label, width) => join(OUT, `${name}-${label}-${width}.png`
 const lotPercent = (page) => page.evaluate(() => Number(document.querySelector("[data-lot-percent]")?.getAttribute("data-lot-percent") ?? NaN));
 const OFFLINE = { tentacle_offline_manual: "1" };
 
+/**
+ * La feuille, MESURÉE dans la page : le temps que met son panneau à se poser (transform revenu à
+ * l'identité) et celui qui sépare « Annuler » de son démontage. Attendu : ≈ 320 ms et ≈ 200 ms.
+ */
+if (wanted("mesure")) {
+  const page = await open("dark", 1440, "vue=feuille-film");
+  const exitMs = await page.evaluate(() => new Promise((done) => {
+    const start = performance.now();
+    const watch = new MutationObserver(() => {
+      if (document.querySelector('[role="dialog"]')) return;
+      watch.disconnect();
+      done(Math.round(performance.now() - start));
+    });
+    watch.observe(document.body, { childList: true, subtree: true });
+    [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.trim() === "Annuler").click();
+  }));
+  // La feuille prévient son appelant une image après sa sortie : on le laisse la démonter.
+  await page.waitForTimeout(400);
+  const enterMs = await page.evaluate(() => new Promise((done) => {
+    const start = performance.now();
+    [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Rouvrir la feuille").click();
+    const settled = (panel) => {
+      const m = getComputedStyle(panel).transform;
+      return m === "none" || m === "matrix(1, 0, 0, 1, 0, 0)";
+    };
+    let moved = false;
+    const tick = () => {
+      const panel = document.querySelector('[role="dialog"]');
+      if (panel && !settled(panel)) moved = true;
+      if (panel && moved && settled(panel)) return done(Math.round(performance.now() - start));
+      if (performance.now() - start > 2000) return done(NaN);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+  console.log(`feuille : entrée ≈ ${enterMs} ms (attendu 320), sortie ≈ ${exitMs} ms (attendu 200 + une image)`);
+  if (!(enterMs > 250 && enterMs < 420) || !(exitMs > 150 && exitMs < 300)) errors.push(`durées de la feuille hors attente : entrée ${enterMs} ms, sortie ${exitMs} ms`);
+  await page.close();
+}
+
 for (const [theme, label] of THEMES) {
   for (const width of WIDTHS) {
     const shot = async (name, query, { storage, act, fullPage = false } = {}) => {
@@ -134,7 +174,7 @@ for (const [theme, label] of THEMES) {
       else console.log(`lot (${label}, ${width}) : ${seen.join(" % → ")} %`);
       await page.close();
     }
-    for (const state of ["pause", "erreur", "echec", "repos", "vide"]) {
+    for (const state of ["pause", "erreur", "echec", "preparation", "repos", "vide"]) {
       await shot(`file-${state}`, `vue=file&etat=${state}`, { fullPage: true });
     }
     await shot("file-selection", "vue=file&etat=repos", { fullPage: true, act: async (page) => {

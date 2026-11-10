@@ -96,6 +96,8 @@ interface EntryOptions {
   variant?: "original" | "light";
   ageDays?: number;
   nextRetryAt?: number | null;
+  /** La phase d'un transfert (`prepare` : le serveur prépare encore le fichier). */
+  phase?: string;
 }
 
 /** L'entrée de liste qu'un titre aurait dans la base du moteur. */
@@ -110,7 +112,7 @@ export function entryOf(item: MediaItem, options: EntryOptions): DownloadListEnt
     id: options.id, itemId: item.Id, mediaSourceId: "src", variant: light ? "light" : "original", preset: light ? "p720" : null,
     relPath: `media/${item.Id}.mkv`, expectedSize: expected, bytesDone: status === "complete" ? expected : (options.bytesDone ?? 0),
     status, errorCode: options.errorCode ?? null, audioStreamIndex: null, burnSubtitleIndex: null, retryCount: 0, lastErrorAt: null,
-    nextRetryAt: options.nextRetryAt ?? null, phase: status === "downloading" ? "transfer" : null, subtitlesDone: status === "complete" ? 1 : 0, sourcePath: null,
+    nextRetryAt: options.nextRetryAt ?? null, phase: status === "downloading" ? (options.phase ?? "transfer") : null, subtitlesDone: status === "complete" ? 1 : 0, sourcePath: null,
     title: item.Name ?? item.Id, seriesName: episode ? (item.SeriesName ?? null) : null, kind: episode ? "episode" : "movie",
     seriesId: episode ? (item.SeriesId ?? null) : null, seasonId: episode ? (item.SeasonId ?? null) : null,
     libraryId: episode ? "lib-series" : "lib-films", libraryName: episode ? "Séries" : "Films", libraryType: episode ? "tvshows" : "movies",

@@ -9,7 +9,7 @@ import type { DownloadListEntry } from "@tentacle-tv/offline-core";
 import { clearProgress, readQueueLot, resetQueueLot, updateProgress } from "@tentacle-tv/offline-core/react";
 import { LAB_SEASON, entryOf, keptLibrary } from "./labData";
 
-export const QUEUE_STATES = ["debut", "fini", "milieu", "pause", "erreur", "echec", "repos", "vide"] as const;
+export const QUEUE_STATES = ["debut", "fini", "milieu", "pause", "erreur", "echec", "preparation", "repos", "vide"] as const;
 export type QueueState = (typeof QUEUE_STATES)[number];
 
 const LOT_ID = 9101;
@@ -17,7 +17,7 @@ const LOT_ID = 9101;
 const T0 = 1_800_000_000_000;
 const RATE = 9 * 1024 * 1024;
 
-type Slot = { status: DownloadListEntry["status"]; ratio?: number; errorCode?: string; pausedByUser?: boolean; retryInSeconds?: number };
+type Slot = { status: DownloadListEntry["status"]; ratio?: number; phase?: string; errorCode?: string; pausedByUser?: boolean; retryInSeconds?: number };
 
 /** L'état de chacun des 8 épisodes du lot, dans l'ordre. */
 function slots(state: QueueState): Slot[] {
@@ -30,6 +30,9 @@ function slots(state: QueueState): Slot[] {
       return [...done(1), { status: "downloading", ratio: 0.03 }, ...queued(6)];
     case "milieu":
       return [...done(3), { status: "downloading", ratio: 0.55 }, ...queued(4)];
+    case "preparation":
+      // Un Allégé que le serveur prépare encore : en transfert, sans un octet reçu.
+      return [...done(3), { status: "downloading", phase: "prepare" }, ...queued(4)];
     case "pause":
       return [...done(3), { status: "paused", ratio: 0.55, pausedByUser: true }, ...Array.from({ length: 4 }, (): Slot => ({ status: "paused", pausedByUser: true }))];
     case "erreur":
@@ -59,9 +62,10 @@ export function applyQueueState(state: QueueState, options: { fresh?: boolean } 
     const bytes = Math.round(size * (slot.ratio ?? 0));
     const entry = entryOf(item, {
       id: LOT_ID + index, status: slot.status, bytesDone: bytes, errorCode: slot.errorCode ?? null, pausedByUser: slot.pausedByUser,
-      nextRetryAt: slot.retryInSeconds ? Date.now() + slot.retryInSeconds * 1_000 : null, ageDays: 0,
+      nextRetryAt: slot.retryInSeconds ? Date.now() + slot.retryInSeconds * 1_000 : null, ageDays: 0, phase: slot.phase,
+      variant: slot.phase === "prepare" ? "light" : "original",
     });
-    if (slot.status === "downloading") {
+    if (slot.status === "downloading" && slot.phase !== "prepare") {
       // Deux mesures : le magasin en tire un débit, donc un temps restant.
       updateProgress(entry.id, { bytesDone: Math.max(0, bytes - RATE * 2), expectedSize: size }, T0);
       updateProgress(entry.id, { bytesDone: bytes, expectedSize: size }, T0 + 2_000);
