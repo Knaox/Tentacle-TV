@@ -3,9 +3,10 @@
  * central suit l'INTENTION (« Pause » dès le clic sur un titre), jamais un
  * spinner : l'attente du son ne se montre pas.
  *
- * L'identité : le bouton Lecture porte le dégradé PROFOND de Tentacle (plus de
- * rond blanc plein), aléatoire et répétition allumés sont ROSES, un point rose
- * dessous le redit sans la couleur seule.
+ * L'identité : le bouton Lecture porte le dégradé du logo (il LIT ; jamais un
+ * rond blanc plein), aléatoire et répétition allumés passent à la teinte
+ * franche, un point dessous le redit sans la couleur seule. Le transport est
+ * toujours PLEIN (`components/icons/transport`) ; la pression répond à 97 %.
  */
 
 import { memo } from "react";
@@ -18,7 +19,7 @@ import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
 const iconButton =
-  "relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-content-secondary transition-[color,transform] duration-150 hover:text-content-primary active:scale-90 disabled:cursor-default disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-content-secondary octave-press hover:text-content-primary disabled:cursor-default disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 const toggledOn = "text-octave-accent-text hover:text-octave-accent-text";
 
 export const Transport = memo(function Transport({ size = "md" }: { size?: "md" | "lg" }) {
@@ -46,7 +47,7 @@ export const Transport = memo(function Transport({ size = "md" }: { size?: "md" 
         onClick={() => queueActions.toggleShuffle(player)}
         className={`${iconButton} ${shuffle ? toggledOn : ""}`}
       >
-        <Shuffle className={big ? "h-5 w-5" : "h-4 w-4"} aria-hidden />
+        <Shuffle weight={shuffle ? "bold" : "regular"} className={big ? "h-5 w-5" : "h-4 w-4"} aria-hidden />
         {shuffle && activeDot}
       </button>
       <button type="button" disabled={!hasTrack} aria-label={t("player.previous")} title={t("player.previous")} onClick={() => player.previous()} className={iconButton}>
@@ -73,7 +74,7 @@ export const Transport = memo(function Transport({ size = "md" }: { size?: "md" 
         onClick={() => queueActions.cycleRepeat(player)}
         className={`${iconButton} ${repeat !== "off" ? toggledOn : ""}`}
       >
-        <RepeatIcon className={big ? "h-5 w-5" : "h-4 w-4"} aria-hidden />
+        <RepeatIcon weight={repeat !== "off" ? "bold" : "regular"} className={big ? "h-5 w-5" : "h-4 w-4"} aria-hidden />
         {repeat !== "off" && activeDot}
       </button>
     </div>

@@ -27,7 +27,7 @@ export const StopButton = memo(function StopButton({ shape, className }: StopBut
       onClick={() => player.clear()}
       aria-label={t("player.stop")}
       title={t("player.stop")}
-      className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
+      className={`octave-press flex shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
     >
       {shape === "stop" ? <Square weight="fill" className="h-3.5 w-3.5" aria-hidden /> : <X className="h-5 w-5" aria-hidden />}
     </button>

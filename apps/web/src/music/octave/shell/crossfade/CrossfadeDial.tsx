@@ -31,7 +31,7 @@ export const CrossfadeDial = memo(function CrossfadeDial() {
         <button
           type="button"
           onClick={() => setCrossfadeMs(on ? 0 : lastOn.current)}
-          className="h-8 shrink-0 cursor-pointer rounded-full border border-line-subtle px-3 text-xs font-semibold text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="octave-press h-8 shrink-0 cursor-pointer rounded-full bg-fill-soft px-3 text-xs font-semibold text-content-primary hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {on ? t("crossfade.turnOff") : t("crossfade.turnOn")}
         </button>

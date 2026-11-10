@@ -78,7 +78,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
               <button
                 type="button"
                 onClick={() => queueActions.retry(player)}
-                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-octave-accent-text underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-content-primary underline underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
                 {t("player.retry")}
               </button>

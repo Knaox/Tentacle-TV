@@ -4,7 +4,7 @@
  * Tentacle), la page défilant dessous. Titre en cours à gauche (sa pochette
  * ouvre le lecteur « en cours »), transport et progression au centre, qualité
  * réelle (et, lu depuis la copie gardée, « Sur cet appareil »), état, transition douce (`CrossfadeButton`),
- * « Arrêter la lecture » (`StopButton`), file et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
+ * « Arrêter la lecture » (`StopButton`), file et volume (à la teinte franche) à droite. Au téléphone, un MINI-LECTEUR,
  * la même capsule en une ligne.
  *
  * TOUJOURS SOMBRE, dans les deux thèmes (« jamais une barre blanche ») : la
@@ -52,9 +52,9 @@ function QueueButton({ open, onToggle }: { open: boolean; onToggle: () => void }
       aria-label={t("player.queue")}
       title={t("player.queue")}
       onClick={onToggle}
-      className={`octave-dock-chip lg-bead relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
+      className={`octave-dock-chip lg-bead octave-press relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
     >
-      <ListMusic className="h-[18px] w-[18px]" aria-hidden />
+      <ListMusic weight={open ? "fill" : "regular"} className="h-[18px] w-[18px]" aria-hidden />
       {open && <span aria-hidden className="absolute bottom-0.5 h-1 w-1 rounded-full bg-octave-accent" />}
     </button>
   );
@@ -130,7 +130,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
     <div {...glass.props}>
       {glass.layers}
       <div className="flex items-center gap-3 p-2">
-        <button type="button" onClick={onOpen} aria-label={t("player.open")} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="button" onClick={onOpen} aria-label={t("player.open")} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[10px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           <Artwork url={track.artworkUrl} className="h-10 w-10" eager />
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold text-content-primary">{track.title}</span>

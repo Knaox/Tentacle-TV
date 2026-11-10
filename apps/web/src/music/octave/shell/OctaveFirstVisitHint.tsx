@@ -77,12 +77,12 @@ export const OctaveFirstVisitHint = memo(function OctaveFirstVisitHint({ anchor,
     <div
       role="note"
       aria-live="polite"
-      className="octave-island octave-enter fixed z-[60] w-[256px] p-4"
+      className="octave-bubble octave-enter fixed z-[60] w-[256px] p-4"
       style={place}
       data-octave-first-visit
     >
       <span aria-hidden className={`octave-hint-tip ${compact ? "octave-hint-tip-up right-5" : "octave-hint-tip-left"}`} />
-      <p className="text-sm font-bold text-content-primary">{t("firstVisit.title")}</p>
+      <p className="text-sm font-semibold text-content-primary">{t("firstVisit.title")}</p>
       <p className="mt-1 text-sm text-content-secondary">{t("firstVisit.body")}</p>
       <button
         type="button"

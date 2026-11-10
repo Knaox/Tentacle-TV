@@ -44,7 +44,7 @@ export const OctaveFloatingTabs = memo(function OctaveFloatingTabs() {
             className="octave-touch relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             <span className="flex items-center justify-center" style={{ width: TAB_PILL_W, height: TAB_PILL_H }}>
-              <Icon className={`h-[22px] w-[22px] ${i === active ? "text-octave-accent-text" : "text-content-tertiary"}`} strokeWidth={i === active ? 2.2 : 1.8} aria-hidden />
+              <Icon className={`h-[22px] w-[22px] ${i === active ? "text-octave-accent-text" : "text-content-tertiary"}`} weight={i === active ? "fill" : "regular"} aria-hidden />
             </span>
             <span className={`max-w-full truncate text-[11px] font-semibold leading-[13px] ${i === active ? "text-content-primary" : "text-content-tertiary"}`}>
               {t(key)}

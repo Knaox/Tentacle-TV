@@ -19,7 +19,7 @@ import { OctaveModeSlot } from "../OctaveModeSlot";
 import { OCTAVE_DESTINATIONS } from "../OctaveSidebar";
 
 const itemClass =
-  "octave-nav-link octave-rail-item octave-touch flex min-h-[56px] w-full flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold leading-tight text-content-tertiary transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link octave-rail-item octave-touch flex min-h-[56px] w-full flex-col items-center justify-center gap-1 rounded-tile px-1 text-[11px] font-semibold leading-tight text-content-tertiary transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation(["music", "octaveShell"]);
@@ -35,8 +35,12 @@ export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { o
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
           <li key={to}>
             <NavLink to={to} end={end} className={itemClass}>
-              <Icon className="octave-nav-icon h-6 w-6" aria-hidden />
-              <span className="max-w-full truncate">{t(key)}</span>
+              {({ isActive }) => (
+                <>
+                  <Icon weight={isActive ? "fill" : "regular"} className="octave-nav-icon h-6 w-6" aria-hidden />
+                  <span className="max-w-full truncate">{t(key)}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}

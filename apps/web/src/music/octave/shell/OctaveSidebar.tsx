@@ -7,7 +7,7 @@
  * dans la barre d'onglets flottante (`touch/OctaveFloatingTabs`).
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
- * active prend la pastille de Tentacle, rose en tête, son icône rose
+ * active est une pastille NEUTRE, son icône PLEINE à la teinte franche
  * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
  * même rail, aux mêmes tailles, posé sur le fond ambiant d'Octave, sans dalle
  * (« sans la démarcation, c'est ultra smooth ») : seule la peau de ses entrées
@@ -50,13 +50,13 @@ export const OCTAVE_DESTINATIONS = [
 ] as const;
 
 const linkClass =
-  "octave-nav-link lg-pane-nav flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link lg-pane-nav flex h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const settingsClass =
-  "octave-nav-link -mb-3 flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link -mb-3 flex items-center gap-2.5 rounded-[10px] px-3 py-1.5 text-[13px] font-medium text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const playlistClass =
-  "octave-nav-link octave-nav-playlist lg-pane-nav flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link octave-nav-playlist lg-pane-nav flex items-center gap-3 rounded-[10px] px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation(["music", "octaveShell"]);
@@ -74,8 +74,13 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
           <li key={to}>
             <NavLink to={to} end={end} className={linkClass}>
-              <Icon className="octave-nav-icon h-5 w-5" aria-hidden />
-              {t(key)}
+              {({ isActive }) => (
+                <>
+                  {/* Au trait au repos, PLEINE sur la page courante. */}
+                  <Icon weight={isActive ? "fill" : "regular"} className="octave-nav-icon h-5 w-5" aria-hidden />
+                  {t(key)}
+                </>
+              )}
             </NavLink>
           </li>
         ))}
@@ -83,7 +88,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
       </ul>
       <div className="octave-rail-playlists min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="flex items-center justify-between pb-1 pl-3 pr-1">
-          <h2 className="octave-rail-heading py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
+          <h2 className="octave-rail-heading oc-eyebrow py-1">{t("nav.yourPlaylists")}</h2>
           <ImportEntryButton variant="rail" />
         </div>
         <ul className="flex flex-col gap-0.5">
@@ -105,7 +110,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
 });
 
 /**
- * Une playlist du rail qui ACCUEILLE un titre glissé (bureau, web) : contour rose pendant le survol, l'ajout au
+ * Une playlist du rail qui ACCUEILLE un titre glissé (bureau, web) : contour à la teinte franche pendant le survol, l'ajout au
  * dépôt — un doublon demande confirmation, comme tout ajout. Une playlist qu'on ne peut pas modifier ne réagit pas.
  */
 function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; children: ReactNode }) {
@@ -114,7 +119,7 @@ function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; c
   const accepts = (e: DragEvent) => canAddToPlaylist(playlist) && carriesTrack(e);
   return (
     <li
-      className={`rounded-xl transition-shadow duration-150 ${over ? "ring-2 ring-octave-accent-text" : ""}`}
+      className={`rounded-[10px] ${over ? "ring-2 ring-octave-accent-text" : ""}`}
       onDragOver={(e) => {
         if (!accepts(e)) return;
         e.preventDefault();

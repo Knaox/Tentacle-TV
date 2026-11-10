@@ -11,7 +11,7 @@ import { useOctaveHistory } from "./useOctaveHistory";
 import { useOctaveGlassStage } from "../glass/glassStage";
 
 const chip =
-  "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-press flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-secondary hover:bg-octave-hover hover:text-content-primary disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const HistoryButtons = memo(function HistoryButtons({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation("music");

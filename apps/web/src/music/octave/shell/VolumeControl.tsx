@@ -1,6 +1,6 @@
 /**
- * Octave — le volume : bouton muet + glissière ROSE (Damien, 25/10 : « pas un
- * truc violet, plutôt rose »).
+ * Octave — le volume : bouton muet + glissière d'UNE teinte, la franche (Damien,
+ * 25/10 : « pas un truc violet » — le dégradé de jauge reste à la progression).
  */
 
 import { memo } from "react";
@@ -25,7 +25,7 @@ export const VolumeControl = memo(function VolumeControl({ className = "w-24" }:
         onClick={() => player.toggleMute()}
         aria-label={t(muted ? "player.unmute" : "player.mute")}
         title={t(muted ? "player.unmute" : "player.mute")}
-        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-secondary transition-colors duration-150 hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="octave-press flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <Icon className="h-[18px] w-[18px]" aria-hidden />
       </button>

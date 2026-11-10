@@ -36,6 +36,7 @@ import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
 import { useOctaveEvents } from "../events/useOctaveEvents";
 import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
 import { NowPlayingSheet } from "./NowPlayingSheet";
+import { OctaveHistoryScope } from "./OctaveBackButton";
 import { OctaveSidebar } from "./OctaveSidebar";
 import { PlayerBar } from "./PlayerBar";
 import { QueuePanel } from "./QueuePanel";
@@ -61,7 +62,16 @@ function useResetScroll(main: React.RefObject<HTMLElement | null>) {
   }, [main, pathname]);
 }
 
-export function OctaveShell({ children, onExit }: OctaveShellProps) {
+/** La coquille pose l'historique du mode : ‹ › et le bouton Retour des vues lisent le même. */
+export function OctaveShell(props: OctaveShellProps) {
+  return (
+    <OctaveHistoryScope>
+      <OctaveShellFrame {...props} />
+    </OctaveHistoryScope>
+  );
+}
+
+function OctaveShellFrame({ children, onExit }: OctaveShellProps) {
   const { t } = useTranslation("music");
   const layout = useOctaveLayout();
   const native = useLiquidGlassMode() === "native";
@@ -113,7 +123,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         // Tablette : un tiroir PAR-DESSUS la page (une colonne de plus l'écraserait), fermé au toucher du voile.
         <>
           {tablet && <button type="button" aria-label={t("queue.close")} className="octave-veil fixed inset-0 z-30 cursor-default" onClick={closeQueue} />}
-          <div className={`octave-drawer octave-island overflow-hidden ${tablet ? "fixed bottom-2 right-2 top-2 z-40 w-[min(var(--oc-queue-width),calc(100vw-96px))]" : "my-2 mr-2 w-[var(--oc-queue-width)] shrink-0"}`}>
+          <div className={`octave-drawer octave-island overflow-hidden ${tablet ? "fixed bottom-2 right-2 top-2 z-40 w-[min(var(--oc-queue-width),calc(100vw-96px))] !shadow-menu" : "my-2 mr-2 w-[var(--oc-queue-width)] shrink-0"}`}>
             <QueuePanel onClose={closeQueue} />
           </div>
         </>

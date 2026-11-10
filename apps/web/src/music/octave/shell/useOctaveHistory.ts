@@ -8,7 +8,7 @@
  * est le geste de la bascule), avancer s'éteint après une nouvelle page.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType, type NavigationType } from "react-router-dom";
 
 /** Le type d'une navigation, en clair (les valeurs de l'énumération du routeur). */
@@ -36,7 +36,27 @@ export function nextHistoryRange(range: HistoryRange, at: number, type: HistoryM
   return { base, at, max };
 }
 
-export function useOctaveHistory() {
+export interface OctaveHistory {
+  canBack: boolean;
+  canForward: boolean;
+  back: () => void;
+  forward: () => void;
+}
+
+/**
+ * L'historique de la COQUILLE, partagé : ‹ › du rail et le bouton Retour d'une vue lisent le même
+ * (une vue montée après coup ne saurait pas où le mode a commencé). Posé par `OctaveHistoryScope`.
+ */
+export const OctaveHistoryContext = createContext<OctaveHistory | null>(null);
+
+/** L'historique d'Octave : celui de la coquille si elle l'a posé, sinon le sien (compté depuis son montage). */
+export function useOctaveHistory(): OctaveHistory {
+  const shared = useContext(OctaveHistoryContext);
+  const own = useOwnOctaveHistory();
+  return shared ?? own;
+}
+
+export function useOwnOctaveHistory(): OctaveHistory {
   const location = useLocation();
   const type = useNavigationType();
   const navigate = useNavigate();
