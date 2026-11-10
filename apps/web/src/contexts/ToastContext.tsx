@@ -44,7 +44,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Une région vivante unique : un lecteur d'écran dit chaque message sans
           prendre le focus. Chaque toast compte son temps lui-même (pause au
           survol et au focus). */}
-      <div aria-live="polite" className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      {/* En bas, au centre (le prototype validé) ; la région ne prend aucun clic, ses avis si. */}
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-2 px-4">
         <AnimatePresence initial={false}>
           {toasts.map((t) => (
             <Toast key={t.id} id={t.id} type={t.type} title={t.title} message={t.message} action={t.action} secondaryAction={t.secondaryAction} onDismiss={dismiss} />
