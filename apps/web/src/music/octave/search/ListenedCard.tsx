@@ -42,9 +42,9 @@ function TrackButton({ tracks, index, contextId }: { tracks: readonly MusicTrack
       onClick={() => playTrackGesture(tracks, index, isTrackUnavailable, (list, i) => player.playList(list, i, contextId), announceUnavailableTrack)}
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
-      className={`group/track flex h-7 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] ${locked ? "text-content-tertiary" : "text-content-secondary"} transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary ${FOCUS}`}
+      className={`group/track flex h-7 w-full min-w-0 cursor-pointer items-center gap-2 rounded-[10px] px-1.5 text-left text-[13px] ${locked ? "text-content-tertiary" : "text-content-secondary"} transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary ${FOCUS}`}
     >
-      <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-octave-accent-text" aria-hidden />
+      <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-content-primary" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{track.title}</span>
     </button>
   );
@@ -70,7 +70,7 @@ function Head({ card, contextId }: { card: ListenedCardModel; contextId: string 
       </span>
     </>
   );
-  const className = `flex min-w-0 items-center gap-3 rounded-lg text-left ${FOCUS}`;
+  const className = `flex min-w-0 items-center gap-3 rounded-[10px] text-left ${FOCUS}`;
   if (album?.target) {
     return (
       <Link to={octavePaths.album(album.target)} aria-label={t("search.openAlbum", { title })} className={className}>
@@ -91,7 +91,7 @@ export const ListenedCard = memo(function ListenedCard({ card }: { card: Listene
   // Sous un album, ses titres écoutés ; sans album, la tête EST le premier titre : seulement les suivants.
   const first = card.album ? 0 : 1;
   return (
-    <article className="flex min-w-0 flex-col gap-1.5 rounded-xl p-2 transition-colors duration-150 hover:bg-octave-hover">
+    <article className="flex min-w-0 flex-col gap-1.5 rounded-tile p-2 transition-colors duration-150 hover:bg-octave-hover">
       <Head card={card} contextId={contextId} />
       {/* Place réservée pour deux titres : les cartes d'une rangée gardent la même hauteur. */}
       <div className="flex h-[3.75rem] flex-col gap-1 pl-[4.25rem]">

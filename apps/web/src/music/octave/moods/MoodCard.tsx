@@ -21,10 +21,10 @@ export const MoodCard = memo(function MoodCard({ mood }: { mood: ExternalMusicMo
     <Link
       to={octavePaths.mood(mood.id)}
       aria-label={t("moods.open", { name: mood.name })}
-      className="octave-card group relative block min-w-0 rounded-[var(--oc-radius-art)] p-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="octave-card group relative block min-w-0 rounded-[var(--oc-radius-art)] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       onPointerEnter={() => warm(mood.id, "hover")}
     >
-      <MoodArtwork id={mood.id} color={mood.color} artworkUrl={mood.artworkUrl} className="aspect-[4/3] w-full rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]">
+      <MoodArtwork id={mood.id} color={mood.color} artworkUrl={mood.artworkUrl} className="octave-card-art aspect-[4/3] w-full rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]">
         <p className="absolute left-3 right-3 top-2.5 truncate text-lg font-bold leading-6 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35)]" title={mood.name}>
           {mood.name}
         </p>
@@ -38,7 +38,7 @@ export const MoodCard = memo(function MoodCard({ mood }: { mood: ExternalMusicMo
             e.stopPropagation();
             void play(mood.id);
           }}
-          className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+          className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           <Play className="ml-0.5 h-5 w-5" />
         </button>

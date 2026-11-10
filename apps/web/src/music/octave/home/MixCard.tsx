@@ -32,9 +32,9 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
     <Link
       to={octavePaths.homeMix(mix.id)}
       aria-label={t("octaveHome.mixOpen", { title })}
-      className="octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
-      <div className="relative aspect-square w-full">
+      <div className="octave-card-art relative aspect-square w-full">
         <PlaylistArtwork urls={mixMosaic(mix.tracks)} label={title} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <CollectionSwell contextId={contextId} />
         <button
@@ -47,7 +47,7 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
             if (current) player.togglePlay();
             else player.playList(mix.tracks, 0, contextId);
           }}
-          className={`octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95 ${current ? "" : "octave-hover-only"}`}
+          className={`octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${current ? "" : "octave-hover-only"}`}
         >
           <Icon weight="fill" className={playing ? "h-5 w-5" : "ml-0.5 h-5 w-5"} />
         </button>

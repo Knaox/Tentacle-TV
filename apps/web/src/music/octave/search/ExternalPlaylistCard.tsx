@@ -29,10 +29,10 @@ export const ExternalPlaylistCard = memo(function ExternalPlaylistCard({ playlis
     <Link
       {...menu}
       to={octavePaths.externalPlaylist(target)}
-      className="octave-card group flex min-w-0 flex-col gap-2 rounded-lg p-2 transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
-      <div className="relative aspect-square w-full">
-        <Artwork url={playlist.artworkUrl} className="h-full w-full shadow-md" />
+      <div className="octave-card-art relative aspect-square w-full">
+        <Artwork url={playlist.artworkUrl} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <button
           type="button"
           aria-label={t("track.play", { title: playlist.title })}
@@ -43,7 +43,7 @@ export const ExternalPlaylistCard = memo(function ExternalPlaylistCard({ playlis
             e.stopPropagation();
             void play(ref);
           }}
-          className="octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+          className="octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           <Play className="ml-0.5 h-5 w-5" />
         </button>

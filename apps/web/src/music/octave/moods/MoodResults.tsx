@@ -34,7 +34,7 @@ const MoodResult = memo(function MoodResult({ mood }: { mood: ExternalMusicMood 
         onPointerDown={() => warm(mood.id, "press")}
         onClick={() => void play(mood.id)}
         aria-label={t("moods.play", { name: mood.name })}
-        className="octave-brand-fill relative z-10 flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full pl-4 pr-5 text-sm font-bold shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+        className="octave-brand-fill octave-press relative z-10 flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full pl-4 pr-5 text-sm font-bold shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <Play className="h-4 w-4" aria-hidden />
         {t("moods.listen")}

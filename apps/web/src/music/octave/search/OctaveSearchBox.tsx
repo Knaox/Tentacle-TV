@@ -11,7 +11,7 @@
  * accordés. Sans lui, `.lg-menu` prenait le verre fin (voile 0,07) sous un
  * flou épais, et le grand titre de la page passait en traînée blanche derrière
  * les suggestions (« le flou pas très beau », O5, 25/10). Hors verre natif :
- * l'encre prune OPAQUE des panneaux d'Octave — un `backdrop-filter` derrière un
+ * l'encre de menu OPAQUE d'Octave — un `backdrop-filter` derrière un
  * fond à 0,95 ne floutait rien de visible et coûtait une passe de composition. La liste n'existe que montrée.
  * Comme l'omnibox, la barre COMPLÈTE : la suite de la première suggestion qui
  * commence par la frappe s'inscrit en gris après le curseur (⇥ ou → l'accepte).
@@ -149,11 +149,10 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
             className="lg-menu absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden p-1.5"
             style={{
               ...glass.props.style,
-              // Hors verre natif : l'îlot d'encre prune, OPAQUE, des panneaux d'Octave (IDENTITE.md).
-              background: "var(--oc-ink-raised)",
-              border: "1px solid var(--oc-line)",
-              borderRadius: "var(--oc-radius-panel)",
-              boxShadow: "var(--oc-shadow-panel)",
+              // Hors verre natif : l'encre de menu, OPAQUE (elle flotte) ; son ombre porte déjà l'arête, pas de liseré.
+              background: "var(--oc-ink-menu)",
+              borderRadius: "var(--oc-radius-menu)",
+              boxShadow: "var(--oc-shadow-menu)",
             }}
           >
             {glass.layers}
@@ -167,7 +166,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
                   aria-selected={i === active}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => submit(s.text)}
-                  className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 text-sm ${i === active ? "bg-octave-selected" : ""}`}
+                  className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] px-3 py-1.5 text-sm ${i === active ? "bg-octave-selected" : ""}`}
                 >
                   <Icon className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
                   <span className={`min-w-0 flex-1 truncate ${s.unplayable ? "text-content-secondary" : "text-content-primary"}`}>
@@ -200,7 +199,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
         type="button"
         onClick={() => submit(value)}
         disabled={!value.trim()}
-        className={`octave-pill ${bead}h-12 shrink-0 cursor-pointer rounded-full border border-octave-line bg-fill-subtle px-5 text-sm font-bold text-content-primary transition-[background-color,transform] duration-150 hover:bg-octave-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40`}
+        className={`octave-pill octave-press ${bead}h-12 shrink-0 cursor-pointer rounded-full bg-fill-subtle px-5 text-sm font-bold text-content-primary hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40`}
       >
         {t("search.submit")}
       </button>

@@ -15,7 +15,7 @@ export const AlbumNotes = memo(function AlbumNotes({ album }: { album: Pick<Musi
   if (lines.length === 0) return null;
   return (
     <section aria-label={t("album.notes")} className="mt-6 max-w-3xl px-2 text-xs leading-relaxed text-content-tertiary">
-      <h2 className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-content-secondary">{t("album.notes")}</h2>
+      <h2 className="oc-eyebrow mb-1">{t("album.notes")}</h2>
       {lines.map((line, i) => (
         <p key={i} className="break-words">
           {line.map((segment, j) =>

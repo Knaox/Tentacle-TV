@@ -28,7 +28,7 @@ function NewPlaylist({ open, setOpen }: { open: boolean; setOpen: (open: boolean
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="octave-brand-fill flex h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--oc-shadow-play)] transition-transform duration-150 hover:scale-[1.03] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus motion-reduce:transform-none"
+        className="octave-solid flex h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <Plus className="h-4 w-4" />
         {t("playlist.new")}
@@ -65,9 +65,9 @@ function NewPlaylist({ open, setOpen }: { open: boolean; setOpen: (open: boolean
         maxLength={120}
         onChange={(e) => setName(e.target.value)}
         placeholder={t("playlist.namePlaceholder")}
-        className="h-10 w-64 rounded-full border border-line-subtle bg-fill-subtle px-4 text-sm text-content-primary placeholder:text-content-quaternary focus:border-line-focus focus:outline-none"
+        className="field w-64"
       />
-      <button type="submit" disabled={!name.trim() || busy} className="octave-brand-fill h-10 cursor-pointer rounded-full px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+      <button type="submit" disabled={!name.trim() || busy} className="octave-solid h-10 cursor-pointer rounded-full px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
         {t("playlist.create")}
       </button>
       <button type="button" onClick={() => setOpen(false)} className="h-10 cursor-pointer rounded-full px-3 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">

@@ -57,7 +57,7 @@ export const SearchFilters = memo(function SearchFilters({ value, onChange, pane
               e.preventDefault();
             }}
             className={`octave-pill ${bead}h-9 cursor-pointer rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-              selected ? "bg-content-primary text-surface-0" : "bg-fill-subtle text-content-secondary hover:bg-fill-medium hover:text-content-primary"
+              selected ? "bg-surface-4 text-content-primary shadow-edge" : "bg-fill-subtle text-content-secondary hover:bg-fill-medium hover:text-content-primary"
             }`}
           >
             {label(filter)}
