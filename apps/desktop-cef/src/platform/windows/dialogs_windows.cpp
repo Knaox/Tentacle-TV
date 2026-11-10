@@ -83,7 +83,9 @@ using TaskDialogIndirectFn = HRESULT(WINAPI*)(const TASKDIALOGCONFIG*, int*, int
 TaskDialogIndirectFn taskDialogIndirect() {
   HMODULE m = GetModuleHandleW(L"comctl32.dll");
   if (!m) m = LoadLibraryW(L"comctl32.dll");
-  return m ? reinterpret_cast<TaskDialogIndirectFn>(GetProcAddress(m, "TaskDialogIndirect"))
+  // Par void* : FARPROC n'a pas la signature de la fonction (GCC le signale à raison).
+  return m ? reinterpret_cast<TaskDialogIndirectFn>(
+                 reinterpret_cast<void*>(GetProcAddress(m, "TaskDialogIndirect")))
            : nullptr;
 }
 

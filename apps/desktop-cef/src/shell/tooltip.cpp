@@ -9,7 +9,7 @@
 namespace tentacle {
 
 TooltipController::TooltipController(SDL_Window* window)
-    : window_(window), native_(platform::createTooltipWindow(window)),
+    : native_(platform::createTooltipWindow(window)),
       alive_(std::make_shared<bool>(true)) {
   // Banc : `navigateur.debug.tooltip` → `{text, shown}` (texte reçu de CEF, bulle affichée).
   if (!std::getenv("TENTACLE_DEBUG_NAVIGATEUR")) return;

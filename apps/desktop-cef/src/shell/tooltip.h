@@ -42,7 +42,6 @@ class TooltipController {
  private:
   void schedule();
   void arm(uint64_t delayMs);
-  SDL_Window* window_;
   std::unique_ptr<platform::TooltipWindow> native_;
   std::string text_;
   std::string shown_;
