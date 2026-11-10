@@ -84,8 +84,9 @@ void installDebugChannels(SDL_Window* window, std::function<std::string()> phase
     const int end = p.is_object() && p.contains("end") ? p["end"].get<int>() : -1;
     r.reply(Json::parse(platform::sheetDebug(window, end), nullptr, false));
   });
-  // L'adieu sans l'axe reseau : journalisé, rendu au bout de 50 ms (un aller-retour local).
-  setFarewellSender([](const FarewellStop& stop, std::function<void()> done) {
+  // L'adieu sans l'axe reseau : journalisé, rendu au bout de 50 ms (un aller-retour local). Avec
+  // son relais branché, c'est lui qui poste — jamais remplacé par le banc.
+  if (!hub::hasFarewellSender()) setFarewellSender([](const FarewellStop& stop, std::function<void()> done) {
     std::fprintf(stderr, "[cycle] adieu (banc) : POST %s/Sessions/Playing/Stopped %s\n", stop.baseUrl.c_str(),
                  stop.body.c_str());
     postToMainDelayed(std::move(done), 50);

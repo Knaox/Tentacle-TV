@@ -170,8 +170,10 @@ void beforeSdl(int argc, char** argv, const AppOptions& opts) {
 
 void prepareWindow(SDL_Window* window) {
   st().window = window;
-  // `window.ts` : 1280×800 (taille de départ, --size), minimum 900×600, aucune mémorisation.
-  SDL_SetWindowMinimumSize(window, 900, 600);
+  // `window.ts` : 1280×800 (taille de départ, --size), minimum 900×600 DIP — en unités de
+  // fenêtre (pixels sous Windows et X11) —, aucune mémorisation.
+  const float k = windowUnitsToDip(window);
+  SDL_SetWindowMinimumSize(window, int(900 / k + 0.5f), int(600 / k + 0.5f));
   platform::prepareMainWindow(window);
   installDragHitTest(window);
 }

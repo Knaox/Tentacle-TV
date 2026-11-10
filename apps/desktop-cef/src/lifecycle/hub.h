@@ -11,13 +11,13 @@ namespace tentacle::lifecycle::hub {
 
 /// Transferts pas finis ; 0 sans moteur déclaré ou si le comptage échoue.
 int transfersInFlight();
-/// Le comptage échoue (exception) : la garde de sortie ne retient alors rien.
-bool transfersCountFails();
 bool transfersBusy();
 /// Le réglage « Continuer en arrière-plan » ; vrai par défaut (et si la lecture échoue).
 bool backgroundEnabled();
 
 PlaybackFarewell& farewell();
+/// L'axe reseau a-t-il branché son émetteur (`setFarewellSender`) ?
+bool hasFarewellSender();
 /// Poste un arrêt par l'émetteur de l'axe reseau ; sans émetteur, `done` tout de suite.
 void sendFarewellStop(const FarewellStop& stop, std::function<void()> done);
 

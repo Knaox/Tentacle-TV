@@ -14,7 +14,8 @@
 // Le jeton de la dernière ligne (UNE seule occurrence dans ce fichier : le natif la
 // remplace une fois) devient un objet JSON, sérialisé par la bibliothèque JSON du
 // natif, jamais à la main :
-//   { origins, serverUrl, version, platform, titleBarHeight, windowFocus, commands, events }
+//   { origins, serverUrl, version, platform, titleBarHeight, windowFocus, montage, windowing,
+//     commands, events }
 (function installTentacleBridge(config) {
   "use strict";
   if (window.top !== window) return; // greffons en iframe : jamais de pont
@@ -125,6 +126,10 @@
     },
   };
   if (config.windowFocus === true) bridge.windowFocus = createWindowFocus();
+  // Linux seulement, et seulement s'ils ont un sens (le preload d'Electron les omet sinon) : le
+  // montage vidéo et le fenêtré Wayland. ⚠️ La CLÉ reste `fenetrage` : la page la lit par chaîne.
+  if (config.montage === "wayland" || config.montage === "x11") bridge.montage = config.montage;
+  if (config.windowing === "libre" || config.windowing === "plein-ecran") bridge.fenetrage = config.windowing;
 
   Object.defineProperty(window, "tentacle", {
     value: Object.freeze(bridge),

@@ -15,6 +15,8 @@ namespace tentacle::lifecycle {
 void setDragRegions(std::vector<DragRegion> regions);
 /// Pose le test de clic sur la fenêtre (une fois, à sa préparation).
 void installDragHitTest(SDL_Window* window);
+/// DIP par unité de fenêtre SDL (1 sur macOS et Wayland ; 1/échelle sous Windows et X11).
+float windowUnitsToDip(SDL_Window* window);
 /// Diagnostic des bancs : les régions connues et le verdict d'un point.
 const std::vector<DragRegion>& dragRegions();
 

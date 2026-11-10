@@ -96,17 +96,6 @@ int transfersInFlight() {
   }
 }
 
-bool transfersCountFails() {
-  const auto& p = hubState().probe;
-  if (!p.inFlight) return false;
-  try {
-    p.inFlight();
-    return false;
-  } catch (...) {
-    return true;
-  }
-}
-
 bool transfersBusy() {
   const auto& p = hubState().probe;
   try {
@@ -126,6 +115,8 @@ bool backgroundEnabled() {
 }
 
 PlaybackFarewell& farewell() { return hubState().farewell; }
+
+bool hasFarewellSender() { return static_cast<bool>(hubState().sender); }
 
 void sendFarewellStop(const FarewellStop& stop, std::function<void()> done) {
   const auto& sender = hubState().sender;
