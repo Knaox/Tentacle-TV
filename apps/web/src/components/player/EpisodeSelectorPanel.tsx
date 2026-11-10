@@ -84,9 +84,7 @@ export function EpisodeSelectorPanel({
   const glass = isGlassLayout(usePlayerGlassMode());
   const body = (
     <>
-      <div className="px-1.5 pb-1 pt-1.5">
-        <PanelHeader title={t("player:episodes")} onClose={onClose} />
-      </div>
+      <PanelHeader title={t("player:episodes")} onClose={onClose} className="px-1.5 pb-1 pt-1.5 !pl-4" />
 
       {seasons && seasons.length > 1 && (
         <div className="px-2 pb-2">
@@ -140,7 +138,7 @@ export function EpisodeSelectorPanel({
     <motion.div data-panneau-detache
       {...PANEL_MOTION}
       role="dialog" aria-label={t("player:episodes")}
-      className="pl-panel ui-menu flex max-h-[65vh] w-[26rem] flex-col overflow-hidden !p-0"
+      className="pl-panel pl-panel--episodes ui-menu !p-0"
       onClick={(e) => e.stopPropagation()}
     >
       {body}

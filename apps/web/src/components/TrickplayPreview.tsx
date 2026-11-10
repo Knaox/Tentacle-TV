@@ -34,7 +34,8 @@ const POINTER_SIZE = 6;
 const GAP_TO_SEEKBAR = 22;
 const TOUCH_EXTRA_OFFSET = 28;
 
-const ENTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+// La courbe de sortie du socle (`--ease-out`) : la vignette répond dès la première image.
+const ENTER_EASING = "cubic-bezier(0.23, 1, 0.32, 1)";
 
 /**
  * Tile mosaic preview shown above the seekbar at hover/scrub.
@@ -109,12 +110,11 @@ function LegacyTrickplayPreview({
         transition: visible
           ? `opacity 160ms ease-out, transform 200ms ${ENTER_EASING}`
           : "opacity 110ms ease-out, transform 130ms ease-out",
-        fontFamily: '"DM Sans", system-ui, sans-serif',
       }}
     >
       {hasFrame ? (
         <div
-          className="relative overflow-hidden rounded-md bg-black"
+          className="relative overflow-hidden rounded-field bg-black"
           style={{
             width: cardWidth,
             height: cardHeight,
@@ -160,7 +160,7 @@ function LegacyTrickplayPreview({
       ) : (
         // No trickplay: standalone timestamp pill
         <div
-          className="flex items-center justify-center rounded-md bg-black/85 px-2.5"
+          className="flex items-center justify-center rounded-pill bg-[#18181B] px-3"
           style={{
             height: TIMESTAMP_PILL_HEIGHT,
             boxShadow: videoShadow(
@@ -192,7 +192,7 @@ function LegacyTrickplayPreview({
         <div
           className="h-full w-full"
           style={{
-            background: hasFrame ? "rgba(0,0,0,0.95)" : "rgba(0,0,0,0.85)",
+            background: hasFrame ? "rgba(0,0,0,0.95)" : "#18181B",
             clipPath: "polygon(50% 100%, 0 0, 100% 0)",
             // `drop-shadow` d'un pixel, sans flou : il se compose correctement
             // même sur une surface à canal alpha, contrairement aux ombres

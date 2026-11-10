@@ -27,7 +27,6 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
-import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { PLAYBACK_RATES, formatRate, isNormalRate } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { SpeedIcon } from "../PlayerIcons";
@@ -41,6 +40,7 @@ import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
 import { useGlassDock } from "../player/glass/glassDock";
 import { PANEL_MOTION } from "../player/chrome/panelMotion";
+import { PanelHeader } from "../player/chrome/PanelHeader";
 import "../player/chrome/playerChrome.css";
 
 interface PlaybackRateControlProps {
@@ -177,12 +177,7 @@ export function PlaybackRateControl({
             {/* Une croix pour refermer : le clic à l'extérieur marche, mais il
                 ne se devine pas — et les deux autres panneaux du lecteur en ont
                 une. */}
-            <div className="pl-panel__head">
-              <span className="pl-panel__title">{t("player:speed")}</span>
-              <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="icon-btn btn-sm">
-                <XIcon size={16} weight="bold" aria-hidden />
-              </button>
-            </div>
+            <PanelHeader title={t("player:speed")} onClose={() => setOpen(false)} />
             <div className="pl-panel__scroll">
               {PLAYBACK_RATES.map((value) => {
                 const active = value === rate;

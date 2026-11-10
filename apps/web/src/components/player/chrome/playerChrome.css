@@ -410,11 +410,26 @@
   right: 24px;
   bottom: calc(80px + max(0px, env(safe-area-inset-bottom, 0px) - 20px));
   z-index: 50;
+  display: flex;
   max-width: calc(100vw - 48px);
+  /* Entre le titre et la barre de lecture ; le contenu défile DEDANS (`.pl-panel__scroll`).
+   * Le client LG, qui enveloppe ces panneaux, pose sa propre hauteur maximale par-dessus. */
+  max-height: calc(100vh - 170px);
+  flex-direction: column;
   transform-origin: bottom right;
 }
 
+.pl-panel--episodes {
+  width: 26rem;
+  max-height: 65vh;
+  overflow: hidden;
+}
+
+/* ⚠️ Le client LG vise la croix par la STRUCTURE (`player-panels-tv.css` : le premier bloc d'un
+ * panneau détaché est son en-tête, son seul bouton ENFANT DIRECT est la croix). L'en-tête reste
+ * donc le premier enfant du panneau, et la croix son enfant direct. */
 .pl-panel__head {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -431,7 +446,7 @@
 }
 
 .pl-panel__scroll {
-  max-height: calc(100vh - 220px);
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
 }
