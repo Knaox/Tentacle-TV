@@ -22,6 +22,7 @@ import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../eng
 import { attachPlayerResume } from "../cache/playerResume";
 import { octaveOwner } from "../cache/octaveOwner";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
+import { useUpdateLockPause } from "../../../components/update/useUpdateLockPause";
 import { keptFor, withKeptSources } from "../offline/keptSources";
 import { attachSessionRemote, type SessionRemote } from "./octaveSessionRemote";
 
@@ -94,7 +95,20 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
   }, [engine, qc]);
 
   if (!player) return null;
-  return <PlayerContext.Provider value={player}>{children}</PlayerContext.Provider>;
+  return (
+    <PlayerContext.Provider value={player}>
+      <UpdateLockPause />
+      {children}
+    </PlayerContext.Provider>
+  );
+}
+
+/** Pendant une mise à jour, la musique se met en pause et y reste, comme les lecteurs vidéo. */
+function UpdateLockPause() {
+  const player = useOctavePlayer();
+  const wantsPlay = usePlayerSelector((s) => s.wantsPlay);
+  useUpdateLockPause(wantsPlay, () => player.pause());
+  return null;
 }
 
 /** Les réglages de départ du moteur d'Octave (le volume survit d'une session à l'autre). */
