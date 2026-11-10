@@ -80,7 +80,7 @@ try {
     const origin = new URL(arg).origin;
     await cdp.eval(`(() => { window.__audioEvents = []; window.tentacle.on("audio://event", (e) => window.__audioEvents.push(e)); return true; })()`);
     show("audio_engine_start", await invoke("audio_engine_start", { serverOrigin: origin, volume: 1, muted: false }));
-    show("audio_play", await invoke("audio_play", { track: { trackKey: "banc-linux" }, source: { url: arg } }));
+    show("audio_play", await invoke("audio_play", { track: { trackKey: "banc-linux" }, source: { url: arg }, startMs: 0 }));
     await sleep(5000);
     show("audio_control pause", await invoke("audio_control", { action: "pause" }));
     await sleep(500);
