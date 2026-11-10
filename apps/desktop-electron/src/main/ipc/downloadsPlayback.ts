@@ -13,6 +13,7 @@ import {
   setPlaybackState,
 } from "../downloads/core/playback";
 import { purgeDueClaims, scheduleOnPlayed } from "../downloads/core/purge";
+import { reconcilePlayback } from "../downloads/core/reconcile";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 
@@ -34,6 +35,25 @@ const SYNCED = z.object({
   userId: USER_ID,
   itemId: ITEM_ID,
   upToId: z.number().int(),
+});
+
+/**
+ * L'état de lecture lu sur le serveur par la page (`offline/playbackSync.ts`) :
+ * des faits, que `reconcile` n'applique que s'ils sont plus récents que le local.
+ */
+const RECONCILE = z.object({
+  userId: USER_ID,
+  entries: z
+    .array(
+      z.object({
+        itemId: ITEM_ID,
+        played: z.boolean(),
+        positionTicks: z.number().nonnegative(),
+        lastPlayedAtMs: z.number().nullable(),
+      }),
+    )
+    .max(5_000),
+  pendingItemIds: z.array(ITEM_ID).max(5_000),
 });
 
 /** `null` explicite quand aucun item n'est exempté de la garde de lecture. */
@@ -71,6 +91,15 @@ export function registerDownloadsPlaybackCommands(registry: CommandRegistry): vo
       schema: SYNCED,
       run: ({ userId, itemId, upToId }) => {
         markItemSynced(localDb(), userId, itemId, upToId);
+      },
+    })
+    .add("downloads_playback_reconcile", {
+      schema: RECONCILE,
+      run: ({ userId, entries, pendingItemIds }) => {
+        const changed = reconcilePlayback(localDb(), userId, entries, pendingItemIds, Date.now());
+        // Une bascule vers « vu » peut armer une suppression : la liste se relit.
+        if (changed.length > 0) downloadsEngine().notifyChanged();
+        return changed;
       },
     })
     .add("downloads_purge_due", {

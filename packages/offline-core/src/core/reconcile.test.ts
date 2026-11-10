@@ -65,6 +65,18 @@ describe("applyServerUserData", () => {
     expect(local(db, "vu")).toEqual({ position: 0, played: true, updatedAt: 7_000 });
   });
 
+  it("retient un « vu » sans date (état importé) quand l'appareil n'en sait rien", () => {
+    const db = openInMemory();
+    const undated = { itemId: "item1", played: true, positionTicks: 0, lastPlayedAtMs: null };
+    expect(applyServerUserData(db, "u", [undated], NOW, { pendingItemIds: NONE })).toEqual(["item1"]);
+    expect(local(db)).toEqual({ position: 0, played: true, updatedAt: NOW });
+
+    // Une progression locale existe : sans date, rien ne dit qui est le plus récent.
+    setPlaybackState(db, "u", "item2", 400, false, false, 1_000);
+    expect(applyServerUserData(db, "u", [{ ...undated, itemId: "item2" }], NOW, { pendingItemIds: NONE })).toEqual([]);
+    expect(local(db, "item2")).toEqual({ position: 400, played: false, updatedAt: 1_000 });
+  });
+
   it("suit un « marquer non vu » du web, sauf si un rapport attend en file", () => {
     const db = openInMemory();
     setPlaybackState(db, "u", "item1", 0, true, false, 1_000);

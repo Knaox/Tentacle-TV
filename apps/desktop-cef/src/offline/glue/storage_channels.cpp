@@ -6,6 +6,7 @@
 #include "offline/core/args.h"
 #include "offline/core/listing.h"
 #include "offline/core/playback.h"
+#include "offline/core/reconcile.h"
 #include "offline/core/schema.h"
 #include "offline/glue/channels.h"
 #include "offline/glue/commands.h"
@@ -87,6 +88,20 @@ void registerPlaybackChannels(bridge::Registry& registry) {
     const std::string item = itemId(p);
     markItemSynced(runtime().db(), user, item, args::integer(p, "upToId"));
     return Json(nullptr);
+  });
+  addCommand(registry, "downloads_playback_reconcile", [](const Json& p) {
+    // L'état de lecture lu sur le serveur par la page : des faits, appliqués seulement
+    // s'ils sont plus récents que le local (`core/reconcile.ts`).
+    const std::string user = userId(p);
+    const Json* entries = args::field(p, "entries");
+    const Json* pending = args::field(p, "pendingItemIds");
+    if (entries == nullptr || pending == nullptr) throw args::Invalid("entries, pendingItemIds : requis");
+    Runtime& rt = runtime();
+    const auto changed =
+        applyServerUserData(rt.db(), user, parseServerUserData(*entries), nowMs(), parseItemIds(*pending));
+    // Une bascule vers « vu » peut armer une suppression : la liste se relit.
+    if (!changed.empty()) rt.notifyChanged();
+    return Json(changed);
   });
   addCommand(registry, "downloads_purge_due", [](const Json& p) {
     // `null` explicite quand aucun item n'est exempté de la garde de lecture.

@@ -54,6 +54,7 @@ export const COMMANDS = [
   "downloads_playback_restart",
   "downloads_reports_pending",
   "downloads_reports_mark_synced",
+  "downloads_playback_reconcile",
   "downloads_purge_due",
 
   // Lecteur mpv

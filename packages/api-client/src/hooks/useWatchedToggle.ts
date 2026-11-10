@@ -1,12 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
+import { invalidateAllMediaQueries, type CacheTarget } from "./cacheUtils";
+import { fetchMediaItem } from "./useLibrary";
 import {
-  invalidateAllMediaQueries,
-  updateItemUserDataInCache,
-  restoreFromSnapshot,
-  type CacheTarget,
-} from "./cacheUtils";
+  beginUserDataGesture, failUserDataGesture, settleUserDataGesture, type UserDataGestureContext,
+} from "./userDataGesture";
+
+/**
+ * Ce que les plateformes lisent sur la mutation (leur cache de mutations) :
+ * le titre de l'échec à dire, et `userDataGesture` — le bureau y reconnaît un
+ * « vu » posé à la main pour le reporter sur les titres gardés hors ligne.
+ */
+export const WATCHED_GESTURE_META = { failureTitle: "errors:toastWatchedFailed", userDataGesture: "watched" } as const;
 
 interface WatchedToggleContext {
   /** Présent UNIQUEMENT quand l'item est un ÉPISODE → id de la série parente. */
@@ -45,39 +51,27 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
   const target: CacheTarget =
     context?.itemType === "Series" && itemId ? { matchId: itemId, matchSeriesId: itemId } : itemId!;
 
+  // Le geste répond avant le serveur, sur tout écran qui montre le titre (`userDataGesture`).
+  const settle = (context: UserDataGestureContext | undefined) => {
+    invalidateAllMediaQueries(qc, { itemId, seriesContext });
+    void settleUserDataGesture(qc, context, { itemId, fetchItem: (id) => fetchMediaItem(client, userId, id) });
+  };
+
   const markWatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "POST" }),
     // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
-    meta: { failureTitle: "errors:toastWatchedFailed" },
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["item", itemId] });
-      const snapshot = updateItemUserDataInCache(qc, target, () => ({
-        Played: true,
-        PlayedPercentage: 100,
-      }));
-      return { snapshot };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
-    },
-    onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
+    meta: WATCHED_GESTURE_META,
+    onMutate: () => beginUserDataGesture(qc, { itemId, target, patch: { Played: true, PlayedPercentage: 100 } }),
+    onError: (_err, _vars, ctx) => failUserDataGesture(qc, ctx),
+    onSettled: (_data, error, _vars, ctx) => settle(error ? undefined : ctx),
   });
 
   const markUnwatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "DELETE" }),
-    meta: { failureTitle: "errors:toastWatchedFailed" },
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["item", itemId] });
-      const snapshot = updateItemUserDataInCache(qc, target, () => ({
-        Played: false,
-        PlayedPercentage: 0,
-      }));
-      return { snapshot };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
-    },
-    onSettled: () => invalidateAllMediaQueries(qc, { itemId, seriesContext }),
+    meta: WATCHED_GESTURE_META,
+    onMutate: () => beginUserDataGesture(qc, { itemId, target, patch: { Played: false, PlayedPercentage: 0 } }),
+    onError: (_err, _vars, ctx) => failUserDataGesture(qc, ctx),
+    onSettled: (_data, error, _vars, ctx) => settle(error ? undefined : ctx),
   });
 
   return { markWatched, markUnwatched };

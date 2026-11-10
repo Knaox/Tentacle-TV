@@ -4,6 +4,7 @@ import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 import { tentacleApiFetch } from "./usePreferences";
 import { hasRatingsSession, ratingKey, type UserRatingEntry } from "./useRatings";
+import { usePendingUserData, withPendingUserData } from "./pendingUserData";
 import { fetchSeriesIds, seriesStateId } from "./useSeriesListMembership";
 import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "./watchlistEffects";
 
@@ -144,13 +145,18 @@ export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): Ca
     select: (entries: UserRatingEntry[]) => scoreFor(ratingIndex(entries), item, scope),
   });
 
+  // Le geste en cours (vu, favori, Ma liste) passe devant les caches : la
+  // pastille change au clic, sur toute carte qui montre le titre.
+  const pendingOwn = usePendingUserData(item.Id);
+  const pendingSeries = usePendingUserData(seriesId);
+
   return resolveCardMarkers({
-    item,
+    item: withPendingUserData(item, pendingOwn),
     communityRating: options.communityRating,
     userScore: userScore ?? null,
     // Pas de série (film) ou Set pas encore chargé : `UserData` répond.
-    inWatchlist: options.inWatchlist ?? (seriesId ? inWatchlist : undefined),
-    isFavorite: options.isFavorite ?? (seriesId ? isFavorite : undefined),
+    inWatchlist: options.inWatchlist ?? pendingSeries?.Likes ?? (seriesId ? inWatchlist : undefined),
+    isFavorite: options.isFavorite ?? pendingSeries?.IsFavorite ?? (seriesId ? isFavorite : undefined),
     device: options.device,
   });
 }

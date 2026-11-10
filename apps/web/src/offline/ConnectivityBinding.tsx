@@ -16,7 +16,7 @@ import { backendUrl } from "../main";
 import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { reportPossibleOutage } from "./connectivityStore";
-import { drainReportQueue } from "./resync";
+import { syncPlaybackState } from "./playbackSync";
 import { retryFailedQueries } from "./retryFailedQueries";
 import { refreshLibraryPrefsCache } from "./localTrackPrefs";
 import { refreshItemTracksCache } from "./localItemTracks";
@@ -71,19 +71,19 @@ export function ConnectivityBinding() {
     };
   }, [queryClient]);
 
-  // Drain au MONTAGE — le filet anti-crash. La resynchronisation ci-dessous
-  // n'écoute qu'une TRANSITION hors ligne → en ligne : après un arrêt brutal
-  // (crash, coupure de courant, kill), l'app redémarre directement « online »,
-  // donc sans transition, et la position serait restée en file indéfiniment.
-  // Coût nul dans le cas courant : `drainReportQueue` commence par lire la file
-  // en SQLite et ne touche au réseau que si elle contient quelque chose.
+  // Synchronisation au MONTAGE — le filet anti-crash, et le premier tirage. La
+  // resynchronisation ci-dessous n'écoute qu'une TRANSITION hors ligne → en
+  // ligne : après un arrêt brutal (crash, coupure de courant, kill), l'app
+  // redémarre directement « online », donc sans transition, et la position
+  // serait restée en file indéfiniment. Le même tour TIRE l'état de lecture du
+  // serveur pour les titres gardés (vus ailleurs depuis) : une lecture groupée,
+  // et rien si la machine ne garde rien.
   const bootDrainedRef = useRef(false);
   useEffect(() => {
     if (!supportsDownloads() || !userId || bootDrainedRef.current) return;
     bootDrainedRef.current = true;
-    void drainReportQueue(userId).catch(() => {
-      /* la file reste en place, retentée au prochain retour en ligne */
-    });
+    // Ne lève jamais : la file reste en place, retentée au prochain retour en ligne.
+    void syncPlaybackState(userId, "all", { force: true });
     // Préférences modifiées hors ligne lors d'une session précédente (l'app a
     // pu être fermée avant le retour en ligne) : poussées dès le boot.
     void flushPendingPrefs(userId, backendUrl);
@@ -108,11 +108,8 @@ export function ConnectivityBinding() {
     const run = async () => {
       const uid = userIdRef.current;
       if (supportsDownloads() && uid) {
-        try {
-          await drainReportQueue(uid);
-        } catch {
-          /* la file reste en place, retentée au prochain retour en ligne */
-        }
+        // Pousse la file, puis tire ce qui a été vu ailleurs pendant la coupure.
+        await syncPlaybackState(uid, "all", { force: true });
       }
       if (uid) {
         // Préférences éditées hors ligne : POUSSÉES avant de re-photographier

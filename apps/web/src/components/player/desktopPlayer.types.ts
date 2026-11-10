@@ -34,6 +34,8 @@ export interface DesktopPlayerProps {
   offline?: boolean;
   /** Bibliothèque de l'item local (préférences de pistes hors ligne). */
   localLibraryId?: string | null;
+  /** Série de l'épisode local : sa préférence de pistes l'emporte sur celle de l'épisode. */
+  localSeriesId?: string | null;
   /** Side-cars de sous-titres téléchargés (menus en lecture locale). */
   localSubtitleFiles?: LocalSubtitleFile[];
   onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;

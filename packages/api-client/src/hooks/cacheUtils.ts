@@ -3,6 +3,8 @@ import type { MediaItem, UserItemData } from "@tentacle-tv/shared";
 import { LIST_QUERY_PREFIXES, WATCH_COMPOSED_PREFIXES } from "./cacheQueryKeys";
 import { patchSearchResponse } from "./searchCachePatch";
 
+export { addItemToLists, patchSeriesIdSet, removeItemFromLists } from "./cacheListEdits";
+
 /** Clé de la rangée « Reprendre la lecture » (cf. `useResumeItems`). */
 const RESUME_KEY = ["resume-items"] as const;
 
@@ -110,10 +112,17 @@ function buildMatcher(target: CacheTarget): (item: MediaItem) => boolean {
     (!!matchSeriesId && (item.Id === matchSeriesId || item.SeriesId === matchSeriesId));
 }
 
-/** Applique l'updater à un item (immuable) si il a un UserData. */
+/** Un titre arrivé sans état (recherche, similaires, liste sans `EnableUserData`) : rien de vu, rien d'aimé. */
+const BLANK_USER_DATA: UserItemData = { PlaybackPositionTicks: 0, PlayCount: 0, IsFavorite: false, Played: false };
+
+/**
+ * Applique l'updater à un item (immuable). Un item SANS `UserData` le reçoit :
+ * sans cela, le geste ne changeait rien sur les cartes qui arrivent sans état
+ * — la bascule attendait le serveur.
+ */
 function patchItem(item: MediaItem, updater: UserDataUpdater): MediaItem {
-  if (!item.UserData) return item;
-  return { ...item, UserData: { ...item.UserData, ...updater(item.UserData) } };
+  const previous = item.UserData ?? BLANK_USER_DATA;
+  return { ...item, UserData: { ...previous, ...updater(previous) } };
 }
 
 /**
@@ -141,7 +150,7 @@ export function updateItemUserDataInCache(
     // Détail d'un item : ["item", id] → MediaItem unique
     if (prefix === "item") {
       const item = data as MediaItem;
-      if (item.Id && matches(item) && item.UserData) {
+      if (item.Id && matches(item)) {
         snapshot.set(keyStr, data);
         qc.setQueryData<MediaItem>(key, patchItem(item, updater));
       }
@@ -168,7 +177,7 @@ export function updateItemUserDataInCache(
       const list = data as MediaItem[];
       let changed = false;
       const updated = list.map((item) => {
-        if (!matches(item) || !item.UserData) return item;
+        if (!matches(item)) return item;
         changed = true;
         return patchItem(item, updater);
       });
@@ -193,7 +202,7 @@ export function updateItemUserDataInCache(
         if (!page.Items) return page;
         let pageChanged = false;
         const updatedItems = page.Items.map((item) => {
-          if (!matches(item) || !item.UserData) return item;
+          if (!matches(item)) return item;
           pageChanged = true;
           changed = true;
           return patchItem(item, updater);
@@ -209,71 +218,6 @@ export function updateItemUserDataInCache(
   }
 
   return snapshot;
-}
-
-/**
- * Met à jour optimiste un Set d'IDs de séries en cache (string[] : liste des
- * SeriesId likées / favorites). No-op si la query n'est pas encore chargée
- * (le refetch onSettled resynchronisera). Enregistre l'état précédent dans le
- * snapshot fourni pour rollback.
- */
-export function patchSeriesIdSet(
-  qc: QueryClient,
-  queryKey: readonly unknown[],
-  seriesId: string | undefined,
-  add: boolean,
-  snapshot?: Map<string, unknown>,
-): void {
-  if (!seriesId) return;
-  const data = qc.getQueryData<string[]>(queryKey);
-  if (data === undefined) return;
-
-  const has = data.includes(seriesId);
-  if (add === has) return; // déjà dans l'état voulu
-
-  const keyStr = JSON.stringify(queryKey);
-  if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
-
-  qc.setQueryData<string[]>(
-    queryKey,
-    add ? [...data, seriesId] : data.filter((id) => id !== seriesId),
-  );
-}
-
-/**
- * Insère un item en tête des listes flat fournies (Ma liste / Favoris) s'il est
- * absent. Mise à jour optimiste → le carrousel se met à jour instantanément.
- */
-export function addItemToLists(
-  qc: QueryClient,
-  listKeys: readonly (readonly unknown[])[],
-  item: MediaItem,
-  snapshot?: Map<string, unknown>,
-): void {
-  for (const key of listKeys) {
-    const data = qc.getQueryData<MediaItem[]>(key);
-    if (!Array.isArray(data) || data.some((i) => i.Id === item.Id)) continue;
-    const keyStr = JSON.stringify(key);
-    if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
-    qc.setQueryData<MediaItem[]>(key, [item, ...data]);
-  }
-}
-
-/** Retire un item (par id) des listes flat fournies. Mise à jour optimiste. */
-export function removeItemFromLists(
-  qc: QueryClient,
-  listKeys: readonly (readonly unknown[])[],
-  id: string | undefined,
-  snapshot?: Map<string, unknown>,
-): void {
-  if (!id) return;
-  for (const key of listKeys) {
-    const data = qc.getQueryData<MediaItem[]>(key);
-    if (!Array.isArray(data) || !data.some((i) => i.Id === id)) continue;
-    const keyStr = JSON.stringify(key);
-    if (snapshot && !snapshot.has(keyStr)) snapshot.set(keyStr, data);
-    qc.setQueryData<MediaItem[]>(key, data.filter((i) => i.Id !== id));
-  }
 }
 
 /**

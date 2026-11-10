@@ -24,6 +24,7 @@ import { useWatchSession } from "../hooks/useWatchSession";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import { JellyfinOutageNotice } from "../components/player/JellyfinOutageNotice";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
+import { seriesIdOf } from "../hooks/trackPrefScope";
 import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
@@ -130,11 +131,11 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   // Épisode : case « Appliquer à cette série » (préférence de langues par série).
   const applyToSeries = useApplyToSeries({
-    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
+    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef, sideCars: localSource?.subtitleFiles,
   });
   // Et, sans rien à cocher, mémorisation du choix pour CE contenu — film compris.
   useRememberItemTracks({
-    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef,
+    item, streams, audioIndex, subtitleIndex, audioOverrideRef, subtitleOverrideRef, sideCars: localSource?.subtitleFiles,
   });
 
   // Avatars du groupe affichés uniquement quand l'overlay lecteur est actif.
@@ -245,7 +246,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
              quand onQualityChange est absent). */
           onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
           isLocalPlayback={isLocalPlayback} offline={!online}
-          localLibraryId={localSource?.libraryId ?? null}
+          localLibraryId={localSource?.libraryId ?? null} localSeriesId={seriesIdOf(item) ?? localSource?.seriesId ?? null}
           localSubtitleFiles={localSource?.subtitleFiles}
           onProgress={handleProgress} onStarted={() => { playback.markStarted(); if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}

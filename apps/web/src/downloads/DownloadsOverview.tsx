@@ -20,23 +20,27 @@ import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/
 import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { PauseCircleIcon as PauseCircle } from "@phosphor-icons/react/dist/csr/PauseCircle";
 import type { Icon as IconType } from "@phosphor-icons/react";
-import { useOfflineOverview } from "@tentacle-tv/offline-core/react";
+import { useOfflineOverview, useOfflineQueueProgress } from "@tentacle-tv/offline-core/react";
 import type { DownloadEntry } from "./api";
 import { DownloadsQueueActions } from "./DownloadsQueueActions";
 import { OfflineModeToggle } from "./OfflineModeToggle";
 import { formatBytes } from "./presets";
+import { formatRate, formatTimeLeft } from "./transferText";
 import { useDiskInfo } from "./useDownloadState";
 
 export function DownloadsOverview({ entries }: { entries: readonly DownloadEntry[] }) {
   const { t } = useTranslation("downloads");
   const overview = useOfflineOverview(entries);
+  // L'avancement du LOT : un titre fini y reste compté tant que la file n'est
+  // pas vide — la barre ne repart plus à zéro à chaque épisode.
+  const lot = useOfflineQueueProgress(entries);
   const { freeBytes, usedBytes } = useDiskInfo();
 
   const used = usedBytes ?? overview.readyBytes;
   const total = used + (freeBytes ?? 0);
   const usedRatio = total > 0 ? Math.min(1, used / total) : 0;
   const inFlight = overview.running + overview.paused + overview.errors;
-  const ratio = overview.transferRatio;
+  const ratio = lot?.ratio ?? null;
 
   return (
     <section className="lg-panel relative rounded-2xl border border-line-subtle bg-surface-1 p-4 sm:p-5">
@@ -124,11 +128,18 @@ export function DownloadsOverview({ entries }: { entries: readonly DownloadEntry
                 />
               </div>
               <p className="mt-1.5 text-[11px] tabular-nums text-content-quaternary">
-                {t("overviewProgress", {
-                  percent: Math.floor(ratio * 100),
-                  done: formatBytes(overview.transferDone),
-                  total: formatBytes(overview.transferTotal),
-                })}
+                {[
+                  lot === null ? null : t("overviewLotCount", { done: lot.done, count: lot.count }),
+                  t("overviewProgress", {
+                    percent: Math.floor(ratio * 100),
+                    done: formatBytes(lot?.bytesDone ?? 0),
+                    total: formatBytes(lot?.bytesTotal ?? 0),
+                  }),
+                  formatRate(t, lot?.bytesPerSecond ?? null),
+                  formatTimeLeft(t, lot?.etaSeconds == null ? null : lot.etaSeconds * 1_000),
+                ]
+                  .filter((part): part is string => part !== null)
+                  .join(" · ")}
               </p>
             </>
           )}

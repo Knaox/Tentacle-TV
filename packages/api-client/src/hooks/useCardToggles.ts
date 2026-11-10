@@ -1,5 +1,6 @@
 import type { CardToggleKind, CardToggleStates, MediaItem } from "@tentacle-tv/shared";
 import { useFavoriteForItem } from "./useFavorite";
+import { usePendingUserData } from "./pendingUserData";
 import { useFavoriteSeriesIds, useWatchlistSeriesIds, seriesStateId } from "./useSeriesListMembership";
 import { useToggleWatchlistForItem } from "./useWatchlist";
 import { useWatchedToggle } from "./useWatchedToggle";
@@ -43,9 +44,15 @@ export function useCardToggles(item: MediaItem): CardToggles {
   // des derniers ajouts est fabriquée côté client et ne porte pas le `UserData`
   // de sa série — Ma liste n'y devenait jamais visible.
   const seriesId = seriesStateId(item);
-  const watchlist = seriesId ? watchlistSeries.has(seriesId) : item.UserData?.Likes === true;
-  const favorite = seriesId ? favoriteSeries.has(seriesId) : item.UserData?.IsFavorite === true;
-  const watched = item.UserData?.Played === true;
+  // Le geste en cours passe devant : il répond avant le serveur, même quand
+  // aucun cache ne porte le titre (carte de recommandation, fiche en route) ou
+  // que l'ensemble des séries n'est pas encore chargé.
+  const pendingOwn = usePendingUserData(item.Id);
+  const pendingSeries = usePendingUserData(seriesId);
+  const membership = seriesId ? pendingSeries : pendingOwn;
+  const watchlist = membership?.Likes ?? (seriesId ? watchlistSeries.has(seriesId) : item.UserData?.Likes === true);
+  const favorite = membership?.IsFavorite ?? (seriesId ? favoriteSeries.has(seriesId) : item.UserData?.IsFavorite === true);
+  const watched = pendingOwn?.Played ?? item.UserData?.Played === true;
 
   const toggleList = () => (watchlist ? removeWatchlist.mutate() : addWatchlist.mutate());
   const toggleFavorite = () => (favorite ? removeFav.mutate() : addFav.mutate());

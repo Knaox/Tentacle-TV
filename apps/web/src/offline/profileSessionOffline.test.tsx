@@ -30,7 +30,7 @@ vi.mock("./useConnectivity", () => ({
 }));
 vi.mock("../desktop/bridge", () => ({ supportsDownloads: () => true, isDesktopApp: () => true }));
 vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: state.entries, isFetched: true }) }));
-vi.mock("@tentacle-tv/offline-core/react", () => ({ LOCAL_QUERY: {} }));
+vi.mock("@tentacle-tv/offline-core/react", () => ({ LOCAL_QUERY: {}, useOfflineQueueProgress: () => null }));
 vi.mock("@tentacle-tv/api-client", () => ({
   // Le cache gardé d'Octave se branche au chargement de son module (`octaveCacheBoot.ts`).
   configureOctaveCacheBackend: () => undefined,

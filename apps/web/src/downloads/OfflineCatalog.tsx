@@ -20,6 +20,7 @@ import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSla
 import { PageTransition } from "../components/PageTransition";
 import { CARD_HEIGHT, FRAME_GUTTER } from "../components/hero/HeroBillboard";
 import { useOfflineMode } from "../offline/useOfflineMode";
+import { usePullOnCatalogOpen } from "../offline/usePlaybackPull";
 import { ProfileOfflineScreen } from "../offline/ProfileOfflineScreen";
 import { useActiveProfile } from "../auth/profileSession";
 import { DownloadsEmptyState } from "./DownloadsEmptyState";
@@ -49,6 +50,8 @@ function DeviceCatalog() {
   const [filter, setFilter] = useState<OfflineHomeFilter>(ALL_LIBRARIES);
   const home = useOfflineHome(search, filter);
   const billboard = useEntriesWithBackdrop(home.hero);
+  // « Sur cet appareil » ouvert en ligne : ce qui a été vu ailleurs entre ici.
+  usePullOnCatalogOpen();
 
   // Le dernier titre d'une bibliothèque filtrée vient de partir : retour à « Tout ».
   useEffect(() => {

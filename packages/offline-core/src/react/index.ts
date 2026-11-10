@@ -6,3 +6,4 @@
 export * from "./localQuery";
 export * from "./progressStore";
 export * from "./useOfflineOverview";
+export * from "./useOfflineQueueProgress";

@@ -38,7 +38,7 @@ export function DesktopPlayer({
   audioTracks = [], subtitleTracks = [],
   currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive, qualityDrop,
   onAudioChange, onSubtitleChange, onQualityChange,
-  isLocalPlayback = false, offline = false, localLibraryId = null,
+  isLocalPlayback = false, offline = false, localLibraryId = null, localSeriesId = null,
   localSubtitleFiles = EMPTY_SUBTITLE_FILES, onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
   segments = [], runtimeMs = 0, libraryId = null,
@@ -108,7 +108,7 @@ export function DesktopPlayer({
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
     isLocalPlayback, fileLoaded, ready,
     audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
-    localLibraryId, itemId: item?.Id, onAudioChange, onSubtitleChange, sourceKey: src,
+    localLibraryId, itemId: item?.Id, seriesId: localSeriesId, onAudioChange, onSubtitleChange, sourceKey: src,
   });
 
   // Handlers + préférences de pistes : useMpvTrackSync reçoit les pistes AFFICHÉES

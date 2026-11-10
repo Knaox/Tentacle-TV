@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run",
-    "bench:audio-engine": "node bench/audio-engine/run.mjs"
+    "bench:audio-engine": "node bench/audio-engine/run.mjs",
+    "bench:route-shell": "node bench/route-shell/run.mjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",
