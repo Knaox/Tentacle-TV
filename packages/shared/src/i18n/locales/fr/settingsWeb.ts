@@ -24,6 +24,13 @@ export default {
     where: "{{section}} › {{group}}",
   },
   detailToggle: "Régler en détail",
+  advanced: {
+    title: "Avancé",
+    open: "Afficher les réglages avancés",
+    summary: "Réglages rares : {{list}}.",
+    inFold: "Sous « Avancé »",
+    upNext: "Affiche de fin en plein écran, moment où la fiche paraît, règles par bibliothèque.",
+  },
   scopeLegend: "« Compte » : enregistré avec votre compte, il vous suit sur tous vos appareils. « Cet appareil » : ne vaut que sur ce navigateur ou cet ordinateur.",
   sections: {
     playback: {
@@ -57,10 +64,11 @@ export default {
   },
   groups: {
     playback: {
-      player: "Sauts et enchaînement",
+      player: "Intros, résumés et génériques",
       stillWatching: "Pause automatique",
       data: "Connexion",
       video: "Vidéo sur cet ordinateur",
+      nextEpisode: "D'un épisode à l'autre",
     },
     languages: {
       tracks: "Audio et sous-titres par bibliothèque",

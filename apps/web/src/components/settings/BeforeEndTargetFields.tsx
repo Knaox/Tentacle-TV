@@ -46,7 +46,7 @@ export function BeforeEndTargetFields({
   const [min, max, step] = BOUNDS[target.mode];
 
   return (
-    <div className="mt-3 space-y-3">
+    <div className="space-y-3">
       <SegmentedChoice
         label={`${label} — ${t("beforeEndModeLabel")}`}
         value={target.mode}
@@ -61,10 +61,10 @@ export function BeforeEndTargetFields({
       />
       <div>
         <div className="flex items-baseline justify-between gap-4">
-          <label htmlFor={`${idPrefix}-value`} className="text-xs text-content-tertiary">
+          <label htmlFor={`${idPrefix}-value`} className="text-[13px] text-content-tertiary">
             {t(target.mode === "percent" ? "beforeEndPercentLabel" : "beforeEndSecondsLabel")}
           </label>
-          <span className="text-sm font-semibold tabular-nums text-content-secondary">
+          <span className="num text-sm font-semibold text-content-secondary">
             {t(target.mode === "percent" ? "beforeEndPercentValue" : "beforeEndSecondsValue", {
               value: target.value,
             })}
@@ -79,7 +79,7 @@ export function BeforeEndTargetFields({
           value={target.value}
           onChange={(e) => { onChange({ mode: target.mode, value: Number(e.target.value) }); }}
           style={rangeFill(target.value, min, max)}
-          className="ctl-range mt-2 w-full max-w-xs"
+          className="ctl-range mt-2 w-full max-w-sm"
         />
       </div>
     </div>

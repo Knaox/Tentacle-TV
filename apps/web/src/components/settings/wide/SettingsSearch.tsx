@@ -17,7 +17,7 @@ export function SettingsSearchField({ value, onChange }: { value: string; onChan
   const { t } = useTranslation("settingsWeb");
   return (
     <div className="relative">
-      <Search size={15} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-tertiary" />
+      <Search size={16} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-content-tertiary" />
       <input
         type="search"
         value={value}
@@ -25,16 +25,16 @@ export function SettingsSearchField({ value, onChange }: { value: string; onChan
         onKeyDown={(e) => { if (e.key === "Escape" && value) { e.preventDefault(); onChange(""); } }}
         placeholder={t("search.placeholder")}
         aria-label={t("search.label")}
-        className="h-10 w-full appearance-none rounded-lg border border-line-subtle bg-fill-subtle pl-9 pr-9 text-sm text-content-primary outline-none transition-colors placeholder:text-content-quaternary focus:border-line-focus focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-search-cancel-button]:hidden"
+        className="field appearance-none pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
       />
       {value ? (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-label={t("search.clear")}
-          className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="icon-btn btn-sm absolute right-1 top-1/2 -translate-y-1/2"
         >
-          <X size={15} aria-hidden />
+          <X size={15} weight="bold" aria-hidden />
         </button>
       ) : null}
     </div>
@@ -57,32 +57,34 @@ export const SettingsSearchResults = memo(function SettingsSearchResults({ query
   const hits = useMemo(() => searchWideSettings(query, ctx, text), [query, ctx, text]);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <p aria-live="polite" className="mb-3 px-1 text-sm text-content-tertiary">
         {hits.length > 0 ? t("search.count", { count: hits.length }) : t("search.empty", { query: query.trim() })}
       </p>
       {hits.length === 0 ? (
         <p className="px-1 text-sm text-content-quaternary">{t("search.emptyHint")}</p>
       ) : (
-        <ul className="lg-content overflow-hidden rounded-xl border border-line-subtle bg-surface-1">
-          {hits.map(({ entry, section, group }, i) => (
-            <li key={entry.id} className={i < hits.length - 1 ? "border-b border-line-subtle" : ""}>
+        <ul className="lg-content ui-panel overflow-hidden">
+          {hits.map(({ entry, section, group }) => (
+            <li key={entry.id} className="border-line-subtle [&:not(:first-child)]:border-t">
               <button
                 type="button"
-                onClick={() => { onPick(); navigate(wideSettingPath(entry.id)); }}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:outline-none"
+                onClick={() => { onPick(); navigate(wideSettingPath(entry.id), { replace: true }); }}
+                className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors duration-hover hover:bg-fill-faint focus-visible:bg-fill-faint focus-visible:outline-none"
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-sm font-medium text-content-primary">{text(entry.label)}</span>
+                    <span className="text-[15px] font-semibold leading-snug text-content-primary">{text(entry.label)}</span>
                     {entry.scope ? <ScopeBadge scope={entry.scope} /> : null}
+                    {/* Replié sous « Avancé » dans sa page : le dire ici, le résultat l'ouvrira. */}
+                    {entry.advanced ? <span className="chip">{t("advanced.inFold")}</span> : null}
                   </span>
-                  <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-wider text-content-quaternary">
+                  <span className="mt-1 block text-xs font-semibold text-content-tertiary">
                     {t("search.where", { section: text(section.label), group: text(group.title) })}
                   </span>
-                  <span className="mt-1 block text-xs leading-relaxed text-content-tertiary">{text(entry.description)}</span>
+                  <span className="mt-1 block max-w-[62ch] text-[13px] leading-relaxed text-content-secondary">{text(entry.description)}</span>
                 </span>
-                <ChevronRight size={16} aria-hidden className="shrink-0 text-content-quaternary" />
+                <ChevronRight size={16} aria-hidden className="shrink-0 text-content-tertiary" />
               </button>
             </li>
           ))}

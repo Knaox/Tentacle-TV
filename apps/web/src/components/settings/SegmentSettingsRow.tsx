@@ -1,9 +1,11 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { SegmentSettings, SkipLabelKey } from "@tentacle-tv/shared";
 import { PlaybackPreview } from "./PlaybackPreview";
 import { SegmentDelaySlider } from "./SegmentDelaySlider";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingToggleRow } from "./SettingToggleRow";
+import { SubSetting } from "./SubSetting";
 
 interface SegmentSettingsRowProps {
   title: string;
@@ -25,35 +27,41 @@ interface SegmentSettingsRowProps {
  *
  * Le choix de l'action est à plat plutôt que dans un menu déroulant : les
  * trois possibilités se lisent d'un coup d'œil, ce qui est tout l'enjeu ici.
+ * Il est À DROITE du titre (refonte de nov. 2026) : les cinq passages
+ * s'alignent, on compare leurs choix en descendant la colonne.
  */
 export function SegmentSettingsRow({
   title, hint, fieldId, settings, onChange, labelKey,
 }: SegmentSettingsRowProps) {
   const { t } = useTranslation("preferences");
   const auto = settings.action === "auto";
+  const titleId = useId();
 
   return (
-    <div>
-      <p className="text-sm font-medium text-content-primary">{title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>
-      <SegmentedChoice
-        label={`${title} — ${t("segmentActionLabel")}`}
-        value={settings.action}
-        options={[
-          { value: "button", label: t("segmentActionButton") },
-          { value: "auto", label: t("segmentActionAuto") },
-          { value: "off", label: t("segmentActionOff") },
-        ]}
-        onChange={(action) => onChange({ action })}
-        className="mt-3 max-w-full"
-      />
-
+    <SubSetting
+      title={title}
+      hint={hint}
+      titleId={titleId}
+      trailing={(
+        <SegmentedChoice
+          label={`${title} — ${t("segmentActionLabel")}`}
+          value={settings.action}
+          options={[
+            { value: "button", label: t("segmentActionButton") },
+            { value: "auto", label: t("segmentActionAuto") },
+            { value: "off", label: t("segmentActionOff") },
+          ]}
+          onChange={(action) => onChange({ action })}
+          className="max-w-full"
+        />
+      )}
+    >
       {/* L'aperçu de CE passage, sous ses propres choix : il n'y a rien à
           relier, et rien à comprendre avant de le lire. */}
       <PlaybackPreview settings={settings} labelKey={labelKey} />
 
       {auto && (
-        <div className="mt-4 space-y-4 border-l border-line-subtle pl-4">
+        <div className="mt-4 space-y-4 rounded-tile bg-surface-2 p-4">
           <SettingToggleRow
             title={t("segmentCountdownTitle")}
             hint={t("segmentCountdownHint")}
@@ -67,6 +75,6 @@ export function SegmentSettingsRow({
           />
         </div>
       )}
-    </div>
+    </SubSetting>
   );
 }

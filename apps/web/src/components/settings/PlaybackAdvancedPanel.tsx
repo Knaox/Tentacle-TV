@@ -1,6 +1,6 @@
 /**
- * Le réglage fin des passages et de l'épisode suivant — chacun derrière son
- * « Régler en détail » (`PlaybackSettingsSection`).
+ * Le réglage fin des passages (sous « Avancé ») et de l'épisode suivant
+ * (`PlaybackSettingsSection`).
  *
  * Tout ce qui suit était déployé d'emblée : quatre passages × trois contrôles,
  * plus cinq réglages d'épisode suivant. Le détail est utile — il l'est même
@@ -29,7 +29,9 @@ import { NextFinalCardPreview } from "./NextFinalCardPreview";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingsDisclosure } from "./SettingsDisclosure";
+import { AdvancedFold } from "./wide/AdvancedFold";
 import { SettingToggleRow } from "./SettingToggleRow";
+import { SubSetting } from "./SubSetting";
 
 /**
  * Dans l'ordre où les passages surviennent à l'écran, l'intro d'abord.
@@ -82,26 +84,27 @@ export function SkipPassagesPanel({ settings }: { settings: PlaybackSettings }) 
   const { t } = useTranslation("preferences");
   return (
     <div>
-      <div className="space-y-6">
+      <div className="divide-y divide-line-subtle">
         {PASSAGES.map((passage) => (
-          <SegmentSettingsRow
-            key={passage.key}
-            fieldId={passage.key}
-            title={t(TITLE_KEYS[passage.key][0])}
-            hint={t(TITLE_KEYS[passage.key][1])}
-            settings={settings[passage.key]}
-            onChange={passage.apply}
-            labelKey={PREVIEW_LABELS[passage.key]}
-          />
+          <div key={passage.key} className="py-5 first:pt-1">
+            <SegmentSettingsRow
+              fieldId={passage.key}
+              title={t(TITLE_KEYS[passage.key][0])}
+              hint={t(TITLE_KEYS[passage.key][1])}
+              settings={settings[passage.key]}
+              onChange={passage.apply}
+              labelKey={PREVIEW_LABELS[passage.key]}
+            />
+          </div>
         ))}
       </div>
 
       {/* Le détail encombrait chaque réglage — trois lignes sous chacun, pour
           des cas qu'on ne rencontre qu'une fois. Il est ici, entier, pour qui
           le cherche : c'est la divulgation progressive, pas une amputation. */}
-      <div className="mt-6 border-t border-line-subtle pt-4">
+      <div className="border-t border-line-subtle pt-3">
         <SettingsDisclosure title={t("segmentsMoreTitle")}>
-          <ul className="space-y-2 text-xs leading-relaxed text-content-tertiary">
+          <ul className="max-w-[62ch] space-y-2 text-[13px] leading-relaxed text-content-tertiary">
             <li>{t("segmentsMoreNothing")}</li>
             <li>{t("segmentsMoreDismiss")}</li>
             <li>{t("segmentsMoreOutro")}</li>
@@ -112,9 +115,19 @@ export function SkipPassagesPanel({ settings }: { settings: PlaybackSettings }) 
   );
 }
 
-/** La fin d'un épisode : la fiche « à suivre », son décompte, l'enchaînement, l'affiche de fin. */
-export function UpNextPanel({ settings }: { settings: PlaybackSettings }) {
-  const { t } = useTranslation("preferences");
+interface UpNextPanelProps {
+  settings: PlaybackSettings;
+  /** Le repli « Avancé » ouvert d'emblée (un réglage fin déjà touché, ou une ancre qui vise la ligne). */
+  advancedOpen?: boolean;
+}
+
+/**
+ * La fin d'un épisode. D'abord ce qu'on règle d'ordinaire — la fiche « à suivre », son
+ * décompte, l'enchaînement, la durée —, avec leur aperçu ; puis, sous « Avancé », l'affiche de
+ * fin, le moment où la fiche paraît et les règles par bibliothèque.
+ */
+export function UpNextPanel({ settings, advancedOpen = false }: UpNextPanelProps) {
+  const { t } = useTranslation(["preferences", "settingsWeb"]);
   const next = settings.next;
   return (
     <div className="space-y-5">
@@ -124,7 +137,9 @@ export function UpNextPanel({ settings }: { settings: PlaybackSettings }) {
         active={next.nextCard}
         onChange={(nextCard) => { setPlaybackSettings({ next: { nextCard } }); }}
       />
-      <div className="space-y-5 border-l border-line-subtle pl-4">
+      {/* Les trois réglages restent INDÉPENDANTS en écriture ; ils sont rangés sous la fiche
+          dont ils dépendent à l'écran, et chacun dit pourquoi il est sans effet. */}
+      <div className="space-y-5 rounded-tile bg-surface-2 p-4">
         <SettingToggleRow
           title={t("upNextCountdownTitle")}
           hint={next.nextCard ? t("upNextCountdownHint") : t("upNextNeedsCard")}
@@ -148,35 +163,39 @@ export function UpNextPanel({ settings }: { settings: PlaybackSettings }) {
           comprend mal en mots : ici on VOIT ce que chaque combinaison donne. */}
       <NextEpisodePreview next={next} />
 
-      {/* L'affiche PLEIN ÉCRAN de fin — un quatrième réglage, indépendant
-          des trois autres comme eux le sont entre eux : écarter la fiche du
-          générique ne l'éteint pas, et c'est voulu. */}
-      <SettingToggleRow
-        title={t("upNextFinalCardTitle")}
-        hint={t("upNextFinalCardHint")}
-        active={next.nextFinalCard}
-        onChange={(nextFinalCard) => { setPlaybackSettings({ next: { nextFinalCard } }); }}
-      />
-      <NextFinalCardPreview next={next} />
+      <AdvancedFold inset summary={t("settingsWeb:advanced.upNext")} defaultOpen={advancedOpen} openSignal={advancedOpen}>
+        <div className="space-y-5">
+          {/* L'affiche PLEIN ÉCRAN de fin — un quatrième réglage, indépendant
+              des trois autres comme eux le sont entre eux : écarter la fiche du
+              générique ne l'éteint pas, et c'est voulu. */}
+          <SettingToggleRow
+            title={t("upNextFinalCardTitle")}
+            hint={t("upNextFinalCardHint")}
+            active={next.nextFinalCard}
+            onChange={(nextFinalCard) => { setPlaybackSettings({ next: { nextFinalCard } }); }}
+          />
+          <NextFinalCardPreview next={next} />
 
-      <div>
-        <p className="text-sm font-medium text-content-primary">{t("upNextTriggerLabel")}</p>
-        <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
-          {t("upNextTriggerHint")}
-        </p>
-        <SegmentedChoice
-          label={t("upNextTriggerLabel")}
-          value={next.nextTrigger}
-          options={[
-            { value: "outroStart", label: t("upNextTriggerOutroStart") },
-            { value: "beforeEnd", label: t("upNextTriggerBeforeEnd") },
-          ]}
-          onChange={(nextTrigger) => { setPlaybackSettings({ next: { nextTrigger } }); }}
-          className="mt-3 max-w-full"
-        />
-      </div>
+          <SubSetting
+            title={t("upNextTriggerLabel")}
+            hint={t("upNextTriggerHint")}
+            trailing={(
+              <SegmentedChoice
+                label={t("upNextTriggerLabel")}
+                value={next.nextTrigger}
+                options={[
+                  { value: "outroStart", label: t("upNextTriggerOutroStart") },
+                  { value: "beforeEnd", label: t("upNextTriggerBeforeEnd") },
+                ]}
+                onChange={(nextTrigger) => { setPlaybackSettings({ next: { nextTrigger } }); }}
+                className="max-w-full"
+              />
+            )}
+          />
 
-      <BeforeEndRules next={next} />
+          <BeforeEndRules next={next} />
+        </div>
+      </AdvancedFold>
     </div>
   );
 }

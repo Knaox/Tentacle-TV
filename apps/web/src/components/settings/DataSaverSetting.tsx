@@ -1,16 +1,14 @@
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { GaugeIcon as Gauge } from "@phosphor-icons/react/dist/csr/Gauge";
 import { WifiHighIcon as Wifi } from "@phosphor-icons/react/dist/csr/WifiHigh";
 import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
-import { SettingsRow } from "@tentacle-tv/ui";
 
 import { useDataSaverActive, useDataSaverSetting } from "../../offline/useDataSaver";
 import type { DataSaverSetting as DataSaverChoice } from "../../offline/dataSaver";
+import { ChoiceTiles, type ChoiceTile } from "./ChoiceTiles";
 import { SettingItem } from "./wide/SettingItem";
 
-const ICON = 17;
+const ICON = 18;
 
 /**
  * Économie de données — dans Réglages › Lecture › Connexion (elle avait sa
@@ -30,7 +28,7 @@ export function DataSaverSetting() {
   const { setting, setSetting } = useDataSaverSetting();
   const active = useDataSaverActive();
 
-  const modes: Array<{ id: DataSaverChoice; label: string; icon: ReactNode; hint: string }> = [
+  const modes: ChoiceTile<DataSaverChoice>[] = [
     { id: "auto", label: t("saverModeAuto"), icon: <Gauge size={ICON} />, hint: t("saverModeAutoHint") },
     { id: "on", label: t("saverModeOn"), icon: <WifiOff size={ICON} />, hint: t("saverModeOnHint") },
     { id: "off", label: t("saverModeOff"), icon: <Wifi size={ICON} />, hint: t("saverModeOffHint") },
@@ -38,21 +36,7 @@ export function DataSaverSetting() {
 
   return (
     <SettingItem setting="dataSaver" note={active ? `${t("saverSettingsCaption")} — ${t("saverActiveNow")}` : t("saverSettingsCaption")}>
-      <div className="overflow-hidden rounded-lg border border-line-subtle">
-        {modes.map((m, i) => (
-          <SettingsRow
-            key={m.id}
-            icon={m.icon}
-            label={m.label}
-            description={m.hint}
-            onClick={() => setSetting(m.id)}
-            last={i === modes.length - 1}
-            trailing={setting === m.id ? (
-              <span className="text-brand" aria-label="selected"><Check size={18} /></span>
-            ) : undefined}
-          />
-        ))}
-      </div>
+      <ChoiceTiles label={t("saverSettingsTitle")} value={setting} options={modes} onChange={setSetting} />
     </SettingItem>
   );
 }

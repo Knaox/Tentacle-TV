@@ -17,6 +17,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 
 interface SettingsDisclosureProps {
   title: string;
@@ -38,19 +39,18 @@ export function SettingsDisclosure({
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         aria-expanded={open}
-        className="flex min-h-11 w-full items-center gap-2 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="flex min-h-10 w-full items-center gap-2.5 rounded-field text-left transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
-        <svg
-          className={`h-4 w-4 flex-shrink-0 text-content-tertiary transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-90" : ""}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
+        <CaretRightIcon
+          size={14}
+          weight="bold"
+          aria-hidden
+          className={`shrink-0 text-content-tertiary transition-transform duration-hover ease-out motion-reduce:transition-none ${open ? "rotate-90" : ""}`}
+        />
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-content-primary">{title}</span>
           {summary !== undefined && !open && (
-            <span className="block text-xs leading-relaxed text-content-tertiary">{summary}</span>
+            <span className="block text-[13px] leading-relaxed text-content-tertiary">{summary}</span>
           )}
         </span>
       </button>

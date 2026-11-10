@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
 import { SegmentedChoice } from "./SegmentedChoice";
+import { SubSetting } from "./SubSetting";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { SettingItem } from "./wide/SettingItem";
 import { StillWatchingTrialRow } from "./StillWatchingTrialRow";
@@ -41,27 +42,31 @@ export function StillWatchingSetting() {
       )}
     >
       {settings.enabled && (
-        <div className="flex flex-col gap-5 border-t border-line-subtle pt-4">
-          <div>
-            <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingAfter")}</p>
-            <SegmentedChoice
-              label={t("preferences:stillWatchingAfter")}
-              value={String(settings.afterMs)}
-              options={stillWatchingAfterChoices(t)}
-              onChange={(value) => set({ afterMs: Number(value) })}
-              className="mt-3"
-            />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-content-primary">{t("preferences:stillWatchingCountdown")}</p>
-            <SegmentedChoice
-              label={t("preferences:stillWatchingCountdown")}
-              value={String(settings.countdownMs)}
-              options={stillWatchingCountdownChoices(t)}
-              onChange={(value) => set({ countdownMs: Number(value) })}
-              className="mt-3"
-            />
-          </div>
+        <div className="flex flex-col gap-4 rounded-tile bg-surface-2 p-4">
+          <SubSetting
+            title={t("preferences:stillWatchingAfter")}
+            trailing={(
+              <SegmentedChoice
+                label={t("preferences:stillWatchingAfter")}
+                value={String(settings.afterMs)}
+                options={stillWatchingAfterChoices(t)}
+                onChange={(value) => set({ afterMs: Number(value) })}
+                className="max-w-full"
+              />
+            )}
+          />
+          <SubSetting
+            title={t("preferences:stillWatchingCountdown")}
+            trailing={(
+              <SegmentedChoice
+                label={t("preferences:stillWatchingCountdown")}
+                value={String(settings.countdownMs)}
+                options={stillWatchingCountdownChoices(t)}
+                onChange={(value) => set({ countdownMs: Number(value) })}
+                className="max-w-full"
+              />
+            )}
+          />
           {isWebDebugEnabled() && <StillWatchingTrialRow trial={trial} />}
         </div>
       )}

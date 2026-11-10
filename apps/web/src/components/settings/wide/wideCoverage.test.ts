@@ -44,6 +44,12 @@ describe("le web large dessine chaque réglage de son catalogue", () => {
     }
   });
 
+  it("un réglage rare (`advanced`) est dessiné DANS un repli « Avancé » qui le nomme — replié, jamais retiré", () => {
+    const folded = new Set([...code.matchAll(/<AdvancedSettings settings=\{\[([^\]]*)\]\}/g)].flatMap((m) => [...m[1].matchAll(/"([A-Za-z]+)"/g)].map((id) => id[1])));
+    const advanced = WIDE_SETTINGS_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.entries)).filter((e) => e.advanced).map((e) => e.id);
+    expect([...folded].sort()).toEqual([...advanced].sort());
+  });
+
   it("aucune ligne ne nomme un réglage absent du catalogue", () => {
     const known = new Set(ids);
     for (const match of code.matchAll(/setting="([A-Za-z]+)"|settingAnchor\("([A-Za-z]+)"\)/g)) {

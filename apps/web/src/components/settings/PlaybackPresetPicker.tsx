@@ -3,12 +3,15 @@
  * ou le lecteur qui FAIT.
  *
  * Il est en tête des réglages de lecture parce que c'est la seule question que
- * la plupart des gens se posent. Le détail — quel passage, quel délai, quel
- * déclencheur — vit derrière un repli, et n'est utile qu'à qui le cherche.
+ * la plupart des gens se posent. Chaque mode est une TUILE (refonte de nov.
+ * 2026) : son nom, la phrase qui dit ce qu'il fait, et son schéma — on choisit
+ * en voyant ce qui se passera, sans lire trois explications l'une après
+ * l'autre. Le détail — quel passage, quel délai, quel déclencheur — vit sous
+ * « Avancé », et n'est utile qu'à qui le cherche.
  *
- * « Personnalisé » n'est pas un bouton : c'est ce qu'on lit quand les réglages
+ * « Personnalisé » n'est pas un choix : c'est ce qu'on lit quand les réglages
  * ne correspondent à aucun mode. On ne peut donc pas le choisir — on y tombe en
- * touchant un réglage fin, et l'étiquette le dit.
+ * touchant un réglage fin, et sa tuile le dit.
  *
  * ⚠️ La liste des modes vient de `SELECTABLE_PRESETS`, jamais d'un tableau
  * écrit ici. Écrite à la main, elle avait déjà manqué l'ajout de « Par
@@ -28,38 +31,43 @@ import {
   type PlaybackPreset,
   type PlaybackSettings,
 } from "@tentacle-tv/shared";
-import { SegmentedChoice } from "./SegmentedChoice";
+import { PlaybackModeMini } from "./PlaybackModeMini";
 
 interface PlaybackPresetPickerProps {
   settings: PlaybackSettings;
 }
 
 export function PlaybackPresetPicker({ settings }: PlaybackPresetPickerProps) {
-  const { t } = useTranslation("preferences");
+  const { t } = useTranslation(["preferences", "player"]);
   const preset = detectPreset(settings);
 
-  const options: { value: PlaybackPreset; label: string }[] = [
-    ...SELECTABLE_PRESETS.map((value) => ({ value, label: t(PRESET_LABEL_KEYS[value]) })),
-    // « Personnalisé » n'apparaît que lorsqu'on y est : proposer un mode qui ne
-    // décrit rien reviendrait à offrir un bouton sans effet.
-    ...(preset === "custom" ? [{ value: "custom" as const, label: t(PRESET_LABEL_KEYS.custom) }] : []),
-  ];
+  // « Personnalisé » n'apparaît que lorsqu'on y est : proposer un mode qui ne
+  // décrit rien reviendrait à offrir un bouton sans effet.
+  const presets: readonly PlaybackPreset[] = preset === "custom" ? [...SELECTABLE_PRESETS, "custom"] : SELECTABLE_PRESETS;
 
   return (
-    <div>
-      <SegmentedChoice
-        label={t("playbackModeLabel")}
-        value={preset}
-        options={options}
-        onChange={(value) => {
-          if (value === "custom") return; // un constat, pas un choix
-          setPlaybackSettings(presetSettings(value));
-        }}
-        className="max-w-full"
-      />
-      <p className="mt-3 text-xs leading-relaxed text-content-tertiary">
-        {t(PRESET_HINT_KEYS[preset])}
-      </p>
+    <div
+      role="radiogroup"
+      aria-label={t("preferences:playbackModeLabel")}
+      className={`grid gap-2.5 ${presets.length === 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+    >
+      {presets.map((value) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={value === preset}
+          onClick={() => {
+            if (value === "custom") return; // un constat, pas un choix
+            setPlaybackSettings(presetSettings(value));
+          }}
+          className="ui-tile flex min-w-0 flex-col gap-1 p-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        >
+          <span className="text-[15px] font-semibold leading-snug text-content-primary">{t(`preferences:${PRESET_LABEL_KEYS[value]}`)}</span>
+          <span className="grow text-[13px] leading-relaxed text-content-secondary">{t(`preferences:${PRESET_HINT_KEYS[value]}`)}</span>
+          <PlaybackModeMini preset={value} skipLabel={t("player:skipIntro")} />
+        </button>
+      ))}
     </div>
   );
 }

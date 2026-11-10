@@ -31,14 +31,14 @@ export function SegmentDelaySlider({ id, valueMs, onChange }: SegmentDelaySlider
   return (
     <div>
       <div className="flex items-baseline justify-between gap-4">
-        <label htmlFor={id} className="text-sm font-medium text-content-primary">
+        <label htmlFor={id} className="text-sm font-semibold text-content-primary">
           {t("segmentDelayLabel")}
         </label>
-        <span className="text-sm font-semibold tabular-nums text-content-secondary">
+        <span className="num text-sm font-semibold text-content-secondary">
           {seconds === 0 ? t("segmentDelayImmediate") : t("segmentDelayValue", { seconds })}
         </span>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{t("segmentDelayHint")}</p>
+      <p className="mt-0.5 max-w-[62ch] text-[13px] leading-relaxed text-content-tertiary">{t("segmentDelayHint")}</p>
       <input
         id={id}
         type="range"
@@ -48,7 +48,7 @@ export function SegmentDelaySlider({ id, valueMs, onChange }: SegmentDelaySlider
         value={seconds}
         onChange={(e) => { onChange(Math.round(Number(e.target.value) * 1000)); }}
         style={rangeFill(seconds, 0, MAX_SECONDS)}
-        className="ctl-range mt-3 w-full max-w-xs"
+        className="ctl-range mt-3 w-full max-w-sm"
       />
     </div>
   );
