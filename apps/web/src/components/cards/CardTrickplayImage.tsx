@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useNearViewport } from "../../hooks/useNearViewport";
 import type { ResumeFrame } from "../../hooks/useResumeFrame";
+import { markImageSeen, wasImageSeen } from "../../lib/seenImages";
 
 interface CardTrickplayImageProps {
   frame: ResumeFrame;
@@ -36,8 +37,11 @@ interface CardTrickplayImageProps {
 export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTrickplayImageProps) {
   // L'état est attaché à l'ADRESSE : les cartes sont recyclées au défilement,
   // et la position de reprise change l'URL (cf. `CardImage` pour le pourquoi).
-  const [state, setState] = useState({ url: frame.url, loaded: false, errored: false });
-  if (state.url !== frame.url) setState({ url: frame.url, loaded: false, errored: false });
+  // Une planche DÉJÀ montrée dans la session (`lib/seenImages`) est d'emblée
+  // « chargée » : ni squelette, ni fondu, ni attente de l'observateur quand la
+  // rangée « Reprendre » se remonte — elle ne clignote plus au retour.
+  const [state, setState] = useState({ url: frame.url, loaded: wasImageSeen(frame.url), errored: false });
+  if (state.url !== frame.url) setState({ url: frame.url, loaded: wasImageSeen(frame.url), errored: false });
   const { loaded, errored } = state;
 
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>();
@@ -68,7 +72,7 @@ export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTr
       {!loaded && !errored && visible && (
         <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
       )}
-      {!errored && near && (
+      {!errored && (near || loaded) && (
         <div
           role="img"
           aria-label={alt}
@@ -89,7 +93,10 @@ export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTr
               loading="lazy"
               decoding="async"
               draggable={false}
-              onLoad={() => setState((e) => (e.url === frame.url ? { ...e, loaded: true } : e))}
+              onLoad={() => {
+                markImageSeen(frame.url);
+                setState((e) => (e.url === frame.url ? { ...e, loaded: true } : e));
+              }}
               onError={() => setState((e) => (e.url === frame.url ? { ...e, errored: true } : e))}
               className="absolute max-w-none"
               style={{

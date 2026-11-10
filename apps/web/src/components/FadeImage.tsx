@@ -1,4 +1,5 @@
 import { useState, type ImgHTMLAttributes } from "react";
+import { markImageSeen, wasImageSeen } from "../lib/seenImages";
 
 interface FadeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   duration?: number;
@@ -7,8 +8,12 @@ interface FadeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: FadeImageProps) {
   /* L'échec suit l'ADRESSE. Sans cela, une liste recyclée — épisodes, casting —
    * gardait une case vide sur une image devenue valide, jusqu'au démontage. */
-  const [state, setState] = useState({ src: props.src, loaded: false, errored: false });
-  if (state.src !== props.src) setState({ src: props.src, loaded: false, errored: false });
+  // Une image DÉJÀ montrée dans la session (`lib/seenImages`) est pleine dès le
+  // premier rendu : remonter la liste (retour sur la fiche, changement de
+  // saison) ne rejoue pas son fondu depuis le vide.
+  const address = typeof props.src === "string" ? props.src : undefined;
+  const [state, setState] = useState({ src: props.src, loaded: wasImageSeen(address), errored: false });
+  if (state.src !== props.src) setState({ src: props.src, loaded: wasImageSeen(address), errored: false });
   const { loaded, errored } = state;
 
   if (errored) return null;
@@ -23,6 +28,7 @@ export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: 
       decoding="async"
       {...props}
       onLoad={(e) => {
+        markImageSeen(address);
         setState((s) => (s.src === props.src ? { ...s, loaded: true } : s));
         onLoad?.(e);
       }}

@@ -128,7 +128,11 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
       {!loaded && !errored && visible && (
         <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
       )}
-      {!errored && near && (
+      {/* Déjà montrée (`loaded` d'emblée) : l'image se rend dès le PREMIER
+          rendu, sans attendre l'observateur — `near` démarre à faux, et la
+          carte restait un rectangle vide le temps d'une image à chaque
+          remontage. Rien n'est redemandé au réseau : elle est dans le cache. */}
+      {!errored && (near || loaded) && (
         <img
           src={src}
           alt={alt}
