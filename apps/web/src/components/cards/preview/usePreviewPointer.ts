@@ -36,8 +36,11 @@ const same = (a: PointerHold, b: PointerHold) => a.onControl === b.onControl && 
  *     de la souris, et sa racine déborde de l'image (la légende) — hors de
  *     l'image, rien ne part ;
  *  3. le bouton REMPLACÉ sous une souris immobile (« Marquer comme vu » bascule,
- *     le plateau naît au survol) : aucun `pointerover` ne vient — le sous-arbre
- *     est observé, et la place relue par la géométrie.
+ *     le plateau naît au survol) : mesuré dans Chromium 156 (bureau CEF,
+ *     `apps/desktop-cef/bench/survol/hoverlag.mjs`), `:hover` du nouveau bouton
+ *     est FAUX à 0 ms et son `pointerover` de synthèse n'arrive que sous 50 ms,
+ *     sans `pointerout` de l'ancien — alors que la géométrie est déjà juste. Le
+ *     sous-arbre est observé, et la place relue par la géométrie.
  */
 export function usePreviewPointer(anchorRef: RefObject<HTMLElement | null>, active: boolean): PointerHold {
   const [state, setState] = useState<{ active: boolean; hold: PointerHold }>({ active: false, hold: NO_HOLD });
