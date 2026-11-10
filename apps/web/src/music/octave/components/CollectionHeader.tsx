@@ -85,7 +85,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, tintUr
       data-tinted={tint ? "true" : undefined}
       style={tint ? ({ "--oc-hero-tint-rgb": tint } as CSSProperties) : undefined}
     >
-      <div className="flex flex-col items-start gap-6 md:flex-row md:items-end">
+      <div className="octave-hero-row flex flex-col items-start gap-6 md:flex-row md:items-end">
         {art ?? (
           <Artwork
             url={artworkUrl}
@@ -100,7 +100,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, tintUr
         )}
         <div className="min-w-0 flex-1">
           <p className="oc-eyebrow">{kicker}</p>
-          <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
+          <h1 className={`octave-hero-title oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
           {description && (
             <p title={description} className="mt-2 line-clamp-2 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-content-tertiary">
               {description}

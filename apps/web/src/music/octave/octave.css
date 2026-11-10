@@ -57,6 +57,19 @@
 .octave-hero {
   position: relative;
   isolation: isolate;
+  /* La tête se règle sur SA colonne (la file ouverte la rétrécit), pas sur la fenêtre. */
+  container-type: inline-size;
+}
+/* À l'étroit : la pochette au-dessus, le titre dessous à une taille qui tient — jamais un mot coupé en lettres. */
+@container (max-width: 640px) {
+  .octave-hero .octave-hero-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .octave-hero .octave-hero-title {
+    font-size: 2rem;
+    line-height: 1.05;
+  }
 }
 .octave-hero[data-tinted="true"]::before {
   content: "";

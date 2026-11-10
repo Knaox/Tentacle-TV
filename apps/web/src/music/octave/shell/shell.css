@@ -21,41 +21,76 @@
 }
 
 /* La colonne de droite du dock se règle sur SA place (requête de conteneur :
- * elle se resserre quand la file s'ouvre ou la fenêtre rétrécit). La qualité
- * tient EN ENTIER ou passe en icône seule (nom accessible, infobulle) — jamais
- * un mot coupé ; la glissière du volume cède de la largeur avant elle.
- * Mesuré (Inter, « Sans perte », le plus long) : état + mot 97, icône 22, file
- * 36, bouton du volume 40, écarts 6. D'où l'échelle (qualité / glissière) :
- *   < 160 : ni qualité ni glissière (le bouton muet reste) ;
- *   160 → glissière 64 (82 + 64 = 146 utiles) ;
- *   180 → icône + glissière 56 (110 + 56 = 166) ;  240 → icône + 96 (206) ;
- *   280 → état + mot + 72 (185 + 72 = 257) ;  310 → état + mot + 96 (281).
+ * elle se resserre quand la file s'ouvre ou la fenêtre rétrécit). RIEN ne s'y
+ * chevauche : ce qui ne tient pas EN ENTIER s'efface, dans cet ordre — la valeur
+ * de la transition douce (l'infobulle la dit), le mot de la qualité (il passe
+ * en icône seule, nom accessible, infobulle), l'icône, puis la glissière du
+ * volume ; transition, arrêt, file et bouton muet restent.
+ * Mesuré (Figtree, « Sans perte », le plus long) : état + mot 97, icône 22,
+ * transition 36 (+48 avec sa valeur), arrêt 36, file 36, bouton du volume 40,
+ * écarts 6. Le socle fixe = 36 + 36 + 36 + 40 + 3 écarts = 166. D'où l'échelle :
+ *   < 240 : ni qualité ni glissière ;            240 → glissière 64 (230) ;
+ *   270 → icône + glissière 64 (258) ;           300 → icône + 96 (290) ;
+ *   356 → état + mot + 72 (341) ;                380 → état + mot + 96 (365) ;
+ *   416 → + valeur de la transition, 72 (389) ;  440 → tout, 96 (413).
  * `.octave-range.octave-dock-volume` : la règle de `.octave-range`, plus bas
  * dans la feuille, reprendrait sinon le `display`. */
 .octave-dock-aside { container-type: inline-size; }
 .octave-dock-meta,
 .octave-dock-availability,
 .octave-dock-quality-label { display: none; }
+.octave-dock-aside .octave-dock-crossfade-label { display: none; }
 .octave-dock-quality-icon { display: inline-flex; }
 .octave-range.octave-dock-volume { display: none; width: 64px; }
-@container (min-width: 160px) {
+@container (min-width: 240px) {
   .octave-range.octave-dock-volume { display: flex; }
 }
-@container (min-width: 180px) {
+@container (min-width: 270px) {
   .octave-dock-meta { display: inline-flex; }
-  .octave-range.octave-dock-volume { width: 56px; }
 }
-@container (min-width: 240px) {
+@container (min-width: 300px) {
   .octave-range.octave-dock-volume { width: 96px; }
 }
-@container (min-width: 280px) {
+@container (min-width: 356px) {
   .octave-dock-availability,
   .octave-dock-quality-label { display: inline-flex; }
   .octave-dock-quality-icon { display: none; }
   .octave-range.octave-dock-volume { width: 72px; }
 }
-@container (min-width: 310px) {
+@container (min-width: 380px) {
   .octave-range.octave-dock-volume { width: 96px; }
+}
+@container (min-width: 416px) {
+  .octave-dock-aside .octave-dock-crossfade-label { display: inline; }
+  .octave-range.octave-dock-volume { width: 72px; }
+}
+@container (min-width: 440px) {
+  .octave-range.octave-dock-volume { width: 96px; }
+}
+
+/* Le dock À L'ÉTROIT (file ouverte, fenêtre de 1024 px) : il se range, jamais il ne se
+ * chevauche. Sa zone (la colonne de la page) est le conteneur ; ce qui cède la place reste
+ * dans le lecteur « en cours » et dans le menu du titre. Pochette, transport et file : toujours. */
+.octave-dock-zone {
+  container-type: inline-size;
+  /* NOMMÉ : la colonne de droite est elle-même un conteneur, plus proche de ses enfants. */
+  container-name: octave-dock-zone;
+}
+@container octave-dock-zone (max-width: 900px) {
+  .octave-dock-zone .octave-now-quickadd { display: none; }
+}
+@container octave-dock-zone (max-width: 780px) {
+  /* La colonne de droite est un conteneur (elle n'a pas de largeur propre) : on la lui donne — file + muet. */
+  .octave-dock-zone [data-octave-dock] { grid-template-columns: auto minmax(0, 1fr) 84px; }
+  .octave-dock-zone .octave-now-actions,
+  .octave-dock-zone .octave-dock-extra,
+  .octave-dock-zone .octave-dock-meta { display: none; }
+  .octave-dock-zone .octave-now-text { max-width: 22cqw; }
+}
+@container octave-dock-zone (max-width: 600px) {
+  .octave-dock-zone [data-octave-dock] { grid-template-columns: auto minmax(0, 1fr) 36px; }
+  .octave-dock-zone .octave-now-text,
+  .octave-dock-zone .octave-dock-volume-box { display: none; }
 }
 
 /* Le bord du bas : la page se fond dans l'encre sous le dock — un dégradé

@@ -19,7 +19,7 @@ export const VolumeControl = memo(function VolumeControl({ className = "w-24" }:
   const shown = muted ? 0 : volume;
   const Icon = shown === 0 ? VolumeX : shown < 0.5 ? Volume1 : Volume2;
   return (
-    <div className="flex items-center gap-1">
+    <div className="octave-dock-volume-box flex items-center gap-1">
       <button
         type="button"
         onClick={() => player.toggleMute()}

@@ -14,6 +14,11 @@
  * dense (`shellGlass.css`). Ailleurs : le verre sombre de `shell.css`
  * (`octave-dock-fallback`).
  *
+ * À l'étroit (file ouverte, fenêtre de 1024 px), le dock se RANGE au lieu de se chevaucher
+ * (requêtes de conteneur sur sa zone, `shell.css`) : l'ajout rapide, puis le cœur, le menu, la
+ * transition douce et l'arrêt cèdent la place — tous restent dans le lecteur « en cours » et le
+ * menu du titre —, puis le texte et le volume ; pochette, transport et file ne partent jamais.
+ *
  * La qualité n'est jamais coupée au milieu d'un mot : en mot quand SA colonne
  * a la place (requête de conteneur, `shell.css`), en icône seule (nom
  * accessible, infobulle) plus à l'étroit, sinon elle s'efface — le détail
@@ -70,12 +75,12 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
     tone: "dark",
     shape: "rounded",
     className:
-      "octave-night pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-4 px-3",
+      "octave-night pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 px-3",
     fallbackClassName: "octave-dock-fallback",
   });
   return (
     // La zone ne prend pas les clics : la page reste cliquable autour du dock.
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-[var(--oc-dock-inset)] pb-[var(--oc-dock-inset)]">
+    <div className="octave-dock-zone pointer-events-none absolute inset-x-0 bottom-0 z-20 px-[var(--oc-dock-inset)] pb-[var(--oc-dock-inset)]">
       <section aria-label={t("player.region")} data-octave-dock {...glass.props}>
         {glass.layers}
         <NowPlayingInfo artworkClass="h-[52px] w-[52px]" onOpen={onOpenNowPlaying} />
@@ -99,8 +104,11 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
               <FormatBadge format={format} icon />
             </span>
           </div>
-          <CrossfadeButton />
-          <StopButton shape="stop" className="octave-dock-chip lg-bead h-9 w-9 text-content-secondary hover:text-content-primary" />
+          {/* À l'étroit (file ouverte, petite fenêtre), ces deux gestes cèdent la place : ils restent dans le lecteur « en cours ». */}
+          <span className="octave-dock-extra flex shrink-0 items-center gap-1.5">
+            <CrossfadeButton />
+            <StopButton shape="stop" className="octave-dock-chip lg-bead h-9 w-9 text-content-secondary hover:text-content-primary" />
+          </span>
           <QueueButton open={queueOpen} onToggle={onToggleQueue} />
           <VolumeControl className="octave-dock-volume" />
         </div>

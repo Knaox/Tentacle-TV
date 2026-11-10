@@ -5,7 +5,9 @@
  * l'album »…), règle partagée `queueFiles.ts`. Chaque entrée se lit, monte,
  * descend ou se retire au clavier comme à la souris, et se GLISSE par sa poignée
  * à sa place DANS sa file (`useRowDrag`, le glisser des playlists) — jamais un
- * glisser seul : les flèches restent.
+ * glisser seul : les flèches restent, dans un PLATEAU qui paraît au survol et au
+ * focus par-dessus la fin de la ligne (il ne réserve plus de place : le titre
+ * se lit en entier au repos).
  * Le panneau n'est MONTÉ qu'ouvert (rien à composer fermé) ; c'est un îlot
  * à l'encre de panneau, le titre en cours à la teinte franche.
  */
@@ -85,7 +87,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
   const playability = useTrackPlayability(track);
   const locked = playability.greyed;
   return (
-    <li className={`group flex shrink-0 items-center gap-2 rounded-[10px] px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>
+    <li className={`group relative flex shrink-0 items-center gap-2 rounded-[10px] px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>
       {handle && <DragHandle slot={handle} />}
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
@@ -127,7 +129,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
       {/* Le titre de la file s'ajoute à une playlist, ou s'en retire, comme partout (25/10). */}
       <TrackMenu track={track} actions={actions} visible={current ? "always" : "hover"} />
       {!current && (
-        <div className="flex shrink-0 items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+        <div className="absolute right-10 top-1/2 z-[1] flex -translate-y-1/2 items-center rounded-full bg-[var(--oc-ink-menu)] p-0.5 opacity-0 shadow-[var(--oc-shadow-menu)] transition-opacity duration-150 pointer-events-none focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100">
           <button type="button" className={small} disabled={index === 0} aria-label={t("queue.moveUp")} onClick={() => queueActions.move(player, item.uid, index - 1)}>
             <ChevronUp className="h-4 w-4" aria-hidden />
           </button>
