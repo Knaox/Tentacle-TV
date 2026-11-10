@@ -16,6 +16,7 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 
 #include "ports.h"
@@ -26,8 +27,11 @@ namespace bridge {
 class VideoChannels : public PlayerListener {
  public:
   using Clock = std::function<double()>;  // millisecondes Unix, pour `at`
+  // Différer une tâche de `ms` sur le fil principal (`postToMainDelayed`) : la retenue de
+  // l'étranglement part aussi PAR LE TEMPS, comme la pompe d'Electron (`mpvDrain.ts`).
+  using Defer = std::function<void(int ms, std::function<void()> task)>;
 
-  VideoChannels(Registry& registry, PlayerPort& player, Clock clock = {});
+  VideoChannels(Registry& registry, PlayerPort& player, Clock clock = {}, Defer defer = {});
   ~VideoChannels() override;
 
   /// Appelé quand une lecture vidéo démarre (`mpv_init`) — octave y met la musique en pause.
@@ -47,6 +51,8 @@ class VideoChannels : public PlayerListener {
   void setProperty(const Json& payload, Reply reply);
   void getProperty(const Json& payload, Reply reply);
   void flushHeld();
+  void flushDue();
+  void scheduleFlush(double delayMs);
 
   Registry& registry_;
   PlayerPort& player_;
@@ -56,6 +62,9 @@ class VideoChannels : public PlayerListener {
   std::map<std::string, int> observedIds_;      // nom → id (rang dans la liste de la page)
   std::map<std::string, double> lastEmitted_;   // étranglement par propriété
   std::map<std::string, Json> held_;            // dernière valeur retenue, pas encore partie
+  Defer defer_;
+  bool flushScheduled_ = false;
+  std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
 };
 
 }  // namespace bridge

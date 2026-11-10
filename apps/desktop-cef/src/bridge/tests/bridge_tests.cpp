@@ -8,6 +8,7 @@
 #include "registry.h"
 #include "tests/fakes.h"
 #include "video_channels.h"
+#include "video_probe.h"
 #include "window_channels.h"
 
 using namespace bridge;
@@ -104,6 +105,25 @@ static void testVideo() {
   CHECK(changes.size() == 3);
   CHECK(changes[1]["data"] == 1.05 && changes[2]["name"] == "pause");
   CHECK(changes[2]["id"] == 1 && changes[2]["at"] == 1050.0);
+  // En pause, rien d'autre ne bouge : la retenue part PAR LE TEMPS (pompe d'Electron, 20 ms).
+  {
+    FakeIpc ipc2;
+    FakePlayer player2;
+    Registry reg2(ipc2);
+    double t = 5000;
+    std::vector<std::pair<int, std::function<void()>>> deferred;
+    VideoChannels v2(reg2, player2, [&t] { return t; }, [&deferred](int ms, std::function<void()> f) { deferred.emplace_back(ms, std::move(f)); });
+    ipc2.invoke("tentacle:mpv_init", frontInit());
+    player2.listener->onProperty("time-pos", 2.0);
+    t += 40;
+    player2.listener->onProperty("time-pos", 2.04);
+    CHECK(ipc2.payloadsOf("tentacle:mpv://property-change").size() == 1);
+    CHECK(deferred.size() == 1 && deferred[0].first == 86);
+    t += 86;
+    deferred[0].second();
+    auto held = ipc2.payloadsOf("tentacle:mpv://property-change");
+    CHECK(held.size() == 2 && held[1]["data"] == 2.04 && held[1]["at"] == 5040.0);
+  }
   player.listener->onProperty("vf", "x");  // non observée par la page : rien
   CHECK(ipc.payloadsOf("tentacle:mpv://property-change").size() == 3);
 
@@ -154,7 +174,35 @@ static void testWindow() {
   CHECK(win.sleepBlocked);
 }
 
+// La sonde de surface (dev) : une capture BMP lue comme Electron (`macosCapture.ts`).
+static std::vector<uint8_t> bmp(int w, int h, bool noisy) {
+  std::vector<uint8_t> b(54 + size_t(w) * h * 4, 0);
+  auto put32 = [&b](size_t at, uint32_t v) { for (int k = 0; k < 4; k++) b[at + k] = uint8_t(v >> (8 * k)); };
+  b[0] = 'B', b[1] = 'M';
+  put32(10, 54);
+  put32(18, uint32_t(w));
+  put32(22, uint32_t(-h));  // de haut en bas
+  b[28] = 32;
+  for (int i = 0; i < w * h; i++)
+    for (int c = 0; c < 3; c++) b[54 + size_t(i) * 4 + c] = noisy ? uint8_t((i * 37 + c * 91) % 256) : 0;
+  return b;
+}
+
+static void testProbe() {
+  probe::ImageStats black, image;
+  CHECK(!probe::statsFromBmp(bmp(64, 64, false), black));
+  CHECK(black.largeur == 64 && black.hauteur == 64 && black.nonNoirs == 0 && black.stdDev == 0);
+  CHECK(probe::verdict(black, std::nullopt).rfind("RIEN A VOIR", 0) == 0);
+  CHECK(!probe::statsFromBmp(bmp(64, 64, true), image));
+  CHECK(image.nonNoirs > 0.35 && image.stdDev > 4 && image.teintes > 10);
+  CHECK(probe::verdict(image, std::nullopt).rfind("IMAGE VISIBLE", 0) == 0);
+  probe::ImageStats bad;
+  CHECK(probe::statsFromBmp({1, 2, 3}, bad).has_value());
+  CHECK(probe::verdict(std::nullopt, std::string("autorisation")) == "INDETERMINE — autorisation");
+}
+
 int main() {
+  testProbe();
   testRegistry();
   testPolicy();
   testVideo();

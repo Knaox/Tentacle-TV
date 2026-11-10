@@ -10,7 +10,9 @@
 #include "registry.h"
 #include "shell/builtin_handlers.h"
 #include "shell/ipc.h"
+#include "shell/main_thread.h"
 #include "glue/mpv_player_port.h"
+#include "glue/video_probe_glue.h"
 #include "player/sound_policy.h"
 #include "video_channels.h"
 #include "window_channels.h"
@@ -82,8 +84,14 @@ void install(AppContext& ctx) {
   state = std::make_unique<State>();
   state->window = std::make_unique<SdlWindow>(ctx.window);
   state->player = std::make_unique<bridge::MpvPlayerPort>(ctx.window, ctx.nativeWindow, ctx.compositor, ctx.fakeVideo);
-  state->video = std::make_unique<bridge::VideoChannels>(state->registry, *state->player);
+  state->video = std::make_unique<bridge::VideoChannels>(
+      state->registry, *state->player, bridge::VideoChannels::Clock{},
+      [](int ms, std::function<void()> task) { postToMainDelayed(std::move(task), ms); });
   state->windowChannels = std::make_unique<bridge::WindowChannels>(state->registry, *state->window);
+#ifdef TENTACLE_VIDEO_PROBES
+  // Sonde de surface du panneau de dev (Electron : macOS hors paquet livré).
+  installVideoProbes(state->registry, ctx.nativeWindow, [] { return state ? state->player->surfaceState() : Json(nullptr); });
+#endif
   // Diagnostic HORS `window.tentacle` (canal du socle, préfixe `pont.`) : preuve HDR sans capture.
   ipc::registerHandler("pont.debug.surface", [](const Json&, ipc::Responder r) {
     r.reply(state ? state->player->surfaceState() : Json(nullptr));
