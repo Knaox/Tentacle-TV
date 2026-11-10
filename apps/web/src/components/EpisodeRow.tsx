@@ -26,7 +26,7 @@ import { FadeImage } from "./FadeImage";
 import { KeptGlyph, WatchedGlyph } from "./cards/cardGlyphs";
 import { QualityChips, LanguagePill } from "./media/MetaChips";
 import { extractMediaQuality } from "../lib/mediaQuality";
-import { imageColorOf, type ImageBlurHashes } from "../lib/blurhashColor";
+import { itemImageColor } from "../lib/itemImageColor";
 import { EpisodeDownloadAction } from "../downloads/EpisodeDownloadAction";
 import { RichOverview } from "../lib/overviewHtml";
 import { EpisodeRatingLine } from "./rating/EpisodeRatingLine";
@@ -77,10 +77,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
   // La couleur d'attente : celle de la vignette, lue dans son blurhash (rien à décoder).
-  // Jellyfin joint `ImageBlurHashes` à ses titres ; le type partagé ne le déclare pas.
-  const thumbColor = ownImage
-    ? imageColorOf((ep as { ImageBlurHashes?: ImageBlurHashes }).ImageBlurHashes, "Primary", ep.ImageTags?.Primary)
-    : null;
+  const thumbColor = ownImage ? itemImageColor(ep, "Primary", ep.ImageTags?.Primary) : null;
 
   // Le modèle des marqueurs, réduit à ce qu'une LIGNE dit d'un épisode : vu,
   // et sur cette machine. Ma liste et les favoris vivent au niveau de la
@@ -130,7 +127,8 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
       onKeyDown={keyboard ? handleKeyDown : undefined}
       role={keyboard ? (isSelecting ? "checkbox" : "button") : undefined}
       aria-checked={keyboard && isSelecting ? isSelected : undefined}
-      aria-current={isCurrent ? "true" : undefined}
+      // Pas d'`aria-current` : le moteur de focus du client LG y lit sa cible d'arrivée
+      // (`focus/default.ts`) ; « Épisode actuel » le dit en mots, sur la ligne.
       tabIndex={keyboard ? 0 : undefined}
       className={`group flex cursor-pointer items-center gap-3 rounded-tile p-2.5 outline-none transition-colors duration-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] sm:gap-4 ${surface}`}
     >
