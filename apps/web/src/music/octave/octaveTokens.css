@@ -1,14 +1,19 @@
 /*
  * Octave — les jetons de l'identité (`--oc-*`). La doc : docs/octave/IDENTITE.md.
  *
- * Octave est Tentacle quand on écoute : même encre, même police (Inter), même
- * verre — mais l'accent de la musique est le ROSE (`--brand-accent`), et le
- * dégradé violet → rose n'y vient qu'en touches (lecture, progression, marque).
+ * Octave est Tentacle quand on écoute : la même encre NEUTRE, les mêmes polices
+ * (Bricolage Grotesque pour les titres, Figtree pour le texte), les mêmes
+ * pilules. Depuis la refonte de nov. 2026 (docs/REFONTE-UI.md), la couleur est
+ * aux POCHETTES : l'accent ne sert qu'à LIRE (le dégradé du logo sous le bouton
+ * Lecture), à MESURER (le dégradé de jauge de la progression) et à dire un état
+ * ACTIF (la teinte franche `--accent` : titre en cours, cœur, aléatoire…).
+ * Plus de dégradé décoratif, plus d'encre prune.
  *
  * Tout dérive des jetons de Tentacle (tokens.css) : une couleur de marque
  * redéfinie par l'administrateur se retrouve ici sans rien toucher. Jamais de
  * valeur de marque en dur, jamais `color-mix()`, `min()`, `max()`, `clamp()`
- * (la feuille passe par la garde du client LG).
+ * (la feuille passe par la garde du client LG). AUCUN nom n'a changé : seules
+ * des valeurs ont bougé, des jetons se sont ajoutés.
  *
  * Posés sur `:root` et non sur la coquille : un menu ou une feuille montés par
  * un portail (`document.body`) les lisent aussi. Le fichier n'est chargé
@@ -25,94 +30,105 @@
 :root,
 .octave-night {
   /* ── L'encre ─────────────────────────────────────────────────────────── */
-  /* La page : l'encre de Tentacle, telle quelle (noir pur, nacre en clair). */
+  /* La page : l'encre de Tentacle, telle quelle. */
   --oc-ink: var(--surface-0);
-  /* Un panneau posé sur l'encre (file d'attente, lecteur « en cours »,
-   * menus) : une encre PRUNE, à peine teintée — la signature d'Octave à côté
-   * du noir de Tentacle et du gris des autres lecteurs. Opaque : aucun flou. */
-  --oc-ink-raised: #0e0b13;
-  --oc-ink-raised-rgb: 14, 11, 19;
+  /* Un panneau posé sur l'encre (la file d'attente, un îlot) : l'encre de
+   * panneau du socle. Opaque : aucun flou. */
+  --oc-ink-raised: #131315;
+  --oc-ink-raised-rgb: 19, 19, 21;
+  /* Ce qui FLOTTE (menu, bulle) : l'encre de menu du socle, un cran plus claire. */
+  --oc-ink-menu: var(--surface-dropdown);
   /* Le survol et la sélection d'une ligne (rangée, entrée de file). */
-  --oc-hover: rgba(255, 255, 255, 0.06);
-  --oc-selected: rgba(255, 255, 255, 0.1);
+  --oc-hover: var(--fill-subtle);
+  --oc-selected: var(--fill-soft);
   --oc-line: var(--border-subtle);
 
-  /* ── L'accent : le rose ─────────────────────────────────────────────── */
-  --oc-accent: var(--brand-accent);
-  --oc-accent-rgb: var(--brand-accent-rgb);
-  /* Le rose LISIBLE en texte et en petit glyphe (≥ 4,5:1 sur l'encre). */
-  --oc-accent-text: var(--brand-accent-light);
-  /* Un fond rose discret (puce active, pastille) — jamais sous du texte rose. */
-  --oc-accent-soft: rgba(var(--brand-accent-rgb), 0.16);
+  /* ── L'accent : la teinte franche du socle, pour un état ACTIF ───────── */
+  --oc-accent: var(--accent);
+  --oc-accent-rgb: var(--accent-rgb);
+  /* Lisible en texte et en petit glyphe dans les deux thèmes (le socle la règle). */
+  --oc-accent-text: var(--accent);
+  /* Le fond d'une puce ou d'une ligne choisie — jamais sous du texte d'accent. */
+  --oc-accent-soft: var(--accent-soft);
   /* Le halo d'un curseur saisi, d'un focus : posé, jamais animé. */
-  --oc-accent-glow: rgba(var(--brand-accent-rgb), 0.38);
+  --oc-accent-glow: rgba(var(--accent-rgb), 0.38);
 
-  /* ── Le dégradé, en touches ─────────────────────────────────────────── */
-  /* La signature : violet → rose, le rose en tête (progression, marque). */
-  --oc-gradient: linear-gradient(90deg, var(--brand) 0%, var(--brand-accent) 72%, var(--brand-accent-light) 100%);
-  /* Sous un glyphe blanc (bouton Lecture) : le dégradé PROFOND de Tentacle,
-   * 4,6:1 d'un bout à l'autre sous le blanc. */
+  /* ── Le dégradé : pour MESURER et pour LIRE, rien d'autre ───────────── */
+  /* La jauge (progression, import) : le dégradé de jauge du socle. */
+  --oc-gradient: var(--gauge-gradient);
+  /* Sous un glyphe blanc (bouton Lecture) : le dégradé du logo. */
   --oc-gradient-deep: var(--cta-brand-gradient);
   --oc-on-gradient: var(--cta-brand-fg);
-  /* Le voile de marque en tête d'une vue (album, playlist) : rose d'abord. */
-  --oc-hero-veil: linear-gradient(160deg, rgba(var(--brand-accent-rgb), 0.3) 0%, rgba(var(--brand-rgb), 0.16) 45%, transparent 100%);
+  /* Plus de voile de marque en tête d'une vue : la couleur vient de la
+   * POCHETTE (`--oc-hero-tint-rgb`, posée en ligne par `CollectionHeader`). */
+  --oc-hero-veil: none;
+  --oc-hero-tint-rgb: 255, 255, 255;
+  --oc-hero-tint-top: 0.3;
+  --oc-hero-tint-mid: 0.13;
+  --oc-hero-tint-low: 0.04;
 
   /* ── Les glissières (progression, volume) ───────────────────────────── */
-  --oc-rail: var(--fill-medium);
+  --oc-rail: var(--gauge-track);
   --oc-rail-height: 4px;
   --oc-progress-fill: var(--oc-gradient);
-  /* Le volume est ROSE plein (Damien, 25/10 : « pas violet, plutôt rose »). */
+  /* Le volume reste d'UNE teinte (Damien, 25/10 : « pas violet ») : la franche. */
   --oc-volume-fill: var(--oc-accent);
-  /* La tête de lecture : un point rose clair cerclé d'encre, visible au
-   * survol, à la saisie et au focus seulement. */
-  --oc-thumb: var(--brand-accent-light);
+  /* La tête de lecture : un point d'ivoire cerclé d'encre, visible au survol,
+   * à la saisie et au focus seulement. */
+  --oc-thumb: var(--text-primary);
   --oc-thumb-ring: var(--surface-0);
   --oc-thumb-size: 12px;
 
   /* ── La barre de lecture (le « dock ») ──────────────────────────────── */
   /* Une capsule de verre sombre qui FLOTTE au-dessus des pages — la famille
-   * de la barre de navigation de Tentacle (theme/chrome.css). */
-  --oc-dock-bg: rgba(18, 14, 24, 0.76);
-  --oc-dock-border: rgba(255, 255, 255, 0.09);
-  --oc-dock-highlight: rgba(255, 255, 255, 0.07);
-  --oc-dock-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.35);
+   * des groupes de la barre du haut : encre de panneau à 72 %, arête haute. */
+  --oc-dock-bg: rgba(19, 19, 21, 0.72);
+  --oc-dock-border: transparent;
+  --oc-dock-highlight: rgba(255, 255, 255, 0.08);
+  --oc-dock-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.9);
   --oc-dock-blur: 20px;
   --oc-dock-height: 76px;
   --oc-dock-inset: 16px;
   --oc-dock-max: 1180px;
 
   /* ── La navigation ──────────────────────────────────────────────────── */
-  /* L'entrée active : la pastille de Tentacle, rose en tête. */
-  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.24) 0%, rgba(var(--brand-rgb), 0.12) 100%);
-  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.36);
-  /* Un bouton rond posé sur une image (en-tête au-dessus d'une pochette). */
-  --oc-chip-bg: rgba(0, 0, 0, 0.5);
-  --oc-chip-bg-hover: rgba(0, 0, 0, 0.66);
+  /* L'entrée active : une pastille NEUTRE ; son icône, pleine, à la teinte franche. */
+  --oc-nav-active-bg: var(--fill-soft);
+  --oc-nav-active-ring: transparent;
+  /* Une pastille posée sur une IMAGE (pochette) : constante entre les thèmes. */
+  --oc-chip-bg: rgba(11, 11, 12, 0.72);
+  --oc-chip-bg-hover: rgba(11, 11, 12, 0.86);
   --oc-chip-fg: #ffffff;
 
-  /* ── Les formes ─────────────────────────────────────────────────────── */
-  --oc-radius-art-xs: 4px;   /* vignette ≤ 32 px */
-  --oc-radius-art-sm: 6px;   /* vignette 40-64 px (rangée, file, barre) */
-  --oc-radius-art: 10px;     /* pochette de carte */
-  --oc-radius-art-lg: 14px;  /* pochette de tête de vue, « en cours » */
-  --oc-radius-panel: 16px;   /* panneau, menu, feuille */
-  --oc-radius-dock: 22px;    /* la barre de lecture */
-  --oc-radius-pill: 9999px;
+  /* ── Les formes : les cinq rayons du socle ──────────────────────────── */
+  --oc-radius-art-xs: var(--radius-xs);   /* vignette ≤ 32 px */
+  --oc-radius-art-sm: var(--radius-sm);   /* vignette 40-64 px (rangée, file, barre) */
+  --oc-radius-art: var(--radius-lg);      /* pochette de carte (12) */
+  --oc-radius-art-lg: var(--radius-xl);   /* pochette de tête de vue, « en cours » (16) */
+  --oc-radius-menu: var(--radius-xl);     /* menu, bulle (16) */
+  --oc-radius-panel: var(--radius-2xl);   /* panneau : la file, un îlot (20) */
+  --oc-radius-dock: var(--radius-3xl);    /* la barre de lecture (24) */
+  --oc-radius-pill: var(--radius-pill);
 
   /* ── Les ombres (posées, jamais animées) ────────────────────────────── */
-  --oc-shadow-art: 0 10px 28px -12px rgba(0, 0, 0, 0.75);
-  --oc-shadow-art-lg: 0 28px 60px -24px rgba(0, 0, 0, 0.85);
-  --oc-shadow-panel: 0 18px 44px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  /* Le bouton Lecture : son ombre est TEINTÉE (rose), il porte la marque. */
-  --oc-shadow-play: 0 6px 18px -6px rgba(var(--brand-accent-rgb), 0.55);
+  --oc-shadow-art: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  --oc-shadow-art-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
+  /* Un panneau se distingue par sa TEINTE : il ne garde qu'une arête. */
+  --oc-shadow-panel: var(--shadow-edge);
+  /* Ce qui flotte ou se soulève (menu, rangée saisie). */
+  --oc-shadow-menu: var(--shadow-dropdown);
+  /* Le bouton Lecture : une ombre neutre (plus de lueur de marque). */
+  --oc-shadow-play: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
 
   /* ── Le mouvement : transform et opacité seulement ──────────────────── */
-  --oc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --oc-ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --oc-ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --oc-duration-fast: 120ms;  /* survol, appui */
-  --oc-duration: 200ms;       /* apparition d'un contrôle */
-  --oc-duration-slow: 320ms;  /* panneau, feuille (sortie : 2/3) */
+  --oc-ease-out: var(--ease-out);
+  /* Jamais d'entrée lente : les deux noms d'avant valent la courbe de sortie. */
+  --oc-ease-in: var(--ease-out);
+  --oc-ease-press: var(--ease-out);
+  --oc-ease-drawer: var(--ease-drawer);
+  --oc-duration-fast: 120ms;  /* appui */
+  --oc-duration: 160ms;       /* survol, apparition d'un contrôle */
+  --oc-duration-slow: 320ms;  /* panneau, feuille (sortie : 200 ms) */
 
   /* ── La mise en page ────────────────────────────────────────────────── */
   --oc-sidebar-width: 244px;
@@ -123,76 +139,51 @@
 }
 
 :root[data-theme="light"] {
-  /* Le panneau en clair : jamais blanc pur — une nacre teintée de prune et de
-   * rose, détachée de la page par son ombre (texte 18:1, rose actif 5,7:1). */
-  --oc-ink-raised: #f9f3f8;
-  --oc-ink-raised-rgb: 249, 243, 248;
-  --oc-hover: rgba(11, 11, 16, 0.045);
-  --oc-selected: rgba(11, 11, 16, 0.08);
+  /* Le panneau en clair : jamais blanc pur — un papier chaud, un cran au-dessus
+   * de la page, détaché par sa teinte. */
+  --oc-ink-raised: #fbfaf8;
+  --oc-ink-raised-rgb: 251, 250, 248;
+  --oc-accent-glow: rgba(var(--accent-rgb), 0.28);
+  --oc-hero-tint-top: 0.22;
+  --oc-hero-tint-mid: 0.09;
+  --oc-hero-tint-low: 0.03;
 
-  /* Le rose lisible sur la nacre est le rose PROFOND (≥ 4,5:1 sur blanc). */
-  --oc-accent-text: var(--brand-accent-dark);
-  --oc-accent-soft: rgba(var(--brand-accent-rgb), 0.1);
-  --oc-accent-glow: rgba(var(--brand-accent-rgb), 0.28);
-  --oc-hero-veil: linear-gradient(160deg, rgba(var(--brand-accent-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.1) 45%, transparent 100%);
-
-  /* En clair, la tête de lecture est BLANCHE, cerclée de rose. */
-  --oc-thumb: #ffffff;
-  --oc-thumb-ring: var(--brand-accent);
-
-  --oc-dock-bg: rgba(255, 255, 255, 0.8);
-  --oc-dock-border: rgba(20, 16, 40, 0.09);
-  --oc-dock-highlight: rgba(255, 255, 255, 0.85);
-  --oc-dock-shadow: 0 18px 40px -20px rgba(60, 30, 110, 0.32), 0 1px 4px rgba(11, 11, 16, 0.06);
-
-  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.14) 0%, rgba(var(--brand-rgb), 0.08) 100%);
-  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.3);
-  --oc-chip-bg: rgba(255, 255, 255, 0.78);
-  --oc-chip-bg-hover: rgba(255, 255, 255, 0.92);
-  --oc-chip-fg: #0b0b10;
-
-  --oc-shadow-art: 0 10px 24px -12px rgba(40, 20, 70, 0.35);
-  --oc-shadow-art-lg: 0 24px 48px -22px rgba(40, 20, 70, 0.4);
-  --oc-shadow-panel: 0 18px 40px -20px rgba(60, 30, 110, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --oc-shadow-play: 0 6px 16px -6px rgba(var(--brand-accent-rgb), 0.45);
+  --oc-shadow-art: 0 10px 22px -14px rgba(19, 19, 21, 0.3);
+  --oc-shadow-art-lg: 0 22px 46px -22px rgba(19, 19, 21, 0.36);
+  --oc-shadow-play: 0 6px 14px -8px rgba(19, 19, 21, 0.35);
 }
 
 /* ── Les classes de l'identité, pour les vues ──────────────────────────── */
 
 /* Le surtitre d'une vue (« ALBUM », « PLAYLIST », « EN COURS ») : petit,
- * espacé, ROSE — le repère d'Octave. */
+ * espacé, NEUTRE — le surtitre du socle (`.ui-eyebrow`). */
 .oc-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  /* Posé sur un `h2` / `h3`, il garde la police de TEXTE (le socle donne la police de titre aux titres). */
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
   text-transform: uppercase;
-  color: var(--oc-accent-text);
+  color: var(--text-tertiary);
 }
 
-/* Le grand titre d'une vue : serré, très gras. */
+/* Le grand titre d'une vue : la police de titre, serrée. */
 .oc-display {
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 760;
   letter-spacing: -0.035em;
-  line-height: 1.04;
+  line-height: 1;
 }
 
-/* Un titre de section : gras, légèrement serré. */
+/* Un titre de section : la police de titre, légèrement serrée. */
 .oc-heading {
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 /* Une durée, un compteur : chiffres à chasse fixe (rien ne bouge). */
 .oc-meta {
   font-variant-numeric: tabular-nums;
-}
-
-/* Le texte de marque (le mot « Octave ») : le dégradé, en touche. */
-.oc-gradient-text {
-  background-image: var(--oc-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* Sous un verre, l'ombre de texte héritée ternirait le dégradé. */
-  text-shadow: none;
 }

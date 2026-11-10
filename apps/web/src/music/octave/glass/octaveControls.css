@@ -24,7 +24,7 @@
   box-shadow: var(--lg-pane-selected-shadow);
 }
 :root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead:focus {
-  border-color: rgba(var(--brand-accent-rgb), 0.7);
+  border-color: var(--border-focus);
 }
 :root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead::placeholder {
   color: var(--lg-pane-glyph-secondary);

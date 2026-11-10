@@ -6,23 +6,22 @@
  *
  * Seul écart au verre commun : son ENCRE. Le dock flotte au-dessus de la PAGE
  * qui défile (pochettes, parfois blanches), pas du seul fond ambiant que couvre
- * la preuve du socle : à 0,7 d'encre prune, le texte blanc tient l'AA au-dessus
+ * la preuve du socle : à 0,7 d'encre, le texte blanc tient l'AA au-dessus
  * d'un BLANC pur, reflet du dégradé compris (`shellGlass.test.ts`). En thème
  * clair, la page est claire PARTOUT : l'encre monte à 0,86 (comme hors verre).
  *
- * Dedans, tout suit le ton du verre : les survols, le rail des glissières, le
- * rose. Hors du mode natif aucune de ces règles ne s'applique (rendu d'avant).
+ * Dedans, tout suit le ton du verre : les survols, le rail des glissières, la
+ * teinte franche. Hors du mode natif aucune de ces règles ne s'applique (rendu d'avant).
  */
 
 :root[data-liquid-glass="native"] .octave-night.lg-pane {
-  --lg-pane-ink: rgba(18, 14, 24, 0.7);
+  --lg-pane-ink: rgba(19, 19, 21, 0.7);
   --border-subtle: rgba(255, 255, 255, 0.14);
   --oc-hover: rgba(255, 255, 255, 0.08);
   --oc-selected: rgba(255, 255, 255, 0.12);
   --oc-rail: rgba(255, 255, 255, 0.2);
-  --oc-accent-text: var(--brand-accent-light);
 }
 :root[data-liquid-glass="native"][data-theme="light"] .octave-night.lg-pane {
-  --lg-pane-ink: rgba(18, 14, 24, 0.86);
-  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px -18px rgba(40, 10, 40, 0.4);
+  --lg-pane-ink: rgba(19, 19, 21, 0.86);
+  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px -18px rgba(19, 19, 21, 0.4);
 }

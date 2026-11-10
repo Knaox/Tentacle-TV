@@ -11,9 +11,9 @@
 .octave-touch {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--duration-press) var(--ease-out);
 }
-.octave-touch:active { transform: scale(0.94); }
+.octave-touch:active { transform: scale(var(--press-scale)); }
 
 /* L'en-tête du téléphone : collé en haut, la page défile DESSOUS, sous un voile d'encre flou. */
 .octave-phone-header {
@@ -63,7 +63,7 @@
   from { opacity: 0.6; transform: translate3d(0, 36%, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-.octave-sheet-rise { animation: octaveSheetRise 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.octave-sheet-rise { animation: octaveSheetRise 320ms var(--oc-ease-drawer) both; }
 @media (prefers-reduced-motion: reduce) {
   .octave-sheet-rise { animation: none; }
 }
