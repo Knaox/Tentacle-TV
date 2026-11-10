@@ -10,6 +10,8 @@ add_library(tentacle_net_core STATIC
   fs_platform.cpp
   art_policy.cpp
   art_cache.cpp
+  csp.cpp
+  plugin_documents.cpp
 )
 target_include_directories(tentacle_net_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 target_compile_features(tentacle_net_core PUBLIC cxx_std_20)
@@ -20,7 +22,7 @@ enable_testing()  # ctest --test-dir <build>/src/net
 add_executable(tentacle_paths_tests tests/paths_tests.cpp "${CMAKE_SOURCE_DIR}/src/shell/paths.cpp")
 target_include_directories(tentacle_paths_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 add_test(NAME tentacle_paths_tests COMMAND tentacle_paths_tests)
-foreach(t art_policy art_cache)
+foreach(t art_policy art_cache plugin_csp)
   add_executable(tentacle_${t}_tests tests/${t}_tests.cpp)
   target_link_libraries(tentacle_${t}_tests PRIVATE tentacle_net_core)
   add_test(NAME tentacle_${t}_tests COMMAND tentacle_${t}_tests)
@@ -32,9 +34,11 @@ target_link_libraries(tentacle_art_key_probe PRIVATE tentacle_net_core)
 if(TARGET tentacle_shell AND TARGET tentacle_bridge)
   add_library(tentacle_net STATIC
     cef_fetch.cpp
+    arg_check.cpp
     net_shell.cpp
     ../schemes/buffered_handler.cpp
     ../schemes/art_scheme.cpp
+    ../schemes/plugin_scheme.cpp
   )
   target_link_libraries(tentacle_net PUBLIC tentacle_net_core tentacle_shell tentacle_bridge)
   target_compile_options(tentacle_net PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)

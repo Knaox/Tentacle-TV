@@ -273,3 +273,10 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
 - `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
   rendue de n'importe quel fil (`Respond`).
+- `tentacle://plugin/<id>` (`schemes/plugin_scheme.h`) : document d'un greffon déposé par la commande
+  `plugin_document_set {id, html}` → `"tentacle://plugin/<id>"` (`net/plugin_documents.h` : 8 au
+  plus, identifiant `^[a-zA-Z0-9._-]{1,64}$`), servi avec la CSP des greffons.
+- CSP (`net/csp.h`, à l'octet celle de `csp.ts`) : `appscheme::setAppCsp()` / `appCsp()`
+  (`shell/app_scheme.h`) — posée par `reseau::install` d'après l'`index.html` servi, portée par
+  TOUTE réponse de `tentacle://` hors greffons. **horsligne** : `tentacle://local` doit la poser
+  aussi (`Content-Security-Policy: appscheme::appCsp()`), comme Electron.

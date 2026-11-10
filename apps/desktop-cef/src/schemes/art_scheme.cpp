@@ -28,6 +28,8 @@ std::shared_ptr<net::art::ArtCache>& artCache() {
 CefResponse::HeaderMap corsHeaders() {
   CefResponse::HeaderMap h;
   h.emplace("Access-Control-Allow-Origin", appscheme::kAppOrigin);
+  // Comme Electron : toute réponse de tentacle:// hors greffons porte la CSP de l'application.
+  if (std::string csp = appscheme::appCsp(); !csp.empty()) h.emplace("Content-Security-Policy", csp);
   return h;
 }
 
