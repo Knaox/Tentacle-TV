@@ -118,7 +118,12 @@ bool DragDrop::startInternal(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragDat
   return true;
 }
 
-void DragDrop::updateOperation(cef_drag_operations_mask_t operation) { operation_ = operation; }
+void DragDrop::updateOperation(cef_drag_operations_mask_t operation) {
+  if (operation != operation_ && traceEnabled()) {
+    std::fprintf(stderr, "[glisser] la cible accepte : %d\n", int(operation));
+  }
+  operation_ = operation;
+}
 
 void DragDrop::moveInternal(CefRefPtr<CefBrowser> browser, float x, float y) {
   auto host = browser->GetHost();
