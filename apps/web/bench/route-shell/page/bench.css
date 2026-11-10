@@ -1,0 +1,16 @@
+/* Le strict nécessaire des utilitaires que lisent CardImage et RouteExit —
+   le banc ne charge pas Tailwind. */
+html, body { margin: 0; background: #0b0b0c; color: #eee; font-family: system-ui, sans-serif; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { inset: 0; }
+.h-full { height: 100%; }
+.w-full { width: 100%; }
+.overflow-hidden { overflow: hidden; }
+.object-cover { object-fit: cover; }
+.flow-root { display: flow-root; }
+.skeleton-shimmer { background: #1b1b1e; }
+.bar { position: sticky; top: 0; height: 56px; background: #131315; z-index: 2; }
+.row { display: flex; gap: 12px; padding: 12px 24px; overflow: hidden; }
+.card { flex: none; width: 150px; height: 225px; border-radius: 10px; overflow: hidden; background: #1b1b1e; }
+.fiche { height: 100vh; display: flex; align-items: center; justify-content: center; font-size: 32px; }
