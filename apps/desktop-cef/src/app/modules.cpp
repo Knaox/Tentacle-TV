@@ -21,7 +21,7 @@ void initModules(AppContext& ctx) {
   reseau::install(ctx);  // reseau : schémas tentacle://art|plugin, canaux jellyfin_*, client_fetch_*…
   lifecycle::install(ctx, pont::registry());  // systeme : liens d'app, liens externes, dossier, relance, focus
   lifecycle::setVideoControls({pont::videoRunning, pont::stopVideo, pont::pauseVideo});  // systeme : le lecteur vu de la fermeture
-  lifecycle::onWindowClosed([] { music::shutdownMusic(); });  // systeme : la musique s'arrête avec la fenêtre (Electron)
+  lifecycle::onWindowClosed([] { music::stopAudio(); });  // systeme + medias : la musique s'arrête avec la fenêtre (stopAudio d'Electron)
   music::installDirectSources();  // medias : flux directs d'Octave par le relais de reseau (après reseau)
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
