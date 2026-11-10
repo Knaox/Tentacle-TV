@@ -47,4 +47,11 @@ export default {
   groupType_movies: "Movies",
   groupType_series: "Series",
   groupType_anime: "Anime",
+  // November 2026 redesign — the numbers in a library header (web, desktop).
+  statUnwatched_one: "{{count}} unwatched",
+  statUnwatched_other: "{{count}} unwatched",
+  statInProgress_one: "{{count}} in progress",
+  statInProgress_other: "{{count}} in progress",
+  statFavorites_one: "{{count}} favorite",
+  statFavorites_other: "{{count}} favorites",
 } as const;

@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowsDownUpIcon as ArrowUpDown } from "@phosphor-icons/react/dist/csr/ArrowsDownUp";
+import { ArrowDownIcon } from "@phosphor-icons/react/dist/csr/ArrowDown";
+import { ArrowUpIcon } from "@phosphor-icons/react/dist/csr/ArrowUp";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
@@ -25,33 +29,39 @@ const SORT_OPTIONS = [
   { value: "CommunityRating", key: "sortRatingDesc", order: "Descending" },
 ] as const;
 
-/** Ligne cochable — même gabarit dans tous les menus, d'où la factorisation. */
-export function CheckRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+/**
+ * Ligne cochable — même gabarit dans tous les menus, d'où la factorisation : l'entrée de menu
+ * du socle (`.ui-menu-item`), et sa marque.
+ *
+ * `mark="box"` (défaut) : une case, pour ce qui se cumule (genres, plateformes). `mark="check"` :
+ * une coche seule à l'accent, pour un choix unique (tri, langue) — une case y promettait un
+ * cumul qui n'existe pas. Le rôle reste `menuitemcheckbox` dans les deux cas : la cible webOS
+ * y résout l'entrée du menu.
+ */
+export function CheckRow({ label, checked, onClick, mark = "box" }: {
+  label: string;
+  checked: boolean;
+  onClick: () => void;
+  mark?: "box" | "check";
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      role="menuitemcheckbox"
-      aria-checked={checked}
-      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
-        checked ? "bg-[rgba(var(--brand-rgb),0.16)] text-[var(--brand-light)]" : "text-content-secondary hover:bg-fill-soft"
-      }`}
-    >
-      <span
-        className={`lg-check flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[4px] border ${
-          checked ? "border-transparent bg-[var(--brand)]" : "border-line-strong"
-        }`}
-      >
-        {checked && (
-          <svg className="h-2.5 w-2.5 text-cta-brand-fg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        )}
-      </span>
+    <button type="button" onClick={onClick} role="menuitemcheckbox" aria-checked={checked} className="ui-menu-item">
+      {mark === "box" ? (
+        <span className="lg-check ui-check">
+          <CheckIcon size={13} weight="bold" aria-hidden />
+        </span>
+      ) : (
+        <span className="flex w-4 flex-shrink-0 justify-center text-accent">
+          {checked && <CheckIcon size={15} weight="bold" aria-hidden />}
+        </span>
+      )}
       <span className="truncate">{label}</span>
     </button>
   );
 }
+
+/** Le champ d'un menu de filtre : le champ du socle, à la hauteur d'une entrée. */
+const MENU_FIELD = "field h-9 w-full text-sm";
 
 export function SortMenu({
   filters, onSortByChange, onSortOrderChange, toolbar = false,
@@ -74,24 +84,21 @@ export function SortMenu({
       align={toolbar ? "right" : "left"}
       icon={toolbar ? <ArrowUpDown aria-hidden className="h-3.5 w-3.5" /> : undefined}
     >
-      <div className="flex flex-col gap-0.5" role="menu">
+      <div className="flex flex-col" role="menu">
         {SORT_OPTIONS.map((opt) => (
           <CheckRow
             key={opt.value}
+            mark="check"
             label={t(`common:${opt.key}`)}
             checked={filters.sortBy === opt.value}
             onClick={() => { onSortByChange(opt.value); onSortOrderChange(opt.order); }}
           />
         ))}
-        <div className="lg-sep my-1 border-t border-line-subtle" />
-        <button
-          type="button"
-          onClick={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
-          className="lg-row flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-content-secondary transition-colors hover:bg-fill-soft"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d={desc ? "M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" : "M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"} />
-          </svg>
+        <div className="lg-sep ui-menu-separator" />
+        <button type="button" onClick={() => onSortOrderChange(desc ? "Ascending" : "Descending")} className="lg-row ui-menu-item">
+          <span className="flex w-4 flex-shrink-0 justify-center">
+            {desc ? <ArrowDownIcon size={15} aria-hidden /> : <ArrowUpIcon size={15} aria-hidden />}
+          </span>
           {desc ? t("common:sortOrderDesc") : t("common:sortOrderAsc")}
         </button>
       </div>
@@ -141,9 +148,10 @@ export function GenreMenu({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t("common:genres")}
-        className="mb-2 w-full rounded-md bg-fill-subtle px-2.5 py-1.5 text-xs text-content-primary placeholder-content-quaternary outline-none ring-1 ring-line-subtle focus:ring-[rgba(var(--brand-rgb),0.5)]"
+        aria-label={t("common:genres")}
+        className={`${MENU_FIELD} mb-1.5`}
       />
-      <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto" role="menu">
+      <div className="flex max-h-72 flex-col overflow-y-auto" role="menu">
         {shown.map((g) => (
           <CheckRow
             key={g.Id}
@@ -153,7 +161,7 @@ export function GenreMenu({
           />
         ))}
         {shown.length === 0 && (
-          <p className="px-2 py-3 text-center text-xs text-content-quaternary">{t("common:noResults")}</p>
+          <p className="px-2.5 py-3 text-center text-sm text-content-tertiary">{t("common:noResults")}</p>
         )}
       </div>
     </FilterMenu>
@@ -176,15 +184,12 @@ export function YearMenu({
   };
   const { yearFrom, yearTo } = filters;
   const value = yearFrom || yearTo ? `${yearFrom ?? "…"} — ${yearTo ?? "…"}` : null;
-  const inputCls =
-    "w-full rounded-md bg-fill-subtle px-2.5 py-1.5 text-xs text-content-primary placeholder-content-quaternary outline-none ring-1 ring-line-subtle focus:ring-[rgba(var(--brand-rgb),0.5)]";
-
   return (
-    <FilterMenu label={t("common:sortYear")} value={value} onClear={onClear} width={230}>
-      <div className="flex items-center gap-2">
-        <input type="number" min={1900} max={2100} placeholder={t("common:yearFrom")} value={yearFrom ?? ""} onChange={(e) => onYearFromChange(parse(e.target.value))} className={inputCls} />
-        <span className="text-xs text-content-quaternary">—</span>
-        <input type="number" min={1900} max={2100} placeholder={t("common:yearTo")} value={yearTo ?? ""} onChange={(e) => onYearToChange(parse(e.target.value))} className={inputCls} />
+    <FilterMenu label={t("common:sortYear")} value={value} onClear={onClear} width={250}>
+      <div className="flex items-center gap-2 p-1">
+        <input type="number" min={1900} max={2100} placeholder={t("common:yearFrom")} aria-label={t("common:yearFrom")} value={yearFrom ?? ""} onChange={(e) => onYearFromChange(parse(e.target.value))} className={`${MENU_FIELD} tabular-nums`} />
+        <span className="text-sm text-content-quaternary" aria-hidden>—</span>
+        <input type="number" min={1900} max={2100} placeholder={t("common:yearTo")} aria-label={t("common:yearTo")} value={yearTo ?? ""} onChange={(e) => onYearToChange(parse(e.target.value))} className={`${MENU_FIELD} tabular-nums`} />
       </div>
     </FilterMenu>
   );
@@ -205,29 +210,33 @@ export function RatingMenu({
       label={t("common:ratingMin")}
       value={current > 0 ? `★ ${current.toFixed(1)}+` : null}
       onClear={onClear}
-      width={230}
+      width={250}
     >
-      <div className="mb-1.5 flex items-center justify-between text-xs">
-        <span className="text-content-quaternary">{t("common:ratingMin")}</span>
-        <span className="font-medium text-content-secondary">
-          {current > 0 ? `${current.toFixed(1)}+` : t("common:ratingAny")}
-        </span>
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={10}
-        step={0.5}
-        value={current}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value);
-          onRatingMinChange(v > 0 ? v : null);
-        }}
-        style={rangeFill(current, 0, 10)}
-        className="ctl-range w-full"
-      />
-      <div className="mt-0.5 flex justify-between text-[10px] text-content-disabled">
-        <span>0</span><span>5</span><span>10</span>
+      <div className="flex flex-col gap-2 px-2.5 pb-2 pt-1.5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-content-tertiary">{t("common:ratingMin")}</span>
+          <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-content-primary">
+            {current > 0 && <StarIcon size={13} weight="fill" aria-hidden />}
+            {current > 0 ? `${current.toFixed(1)}+` : t("common:ratingAny")}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={10}
+          step={0.5}
+          value={current}
+          aria-label={t("common:ratingMin")}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onRatingMinChange(v > 0 ? v : null);
+          }}
+          style={rangeFill(current, 0, 10)}
+          className="ctl-range w-full"
+        />
+        <div className="flex justify-between text-[11px] tabular-nums text-content-quaternary" aria-hidden>
+          <span>0</span><span>5</span><span>10</span>
+        </div>
       </div>
     </FilterMenu>
   );
@@ -248,7 +257,7 @@ export function PlatformMenu({
 
   return (
     <FilterMenu label={t("common:platforms")} value={count > 0 ? label : null} onClear={onClear} width={240}>
-      <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto" role="menu">
+      <div className="flex max-h-72 flex-col overflow-y-auto" role="menu">
         {PLATFORMS.map((p) => (
           <CheckRow
             key={p.id}

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import { languageName } from "@tentacle-tv/shared";
 import { PLATFORMS } from "../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../hooks/useLibraryFilters";
 
@@ -26,24 +27,32 @@ interface Props {
    * que sa pastille réduit à « Genres · 3 ».
    */
   compact?: boolean;
+  /** Les langues posées (audio, sous-titres) paraissent aussi, chacune retirable. */
+  languages?: boolean;
+  onClearAudioLang?: () => void;
+  onClearSubtitleLang?: () => void;
+  /** La marge de la rangée — sous le panneau d'outils, elle suit l'étage des menus. */
+  className?: string;
 }
 
+/**
+ * Un filtre posé : la puce du socle à la teinte franche (un état ACTIF), et sa croix. Sans
+ * `onRemove`, la puce informe seulement — l'appelant ne sait pas lever ce filtre-là.
+ */
 function Pill({ label, onRemove }: { label: string; onRemove?: () => void }) {
   const { t } = useTranslation("library");
   return (
-    <span className="inline-flex min-h-[28px] items-center gap-1 rounded-full bg-[rgba(var(--brand-rgb),0.14)] py-0.5 pl-3 pr-1 text-[11px] font-semibold text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]">
+    <span className={`chip chip-accent h-7 ${onRemove ? "gap-0.5 pr-1" : ""}`}>
       {label}
-      {onRemove ? (
+      {onRemove && (
         <button
           type="button"
           onClick={onRemove}
           aria-label={t("removeFilter", { name: label })}
-          className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+          className="flex h-5 w-5 items-center justify-center rounded-full transition-colors duration-hover hover:bg-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
         >
-          <X weight="bold" aria-hidden className="h-3 w-3" />
+          <X weight="bold" aria-hidden size={11} />
         </button>
-      ) : (
-        <span className="w-2" aria-hidden />
       )}
     </span>
   );
@@ -53,8 +62,9 @@ export function LibraryActiveFilterPills({
   genres, filters, hasActiveFilters, totalResults,
   onRemoveGenre, onClearPlatform, onClearYears, onClearRating, onReset,
   onClearStatus, onClearFavorite, compact = false,
+  languages = false, onClearAudioLang, onClearSubtitleLang, className,
 }: Props) {
-  const { t } = useTranslation(["common", "library"]);
+  const { t, i18n } = useTranslation(["common", "library"]);
 
   if (!hasActiveFilters) return null;
 
@@ -69,10 +79,10 @@ export function LibraryActiveFilterPills({
     <div
       role="group"
       aria-label={t("library:activeFilters")}
-      className={`flex flex-wrap items-center gap-2 ${compact ? "mt-3" : "mb-4"}`}
+      className={`flex flex-wrap items-center gap-1.5 ${className ?? (compact ? "mt-3" : "mb-4")}`}
     >
       {!compact && totalResults != null && (
-        <span className="mr-1 text-xs font-medium tabular-nums text-content-quaternary">
+        <span className="mr-1 text-[13px] font-semibold tabular-nums text-content-tertiary">
           {t("common:resultCount", { count: totalResults })}
         </span>
       )}
@@ -88,17 +98,25 @@ export function LibraryActiveFilterPills({
       })}
 
       {hasYears && (
-        <Pill label={`${filters.yearFrom ?? "..."} — ${filters.yearTo ?? "..."}`} onRemove={onClearYears} />
+        <Pill label={`${filters.yearFrom ?? "…"} — ${filters.yearTo ?? "…"}`} onRemove={onClearYears} />
       )}
 
       {showRating && filters.ratingMin != null && (
-        <Pill label={`${filters.ratingMin.toFixed(1)}+`} onRemove={onClearRating} />
+        <Pill label={`★ ${filters.ratingMin.toFixed(1)}+`} onRemove={onClearRating} />
+      )}
+
+      {languages && filters.audioLang && (
+        <Pill label={`${t("common:filterAudioLanguage")} · ${languageName(filters.audioLang, i18n.language)}`} onRemove={onClearAudioLang} />
+      )}
+
+      {languages && filters.subtitleLang && (
+        <Pill label={`${t("common:filterSubtitleLanguage")} · ${languageName(filters.subtitleLang, i18n.language)}`} onRemove={onClearSubtitleLang} />
       )}
 
       {/* Favoris et statut : la croix n'apparaît que si l'appelant sait les
           lever — elle ne faisait rien jusqu'ici. */}
       {!compact && filters.isFavorite && (
-        <Pill label={`♥ ${t("common:favorites")}`} onRemove={onClearFavorite} />
+        <Pill label={t("common:favorites")} onRemove={onClearFavorite} />
       )}
 
       {!compact && filters.statusFilter && (
@@ -109,12 +127,8 @@ export function LibraryActiveFilterPills({
       )}
 
       {!compact && (
-        <button
-          type="button"
-          onClick={onReset}
-          className="rounded-full px-2.5 py-1 text-[11px] font-medium text-content-quaternary transition-colors hover:text-content-tertiary"
-        >
-          {t("common:resetFilters")}
+        <button type="button" onClick={onReset} className="btn btn-ghost btn-sm">
+          {t("library:clearAll")}
         </button>
       )}
     </div>

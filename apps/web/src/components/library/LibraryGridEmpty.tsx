@@ -58,11 +58,7 @@ export function LibraryGridEmpty({
           {t("common:noResultsFor", { query: query.trim(), name: scopeName })}
         </p>
         <SearchSuggestions query={query} onApply={onApplyQuery} />
-        <button
-          type="button"
-          onClick={onReset}
-          className="text-sm font-medium text-content-tertiary underline-offset-4 transition-colors hover:text-content-primary hover:underline"
-        >
+        <button type="button" onClick={onReset} className="btn btn-ghost btn-sm">
           {t("common:resetSearchAndFilters")}
         </button>
       </EmptyFrame>
@@ -72,7 +68,7 @@ export function LibraryGridEmpty({
   return (
     <EmptyFrame icon={filtered ? FilterX : Clapperboard}>
       <div className="flex max-w-md flex-col gap-1.5">
-        <h2 className="text-lg font-semibold text-content-primary">
+        <h2 className="text-heading-2 text-content-primary">
           {filtered ? t("library:emptyFilteredTitle") : t("library:emptyTitle")}
         </h2>
         <p className="text-sm text-content-tertiary">
@@ -82,7 +78,9 @@ export function LibraryGridEmpty({
       <button
         type="button"
         onClick={filtered ? onReset : () => navigate("/")}
-        className="inline-flex h-11 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+        // `cta-primary` : marqueur sans style — le moteur de focus du client LG y reconnaît
+        // l'action principale de l'écran (`focus/default.ts`).
+        className="btn btn-solid cta-primary"
       >
         {filtered ? t("common:resetFilters") : t("common:browseLibraries")}
       </button>
@@ -91,22 +89,16 @@ export function LibraryGridEmpty({
 }
 
 /**
- * Le cadre commun aux trois états : une pastille d'icône cerclée d'un
- * dégradé violet → rose, le message, puis la sortie. Aucune animation — un
- * état vide n'a rien à annoncer en boucle. Ma liste et Mes favoris le
- * reprennent pour leurs propres états (`collection/CollectionStates`).
+ * Le cadre commun aux trois états : une pastille d'icône à l'encre de carte, le message, puis
+ * la sortie. Plus d'anneau dégradé (un décor) ; aucune animation — un état vide n'a rien à
+ * annoncer en boucle. Ma liste et Mes favoris le reprennent pour leurs propres états
+ * (`collection/CollectionStates`).
  */
 export function EmptyFrame({ icon: Icon, children }: { icon: IconType; children: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-5 py-16 text-center md:py-20">
-      <span
-        aria-hidden
-        className="flex h-20 w-20 items-center justify-center rounded-full p-px"
-        style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.7), rgba(var(--brand-accent-rgb),0.55))" }}
-      >
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-[color:var(--surface-1)]">
-          <Icon className="h-8 w-8 text-[var(--brand-light)]" />
-        </span>
+      <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-2 text-content-tertiary shadow-edge">
+        <Icon size={28} />
       </span>
       {children}
     </div>

@@ -8,8 +8,8 @@ import { useTranslation } from "react-i18next";
  * titres.
  *
  * Trois rangées suffisent à remplir la vue sous la bannière ; au-delà, des
- * calques animés que personne ne voit. Le balayage du shimmer est borné
- * (`index.css`) : il ne tient pas le compositeur éveillé.
+ * calques animés que personne ne voit. Le squelette est une teinte calme, immobile
+ * (refonte de nov. 2026) : plus de balayage.
  */
 export function LibraryGridSkeleton({ columns, gap, rows = 3 }: { columns: number; gap: number; rows?: number }) {
   const { t } = useTranslation("library");
@@ -32,17 +32,17 @@ export function LibraryGridSkeleton({ columns, gap, rows = 3 }: { columns: numbe
 }
 
 /**
- * La page suivante arrive : un anneau aux couleurs de la marque et le mot,
- * dans une pastille — la fin de grille ne ressemble plus à un bug.
+ * La page suivante arrive : un anneau neutre et le mot, dans une pastille — la
+ * fin de grille ne ressemble plus à un bug.
  */
 export function LibraryLoadingMore({ className = "" }: { className?: string }) {
   const { t } = useTranslation("common");
   return (
     <div role="status" className={`flex items-center justify-center ${className}`}>
-      <span className="inline-flex items-center gap-2.5 rounded-full bg-[color:var(--surface-2)] px-4 py-2 text-xs font-medium text-content-tertiary ring-1 ring-line-subtle">
+      <span className="inline-flex items-center gap-2.5 rounded-pill bg-surface-2 px-4 py-2 text-[13px] font-medium text-content-tertiary">
         <span
           aria-hidden
-          className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent motion-reduce:animate-none"
+          className="h-4 w-4 animate-spin rounded-full border-2 border-content-tertiary border-t-transparent motion-reduce:animate-none"
         />
         {t("common:loadingMore")}
       </span>

@@ -51,14 +51,14 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           <button
             onClick={() => { props.onFavoriteChange(!props.filters.isFavorite); if (!props.filters.isFavorite) props.onStatusChange(null); }}
             aria-selected={props.filters.isFavorite}
-            className={`${chipCls(props.filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
+            className={chipCls(props.filters.isFavorite, "rose")}
           >
             <HeartIcon filled={props.filters.isFavorite} />
             {t("common:favorites")}
           </button>
         )}
 
-        <div className="mx-1 h-5 w-px bg-fill-soft" />
+        <div className="mx-1 h-5 w-px bg-line-subtle" />
 
         <SortMenu
           filters={props.filters}
@@ -89,10 +89,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
         />
 
         {props.hasActiveFilters && (
-          <button
-            onClick={props.onReset}
-            className="ml-1 text-xs font-medium text-content-tertiary underline-offset-4 transition-colors hover:text-content-primary hover:underline"
-          >
+          <button type="button" onClick={props.onReset} className="btn btn-ghost btn-sm">
             {t("common:resetFilters")}
           </button>
         )}
