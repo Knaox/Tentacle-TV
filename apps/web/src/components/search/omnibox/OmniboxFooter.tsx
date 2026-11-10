@@ -13,7 +13,7 @@ function Hint({ keys, label }: { keys: readonly string[]; label: string }) {
     <span className="inline-flex items-center gap-1.5">
       <span className="inline-flex gap-0.5">
         {keys.map((key) => (
-          <kbd key={key} className="min-w-[18px] rounded border border-line-subtle bg-fill-subtle px-1 text-center text-[10px] leading-[16px] text-content-tertiary">
+          <kbd key={key} className="ui-kbd min-w-[18px] text-center">
             {key}
           </kbd>
         ))}

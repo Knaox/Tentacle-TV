@@ -82,7 +82,7 @@ export const OmniboxNotice = memo(function OmniboxNotice({ query, response, curr
       {response.correction !== null && (
         <p className="text-content-tertiary">
           {t("resultsFor")}{" "}
-          <button type="button" tabIndex={-1} onClick={() => onPick(response.correction ?? "")} className="font-semibold italic text-[var(--brand-light)] hover:underline">
+          <button type="button" tabIndex={-1} onClick={() => onPick(response.correction ?? "")} className="font-semibold italic text-accent hover:underline">
             {response.correction}
           </button>
         </p>
