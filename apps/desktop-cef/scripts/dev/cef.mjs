@@ -21,7 +21,11 @@ export function cefVersion() {
 export const CEF_PINS = {
   version: "156.0.15+gcf671c0+chromium-156.0.8078.80",
   linux64: { sha1: "09235427222e026a4f34399742df27c5d98a4f8a", sha256: null, size: 333318600 },
-  linuxarm64: { sha1: "85602db8e813ad824b45ae54218476aa3d91d561", sha256: null, size: 431229830 },
+  linuxarm64: {
+    sha1: "85602db8e813ad824b45ae54218476aa3d91d561",
+    sha256: "806663a9eca2a8f7be185480ce7e779c5864b5cdd52bd77489053bdb1933feb8",  // 10/11, banc Fedora 44
+    size: 431229830,
+  },
   windows64: { sha1: "b690e035689ee20ba9d2500ac8953815bc7ed46a", sha256: null, size: 174836914 },
   windowsarm64: { sha1: "446515cfaed802200749083ea64f8718e885c91f", sha256: null, size: 170136968 },
 };
