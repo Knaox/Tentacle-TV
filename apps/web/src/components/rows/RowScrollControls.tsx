@@ -1,9 +1,12 @@
 import { PressableGlass } from "../ui/glass/PressableGlass";
+import { ChevronLeftIcon, ChevronRightIcon } from "../icons/HeroIcons";
 
 /** En mode natif : la lentille exacte du disque (monté au survol seulement). */
 const DISC_GLASS = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
 /** La peau d'avant du disque (hors verre natif). */
-const DISC_SKIN = "rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]";
+// Hors verre : un disque d'encre PLEIN, sans flou ni liseré (le prototype validé) — il passe
+// sur des affiches, un `backdrop-filter` n'y montrerait rien qu'un fond opaque ne dise déjà.
+const DISC_SKIN = "rounded-full bg-surface-4 text-content-primary shadow-elev-2 transition-colors duration-hover hover:bg-surface-3";
 
 interface RowScrollControlsProps {
   canLeft: boolean;
@@ -59,15 +62,13 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
           <PressableGlass
             appearance={DISC_GLASS}
             fallbackClassName={DISC_SKIN}
-            hoverScale={1.08}
-            tapScale={0.92}
+            hoverScale={1}
+            tapScale={0.97}
             onClick={() => onScroll("left")}
             aria-label="Défiler à gauche"
             className={discClass}
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeftIcon />
           </PressableGlass>
         </div>
       )}
@@ -81,15 +82,13 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
           <PressableGlass
             appearance={DISC_GLASS}
             fallbackClassName={DISC_SKIN}
-            hoverScale={1.08}
-            tapScale={0.92}
+            hoverScale={1}
+            tapScale={0.97}
             onClick={() => onScroll("right")}
             aria-label="Défiler à droite"
             className={discClass}
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRightIcon />
           </PressableGlass>
         </div>
       )}

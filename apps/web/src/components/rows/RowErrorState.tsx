@@ -52,13 +52,13 @@ export function RowErrorState({ title, retrying, onRetry }: RowErrorStateProps) 
     <section className="group/row mb-10" role="status">
       <RowHeader title={title} />
       <div className="row-gutter mt-3">
-        <div className="lg-content flex max-w-xl flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line-subtle bg-fill-subtle px-4 py-3">
+        <div className="lg-content flex max-w-xl flex-wrap items-center gap-x-4 gap-y-2 rounded-tile bg-surface-2 px-4 py-3">
           <p className="text-sm text-content-tertiary">{t("common:rowErrorMessage")}</p>
           <button
             type="button"
             onClick={onRetry}
             disabled={retrying}
-            className="ml-auto inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-4 text-sm font-semibold text-content-primary transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="btn btn-sm btn-soft ml-auto shrink-0"
           >
             {retrying ? t("common:retrying") : t("common:retry")}
           </button>

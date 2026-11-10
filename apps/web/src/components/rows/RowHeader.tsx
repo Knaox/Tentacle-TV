@@ -1,13 +1,13 @@
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 interface RowHeaderProps {
   title: string;
-  /** Cible de « Tout voir » — révélé au survol de la rangée. */
+  /** Cible de « Tout voir », au bout de la ligne — toujours visible. */
   href?: string;
-  /** Posé juste après le titre, TOUJOURS visible (la puce du filtre de
-   *  plateformes) — là où « Tout voir » ne paraît qu'au survol. */
+  /** Posé juste après le titre (la puce du filtre de plateformes). */
   trailing?: ReactNode;
 }
 
@@ -34,14 +34,11 @@ export function RowHeader({ title, href, trailing }: RowHeaderProps) {
       {trailing}
 
       {href && (
-        <Link
-          to={href}
-          className="lg-pill -translate-x-2 flex items-center gap-1 rounded-full bg-cta-ghost-bg px-2.5 py-1 text-xs font-medium text-content-tertiary opacity-0 transition duration-300 hover:bg-cta-ghost-bg-hover hover:text-content-primary group-hover/row:translate-x-0 group-hover/row:opacity-100 motion-reduce:transition-none"
-        >
+        // TOUJOURS là, au bout de la ligne (refonte de nov. 2026) : il ne paraissait qu'au survol
+        // de la rangée — on ne trouve pas un lien qu'on ne voit pas.
+        <Link to={href} className="lg-pill btn btn-sm btn-ghost ml-auto shrink-0">
           {t("common:seeAll")}
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
+          <CaretRightIcon weight="bold" className="h-3 w-3" aria-hidden />
         </Link>
       )}
     </div>
