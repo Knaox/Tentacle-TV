@@ -10,10 +10,18 @@
 
 #include <string>
 
+#include "shell/navigation_rule.h"
+
 namespace tentacle {
 
 /// Vrai si l'URL est partie dehors (ou journalisée en mode banc) ; faux si refusée.
 /// Fil principal (CefParseURL).
 bool openExternalSafely(const std::string& url);
+
+namespace nav {
+/// Applique un verdict : `denyOpenExternal` → `openExternalSafely(url)` ; `deny` → journalisé.
+/// `what` nomme le geste dans le journal (« navigation », « fenêtre »…).
+void applyVerdict(Verdict verdict, const std::string& url, const char* what);
+}  // namespace nav
 
 }  // namespace tentacle

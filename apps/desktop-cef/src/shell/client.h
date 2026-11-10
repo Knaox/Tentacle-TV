@@ -68,7 +68,9 @@ class Client final : public CefClient,
                                 CefProcessId source,
                                 CefRefPtr<CefProcessMessage> message) override;
 
-  // CefLifeSpanHandler — OnBeforePopup : politique d'Electron (client_navigation.cpp)
+  // CefLifeSpanHandler — OnBeforePopup et DoClose : client_popup.cpp (aiguillage par module ;
+  // défaut = règle d'Electron, navigateur : dehors et refusée).
+  bool DoClose(CefRefPtr<CefBrowser> browser) override;
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popupId,
                      const CefString& targetUrl, const CefString& targetFrameName,
                      WindowOpenDisposition disposition, bool userGesture,

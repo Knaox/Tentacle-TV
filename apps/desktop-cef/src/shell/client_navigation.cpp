@@ -10,22 +10,11 @@
 #include "shell/client.h"
 #include "shell/external_url.h"
 #include "shell/navigation_rule.h"
-#include "shell/popup_claim.h"
 
 namespace tentacle {
 namespace nav {
-namespace {
-PopupClaim g_popupClaim;
-}  // namespace
 
-void setPopupClaim(PopupClaim claim) { g_popupClaim = std::move(claim); }
-const PopupClaim& popupClaim() { return g_popupClaim; }
-
-}  // namespace nav
-
-namespace {
-
-void applyVerdict(nav::Verdict verdict, const std::string& url, const char* what) {
+void applyVerdict(Verdict verdict, const std::string& url, const char* what) {
   if (verdict == nav::Verdict::denyOpenExternal) {
     openExternalSafely(url);
   } else if (verdict == nav::Verdict::deny) {
@@ -33,25 +22,7 @@ void applyVerdict(nav::Verdict verdict, const std::string& url, const char* what
   }
 }
 
-}  // namespace
-
-// `setWindowOpenHandler` : le PiP d'abord (`pipWindowOpen`), sinon dehors, et jamais une
-// seconde fenêtre CEF.
-bool Client::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                           int popupId, const CefString& targetUrl,
-                           const CefString& targetFrameName, WindowOpenDisposition disposition,
-                           bool userGesture, const CefPopupFeatures& features,
-                           CefWindowInfo& windowInfo, CefRefPtr<CefClient>& client,
-                           CefBrowserSettings& settings, CefRefPtr<CefDictionaryValue>& extraInfo,
-                           bool* noJavascriptAccess) {
-  const std::string url = targetUrl.ToString();
-  if (const auto& claim = nav::popupClaim()) {
-    nav::PopupRequest request{url, targetFrameName.ToString(), disposition, userGesture, &features};
-    if (claim(request, windowInfo, client, settings, extraInfo)) return false;
-  }
-  applyVerdict(nav::windowOpen(url), url, "fenêtre");
-  return true;
-}
+}  // namespace nav
 
 // `will-navigate` et `will-redirect`, cadre principal seulement : les cadres (bande-annonce,
 // greffons) gardent leurs navigations, comme sous Electron.
@@ -61,7 +32,7 @@ bool Client::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> f
   const std::string url = request->GetURL().ToString();
   const nav::Verdict verdict = nav::mainFrameNavigation(url, isRedirect);
   if (verdict == nav::Verdict::allow) return false;
-  applyVerdict(verdict, url, isRedirect ? "redirection" : "navigation");
+  nav::applyVerdict(verdict, url, isRedirect ? "redirection" : "navigation");
   return true;
 }
 
@@ -73,7 +44,7 @@ bool Client::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame>
                               bool userGesture) {
   if (disposition == CEF_WOD_CURRENT_TAB) return false;
   const std::string url = targetUrl.ToString();
-  applyVerdict(nav::windowOpen(url), url, "fenêtre");
+  nav::applyVerdict(nav::windowOpen(url), url, "fenêtre");
   return true;
 }
 
