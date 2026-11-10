@@ -48,13 +48,14 @@ interface DetailOpenOverlayProps {
  * pendant l'attente, avant que celle-ci ne soit connue.
  */
 const TRAVEL_MIN_S = 0.24;
-const TRAVEL_MAX_S = 0.5;
+// Plafond de la refonte de nov. 2026 : rien d'interface ne dépasse 320 ms (docs/REFONTE-UI.md).
+const TRAVEL_MAX_S = 0.32;
 /** Part de l'attente reportée sur la course. */
 const TRAVEL_WAIT_RATIO = 0.4;
 /** Durée de référence des couches de décor (indépendante de l'attente). */
-const DECOR_S = 0.44;
-/** Décélération franche puis arrivée qui se pose, sans le moindre rebond. */
-const SETTLE = [0.16, 1, 0.3, 1] as const;
+const DECOR_S = 0.3;
+/** Décélération franche puis arrivée qui se pose, sans le moindre rebond — la courbe de sortie du socle. */
+const SETTLE = [0.23, 1, 0.32, 1] as const;
 /*
  * Sécurité : le calque ne garde JAMAIS l'écran (`openingGuardDelay`). Le
  * compte à rebours part de la première MESURE reçue — ou, sans mesure, de

@@ -3,30 +3,23 @@ import { useTranslation } from "react-i18next";
 import { useSeriesWatchState } from "@tentacle-tv/api-client";
 import { useMediaWarmup } from "../../hooks/useMediaWarmup";
 import { formatEpisodeCode, resumeState, splitMinutes, VERSION_QUERY_PARAM, type MediaItem } from "@tentacle-tv/shared";
-import { PlayIcon } from "../media/MediaDetailIcons";
+import { RowsIcon } from "@phosphor-icons/react/dist/csr/Rows";
+import { PlayIcon } from "../icons/transport";
 import { PressableGlass } from "../ui/glass/PressableGlass";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
 
-// `hero-cta-primary` : le dégradé de marque profond (libellé blanc ≥ 4,6:1),
-// ses voiles d'appui et son anneau de focus — le même que les bannières. La
-// peau d'AVANT (hors verre natif) ; en natif, la marque DANS le verre.
-const PRIMARY_LAYOUT = "flex h-14 items-center gap-3 overflow-hidden pr-7 text-left";
+// L'action de LECTURE de la fiche, la seule de l'écran au dégradé du logo : `.btn-play`, en
+// grande pilule (52 px). Plus de lueur portée ni de grossissement au survol — la pression
+// (97 %) répond seule. Sous le verre natif, la marque passe DANS le verre (`tint: "brand"`) et
+// la primitive retire `fallbackClassName`.
+// `cta-primary` : marqueur sans style — le moteur de focus du client LG y reconnaît l'action
+// principale de l'écran.
+const PRIMARY_LAYOUT = "flex h-[52px] items-center gap-2.5 overflow-hidden text-left";
 const PRIMARY_GLASS = {
   appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
-  fallbackClassName: "hero-cta-primary rounded-full",
-  fallbackStyle: { boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)" },
+  fallbackClassName: "btn btn-play btn-lg cta-primary",
 } as const;
 
-/**
- * L'action principale de la fiche — la seule en couleur, au dégradé de marque
- * comme le bouton de lecture des cartes.
- *
- * Entamé : « Reprendre », ce qu'il reste en clair (« Reste 1 h 48 min ») et la
- * progression en filet dans le bouton même — un chiffre isolé à côté des
- * pastilles se lisait comme une étiquette orpheline. Série : l'épisode visé
- * (« Reprendre S1 E3 »), avec SA reprise. Collection, série terminée : aucun
- * bouton, il n'y a rien à lancer.
- */
 export function DetailPlayButton({ item, collectionCount = 0, version = null }: {
   item: MediaItem;
   collectionCount?: number;
@@ -51,13 +44,11 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
     return (
       <PressableGlass
         {...PRIMARY_GLASS}
-        hoverScale={1.03}
-        tapScale={0.97}
         onClick={() => document.getElementById(DETAIL_COLLECTION_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-        className={`${PRIMARY_LAYOUT} pl-6`}
+        className={`${PRIMARY_LAYOUT} px-6`}
       >
-        <svg className="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h10" /></svg>
-        <span className="relative whitespace-nowrap text-base font-bold">{t("media:detailBrowseCollection", { count: collectionCount })}</span>
+        <RowsIcon size={20} weight="fill" aria-hidden className="relative" />
+        <span className="relative whitespace-nowrap text-base font-semibold">{t("media:detailBrowseCollection", { count: collectionCount })}</span>
       </PressableGlass>
     );
   }
@@ -99,16 +90,14 @@ export function DetailPlayPill({ label, remaining, progress, ariaLabel, onClick 
   return (
     <PressableGlass
       {...PRIMARY_GLASS}
-      hoverScale={1.03}
-      tapScale={0.97}
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`${PRIMARY_LAYOUT} pl-4`}
+      className={`${PRIMARY_LAYOUT} pl-4 pr-6`}
     >
       <ProgressRing progress={progress} />
       <span className="relative flex flex-col leading-tight">
-        <span className="whitespace-nowrap text-base font-bold">{label}</span>
-        {remaining && <span className="whitespace-nowrap text-xs font-medium">{remaining}</span>}
+        <span className="whitespace-nowrap text-base font-semibold">{label}</span>
+        {remaining && <span className="mt-0.5 whitespace-nowrap text-xs font-medium tabular-nums opacity-80">{remaining}</span>}
       </span>
     </PressableGlass>
   );
@@ -130,7 +119,7 @@ function ProgressRing({ progress }: { progress: number | null }) {
             strokeDasharray={c} strokeDashoffset={c * (1 - progress)} />
         </svg>
       )}
-      <span className="relative ml-0.5 flex h-4 w-4 items-center justify-center [&>svg]:h-4 [&>svg]:w-4"><PlayIcon /></span>
+      <PlayIcon size={progress !== null ? 14 : 20} aria-hidden className="relative" />
     </span>
   );
 }

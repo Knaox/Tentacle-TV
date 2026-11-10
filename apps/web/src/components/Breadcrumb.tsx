@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 
 interface BreadcrumbItem {
   label: string;
@@ -16,7 +17,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && <ChevronIcon />}
           {item.path ? (
-            <Link to={item.path} className="transition-colors hover:text-content-secondary">
+            <Link to={item.path} className="transition-colors duration-hover hover:text-content-secondary">
               {item.label}
             </Link>
           ) : (
@@ -29,9 +30,5 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
 }
 
 function ChevronIcon() {
-  return (
-    <svg className="h-3 w-3 text-content-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
+  return <CaretRightIcon size={12} weight="bold" className="text-content-disabled" aria-hidden />;
 }

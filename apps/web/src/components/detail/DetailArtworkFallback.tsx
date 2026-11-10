@@ -5,22 +5,19 @@ import { TentacleSvg } from "../ui/TentacleSvg";
  * Les visuels de REPLI de la fiche, pour un titre sans images (Jellyfin ne les
  * a pas encore trouvées) : la fiche ne doit jamais avoir l'air vide ni cassée.
  *
- * Tout est STATIQUE (règles GPU) : dégradés posés une fois, aucun flou, aucune
- * animation. Les couleurs viennent des jetons de marque (`--brand-rgb`,
- * `--brand-accent-rgb`) : une marque redéfinie par l'administrateur s'y
- * propage, comme sur le logo.
+ * Tout est STATIQUE (règles GPU) : aucun flou, aucune animation. À l'ENCRE, depuis la refonte
+ * de nov. 2026 : plus de halos de marque (un dégradé décoratif) — la mascotte, qui illustre
+ * l'état, garde seule ses couleurs.
  */
 
 /**
- * Le décor de la scène sans backdrop : deux halos de marque sur la page, sous
+ * Le décor de la scène sans backdrop : une lumière d'encre sur le panneau, sous
  * les voiles habituels (`DETAIL_STAGE_LAYERS`), qui gardent au texte son
  * assise sombre dans les deux thèmes.
  */
 export const DETAIL_STAGE_FALLBACK_BACKGROUND = [
-  "radial-gradient(58% 64% at 80% 26%, rgba(var(--brand-rgb), 0.34) 0%, transparent 72%)",
-  "radial-gradient(46% 52% at 98% 78%, rgba(var(--brand-accent-rgb), 0.24) 0%, transparent 70%)",
-  "radial-gradient(40% 40% at 8% 12%, rgba(var(--brand-rgb), 0.12) 0%, transparent 70%)",
-  "var(--surface-0)",
+  "radial-gradient(70% 80% at 78% 20%, var(--surface-3) 0%, transparent 72%)",
+  "var(--surface-1)",
 ].join(", ");
 
 export function DetailStageFallback() {
@@ -43,20 +40,12 @@ export const DetailPosterFallback = memo(function DetailPosterFallback({ title, 
   return (
     <div
       data-detail-fallback="poster"
-      className={`relative flex w-full flex-col items-center justify-center overflow-hidden ${wide ? "aspect-video" : "aspect-[2/3]"}`}
-      style={{
-        background:
-          "radial-gradient(90% 70% at 30% 18%, rgba(var(--brand-rgb), 0.55) 0%, transparent 70%), " +
-          "radial-gradient(80% 60% at 85% 95%, rgba(var(--brand-accent-rgb), 0.45) 0%, transparent 70%), " +
-          // Base SOMBRE fixe dans les deux thèmes : c'est une image, le titre
-          // blanc y garde son contraste (comme le texte `on-media`).
-          "linear-gradient(160deg, #1a1226, #08060c)",
-      }}
+      className={`relative flex w-full flex-col items-center justify-center overflow-hidden bg-surface-2 ${wide ? "aspect-video" : "aspect-[2/3]"}`}
     >
       <span className="opacity-80">
         <TentacleSvg size={wide ? 72 : 96} />
       </span>
-      <span className="mt-3 line-clamp-3 break-words px-4 text-center text-base font-bold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)] md:text-lg">
+      <span className="mt-3 line-clamp-3 break-words px-4 text-center font-display text-base font-bold leading-tight text-content-primary md:text-lg">
         {title}
       </span>
     </div>

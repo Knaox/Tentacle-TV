@@ -1,9 +1,10 @@
-import { memo, useId } from "react";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useCardMarkers } from "@tentacle-tv/api-client";
-import { formatCommunityRating, STAR_PATH, STAR_VIEWBOX, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
-import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../cards/cardGlyphs";
+import { formatCommunityRating, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
+import { BookmarkGlyph, HeartGlyph, StarGlyph, WatchedGlyph } from "../cards/cardGlyphs";
+import { ON_MEDIA_ACCENT } from "./onMedia";
 import { fadeUp } from "../../theme/motion";
 
 interface DetailScorelineProps {
@@ -33,7 +34,6 @@ const STATUS_GLYPH: Record<CardStatusKind, typeof BookmarkGlyph> = {
  */
 export const DetailScoreline = memo(function DetailScoreline({ item, communityRating, markersEnabled = true }: DetailScorelineProps) {
   const { t } = useTranslation(["cards", "media"]);
-  const gradientId = useId();
   const markers = useCardMarkers(item, {
     communityRating: communityRating === undefined ? (item.CommunityRating ?? null) : communityRating,
     scope: "item",
@@ -52,16 +52,9 @@ export const DetailScoreline = memo(function DetailScoreline({ item, communityRa
           aria-label={t("cards:communityRating", { score: formatCommunityRating(community) })}
           title={t("media:detailCommunityScore")}
         >
-          <svg className="h-6 w-6" viewBox={STAR_VIEWBOX} aria-hidden>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="var(--brand-light)" />
-                <stop offset="1" stopColor="var(--brand-accent)" />
-              </linearGradient>
-            </defs>
-            <path d={STAR_PATH} fill={`url(#${gradientId})`} />
-          </svg>
-          <span aria-hidden className="text-[1.75rem] font-bold leading-none tabular-nums tracking-tight text-on-media-primary">
+          {/* L'étoile à l'encre : la note se lit, elle ne se décore plus d'un dégradé. */}
+          <StarGlyph className="h-5 w-5 text-on-media-primary" />
+          <span aria-hidden className="font-display text-[1.625rem] font-bold leading-none tabular-nums tracking-tight text-on-media-primary">
             {formatCommunityRating(community)}
           </span>
           <span aria-hidden className="self-end pb-0.5 text-xs font-medium text-on-media-secondary">/10</span>
@@ -73,12 +66,9 @@ export const DetailScoreline = memo(function DetailScoreline({ item, communityRa
           {statuses.map((kind) => {
             const Glyph = STATUS_GLYPH[kind];
             return (
-              <li
-                key={kind}
-                className="lg-status-pill flex items-center gap-1.5 rounded-full border border-on-media-muted px-3 py-1 text-xs font-medium text-on-media-secondary"
-                style={{ background: "rgba(var(--scrim-media-rgb), 0.35)" }}
-              >
-                <Glyph filled className={`h-3.5 w-3.5 ${kind === "favorite" ? "text-[var(--brand-accent)]" : "text-[var(--brand-light)]"}`} />
+              <li key={kind} className="lg-status-pill chip chip-on-media h-7 px-2.5">
+                {/* Un état ACTIF : la teinte franche, la même pour les trois. */}
+                <Glyph filled className={`h-3.5 w-3.5 ${ON_MEDIA_ACCENT}`} />
                 {t(`cards:status.${kind}`)}
               </li>
             );

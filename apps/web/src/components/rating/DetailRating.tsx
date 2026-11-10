@@ -32,9 +32,9 @@ export function DetailRating({ item, tone = "themed" }: { item: MediaItem; tone?
   return (
     <span
       className={tone === "media"
-        ? "flex h-14 items-center gap-3 rounded-full border border-on-media-muted px-5"
-        : "flex items-center gap-2.5 rounded-full border border-line-strong bg-fill-subtle px-4 py-2"}
-      style={tone === "media" ? { background: "rgba(var(--scrim-media-rgb), 0.38)" } : undefined}
+        // Sur l'image : la même capsule d'encre que les bascules voisines, sans liseré.
+        ? "flex h-[52px] items-center gap-3 rounded-pill bg-[rgba(var(--scrim-media-rgb),0.5)] px-5 shadow-edge"
+        : "flex items-center gap-2.5 rounded-pill bg-surface-2 px-4 py-2"}
     >
       <span className={tone === "media" ? "text-sm text-on-media-secondary" : "text-sm text-content-secondary"}>{t("yourRating")}</span>
       <StarRating

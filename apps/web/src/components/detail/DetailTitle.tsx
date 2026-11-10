@@ -6,7 +6,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ChevronRightIcon } from "../media/MediaDetailIcons";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
-import { easeOut, fadeUp } from "../../theme/motion";
+import { duration, easeOut, fadeUp } from "../../theme/motion";
 import { detailLogoUrl } from "./detailArtUrls";
 import { useLateReveal } from "./detailArrival";
 
@@ -16,8 +16,8 @@ import { useLateReveal } from "./detailArrival";
  * Opacité et `transform` seulement.
  */
 const logoReveal = {
-  hidden: { opacity: 0, scale: 0.94, y: 8 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.5, ease: easeOut } },
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.base, ease: easeOut } },
 };
 
 const KIND_KEYS: Partial<Record<MediaItem["Type"], string>> = {
@@ -74,11 +74,11 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
   return (
     <>
       {kicker && (
+        // Le sur-titre du socle, sur image : plus de pastille dégradée devant lui.
         <motion.p
           variants={fadeUp}
-          className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
+          className="mb-3 text-xs font-semibold uppercase tracking-[0.06em] text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
         >
-          <span aria-hidden className="mr-2 inline-block h-1.5 w-1.5 -translate-y-px rounded-full align-middle" style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }} />
           {kicker}
         </motion.p>
       )}
@@ -86,7 +86,9 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
         variants={fadeUp}
         className={showLogo
           ? "sr-only"
-          : "max-w-3xl break-words text-display-3 font-bold leading-[1.02] tracking-tight text-on-media-primary drop-shadow-[0_3px_16px_var(--on-media-shadow)] line-clamp-3 md:text-display-2 xl:text-[4.25rem]"}
+          // Bricolage, serré : les échelles `text-display-*` portent graisse, interligne et
+          // crénage ; le plus grand corps reprend ceux du prototype (0,97 · −0,035 em).
+          : "max-w-3xl break-words text-display-3 text-on-media-primary drop-shadow-[0_3px_16px_var(--on-media-shadow)] line-clamp-3 md:text-display-2 xl:text-[4.25rem] xl:font-[780] xl:leading-[0.97] xl:tracking-[-0.035em]"}
       >
         {item.Name}
       </motion.h1>
@@ -121,7 +123,7 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
           onClick={onOpenSeries ?? (() => navigate(`/media/${item.SeriesId}`))}
           aria-label={t("common:goToSeries")}
           title={t("common:goToSeries")}
-          className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-on-media-secondary transition-colors hover:text-on-media-primary"
+          className="group/series mt-1.5 inline-flex items-center gap-1.5 py-1 text-lg font-medium text-on-media-secondary transition-colors duration-hover hover:text-on-media-primary"
         >
           <span className="underline-offset-4 group-hover/series:underline">
             {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}

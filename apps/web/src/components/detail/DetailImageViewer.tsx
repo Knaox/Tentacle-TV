@@ -1,3 +1,6 @@
+import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -70,8 +73,9 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
           role="dialog"
           aria-modal="true"
           aria-label={t("imageViewerTitle", { title })}
-          className="fixed inset-0 z-[70] flex flex-col text-white"
-          style={{ background: "rgba(4, 3, 8, 0.96)" }}
+          // Une visionneuse d'images : tout y est « posé sur média », dans les deux thèmes.
+          className="fixed inset-0 z-[70] flex flex-col text-on-media-primary"
+          style={{ background: "rgba(11, 11, 12, 0.96)" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: exitDuration(duration.base) } }}
@@ -87,7 +91,7 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
           <header className="relative z-10 flex items-center gap-4 px-4 pb-2 pt-4 md:px-8 md:pt-6">
             <div className="min-w-0 flex-1">
               <p className="truncate text-base font-semibold">{title}</p>
-              <p className="text-xs text-white/60" aria-live="polite">
+              <p className="text-xs tabular-nums text-on-media-secondary" aria-live="polite">
                 {t(KIND_KEY[current.kind])}
                 {count > 1 && <> · {t("imageViewerCounter", { index: (index ?? 0) + 1, count })}</>}
               </p>
@@ -98,10 +102,10 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
               aria-label={t("imageViewerClose")}
               title={t("imageViewerClose")}
               appearance={VIEWER_ROUND}
-              className="flex h-11 w-11 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
+              className="flex h-10 w-10 items-center justify-center"
               fallbackClassName={VIEWER_ROUND_SKIN}
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+              <XIcon size={20} aria-hidden />
             </GlassButton>
           </header>
 
@@ -142,8 +146,8 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                       onClick={() => onIndexChange(i)}
                       aria-label={t("imageViewerShow", { index: i + 1 })}
                       aria-current={i === index ? "true" : undefined}
-                      className={`block overflow-hidden rounded-md transition-opacity duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] ${
-                        i === index ? "opacity-100 ring-2 ring-[var(--brand-light)] ring-offset-2 ring-offset-[#040308]" : "opacity-50 hover:opacity-90"
+                      className={`block overflow-hidden rounded-chip transition-opacity duration-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] ${
+                        i === index ? "opacity-100 ring-2 ring-on-media-primary ring-offset-2 ring-offset-[#0B0B0C]" : "opacity-50 hover:opacity-90"
                       }`}
                     >
                       <img src={thumbUrl(client, ref)} alt="" draggable={false} className="h-14 w-auto object-cover" style={{ aspectRatio: String(ref.aspect) }} loading="lazy" /* tv-compat-ok: ratio naturel une fois chargée */ />
@@ -161,9 +165,9 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
 }
 
 /** Les ronds de la visionneuse : en Liquid Glass (mode natif), le rond de verre
- * CLAIR de la fiche (lot lg7, R16) ; ailleurs, la peau d'avant. */
+ * CLAIR de la fiche (lot lg7, R16) ; ailleurs, le rond sur image du socle. */
 const VIEWER_ROUND = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
-const VIEWER_ROUND_SKIN = "rounded-full bg-white/10 transition-colors hover:bg-white/20";
+const VIEWER_ROUND_SKIN = "icon-btn btn-on-media";
 
 function StepButton({ side, label, onClick }: { side: "left" | "right"; label: string; onClick: () => void }) {
   return (
@@ -172,14 +176,12 @@ function StepButton({ side, label, onClick }: { side: "left" | "right"; label: s
       aria-label={label}
       title={label}
       appearance={VIEWER_ROUND}
-      className={`absolute top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] md:flex ${
+      className={`!absolute top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center md:flex ${
         side === "left" ? "left-5" : "right-5"
       }`}
       fallbackClassName={VIEWER_ROUND_SKIN}
     >
-      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d={side === "left" ? "M15 18l-6-6 6-6" : "M9 6l6 6-6 6"} />
-      </svg>
+      {side === "left" ? <CaretLeftIcon size={22} aria-hidden /> : <CaretRightIcon size={22} aria-hidden />}
     </GlassButton>
   );
 }

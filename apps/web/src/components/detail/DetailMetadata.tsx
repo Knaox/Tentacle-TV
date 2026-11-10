@@ -46,12 +46,10 @@ export function DetailMetadata({ item, linkGenres = true }: DetailMetadataProps)
     <>
       <motion.div
         variants={fadeUp}
-        className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-[0.9375rem] text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
+        className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-[0.9375rem] tabular-nums text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
       >
         {item.OfficialRating && (
-          <span className="rounded-[5px] border border-on-media-muted px-1.5 py-0.5 text-[11px] font-bold leading-none tracking-wider">
-            {item.OfficialRating}
-          </span>
+          <span className="chip chip-on-media">{item.OfficialRating}</span>
         )}
         {facts.map((fact, i) => (
           <Fragment key={fact}>
@@ -75,7 +73,7 @@ export function DetailMetadata({ item, linkGenres = true }: DetailMetadataProps)
               {linkGenres ? (
                 <Link
                   to={`/search?${new URLSearchParams({ genre: g }).toString()}`}
-                  className="text-on-media-secondary underline-offset-4 transition-colors hover:text-on-media-primary hover:underline"
+                  className="text-on-media-secondary underline-offset-4 transition-colors duration-hover hover:text-on-media-primary hover:underline"
                 >
                   {g}
                 </Link>

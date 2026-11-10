@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { AudioLabel, MediaQuality } from "../../lib/mediaQuality";
 
 /**
@@ -19,24 +19,16 @@ type Tone = "glass" | "accent" | "lang";
  * 3,5:1 sous 10 px — le téléviseur l'avait déjà remonté à 0,92 pour la même
  * raison (`cards-tv.css`). À 0,72, 6:1 sur un blanc pur.
  */
-const TONE_STYLE: Record<Tone, CSSProperties> = {
-  glass: {
-    background: "rgba(12,12,18,0.72)",
-    color: "rgba(255,255,255,0.82)",
-    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.13)",
-  },
-  // 4K : unique signal "premium" — teinte brand subtile + halo soft.
-  accent: {
-    background: "linear-gradient(180deg, rgba(42,28,70,0.72) 0%, rgba(22,14,40,0.82) 100%)",
-    color: "#ffffff",
-    boxShadow: "inset 0 0 0 1px rgba(167,139,250,0.5), 0 0 10px rgba(var(--brand-rgb),0.28)",
-  },
-  // Langues : même verre, texte légèrement plus discret que la qualité.
-  lang: {
-    background: "rgba(12,12,18,0.72)",
-    color: "rgba(255,255,255,0.76)",
-    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)",
-  },
+/**
+ * Trois tons, une seule peau : la puce sur image du socle. `accent` (le 4K) et `glass` sont en
+ * blanc plein, `lang` un cran plus discret — plus de lavis violet ni de halo sur le 4K (un
+ * décor), plus de `backdrop-filter` par puce (une passe de composition chacune, sur chaque
+ * carte survolée, derrière un voile déjà presque opaque).
+ */
+const TONE_CLASS: Record<Tone, string> = {
+  glass: "",
+  accent: "",
+  lang: "!text-on-media-secondary",
 };
 
 interface MetaChipProps {
@@ -52,8 +44,7 @@ export function MetaChip({ children, tone = "glass", title, ariaLabel }: MetaChi
       title={title}
       aria-label={ariaLabel ?? title}
       data-tone={tone}
-      className="lg-meta inline-flex items-center whitespace-nowrap rounded-[5px] px-1.5 py-[2px] text-[10px] font-semibold uppercase leading-none tracking-[0.1em] backdrop-blur-md"
-      style={{ ...TONE_STYLE[tone], textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
+      className={`lg-meta chip chip-on-media !h-[18px] !px-1.5 !text-[10px] uppercase tracking-[0.08em] ${TONE_CLASS[tone]}`}
     >
       {children}
     </span>

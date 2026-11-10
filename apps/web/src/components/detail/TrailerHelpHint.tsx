@@ -42,10 +42,10 @@ export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: M
         <>
           <Link
             to={trailerGuideHref()}
-            className={`group inline-flex min-h-[2rem] items-center gap-2 rounded-md transition-colors duration-150 hover:text-on-media-primary ${FOCUS}`}
+            className={`group inline-flex min-h-[2rem] items-center gap-2 rounded-chip transition-colors duration-hover hover:text-on-media-primary ${FOCUS}`}
           >
             <CircleHelp size={15} aria-hidden />
-            <span className="underline decoration-[rgba(255,255,255,0.35)] underline-offset-4 transition-colors duration-150 group-hover:decoration-current">
+            <span className="underline decoration-on-media-muted underline-offset-4 transition-colors duration-hover group-hover:decoration-current">
               {t("hintLink")}
             </span>
           </Link>
@@ -54,7 +54,7 @@ export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: M
             onClick={hide}
             aria-label={t("hintHide")}
             title={t("hintHide")}
-            className={`flex h-8 w-8 items-center justify-center rounded-full opacity-75 transition duration-150 hover:bg-[rgba(255,255,255,0.12)] hover:text-on-media-primary hover:opacity-100 ${FOCUS}`}
+            className={`flex h-8 w-8 items-center justify-center rounded-pill opacity-75 transition-[background-color,color,opacity] duration-hover hover:bg-white/10 hover:text-on-media-primary hover:opacity-100 ${FOCUS}`}
           >
             <X size={14} aria-hidden />
           </button>
@@ -65,7 +65,7 @@ export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: M
           <button
             type="button"
             onClick={undo}
-            className={`min-h-[2rem] rounded-md font-semibold text-on-media-primary underline underline-offset-4 ${FOCUS}`}
+            className={`min-h-[2rem] rounded-chip font-semibold text-on-media-primary underline underline-offset-4 ${FOCUS}`}
           >
             {t("hintUndo")}
           </button>

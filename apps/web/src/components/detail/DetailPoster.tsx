@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import { ArrowsOutSimpleIcon } from "@phosphor-icons/react/dist/csr/ArrowsOutSimple";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
@@ -8,6 +9,7 @@ import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { DetailPosterFallback } from "./DetailArtworkFallback";
 import { detailPosterUrl } from "./detailArtUrls";
 import { useLateReveal } from "./detailArrival";
+import { itemImageColor } from "../../lib/itemImageColor";
 
 interface DetailPosterProps {
   item: MediaItem;
@@ -94,6 +96,7 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
   const showImage = url !== null && !broken;
   // Arrivée après l'entrée (réseau lent) : elle fond, elle ne surgit pas.
   const late = useLateReveal(showImage ? url : null);
+  const tone = itemImageColor(item, "Primary", item.ImageTags?.Primary);
 
   return (
     // Entrée en OPACITÉ seule, jamais en `y`/`scale`. Une transformation
@@ -117,10 +120,11 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
       // discret sur une affiche 2:3 qui remplit presque la rangée.
       // `self-end` : l'affiche s'aligne sur le BAS du bloc titre, sur la ligne
       // des actions — c'est le socle de la composition.
-      className={`group/poster relative hidden flex-shrink-0 self-end overflow-hidden rounded-[var(--radius-lg)] ring-1 ring-white/15 sm:block ${
+      className={`group/poster relative hidden flex-shrink-0 self-end overflow-hidden rounded-tile bg-surface-2 sm:block ${
         isEpisode ? "w-72 md:w-[22rem] xl:w-[26rem]" : "w-40 md:w-52 xl:w-60"
       }`}
-      style={{ boxShadow: "0 30px 60px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--brand-rgb),0.12)" }}
+      // La couleur de l'affiche sous elle, et une seule ombre portée — plus de liseré de marque.
+      style={{ boxShadow: "0 24px 60px -20px rgba(0,0,0,0.9)", backgroundColor: tone ?? undefined }}
     >
       {/* Seconde et dernière mesure : la boîte épouse son image, sa hauteur
           n'est donc définitive qu'une fois celle-ci placée. */}
@@ -131,7 +135,7 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
         aria-label={t("media:detailOpenPoster")}
         className="block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--border-focus)] disabled:cursor-default"
       >
-        {/* Le zoom au survol vit sur l'IMAGE, jamais sur la boîte mesurée. */}
+        {/* Plus de zoom de l'image au survol (refonte) : le coin « agrandir » dit seul qu'elle s'ouvre. */}
         {showImage && placeholderUrl && !late.shown ? (
           <img src={placeholderUrl} alt="" aria-hidden draggable={false} className="absolute inset-0 h-full w-full object-cover" />
         ) : null}
@@ -144,14 +148,14 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
               data-detail-art="poster"
               onLoad={() => { publish(); late.onLoad(); }}
               onError={() => { late.onError(); reportFailure(); }}
-              className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
+              className={`w-full object-cover ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
             />
           </span>
         ) : (
           <DetailPosterFallback title={item.Name} wide={isEpisode} />
         )}
-        <span aria-hidden className={`pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100 ${onOpen ? "" : "hidden"}`}>
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+        <span aria-hidden className={`pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-pill bg-[rgba(var(--scrim-media-rgb),0.6)] text-on-media-primary opacity-0 transition-opacity duration-hover group-hover/poster:opacity-100 ${onOpen ? "" : "hidden"}`}>
+          <ArrowsOutSimpleIcon size={16} weight="bold" />
         </span>
       </button>
       {/* Qualité + langues directement sur le visuel, comme sur les vignettes —

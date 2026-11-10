@@ -1,3 +1,5 @@
+import { ON_MEDIA_ACCENT } from "../detail/onMedia";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RatingBurst } from "./RatingBurst";
@@ -51,7 +53,9 @@ export function StarRating({
   const displayed = hovered ?? value ?? 0;
   const starClass = SIZE_CLASS[size];
   const outlineClass =
-    tone === "onMedia" ? "text-white/80" : "text-content-tertiary opacity-40";
+    tone === "onMedia" ? "text-on-media-secondary" : "text-content-tertiary opacity-40";
+  // La note posée : un état ACTIF, à la teinte franche (celle du sombre sur une image).
+  const filledClass = tone === "onMedia" ? ON_MEDIA_ACCENT : "text-accent";
   // Filtre STATIQUE (jamais animé) sur le conteneur de l'étoile : un seul
   // drop-shadow pour les trois glyphes, pas trois.
   const starShadow = tone === "onMedia" ? "drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]" : "";
@@ -66,23 +70,20 @@ export function StarRating({
       {[1, 2, 3, 4, 5].map((star) => {
         // Remplissage de CETTE étoile : 0, 0.5 ou 1 selon la note affichée.
         const fraction = Math.min(Math.max(displayed - (star - 1) * 2, 0), 2) / 2;
-        const isHoveredStar = hovered !== null && Math.ceil(hovered / 2) === star;
         return (
           <span
             key={star}
-            className={`relative ${starClass} ${starShadow} transition-transform duration-150 ${
-              isHoveredStar ? "scale-110" : ""
-            }`}
+            className={`relative ${starClass} ${starShadow}`}
           >
             <StarGlyph className={`absolute inset-0 ${starClass} ${outlineClass}`} outline />
             <StarGlyph
-              className={`absolute inset-0 ${starClass} text-[var(--brand-accent)] transition-opacity duration-150 ${
+              className={`absolute inset-0 ${starClass} ${filledClass} transition-opacity duration-hover ${
                 fraction >= 0.5 ? "opacity-100" : "opacity-0"
               }`}
               clip="left"
             />
             <StarGlyph
-              className={`absolute inset-0 ${starClass} text-[var(--brand-accent)] transition-opacity duration-150 ${
+              className={`absolute inset-0 ${starClass} ${filledClass} transition-opacity duration-hover ${
                 fraction === 1 ? "opacity-100" : "opacity-0"
               }`}
               clip="right"
@@ -166,21 +167,5 @@ function StarGlyph({
       : clip === "right"
         ? { clipPath: "inset(0 0 0 50%)" }
         : undefined;
-  return (
-    <svg
-      className={className}
-      style={clipStyle}
-      viewBox="0 0 24 24"
-      fill={outline ? "none" : "currentColor"}
-      stroke={outline ? "currentColor" : "none"}
-      strokeWidth={outline ? 1.5 : 0}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
-      />
-    </svg>
-  );
+  return <StarIcon className={className} style={clipStyle} weight={outline ? "regular" : "fill"} aria-hidden />;
 }

@@ -23,7 +23,7 @@ export function DetailOverview({ item }: { item: MediaItem }) {
   if (!overview && !tagline) return null;
 
   return (
-    <motion.div variants={fadeUp} className="mt-5 max-w-2xl">
+    <motion.div variants={fadeUp} className="mt-5 max-w-[60ch]">
       {tagline && (
         <p className="mb-2 text-[0.9375rem] font-medium italic text-on-media-primary drop-shadow-[0_1px_6px_var(--on-media-shadow)]">
           « {tagline} »
@@ -37,7 +37,7 @@ export function DetailOverview({ item }: { item: MediaItem }) {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
             id={`overview-${item.Id}`}
-            className={`text-[0.9375rem] leading-relaxed text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)] ${expanded ? "" : "line-clamp-3"}`}
+            className={`text-base leading-normal text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)] ${expanded ? "" : "line-clamp-3"}`}
           >
             <RichOverview text={overview} />
           </motion.p>
@@ -47,7 +47,7 @@ export function DetailOverview({ item }: { item: MediaItem }) {
               onClick={() => setExpanded((p) => !p)}
               aria-expanded={expanded}
               aria-controls={`overview-${item.Id}`}
-              className="mt-1 py-1 text-xs font-semibold uppercase tracking-wider text-on-media-secondary transition-colors hover:text-on-media-primary"
+              className="mt-1 py-1 text-[13px] font-semibold text-on-media-secondary underline-offset-4 transition-colors duration-hover hover:text-on-media-primary hover:underline"
             >
               {expanded ? t("common:showLess") : t("common:showMore")}
             </button>
