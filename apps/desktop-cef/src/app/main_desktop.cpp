@@ -14,6 +14,7 @@
 #include "shell/renderer_app.h"
 
 #ifdef __linux__
+#include <cstdlib>
 #include <map>
 
 #include "platform/linux/graphics_session.h"
@@ -49,8 +50,11 @@ int main(int argc, char* argv[]) {
 #ifdef __linux__
   configureUserData(argc, argv);
   const auto& session = tentacle::platform::startupSession();
+  // TENTACLE_OZONE=<plateforme> : diagnostic (headless, x11, wayland), l'emporte sur la session.
+  const char* forcedOzone = std::getenv("TENTACLE_OZONE");
   std::vector<std::string> extra = {
-      std::string("--ozone-platform=") + tentacle::platform::displayServerName(session.montage),
+      std::string("--ozone-platform=") +
+          (forcedOzone && *forcedOzone ? forcedOzone : tentacle::platform::displayServerName(session.montage)),
       // Cookies de CEF chiffrés par une clé locale : jamais d'invite du trousseau (GNOME
       // Keyring, KWallet) — l'équivalent de use-mock-keychain sous macOS.
       "--password-store=basic",

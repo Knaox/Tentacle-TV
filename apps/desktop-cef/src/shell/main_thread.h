@@ -8,8 +8,9 @@
 namespace tentacle {
 
 bool onMainThread();
-// Exécute `fn` sur le fil principal (immédiatement plus tard, jamais en ligne).
-void postToMain(std::function<void()> fn);
+// Exécute `fn` sur le fil principal (immédiatement plus tard, jamais en ligne). Faux si la
+// tâche n'a pas pu être postée (avant CefInitialize ou après CefShutdown) : elle est perdue.
+bool postToMain(std::function<void()> fn);
 void postToMainDelayed(std::function<void()> fn, int64_t delayMs);
 
 }  // namespace tentacle

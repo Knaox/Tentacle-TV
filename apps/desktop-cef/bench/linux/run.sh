@@ -44,7 +44,12 @@ case "${1:-}" in
   up)
     comp="${2:?compositeur : mutter | kwin | sway | x11}"; shift 2
     docker rm -f "$name" >/dev/null 2>&1 || true
-    docker run -d --pull=never --name "$name" --network host --shm-size=1g "${container_env[@]}" \
+    # BANC_ENV="A=1 B=2" : variables de plus pour l'app (diagnostics : TENTACLE_PUMP_TRACE=1…).
+    for kv in ${BANC_ENV:-}; do container_env+=(-e "$kv"); done
+    # SYS_NICE : sway (Fedora) porte la capacité de fichier cap_sys_nice, refusée sans elle ;
+    # SYS_PTRACE : gdb sur l'app (diagnostic du banc).
+    docker run -d --pull=never --name "$name" --network host --shm-size=1g --cap-add=SYS_NICE --cap-add=SYS_PTRACE \
+      "${container_env[@]}" \
       -e TENTACLE_URL="${TENTACLE_URL:-http://127.0.0.1:3471}" \
       -v "$repo:/repo:ro" -v "$volume:/cache" "$image" sleep infinity >/dev/null
     docker exec -d "$name" dbus-run-session -- bash /repo/apps/desktop-cef/bench/linux/inside.sh "$comp" "$@"

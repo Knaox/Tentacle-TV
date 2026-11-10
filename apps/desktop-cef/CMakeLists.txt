@@ -93,7 +93,7 @@ else()
   # vidéo en sous-surface Wayland ou par l'API de rendu de libmpv (src/platform/linux/).
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(TENTACLE_LINUX REQUIRED IMPORTED_TARGET
-                    wayland-client wayland-egl egl glesv2 x11)
+                    wayland-client wayland-egl egl glesv2 x11 glib-2.0)
   target_sources(tentacle_shell PRIVATE src/shell/message_pump_sdl.cpp
                                         src/platform/linux/app_linux.cpp
                                         src/platform/linux/shell_linux.cpp
@@ -101,6 +101,7 @@ else()
                                         src/platform/linux/locale_linux.cpp
                                         src/platform/linux/edid_linux.cpp
                                         src/platform/linux/linux_commands.cpp
+                                        src/platform/linux/glib_pump_linux.cpp
                                         src/platform/linux/egl_linux.cpp
                                         src/platform/linux/gl_quad_linux.cpp
                                         src/platform/linux/dmabuf_linux.cpp

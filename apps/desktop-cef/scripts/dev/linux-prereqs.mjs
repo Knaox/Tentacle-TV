@@ -42,6 +42,8 @@ const PKG = {
   egl: ["libglvnd-devel", "libegl-dev libgles-dev", "libglvnd", "Mesa-libEGL-devel Mesa-libGLESv2-devel"],
   x11: ["libX11-devel", "libx11-dev", "libx11", "libX11-devel"],
   dbus: ["dbus-devel", "libdbus-1-dev", "dbus", "dbus-1-devel"],
+  // La pompe UI de Chromium sous Linux est une MessagePumpGlib (glib_pump_linux.h).
+  glib: ["glib2-devel", "libglib2.0-dev", "glib2", "glib2-devel"],
   // Moteur de mise à jour (src/update) : libcurl (pile de l'OS) et libsodium (ed25519).
   curl: ["libcurl-devel", "libcurl4-openssl-dev", "curl", "libcurl-devel"],
   sodium: ["libsodium-devel", "libsodium-dev", "libsodium", "libsodium-devel"],
@@ -102,6 +104,7 @@ export function checkBuildPrereqs(recommended = []) {
     ["egl", "glesv2"],
     ["x11", "x11"],
     ["dbus", "dbus-1"],
+    ["glib", "glib-2.0"],
     ["curl", "libcurl"],
     ["sodium", "libsodium"],
   ];

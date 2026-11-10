@@ -125,11 +125,14 @@ class GlCompositor final : public Compositor, public WebLayer, public platform::
     if (redrawPending_) return;
     redrawPending_ = true;
     std::weak_ptr<bool> alive = alive_;
-    postToMain([this, alive] {
+    // Avant CefInitialize (couche factice posée à la création), la tâche est perdue : sans ce
+    // retour, plus aucune composition ne partirait jamais (mesuré : 0 image présentée).
+    const bool posted = postToMain([this, alive] {
       if (alive.expired()) return;
       redrawPending_ = false;
       compose();
     });
+    if (!posted) redrawPending_ = false;
   }
 
  private:
