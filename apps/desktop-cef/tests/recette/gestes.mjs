@@ -9,7 +9,9 @@ import { join } from "node:path";
 import { Cdp, pageTarget } from "../../web/shim/dev/cdp.mjs";
 
 const [port = "9425", image, audio, tmp] = process.argv.slice(2);
-const log = join(process.env.HOME, ".cache/tentacle-cef/build/cef-navigateur-run.log");
+// Le journal de l'app lancée par app.sh : celui du build choisi (TENTACLE_BUILD), même règle.
+const cache = process.env.TENTACLE_CEF_CACHE ?? join(process.env.HOME, ".cache/tentacle-cef");
+const log = join(cache, "build", `${process.env.TENTACLE_BUILD || "cef-navigateur"}-run.log`);
 const cdp = await Cdp.connect((await pageTarget(Number(port))).webSocketDebuggerUrl);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const ev = async (expression, gesture = false) => {
