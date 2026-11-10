@@ -14,6 +14,7 @@
 //   liquidGlass.pageStarted                         un nouveau document : le verre d'avant part
 //   liquidGlass.debug.snapshot → {supported, availability, refractsVideo, enabled,
 //     surfaceVisible, root, groups, nativeViews, regions, leaving}   (bancs : relu dans AppKit)
+//     + en plus sous CEF : liveViews (vues du verre vivantes dans le processus), windowVisible
 
 namespace tentacle {
 struct AppContext;

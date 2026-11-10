@@ -45,6 +45,7 @@ class MainTimers final : public Timers {
 };
 
 struct State {
+  void* nativeWindow = nullptr;
   Availability availability = Availability::NotMacos;
   bool refractsVideo = false;
   std::unique_ptr<GlassBackend> backend;
@@ -74,6 +75,9 @@ Json snapshot() {
   out["supported"] = availability == Availability::Native;
   out["availability"] = availabilityName(availability);
   out["refractsVideo"] = state && state->refractsVideo;
+  // En plus (bancs CEF) : vues natives vivantes dans le processus, fenêtre composée.
+  out["liveViews"] = availability == Availability::Native ? platform::liveNativeViews() : -1;
+  out["windowVisible"] = state && platform::windowComposited(state->nativeWindow);
   return out;
 }
 
@@ -109,6 +113,7 @@ void installChannels(AppContext& ctx) {
 
 void install(AppContext& ctx) {
   state = std::make_unique<State>();
+  state->nativeWindow = ctx.nativeWindow;
   const char* forced = std::getenv("TENTACLE_LIQUID_GLASS");
   state->availability = decideLiquidGlass({platform::name(), platform::systemVersion(),
                                            forced ? std::optional<std::string>(forced) : std::nullopt,

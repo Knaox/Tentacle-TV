@@ -35,6 +35,13 @@ bool refractsVideo();
 /// nullptr si la fenêtre ne s'y prête pas.
 std::unique_ptr<GlassBackend> createBackend(AppContext& ctx);
 
+/// Bancs : les vues natives du verre encore VIVANTES dans le processus (racine, conteneurs,
+/// contenus, verres) — 0 après un retrait complet, sinon une fuite ; -1 sans verre natif.
+int liveNativeViews();
+/// Bancs : la fenêtre est-elle composée (visible, même en partie) ? Une fenêtre sur un autre
+/// bureau ou sous un écran verrouillé ne coûte rien à WindowServer.
+bool windowComposited(void* nativeWindow);
+
 /// La page sous chaque boîte (points de la vue, `nullopt` : pas demandée) : la grille de
 /// `gridSamples`, lue dans la DERNIÈRE image de la page (`WebLayer::retainLastFrame`), HORS du
 /// fil principal ; `done` sur le fil principal, `nullopt` par boîte si rien n'est lisible.

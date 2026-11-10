@@ -16,6 +16,9 @@
 
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
+#import <objc/runtime.h>
+
+#include <atomic>
 
 #include <map>
 #include <memory>
@@ -25,8 +28,30 @@
 #include "compositor/compositor.h"
 #include "glass/glass_platform.h"
 
+// Bancs : chaque vue du verre porte un témoin (objet associé, API publique du runtime) qui
+// décompte à sa libération — « aucune fuite » se prouve par ce compteur revenu à 0.
+static std::atomic<int> g_liveViews{0};
+@interface TentacleGlassWitness : NSObject
+@end
+@implementation TentacleGlassWitness
+- (instancetype)init {
+  if ((self = [super init])) g_liveViews++;
+  return self;
+}
+- (void)dealloc {
+  g_liveViews--;
+}
+@end
+
 namespace tentacle::glass {
 namespace {
+
+char kWitnessKey;
+template <typename V>
+V* witnessed(V* v) {
+  objc_setAssociatedObject(v, &kWitnessKey, [TentacleGlassWitness new], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  return v;
+}
 
 /// `NSViewMinYMargin` : la marge du BAS est souple, celle du haut tenue — le verre garde sa
 /// distance au haut de la fenêtre quand elle change de taille : le repère de la page.
@@ -64,7 +89,7 @@ class API_AVAILABLE(macos(26.0)) AppKitGlassBackend final : public GlassBackend 
   ViewHandle createRoot() override {
     NSView* content = window_.contentView;
     if (content == nil) return nullptr;
-    NSView* root = [[NSView alloc] initWithFrame:content.bounds];
+    NSView* root = witnessed([[NSView alloc] initWithFrame:content.bounds]);
     root.wantsLayer = YES;
     root.autoresizingMask = kFill;
     if (!compositor_->setUnderlay((__bridge void*)root)) return nullptr;
@@ -78,8 +103,8 @@ class API_AVAILABLE(macos(26.0)) AppKitGlassBackend final : public GlassBackend 
 
   GroupHandle createGroup(ViewHandle root, double spacing, double alpha) override {
     const NSRect bounds = view(root).bounds;
-    NSGlassEffectContainerView* container = [[NSGlassEffectContainerView alloc] initWithFrame:bounds];
-    NSView* content = [[NSView alloc] initWithFrame:bounds];
+    NSGlassEffectContainerView* container = witnessed([[NSGlassEffectContainerView alloc] initWithFrame:bounds]);
+    NSView* content = witnessed([[NSView alloc] initWithFrame:bounds]);
     container.autoresizingMask = kFill;
     content.autoresizingMask = kFill;
     container.spacing = spacing;
@@ -95,7 +120,7 @@ class API_AVAILABLE(macos(26.0)) AppKitGlassBackend final : public GlassBackend 
   }
 
   ViewHandle createGlass(const GlassProps& props) override {
-    NSGlassEffectView* glass = [[NSGlassEffectView alloc] initWithFrame:nsRect(props.frame)];
+    NSGlassEffectView* glass = witnessed([[NSGlassEffectView alloc] initWithFrame:nsRect(props.frame)]);
     glass.autoresizingMask = kKeepTop;
     glass.cornerRadius = props.radius;
     glass.style = props.style == 1 ? NSGlassEffectViewStyleClear : NSGlassEffectViewStyleRegular;
@@ -195,6 +220,8 @@ class API_AVAILABLE(macos(26.0)) AppKitGlassBackend final : public GlassBackend 
 }  // namespace
 
 namespace platform {
+
+int liveNativeViews() { return g_liveViews.load(); }
 
 std::unique_ptr<GlassBackend> createBackend(AppContext& ctx) {
   NSWindow* window = (__bridge NSWindow*)ctx.nativeWindow;

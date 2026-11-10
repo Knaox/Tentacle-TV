@@ -39,6 +39,11 @@ bool refractsVideo() {
 #endif
 }
 
+bool windowComposited(void* nativeWindow) {
+  NSWindow* window = (__bridge NSWindow*)nativeWindow;
+  return window != nil && (window.occlusionState & NSWindowOcclusionStateVisible) != 0;
+}
+
 void readPageGrids(Compositor* compositor, double viewWidthPt, std::vector<std::optional<Box>> boxes,
                    std::function<void(Grids)> done) {
   bool wanted = false;

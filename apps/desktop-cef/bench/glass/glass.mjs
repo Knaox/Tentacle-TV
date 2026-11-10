@@ -35,9 +35,22 @@ check("hors lecture : aucune vue native", idle.nativeViews === 0 && !idle.root, 
 await d.playFromDetail((await findItem(title)).item.Id);
 const playing = async () => { const a = await d.prop("time-pos"); await sleep(900); const b = await d.prop("time-pos"); return b > a ? [a, b] : null; };
 check("lecture", await d.waitFor(() => playing(), 15000), title);
+await sleep(3500);  // les contrôles de l'ouverture s'effacent : l'entrée qui suit est mesurée
 await wiggle();
-await sleep(900);
+// La matérialisation (lot lg8), relue dans la couche de PRÉSENTATION d'AppKit : chaque conteneur
+// s'allume (opacité en vol entre 0 et 1) pendant que son verre monte vers son cadre.
+const alphas = [];
+for (const end = Date.now() + 700; Date.now() < end; await sleep(25)) {
+  for (const r of (await snapshot()).regions) if (r.live) alphas.push(r.live.containerAlpha);
+}
+const inFlight = alphas.filter((a) => a > 0.02 && a < 0.98).length;
+check("matérialisation : les conteneurs s'allument en fondu (animateur d'AppKit)", inFlight > 0,
+  `${inFlight} relevés en vol sur ${alphas.length} (min ${Math.min(...alphas).toFixed(2)})`);
+await sleep(500);
 const shown = await snapshot();
+const surface = await d.surface();
+console.log(`   couche vidéo : ${surface?.colorspace ?? "?"} ${surface?.pixelFormat ?? ""} EDR=${surface?.wantsEdr ?? "?"}`
+  + ` — video-target-params ${JSON.stringify(await d.prop("video-target-params/gamma", "string"))}`);
 check("lecteur : verre posé, surface transparente", shown.root && shown.surfaceVisible && shown.nativeViews > 0,
   `vues=${shown.nativeViews} groupes=${shown.groups} régions=${shown.regions.length} surface=${shown.surfaceVisible}`);
 for (const r of shown.regions) {
@@ -80,6 +93,10 @@ await cdp.eval("history.back()");
 await d.waitFor(async () => !(await d.path()).startsWith("/watch/"), 8000);
 const out = await d.waitFor(async () => { const s = await snapshot(); return !s.root && !s.surfaceVisible ? s : null; }, 8000);
 check("sortie : verre retiré, surface opaque", !!out, JSON.stringify(out ?? await snapshot()).slice(0, 160));
+const freed = await d.waitFor(async () => (await snapshot()).liveViews === 0, 4000);
+const layersAfter = String(await d.layers());
+check("aucune fuite : 0 vue du verre vivante, plus de couche z 5", freed && !/ z=5 /.test(layersAfter),
+  `vues vivantes ${(await snapshot()).liveViews}`);
 
 const failed = d.results.filter((r) => !r.ok).length;
 console.log(`\n${d.results.length - failed}/${d.results.length} vérifications`);
