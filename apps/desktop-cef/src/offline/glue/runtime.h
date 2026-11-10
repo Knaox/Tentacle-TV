@@ -11,6 +11,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "offline/core/paths.h"
 #include "offline/core/sqlite.h"
 
 namespace tentacle::offline {
@@ -30,6 +31,10 @@ struct Runtime {
   void closeDb();
 
   std::filesystem::path avatarsDir() const { return userData / "avatars"; }
+  /// La racine de stockage effective (relue en base une fois, puis gardée : `paths.ts`).
+  Volume volume();
+  /// « Quelque chose a changé » : la page relit ses listes.
+  void notifyChanged() const;
 
  private:
   std::unique_ptr<Database> database_;

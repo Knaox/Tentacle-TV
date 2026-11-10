@@ -21,6 +21,12 @@ void Runtime::closeDb() {
   database_.reset();
 }
 
+Volume Runtime::volume() { return resolveRoot(db(), userData); }
+
+void Runtime::notifyChanged() const {
+  if (emit) emit("downloads://changed", nullptr);
+}
+
 Runtime& runtime() {
   static Runtime instance;
   return instance;

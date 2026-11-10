@@ -5,6 +5,7 @@
 #include "app/app.h"
 #include "offline/core/utf8_path.h"
 #include "offline/glue/channels.h"
+#include "offline/glue/local_scheme.h"
 #include "offline/glue/offline_thread.h"
 #include "offline/glue/runtime.h"
 #include "offline/glue/user_data.h"
@@ -27,6 +28,15 @@ void installInShell(bridge::Registry& registry, const AppContext& ctx) {
     };
   });
   registerSessionChannels(registry);
+  // Stockage et lecture AVANT la liste : c'est `downloads_list` qui fait apparaître la
+  // section côté page (ordre d'Electron ; ici les capacités sont figées d'un coup).
+  registerStorageChannels(registry);
+  registerPlaybackChannels(registry);
+  registerMusicListChannels(registry);
+  registerListChannels(registry);
+  registry.event("downloads://progress");
+  registry.event("downloads://changed");
+  serveLocalScheme();
   std::fprintf(stderr, "[offline] dossier de données : %s\n", pathToUtf8(userData).c_str());
 }
 
