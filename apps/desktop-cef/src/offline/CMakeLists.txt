@@ -38,6 +38,7 @@ add_library(tentacle_offline_core STATIC
   core/paths.cpp
   core/playback.cpp
   core/queue.cpp
+  core/reconcile.cpp
   core/schema.cpp
   core/session_cache.cpp
   core/snapshot.cpp
@@ -70,6 +71,7 @@ add_executable(tentacle_offline_tests
   tests/engine_tests.cpp
   tests/library_tests.cpp
   tests/main.cpp
+  tests/reconcile_tests.cpp
   tests/schema_tests.cpp
   tests/session_tests.cpp
   tests/store_tests.cpp

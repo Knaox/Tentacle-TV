@@ -10,6 +10,9 @@
  * vers « vu » arme l'auto-suppression comme une lecture, l'inverse la lève.
  *
  * Jamais de ligne de file créée ici : ce sont des faits du serveur.
+ *
+ * Le bureau passe par `reconcilePlayback` : la page lit le serveur, la
+ * coquille (Electron, CEF) applique — même règle que le téléphone.
  */
 
 import type { DatabaseHandle } from "./adapters";
@@ -113,6 +116,10 @@ export function applyServerUserData(
       if (local === null || entry.lastPlayedAtMs > local.updatedAt) {
         next = { positionTicks: entry.played ? 0 : entry.positionTicks, played: entry.played, updatedAt: entry.lastPlayedAtMs };
       }
+    } else if (entry.played && local === null) {
+      // « Vu » sans date (état importé d'un autre serveur, d'un greffon) : rien
+      // ne le date, mais l'appareil n'a aucun avis à lui opposer.
+      next = { positionTicks: 0, played: true, updatedAt: nowMs };
     } else if (!entry.played && entry.positionTicks === 0 && local !== null && local.played && !options.pendingItemIds.has(entry.itemId)) {
       // « Marquer non vu » sur le web : Jellyfin annule la date.
       next = { positionTicks: 0, played: false, updatedAt: nowMs };
@@ -127,6 +134,21 @@ export function applyServerUserData(
     changed.push(entry.itemId);
   }
   return changed;
+}
+
+/**
+ * La commande du bureau (`downloads_playback_reconcile`) : les faits du
+ * serveur tels que la page les a lus, et les titres dont un rapport attend
+ * encore. Rend les items modifiés.
+ */
+export function reconcilePlayback(
+  db: DatabaseHandle,
+  userId: string,
+  entries: readonly ServerUserData[],
+  pendingItemIds: readonly string[],
+  nowMs: number,
+): string[] {
+  return applyServerUserData(db, userId, entries, nowMs, { pendingItemIds: new Set(pendingItemIds) });
 }
 
 /**
