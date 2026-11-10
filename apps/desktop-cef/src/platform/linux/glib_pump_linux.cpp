@@ -6,6 +6,9 @@
 #include <unistd.h>
 
 #include <condition_variable>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <cstdint>
 #include <mutex>
 #include <thread>
@@ -61,6 +64,12 @@ void watch() {
       if (g->quit) return;
     }
     // Interrompu sans rien de prêt : un nouvel ensemble est armé, on y retourne.
+    if (ready && std::getenv("TENTACLE_PUMP_TRACE")) {
+      std::string why = r == 0 ? "délai " + std::to_string(timeout) + " ms" : "fd";
+      for (size_t i = 0; i + 1 < p.size(); ++i)
+        if (p[i].revents) why += " " + std::to_string(p[i].fd) + ":" + std::to_string(p[i].revents);
+      std::fprintf(stderr, "[glib] réveil (%s) sur %zu fd\n", why.c_str(), p.size() - 1);
+    }
     if (ready) g->wake();
   }
 }
@@ -103,7 +112,11 @@ void armGlib() {
   g->prepared = true;
   std::lock_guard lk(g->m);
   g->armedFds.assign(g->fds.begin(), g->fds.begin() + n);
-  g->timeoutMs = timeout;
+  // La source de travail de MessagePumpGlib se dit TOUJOURS prête (délai 0) : en pompe externe,
+  // c'est CefDoMessageLoopWork qui exécute les tâches, pas sa dispatch (mesuré : 13 800 réveils
+  // par seconde au repos). Le guetteur n'attend donc que les descripteurs — dont le tube de
+  // réveil de Chromium ; les délais de CEF passent par OnScheduleMessagePumpWork (minuteur SDL).
+  g->timeoutMs = timeout == 0 ? -1 : timeout;
   g->armed = true;
   if (g->polling) {
     const uint64_t one = 1;
