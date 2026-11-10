@@ -244,3 +244,39 @@ livrés et du client LG. On y pose un contrôle nouveau AVANT de le propager.
 - **Pas touché** : les applications natives. `packages/shared/src/theme` et les palettes de `packages/theme` (mobile),
   `DEFAULT_*_TOKENS` (Apple TV, Android TV) gardent leurs valeurs — seuls les NOMS nouveaux y sont entrés. Le client
   LG, qui compile `apps/web`, porte la nouvelle peau avec la police de la dalle.
+
+## 10. Les écrans (vague 2) — un labo et un banc par axe
+
+Chaque famille d'écrans a été refaite sur le socle par un axe, avec son LABO (`apps/web/src/dev/<axe>Lab/`, monté par
+`dev/devLabRoutes.tsx`, absent des paquets livrés et du client LG) et son BANC de capture (`apps/web/bench/<axe>/`,
+faux serveur, Chrome sans tête). Aucun serveur n'était joignable pendant le chantier : c'est sur ces labos que tout a
+été vu. On y regarde un écran AVANT et APRÈS l'avoir retouché.
+
+| Axe | Labo | Banc (depuis `apps/web`) | Ce qu'il couvre |
+|---|---|---|---|
+| accueil | `/dev/accueil` | `node bench/accueil/capture.mjs <dossier>` (+ `return.mjs`) | barre du haut, bannière, rangées, cartes, avis, palette de recherche, menus |
+| fiches | `/dev/fiches/*` | `node bench/fiches/capture.mjs <dossier>` | bibliothèques et filtres, fiche, recherche, personne, Ma liste, Mes favoris |
+| hors ligne | `/dev/hors-ligne/*` | `node bench/hors-ligne/capture.mjs <dossier>` | feuille, boutons, lot de la file, « Sur cet appareil », fiches locales |
+| lecteur | `/dev/lecteur` | `pnpm --filter @tentacle-tv/web bench:lecteur <dossier>`, `bench:update-lock` | habillage, encarts, PiP, mise à jour, Watch Together, nouveautés |
+| réglages | `/dev/reglages` | `node bench/reglages/capture.mjs <dossier>` | réglages, administration, connexion, « Qui regarde ? », assistant, aide |
+| Octave | `/dev/octave` | `node bench/octave/capture.mjs` | coquille, vues, file, lecteur du bas, plein écran |
+
+Ce que l'intégration a recousu entre les axes, et qu'un écran nouveau doit respecter :
+
+- **Le focus clavier ne change pas la forme d'un contrôle** : le rayon de `:focus-visible` (base) est en `:where`, un
+  `.field` porte son seul anneau (son ombre).
+- **La teinte franche posée sur une image** est constante entre les thèmes et n'a qu'une source :
+  `components/cards/onMedia.ts` (en attendant un jeton `--on-media-accent`). Jamais `--accent` ni `--cta-primary-*`
+  sur une image : ils s'inversent en thème clair.
+- **Une bannière jumelle suit l'originale** : `downloads/home/OfflineBillboard*` reprend l'ancrage et les gestes de
+  `components/hero/HeroBillboard` — les deux se retouchent ensemble.
+- **Toute lecture se met en pause sous le verrou de mise à jour** (`useUpdateLockPause`) : les deux lecteurs vidéo
+  et Octave. Un lecteur nouveau le monte.
+- **Un groupe de réglages posé dans une page de Tentacle** passe par `components/settings/SettingsCard`, pas par
+  `SettingsSection` (Octave compris).
+
+Restes connus à l'intégration : `App.tsx` dépasse encore 300 lignes ; sous le verre natif (macOS 26), les feuilles
+`lgPageButtons.css` et `lgSurfaceAdhoc.css` visent des utilitaires que `.btn` remplace — rendu jamais vu sur un Mac ;
+le jumeau de Vigie (`PosterHover.tsx`, dépôt Tentacle-Plugin-Seer) n'a pas reçu la nouvelle peau du plateau ; le
+client LG garde l'ancien libellé de « Appliquer à cette série » ; le mobile et la TV envoient encore saison puis série
+à `/resolve`.
