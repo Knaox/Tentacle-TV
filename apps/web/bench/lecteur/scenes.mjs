@@ -43,6 +43,8 @@ export const SCENES = [
   { name: "maj-redemarrage", query: "vue=maj&etat=redemarrage", widths: [[1440, 810]], settle: 700 },
   { name: "maj-erreur", query: "vue=maj&etat=erreur", themes: BOTH, settle: 700 },
   { name: "maj-appstore", query: "vue=maj&etat=appstore", widths: [[1440, 810]], settle: 700 },
+  { name: "nouveautes", query: "vue=nouveautes", themes: BOTH, settle: 1500 },
+  { name: "nouveautes-1-40", query: "vue=nouveautes&version=1.40.0", widths: [[1440, 810]], settle: 1500 },
   // Watch Together, séance factice.
   { name: "wt-panneau", query: "vue=wt&etat=panneau", themes: BOTH, widths: [[1024, 640]] },
   { name: "wt-panneau-groupe", query: "vue=wt&etat=panneau-groupe", themes: BOTH, widths: [[1024, 640]] },

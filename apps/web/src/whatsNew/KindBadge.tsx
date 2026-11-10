@@ -7,15 +7,17 @@ const KIND_KEY: Record<WhatsNewKind, string> = {
   fixed: "whatsNew:kindFixed",
 };
 
+// Des puces du socle : la teinte franche pour ce qui est NOUVEAU, l'encre pour le reste —
+// plus de violet et de rose de marque pour distinguer trois sortes de lignes.
 const KIND_STYLE: Record<WhatsNewKind, string> = {
-  new: "border-[rgba(var(--brand-rgb),0.5)] bg-[var(--brand-soft)] text-[var(--brand)]",
-  improved: "border-[rgba(var(--brand-accent-rgb),0.45)] bg-[rgba(var(--brand-accent-rgb),0.12)] text-[var(--brand-accent)]",
-  fixed: "border-line-strong bg-fill-soft text-content-secondary",
+  new: "chip-accent",
+  improved: "text-content-primary",
+  fixed: "",
 };
 
 const KIND_DOT: Record<WhatsNewKind, string> = {
-  new: "bg-[var(--brand)]",
-  improved: "bg-[var(--brand-accent)]",
+  new: "bg-accent",
+  improved: "bg-content-secondary",
   fixed: "bg-content-quaternary",
 };
 
@@ -33,7 +35,7 @@ export function KindBadge({ kind, compact = false }: { kind: WhatsNewKind; compa
   }
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${KIND_STYLE[kind]}`}
+      className={`chip h-[22px] text-[11px] uppercase tracking-wide ${KIND_STYLE[kind]}`}
     >
       {label}
     </span>

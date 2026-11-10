@@ -19,6 +19,7 @@ import { LabPip } from "./labPip";
 import { LabPlayerDesktop } from "./labPlayerDesktop";
 import { LabScreens } from "./labScreens";
 import { LabUpdate } from "./labUpdate";
+import { LabWhatsNew } from "./labWhatsNew";
 import { LabWt } from "./labWt";
 import { LabPlayerWeb } from "./labPlayerWeb";
 
@@ -30,6 +31,7 @@ const VIEWS: Record<string, ComponentType> = {
   pip: LabPip,
   maj: LabUpdate,
   wt: LabWt,
+  nouveautes: LabWhatsNew,
 };
 
 const IDLE = labWtContext();
