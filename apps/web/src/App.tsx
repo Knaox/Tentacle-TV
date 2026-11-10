@@ -40,6 +40,7 @@ import { RECO_REFINE_PATH } from "./lib/recoSections";
 import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
 import { webPluginRoutes } from "./hooks/pluginNavPages";
 import { DevGlassLab } from "./dev/glassLab/devRoute";
+import { DevSocleLab } from "./dev/socleLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -152,6 +153,8 @@ export function App() {
           {/* Protected — immersive. Avec le PiP, `PlayerStage` rend le lecteur hors des routes. */}
           <Route path="/watch/:itemId" element={guard(playerOnStage ? <></> : <Watch />)} />
           {DevGlassLab ? <Route path="/dev/verre" element={guard(<DevGlassLab />)} /> : null}
+          {/* Le labo du socle : sans garde — il ne lit aucune donnée (paquets de développement seulement). */}
+          {DevSocleLab ? <Route path="/dev/socle" element={<DevSocleLab />} /> : null}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
