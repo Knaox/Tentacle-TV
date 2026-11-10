@@ -11,6 +11,10 @@ embarquent le lecteur YouTube et ne passent pas par ce chemin — sauf l'aperçu
 au survol des cartes (web et bureau, 2026-10-14), qui lit le relais : voir
 « Aperçu au survol ».
 
+Le bureau CEF (Chromium sans H.264 ni AAC) reçoit du VP9 + Opus : voir « Sans
+H.264 ni AAC — le bureau CEF ». L'aperçu ne part que sur l'IMAGE d'une carte,
+jamais sous un bouton ni sur sa légende (`components/cards/preview/usePreviewPointer.ts`).
+
 ## Ce qui se passait
 
 ### Pas un plantage de l'app : un échec de lecture
@@ -893,6 +897,107 @@ zone.
   voisines (US D988,338 ; D1,001,142 ; D1,055,965), l'antériorité existe (Prime
   Video 2022, Top Shelf d'Apple) ; nos choix — ombre seule, carte au retrait,
   bannière à une cible, nos proportions — restent les nôtres.
+
+## Sans H.264 ni AAC — le bureau CEF (10/11, serveur 1.41.0)
+
+Le bureau CEF charge le Chromium des binaires publics de CEF, construit SANS
+les codecs propriétaires. Mesuré dans la coquille (CEF 156, Linux — les mêmes
+binaires sur macOS et Windows), `MediaSource.isTypeSupported` :
+
+| Type | Réponse |
+|---|---|
+| `video/mp4; codecs="avc1.640028"` (H.264) | **faux** |
+| `audio/mp4; codecs="mp4a.40.2"` (AAC) | **faux** |
+| `video/mp4; codecs="vp09.00.40.08"` (VP9 en MP4) | vrai |
+| `video/mp4; codecs="av01.0.08M.08"` (AV1) | vrai |
+| `audio/mp4; codecs="opus"`, `audio/webm; codecs="opus"` | vrai |
+| `audio/mpeg` (MP3), FLAC, Vorbis | vrai |
+| HEVC, AC-3, E-AC-3 | faux |
+
+Or le relais ne servait que du H.264 + AAC. Sous CEF, hls.js refusait le maître
+(`manifestIncompatibleCodecsError`, fatale), la machine de l'aperçu concluait
+« la vidéo a lâché » et ignorait le TITRE dix minutes — pour une cause qui était
+l'appareil ; le lecteur de la fiche échouait de même sur chaque vidéo.
+
+### Ce que YouTube fournit (relevé du 10/11, yt-dlp 2026.10.21, `visionos`)
+
+- Le maître HLS porte, à côté du H.264, des **variantes VP9** (`vp09.00.xx.08`,
+  MP4 fragmenté, 144p à 1080p) — mais son audio n'est QUE de l'AAC (groupes
+  233 / 234). Aucune variante AV1 dans le maître.
+- L'**Opus** existe en fichiers WebM à part (formats 249, 250, 251 ; 48 à
+  125 kb/s), servis par plages, indexés EN TÊTE (les Cues dans le premier Ko),
+  une grappe toutes les dix secondes ; avec leurs variantes « DRC » et, sur une
+  vidéo doublée, une piste par langue marquée dans l'URL (`xtags=acont%3D…`).
+
+### Le flux libre : VP9 du maître + Opus réemballé
+
+**Le client DÉCLARE ce que son lecteur décode, la règle décide**
+(`packages/shared/src/trailers/trailerCodecs.ts`, miroir backend) : `dec=vp9,opus`
+sur `/preview`, `/preview/warm` (corps `decodes`), `/resolve` et `/prepare`.
+Un client qui lit le H.264 et l'AAC n'écrit RIEN — ses requêtes, leurs réponses
+et leurs caches sont ceux d'avant, à l'octet ; les téléviseurs et le mobile ne
+déclarent rien. Le serveur ne sert le flux libre que s'il déclare
+`trailers.openCodecs` ; le client ne le demande qu'à lui. Face à un serveur qui
+ne sait pas : aucun aperçu, aucune requête, aucune erreur — et la fiche garde
+la modale d'avant (lecteur officiel de YouTube), jamais un lecteur complet qui
+échouerait sur tout.
+
+- **Une autre entrée du relais pour la même vidéo** (`o:<id>`, `videoRef.ts`) :
+  son maître ne garde que le VP9 (`parseMaster`, `open`), ses lignes disent
+  `CODECS="vp09…,opus"`, et son audio est UNE piste synthétique
+  (`p/opus.m3u8`). Jetons, listes, reprises, lecture d'avance du départ,
+  mémoire durable, garde-fous de YouTube : ceux du H.264, inchangés. Une
+  extraction dit les deux flux (`trailerSource.ts` → `open`) : passer de l'un
+  à l'autre ne redemande rien à YouTube (`heldEntry`).
+- **L'Opus est RÉEMBALLÉ, jamais réencodé** (`services/trailers/open/`) : la
+  tête du WebM lue une fois (64 Ko), sa liste HLS (un segment par grappe), et
+  chaque segment = la plage d'octets de sa grappe lue chez googlevideo, ses
+  paquets recopiés en MP4 fragmenté (`Opus` + `dOps`, durées lues dans le TOC).
+  Aucun outil de plus dans l'image — ni ffmpeg, ni rien.
+- **La règle des doublages tient** (`chooseOpusTrack`) : un doublage HUMAIN
+  dans la langue du serveur, sinon l'originale ; jamais une voix de synthèse ni
+  l'audiodescription, jamais une piste DRC — et RIEN plutôt qu'une autre langue.
+- **Ce qui n'a pas de flux libre** : une vidéo Dailymotion (AlloCiné : H.264
+  seul) et une vidéo sans VP9 ni Opus (« pour enfants » : MP4 seul). La
+  candidate suivante a son tour ; un titre qui n'a qu'elles n'a pas d'aperçu
+  sous CEF, et la fiche passe à la bande-annonce suivante puis au lecteur
+  officiel. Les aperçus de **Vigie** (dépôt à part, son propre bundle) ne
+  déclarent rien encore : sous CEF ils restent muets tant que Vigie n'écrit
+  pas `dec=`.
+
+### Côté client (web, bureau)
+
+`trailerPreview/previewDecode.ts` sonde `MediaSource.isTypeSupported` sur les
+types que le relais sert vraiment, et le déclare au client d'API
+(`declareTrailerDecodes`, au chargement). `useTrailerPreviewStream`,
+`usePreviewWarm` et `useFullTrailerPlayer` lisent `useTrailerDelivery()` :
+`h264`, `open`, ou `null` — rien à demander. Un lecteur qui ne décoderait
+aucun flux du relais : blocage `codec` de l'appareil (`previewEnvironment.ts`).
+Un refus de codecs constaté EN LECTURE (`onCodecRefused`) coupe les aperçus de
+la session et n'accuse plus le titre.
+
+### Mesuré
+
+Banc rejouable : `pnpm --filter @tentacle-tv/backend bench:trailers-open -- <ytId>…`
+(le vrai relais, YouTube réel, UNE extraction par vidéo), page chargée dans la
+coquille CEF (`--url=http://127.0.0.1:4391/`). Le 10/11, Bazzite, RTX, KWin
+virtuel :
+
+| | Avant | Après |
+|---|---|---|
+| Maître H.264 dans CEF | `manifestIncompatibleCodecsError`, rien ne joue | — |
+| Flux libre prêt (extraction + maître + listes + tête Opus) | — | 1,5 à 3,2 s à froid (extraction 1,3 à 2,7 s) |
+| Première image dans CEF (4 vidéos) | jamais | 0,41 à 0,79 s après la demande du maître |
+| Lecture 13 s puis saut à 95 s | — | 1080p, 0 image perdue, audio décodé, aucune erreur fatale |
+| Vidéo doublée (8 pistes Opus) | — | le doublage humain français retenu |
+| Vidéo « pour enfants » | — | pas de flux libre (attendu) |
+| Coût, VP9 décodé en logiciel, boîte de 640 × 360 | — | 4,7 % d'un cœur en 360p, 6,2 % en 720p, 9,7 % en 1080p (tous processus, 9800X3D) |
+
+NON mesuré : le GPU (le décodage est logiciel : rien au matériel, la
+composition est celle de toute `<video>`), une machine lente, macOS et
+Windows, et l'aperçu réel d'une carte dans l'app connectée sous CEF (pas de
+session ouvrable sur le banc : la chaîne est prouvée par morceaux — relais +
+lecteur dans CEF d'un côté, requêtes et portes par les tests de l'autre).
 
 ## Ce qui reste fragile, et comment le surveiller
 
