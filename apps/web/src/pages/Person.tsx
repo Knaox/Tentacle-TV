@@ -5,14 +5,14 @@ import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import type { SearchMediaItem } from "@tentacle-tv/shared";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { RowHeader } from "../components/rows/RowHeader";
-import { ArrowLeftIcon } from "../components/media/MediaDetailIcons";
 import { PosterGrid } from "../components/search/page/SearchSections";
 import { ExternalSections } from "../components/search/external/ExternalSections";
 import { PersonHero } from "../components/person/PersonHero";
 import { PersonBiography } from "../components/person/PersonBiography";
 import { FilmographyFilters } from "../components/person/FilmographyFilters";
 import { usePersonPage } from "../components/person/usePersonPage";
-import { GlassButton } from "../components/ui/glass/GlassButton";
+import { BackButton } from "../components/ui/BackButton";
+import { imageColorOf, type ImageBlurHashes } from "../lib/blurhashColor";
 
 /**
  * La page d'une personne (`/person/:personId`) — ouverte d'un clic sur un
@@ -41,7 +41,9 @@ function PersonView({ personId }: { personId: string }) {
 
   if (page.details.isError && !page.details.data) {
     return (
-      <div className="px-4 pt-24 md:px-12">
+      <div className="relative px-4 pt-24 md:px-12">
+        {/* Même en échec, on sort de la page par où l'on est venu. */}
+        <BackButton label={t("common:back")} className="absolute left-4 top-4 md:left-12 md:top-6" />
         <p className="mb-4 text-content-secondary">{t("media:personLoadError")}</p>
         <ContentErrorState onRetry={() => void page.details.refetch()} />
       </div>
@@ -50,24 +52,16 @@ function PersonView({ personId }: { personId: string }) {
 
   return (
     <div className="relative min-h-screen bg-surface-0 pb-20">
-      {/* Liquid Glass (mode natif) : le même Retour, à la même taille — seule sa
-          peau devient le verre de la maquette, au ton sombre (posé sur l'image). */}
-      <GlassButton
-        onClick={() => navigate(-1)}
-        aria-label={t("common:back")}
-        appearance={{ material: "pane", tone: "dark", level: "clear", shape: "capsule" }}
-        className="absolute left-4 top-4 z-20 flex items-center gap-2 px-4 py-2 text-sm md:left-12 md:top-6"
-        fallbackClassName="rounded-full border border-line-subtle bg-[var(--glass-tint)] text-content-secondary backdrop-blur-md transition-colors hover:text-content-primary"
-      >
-        <ArrowLeftIcon />
-        {t("common:back")}
-      </GlassButton>
+      {/* Le Retour du socle, à la même place qu'avant : une pilule d'encre thémée —
+          le voile du décor rend le coin haut gauche au fond de page, dans les deux thèmes. */}
+      <BackButton label={t("common:back")} className="absolute left-4 top-4 z-20 md:left-12 md:top-6" />
 
       {page.details.data ? (
         <PersonHero
           id={personId}
           name={name}
           imageTag={page.details.data.ImageTags?.Primary ?? null}
+          portraitColor={portraitColorOf(page.details.data)}
           life={page.life}
           roles={page.facets.roles.map((r) => r.role).filter((r) => r !== "Other")}
           backdrop={page.backdrop}
@@ -99,10 +93,10 @@ function PersonView({ personId }: { personId: string }) {
             )}
             {page.filmography.isPending && <GridSkeleton />}
             {page.filmography.data && page.entries.length === 0 && (
-              <p className="py-8 text-content-tertiary">{t("media:personLibraryEmpty")}</p>
+              <p className="ui-panel max-w-[65ch] px-5 py-4 text-sm text-content-secondary">{t("media:personLibraryEmpty")}</p>
             )}
             {page.filmography.data && page.entries.length > 0 && page.shown.length === 0 && (
-              <p className="py-8 text-content-tertiary">{t("media:personFilterEmpty")}</p>
+              <p className="ui-panel max-w-[65ch] px-5 py-4 text-sm text-content-secondary">{t("media:personFilterEmpty")}</p>
             )}
             {page.shown.length > 0 && <PosterGrid items={page.shown.map((e) => e.item)} onOpen={openItem} />}
           </div>
@@ -121,24 +115,22 @@ function PersonView({ personId }: { personId: string }) {
   );
 }
 
+/**
+ * La couleur d'attente du portrait : Jellyfin joint `ImageBlurHashes` à la fiche d'une
+ * personne, que le type partagé `PersonDetails` ne déclare pas.
+ */
+function portraitColorOf(details: { ImageTags?: Record<string, string> }): string | null {
+  const hashes = (details as { ImageBlurHashes?: ImageBlurHashes }).ImageBlurHashes;
+  return imageColorOf(hashes, "Primary", details.ImageTags?.Primary);
+}
+
 function LikeButton({ name, liked, pending, toggle }: { name: string; liked: boolean; pending: boolean; toggle: () => void }) {
   const { t } = useTranslation("media");
   const label = liked ? t("unlikeActor", { name }) : t("likeActor", { name });
   return (
-    <button
-      type="button"
-      aria-pressed={liked}
-      aria-label={label}
-      title={label}
-      disabled={pending}
-      onClick={toggle}
-      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors ${
-        liked
-          ? "border-transparent bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg"
-          : "border-line-strong bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
-      }`}
-    >
-      <Heart weight={liked ? "fill" : "regular"} size={18} aria-hidden />
+    // `aria-pressed` allume le rond à la teinte franche (`.icon-btn`) ; le cœur passe en plein.
+    <button type="button" aria-pressed={liked} aria-label={label} title={label} disabled={pending} onClick={toggle} className="icon-btn btn-soft">
+      <Heart weight={liked ? "fill" : "regular"} size={20} aria-hidden />
     </button>
   );
 }
@@ -146,11 +138,11 @@ function LikeButton({ name, liked, pending, toggle }: { name: string; liked: boo
 function HeroSkeleton() {
   return (
     <div aria-hidden className="flex flex-col gap-6 px-4 pt-24 sm:flex-row sm:items-end md:px-12 md:pt-[22vh]">
-      <div className="aspect-[2/3] w-36 rounded-[var(--radius-lg)] bg-fill-subtle sm:w-44 md:w-56" />
+      <div className="aspect-[2/3] w-36 rounded-tile bg-surface-2 sm:w-44 md:w-56" />
       <div className="flex-1 space-y-3 pb-1">
-        <div className="h-3 w-40 rounded bg-fill-subtle" />
-        <div className="h-10 w-2/3 max-w-md rounded bg-fill-subtle" />
-        <div className="h-3 w-56 rounded bg-fill-subtle" />
+        <div className="h-3 w-40 rounded-chip bg-surface-2" />
+        <div className="h-10 w-2/3 max-w-md rounded-field bg-surface-2" />
+        <div className="h-3 w-56 rounded-chip bg-surface-2" />
       </div>
     </div>
   );
@@ -159,7 +151,7 @@ function HeroSkeleton() {
 function GridSkeleton() {
   return (
     <div aria-hidden className="grid gap-x-4 gap-y-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
-      {Array.from({ length: 12 }, (_, i) => <div key={i} className="aspect-[2/3] rounded-md bg-fill-subtle" />)}
+      {Array.from({ length: 12 }, (_, i) => <div key={i} className="aspect-[2/3] rounded-card bg-surface-2" />)}
     </div>
   );
 }

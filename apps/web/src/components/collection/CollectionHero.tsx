@@ -1,12 +1,13 @@
-import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, heroBackdropUrl, resolveBackdropId } from "../hero/resolveBackdrop";
-import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { itemImageColor } from "../../lib/itemImageColor";
 import { HeroScrims } from "../hero/HeroScrims";
+import { BannerArt } from "../library/BannerArt";
+import { BannerHeading } from "../library/BannerHeading";
 
 interface CollectionHeroProps {
   title: string;
@@ -33,39 +34,26 @@ interface CollectionHeroProps {
  */
 export function CollectionHero({ title, kicker, items, subtitle }: CollectionHeroProps) {
   const client = useJellyfinClient();
-  const reduced = useReducedMotion();
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
 
   const featured = firstBackdropItem(items);
   const backdropId = featured ? resolveBackdropId(featured) : null;
   const { broken, reportFailure } = useBrokenImage(backdropId ?? undefined);
   const url = heroBackdropUrl(client, featured ?? undefined);
+  const tone = itemImageColor(featured, "Backdrop");
 
   if (!items || items.length === 0) return null;
 
   return (
     <section className="relative w-full" aria-label={title}>
       <div ref={boxRef} className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
-        <div className="absolute inset-0 bg-surface-0" />
+        {/* L'assise de l'image : sa couleur dès qu'on la connaît. En thème CLAIR, une encre sombre
+            en attendant — le titre posé dessus est blanc (`on-media`), et les voiles noirs sur le
+            papier donnaient un gris sale. `bg-surface-0` reste : la feuille du client LG la vise. */}
+        <div className="absolute inset-0 bg-surface-0 [[data-theme=light]_&]:bg-[#131315]" style={tone ? { backgroundColor: tone } : undefined} />
 
-        {url && (
-          <motion.img
-            key={backdropId}
-            src={url}
-            alt=""
-            draggable={false}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            /* `will-change-transform` comme les trois autres bannières : la
-               promotion en couche décide de la façon dont les voiles sont
-               composés par-dessus, et deux moteurs de générations différentes
-               n'y répondent pas pareil. */
-            className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
-            style={{ display: broken ? "none" : undefined }}
-            onError={reportFailure}
-          />
-        )}
+        {/* UN fondu sur la couleur de l'image ; déjà vue, elle est là d'emblée (`BannerArt`). */}
+        {url && <BannerArt key={backdropId} url={url} broken={broken} onError={reportFailure} />}
 
         {/* Raccord vers la page (jeton `--hero-page-fade`, `none` en sombre).
             Sans lui, en thème clair, l'assise noire du bas de l'image
@@ -103,42 +91,7 @@ export function CollectionHero({ title, kicker, items, subtitle }: CollectionHer
           de regard. */}
       <div className="h-[32vh] min-h-[220px] w-full md:h-[36vh]" aria-hidden />
 
-      <motion.div
-        className="absolute inset-x-0 bottom-[18%] z-10 px-4 sm:px-8 md:px-14"
-        variants={reduced ? undefined : textCascade}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div variants={reduced ? undefined : fadeUp} className="mb-3 flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="h-6 w-[3px] flex-shrink-0 rounded-full"
-            style={{
-              background: "linear-gradient(180deg, var(--brand-light), var(--brand-accent))",
-              boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
-            }}
-          />
-          <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-on-media-secondary">
-            {kicker}
-          </span>
-        </motion.div>
-
-        <motion.h1
-          variants={reduced ? undefined : fadeUp}
-          className="titre-bibliotheque font-bold text-on-media-primary drop-shadow-[0_3px_14px_var(--on-media-shadow)]"
-        >
-          {title}
-        </motion.h1>
-
-        {subtitle && (
-          <motion.p
-            variants={reduced ? undefined : fadeUp}
-            className="mt-2 text-sm font-medium text-on-media-secondary"
-          >
-            {subtitle}
-          </motion.p>
-        )}
-      </motion.div>
+      <BannerHeading kicker={kicker} title={title} subtitle={subtitle} />
     </section>
   );
 }

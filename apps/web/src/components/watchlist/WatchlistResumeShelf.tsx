@@ -43,10 +43,10 @@ export const WatchlistResumeShelf = memo(function WatchlistResumeShelf({
     >
       {/* Sous le panneau d'outils, sur la page : texte thémé. */}
       <div className="mb-3 flex items-baseline gap-3">
-        <h2 id="watchlist-resume-title" className="text-lg font-bold tracking-tight text-content-primary">
+        <h2 id="watchlist-resume-title" className="text-heading-2 text-content-primary">
           {t("resumeTitle")}
         </h2>
-        <span className="text-xs text-content-tertiary">{t("resumeHint")}</span>
+        <span className="text-[13px] text-content-tertiary">{t("resumeHint")}</span>
       </div>
       {/* La pièce de la mini-carte d'aperçu : ses voisines s'y écartent. */}
       <ul data-preview-room="row" className="scrollbar-hide -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 pt-3 md:-mx-8 md:scroll-px-8 md:px-8">

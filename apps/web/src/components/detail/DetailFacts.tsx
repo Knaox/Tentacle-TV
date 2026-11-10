@@ -42,7 +42,7 @@ export const DetailFacts = memo(function DetailFacts({ item, readOnly = false, l
     facts.push({
       key: "runtime",
       label: t("media:detailRuntime"),
-      value: time ? <>{runtime}<span className="text-content-quaternary"> · {t("media:detailEndsAt", { time })}</span></> : runtime,
+      value: time ? <>{runtime}<span className="tabular-nums text-content-tertiary"> · {t("media:detailEndsAt", { time })}</span></> : runtime,
     });
   }
 
@@ -65,14 +65,17 @@ export const DetailFacts = memo(function DetailFacts({ item, readOnly = false, l
   return (
     <section className="group/row" aria-label={t("media:detailsSection")}>
       <RowHeader title={t("media:detailsSection")} />
-      <dl className="row-gutter mt-4 grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {facts.map((f) => (
-          <div key={f.key} className="min-w-0">
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{f.label}</dt>
-            <dd className="mt-1 text-sm leading-relaxed text-content-secondary">{f.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* Un panneau du socle : une teinte, pas un liseré ; le surtitre nomme, la valeur se lit. */}
+      <div className="row-gutter mt-4">
+        <dl className="ui-panel grid grid-cols-1 gap-x-10 gap-y-5 p-5 sm:grid-cols-2 md:p-6 lg:grid-cols-3 xl:grid-cols-4">
+          {facts.map((f) => (
+            <div key={f.key} className="min-w-0">
+              <dt className="ui-eyebrow">{f.label}</dt>
+              <dd className="mt-1.5 text-sm leading-relaxed text-content-primary">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 });
@@ -85,7 +88,7 @@ function Links({ kind, names }: { kind: "genre" | "studio"; names: string[] }) {
         <span key={name}>
           <Link
             to={`/search?${new URLSearchParams({ [kind]: name }).toString()}`}
-            className="underline-offset-4 transition-colors hover:text-content-primary hover:underline"
+            className="underline decoration-[var(--border-strong)] underline-offset-4 transition-colors duration-hover hover:decoration-current"
           >
             {name}
           </Link>

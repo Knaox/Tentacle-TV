@@ -9,12 +9,13 @@ import { useItemsPerRow } from "../../hooks/useItemsPerRow";
 /** L'écart de la grille — celui de `CollectionGridBody` et de la bibliothèque. */
 const GAP = 16;
 
-/** Le bouton plein de l'état vide : l'appel principal, reconnu par le moteur de focus du téléviseur. */
-const CTA_PRIMARY =
-  "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover";
-/** La sortie secondaire : pastille neutre opaque, comme les filtres. */
-const CTA_SECONDARY =
-  "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-[color:var(--surface-2)] px-6 text-sm font-semibold text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors duration-150 hover:text-content-primary";
+/**
+ * Le bouton plein de l'état vide. `cta-primary` : marqueur sans style — le moteur de focus du
+ * client LG y reconnaît l'appel principal d'un écran (`focus/default.ts`).
+ */
+const CTA_PRIMARY = "btn btn-solid cta-primary";
+/** La sortie secondaire : la pilule neutre du socle. */
+const CTA_SECONDARY = "btn btn-soft";
 
 interface EmptyAction {
   label: string;
@@ -37,8 +38,8 @@ interface CollectionEmptyProps {
 /**
  * Une collection VIDE — jamais remplie, pas filtrée à zéro.
  *
- * Le cadre des états vides de la Bibliothèque (`EmptyFrame` : pastille
- * cerclée du dégradé de marque), un titre de page, la promesse, puis deux
+ * Le cadre des états vides de la Bibliothèque (`EmptyFrame` : une pastille
+ * d'icône à l'encre de carte), un titre de page, la promesse, puis deux
  * sorties. Ma liste et Mes favoris ne diffèrent plus que par leurs mots et
  * leur icône. Aucune animation : un état vide n'a rien à annoncer.
  */
@@ -47,8 +48,8 @@ export function CollectionEmpty({ icon, title, body, steps, primary, secondary, 
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-10 md:pt-16">
       <EmptyFrame icon={icon}>
         <div className="flex max-w-md flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-content-primary md:text-3xl">{title}</h1>
-          <p className="text-[15px] leading-relaxed text-content-tertiary">{body}</p>
+          <h1 className="text-heading-1 text-content-primary md:text-display-3">{title}</h1>
+          <p className="text-[15px] leading-relaxed text-content-secondary">{body}</p>
         </div>
 
         {steps && (
@@ -56,13 +57,15 @@ export function CollectionEmpty({ icon, title, body, steps, primary, secondary, 
             {steps.map(({ icon: Icon, label }, i) => (
               <li
                 key={label}
-                className="flex items-center gap-3 rounded-2xl bg-[color:var(--surface-1)] px-4 py-3 text-left ring-1 ring-line-subtle sm:flex-col sm:items-start sm:gap-2"
+                // Une tuile du socle (une teinte, pas un liseré) ; la pastille d'icône est neutre —
+                // une étape n'est pas un état actif.
+                className="ui-tile flex items-center gap-3 px-4 py-3 text-left sm:flex-col sm:items-start sm:gap-2"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[rgba(var(--brand-rgb),0.14)] text-[var(--brand-light)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-field bg-fill-soft text-content-secondary">
                   <Icon size={16} aria-hidden />
                 </span>
                 <span className="text-sm text-content-secondary">
-                  <span className="mr-1 font-semibold tabular-nums text-content-quaternary">{i + 1}.</span>
+                  <span className="mr-1 font-semibold tabular-nums text-content-tertiary">{i + 1}.</span>
                   {label}
                 </span>
               </li>
@@ -122,22 +125,23 @@ export function CollectionSkeleton({ view = "grid", label }: { view?: "grid" | "
       <div className="relative -mt-[56px] h-[32vh] min-h-[220px] w-full md:-mt-[68px] md:h-[36vh]">
         <div className="absolute inset-x-0 bottom-[18%] flex flex-col gap-3 px-4 sm:px-8 md:px-14">
           <div className="skeleton-shimmer h-3 w-32 rounded-full" />
-          <div className="skeleton-shimmer h-10 w-64 rounded-xl md:h-14 md:w-96" />
+          <div className="skeleton-shimmer h-10 w-64 rounded-card md:h-14 md:w-96" />
         </div>
       </div>
       <div className="relative -mt-10 px-4 pt-6 md:-mt-14 md:px-8">
-        <div aria-hidden className="mb-6 rounded-[var(--radius-xl)] bg-[color:var(--surface-1)] p-2.5 ring-1 ring-line-subtle md:p-3">
+        {/* Le panneau d'outils, à ses cotes (`LibraryToolbarPanel`) : rien ne saute à l'arrivée. */}
+        <div aria-hidden className="ui-panel mb-6 p-3 md:p-4">
           <div className="flex items-center justify-between gap-3">
-            <div className="skeleton-shimmer h-10 w-full max-w-xl rounded-full" />
+            <div className="skeleton-shimmer h-10 w-full max-w-md rounded-full" />
             <div className="skeleton-shimmer hidden h-8 w-64 rounded-full md:block" />
           </div>
-          <div className="my-2.5 border-t border-line-subtle md:my-3" />
+          <div className="my-3 border-t border-line-subtle" />
           <div className="skeleton-shimmer h-8 w-full max-w-2xl rounded-full" />
         </div>
         <div ref={gridRef}>
           {view === "list" ? (
             <div aria-hidden className="flex flex-col gap-2.5">
-              {Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton-shimmer h-[118px] rounded-2xl" />)}
+              {Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton-shimmer h-[118px] rounded-tile" />)}
             </div>
           ) : (
             <LibraryGridSkeleton columns={itemsPerRow} gap={GAP} />

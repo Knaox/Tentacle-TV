@@ -17,7 +17,7 @@ import { SeasonRows } from "./SeasonRows";
  * web) : une ligne par saison, dans l'ordre de l'extension (`titles.seasons`,
  * modèle `seasonPick`) — celles qu'on a disent « Dans la bibliothèque »,
  * celles déjà demandées leur état, les autres se cochent. « Demander N
- * saisons » au dégradé de la marque ; la réponse de l'extension se dit en
+ * saisons » est l'action principale neutre de la feuille ; la réponse de l'extension se dit en
  * toast, un refus sur place.
  *
  * Le clavier entre sur la première saison à cocher, une fois les saisons
@@ -108,19 +108,16 @@ export function SeasonRequestDialog({ target, open, onClose }: {
       <div className="flex flex-col gap-3 px-6 pb-5 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         {refusal && <p role="alert" className="text-sm text-[var(--status-error-fg)]">{refusal}</p>}
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition hover:bg-fill-medium"
-          >
+          <button type="button" onClick={onClose} className="btn btn-ghost">
             {t("common:cancel")}
           </button>
+          {/* L'action principale NEUTRE : le dégradé du logo ne sert qu'à lire et à mesurer. */}
           <button
             type="button"
             onClick={submit}
             disabled={disabled}
             aria-busy={sending || undefined}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-5 text-sm font-bold text-cta-brand-fg shadow-[0_2px_10px_rgba(var(--brand-rgb),0.45)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            className="btn btn-solid disabled:cursor-not-allowed"
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus weight="bold" className="h-4 w-4" aria-hidden />}
             {pick.submitLabel ?? t("seasonsSubmitIdle")}

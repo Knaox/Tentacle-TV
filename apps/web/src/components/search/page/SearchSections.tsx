@@ -17,6 +17,7 @@ import { SearchEpisodeRow } from "./SearchEpisodeRow";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar } from "../SearchThumbs";
 import { displayFacet } from "../omnibox/OmniboxChips";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 
 export function Section({ title, count, onSeeAll, children }: {
   title: string;
@@ -27,14 +28,15 @@ export function Section({ title, count, onSeeAll, children }: {
   const { t } = useTranslation("search");
   return (
     <section className="mt-10">
-      <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="text-xl font-bold tracking-tight text-content-primary">
+      <div className="mb-3 flex min-h-8 items-center justify-between gap-4">
+        <h2 className="text-heading-2 text-content-primary">
           {title}
-          {count !== undefined && <span className="ml-2 text-base font-medium tabular-nums text-content-quaternary">{count}</span>}
+          {count !== undefined && <span className="ml-2 font-sans text-sm font-medium tabular-nums tracking-normal text-content-tertiary">{count}</span>}
         </h2>
         {onSeeAll && (
-          <button type="button" onClick={onSeeAll} className="text-sm font-medium text-[var(--brand-light)] transition-opacity hover:opacity-80">
-            {t("seeAll")} →
+          <button type="button" onClick={onSeeAll} className="btn btn-ghost btn-sm -mr-2">
+            {t("seeAll")}
+            <CaretRightIcon aria-hidden size={14} weight="bold" />
           </button>
         )}
       </div>
@@ -65,13 +67,13 @@ export const PeopleStrip = memo(function PeopleStrip({ people, terms, onOpen }: 
 }) {
   const { t } = useTranslation("search");
   return (
-    <ul className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+    <ul className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
       {people.map((person) => (
         <li key={person.id}>
           <button
             type="button"
             onClick={() => onOpen(person)}
-            className="flex w-full items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint p-3 text-left transition-colors hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="ui-tile flex w-full items-center gap-3 p-3 text-left hover:bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             <PersonAvatar person={person} size={56} />
             <span className="min-w-0">
@@ -116,11 +118,11 @@ export const FacetChips = memo(function FacetChips({ genres, studios, onOpen }: 
           key={`${kind}:${facet.name}`}
           type="button"
           onClick={() => onOpen(kind, facet.name)}
-          className="inline-flex items-center gap-2 rounded-full border border-line-subtle bg-fill-subtle px-4 py-2 text-sm text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
+          className="btn btn-soft"
         >
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-content-quaternary">{t(kind)}</span>
-          <span className="font-medium">{displayFacet(facet.name)}</span>
-          <span className="tabular-nums text-content-quaternary">{facet.count}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-content-tertiary">{t(kind)}</span>
+          <span>{displayFacet(facet.name)}</span>
+          <span className="font-medium tabular-nums text-content-tertiary">{facet.count}</span>
         </button>
       ))}
     </div>

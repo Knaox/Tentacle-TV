@@ -23,6 +23,7 @@ import { useDetailArrival } from "../components/detail/detailArrival";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
+import { itemImageColor } from "../lib/itemImageColor";
 import { textCascadeArrival } from "../theme/motion";
 import { GlassAmbient } from "../theme/glass";
 
@@ -190,7 +191,7 @@ export function MediaDetail() {
       <>
         {/* L'attente, ou l'échec : une requête en erreur ne tourne plus à vide. */}
         <div style={pageStyle}>
-          <DetailPlaceholder quiet={holding} failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
+          <DetailPlaceholder quiet={holding} tone={itemImageColor(item, "Backdrop")} failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
         </div>
         {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
             lui ici, un aller-retour spinner → fiche crevait l'animation. */}

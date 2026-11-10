@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion, useReducedMotion } from "framer-motion";
+import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { AmbilightLayer } from "../hero/AmbilightLayer";
@@ -10,6 +10,9 @@ import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { DetailStageFallback } from "./DetailArtworkFallback";
 import { GlassButton } from "../ui/glass/GlassButton";
+import { BackButton } from "../ui/BackButton";
+import { useLiquidGlassMode } from "../../theme/glass";
+import { itemImageColor } from "../../lib/itemImageColor";
 import { useLateReveal } from "./detailArrival";
 import {
   DETAIL_STAGE_BOX,
@@ -44,16 +47,6 @@ interface DetailStageProps {
 }
 
 /**
- * Durée de la mise en place du décor : UNE fois, à l'arrivée, puis l'image ne
- * bouge plus. L'ancien ken burns tournait en boucle (32 s aller-retour) tant
- * que la bannière était visible ; la consigne de cette refonte est qu'aucune
- * image plein cadre ne soit retravaillée en permanence. La respiration est
- * gardée, sous forme d'un seul dézoom lent qui se termine.
- */
-const SETTLE_S = 1.6;
-const SETTLE_EASE = [0.16, 1, 0.3, 1] as const;
-
-/**
  * La scène de la fiche : le décor sur tout le premier écran, le bloc titre
  * posé en bas à gauche, le retour et « Voir les images » dans les coins hauts.
  *
@@ -63,9 +56,14 @@ const SETTLE_EASE = [0.16, 1, 0.3, 1] as const;
  * porte le contenu (`justify-end`). Aucun `overflow-hidden` sur l'ensemble :
  * la lueur et le débord en dépendent.
  *
- * Tout ce qui est posé ici l'est sur le décor : jetons `on-media` dans les deux
- * thèmes. Un seul `backdrop-filter` par contrôle de coin — ils sont petits et
- * floutent réellement une image vivante.
+ * Le décor ne se « met plus en place » : sa COULEUR d'abord (le blurhash de l'image, peint sous
+ * elle), puis l'image — là d'emblée si la fiche l'attendait décodée (`useDetailArrival`), en UN
+ * fondu de 300 ms si elle arrive après (`useLateReveal`). Plus de fondu de 0,6 s ni de dézoom
+ * de 1,6 s rejoués à chaque fiche (refonte de nov. 2026).
+ *
+ * Tout ce qui est posé ici l'est sur le décor : jetons `on-media` dans les deux thèmes. Les
+ * contrôles de coin sont les pilules du socle (`.btn-on-media`), sans flou ; sous le verre
+ * natif, les mêmes formes passent par la primitive.
  */
 export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, children, onBack, backLabel, glowUrl }: DetailStageProps) {
   const navigate = useNavigate();
@@ -75,31 +73,31 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
   // revenir pour qu'on ne surprenne jamais son fondu.
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
   const { broken, reportFailure } = useBrokenImage(backdropUrl);
-  // Mouvement réduit : le décor arrive en fondu, sans dézoom.
-  const reduced = useReducedMotion();
   const late = useLateReveal(backdropUrl && !broken ? backdropUrl : null);
+  const native = useLiquidGlassMode() === "native";
+  // La couleur moyenne du décor (un épisode prend celle que sa série lui prête, s'il en a une).
+  const tone = itemImageColor(item, "Backdrop");
 
   return (
     <section className={`relative flex w-full flex-col justify-end ${DETAIL_STAGE_MIN_H}`} aria-label={item.Name}>
       {/* `detail-stage-box` : marqueur de la boîte image (sans style). */}
       <div ref={boxRef} className={`detail-stage-box pointer-events-none absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
         {backdropUrl && !broken && (
-          // Arrivé après l'entrée (réseau lent) : le décor fond, il ne surgit pas.
-          <div className="absolute inset-0" style={late.style}>
-            <motion.img
-              src={backdropUrl}
-              alt=""
-              draggable={false}
-              data-detail-art="backdrop"
-              // `transform` entier, jamais `scale` seul : framer ne confie au compositeur que celui-là.
-              initial={instant ? false : reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(1.06)" }}
-              animate={{ opacity: 1, transform: "scale(1)" }}
-              transition={{ opacity: { duration: 0.6, ease: "easeOut" }, transform: { duration: SETTLE_S, ease: SETTLE_EASE } }}
-              className="absolute inset-0 h-full w-full object-cover"
-              style={{ objectPosition: DETAIL_STAGE_FOCUS }}
-              onLoad={late.onLoad}
-              onError={() => { late.onError(); reportFailure(); }}
-            />
+          // La couleur de l'image dessous ; l'image fond dessus si elle arrive après l'entrée.
+          // `instant` n'a plus rien à couper : aucune mise en place ne se joue.
+          <div className="absolute inset-0" style={tone ? { backgroundColor: tone } : undefined} data-detail-instant={instant || undefined}>
+            <div className="absolute inset-0" style={late.style}>
+              <img
+                src={backdropUrl}
+                alt=""
+                draggable={false}
+                data-detail-art="backdrop"
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ objectPosition: DETAIL_STAGE_FOCUS }}
+                onLoad={late.onLoad}
+                onError={() => { late.onError(); reportFailure(); }}
+              />
+            </div>
           </div>
         )}
         {/* Pas de décor (titre sans images, ou image en échec) : le repli de
@@ -128,9 +126,15 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
       ))}
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-4 md:px-8 md:pt-8">
-        <StageButton onClick={onBack ?? (() => navigate(-1))} label={backLabel ?? t("common:back")} icon={<ArrowLeftIcon />} showLabel />
+        {native ? (
+          <StageButton onClick={onBack ?? (() => navigate(-1))} label={backLabel ?? t("common:back")} icon={<ArrowLeftIcon />} showLabel />
+        ) : (
+          // Le Retour du socle : il revient d'où l'on vient, et mène à l'accueil si la fiche a
+          // été ouverte par un lien (rien derrière).
+          <BackButton onMedia label={backLabel ?? t("common:back")} onBack={onBack} />
+        )}
         {onOpenImages && (
-          <StageButton onClick={onOpenImages} label={t("media:detailViewImages")} icon={<ImagesIcon />} />
+          <StageButton onClick={onOpenImages} label={t("media:detailViewImages")} icon={<CornersOutIcon size={20} aria-hidden />} />
         )}
       </div>
 
@@ -145,31 +149,20 @@ function StageButton({ onClick, label, icon, showLabel = false }: {
   icon: ReactNode;
   showLabel?: boolean;
 }) {
-  // Verre natif : un rond (ou une capsule avec libellé) de verre clair, glyphes
-  // adaptés au décor. Ailleurs : blanc plein sur un verre à 0,55 — sur un
-  // décor clair, le blanc à 80 % sur 0,42 tombait à 4,1:1 (mesuré au banc).
+  // Verre natif : un rond (ou une capsule avec libellé) de verre clair, glyphes adaptés au
+  // décor. Ailleurs : la pilule sur image du socle — la primitive retire `fallbackClassName`
+  // en natif et garde la mise en page.
   return (
     <GlassButton
       onClick={onClick}
       aria-label={label}
       title={label}
       appearance={{ material: showLabel ? "pane" : "bead", tone: "dark", level: "clear", shape: showLabel ? "capsule" : "circle" }}
-      className={`flex h-11 items-center gap-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
-        showLabel ? "px-4" : "w-11 justify-center"
-      }`}
-      fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-on-media-primary backdrop-blur-md transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.7)]"
+      className={showLabel ? "flex h-10 items-center gap-2 px-4 text-sm font-semibold" : "flex h-10 w-10 items-center justify-center"}
+      fallbackClassName={showLabel ? "btn btn-on-media" : "icon-btn btn-on-media"}
     >
       {icon}
       {showLabel && <span>{label}</span>}
     </GlassButton>
-  );
-}
-
-function ImagesIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
-      <path d="M8 15l2.5-3 2 2.2L15 11l2 4H8z" />
-    </svg>
   );
 }

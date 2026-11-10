@@ -1,19 +1,32 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, useReducedMotion } from "framer-motion";
-import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useLatestItems, useLibraryCatalogCounts, useRandomLibraryBackdrop, type CatalogFilters } from "@tentacle-tv/api-client";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { heroBackdropUrl, libraryBannerItem, resolveBackdropId } from "../hero/resolveBackdrop";
-import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
-import { isImageReady, markImageSeen } from "../../lib/seenImages";
+import { itemImageColor } from "../../lib/itemImageColor";
 import { HeroScrims } from "../hero/HeroScrims";
+import { BannerArt } from "./BannerArt";
+import { BannerHeading, type BannerStat } from "./BannerHeading";
 
 interface LibraryHeroProps {
   libraryId: string;
   libraryName: string;
   collectionType?: string;
 }
+
+/**
+ * Les nombres de l'en-tête : le total, puis ce qui reste à voir, ce qui est entamé, ce qu'on
+ * aime. Quatre requêtes d'UN titre sans image ni champ (`useLibraryCatalogCounts`, gardées dix
+ * minutes) — une constante de module : la liste nomme les clés de cache.
+ */
+const HEADER_COUNTS: readonly CatalogFilters[] = [
+  {},
+  { statusFilter: "IsUnplayed" },
+  { statusFilter: "IsResumable" },
+  { isFavorite: true },
+];
 
 /**
  * En-tête de page bibliothèque : même grammaire que la bannière d'accueil
@@ -27,9 +40,9 @@ interface LibraryHeroProps {
  * en cache) quand le tirage ne renvoie rien — petite bibliothèque, aucun backdrop.
  */
 export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryHeroProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "library"]);
   const client = useJellyfinClient();
-  const reduced = useReducedMotion();
+  const { counts } = useLibraryCatalogCounts(libraryId, HEADER_COUNTS);
   const random = useRandomLibraryBackdrop(libraryId);
   const { data: latest } = useLatestItems(libraryId, { collectionType });
   // Bannière réellement à l'écran ET fenêtre au premier plan — sert à démonter
@@ -47,6 +60,18 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
   // second jeu de paramètres, c'est un second téléchargement là où le cache
   // aurait suffi.
   const url = heroBackdropUrl(client, featured ?? undefined);
+  // La couleur de l'image d'abord (son blurhash), puis UN fondu — jamais un noir qui attend.
+  const tone = itemImageColor(featured, "Backdrop");
+
+  const [total, unwatched, inProgress, favorites] = counts;
+  const stats = useMemo<BannerStat[]>(() => {
+    if (total === undefined) return [];
+    const list: BannerStat[] = [{ key: "total", label: t("library:titles", { count: total }) }];
+    if (unwatched) list.push({ key: "unwatched", label: t("library:statUnwatched", { count: unwatched }) });
+    if (inProgress) list.push({ key: "inProgress", label: t("library:statInProgress", { count: inProgress }) });
+    if (favorites) list.push({ key: "favorites", label: t("library:statFavorites", { count: favorites }) });
+    return list;
+  }, [t, total, unwatched, inProgress, favorites]);
 
   return (
     /**
@@ -60,31 +85,13 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
      */
     <section className="relative w-full" aria-label={libraryName}>
       <div ref={boxRef} className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
-        <div className="absolute inset-0 bg-surface-0" />
+        {/* L'assise de l'image : sa couleur dès qu'on la connaît. En thème CLAIR, une encre sombre
+            en attendant — le titre posé dessus est blanc (`on-media`), et les voiles noirs sur le
+            papier donnaient un gris sale. `bg-surface-0` reste : la feuille du client LG la vise. */}
+        <div className="absolute inset-0 bg-surface-0 [[data-theme=light]_&]:bg-[#131315]" style={tone ? { backgroundColor: tone } : undefined} />
 
-        {url && (
-          <motion.img
-            key={backdropId}
-            src={url}
-            alt=""
-            draggable={false}
-            // Déjà montrée (retour dans la bibliothèque) : posée d'emblée, sans
-            // repartir du noir (`lib/seenImages`). L'adresse est lue au MONTAGE
-            // de l'image (clé `backdropId`), un rendu suivant n'y change rien.
-            initial={isImageReady(url) ? false : { opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            /* `will-change-transform` comme sur l'accueil, et pour la même
-               raison : la promotion en couche décide de la façon dont les
-               voiles sont composés par-dessus. Sans elle, les deux bannières
-               n'empruntaient pas le même chemin de composition — et deux
-               moteurs de générations différentes n'y répondent pas pareil. */
-            className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
-            style={{ display: broken ? "none" : undefined }}
-            onLoad={() => markImageSeen(url)}
-            onError={reportFailure}
-          />
-        )}
+        {/* UN fondu sur la couleur de l'image ; déjà vue, elle est là d'emblée (`BannerArt`). */}
+        {url && <BannerArt key={backdropId} url={url} broken={broken} onError={reportFailure} />}
 
         {/* La MÊME pile que l'accueil, au sens propre : le même composant, les
             mêmes cotes. Elle en différait sur deux points, tous deux mesurés
@@ -104,6 +111,14 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             dégradé — d'où une SIXIÈME couche quantifiée sur huit bits empilée
             sur les cinq autres, dans la zone la plus sombre de l'image. */}
         <HeroScrims bottom="h-[62%]" />
+        {/* Thème CLAIR seulement : le raccord vers la page (`--hero-page-fade`). Sans lui, l'assise
+            noire du bas de l'image s'arrêtait net sous le panneau d'outils. Masqué en sombre —
+            donc sur le téléviseur, toujours sombre — : aucune couche de plus à y composer. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[240px] [[data-theme=light]_&]:block"
+          style={{ background: "var(--hero-page-fade)" }}
+        />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée en fusion `screen` par-dessus le
@@ -132,37 +147,9 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
 
       {/* Titre ancré sur la RÉSERVE, pas sur la boîte image : celle-ci déborde
           de 200 px, un `bottom-[18%]` calculé dessus aurait fait descendre le
-          titre d'autant. */}
-      <motion.div
-        className="absolute inset-x-0 bottom-[18%] z-10 px-4 sm:px-8 md:px-14"
-        variants={reduced ? undefined : textCascade}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div variants={reduced ? undefined : fadeUp} className="mb-3 flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="h-6 w-[3px] flex-shrink-0 rounded-full"
-            style={{
-              background: "linear-gradient(180deg, var(--brand-light), var(--brand-accent))",
-              boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
-            }}
-          />
-          {/* Le nom de la bibliothèque juste dessous dit déjà « Films » ou
-              « Séries » : le sur-titre reste un libellé de section neutre,
-              traduit, plutôt qu'un doublon dérivé du collectionType. */}
-          <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-on-media-secondary">
-            {t("common:librariesTitle")}
-          </span>
-        </motion.div>
-
-        <motion.h1
-          variants={reduced ? undefined : fadeUp}
-          className="titre-bibliotheque font-bold text-on-media-primary drop-shadow-[0_3px_14px_var(--on-media-shadow)]"
-        >
-          {libraryName}
-        </motion.h1>
-      </motion.div>
+          titre d'autant. Le nom de la bibliothèque dit déjà « Films » ou
+          « Séries » : le sur-titre reste un libellé de section neutre. */}
+      <BannerHeading kicker={t("common:librariesTitle")} title={libraryName} stats={stats} />
     </section>
   );
 }

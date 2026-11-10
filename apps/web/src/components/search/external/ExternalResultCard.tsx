@@ -74,17 +74,17 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
           open();
         }}
         aria-label={item.subtitle ? `${item.title} — ${item.subtitle}` : item.title}
-        className="block w-full cursor-pointer rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="block w-full cursor-pointer rounded-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         {/* Le visuel : l'ancre de la mini-carte, qui s'efface sous elle — sa
             légende avec lui (`data-concealed`, cf. previewRoom.css). */}
         <div
           ref={preview.anchorRef}
           data-concealed={preview.shown}
-          className="relative overflow-hidden rounded-md transition-opacity duration-200"
+          className="relative overflow-hidden rounded-card transition-opacity duration-200"
           style={{ opacity: preview.shown ? 0 : undefined }}
         >
-          <ExternalPoster item={item} className="aspect-[2/3] w-full rounded-md" />
+          <ExternalPoster item={item} className="aspect-[2/3] w-full rounded-card" />
           {badge !== null && (
             <ExternalBadge
               badge={badge}
@@ -113,8 +113,8 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
             </CardPreview>
           )}
         </div>
-        <p className="mt-2 truncate text-sm font-medium text-content-primary group-hover/x:text-[var(--brand-light)]">{item.title}</p>
-        {item.subtitle !== null && <p className="truncate text-xs text-content-quaternary">{item.subtitle}</p>}
+        <p className="mt-2 truncate text-sm font-semibold tracking-tight text-content-primary">{item.title}</p>
+        {item.subtitle !== null && <p className="truncate text-xs text-content-tertiary">{item.subtitle}</p>}
       </div>
     </div>
   );

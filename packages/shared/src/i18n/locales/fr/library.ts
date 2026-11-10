@@ -57,4 +57,11 @@ export default {
   groupType_movies: "Films",
   groupType_series: "Séries",
   groupType_anime: "Animés",
+  // Refonte de nov. 2026 — les nombres de l'en-tête d'une bibliothèque (web, bureau).
+  statUnwatched_one: "{{count}} non vu",
+  statUnwatched_other: "{{count}} non vus",
+  statInProgress_one: "{{count}} en cours",
+  statInProgress_other: "{{count}} en cours",
+  statFavorites_one: "{{count}} favori",
+  statFavorites_other: "{{count}} favoris",
 } as const;

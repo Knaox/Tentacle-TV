@@ -13,6 +13,7 @@ import type { SearchTab } from "./searchParams";
 import { ExternalSections } from "../external/ExternalSections";
 import { EXTERNAL_SEARCH_LIMIT, type ExternalSearchState } from "../external/useExternalSearch";
 import { useSearchDeletionMode } from "./searchDeletion";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 
 const NO_ITEMS: readonly SearchMediaItem[] = [];
 
@@ -61,14 +62,20 @@ export const SearchResultsView = memo(function SearchResultsView(props: SearchRe
   if (nothing) {
     return (
       <div className="px-4 md:px-12">
-        <div className={`text-center ${beyond ? "pb-2 pt-10" : "py-20"}`} role="status">
-          <p className="text-xl font-semibold text-content-primary">
+        <div className={`flex flex-col items-center text-center ${beyond ? "pb-2 pt-10" : "py-20"}`} role="status">
+          {!beyond && (
+            <span aria-hidden className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-content-tertiary">
+              <MagnifyingGlassIcon size={24} />
+            </span>
+          )}
+          <p className="font-display text-heading-2 text-content-primary">
             {t(beyond ? "noLibraryResults" : "noResults", { query: response.query })}
           </p>
-          {!beyond && <p className="mx-auto mt-3 max-w-md text-sm text-content-tertiary">{t("noResultsHint")}</p>}
+          {!beyond && <p className="mt-2 max-w-md text-sm text-content-tertiary">{t("noResultsHint")}</p>}
           {response.correction !== null && (
-            <button type="button" onClick={() => onRetry(response.correction ?? "")} className="mt-6 rounded-full bg-[var(--brand-soft)] px-5 py-2 text-sm font-semibold text-[var(--brand-light)]">
-              {response.correction}
+            <button type="button" onClick={() => onRetry(response.correction ?? "")} className="btn btn-solid mt-6">
+              <MagnifyingGlassIcon aria-hidden size={16} />
+              {t("common:tryCorrection", { term: response.correction })}
             </button>
           )}
         </div>
@@ -81,7 +88,7 @@ export const SearchResultsView = memo(function SearchResultsView(props: SearchRe
     <div className="flex flex-col gap-1 text-sm text-content-tertiary">
       {response.correction !== null && (
         <p>
-          {t("resultsFor")} <span className="font-semibold italic text-[var(--brand-light)]">{response.correction}</span>
+          {t("resultsFor")} <span className="font-semibold text-content-primary">{response.correction}</span>
         </p>
       )}
       {response.partial && <p>{t("partial")}</p>}

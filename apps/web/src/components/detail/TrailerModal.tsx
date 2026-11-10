@@ -51,9 +51,9 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
         {/* Canevas vidéo (iframe/placeholder) : fond noir constant dans les
             deux thèmes, comme un lecteur vidéo (cf. règle « posé sur média »). */}
         {ytId ? (
-          <TrailerEmbedFallback key={current.Url} ytId={ytId} title={title} className="aspect-video w-full rounded-lg" />
+          <TrailerEmbedFallback key={current.Url} ytId={ytId} title={title} className="aspect-video w-full rounded-card" />
         ) : (
-          <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-black/60 px-6 text-center text-sm text-white/60">
+          <div className="flex aspect-video w-full items-center justify-center rounded-card bg-surface-2 px-6 text-center text-sm text-content-tertiary">
             {t("common:trailerUnavailable")}
           </div>
         )}
@@ -63,7 +63,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
           target="_blank"
           rel="noopener noreferrer"
           onClick={externalLinkHandler(current.Url)}
-          className="mt-3 inline-flex items-center gap-2 rounded-md border border-line-strong px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary"
+          className="btn btn-soft btn-sm mt-3"
         >
           <ExternalLinkIcon /> {t("common:openOnYoutube")}
         </a>
@@ -75,11 +75,8 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
                 key={tr.Url}
                 type="button"
                 onClick={() => setIndex(i)}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  i === index
-                    ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                    : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-                }`}
+                aria-pressed={i === index}
+                className={`btn btn-sm ${i === index ? "btn-accent" : "btn-soft"}`}
               >
                 {tr.Name || `${t("common:trailer")} ${i + 1}`}
               </button>

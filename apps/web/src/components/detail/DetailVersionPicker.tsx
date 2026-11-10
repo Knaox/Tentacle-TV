@@ -1,9 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { mediaVersions, pickMediaSource, type MediaItem } from "@tentacle-tv/shared";
 
-const ACTIVE_STYLE = {
-  background: "linear-gradient(120deg, var(--brand) 0%, var(--brand-accent) 100%)",
-};
 
 /**
  * Les VERSIONS d'un film — ou, depuis Jellyfin 12, d'un épisode — à lire :
@@ -40,12 +37,8 @@ export function DetailVersionPicker({ item, value, onChange }: {
             type="button"
             aria-pressed={active}
             onClick={() => onChange(v.id)}
-            className={`h-11 rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
-              active
-                ? "text-cta-brand-fg ring-1 ring-white/20"
-                : "border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] text-on-media-secondary hover:text-on-media-primary"
-            }`}
-            style={active ? ACTIVE_STYLE : undefined}
+            // La version retenue : la pastille pleine NEUTRE (ivoire sur image), jamais un dégradé.
+            className={`btn btn-sm ${active ? "bg-on-media-primary text-[rgb(var(--scrim-media-rgb))]" : "btn-on-media"}`}
           >
             {v.label}
           </button>

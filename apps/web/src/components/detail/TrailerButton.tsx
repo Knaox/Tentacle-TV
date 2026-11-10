@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { FilmIcon } from "../media/MediaDetailIcons";
+import { FilmStripIcon } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { parseYouTubeId, trailerButtonReserved, type RelayedTrailerPlayback } from "@tentacle-tv/shared";
 import { TrailerViewer, useFullTrailerPlayer } from "./TrailerViewer";
 import { useTrailerIntent } from "../trailerPlayer";
@@ -94,10 +94,10 @@ export function TrailerButton({ item }: { item: MediaItem }) {
         // Ailleurs, posé sur la scène : `on-media`, sans flou (le voile dessous
         // est déjà sombre, un `backdrop-filter` n'y changerait rien de visible).
         appearance={{ material: "pane", tone: "dark", level: "clear", shape: "capsule" }}
-        className="flex h-14 items-center gap-2.5 px-6 text-base font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
-        fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] text-on-media-primary transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.6)]"
+        className="flex h-[52px] items-center gap-2.5 px-6 text-base font-semibold"
+        fallbackClassName="btn btn-on-media btn-lg"
       >
-        <FilmIcon /> {t("common:trailer")}
+        <FilmStripIcon size={20} aria-hidden /> {t("common:trailer")}
       </GlassButton>
       {remote.length > 0 && (
         <TrailerViewer open={modalOpen} onClose={() => setModalOpen(false)} trailers={remote} />

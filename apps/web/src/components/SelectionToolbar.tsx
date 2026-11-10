@@ -1,5 +1,5 @@
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { SelectionBarFrame } from "./collection/SelectionBarFrame";
 
 interface SelectionToolbarProps {
   count: number;
@@ -12,77 +12,28 @@ interface SelectionToolbarProps {
 }
 
 /**
- * La barre de sélection (Mes favoris, Ma liste…). Verre natif : la même bande,
- * à la même place (le verre change le MATÉRIAU, jamais les DIMENSIONS).
+ * La barre de sélection (Mes favoris, Ma liste, tickets) : le compte, « Tout sélectionner »,
+ * « Annuler », puis le geste qui retire — le seul en couleur. La capsule et son entrée sont
+ * dans `SelectionBarFrame` ; les boutons sont les pilules du socle.
  */
 export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting, removal = false }: SelectionToolbarProps) {
-  const counter = (
-    <span className="lg-fb-status text-sm font-medium text-content-secondary">
-      <Counter count={count} />
-    </span>
-  );
-  const selectAll = <SelectAllButton onClick={onSelectAll} />;
-  const cancel = <CancelButton onClick={onCancel} />;
-  const remove = <DeleteButton count={count} onClick={onDelete} disabled={count === 0 || isDeleting} isDeleting={isDeleting} removal={removal} />;
+  const { t } = useTranslation("common");
   return (
-    createPortal(
-      <div
-        className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
-        style={{ animation: "slideUp 0.25s ease" }}
+    <SelectionBarFrame status={t("common:selectedCount", { count })}>
+      <button type="button" onClick={onSelectAll} className="lg-fb-btn btn btn-ghost btn-sm">
+        {t("common:selectAll")}
+      </button>
+      <button type="button" onClick={onCancel} className="lg-fb-btn btn btn-soft btn-sm">
+        {t("common:cancel")}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={count === 0 || isDeleting}
+        className="lg-fb-btn lg-fb-danger btn btn-danger btn-sm"
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-12">
-          {counter}
-          <div className="flex items-center gap-2">
-            {selectAll}
-            {cancel}
-            {remove}
-          </div>
-        </div>
-        <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
-      </div>,
-      document.body,
-    )
-  );
-}
-
-function Counter({ count }: { count: number }) {
-  const { t } = useTranslation("common");
-  return <>{t("common:selectedCount", { count })}</>;
-}
-
-function SelectAllButton({ onClick }: { onClick: () => void }) {
-  const { t } = useTranslation("common");
-  return (
-    <button
-      onClick={onClick}
-      className="lg-fb-btn rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
-    >
-      {t("common:selectAll")}
-    </button>
-  );
-}
-
-function CancelButton({ onClick }: { onClick: () => void }) {
-  const { t } = useTranslation("common");
-  return (
-    <button
-      onClick={onClick}
-      className="lg-fb-btn rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
-    >
-      {t("common:cancel")}
-    </button>
-  );
-}
-
-function DeleteButton({ count, onClick, disabled, isDeleting, removal }: { count: number; onClick: () => void; disabled: boolean; isDeleting: boolean; removal: boolean }) {
-  const { t } = useTranslation("common");
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="lg-fb-btn lg-fb-danger rounded-lg bg-danger-surface px-4 py-1.5 text-sm font-medium text-status-error-fg ring-1 ring-danger-border transition hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {isDeleting ? t("common:loading") : t(removal ? "common:removeCount" : "common:deleteCount", { count })}
-    </button>
+        {isDeleting ? t("common:loading") : t(removal ? "common:removeCount" : "common:deleteCount", { count })}
+      </button>
+    </SelectionBarFrame>
   );
 }

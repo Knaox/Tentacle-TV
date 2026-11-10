@@ -31,14 +31,14 @@ import { useSearchSelection } from "./page/searchDeletion";
 
 export function SearchResultCard({
   item,
-  index,
   onSelect,
 }: {
   item: MediaItem;
-  index: number;
+  /** La place dans la grille — gardée pour les appelants ; plus aucune entrée échelonnée n'en dépend. */
+  index?: number;
   onSelect: (it: MediaItem) => void;
 }) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "media"]);
   const client = useJellyfinClient();
   const rootRef = useRef<HTMLLIElement>(null);
   // Ici la carte est atteignable au clavier : le survol suit aussi le focus
@@ -68,6 +68,8 @@ export function SearchResultCard({
   const type =
     item.Type === "Movie" ? t("common:movie") :
     item.Type === "Series" ? t("common:series") :
+    // Une collection disait « BoxSet », le nom de son type chez Jellyfin.
+    item.Type === "BoxSet" ? t("media:kindCollection") :
     item.Type;
 
   const open = (range = false) => {
@@ -87,13 +89,12 @@ export function SearchResultCard({
       ref={rootRef}
       className="group/card relative"
       title={selection?.mark === "locked" ? t("libraryDelete:notDeletable") : undefined}
-      style={{
-        animation: "fadeSlideUp 0.4s ease both",
-        animationDelay: `${Math.min(index * 30, 300)}ms`,
-        // La carte survolée passe au-dessus de ses voisines, son ombre aussi
-        // (cf. `CardFrame`).
-        zIndex: hover.hovered ? 2 : undefined,
-      }}
+      // Pas d'entrée échelonnée : la grille suit la FRAPPE (des dizaines de
+      // fois par recherche), et l'affiche a déjà son fondu (`CardImage`) — un
+      // second, sur la carte, la ferait paraître deux fois.
+      // La carte survolée passe au-dessus de ses voisines, son ombre aussi
+      // (cf. `CardFrame`).
+      style={{ zIndex: hover.hovered ? 2 : undefined }}
       {...hover.handlers}
       onMouseEnter={() => {
         hover.handlers.onMouseEnter();
@@ -118,8 +119,7 @@ export function SearchResultCard({
         }}
         // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se
         // soulève : sur ce bouton, il cernait aussi le titre et restait en place.
-        // L'atténuation d'un titre refusé se pose ICI : l'entrée de la carte
-        // (`fadeSlideUp … both`) impose son opacité à la racine.
+        // L'atténuation d'un titre refusé se pose ICI, sur le bouton.
         className={`group/focus block w-full text-left outline-none ${selecting && locked ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
       >
         <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered && !(selecting && locked)} showActions={!selecting} preview={preview} />
@@ -129,7 +129,7 @@ export function SearchResultCard({
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ""}
         </p>
         {gap && (
-          <p className="mt-0.5 flex items-center gap-1 px-0.5 text-xs font-medium text-[var(--brand-light)]">
+          <p className="mt-0.5 flex items-center gap-1 px-0.5 text-xs font-medium text-content-secondary">
             <Plus weight="bold" className="h-3 w-3 shrink-0" aria-hidden />
             <span className="truncate">{t("requests:missingSeasons", { count: gap.count })}</span>
           </p>

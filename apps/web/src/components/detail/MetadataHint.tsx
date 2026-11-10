@@ -55,10 +55,11 @@ export const MetadataHint = memo(function MetadataHint({ item, tone = "media" }:
       data-metadata-hint
       // `lg-content` : sous le verre de macOS 26, le panneau de la maquette,
       // givré (posé sur l'image de la fiche) — marqueurs sans style ailleurs.
-      className={`lg-content lg-content-frosted mt-5 max-w-2xl rounded-xl border px-4 py-3 text-sm leading-relaxed ${
+      // Hors natif : un voile d'encre sur l'image (ou la tuile du socle sur la page), sans liseré.
+      className={`lg-content lg-content-frosted mt-5 max-w-[60ch] rounded-tile px-4 py-3 text-sm leading-relaxed ${
         onMedia
-          ? "border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.5)] text-on-media-secondary"
-          : "border-line-subtle bg-fill-faint text-content-secondary"
+          ? "bg-[rgba(var(--scrim-media-rgb),0.5)] text-on-media-secondary shadow-edge"
+          : "bg-surface-2 text-content-secondary"
       }`}
     >
       <p className="flex gap-2.5">

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CastRow } from "../CastRow";
 import { EpisodeList } from "../EpisodeList";
@@ -13,7 +13,7 @@ import { IncludedInRow } from "./IncludedInRow";
 import { DetailFacts } from "./DetailFacts";
 import { TechInfo } from "../TechInfo";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
-import { fadeIn } from "../../theme/motion";
+import { duration, easeOut } from "../../theme/motion";
 
 interface DetailSectionsProps {
   item: MediaItem;
@@ -37,7 +37,8 @@ interface DetailSectionsProps {
  * repoussaient « Lecture » sous un panneau que presque personne n'ouvre.
  *
  * Les extras restent AU-DESSUS des épisodes (décision antérieure, gardée).
- * Chaque section entre en fondu une seule fois, à son arrivée dans le champ.
+ * Chaque section entre en fondu une seule fois, à son arrivée dans le champ —
+ * et plus du tout sur une fiche déjà parcourue pendant la séance (`Reveal`).
  */
 export function DetailSections({
   item, parentSeries, collectionItems, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId, openSeasonId,
@@ -48,6 +49,7 @@ export function DetailSections({
   const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
 
   return (
+    <RevealItem.Provider value={item.Id}>
     <div className="relative z-10 mt-6 space-y-12 pb-16">
       {/* Collection (BoxSet) : contenu navigable — un BoxSet n'a ni lecture
           ni saisons, sa fiche restait vide. */}
@@ -104,18 +106,46 @@ export function DetailSections({
 
       <LicenseAttribution item={item} />
     </div>
+    </RevealItem.Provider>
   );
 }
 
+/** La fiche dont les sections se révèlent : leur mémoire est par titre. */
+const RevealItem = createContext<string | null>(null);
+
+/**
+ * Les fiches dont une section s'est déjà révélée pendant la séance : y revenir
+ * (retour du lecteur, d'une personne) ne rejoue aucun fondu — même règle que
+ * les images déjà vues. Bornée : au-delà, les plus anciennes repartent de zéro.
+ */
+const revealed = new Set<string>();
+const REVEALED_MAX = 200;
+
+function markRevealed(itemId: string | null): void {
+  if (itemId === null || revealed.has(itemId)) return;
+  if (revealed.size >= REVEALED_MAX) revealed.delete(revealed.values().next().value as string);
+  revealed.add(itemId);
+}
+
+const REVEAL_VIEWPORT = { once: true, margin: "-50px" } as const;
+const REVEAL_FROM = { opacity: 0 } as const;
+const REVEAL_TO = { opacity: 1 } as const;
+// 220 ms, l'opacité seule : c'est le fondu d'une image (`--duration-card`), pas une entrée de page.
+const REVEAL_TRANSITION = { duration: duration.card, ease: easeOut } as const;
+
 function Reveal({ children, as = "div" }: { children: ReactNode; as?: "div" | "section" }) {
   const Tag = as === "section" ? motion.section : motion.div;
+  const itemId = useContext(RevealItem);
+  const reduced = useReducedMotion();
+  // Lu au rendu : la section d'une fiche déjà parcourue, ou sous mouvement réduit, est là d'emblée.
+  const instant = reduced === true || (itemId !== null && revealed.has(itemId));
   return (
     <Tag
-      variants={fadeIn}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5 }}
+      initial={instant ? false : REVEAL_FROM}
+      whileInView={REVEAL_TO}
+      viewport={REVEAL_VIEWPORT}
+      transition={REVEAL_TRANSITION}
+      onViewportEnter={() => markRevealed(itemId)}
     >
       {children}
     </Tag>

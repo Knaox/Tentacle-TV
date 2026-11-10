@@ -13,6 +13,8 @@ import {
 } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { WatchedGlyph } from "./cards/cardGlyphs";
 import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { SeasonTabs, seasonTabId } from "./episodes/SeasonTabs";
@@ -25,8 +27,10 @@ import { useDownloadsVisibility } from "../downloads/useDownloadState";
 import { RevealCell, RevealScope } from "./grid/RevealCell";
 import { SeasonDeleteAction } from "./libraryDelete/SeasonDeleteAction";
 
-/** Hauteur d'une ligne d'épisode, réservée avant son premier passage. */
-const EPISODE_ROW_HEIGHT = 100;
+/** Hauteur d'une ligne d'épisode (vignette de 176 px en 16:9, 10 px de marge), réservée avant son premier passage. */
+const EPISODE_ROW_HEIGHT = 119;
+/** Une action de saison : la pilule secondaire du socle ; sous le verre natif, un bouton de verre. */
+const SEASON_ACTION = "btn btn-soft btn-sm lg-glass-btn";
 
 interface EpisodeListProps {
   seriesId: string;
@@ -132,47 +136,47 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, openS
   const isBusy = batchMarkWatched.isPending || batchMarkUnwatched.isPending;
 
   return (
-    <div className="px-4 md:px-8 py-4">
-      {/* La bande des saisons : pastilles lisibles, saison en cours marquée,
-          préchargement au survol et au focus. */}
-      {browser.seasonsLoading ? (
-        <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="104px" height="40px" className="!rounded-full" />)}</div>
-      ) : seasons && seasons.length > 0 ? (
-        <SeasonTabs
-          seasons={seasons}
-          selectedId={selectedSeasonId}
-          markedId={browser.markedSeasonId}
-          onSelect={browser.select}
-          onIntent={browser.prefetch}
-          className="mb-4"
-        />
-      ) : null}
-
-      {/* Season actions bar */}
-      {!browser.episodesLoading && episodes?.length ? (
-        <div className="mb-3 flex items-center gap-2">
-          <button
-            onClick={handleSeasonToggle}
-            disabled={isBusy}
-            className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary disabled:opacity-40"
-          >
-            {allWatched ? t("common:markSeasonUnwatched") : t("common:markSeasonWatched")}
-          </button>
-          {!ms.isSelecting && (
-            <button
-              onClick={ms.enterSelectionMode}
-              className="rounded-lg bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
-            >
-              {t("common:select")}
-            </button>
-          )}
-          {/* Téléchargement de la saison (desktop, droit requis — sinon absent).
-              Il lit les sources (tailles, pistes) : il paraît quand elles sont là. */}
-          <SeasonDownloadAction episodes={browser.withSources ?? []} />
-          {/* Supprimer la saison (droit Jellyfin requis — sinon absent), à l'écart, au bout. */}
-          <SeasonDeleteAction seasonId={selectedSeasonId} seasonName={seasons?.find((s) => s.Id === selectedSeasonId)?.Name} />
+    <div className="row-gutter max-w-[1392px] py-3">
+      {/* La bande des saisons — des pastilles NEUTRES, la saison affichée en
+          pastille pleine (`theme/seasonTabs.css`), celle en cours marquée d'un
+          point, préchargement au survol et au focus — puis les gestes de la
+          saison affichée, au bout de la même ligne. */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0 flex-1 basis-64">
+          {browser.seasonsLoading ? (
+            <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="104px" height="40px" className="!rounded-full" />)}</div>
+          ) : seasons && seasons.length > 0 ? (
+            <SeasonTabs
+              seasons={seasons}
+              selectedId={selectedSeasonId}
+              markedId={browser.markedSeasonId}
+              onSelect={browser.select}
+              onIntent={browser.prefetch}
+            />
+          ) : null}
         </div>
-      ) : null}
+
+        {/* Season actions bar */}
+        {!browser.episodesLoading && episodes?.length ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={handleSeasonToggle} disabled={isBusy} aria-pressed={allWatched} className={SEASON_ACTION}>
+              <WatchedGlyph className="h-4 w-4" filled={allWatched} />
+              {allWatched ? t("common:markSeasonUnwatched") : t("common:markSeasonWatched")}
+            </button>
+            {!ms.isSelecting && (
+              <button type="button" onClick={ms.enterSelectionMode} className={SEASON_ACTION}>
+                <CheckSquareIcon className="h-4 w-4" aria-hidden />
+                {t("common:select")}
+              </button>
+            )}
+            {/* Téléchargement de la saison (desktop, droit requis — sinon absent).
+                Il lit les sources (tailles, pistes) : il paraît quand elles sont là. */}
+            <SeasonDownloadAction episodes={browser.withSources ?? []} />
+            {/* Supprimer la saison (droit Jellyfin requis — sinon absent), à l'écart, au bout. */}
+            <SeasonDeleteAction seasonId={selectedSeasonId} seasonName={seasons?.find((s) => s.Id === selectedSeasonId)?.Name} />
+          </div>
+        ) : null}
+      </div>
 
       {/* Episodes.
           Une saison d'anime dépasse couramment la centaine d'épisodes, et chaque
@@ -182,12 +186,13 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, openS
           et la sélection multiple survit puisqu'elle porte sur des identifiants. */}
       <RevealScope>
         <div
-          className="space-y-3"
+          // `-mx-2.5` : la marge intérieure d'une ligne ne décale pas son numéro du titre de la section.
+          className="-mx-2.5 space-y-1"
           role="tabpanel"
           aria-labelledby={selectedSeasonId ? seasonTabId(selectedSeasonId) : undefined}
         >
           {browser.episodesLoading ? (
-            Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} height="100px" />)
+            Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} height={`${EPISODE_ROW_HEIGHT}px`} className="!rounded-tile" />)
           ) : (
             episodes?.map((ep, i) => (
               <RevealCell key={ep.Id} minHeight={EPISODE_ROW_HEIGHT} eager={i < 8}>
@@ -202,6 +207,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, openS
                   onToggleSelect={() => ms.toggle(ep.Id)}
                   onPlay={() => navigate(`/watch/${ep.Id}`)}
                   rating={ratingFor(ep)}
+                  keyboard
                 />
               </RevealCell>
             ))

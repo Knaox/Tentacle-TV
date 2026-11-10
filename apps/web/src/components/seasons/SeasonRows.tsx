@@ -12,21 +12,22 @@ import type { SeasonPickRow, SeasonPickTone } from "@tentacle-tv/shared";
  * « Demandée »), jamais de la couleur seule.
  */
 
+/** La puce du socle (`.chip`), à la teinte de l'état. */
 const STATUS: Record<SeasonPickTone, { pill: string; Glyph: typeof Check }> = {
-  ready: { pill: "bg-status-success-bg text-status-success-fg", Glyph: Check },
+  ready: { pill: "chip-success", Glyph: Check },
   pending: { pill: "bg-status-info-bg text-status-info-fg", Glyph: Clock },
-  neutral: { pill: "bg-fill-medium text-content-secondary", Glyph: Lock },
+  neutral: { pill: "", Glyph: Lock },
 };
 
 function SettledRow({ row }: { row: SeasonPickRow }) {
   const status = row.status ?? { label: "", tone: "neutral" as const };
   const { pill, Glyph } = STATUS[status.tone];
   return (
-    <li className="flex min-h-[52px] items-center gap-3 rounded-xl px-3">
+    <li className="flex min-h-[48px] items-center gap-3 rounded-field px-3">
       <span className="min-w-0 flex-1 truncate text-sm text-content-tertiary">{row.label}</span>
       {status.label !== "" && (
-        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${pill}`}>
-          <Glyph weight="bold" className="h-3.5 w-3.5" aria-hidden />
+        <span className={`chip shrink-0 ${pill}`}>
+          <Glyph weight="bold" className="h-3 w-3" aria-hidden />
           {status.label}
         </span>
       )}
@@ -41,7 +42,7 @@ function CheckRow({ row, onToggle, inputRef }: {
 }) {
   return (
     <li>
-      <label className="group relative z-0 flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl px-3">
+      <label className="group relative z-0 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-field px-3">
         <input
           ref={inputRef}
           type="checkbox"
@@ -55,17 +56,15 @@ function CheckRow({ row, onToggle, inputRef }: {
             refusée). En fondu d'opacité : aucune couleur animée. */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 rounded-xl bg-fill-soft opacity-0 transition-opacity group-hover:opacity-100 peer-focus-visible:opacity-100"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-field bg-fill-soft opacity-0 transition-opacity duration-hover group-hover:opacity-100 peer-focus-visible:opacity-100"
         />
+        {/* La case du socle (`.ui-check`) : cochée, l'aplat d'accent — plus de dégradé. */}
         <span
           aria-hidden
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus ${
-            row.selected
-              ? "border-transparent bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg"
-              : "border-line-strong bg-fill-subtle"
-          }`}
+          data-checked={row.selected}
+          className="ui-check peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus"
         >
-          {row.selected && <Check weight="bold" className="h-3.5 w-3.5" />}
+          <Check weight="bold" className="h-3.5 w-3.5" />
         </span>
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{row.label}</span>
         {row.detail && <span className="shrink-0 text-xs tabular-nums text-content-tertiary">{row.detail}</span>}

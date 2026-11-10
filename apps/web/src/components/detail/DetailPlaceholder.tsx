@@ -16,6 +16,8 @@ interface DetailPlaceholderProps {
    * n'aurait été qu'un éclair.
    */
   quiet?: boolean;
+  /** La couleur du décor qui arrive (son blurhash) : l'attente la porte, au lieu d'un écran vide. */
+  tone?: string | null;
 }
 
 /**
@@ -34,11 +36,23 @@ interface DetailPlaceholderProps {
  * dalle, l'échec arrive après les reprises réseau, bien au-delà du délai où le
  * moteur pose lui-même l'anneau d'un écran.
  */
-export function DetailPlaceholder({ failed, retrying, onRetry, error, quiet = false }: DetailPlaceholderProps) {
+export function DetailPlaceholder({ failed, retrying, onRetry, error, quiet = false, tone = null }: DetailPlaceholderProps) {
   const navigate = useNavigate();
   const model = usePageProblemModel(failed ? error ?? new Error("item") : null, { availability: { canGoBack: true } });
 
-  if (quiet && !failed) return <div className="h-screen bg-surface-0" />;
+  if (quiet && !failed) {
+    // La fiche est connue, ses images se décodent : la COULEUR du décor d'abord, fondue vers
+    // la page comme la scène le fera — puis la fiche entière, en un seul fondu.
+    return (
+      <div className="relative h-screen overflow-hidden bg-surface-0">
+        {tone && (
+          <div aria-hidden className="absolute inset-0" style={{ backgroundColor: tone }}>
+            <div className="absolute inset-0" style={{ background: "var(--detail-scrim-bottom)" }} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (!failed || !model) {
     return (

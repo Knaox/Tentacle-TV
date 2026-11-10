@@ -20,10 +20,11 @@ import { openOmnibox } from "./omniboxStore";
  * texte (cache de `useTentacleSearch`).
  */
 
-const PRIMARY =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-6 text-sm font-bold text-cta-primary-fg outline-none transition-[background-color,transform] duration-150 hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus";
-const SECONDARY =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary outline-none transition-[background-color,transform] duration-150 hover:bg-fill-medium active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus";
+// Les pilules du socle : l'action neutre principale, puis la secondaire.
+// `cta-primary` : marqueur SANS style — le moteur de focus du client LG y reconnaît
+// l'action principale d'un écran (`[class*="cta-primary"]`).
+const PRIMARY = "btn btn-solid cta-primary";
+const SECONDARY = "btn btn-soft";
 
 export const SearchSuggestions = memo(function SearchSuggestions({ query, onApply }: {
   query: string;
@@ -39,12 +40,12 @@ export const SearchSuggestions = memo(function SearchSuggestions({ query, onAppl
     <div className="flex flex-wrap items-center justify-center gap-2">
       {correction !== null && (
         <button type="button" className={PRIMARY} onClick={() => onApply(correction)}>
-          <Sparkles aria-hidden className="h-4 w-4" />
+          <Sparkles aria-hidden size={16} />
           {t("tryCorrection", { term: correction })}
         </button>
       )}
       <button type="button" className={correction === null ? PRIMARY : SECONDARY} onClick={() => openOmnibox(q)}>
-        <Search aria-hidden className="h-4 w-4" />
+        <Search aria-hidden size={16} />
         {t("searchEverywhere")}
       </button>
     </div>

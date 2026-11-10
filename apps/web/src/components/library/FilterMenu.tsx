@@ -1,6 +1,9 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { FloatingLayer } from "../floating/FloatingLayer";
+import { chipCls } from "./filterChip";
 
 interface FilterMenuProps {
   label: string;
@@ -40,7 +43,7 @@ interface FilterMenuProps {
 export function FilterMenu({
   label, value, onClear, width = 260, closeButton = false, icon, neutral = false, align = "left", children,
 }: FilterMenuProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "library"]);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -61,49 +64,26 @@ export function FilterMenu({
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="true"
-        // Mêmes valeurs que `chipCls` (LibraryFilters) : la barre mélange les
-        // deux composants, une seule pastille au style différent se voit
-        // immédiatement. Fond opaque pour la même raison — ces contrôles
-        // reposent sur la bannière et se perdaient sur une affiche claire.
-        className={`lg-chip ${active ? "lg-chip-on " : ""}inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
-          active
-            ? "bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.24),rgba(var(--brand-rgb),0.24))] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.6)]"
-            : "bg-[color:var(--surface-2)] text-content-secondary ring-1 ring-line-strong shadow-[var(--elev-1)] hover:bg-fill-medium hover:text-content-primary"
-        }`}
+        // La pilule du socle, la même que les pastilles voisines (`chipCls`) : au repos un
+        // remplissage neutre, posée le fond doux de l'accent — la valeur remplace le libellé.
+        className={`${chipCls(active)} max-w-full`}
       >
         {icon}
-        {active && (
-          <span
-            aria-hidden
-            className="h-3 w-[2px] rounded-full"
-            style={{ background: "linear-gradient(180deg, var(--brand-light), var(--brand-accent))" }}
-          />
-        )}
         <span className="max-w-[14rem] truncate">{value || label}</span>
         {Boolean(value) && onClear && !neutral ? (
           <span
             role="button"
             tabIndex={0}
-            aria-label={`Effacer ${label}`}
+            aria-label={t("library:removeFilter", { name: label })}
             onClick={(e) => { e.stopPropagation(); onClear(); setOpen(false); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onClear(); setOpen(false); } }}
-            className="-mr-1 flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)]"
+            className="-mr-1.5 flex h-5 w-5 items-center justify-center rounded-full transition-colors duration-hover hover:bg-accent/20"
           >
-            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+            <XIcon size={11} weight="bold" aria-hidden />
           </span>
         ) : (
-          <svg
-            className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            aria-hidden
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          // Le chevron ne tourne pas : un menu s'ouvre des dizaines de fois par séance.
+          <CaretDownIcon size={12} weight="bold" aria-hidden className="-mr-0.5 opacity-70" />
         )}
       </button>
 
@@ -114,22 +94,21 @@ export function FilterMenu({
         onDismiss={() => setOpen(false)}
         side="bottom"
         align={align === "right" ? "end" : "start"}
-        className="lg-menu lg-filter overflow-y-auto overscroll-contain rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
-        style={{ width, boxShadow: "var(--shadow-dropdown)" }}
+        // La peau du menu du socle (opaque : aucun flou à payer derrière un fond plein).
+        className="lg-menu lg-filter ui-menu overflow-y-auto overscroll-contain"
+        style={{ width }}
       >
         {closeButton && (
-          <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="mb-1 flex items-center justify-between gap-3 pl-2.5">
             <span className="truncate text-sm font-semibold text-content-primary">{label}</span>
             <button
               type="button"
               data-menu-close
               onClick={closeFromPanel}
-              aria-label={t("close")}
-              className="flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-content-tertiary transition-colors hover:text-content-primary"
+              aria-label={t("common:close")}
+              className="icon-btn btn-sm"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              <XIcon size={18} aria-hidden />
             </button>
           </div>
         )}

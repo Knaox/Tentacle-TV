@@ -9,7 +9,8 @@ import { openOmnibox } from "./omniboxStore";
  * La recherche DANS une page — une bibliothèque, Ma liste, Mes favoris — au
  * niveau de la barre de recherche globale :
  *
- * - l'icône prend la couleur de la marque au focus, le liseré aussi ;
+ * - l'icône s'éclaire au focus, et le champ prend l'anneau du socle (`.field`,
+ *   à la teinte franche) ;
  * - une croix efface d'un clic, Échap aussi (puis quitte le champ) ;
  * - pendant que la recherche part, un anneau tourne ; ensuite, le nombre de
  *   titres trouvés s'affiche au bout du champ — la réponse se voit avant
@@ -18,9 +19,9 @@ import { openOmnibox } from "./omniboxStore";
  *   tout Tentacle, qui tolère les fautes (`relayToOmnibox` : seulement là où
  *   l'on cherche des œuvres — pas des comptes ni des tickets).
  *
- * Fond de surface OPAQUE et liseré franc : le champ chevauche souvent le bas
- * d'une bannière, et une teinte translucide s'y perdait (voir l'historique de
- * `LibrarySearchField`).
+ * La pilule de recherche du socle (`field field-pill`), sur un fond de surface
+ * OPAQUE : le champ chevauche parfois le bas d'une bannière, et une teinte
+ * translucide s'y perdait (voir l'historique de `LibrarySearchField`).
  */
 
 interface ScopedSearchFieldProps {
@@ -66,11 +67,12 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
   return (
     <div
       role="search"
-      className={`lg-field group relative flex h-11 w-full items-center gap-2 rounded-full border border-line-strong bg-[color:var(--surface-2)] pl-4 pr-1.5 transition-colors duration-150 focus-within:border-[color:rgba(var(--brand-rgb),0.75)] focus-within:shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.2)] ${className}`}
+      className={`lg-field field field-pill group relative flex items-center gap-2 bg-surface-2 pl-3.5 pr-1 focus-within:shadow-[inset_0_0_0_1.5px_var(--accent),0_0_0_3px_rgba(var(--accent-rgb),0.22)] ${className}`}
     >
       <Search
         aria-hidden
-        className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-[var(--brand-light)]" : "text-content-tertiary group-focus-within:text-[var(--brand-light)]"}`}
+        size={16}
+        className={`shrink-0 transition-colors duration-hover ${active ? "text-content-primary" : "text-content-tertiary group-focus-within:text-content-primary"}`}
       />
       <input
         ref={ref}
@@ -84,12 +86,12 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
         autoComplete="off"
         spellCheck={false}
         enterKeyHint="search"
-        className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-content-primary outline-none placeholder:text-content-tertiary [&::-webkit-search-cancel-button]:appearance-none"
+        className="h-full min-w-0 flex-1 bg-transparent text-sm text-content-primary outline-none placeholder:text-content-tertiary [&::-webkit-search-cancel-button]:appearance-none"
       />
       {active && (
         <span id={statusId} aria-live="polite" className="flex h-8 shrink-0 items-center px-1 text-xs tabular-nums text-content-tertiary">
           {busy ? (
-            <LoaderCircle aria-label={t("searching")} className="h-4 w-4 animate-spin text-[var(--brand-light)]" />
+            <LoaderCircle aria-label={t("searching")} size={16} className="animate-spin text-content-secondary motion-reduce:animate-none" />
           ) : resultCount !== null ? (
             t("searchResultCount", { count: resultCount })
           ) : null}
@@ -101,9 +103,9 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
           onClick={() => onChange("")}
           aria-label={t("clearSearch")}
           title={t("clearSearch")}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="icon-btn btn-sm"
         >
-          <X aria-hidden className="h-4 w-4" />
+          <X aria-hidden size={16} />
         </button>
       )}
     </div>

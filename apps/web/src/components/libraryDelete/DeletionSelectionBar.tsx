@@ -14,8 +14,7 @@ interface Props {
   note?: string | null;
 }
 
-const SECONDARY =
-  "lg-fb-btn inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40";
+const SECONDARY = "lg-fb-btn btn btn-ghost btn-sm";
 
 /**
  * La barre du mode sélection, fixée en bas de la fenêtre : combien, sur combien,
@@ -78,12 +77,12 @@ export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, not
         type="button"
         onClick={onDelete}
         disabled={count === 0}
-        className="lg-fb-btn lg-fb-danger inline-flex h-10 items-center gap-2 rounded-lg border border-danger-border bg-danger-surface px-4 text-sm font-semibold text-[var(--status-error-fg)] transition-colors hover:bg-danger-surface-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
+        className="lg-fb-btn lg-fb-danger btn btn-danger btn-sm"
       >
         <Trash2 className="h-4 w-4" aria-hidden />
         {t("delete")}
       </button>
-      <button type="button" onClick={selection.exit} className={`${SECONDARY} gap-1.5`} title={t("escapeHint")}>
+      <button type="button" onClick={selection.exit} className={SECONDARY} title={t("escapeHint")}>
         <X className="h-4 w-4" aria-hidden />
         {t("done")}
       </button>
@@ -91,22 +90,25 @@ export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, not
   );
   return (
     createPortal(
-      <div
-        role="toolbar"
-        data-deletion-bar
-        aria-label={t("selectHint")}
-        className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
-        style={{ animation: "deletionBarIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }}
-      >
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">
+      // La même capsule que les barres de sélection de Ma liste et de Mes favoris
+      // (`collection/SelectionBarFrame`) : une encre pleine qui flotte au bas de la fenêtre,
+      // sans flou — plus de bande pleine largeur.
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 md:bottom-6">
+        <div
+          role="toolbar"
+          data-deletion-bar
+          aria-label={t("selectHint")}
+          className="lg-bar ui-toast pointer-events-auto w-full max-w-4xl flex-wrap gap-x-4 gap-y-2 rounded-panel py-2.5 pl-5 pr-2.5"
+          style={{ animation: "deletionBarIn var(--duration-menu-in) var(--ease-out)" }}
+        >
           {status}
           <div className="flex flex-wrap items-center gap-1">
             {choose}
-            <span aria-hidden className="mx-2 h-6 w-px bg-line-subtle" />
+            <span aria-hidden className="mx-1.5 h-6 w-px bg-line-subtle" />
             {finish}
           </div>
+          <style>{"@keyframes deletionBarIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }"}</style>
         </div>
-        <style>{"@keyframes deletionBarIn { from { transform: translateY(100%); } to { transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { [data-deletion-bar] { animation: none !important; } }"}</style>
       </div>,
       document.body,
     )

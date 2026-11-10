@@ -61,7 +61,7 @@ export function useDeletionMode({ allowed, active, setActive, universe, entries,
       onClick={selection.active ? selection.exit : selection.enter}
       aria-pressed={selection.active}
       title={t("selectHint")}
-      className={`${chipCls(selection.active)} inline-flex cursor-pointer items-center gap-1.5`}
+      className={chipCls(selection.active)}
     >
       <CheckSquare aria-hidden className="h-3.5 w-3.5" />
       {selection.active ? t("done") : t("select")}

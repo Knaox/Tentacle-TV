@@ -33,7 +33,7 @@ export function ContentErrorState({ onRetry }: { onRetry?: () => void }) {
 
   return (
     <div className="row-gutter flex flex-col items-center py-20 text-center" role="status">
-      <h2 className="text-lg font-semibold text-content-primary">
+      <h2 className="text-heading-2 text-content-primary">
         {t("common:contentErrorTitle")}
       </h2>
       <p className="mt-2 max-w-md text-sm text-content-tertiary">
@@ -43,7 +43,7 @@ export function ContentErrorState({ onRetry }: { onRetry?: () => void }) {
         type="button"
         onClick={handleRetry}
         disabled={retrying}
-        className="mt-6 inline-flex h-10 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+        className="btn btn-soft mt-6"
       >
         {t("common:retry")}
       </button>
