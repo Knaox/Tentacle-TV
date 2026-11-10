@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MusicImportSource } from "@tentacle-tv/shared/music";
 import { useServerCapability } from "../../hooks/useServerCapabilities";
+import { TentacleApiError } from "../../hooks/usePreferences";
 import { musicPendingKey } from "../../pluginMusic/useMusicActions";
 import type { MusicProvider } from "../../pluginMusic/musicProvider";
 import { musicKeys } from "../musicQueryKeys";
@@ -39,8 +40,12 @@ export function importPortFor(provider: MusicProvider | null, tentacleShare = fa
     core: fetchCoreImport,
     refusal: refusalCode,
     canRead: (source) => readable.includes(source),
+    readsFirst: (source) => (provider?.music.importReadFirst ?? []).includes(source),
     read: (url, signal) => (provider ? readByExtension(provider, url, signal) : Promise.resolve({ ok: false as const, refusal: "unsupported" as const })),
     canConfide: !!provider?.music.importTracks,
+    batches: provider?.music.importBatches === true,
+    // Une réponse de l'extension (< 500) est un refus : jamais relancé ; une coupure ou un 5xx, si.
+    isRefusal: (error) => error instanceof TentacleApiError && error.status < 500,
     confide: (request, signal) => (provider ? confideImportTracks(provider, request, signal) : Promise.resolve(null)),
     progress: (operationId, signal) => fetchImportTracksProgress(provider!, operationId, signal),
     cancel: (operationId) => {

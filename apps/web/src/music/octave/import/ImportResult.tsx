@@ -65,7 +65,7 @@ function ReportBody({ summary }: { summary: Summary }) {
           )}
           {listed && (
             <ol id="octave-import-skipped" className="min-h-0 overflow-y-auto overscroll-contain rounded-xl bg-fill-subtle px-3 py-2 text-sm">
-              {report.missing.map((track) => (
+              {report.listed.map((track) => (
                 <li key={track.index} className="flex gap-2 py-1.5">
                   <span className="w-8 shrink-0 text-right tabular-nums text-content-quaternary">{track.index + 1}</span>
                   <span className="flex min-w-0 flex-col">
@@ -77,6 +77,7 @@ function ReportBody({ summary }: { summary: Summary }) {
                   </span>
                 </li>
               ))}
+              {report.unlisted > 0 && <li className="py-1.5 text-content-tertiary">{t("report.more", { count: report.unlisted })}</li>}
             </ol>
           )}
         </div>

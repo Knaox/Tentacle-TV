@@ -49,9 +49,15 @@ describe("liste collée — une ligne par titre", () => {
     expect(() => readText("  \n\n")).toThrow(ImportReadFailure);
   });
 
-  it("plafond : 1 000 titres, la suite dite tronquée", () => {
-    const pl = readText(Array.from({ length: 1_200 }, (_, i) => `A - T${i}`).join("\n"));
-    expect(pl.tracks).toHaveLength(1_000);
+  it("9 000 titres entrent tous : la limite n'est qu'un garde-fou mémoire", () => {
+    const pl = readText(Array.from({ length: 9_000 }, (_, i) => `A - T${i}`).join("\n"));
+    expect(pl.tracks).toHaveLength(9_000);
+    expect(pl.truncated).toBe(false);
+  });
+
+  it("garde-fou : 100 000 titres, la suite dite tronquée", () => {
+    const pl = readText(Array.from({ length: 100_200 }, (_, i) => `A - T${i}`).join("\n"));
+    expect(pl.tracks).toHaveLength(100_000);
     expect(pl.truncated).toBe(true);
   });
 });

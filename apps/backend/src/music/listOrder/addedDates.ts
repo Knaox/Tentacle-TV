@@ -33,6 +33,33 @@ export interface AddedDatesOptions extends AddedPlanOptions {
   legacyScope?: string;
 }
 
+/** Lignes par INSERT (3 variables chacune : loin de la limite de SQLite). */
+const UPSERT_CHUNK = 300;
+
+/**
+ * Les dates à garder, en INSERT groupés (lot « pg », 10/11 : 9 000 `upsert` un à un prenaient 2,3 s à la première
+ * lecture d'une playlist importée). Une date du rang dans la source fait foi (`replace`) ; toute autre ne remplace
+ * jamais une date déjà gardée. Les dates se lient en `Date` : le moteur les écrit en INTEGER ms.
+ */
+function groupedUpserts(scope: string, rows: readonly { itemId: string; addedAt: number; replace?: boolean }[]) {
+  const prisma = getPrisma();
+  const out: ReturnType<typeof prisma.$executeRawUnsafe>[] = [];
+  for (const replace of [true, false]) {
+    const part = rows.filter((r) => (r.replace === true) === replace);
+    for (let i = 0; i < part.length; i += UPSERT_CHUNK) {
+      const chunk = part.slice(i, i + UPSERT_CHUNK);
+      out.push(
+        prisma.$executeRawUnsafe(
+          `INSERT INTO "music_list_added" ("scope", "itemId", "addedAt") VALUES ${chunk.map(() => "(?, ?, ?)").join(", ")}
+           ON CONFLICT ("scope", "itemId") DO ${replace ? `UPDATE SET "addedAt" = excluded."addedAt"` : "NOTHING"}`,
+          ...chunk.flatMap((r) => [scope, r.itemId, new Date(r.addedAt)]),
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 /** Les dates d'entrée des titres de `ids` (relevées, estimées à la première lecture), la table tenue à jour. */
 export async function addedDatesFor(
   scope: string,
@@ -50,14 +77,7 @@ export async function addedDatesFor(
       await prisma.$transaction([
         ...(legacy ? [prisma.musicListAdded.deleteMany({ where: { scope: legacy } })] : []),
         ...(plan.remove.length > 0 ? [prisma.musicListAdded.deleteMany({ where: { scope, itemId: { in: plan.remove } } })] : []),
-        ...plan.insert.map((r) =>
-          prisma.musicListAdded.upsert({
-            where: { scope_itemId: { scope, itemId: r.itemId } },
-            create: { scope, itemId: r.itemId, addedAt: new Date(r.addedAt) },
-            // Une date du rang dans la source fait foi ; toute autre ne remplace jamais une date déjà gardée.
-            update: r.replace ? { addedAt: new Date(r.addedAt) } : {},
-          }),
-        ),
+        ...groupedUpserts(scope, plan.insert),
       ]);
     } catch (error) {
       // Une écriture concurrente (deux lectures à la fois) : la date relevée reste juste pour cette réponse.
@@ -100,16 +120,17 @@ export async function noteArrival(playlistId: string, before: readonly string[],
     const prisma = getPrisma();
     const rows = await prisma.musicListAdded.findMany({ where: { scope }, select: { itemId: true, addedAt: true } });
     let known = new Map(rows.map((r) => [r.itemId, r.addedAt.getTime()]));
+    const when = addedAt === undefined ? undefined : Math.min(addedAt, Date.now());
     if (known.size === 0) {
-      if (addedAt === undefined || before.length === 0) return;
-      known = await addedDatesFor(scope, before, undefined, { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
+      if (when === undefined || before.length === 0) return;
+      // Les entrées d'avant sont estimées AVANT l'arrivée, jamais après elle : l'horloge a avancé depuis `addedAt`.
+      known = await addedDatesFor(scope, before, (_id, index) => when - (before.length - index), { ordered: true, legacyScope: legacyPlaylistScope(playlistId) });
     }
     const index = await rowsByIds([...new Set([...before, ...inserted])]);
     const identity = (id: string): string | null => {
       const row = index.get(id);
       return row ? listAlias(row.recordingMbid, row.name, row.artists[0]?.name ?? row.albumArtist ?? "") : null;
     };
-    const when = addedAt === undefined ? undefined : Math.min(addedAt, Date.now());
     const dates = planArrivalDates({ known, before, inserted, at, identity, addedAt: when });
     if (dates.size === 0) return;
     await prisma.$transaction(

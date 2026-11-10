@@ -4,7 +4,8 @@
  * (sections `…-detail-header` et `track-list`, relevé du 26/10/2026). L'en-tête
  * dit `trackCount` : une page qui en montre moins le dit par `truncated`.
  * Les artistes sont les liens du sous-titre (un par artiste), sinon
- * `artistName` ; l'album, le premier lien tertiaire (playlist) ou l'en-tête.
+ * `artistName` ; l'album, le premier lien tertiaire (playlist) ou l'en-tête ;
+ * la pochette et le badge explicite de chaque titre (relevé du 10/11).
  */
 
 import type { ImportedPlaylist } from "../../contract/musicImport";
@@ -28,10 +29,11 @@ function albumName(title: string | null): string | null {
   return title ? title.replace(/\s+-\s+(?:Single|EP)$/i, "") : null;
 }
 
-function artworkOf(header: Item | null): string | null {
-  const url = field(record(record(header?.artwork)?.dictionary)?.url);
+/** La pochette d'un en-tête (600 px) ou d'un titre (300 px : une ligne de liste), sur l'hôte d'images d'Apple. */
+function artworkOf(item: Item | null, size: number): string | null {
+  const url = field(record(record(item?.artwork)?.dictionary)?.url);
   if (!url || !/^https:\/\/is\d+-ssl\.mzstatic\.com\//.test(url)) return null;
-  return url.replace("{w}", "600").replace("{h}", "600").replace("{f}", "jpg");
+  return url.replace("{w}", String(size)).replace("{h}", String(size)).replace("{f}", "jpg");
 }
 
 export function parseApplePage(html: string, kind: "playlist" | "album"): ImportedPlaylist {
@@ -50,12 +52,14 @@ export function parseApplePage(html: string, kind: "playlist" | "album"): Import
         durationMs: durationOf(t.duration),
         isrc: null,
         sourceId: field(record(record(t.contentDescriptor)?.identifiers)?.storeAdamID),
+        artworkUrl: artworkOf(t, 300),
+        ...(t.showExplicitBadge === true ? { explicit: true as const } : {}),
       };
     }),
   );
   if (tracks.length === 0) throw new ImportReadFailure("empty");
   const declared = typeof header?.trackCount === "number" ? header.trackCount : 0;
-  return { source: "apple", name: albumName(name) ?? "Apple Music", tracks, truncated: truncated || declared > items.length, artworkUrl: artworkOf(header) };
+  return { source: "apple", name: albumName(name) ?? "Apple Music", tracks, truncated: truncated || declared > items.length, artworkUrl: artworkOf(header, 600) };
 }
 
 export async function readApple(fetcher: ImportFetcher, kind: "playlist" | "album", url: string): Promise<ImportedPlaylist> {

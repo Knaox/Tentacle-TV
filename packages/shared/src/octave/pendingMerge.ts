@@ -8,7 +8,7 @@
  * ou dont l'élément Jellyfin est connu, cède sa place : jamais de doublon.
  */
 
-import { pendingAsPlaylistEntry, sourcePlace, type MusicPlaylistEntry, type MusicTrack, type PendingMusicItem } from "../music";
+import { pendingAsPlaylistEntry, sourcePlacer, type MusicPlaylistEntry, type MusicTrack, type PendingMusicItem } from "../music";
 import { sameRecording } from "./trackTwins";
 
 export interface ListRow {
@@ -70,9 +70,9 @@ export function mergePlaylist(entries: readonly MusicPlaylistEntry[], pending: r
   const tracks = ordered.map((e) => e.track);
   const recordings = knownRecordings(tracks);
   const keys = new Set(tracks.map((t) => t.key));
-  const ranks = ordered.map((e) => (typeof e.sourceIndex === "number" ? e.sourceIndex : null));
+  const place = sourcePlacer(ordered.map((e) => (typeof e.sourceIndex === "number" ? e.sourceIndex : null)));
   const placeOf = (item: PendingMusicItem): number =>
-    (typeof item.sourceIndex === "number" ? sourcePlace(ranks, item.sourceIndex) : null) ?? pendingAsPlaylistEntry(item).position;
+    (typeof item.sourceIndex === "number" ? place(item.sourceIndex) : null) ?? pendingAsPlaylistEntry(item).position;
   const waiting = pending
     // Un doublon CONFIRMÉ ne se fond pas dans l'entrée existante : il a sa rangée.
     .filter((item) => item.kind === "playlistAdd" && item.playlistId === playlistId && (item.duplicate === true || !alreadyThere(item, recordings, keys)))

@@ -12,6 +12,8 @@ import { IMPORT_SKIP_REASONS, type ImportAbsentTrack, type ImportSkipReason, typ
 
 /** Au-delà de ce nombre de titres non importés, leur liste est repliée sous le bilan. */
 export const IMPORT_REPORT_FOLD_AT = 5;
+/** Titres non importés MONTRÉS au plus (lot « pg » : 6 000 lignes dépliées d'un coup figeaient le mobile) ; la suite se compte. */
+export const IMPORT_REPORT_LIST_MAX = 300;
 
 /** Un titre de la source qui n'est pas dans la playlist, et pourquoi. */
 export interface ImportMissingTrack extends ImportAbsentTrack {
@@ -71,6 +73,9 @@ export interface ImportReport {
   reasons: { reason: ImportSkipReason; count: number }[];
   /** La liste se replie (trop longue pour être montrée d'emblée). */
   folded: boolean;
+  /** Ceux qu'on montre (les `IMPORT_REPORT_LIST_MAX` premiers, ordre de la source), et combien après eux. */
+  listed: ImportMissingTrack[];
+  unlisted: number;
 }
 
 export interface ImportReportInput {
@@ -93,5 +98,7 @@ export function importReport(input: ImportReportInput): ImportReport {
     missing,
     reasons: IMPORT_SKIP_REASONS.map((reason) => ({ reason, count: missing.filter((t) => t.reason === reason).length })).filter((r) => r.count > 0),
     folded: missing.length > IMPORT_REPORT_FOLD_AT,
+    listed: missing.slice(0, IMPORT_REPORT_LIST_MAX),
+    unlisted: Math.max(0, missing.length - IMPORT_REPORT_LIST_MAX),
   };
 }
