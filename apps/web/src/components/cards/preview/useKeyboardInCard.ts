@@ -10,22 +10,25 @@ import { useEffect, useState, type RefObject } from "react";
  * et ne doit pas priver la souris de son aperçu.
  */
 export function useKeyboardInCard(anchorRef: RefObject<HTMLElement | null>, active: boolean): boolean {
-  const [inside, setInside] = useState(false);
+  const [state, setState] = useState({ active: false, inside: false });
+  // Le survol commence (ou finit) À CE RENDU : le focus est lu tout de suite — jamais « hors du
+  // plateau » le temps d'un effet, focus posé sur un de ses boutons (cf. `usePreviewPointer`).
+  let current = state;
+  if (state.active !== active) {
+    current = { active, inside: active && focusInCard(anchorRef.current) };
+    setState(current);
+  }
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    if (!active || !anchor) {
-      setInside(false);
-      return;
-    }
-    const focused = document.activeElement;
-    setInside(focused instanceof HTMLElement && anchor.contains(focused) && focused.matches(":focus-visible"));
+    if (!active || !anchor) return;
+    const apply = (inside: boolean) => setState((known) => (known.active && known.inside !== inside ? { active: true, inside } : known));
     const onIn = (e: FocusEvent) => {
-      setInside(e.target instanceof HTMLElement && e.target.matches(":focus-visible"));
+      apply(e.target instanceof HTMLElement && e.target.matches(":focus-visible"));
     };
     const onOut = (e: FocusEvent) => {
       const next = e.relatedTarget;
-      if (!(next instanceof Node) || !anchor.contains(next)) setInside(false);
+      if (!(next instanceof Node) || !anchor.contains(next)) apply(false);
     };
     anchor.addEventListener("focusin", onIn);
     anchor.addEventListener("focusout", onOut);
@@ -35,5 +38,12 @@ export function useKeyboardInCard(anchorRef: RefObject<HTMLElement | null>, acti
     };
   }, [anchorRef, active]);
 
-  return inside;
+  return current.active && current.inside;
+}
+
+/** Le focus CLAVIER est-il, maintenant, sur un élément de la carte (son plateau) ? */
+function focusInCard(anchor: HTMLElement | null): boolean {
+  if (!anchor || typeof document === "undefined") return false;
+  const focused = document.activeElement;
+  return focused instanceof HTMLElement && anchor.contains(focused) && focused.matches(":focus-visible");
 }
