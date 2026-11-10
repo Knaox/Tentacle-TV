@@ -1,6 +1,7 @@
 #include "platform/linux/egl_linux.h"
 
 #include <EGL/eglext.h>
+#include <SDL3/SDL.h>
 #include <X11/Xlib.h>
 #include <wayland-egl.h>
 
@@ -49,6 +50,21 @@ EGLConfig pickConfig(EGLDisplay d, bool alpha, int visualId) {
 // l'autre pile (Compositor::lendVideo).
 EGLDisplay g_rootDisplay = EGL_NO_DISPLAY;
 EGLContext g_rootContext = EGL_NO_CONTEXT;
+
+// SDL dessine aussi en EGL (SDL_Renderer : bulle d'aide, vignette du glisser-déposer) sur LA
+// MÊME connexion d'affichage, donc le MÊME EGLDisplay que le nôtre. À la destruction de sa
+// dernière fenêtre GL, SDL décharge sa bibliothèque et appelle eglTerminate : notre compositeur
+// perdait tout (eglMakeCurrent → EGL_NOT_INITIALIZED, l'app figée au premier survol d'un
+// `title=` ; pris sous gdb le 10/11). SDL compte ses chargements : un de plus, jamais rendu,
+// et il ne termine plus l'affichage tant que l'app vit.
+void holdSdlGlLibrary() {
+  static const bool held = [] {
+    const bool ok = SDL_GL_LoadLibrary(nullptr);
+    if (!ok) std::fprintf(stderr, "[egl] SDL_GL_LoadLibrary refusé : %s\n", SDL_GetError());
+    return ok;
+  }();
+  (void)held;
+}
 
 }  // namespace
 
@@ -100,6 +116,7 @@ std::unique_ptr<EglWindow> EglWindow::create(const LinuxWindow& w, int widthPx, 
     g_rootDisplay = e->display_;
     g_rootContext = e->context_;
     e->shared_ = true;  // la racine partage avec elle-même
+    holdSdlGlLibrary();
   }
   if (e->context_ == EGL_NO_CONTEXT) {
     std::fprintf(stderr, "[egl] eglCreateContext a échoué (0x%x)\n", eglGetError());
