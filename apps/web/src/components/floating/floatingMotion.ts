@@ -1,5 +1,5 @@
 import type { Variants } from "framer-motion";
-import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
+import { duration, easeOut, exitDuration } from "../../theme/motion";
 import { springToFramer, type GlassSpring } from "../../theme/glass/springs";
 
 /**
@@ -22,10 +22,12 @@ export const MENU_OPEN_SPRING: GlassSpring = { response: 0.3, dampingFraction: 0
 /** L'échelle de départ d'un menu en verre : il sort du bouton, pas de nulle part. */
 export const MENU_FROM_SCALE = 0.9;
 
+// Hors du verre natif (refonte de nov. 2026) : le menu SORT de son bouton — l'échelle part de
+// l'origine que pose le placement —, 180 ms à l'entrée, 120 à la sortie, la même courbe.
 const LEGACY: Variants = {
   hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: { duration: duration.fast, ease: easeOut } },
-  exit: { opacity: 0, scale: 0.97, transition: { duration: exitDuration(duration.fast), ease: easeIn } },
+  show: { opacity: 1, scale: 1, transition: { duration: duration.menuIn, ease: easeOut } },
+  exit: { opacity: 0, scale: 0.96, transition: { duration: duration.menuOut, ease: easeOut } },
 };
 
 const GLASS: Variants = {
@@ -35,17 +37,24 @@ const GLASS: Variants = {
     scale: 1,
     transition: { scale: springToFramer(MENU_OPEN_SPRING), opacity: { duration: duration.fast * 0.8, ease: easeOut } },
   },
-  exit: { opacity: 0, scale: 0.96, transition: { duration: exitDuration(duration.fast), ease: easeIn } },
+  exit: { opacity: 0, scale: 0.96, transition: { duration: exitDuration(duration.fast), ease: easeOut } },
 };
 
 const GLASS_REDUCED: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: duration.fast, ease: easeOut } },
-  exit: { opacity: 0, transition: { duration: exitDuration(duration.fast), ease: easeIn } },
+  exit: { opacity: 0, transition: { duration: exitDuration(duration.fast), ease: easeOut } },
+};
+
+/** Mouvement réduit, hors verre : le fondu seul — plus d'échelle. */
+const LEGACY_REDUCED: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.menuOut, ease: easeOut } },
+  exit: { opacity: 0, transition: { duration: duration.menuOut, ease: easeOut } },
 };
 
 export function floatingVariants(nativeGlass: boolean, reducedMotion: boolean): Variants {
-  if (!nativeGlass) return LEGACY;
+  if (!nativeGlass) return reducedMotion ? LEGACY_REDUCED : LEGACY;
   return reducedMotion ? GLASS_REDUCED : GLASS;
 }
 

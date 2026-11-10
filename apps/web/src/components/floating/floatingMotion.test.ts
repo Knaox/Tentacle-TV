@@ -6,12 +6,16 @@ type Step = { opacity?: number; scale?: number; transition?: { duration?: number
 const step = (variants: ReturnType<typeof floatingVariants>, name: string) => variants[name] as Step;
 
 describe("le mouvement des menus", () => {
-  it("hors verre : le fondu et l'échelle d'avant, inchangés", () => {
+  it("hors verre : il sort de son bouton en 180 ms et repart en 120, par le même chemin", () => {
     const legacy = floatingVariants(false, false);
     expect(step(legacy, "hidden")).toEqual({ opacity: 0, scale: 0.96 });
-    expect(step(legacy, "exit").scale).toBe(0.97);
-    // Le mouvement réduit n'y change rien : le rendu d'avant ne le lisait pas ici.
-    expect(floatingVariants(false, true)).toBe(legacy);
+    expect(step(legacy, "exit").scale).toBe(0.96);
+    expect(step(legacy, "show").transition?.duration).toBe(0.18);
+    expect(step(legacy, "exit").transition?.duration).toBe(0.12);
+    // Mouvement réduit : le fondu seul, sans échelle.
+    const reduced = floatingVariants(false, true);
+    expect(step(reduced, "hidden")).toEqual({ opacity: 0 });
+    expect(step(reduced, "exit").scale).toBeUndefined();
   });
 
   it("en verre : il naît du déclencheur sur un ressort, et repart plus vite", () => {

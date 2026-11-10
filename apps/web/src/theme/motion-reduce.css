@@ -20,8 +20,19 @@
     --duration-base: 0ms;
     --duration-slow: 0ms;
     --duration-page: 0ms;
+    --duration-press: 0ms;
+    --duration-hover: 0ms;
+    --duration-menu-in: 0ms;
+    --duration-menu-out: 0ms;
+    --duration-card: 0ms;
+    --duration-sheet-in: 0ms;
+    --duration-sheet-out: 0ms;
     --hover-delay: 0ms;
     --hover-scale: 1;
+    /* Plus d'échelle : ni la pression d'un bouton ni le survol d'une carte ne bougent. Les
+     * changements de couleur, eux, restent — ils disent l'état sans déplacer quoi que ce soit. */
+    --press-scale: 1;
+    --card-hover-scale: 1;
   }
 }
 

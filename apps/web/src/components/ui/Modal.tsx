@@ -3,7 +3,8 @@ import { useGlassControl } from "./glass/useGlassControl";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
+import { duration, easeDrawer, easeOut } from "../../theme/motion";
+import { useLiquidGlassMode } from "../../theme/glass";
 
 interface ModalProps {
   open: boolean;
@@ -32,30 +33,37 @@ interface ModalProps {
   initialFocus?: () => HTMLElement | null | undefined;
 }
 
+// Une feuille (refonte de nov. 2026) : elle entre en 320 ms sur la courbe de tiroir, depuis 97 %
+// — jamais depuis rien —, et sort en 200 ms. L'opacité court plus vite que la forme : le contenu
+// se lit avant que la feuille ait fini de se poser. Centrée : son origine reste son centre.
 const PANEL_VARIANTS = {
-  hidden: { opacity: 0, scale: 0.96, y: 8 },
+  hidden: { opacity: 0, scale: 0.97, y: 10 },
   show: {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { duration: duration.base, ease: easeOut },
+    transition: { duration: duration.sheetIn, ease: easeDrawer, opacity: { duration: 0.22, ease: "easeOut" } },
   },
   exit: {
     opacity: 0,
-    scale: 0.96,
-    y: 8,
-    transition: { duration: exitDuration(duration.base), ease: easeIn },
+    scale: 0.97,
+    y: 10,
+    transition: { duration: duration.sheetOut, ease: easeOut, opacity: { duration: 0.16, ease: "easeOut" } },
   },
 };
 
-// Mouvement réduit : un fondu court, sans déplacement ni échelle. Un jeu de
-// variantes CONSTANT, comme l'autre — framer compare les objets par identité,
-// un objet recréé à chaque rendu relancerait l'animation.
 const PANEL_VARIANTS_REDUCED = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: duration.fast } },
-  exit: { opacity: 0, transition: { duration: exitDuration(duration.fast) } },
+  exit: { opacity: 0, transition: { duration: duration.menuOut } },
 };
+
+const PLAIN_SCRIM = { background: "var(--glass-backdrop)" } as const;
+const NATIVE_SCRIM = {
+  background: "var(--glass-backdrop)",
+  backdropFilter: "blur(var(--blur-modal))",
+  WebkitBackdropFilter: "blur(var(--blur-modal))",
+} as const;
 
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
@@ -104,6 +112,7 @@ export function Modal({
   }, [glassRef]);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
+  const native = useLiquidGlassMode() === "native";
 
   // Esc ferme ; Tab boucle dans le panneau. Le piège vit sur `window` : le
   // focus peut s'être échappé (clic sur le scrim, lecteur d'écran), et c'est
@@ -183,19 +192,14 @@ export function Modal({
         <motion.div
           className="lg-scrim fixed inset-0 z-[100] flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: reduced ? 0.12 : 0.18 } }}
-          exit={{ opacity: 0, transition: { duration: reduced ? 0.08 : 0.12 } }}
+          animate={{ opacity: 1, transition: { duration: reduced ? 0.12 : 0.2 } }}
+          exit={{ opacity: 0, transition: { duration: reduced ? 0.08 : 0.16 } }}
           onClick={handleBackdrop}
           role="presentation"
-          style={{
-            // `--glass-backdrop` EST le scrim de modale du design system : il
-            // reste sombre dans les deux schémas (standard iOS au-dessus de
-            // contenus photo/vidéo), simplement plus léger en clair. Le
-            // `rgba(0,0,0,0.65)` en dur qu'il remplace ignorait le thème.
-            background: "var(--glass-backdrop)",
-            backdropFilter: "blur(var(--blur-modal))",
-            WebkitBackdropFilter: "blur(var(--blur-modal))",
-          }}
+          // Le voile seul : hors du verre natif, plus de flou plein écran derrière une feuille
+          // opaque (une passe de composition par image pour un fond qu'on ne regarde pas). Le
+          // verre natif garde le sien — sa feuille est translucide et lit ce flou.
+          style={native ? NATIVE_SCRIM : PLAIN_SCRIM}
         >
           <motion.div
             ref={setPanel}
@@ -210,8 +214,7 @@ export function Modal({
             style={{
               maxWidth: typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
               background: "var(--surface-modal)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: "var(--radius-xl)",
+              borderRadius: "var(--radius-3xl)",
               boxShadow: "var(--shadow-modal)",
               // AUCUN backdrop-filter sur le panneau. Il portait la réfraction
               // Liquid Glass — sous un fond à 0,96 d'alpha, invisible (règle du

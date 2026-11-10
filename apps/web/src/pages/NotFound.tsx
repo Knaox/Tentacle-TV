@@ -40,7 +40,7 @@ export function NotFound() {
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
+          className="inline-flex items-center gap-2 rounded-md bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover"
           style={{ boxShadow: "0 8px 30px rgba(var(--brand-rgb), 0.35)" }}
         >
           {t("common:backHome", { defaultValue: "Retour à l'accueil" })}

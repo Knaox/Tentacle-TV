@@ -23,19 +23,14 @@ interface CardImageProps {
   className?: string;
   /** Fallback rendered when the image fails to load. */
   fallback?: React.ReactNode;
-  /**
-   * Zoom interne au survol de la carte parente. À couper (`false`) sur une
-   * carte qui ne mène nulle part : un zoom y promettrait un geste qui n'existe
-   * pas.
-   */
-  zoom?: boolean;
 }
 
 /**
- * Lazy-loaded image with shimmer skeleton + graceful error fallback.
- * Used by both PosterCard and EpisodeCard.
+ * L'image d'une carte : chargée à l'approche, sur une teinte calme en attendant, puis UN fondu —
+ * et là d'emblée si elle a déjà été vue. Plus de zoom interne au survol (refonte de nov. 2026 :
+ * la carte grandit de 3 % sur place, `CardFrame`, et c'est tout).
  */
-export function CardImage({ src, alt, className, fallback, zoom = true }: CardImageProps) {
+export function CardImage({ src, alt, className, fallback }: CardImageProps) {
   /* L'échec est attaché à l'ADRESSE, pas au composant.
    *
    * Les cartes sont recyclées au défilement : la même instance sert un autre
@@ -151,12 +146,12 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           }}
           // Zoom interne discret au survol de la carte parente (`group/card`) —
           // le conteneur masque le débord (overflow-hidden côté carte).
-          className={`h-full w-full object-cover motion-reduce:!transform-none ${
-            zoom ? "group-hover/card:scale-[1.06]" : ""
-          }`}
+          className="h-full w-full object-cover"
           style={{
+            // UN fondu, et seulement pour une image jamais vue : `loaded` naît vrai quand elle
+            // l'a déjà été (`wasImageSeen`) — elle est alors là d'emblée.
             opacity: loaded ? 1 : 0,
-            transition: "opacity 240ms ease-out, transform 300ms var(--ease-out)",
+            transition: "opacity var(--duration-card) ease-out",
           }}
         />
       )}

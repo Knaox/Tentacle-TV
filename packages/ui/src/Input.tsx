@@ -6,20 +6,15 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   inputSize?: Size;
 }
 
+// Le champ du socle (apps/web/src/theme/overlays.css, `.field`) : 40 px, ou 32 en petit.
 const sizeClasses: Record<Size, string> = {
-  sm: "px-3 py-2 text-sm",
-  md: "px-5 py-3 text-sm",
+  sm: "h-8 text-[13px]",
+  md: "",
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ inputSize = "md", className = "", ...props }, ref) => {
-    return (
-      <input
-        ref={ref}
-        className={`w-full rounded-lg border border-line-subtle bg-fill-subtle text-content-primary placeholder-content-quaternary outline-none transition-all focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.5)] focus:border-[rgba(var(--brand-rgb),0.5)] ${sizeClasses[inputSize]} ${className}`}
-        {...props}
-      />
-    );
+    return <input ref={ref} className={`field ${sizeClasses[inputSize]} ${className}`} {...props} />;
   }
 );
 

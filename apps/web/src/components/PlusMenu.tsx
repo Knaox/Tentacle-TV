@@ -324,7 +324,7 @@ function PinnableRow({
       </button>
       {onTogglePin && <button
         onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
-        className={`mr-2 flex-shrink-0 rounded-lg p-2 transition-all ${
+        className={`mr-2 flex-shrink-0 rounded-lg p-2 transition ${
           isPinned
             ? "text-[var(--brand)] hover:bg-[rgba(var(--brand-rgb),0.1)]"
             : "text-content-disabled hover:bg-fill-subtle hover:text-content-tertiary"

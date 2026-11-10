@@ -16,6 +16,10 @@ import { DEFAULT_TYPOGRAPHY_TOKENS } from "../tokens/typography";
  * extra screens, …) stay in the consuming app config.
  */
 export const tentacleTailwindPreset: Partial<Config> = {
+  // Un `hover:` ne vaut qu'à la souris : Tailwind l'enferme dans
+  // `@media (hover: hover) and (pointer: fine)`. Au doigt, un survol reste collé après le
+  // toucher — un bouton « allumé » qu'on vient de quitter. Vaut pour `group-hover:` aussi.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       screens: {

@@ -20,16 +20,19 @@
  * quand il se répète à chaque carte traversée. Une carte est un objet lourd
  * qui monte et s'arrête, pas un jouet à ressort.
  *
- * Un seul tempo pour le déplacement ET les ombres, `--duration-base` : la
+ * Un seul tempo pour l'échelle ET les ombres, `--duration-card` : la
  * préférence « animations réduites » le met à 0 ms, donc elle est respectée par
  * construction, sans `!important` ni valeur en dur à rattraper. */
 .media-tile {
   /* Rayon sans `overflow` : rien n'est rogné, mais les ombres des deux calques
    * d'élévation ci-dessous épousent les coins de l'affiche. */
   border-radius: var(--radius-lg);
+  /* +3 % SUR PLACE en 220 ms (refonte de nov. 2026) : la carte ne se lève plus de 8 px ni ne
+   * grandit de 6 % — elle répond, elle ne saute pas. L'échelle est posée par `CardFrame`
+   * (`--card-hover-scale`). */
   transition:
-    transform var(--duration-base) var(--ease-out),
-    opacity var(--duration-base) var(--ease-out);
+    transform var(--duration-card) var(--ease-out),
+    opacity var(--duration-card) var(--ease-out);
 }
 
 /* ── Élévation : deux calques en fondu, jamais une ombre animée ─────────
@@ -100,7 +103,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-out);
+  transition: opacity var(--duration-card) ease;
 }
 
 .media-tile::before {
@@ -187,8 +190,8 @@
   transform: scale(0.94);
   pointer-events: none;
   transition:
-    opacity 160ms cubic-bezier(0.4, 0, 1, 1),
-    transform 160ms cubic-bezier(0.4, 0, 1, 1);
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
 
 /* ── La légende sous une carte (année, durée, épisode, sous-titre) ────────

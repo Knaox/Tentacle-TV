@@ -52,7 +52,7 @@ export const PotentialTile = memo(function PotentialTile({ taste }: { taste: Vie
                 key={p.key}
                 className={`relative block aspect-[2/3] w-9 overflow-hidden rounded-md bg-fill-soft ring-2 ring-[color:var(--surface-0)] ${i > 0 ? "-ml-2.5" : ""}`}
               >
-                <CardImage src={p.url} alt="" className="h-full w-full object-cover" zoom={false} />
+                <CardImage src={p.url} alt="" className="h-full w-full object-cover" />
               </span>
             ))}
           </span>

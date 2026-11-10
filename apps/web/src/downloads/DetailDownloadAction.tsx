@@ -115,7 +115,7 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
         {...(variant === "capsule" ? { ...GLASS_LENS_PROPS, ...capsuleGlass.props } : {})}
         className={variant === "capsule"
           ? capsuleGlass.props.className
-          : `relative flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
+          : `relative flex h-11 w-11 items-center justify-center rounded-full border transition duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
             isComplete
               ? "border-status-success-fg bg-fill-medium text-status-success-fg"
               : "border-line-strong text-content-secondary"

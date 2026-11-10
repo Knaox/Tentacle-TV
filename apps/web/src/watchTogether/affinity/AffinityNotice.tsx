@@ -41,7 +41,7 @@ export function AffinityNotice() {
               aria-hidden
               initial={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0, transition: { duration: reduced ? 0.12 : 0.22, ease: "easeOut" } }}
-              exit={reduced ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, y: -6, transition: { duration: 0.15, ease: "easeIn" } }}
+              exit={reduced ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
               className="flex max-w-full items-center gap-2.5 rounded-2xl py-1.5 pl-1.5 pr-4 text-[13px] font-medium leading-snug text-white"
               style={{
                 background: "rgb(15,15,25)",

@@ -95,20 +95,20 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         <button
           onClick={handleRetry}
           disabled={retrying}
-          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-full bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover active:scale-[0.98] disabled:scale-100 disabled:opacity-60"
+          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-full bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover active:scale-[0.98] disabled:scale-100 disabled:opacity-60"
         >
           {retrying ? t("retrying") : t("retryConnection")}
         </button>
         <button
           onClick={handleLogout}
-          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-danger-surface active:scale-[0.98]"
+          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg backdrop-blur-md transition duration-200 hover:scale-[1.03] hover:bg-danger-surface active:scale-[0.98]"
         >
           {t("offlineLogout")}
         </button>
         {isDesktopApp() && (
           <button
             onClick={handleChangeServer}
-            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"
+            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"
           >
             {t("changeServer")}
           </button>

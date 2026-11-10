@@ -108,7 +108,7 @@ function LegacyTrickplayPreview({
         transformOrigin: "bottom center",
         transition: visible
           ? `opacity 160ms ease-out, transform 200ms ${ENTER_EASING}`
-          : "opacity 110ms ease-in, transform 130ms ease-in",
+          : "opacity 110ms ease-out, transform 130ms ease-out",
         fontFamily: '"DM Sans", system-ui, sans-serif',
       }}
     >

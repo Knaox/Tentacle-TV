@@ -4,7 +4,13 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { focusableIn } from "./Modal";
-import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
+import { duration, easeDrawer, easeOut } from "../../theme/motion";
+import { useLiquidGlassMode } from "../../theme/glass";
+
+const NATIVE_BACKDROP = {
+  backdropFilter: "blur(var(--blur-sheet))",
+  WebkitBackdropFilter: "blur(var(--blur-sheet))",
+} as const;
 
 export type SheetPlacement = "right" | "bottom";
 
@@ -57,6 +63,7 @@ export function Sheet({
   trapFocus = false,
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const native = useLiquidGlassMode() === "native";
   // Verre natif : le ton du dessous (`data-lg-tone`), auquel les textes de la
   // feuille s'adaptent — UN ton pour toute la feuille, jamais de bandes.
   const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
@@ -138,8 +145,8 @@ export function Sheet({
         <motion.div
           className="fixed inset-0 z-[90]"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: duration.fast } }}
-          exit={{ opacity: 0, transition: { duration: exitDuration(duration.fast) } }}
+          animate={{ opacity: 1, transition: { duration: 0.2 } }}
+          exit={{ opacity: 0, transition: { duration: 0.16 } }}
           onClick={onClose}
           role="presentation"
           // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
@@ -157,19 +164,18 @@ export function Sheet({
             style={{
               ...panelStyle,
               background: "var(--surface-sheet)",
-              borderLeft: isRight ? "1px solid var(--border-subtle)" : undefined,
-              borderTop: !isRight ? "1px solid var(--border-subtle)" : undefined,
-              borderTopLeftRadius: isRight ? "var(--radius-xl)" : "var(--radius-xl)",
-              borderTopRightRadius: !isRight ? "var(--radius-xl)" : 0,
-              borderBottomLeftRadius: isRight ? "var(--radius-xl)" : 0,
+              borderTopLeftRadius: "var(--radius-3xl)",
+              borderTopRightRadius: !isRight ? "var(--radius-3xl)" : 0,
+              borderBottomLeftRadius: isRight ? "var(--radius-3xl)" : 0,
               boxShadow: "var(--shadow-sheet)",
-              backdropFilter: "blur(var(--blur-sheet))",
-              WebkitBackdropFilter: "blur(var(--blur-sheet))",
+              // Le flou ne sert qu'au verre natif : hors de lui la feuille est opaque.
+              ...(native ? NATIVE_BACKDROP : null),
               overflowY: "auto",
             }}
             initial={initialOffset}
-            animate={{ ...settledOffset, transition: { duration: duration.slow, ease: easeOut } }}
-            exit={{ ...initialOffset, transition: { duration: exitDuration(duration.slow), ease: easeIn } }}
+            // Le tiroir : 320 ms sur sa courbe à l'entrée, 200 ms à la sortie, par le même chemin.
+            animate={{ ...settledOffset, transition: { duration: duration.sheetIn, ease: easeDrawer } }}
+            exit={{ ...initialOffset, transition: { duration: duration.sheetOut, ease: easeOut } }}
             onClick={(e) => e.stopPropagation()}
           >
             {children}

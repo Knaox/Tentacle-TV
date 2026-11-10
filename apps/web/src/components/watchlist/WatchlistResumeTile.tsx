@@ -104,7 +104,6 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
       <CardFrame
         hovered={hover.hovered}
         aspect="aspect-video"
-        lift={{ scale: 1.04, y: -7 }}
         ref={preview.anchorRef}
         concealed={preview.shown}
       >

@@ -123,7 +123,7 @@ export function HeroIndicators({
               onClick={() => onSelect(i)}
               aria-label={`Slide ${i + 1}`}
               aria-current={active}
-              className="relative h-1 overflow-hidden rounded-full transition-all duration-500 motion-reduce:transition-none"
+              className="relative h-1 overflow-hidden rounded-full transition-[width] duration-500 motion-reduce:transition-none"
               style={{
                 width: active ? 44 : 14,
                 background: "var(--on-media-muted)",

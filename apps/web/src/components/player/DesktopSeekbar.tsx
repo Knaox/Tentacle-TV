@@ -45,7 +45,7 @@ export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSee
 
   return (
     <div ref={seekBarRef as RefObject<HTMLDivElement>}
-      className={`group/bar relative mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-all ${dragProgress != null ? "h-2.5" : "hover:h-2.5"}`}
+      className={`group/bar relative mb-3 flex h-1.5 cursor-pointer items-center rounded-full bg-white/20 transition-[height] ${dragProgress != null ? "h-2.5" : "hover:h-2.5"}`}
       onMouseDown={onScrubStart}
       onMouseMove={onBarMouseMove}
       onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}

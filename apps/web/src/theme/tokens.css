@@ -184,10 +184,12 @@
   --status-info-bg: rgba(59, 130, 246, 0.15);
   --status-info-fg: #60A5FA;
 
-  /* ── Surface tiers — extended for popups/modals ─────────────── */
-  --surface-modal: rgba(19, 19, 21, 0.98);
-  --surface-dropdown: rgba(30, 30, 34, 0.96);
-  --surface-sheet: rgba(19, 19, 21, 0.98);
+  /* ── Calques : feuille, menu — OPAQUES ──────────────────────────
+   * Sans flou dessous (CLAUDE.md, « Coût GPU »), la moindre transparence laisse lire la page à
+   * travers le calque. Le verre natif pose ses propres remplissages (lgOverlays.css). */
+  --surface-modal: #131315;
+  --surface-dropdown: #1E1E22;
+  --surface-sheet: #131315;
   --surface-toolbar: rgba(19, 19, 21, 0.9);
 
   /* ── Blur scale — unify all overlays ────────────────────────── */
@@ -306,9 +308,9 @@
   --surface-overlay: rgba(19, 19, 21, 0.4);
   --surface-0-tint: #EEEDE9;
 
-  --surface-modal: rgba(255, 255, 255, 0.98);
-  --surface-dropdown: rgba(255, 255, 255, 0.97);
-  --surface-sheet: rgba(255, 255, 255, 0.98);
+  --surface-modal: #FFFFFF;
+  --surface-dropdown: #FFFFFF;
+  --surface-sheet: #FFFFFF;
   --surface-toolbar: rgba(255, 255, 255, 0.9);
 
   /* ── Marque — l'accent lisible sur fond clair est la nuance FONCÉE.

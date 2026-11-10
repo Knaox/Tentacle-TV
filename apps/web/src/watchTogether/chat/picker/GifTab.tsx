@@ -26,7 +26,7 @@ const GifCell = memo(function GifCell({
     <button
       onClick={() => onSend(gif)}
       aria-label={sendLabel}
-      className={`overflow-hidden rounded-lg transition-all hover:ring-1 hover:ring-purple-400/60 ${sent ? "ring-2 ring-purple-400" : ""}`}
+      className={`overflow-hidden rounded-lg transition hover:ring-1 hover:ring-purple-400/60 ${sent ? "ring-2 ring-purple-400" : ""}`}
     >
       <img
         src={gif.url}

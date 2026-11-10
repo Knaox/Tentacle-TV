@@ -160,7 +160,6 @@ export const EpisodeCard = memo(function EpisodeCard({
         // et le débord latéral vaut `width × (échelle − 1) / 2`. À 1920 px elle
         // fait ~443 px, donc 8,9 px de débord par côté — il reste 3,1 px dans la
         // gouttière de 12 px. `1.045` n'en laisserait que 2 : c'est le plafond.
-        lift={{ scale: 1.04, y: -7 }}
         ref={preview.anchorRef}
         concealed={preview.shown}
       >

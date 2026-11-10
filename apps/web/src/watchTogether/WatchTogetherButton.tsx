@@ -35,7 +35,7 @@ function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButto
       <button
         ref={buttonRef}
         onClick={() => setOpen((p) => !p)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-fill-subtle text-content-secondary transition-all duration-200 hover:bg-fill-soft hover:text-content-primary"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-fill-subtle text-content-secondary transition duration-200 hover:bg-fill-soft hover:text-content-primary"
         aria-label="Watch Together"
       >
         <GroupIcon active={isInGroup} />

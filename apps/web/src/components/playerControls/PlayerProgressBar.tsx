@@ -109,7 +109,7 @@ export function PlayerProgressBar({
 
   return (
     <div ref={barRef}
-      className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5"
+      className="group/bar relative mb-3 h-1.5 cursor-pointer rounded-full bg-white/20 transition-[height] hover:h-2.5"
       onMouseDown={handleScrubStart} onTouchStart={handleTouchScrubStart} onMouseMove={handleBarHover}
       onMouseEnter={(e) => setBarWidth(e.currentTarget.getBoundingClientRect().width)}
       onMouseLeave={endHover}

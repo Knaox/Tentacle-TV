@@ -69,12 +69,11 @@ export function Dropdown({
         style={{
           minWidth,
           width: "max-content",
+          // Opaque, donc sans flou (CLAUDE.md, « Coût GPU ») ; le verre natif pose le sien
+          // (lgOverlays.css). Le liseré est dans l'ombre.
           background: "var(--surface-dropdown)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "var(--radius-lg)",
+          borderRadius: "var(--radius-xl)",
           boxShadow: "var(--shadow-dropdown)",
-          backdropFilter: "blur(var(--blur-dropdown))",
-          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
         }}
       >
         {children}

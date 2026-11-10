@@ -35,7 +35,7 @@ export function ConfirmDeleteModal({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 hover:scale-[1.03] disabled:opacity-50"
+            className="rounded-lg px-4 py-2 text-sm font-semibold transition duration-150 hover:scale-[1.03] disabled:opacity-50"
             style={{
               background: "var(--status-error-bg)",
               color: "var(--status-error-fg)",

@@ -37,7 +37,7 @@ export const SharedPosterCard = memo(function SharedPosterCard({ item, to, selec
     <>
       <CardFrame hovered={hovered && to !== null} aspect="aspect-[2/3]">
         {poster ? (
-          <CardImage src={poster} alt="" zoom={to !== null} />
+          <CardImage src={poster} alt="" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-surface-2 p-3 text-center text-sm font-semibold text-content-tertiary">
             {item.Name}

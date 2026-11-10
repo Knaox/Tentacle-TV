@@ -18,7 +18,15 @@
   isolation: isolate;
   background-image: var(--cta-brand-gradient);
   color: var(--cta-brand-fg);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  /* Une pilule, comme tout bouton (refonte de nov. 2026) — et plus de liseré blanc : le
+   * dégradé se détache seul. Une classe de rayon de l'appelant l'emporte (émise après). */
+  border-radius: var(--radius-pill);
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+/* La pression : 97 %, dès l'appui. */
+.hero-cta-primary:active {
+  transform: scale(var(--press-scale));
 }
 
 .hero-cta-primary::before {
@@ -34,10 +42,10 @@
   background: #000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .hero-cta-primary:hover::before {
     opacity: 0.1;
   }
