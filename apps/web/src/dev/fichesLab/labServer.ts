@@ -44,7 +44,7 @@ function queryItems(q: URLSearchParams): { Items: MediaItem[]; TotalRecordCount:
     ? LAB_ITEMS.filter((item) => LAB_COLLECTION_TITLES.includes(item.Id))
     : LAB_ITEMS.filter((item) => !parent || item.ParentId === parent);
   // « En cours » d'une bibliothèque de séries montre des épisodes.
-  if (types.includes("Episode")) pool = [...pool.filter((item) => item.Type !== "Series"), ...(parent === "films" ? [] : LAB_EPISODE_ITEMS)];
+  if (types.includes("Episode")) pool = [...pool.filter((item) => item.Type !== "Series"), ...(!parent || parent === "series" ? LAB_EPISODE_ITEMS : [])];
   if (types.length > 0) pool = pool.filter((item) => types.includes(item.Type));
 
   const person = get("PersonIds");

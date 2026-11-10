@@ -86,6 +86,8 @@ function toItem(title: LabTitle): MediaItem {
     Studios: ownStudio ? [{ Name: LAB_STUDIO, Id: studioId(LAB_STUDIO) }] : [],
     People: people(title),
     ProviderIds: {},
+    // Supprimable : le mode sélection d'une bibliothèque coche ses cartes.
+    CanDelete: true,
     // Une bande-annonce distante : le bouton « Bande-annonce » de la fiche paraît.
     RemoteTrailers: title.backdrop ? [{ Url: "https://www.youtube.com/watch?v=eRsGyueVLvQ", Name: "Bande-annonce" }] : [],
     RecursiveItemCount: title.series ? LAB_EPISODES.length : 0,

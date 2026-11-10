@@ -41,6 +41,8 @@ export const SCENES = [
   { name: "recherche-vide", route: "/search" },
   { name: "recherche-genre", route: "/search?genre=Thriller" },
   { name: "ma-liste", route: "/watchlist" },
-  { name: "ma-liste-vue-liste", route: "/watchlist?view=list" },
+  { name: "ma-liste-vue-liste", route: "/watchlist", act: (page) => page.getByRole("radio", { name: "Liste" }).click() },
+  { name: "ma-liste-selection", route: "/watchlist", act: (page) => page.getByRole("button", { name: "Sélectionner" }).click() },
+  { name: "bibliotheque-selection", route: FILMS, act: async (page) => { await page.getByRole("button", { name: "Sélectionner" }).click(); await page.locator('[role="checkbox"]').nth(1).click(); } },
   { name: "mes-favoris", route: "/favorites" },
 ];
