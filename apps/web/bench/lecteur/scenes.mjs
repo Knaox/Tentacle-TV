@@ -36,4 +36,18 @@ export const SCENES = [
   { name: "ecran-secours", query: "vue=ecrans&etat=secours", themes: BOTH, widths: [[1440, 810]] },
   { name: "pip-lecture", query: "vue=pip", themes: BOTH, widths: [[1024, 640]], steps: [hover("[data-lab-stage] > div")] },
   { name: "pip-chargement", query: "vue=pip&etat=chargement", widths: [[1024, 640]] },
+  { name: "maj-disponible", query: "vue=maj&etat=disponible", themes: BOTH, settle: 700 },
+  { name: "maj-telechargement", query: "vue=maj&etat=telechargement", themes: BOTH, settle: 700 },
+  { name: "maj-magasin", query: "vue=maj&etat=magasin", widths: [[1440, 810]], settle: 700 },
+  { name: "maj-installation", query: "vue=maj&etat=installation", themes: BOTH, widths: [[1440, 810]], settle: 700 },
+  { name: "maj-redemarrage", query: "vue=maj&etat=redemarrage", widths: [[1440, 810]], settle: 700 },
+  { name: "maj-erreur", query: "vue=maj&etat=erreur", themes: BOTH, settle: 700 },
+  { name: "maj-appstore", query: "vue=maj&etat=appstore", widths: [[1440, 810]], settle: 700 },
+  // La surcouche de la coquille CEF (son propre Shadow DOM, toujours sombre), sur le lecteur.
+  { name: "cef-telechargement", query: "vue=web&cef=telechargement", settle: 800 },
+  { name: "cef-prete", query: "vue=web&cef=prete", widths: [[1440, 810]], settle: 800 },
+  { name: "cef-installation", query: "vue=web&cef=installation", widths: [[1440, 810]], settle: 800 },
+  { name: "cef-securite", query: "vue=web&cef=securite", settle: 800 },
+  { name: "cef-securite-prete", query: "vue=web&cef=securite-prete", widths: [[1440, 810]], settle: 800 },
+  { name: "cef-retour", query: "vue=web&cef=retour", widths: [[1440, 810]], settle: 800 },
 ];

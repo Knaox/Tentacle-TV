@@ -11,54 +11,26 @@
  * `~/.cache/puppeteer`. Un filtre (sous-chaîne du nom de scène) n'en rejoue qu'une partie.
  */
 
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { createServer } from "node:http";
-import { homedir, tmpdir } from "node:os";
-import { dirname, extname, join, resolve } from "node:path";
+import { mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright-core";
 
+import { buildLab, CHROME_ARGS, chromePath, serveLab } from "./labServer.mjs";
 import { SCENES } from "./scenes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const WEB = resolve(HERE, "../..");
 const OUT = resolve(process.argv[2] ?? join(HERE, "captures"));
 const FILTER = process.argv[3] ?? "";
-const DIST = join(tmpdir(), "tentacle-lecteur-lab");
-const TYPES = {
-  ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2",
-  ".svg": "image/svg+xml", ".webp": "image/webp", ".png": "image/png", ".json": "application/json",
-};
 const WIDTHS = [[1440, 810], [1024, 640]];
 
-function chromePath() {
-  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
-  const root = join(homedir(), ".cache/puppeteer/chrome-headless-shell");
-  for (const version of existsSync(root) ? readdirSync(root).sort().reverse() : []) {
-    for (const flavour of readdirSync(join(root, version))) {
-      const binary = join(root, version, flavour, "chrome-headless-shell");
-      if (existsSync(binary)) return binary;
-    }
-  }
-  throw new Error("Aucun Chrome sans tête : poser CHROME_PATH.");
-}
-
-if (process.env.LECTEUR_SKIP_BUILD !== "1") {
-  execFileSync("pnpm", ["exec", "vite", "build", "--config", join(HERE, "vite.config.ts"), "--outDir", DIST], { cwd: WEB, stdio: "inherit" });
-}
-
-const server = createServer((req, res) => {
-  const path = join(DIST, decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/\/$/, "/index.html"));
-  if (!path.startsWith(DIST) || !existsSync(path) || statSync(path).isDirectory()) return res.writeHead(404).end();
-  res.writeHead(200, { "content-type": TYPES[extname(path)] ?? "application/octet-stream" }).end(readFileSync(path));
-});
-await new Promise((done) => server.listen(0, "127.0.0.1", done));
-const base = `http://lecteur.localhost:${server.address().port}/`;
+buildLab();
+const server = await serveLab();
+const { base } = server;
 
 mkdirSync(OUT, { recursive: true });
-const browser = await chromium.launch({ executablePath: chromePath(), args: ["--host-resolver-rules=MAP lecteur.localhost 127.0.0.1"] });
+const browser = await chromium.launch({ executablePath: chromePath(), args: CHROME_ARGS });
 const errors = [];
 let count = 0;
 

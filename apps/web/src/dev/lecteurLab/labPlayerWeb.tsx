@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { QualityKey } from "@tentacle-tv/shared";
 import { PlayerControls } from "../../components/PlayerControls";
+import { usePlayerHotkeys } from "../../hooks/usePlayerHotkeys";
+import { usePlayerStillWatching } from "../../hooks/useStillWatchingActivity";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 import type { TrackChoice } from "../../hooks/trackChoice";
 import {
@@ -9,6 +12,7 @@ import {
 import { LabStage } from "./labStage";
 
 const noop = () => {};
+const LAB_SUBTITLE_TRACKS = LAB_SUBTITLES.map((track) => ({ ...track, url: "" }));
 
 /** Ce que les pistes du labo enregistreraient : des langues et un mode, comme `trackChoiceOf`. */
 function labChoice(audio: number, subtitle: number | null): TrackChoice {
@@ -21,6 +25,11 @@ function labChoice(audio: number, subtitle: number | null): TrackChoice {
  * L'habillage du lecteur WEB (`PlayerControls`) sur une image fixe. `?etat=film` : un film (ni
  * épisodes, ni « toute la série ») ; `?serie=1` : « Garder pour toute la série » déjà allumé ;
  * `?masque=1` : contrôles masqués (plus rien dans le DOM).
+ *
+ * Les VRAIS raccourcis du lecteur web (`usePlayerHotkeys`) et sa vraie pause
+ * (`usePlayerStillWatching`, qui porte le verrou de la mise à jour) y sont montés : le banc
+ * éprouve le blocage de la pop-up contre eux. La scène dit son état (`data-lab-playing`,
+ * `data-lab-time`).
  */
 export function LabPlayerWeb() {
   const movie = labParam("etat") === "film";
@@ -34,12 +43,22 @@ export function LabPlayerWeb() {
   const [fullscreen, setFullscreen] = useState(false);
   const item = movie ? LAB_MOVIE : LAB_EPISODE;
   const duration = movie ? 888 : 190;
+  const skipBy = (delta: number) => setTime((value) => Math.max(0, Math.min(duration, value + delta)));
+  usePlayerHotkeys({
+    videoRef: useRef(null), volume, subtitleTracks: LAB_SUBTITLE_TRACKS, currentSubtitle: subtitle,
+    hasNextEpisode: !movie, hasPreviousEpisode: !movie, navigate: useNavigate(),
+    togglePlay: () => setPlaying((p) => !p), toggleFullscreen: () => setFullscreen((f) => !f),
+    handleSeek: setTime, skipBy, handleVolumeChange: setVolume, handleToggleMute: () => setVolume((v) => (v === 0 ? 0.7 : 0)),
+    onSubtitleChange: setSubtitle, onNextEpisode: noop, onPreviousEpisode: noop,
+  });
+  usePlayerStillWatching({ playing, enabled: false, pause: () => setPlaying(false), play: () => setPlaying(true) });
   const applyToSeries: ApplyToSeriesControl | undefined = movie
     ? undefined
     : { checked: kept, pending: false, toggle: setKept, choice: labChoice(audio, subtitle) };
 
   return (
     <LabStage>
+      <span hidden data-lab-player data-lab-playing={playing} data-lab-time={time} data-lab-fullscreen={fullscreen} />
       <div className="absolute inset-0 z-20">
         <PlayerControls
           visible={labParam("masque") !== "1"}
@@ -51,7 +70,7 @@ export function LabPlayerWeb() {
           currentQuality={quality} sourceQuality={LAB_SOURCE_QUALITY} qualityPresets={LAB_QUALITY_PRESETS}
           autoQualityActive={labParam("auto") === "1"}
           hasNextEpisode={!movie} hasPreviousEpisode={!movie}
-          onTogglePlay={() => setPlaying((p) => !p)} onSeek={setTime} onSkip={(d) => setTime((v) => Math.max(0, Math.min(duration, v + d)))}
+          onTogglePlay={() => setPlaying((p) => !p)} onSeek={setTime} onSkip={skipBy}
           onVolumeChange={setVolume} onToggleMute={() => setVolume((v) => (v === 0 ? 0.7 : 0))}
           onToggleFullscreen={() => setFullscreen((f) => !f)} onBack={noop}
           onAudioChange={setAudio} onSubtitleChange={setSubtitle} onQualityChange={setQuality}

@@ -18,6 +18,7 @@ import { ToastProvider } from "../../src/contexts/ToastContext";
 import { LecteurLab } from "../../src/dev/lecteurLab/LecteurLab";
 import { ThemeProvider } from "../../src/theme";
 import { setMode } from "../../src/theme/colorScheme";
+import { installCefOverlay } from "./cefOverlay";
 import { installFakeServer } from "./fakeServer";
 import backdrop from "./img/b-cam3.webp";
 import backdropNext from "./img/b-cam2.webp";
@@ -36,6 +37,9 @@ initI18n({ lng: params.get("lang") ?? "fr" });
   backdrop, backdropNext, thumb: thumb1, poster, posters: [poster, posterSpring, posterCosmos],
 };
 installFakeServer({ thumbs: [thumb1, backdropNext, backdrop, thumbSintel] });
+// `?cef=<état>` : la surcouche de mise à jour de la coquille CEF, par-dessus la vue demandée.
+const cef = params.get("cef");
+if (cef) installCefOverlay(cef);
 
 const storage = new WebStorageAdapter();
 const uuid = new WebUuidGenerator();
