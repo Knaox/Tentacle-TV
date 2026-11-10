@@ -150,7 +150,7 @@ void installDebug(const AppContext& ctx) {
 }  // namespace
 
 void install(AppContext& ctx, bridge::Registry& registry) {
-  auto real = createPlatform(ctx.window, ctx.nativeWindow);
+  auto real = createPlatform(ctx.window, ctx.nativeWindow, ctx.compositor);
   if (!real) {
     std::fprintf(stderr, "[pip] pas de PiP sur ce système : pip_* non déclarées\n");
     return;

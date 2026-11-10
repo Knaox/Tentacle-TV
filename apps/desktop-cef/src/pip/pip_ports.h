@@ -101,6 +101,8 @@ struct PageInput {
   std::function<void(double x, double y, uint32_t modifiers, double dx, double dy)> wheel;
   /// La fenêtre a changé de taille (ou d'échelle, `scaleChanged`) : la page relit sa vue.
   std::function<void(bool scaleChanged)> resized;
+  /// Le système demande de la fermer (Alt+F4) : la page la voit fermée, comme Electron.
+  std::function<void()> closeRequested;
 };
 
 /// Ce que chaque OS fournit au PiP. `nullptr` (createPlatform) : pas de PiP sur ce système

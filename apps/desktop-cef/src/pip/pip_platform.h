@@ -13,7 +13,8 @@ struct SDL_Window;
 
 namespace tentacle::pip {
 
-/// `host` : la fenêtre principale (SDL), `nativeHost` sa poignée native (macOS : NSWindow*).
-std::unique_ptr<Platform> createPlatform(SDL_Window* host, void* nativeHost);
+/// `host` : la fenêtre principale (SDL), `nativeHost` sa poignée native (macOS : NSWindow*),
+/// `hostStack` son compositeur — sans `canLendVideo()`, pas de PiP.
+std::unique_ptr<Platform> createPlatform(SDL_Window* host, void* nativeHost, Compositor* hostStack);
 
 }  // namespace tentacle::pip

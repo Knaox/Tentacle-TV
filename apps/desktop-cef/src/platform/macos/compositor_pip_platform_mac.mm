@@ -3,8 +3,15 @@
 
 #import <QuartzCore/QuartzCore.h>
 
+#import "platform/macos/compositor_mac.h"
 #import "platform/macos/compositor_pip_mac.h"
 #include "pip/pip_platform.h"
+#include "pip/sdl/pip_sdl.h"
+
+#include <SDL3/SDL.h>
+
+#include <cstdio>
+#include <cstring>
 
 #include <cmath>
 #include <map>
@@ -140,9 +147,21 @@ class MacPlatform final : public Platform {
 
 }  // namespace
 
-std::unique_ptr<Platform> createPlatform(SDL_Window*, void* nativeHost) {
+std::unique_ptr<Platform> createPlatform(SDL_Window* sdlHost, void* nativeHost, Compositor* hostStack) {
   NSWindow* host = (__bridge NSWindow*)nativeHost;
-  if (![host isKindOfClass:NSWindow.class]) return nullptr;
+  if (![host isKindOfClass:NSWindow.class] || !hostStack || !hostStack->canLendVideo()) return nullptr;
+  // Banc : la fenêtre PiP PORTABLE (SDL3, celle de Linux et Windows) éprouvée ici, sur la même
+  // pile de couches macOS. L'app livrée garde la fenêtre native (compositor_pip_window_mac.mm).
+  if (const char* host_kind = getenv("TENTACLE_PIP_HOST"); host_kind && !strcmp(host_kind, "sdl")) {
+    sdl::Options o;
+    o.makeStack = [](SDL_Window* pip) {
+      NSWindow* ns = (__bridge NSWindow*)SDL_GetPointerProperty(
+          SDL_GetWindowProperties(pip), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
+      return tentacle::mac::createCompositor(ns, /*transparent=*/true);
+    };
+    std::fprintf(stderr, "[pip] fenêtre PiP SDL (banc)\n");
+    return sdl::createPlatform(sdlHost, std::move(o));
+  }
   // Aucun montage à part sur CEF : la vidéo est NOTRE couche, sur Apple Silicon comme sur
   // Intel ; elle change de pile sans que mpv le sache (Compositor::lendVideo).
   return std::make_unique<MacPlatform>(host);

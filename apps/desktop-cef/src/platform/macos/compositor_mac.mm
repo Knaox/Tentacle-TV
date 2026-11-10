@@ -98,6 +98,8 @@ class CompositorMac final : public Compositor {
     [CATransaction commit];
   }
 
+  bool canLendVideo() const override { return true; }
+
   bool lendVideo(Compositor* borrower, VideoSurface* home) override {
     if (!borrower || borrower == this) return false;
     [CATransaction begin];

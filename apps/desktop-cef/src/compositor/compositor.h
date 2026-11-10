@@ -79,6 +79,8 @@ class Compositor {
   // ne change ni d'instance ni de réglages : mpv continue d'y dessiner, HDR/EDR compris.
   // `borrower` doit vivre jusqu'à reclaimVideo(). Rend faux si la plateforme ne sait pas.
   virtual bool lendVideo(Compositor* borrower, VideoSurface* home) { return false; }
+  // Ce compositeur sait-il prêter sa vidéo ? Sans, pas de PiP sur ce système (pip_* absentes).
+  virtual bool canLendVideo() const { return false; }
   // La couche revient ici, plein cadre (jamais après la destruction de `borrower`).
   virtual void reclaimVideo() {}
   // La pile qui reçoit : la vidéo posée à `inset` points de ses bords (0 : plein cadre).

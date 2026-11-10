@@ -52,6 +52,7 @@ PageInput inputFor(CefRefPtr<CefBrowser> browser) {
     browser->GetHost()->SendMouseWheelEvent(mouse(x, y, m), int(std::lround(dx)),
                                             int(std::lround(dy)));
   };
+  in.closeRequested = [browser] { browser->GetHost()->CloseBrowser(true); };
   in.resized = [browser](bool scaleChanged) {
     if (scaleChanged) browser->GetHost()->NotifyScreenInfoChanged();
     browser->GetHost()->WasResized();

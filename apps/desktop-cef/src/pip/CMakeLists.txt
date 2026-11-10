@@ -44,6 +44,8 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge)
     glue/pip_client.cpp
     glue/pip_install.cpp
     glue/pip_commands.cpp
+    sdl/pip_sdl_window.cpp
+    sdl/pip_sdl_platform.cpp
   )
   if(APPLE)
     target_sources(tentacle_pip_glue PRIVATE
