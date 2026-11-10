@@ -4,6 +4,7 @@ import type { DownloadListEntry, OfflineSeriesGroup } from "@tentacle-tv/offline
 import { RowHeader } from "../../components/rows/RowHeader";
 import { RevealCell, RevealScope } from "../../components/grid/RevealCell";
 import { ScopedSearchField } from "../../components/search/ScopedSearchField";
+import { SheetSegments } from "../ui/SheetSegments";
 import { ALL_LIBRARIES, type OfflineHomeFilter, type OfflineHomeLibrary } from "./useOfflineHome";
 import { OfflineMovieTile, OfflineSeriesTile } from "./OfflineLibraryTiles";
 
@@ -13,7 +14,8 @@ import { OfflineMovieTile, OfflineSeriesTile } from "./OfflineLibraryTiles";
  * barre de défilement : une cellule montée garde sa hauteur réelle.
  */
 const POSTER_CELL_HEIGHT = 260;
-const POSTER_TEXT_HEIGHT = 52;
+/** Titre, sous-titre, et la ligne « Reprendre S1 · E3 » d'une série entamée. */
+const POSTER_TEXT_HEIGHT = 70;
 /** Cellules montées d'emblée, pour qu'aucune case ne soit vide au premier rendu. */
 const EAGER_CELLS = 14;
 const GRID = "grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8";
@@ -52,35 +54,27 @@ export function OfflineLibrarySection({ search, onSearch, filter, onFilter, libr
         />
         {/* Une seule bibliothèque : la puce « Tout » n'arbitrerait rien. */}
         {libraries.length > 1 && (
-          <div role="radiogroup" aria-label={t("downloads:filterAll")} className="flex flex-wrap items-center gap-2">
-            {[{ id: ALL_LIBRARIES, label: t("downloads:filterAll"), count: null as number | null }, ...libraries].map((option) => {
-              const active = option.id === filter;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => onFilter(option.id)}
-                  className={`flex h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] ${
-                    active
-                      ? "border-[rgba(var(--brand-rgb),0.45)] bg-[rgba(var(--brand-rgb),0.16)] text-[var(--brand-light)]"
-                      : "border-line-subtle bg-fill-faint text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
-                  }`}
-                >
+          <SheetSegments
+            label={t("downloads:filterAll")}
+            value={filter}
+            onChange={onFilter}
+            options={[{ id: ALL_LIBRARIES, label: t("downloads:filterAll"), count: null as number | null }, ...libraries].map((option) => ({
+              value: option.id,
+              label: (
+                <>
                   {option.label}
-                  {option.count !== null && <span className="ml-1.5 text-xs tabular-nums text-content-quaternary">{option.count}</span>}
-                </button>
-              );
-            })}
-          </div>
+                  {option.count !== null && <span className="num ml-1.5 text-xs font-medium text-content-tertiary">{option.count}</span>}
+                </>
+              ),
+            }))}
+          />
         )}
       </div>
 
       {empty ? (
         <div className="row-gutter mt-12 flex flex-col items-center text-center">
           <p className="text-sm font-medium text-content-secondary">{t("common:noResults")}</p>
-          <p className="mt-1 text-xs text-content-quaternary">{t("common:noResultsHint")}</p>
+          <p className="mt-1 text-[13px] text-content-tertiary">{t("common:noResultsHint")}</p>
         </div>
       ) : (
         <RevealScope>
@@ -113,7 +107,7 @@ export function OfflineLibrarySection({ search, onSearch, filter, onFilter, libr
 function Grid({ title, count, children }: { title: string; count: number; children: ReactNode }) {
   return (
     <div className="group/row">
-      <RowHeader title={title} trailing={<span className="text-sm font-medium tabular-nums text-content-quaternary">{count}</span>} />
+      <RowHeader title={title} trailing={<span className="num text-sm font-medium text-content-tertiary">{count}</span>} />
       <div className={`row-gutter mt-5 ${GRID}`}>{children}</div>
     </div>
   );

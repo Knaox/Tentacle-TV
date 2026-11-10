@@ -69,6 +69,7 @@ export const OfflineSeriesTile = memo(function OfflineSeriesTile({ group }: { gr
   const { watched } = groupWatchState(episodes);
   const target = useMemo(() => pickSeriesPlayTarget(episodes), [episodes]);
   const action = seriesPlayAction(t, episodes, target);
+  const resuming = episodes.some((episode) => episode.played || isInProgress(episode)) && !watched;
   // Une seule saison : son numéro dit plus que « 1 saison ».
   const seasons = group.seasons.length === 1
     ? seasonLabel(t, group.seasons[0].seasonNumber)
@@ -78,6 +79,8 @@ export const OfflineSeriesTile = memo(function OfflineSeriesTile({ group }: { gr
     <OfflinePosterCard
       title={group.seriesName}
       subtitle={`${seasons} · ${t("downloads:episodesCount", { count: group.episodeCount })}`}
+      // Une série entamée DIT où elle reprend, sans l'ouvrir.
+      hint={resuming && action ? action.label : null}
       imageItemId={group.posterItemId}
       imageCandidates={SERIES_ART}
       item={item}
@@ -85,7 +88,7 @@ export const OfflineSeriesTile = memo(function OfflineSeriesTile({ group }: { gr
       watched={watched}
       percent={null}
       play={action && target ? {
-        resume: episodes.some((episode) => episode.played || isInProgress(episode)) && !watched,
+        resume: resuming,
         label: action.label,
         onPlay: () => navigate(`/watch/${target.itemId}`),
       } : null}

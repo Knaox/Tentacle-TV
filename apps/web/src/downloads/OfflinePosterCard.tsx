@@ -34,6 +34,8 @@ export interface LocalCardPlay {
 interface OfflinePosterCardProps {
   title: string;
   subtitle?: string | null;
+  /** « Reprendre S1 · E3 » : ce que Lecture lancera, dit sous la carte (une série entamée). */
+  hint?: string | null;
   /** Item dont le snapshot porte les visuels (le film, ou l'épisode porteur d'une série). */
   imageItemId: string;
   /** Visuels du snapshot, dans l'ordre de préférence. */
@@ -54,7 +56,7 @@ const WATCHED: readonly ["watched"] = ["watched"];
 const NONE: readonly [] = [];
 
 export const OfflinePosterCard = memo(function OfflinePosterCard({
-  title, subtitle, imageItemId, imageCandidates, item, rating, watched, percent, play, onOpen, onToggleWatched,
+  title, subtitle, hint, imageItemId, imageCandidates, item, rating, watched, percent, play, onOpen, onToggleWatched,
 }: OfflinePosterCardProps) {
   const [hovered, setHovered] = useState(false);
   const overlayMounted = useMountWhile(hovered, 200);
@@ -112,6 +114,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{title}</h3>
         {subtitle && <p className="mt-0.5 truncate text-xs card-caption">{subtitle}</p>}
+        {hint && <p className="num mt-0.5 truncate text-xs font-semibold text-accent">{hint}</p>}
       </div>
     </div>
   );

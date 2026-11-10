@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
 import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { PageTransition } from "../components/PageTransition";
+import { BackButton } from "../components/ui/BackButton";
 import { CARD_HEIGHT, FRAME_GUTTER } from "../components/hero/HeroBillboard";
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { usePullOnCatalogOpen } from "../offline/usePlaybackPull";
@@ -58,10 +59,15 @@ function DeviceCatalog() {
     if (filter !== ALL_LIBRARIES && !home.libraries.some((library) => library.id === filter)) setFilter(ALL_LIBRARIES);
   }, [filter, home.libraries]);
 
+  // Hors ligne, ce catalogue EST l'accueil (une racine) ; en ligne, c'est la page
+  // « Sur cet appareil » : on en revient par le bouton Retour.
+  const showBack = !offline;
+  const hasBillboard = billboard.settled && home.ready && billboard.entries.length > 0;
+
   if (home.ready && home.complete.length === 0) {
     return (
       <PageTransition className="px-4 pb-24 pt-10 md:px-8">
-        <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
+        {showBack ? <CatalogHeading title={t("downloads:heroLabel")} /> : <h1 className="sr-only">{t("downloads:heroLabel")}</h1>}
         {offline ? (
           <OfflineMusicOrEmpty fallback={<OfflineEmpty />} />
         ) : (
@@ -76,7 +82,12 @@ function DeviceCatalog() {
 
   return (
     <PageTransition>
-      <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
+      {/* Sans bannière pour le porter, le Retour a sa ligne en tête de page. */}
+      {showBack && billboard.settled && home.ready && !hasBillboard ? (
+        <div className="row-gutter pt-6"><CatalogHeading title={t("downloads:heroLabel")} /></div>
+      ) : (
+        <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
+      )}
       {!billboard.settled || !home.ready ? (
         // Le temps d'une sonde (quelques millisecondes) : le cadre de la
         // bannière, pour que rien ne saute quand elle arrive.
@@ -84,7 +95,7 @@ function DeviceCatalog() {
           <div className={`skeleton-shimmer w-full ${CARD_HEIGHT}`} style={{ borderRadius: "var(--hero-frame-radius)" }} />
         </div>
       ) : (
-        billboard.entries.length > 0 && <OfflineBillboard entries={billboard.entries} />
+        billboard.entries.length > 0 && <OfflineBillboard entries={billboard.entries} back={showBack} />
       )}
 
       <div className="relative z-10 space-y-10 pb-24">
@@ -106,16 +117,26 @@ function DeviceCatalog() {
   );
 }
 
+/** La ligne de tête d'une page sans bannière : le Retour et le titre, en clair. */
+function CatalogHeading({ title }: { title: string }) {
+  return (
+    <div className="mb-6 flex items-center gap-3.5">
+      <BackButton />
+      <h1 className="font-display text-display-3 text-content-primary">{title}</h1>
+    </div>
+  );
+}
+
 /** Hors ligne, et rien sur la machine : le catalogue reviendra avec le serveur. */
 function OfflineEmpty() {
   const { t } = useTranslation("downloads");
   return (
-    <div className="mt-16 flex flex-col items-center text-center">
-      <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-line-subtle bg-fill-faint text-[var(--brand-light)]">
-        <WifiOff className="h-7 w-7" aria-hidden />
+    <div className="mt-16 flex flex-col items-center gap-3 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-tile bg-surface-2 text-content-secondary">
+        <WifiOff size={26} aria-hidden />
       </span>
-      <p className="mt-5 text-lg font-semibold text-content-primary">{t("offlineEmptyTitle")}</p>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-content-tertiary">{t("offlineEmptyMessage")}</p>
+      <p className="font-display text-heading-3 text-content-primary">{t("offlineEmptyTitle")}</p>
+      <p className="max-w-[52ch] text-sm leading-relaxed text-content-secondary">{t("offlineEmptyMessage")}</p>
     </div>
   );
 }

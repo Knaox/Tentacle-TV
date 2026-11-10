@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { RowHeader } from "../../components/rows/RowHeader";
 
 export interface DeviceFact {
@@ -30,26 +31,16 @@ export function OfflineDevicePanel({ facts, aside, action }: Props) {
     <section className="group/row" aria-label={t("heroLabel")}>
       <RowHeader title={t("heroLabel")} />
       <div className="row-gutter mt-4">
-        <div className="relative rounded-2xl border border-line-subtle bg-surface-1 p-5 md:p-6">
-          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-            <div
-              className="absolute -right-24 -top-28 h-64 w-64 rounded-full opacity-60"
-              style={{ background: "radial-gradient(closest-side, rgba(var(--brand-accent-rgb), 0.16), transparent)" }}
-            />
-            <div
-              className="absolute -bottom-28 -left-20 h-64 w-64 rounded-full opacity-60"
-              style={{ background: "radial-gradient(closest-side, rgba(var(--brand-rgb), 0.18), transparent)" }}
-            />
-          </div>
-          <dl className="relative grid grid-cols-2 gap-x-10 gap-y-5 lg:grid-cols-4">
+        <div className="ui-panel lg-panel p-5 md:p-6">
+          <dl className="grid grid-cols-2 gap-x-10 gap-y-5 lg:grid-cols-4">
             {facts.map((fact) => (
               <div key={fact.key} className="min-w-0">
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{fact.label}</dt>
-                <dd className="mt-1 truncate text-sm font-medium tabular-nums text-content-secondary">{fact.value}</dd>
+                <dt className="ui-eyebrow">{fact.label}</dt>
+                <dd className="num mt-1.5 truncate text-[15px] font-semibold text-content-primary">{fact.value}</dd>
               </div>
             ))}
           </dl>
-          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line-subtle pt-4">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line-subtle pt-4">
             {aside ?? <span aria-hidden />}
             {action}
           </div>
@@ -62,11 +53,8 @@ export function OfflineDevicePanel({ facts, aside, action }: Props) {
 /** Le retrait de la machine : la seule action rouge de la fiche, séparée du reste. */
 export function RemoveFromDeviceButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full border border-danger-border bg-danger-surface px-5 py-2.5 text-sm font-bold text-status-error-fg transition-colors duration-150 hover:bg-danger-surface-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
-    >
+    <button type="button" onClick={onClick} className="btn btn-danger">
+      <TrashIcon size={16} aria-hidden />
       {label}
     </button>
   );

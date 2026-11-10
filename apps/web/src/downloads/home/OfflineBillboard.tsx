@@ -19,6 +19,7 @@ import { CARD_HEIGHT, FRAME_GUTTER } from "../../components/hero/HeroBillboard";
 import { HERO_ZOOM_DURATION_S, HeroBackdropLayer } from "../../components/hero/HeroBackdrop";
 import { HeroIndicators } from "../../components/hero/HeroIndicators";
 import { useBillboardRotation } from "../../components/hero/useBillboardRotation";
+import { BackButton } from "../../components/ui/BackButton";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useIdle } from "../../hooks/useIdle";
 import { useBillboardViewport } from "../../components/hero/useBillboardViewport";
@@ -30,7 +31,13 @@ import { OfflineBillboardContent } from "./OfflineBillboardContent";
 const IDLE_MS = 20_000;
 const ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
 
-export function OfflineBillboard({ entries }: { entries: readonly DownloadListEntry[] }) {
+interface Props {
+  entries: readonly DownloadListEntry[];
+  /** « Sur cet appareil » ouvert EN LIGNE n'est pas une racine : le Retour, posé sur l'image. */
+  back?: boolean;
+}
+
+export function OfflineBillboard({ entries, back = false }: Props) {
   const { t } = useTranslation("downloads");
   // Halo monté à 200 px, rotation strictement à l'écran (`billboardActivity`).
   const { ref: frameRef, near, onScreen } = useBillboardViewport<HTMLDivElement>();
@@ -58,6 +65,7 @@ export function OfflineBillboard({ entries }: { entries: readonly DownloadListEn
           onMouseLeave={arrows.onMouseLeave}
         >
           <HeroBackdropLayer imageKey={entry.itemId} url={backdrop} />
+          {back && <BackButton onMedia className="absolute left-4 top-4 z-20 md:left-6 md:top-6" />}
           <OfflineBillboardContent entry={entry} animationKey={animKey} />
           <HeroIndicators
             count={entries.length}
