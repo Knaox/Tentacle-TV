@@ -22,6 +22,7 @@ même commit.
 | `src/music/`, `web/shim/octave*`, `bench/music/` | octave | mode musique, mini-lecteur, file, bascule musique ↔ vidéo ; musique de test |
 | `bench/server/` | pont | banc local Tentacle + Jellyfin jetable (copies, jamais le dépôt Tentacle) |
 | `src/update/`, `src/platform/<os>/update_*`, `web/shim/update*`, `bench/update/` | maj | mise à jour automatique : manifeste signé, règle de décision, assistant de remplacement, surcouche |
+| `src/pip/`, `src/compositor/`, `src/platform/macos/compositor*`, `src/platform/<os>/pip_<os>.cpp`, `src/shell/client_popup.*`, `bench/pip/` | pip (lot cef-parite) | image dans l'image : règles d'Electron, navigateur du PiP, fenêtre PiP, prêt de la vidéo |
 
 ## Interfaces natives
 
@@ -285,3 +286,57 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
 - `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
   rendue de n'importe quel fil (`Respond`).
+
+## Image dans l'image — PiP (axe pip, lot cef-parite)
+
+Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
+`video/macosPipParent.ts`) ; le front ne change pas (`apps/web/src/pictureInPicture/`).
+
+- **Commandes** (déclarées seulement là où le PiP marche : `pip::createPlatform` non nul), mêmes
+  charges et réponses qu'Electron — `pip_open {mode, width, height}` → `{shadow, bezel}` (le cadre,
+  `pip/rules/pip_frame.h`) ; `pip_mode {mode, width?, height?}`, `pip_resize {width, height}`,
+  `pip_gesture {gesture|null, grab?}`, `pip_close {}` → booléen (faux sans PiP) ; `pip_restore {}` →
+  booléen APRÈS l'animation du retour. Charge refusée : « arguments invalides pour <commande>: … ».
+- **La fenêtre PiP est ouverte par la page** (`window.open("about:blank", "tentacle-pip")`, armée
+  par `pip_open`, 3 s, une seule) : `popup::addHandler` (`src/shell/client_popup.h`) en fait un
+  SECOND navigateur hors écran (`pip/glue/pip_client.h` : ni `window.tentacle` ni scripts injectés,
+  navigation bloquée hors `about:blank`), rendu dans la pile de couches de la fenêtre PiP. Le bloqueur
+  de popups de Chromium est levé (réglage par défaut du profil CEF : Electron n'en a pas) ; seul le
+  PiP armé passe le filtre.
+- **La vidéo est PRÊTÉE, jamais recréée** (`src/compositor/compositor.h`) :
+  `lendVideo(borrower, home)` range la couche vidéo courante — et toute couche posée par
+  `setVideoLayer` pendant le prêt, sauf `home` (la couche factice) — sous la page de `borrower` ;
+  `reclaimVideo()` la rend, plein cadre ; `setVideoInset(inset)` (pile qui reçoit) la pose à
+  `inset` points des bords ; `canLendVideo()` dit si l'OS sait le faire (sinon : pas de PiP). La
+  couche ne change ni d'instance ni de réglages : lecture et HDR/EDR gardés. Le cadrage de la vidéo
+  est l'affaire du SEUL compositeur (le pont ne la recadre plus). `VideoSurface::setHostWindow`
+  (défaut : rien) : le compositeur donne à la couche la fenêtre qui la porte (échelle, écran).
+- **Portes à implémenter par OS** (`src/pip/pip_ports.h`, coordonnées en POINTS, origine en haut à
+  gauche de l'écran principal) : `pip::Platform` = `Desktop` (curseur, écrans, zone utile, fenêtre
+  principale, bandeau, « Réduire les animations »), `Ticker` (minuterie du fil principal), fabrique
+  de `pip::Window` (sans cadre, `setBounds`, `showInactive`, `applyMode` = niveaux / bureaux /
+  ancrage, titre, sa pile `Compositor`, `WindowEvents` : garde du redimensionnement, fin d'un
+  redimensionnement par la main, fenêtre principale déplacée/restaurée) ; sa souris va à SA page par
+  `PageInput` (drapeaux `EVENTFLAG_*` de CEF ; `resized`, `closeRequested`).
+  - **macOS** : fenêtre NATIVE (`platform/macos/compositor_pip_*`) — premier clic, survol
+    application inactive (zone de suivi ActiveAlways), garde par `windowWillResize:`, ancrage
+    (`pipDocking.ts`), focus rendu à la fenêtre principale.
+  - **Linux, Windows** : la fenêtre PORTABLE sur SDL3 (`src/pip/sdl/`, filtre d'évènements SDL
+    chaîné : la boucle de l'app ne voit jamais les évènements du PiP), prise par
+    `platform/<os>/pip_<os>.cpp` dès que le compositeur de l'OS rend `canLendVideo()` vrai. Reste à
+    l'axe de l'OS : `canLendVideo` / `lendVideo` / `reclaimVideo` / `setVideoInset` dans SON
+    compositeur, une pile TRANSPARENTE pour la fenêtre PiP (`Options::makeStack`) ; Wayland : la
+    place des fenêtres (le titre de la colle KWin, `pip/rules/pip_captions.h`).
+- **Branchement** : `pip::install(ctx, pont::registry())` avant `pont::installShim`,
+  `pip::shutdown()` dans `shutdownModules` (le navigateur du PiP part avant CefShutdown) ;
+  `Client::DoClose` du navigateur principal → `popup::hostClosing()` → le PiP part AVANT la fenêtre
+  principale (`pipQuit.ts`).
+- **Diagnostic** (hors `window.tentacle`) : `pip.debug.state` (ouvert, cadre, mode, vidéo prêtée,
+  couches de la pile du PiP, état de la fenêtre, zone de l'application) ; avec `--debug-input` :
+  `pip.debug.cursor {x,y}|null` (curseur que suivent les gestes), `pip.debug.native {kind,x,y,…}`
+  (évènement de souris natif dans la fenêtre PiP), `pip.debug.moveHost {dx,dy}`.
+  `TENTACLE_PIP_HOST=sdl` (macOS, banc) : la fenêtre portable sur la pile macOS.
+- **Bancs** : `bench/pip/scenario.mjs` (parcours complet dans le front), `bench/pip/native.mjs`
+  (chemin natif, niveaux, ancrage), `bench/pip/quit.sh` (quitter pendant le PiP) ; tests des règles :
+  `cmake -S src/pip -B <build> && ctest` (`tentacle_pip_tests`).
+
