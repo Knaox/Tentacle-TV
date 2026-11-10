@@ -10,6 +10,7 @@
 #include "pip/glue/pip_install.h"  // pip : image dans l'image (src/pip)
 #include "update/update_shell.h"  // maj : mise à jour automatique (src/update)
 #include "lifecycle/lifecycle_shell.h"  // systeme : cycle de vie (src/lifecycle)
+#include "glass/glass_shell.h"  // verre : Liquid Glass de macOS 26 (src/glass)
 
 namespace tentacle {
 
@@ -22,6 +23,7 @@ void initModules(AppContext& ctx) {
   lifecycle::onWindowClosed([] { music::shutdownMusic(); });  // systeme : la musique s'arrête avec la fenêtre (Electron)
   reseau::install(ctx);  // reseau : schémas tentacle://art|plugin, canaux jellyfin_*, client_fetch_*…
   pip::install(ctx, pont::registry());  // pip : commandes pip_*, fenêtre PiP
+  glass::install(ctx);  // verre : window.tentacle.liquidGlass (macOS 26), avant le shim
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }
@@ -31,6 +33,7 @@ void shutdownModules() {
   music::shutdownMusic();  // octave : la musique s'arrête, la sortie audio est rendue
   reseau::shutdown();  // reseau
   pip::shutdown();  // pip : le navigateur du PiP part avant CefShutdown
+  glass::shutdown();  // verre : retiré d'AppKit tant que la fenêtre vit
   pont::shutdown();
 }
 
