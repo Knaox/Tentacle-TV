@@ -42,7 +42,8 @@ enum class Mode { floating, docked };
 enum class Gesture { move, topLeft, topRight, bottomLeft, bottomRight };
 
 /// Le système : les valeurs du cadre en dépendent, comme chez Electron.
-enum class Os { macos, linux, windows };
+// (`linux` est une macro de GCC en gnu++20 : jamais un énumérateur de ce nom.)
+enum class Os { macos, linuxDesktop, windows };
 
 /// Le système de CE binaire.
 constexpr Os currentOs() {
@@ -51,7 +52,7 @@ constexpr Os currentOs() {
 #elif defined(_WIN32)
   return Os::windows;
 #else
-  return Os::linux;
+  return Os::linuxDesktop;
 #endif
 }
 

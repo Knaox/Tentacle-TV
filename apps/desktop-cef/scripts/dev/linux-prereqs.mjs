@@ -42,8 +42,11 @@ const PKG = {
   egl: ["libglvnd-devel", "libegl-dev libgles-dev", "libglvnd", "Mesa-libEGL-devel Mesa-libGLESv2-devel"],
   x11: ["libX11-devel", "libx11-dev", "libx11", "libX11-devel"],
   dbus: ["dbus-devel", "libdbus-1-dev", "dbus", "dbus-1-devel"],
-  // La pompe UI de Chromium sous Linux est une MessagePumpGlib (glib_pump_linux.h).
+  // La pompe UI de Chromium sous Linux est une MessagePumpGlib (glib_pump_linux.h) ; gio-2.0
+  // porte aussi MPRIS (axe medias).
   glib: ["glib2-devel", "libglib2.0-dev", "glib2", "glib2-devel"],
+  // Hors ligne (axe horsligne) : le SQLite du système (src/offline/sqlite.cmake).
+  sqlite: ["sqlite-devel", "libsqlite3-dev", "sqlite", "sqlite3-devel"],
   // Moteur de mise à jour (src/update) : libcurl (pile de l'OS) et libsodium (ed25519).
   curl: ["libcurl-devel", "libcurl4-openssl-dev", "curl", "libcurl-devel"],
   sodium: ["libsodium-devel", "libsodium-dev", "libsodium", "libsodium-devel"],
@@ -105,6 +108,8 @@ export function checkBuildPrereqs(recommended = []) {
     ["x11", "x11"],
     ["dbus", "dbus-1"],
     ["glib", "glib-2.0"],
+    ["glib", "gio-2.0"],
+    ["sqlite", "sqlite3"],
     ["curl", "libcurl"],
     ["sodium", "libsodium"],
   ];

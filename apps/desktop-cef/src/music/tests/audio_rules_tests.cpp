@@ -43,12 +43,12 @@ static void outputs() {
   CHECK(parseOutputs(Platform::Darwin, mac) ==
         json::array({{{"id", "auto"}, {"name", "Autoselect device"}, {"exclusiveCapable", true}},
                      {{"id", "coreaudio/BuiltInSpeakerDevice"}, {"name", "Haut-parleurs MacBook Pro"}, {"exclusiveCapable", true}}}));
-  json linux = json::array({{{"name", "pipewire/alsa_output.usb"}, {"description", "DAC"}},
+  json onLinux = json::array({{{"name", "pipewire/alsa_output.usb"}, {"description", "DAC"}},
                             {{"name", "pulse/alsa_output.usb"}, {"description", "DAC"}},
                             {{"name", "alsa/hw:CARD=DAC,DEV=0"}, {"description", "DAC direct"}},
                             {{"name", "alsa/default"}, {"description", "Défaut"}}});
   std::vector<std::string> ids;
-  for (const auto& o : parseOutputs(Platform::Linux, linux))
+  for (const auto& o : parseOutputs(Platform::Linux, onLinux))
     ids.push_back(o["id"].get<std::string>() + ":" + (o["exclusiveCapable"].get<bool>() ? "true" : "false"));
   CHECK((ids == std::vector<std::string>{"auto:true", "pipewire/alsa_output.usb:true", "alsa/hw:CARD=DAC,DEV=0:true", "alsa/default:false"}));
   CHECK(exclusiveCapable(Platform::Win32, "wasapi/{abc}"));

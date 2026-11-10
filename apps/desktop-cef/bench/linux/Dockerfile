@@ -6,7 +6,7 @@ ARG BASE=banc-fs:f44
 FROM ${BASE}
 RUN dnf -y install --setopt=install_weak_deps=False \
       mutter kwin-wayland sway xorg-x11-server-Xvfb xorg-x11-server-Xwayland openbox \
-      grim ImageMagick gdb-minimal dbus-daemon dbus-tools procps-ng curl jq nodejs \
+      grim ImageMagick dbus-daemon dbus-tools procps-ng curl jq nodejs \
       mesa-dri-drivers mesa-vulkan-drivers ffmpeg-free \
       nss atk at-spi2-atk at-spi2-core cups-libs libdrm mesa-libgbm libXcomposite libXdamage \
       libXrandr libxkbcommon gtk3 alsa-lib pango libxshmfence \
@@ -16,4 +16,9 @@ RUN dnf -y install --setopt=install_weak_deps=False \
       ffmpeg-free-devel libplacebo-devel libass-devel vulkan-loader-devel vulkan-headers \
       pipewire-devel pulseaudio-libs-devel alsa-lib-devel libva-devel libdrm-devel \
       mpv-libs-devel \
+    && dnf clean all
+# Ajouts de l'intégration (couche à part : la première n'est pas retéléchargée) — SQLite du hors
+# ligne, clavier virtuel et presse-papiers Wayland pour les preuves, gdb.
+RUN dnf -y install --setopt=install_weak_deps=False \
+      sqlite-devel wtype wl-clipboard gdb-minimal python3 \
     && dnf clean all

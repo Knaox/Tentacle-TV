@@ -8,6 +8,7 @@
 // Coordonnées : POINTS logiques, origine en haut à gauche de l'écran principal (celle
 // d'Electron et de SDL3). Tout appel : fil principal.
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
