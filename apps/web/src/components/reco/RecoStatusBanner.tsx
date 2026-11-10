@@ -26,7 +26,7 @@ function Hint({ children }: { children: ReactNode }) {
 function Actionable({ text, cta }: { text: string; cta: ReactNode }) {
   return (
     <div className="row-gutter mb-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line-subtle bg-fill-faint px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-tile bg-surface-2 px-4 py-3">
         <p className="min-w-0 flex-1 text-sm text-content-secondary">{text}</p>
         {cta}
       </div>
