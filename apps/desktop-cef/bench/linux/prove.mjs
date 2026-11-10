@@ -6,7 +6,7 @@
 //   node bench/linux/prove.mjs login [admin|user]    connexion au banc par le formulaire du front
 //   node bench/linux/prove.mjs video <chemin>        mpv_init + loadfile, puis ce que mpv rend
 //   node bench/linux/prove.mjs fullscreen            plein écran, état, retour
-//   node bench/linux/prove.mjs octave <chemin>       moteur audio d'Octave (ao=null imposé)
+//   node bench/linux/prove.mjs octave <url>          moteur audio d'Octave (ao=null imposé)
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -76,10 +76,16 @@ try {
       show("après", await shell("shell.window.state"));
     }
   } else if (cmd === "octave") {
-    show("audio_engine_start", await invoke("audio_engine_start", {}));
+    // `arg` : une URL servie par l'origine donnée au moteur (refuseSource : même origine).
+    const origin = new URL(arg).origin;
+    await cdp.eval(`(() => { window.__audioEvents = []; window.tentacle.on("audio://event", (e) => window.__audioEvents.push(e)); return true; })()`);
+    show("audio_engine_start", await invoke("audio_engine_start", { serverOrigin: origin, volume: 1, muted: false }));
     show("audio_play", await invoke("audio_play", { track: { trackKey: "banc-linux" }, source: { url: arg } }));
-    await sleep(4000);
-    show("audio_control état", await invoke("audio_control", { action: "state" }));
+    await sleep(5000);
+    show("audio_control pause", await invoke("audio_control", { action: "pause" }));
+    await sleep(500);
+    const ev = await cdp.eval("window.__audioEvents.map((e) => JSON.stringify(e).slice(0, 160))");
+    show("évènements audio://event", `${ev.length} reçus ; derniers : ${ev.slice(-4).join(" | ")}`);
     show("audio_engine_stop", await invoke("audio_engine_stop", {}));
   } else {
     console.error("usage : prove.mjs state | page <png> | login [admin|user] | video <chemin> | video-stop | fullscreen [garder] | octave <chemin>");

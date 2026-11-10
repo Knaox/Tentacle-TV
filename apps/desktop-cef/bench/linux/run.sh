@@ -56,7 +56,7 @@ case "${1:-}" in
     echo "banc linux : $comp lancé — journal : bench/linux/run.sh log ; DevTools 127.0.0.1:9427" ;;
   shot)
     out="${2:?fichier .png}"
-    docker exec "$name" bash -c 'cat /tmp/banc/compositor; echo' | grep -q . || die "aucun compositeur"
+    docker exec "$name" test -s /tmp/banc/compositor || die "aucun compositeur"
     docker exec "$name" bash /repo/apps/desktop-cef/bench/linux/inside.sh --shot /tmp/banc/shot.png
     docker cp "$name:/tmp/banc/shot.png" "$out" >/dev/null && echo "$out" ;;
   log) docker exec "$name" cat /tmp/banc/app.log ;;
