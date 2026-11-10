@@ -6,6 +6,8 @@ import {
   useUnlinkTmdbGuestSession,
 } from "@tentacle-tv/api-client";
 import { SettingItem } from "../wide/SettingItem";
+import { SubSetting } from "../SubSetting";
+import { SETTING_BUTTON } from "../wide/settingButtons";
 
 /**
  * Réglages › Compte et sécurité › Comptes liés (elle vivait dans
@@ -25,51 +27,46 @@ export function LinkedAccounts() {
 
   return (
     <SettingItem setting="linkedAccounts">
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         {/* TMDB — guest session anonyme */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-content-primary">{t("persoTmdbTitle")}</p>
-            <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+        <SubSetting
+          title={t("persoTmdbTitle")}
+          hint={(
+            <>
               {data.tmdb.configured ? t("persoTmdbHint") : t("persoTmdbUnavailable")}
-            </p>
-            {data.tmdb.linked && (
-              <p className="mt-1 text-xs text-status-success">{t("persoTmdbLinked")}</p>
-            )}
-          </div>
-          {data.tmdb.configured && (
+              {data.tmdb.linked && <span className="mt-1 block font-medium text-status-success-fg">{t("persoTmdbLinked")}</span>}
+            </>
+          )}
+          trailing={data.tmdb.configured ? (
             <button
               type="button"
               onClick={() => (data.tmdb.linked ? unlinkGuest.mutate() : createGuest.mutate())}
               disabled={createGuest.isPending || unlinkGuest.isPending}
-              className="shrink-0 rounded-full border border-line-strong px-4 py-1.5 text-sm text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
+              className={SETTING_BUTTON}
             >
               {data.tmdb.linked ? t("persoUnlink") : t("persoTmdbCreate")}
             </button>
-          )}
-        </div>
+          ) : undefined}
+        />
 
         {/* État de la file de sync */}
         <div className="border-t border-line-subtle pt-4">
-          <p className="text-sm font-medium text-content-primary">{t("persoSyncTitle")}</p>
-          <p className="mt-1 text-xs text-content-tertiary">
-            {t("persoSyncCounts", {
-              synced: data.sync.synced,
-              pending: data.sync.pending,
-              failed: data.sync.failed,
-            })}
-          </p>
-          {data.sync.failed > 0 && (
-            <p className="mt-1 text-xs text-status-error">{t("persoSyncFailedHint")}</p>
-          )}
-          <button
-            type="button"
-            onClick={() => resync.mutate()}
-            disabled={resync.isPending}
-            className="mt-3 rounded-full border border-line-strong px-4 py-1.5 text-sm text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
-          >
-            {t("persoSyncNow")}
-          </button>
+          <SubSetting
+            title={t("persoSyncTitle")}
+            hint={(
+              <>
+                <span className="num">
+                  {t("persoSyncCounts", { synced: data.sync.synced, pending: data.sync.pending, failed: data.sync.failed })}
+                </span>
+                {data.sync.failed > 0 && <span className="mt-1 block text-status-error-fg">{t("persoSyncFailedHint")}</span>}
+              </>
+            )}
+            trailing={(
+              <button type="button" onClick={() => resync.mutate()} disabled={resync.isPending} className={SETTING_BUTTON}>
+                {t("persoSyncNow")}
+              </button>
+            )}
+          />
         </div>
       </div>
     </SettingItem>

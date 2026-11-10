@@ -82,7 +82,7 @@ export function SettingsDownloads() {
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <WideGroup section="downloads" group="storage">
         <SettingItem
           setting="downloadsLocation"
@@ -93,10 +93,10 @@ export function SettingsDownloads() {
             </button>
           ) : undefined}
         >
-          <p className="break-all rounded-lg bg-fill-subtle px-3 py-2 font-mono text-xs text-content-secondary">{root ?? "…"}</p>
+          <p className="break-all rounded-field bg-surface-2 px-3.5 py-2.5 font-mono text-xs text-content-secondary">{root ?? "…"}</p>
         </SettingItem>
         <SettingItem setting="downloadsSpace">
-          <div className="space-y-1 text-xs text-content-tertiary">
+          <div className="num space-y-1 text-[13px] text-content-secondary">
             <p>{t("spaceUsed", { size: formatBytes(usedBytes) })}</p>
             <p>{t("freeSpace", { size: formatBytes(freeBytes) })}</p>
           </div>

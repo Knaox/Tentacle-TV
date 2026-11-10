@@ -1,20 +1,22 @@
 /**
- * Les classes des boutons de la page Famille — celles des réglages
- * (`MyDevicesSection`, `ConfirmDialog`), réunies pour ne pas se recopier
- * d'un composant à l'autre. Le bouton de marque porte en plus
- * `BRAND_BUTTON_STYLE` (le dégradé profond, lisible sous un libellé blanc).
+ * Les classes des boutons et des champs de la page Famille — depuis la refonte de nov. 2026,
+ * des RACCOURCIS vers les contrôles du socle (`theme/buttons.css`, `theme/overlays.css`) : des
+ * pilules, une peau par rôle, la pression et le focus dans la classe. Les clés ne changent
+ * pas : une vingtaine d'appelants les composent.
+ *
+ * `BRAND_BUTTON` est l'action PRINCIPALE d'un dialogue ou d'une section — neutre : le dégradé
+ * du logo est réservé à l'action de lecture.
  */
-const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+export const SMALL_BUTTON = "btn btn-soft btn-sm";
 
-export const SMALL_BUTTON = `inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-line-subtle bg-fill-soft px-3 text-xs font-semibold text-content-primary transition-colors hover:bg-fill-medium disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
+export const SMALL_DANGER_BUTTON = "btn btn-danger btn-sm";
 
-export const SMALL_DANGER_BUTTON = `inline-flex min-h-[36px] items-center justify-center rounded-lg bg-danger-surface px-3 text-xs font-semibold text-status-error-fg transition-colors hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
+export const BRAND_BUTTON = "btn btn-solid";
 
-export const BRAND_BUTTON = `inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-cta-brand-fg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
+export const SECONDARY_BUTTON = "btn btn-soft";
 
-export const SECONDARY_BUTTON = `inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line-subtle bg-fill-soft px-4 text-sm font-semibold text-content-primary transition-colors hover:bg-fill-medium disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
+/** La plaque d'un pictogramme en tête d'un dialogue ou d'un état vide : la teinte franche, en aplat doux. */
+export const ICON_PLAQUE = "bg-accent-soft text-accent";
 
-export const BRAND_BUTTON_STYLE = { backgroundImage: "var(--cta-brand-gradient)" } as const;
-
-/** Un champ de saisie des réglages. */
-export const FIELD = `h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-3 text-sm text-content-primary placeholder:text-content-quaternary ${FOCUS}`;
+/** Un champ de saisie des réglages : le champ du socle. */
+export const FIELD = "field";

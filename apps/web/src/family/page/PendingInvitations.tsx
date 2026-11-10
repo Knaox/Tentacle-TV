@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
-import { SettingsSection } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import type { OutgoingInvitationDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import { useFamilyText } from "../useFamilyText";
@@ -19,7 +19,7 @@ export const PendingInvitations = memo(function PendingInvitations({ invitations
   const { t } = useTranslation("familyWeb");
   const { formatDate } = useFamilyText();
   return (
-    <SettingsSection title={t("owned.pendingTitle")}>
+    <SettingsCard title={t("owned.pendingTitle")}>
       <ul>
         {invitations.map((invitation, index) => (
           <li
@@ -45,6 +45,6 @@ export const PendingInvitations = memo(function PendingInvitations({ invitations
           </li>
         ))}
       </ul>
-    </SettingsSection>
+    </SettingsCard>
   );
 });

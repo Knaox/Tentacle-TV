@@ -12,7 +12,7 @@ import { Modal } from "../../components/ui/Modal";
 import { useToast } from "../../contexts/ToastContext";
 import { profileGradient } from "../profileColors";
 import { useFamilyText } from "../useFamilyText";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, FIELD, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, FIELD, SECONDARY_BUTTON } from "./familyUi";
 
 /**
  * Créer un profil invité : un prénom et une couleur. Le serveur crée le vrai
@@ -116,7 +116,7 @@ export function GuestDialog({ onClose }: { onClose: () => void }) {
 
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" onClick={close} disabled={create.isPending} className={SECONDARY_BUTTON}>{t("cancel")}</button>
-          <button type="submit" disabled={!cleaned || create.isPending} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+          <button type="submit" disabled={!cleaned || create.isPending} className={BRAND_BUTTON}>
             {t("guest.create")}
           </button>
         </div>

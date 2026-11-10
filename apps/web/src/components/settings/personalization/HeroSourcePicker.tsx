@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
-import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
 import { PlayCircleIcon as PlayCircle } from "@phosphor-icons/react/dist/csr/PlayCircle";
 import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
@@ -47,7 +46,7 @@ export function HeroSourcePicker({ modes, value, onChange, favorites, fixedItemI
   const { t } = useTranslation("homeSettings");
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label={t("heroTitle")} className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      <div role="radiogroup" aria-label={t("heroTitle")} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {modes.map((mode) => {
           const Icon = ICONS[mode];
           const checked = mode === value;
@@ -58,29 +57,24 @@ export function HeroSourcePicker({ modes, value, onChange, favorites, fixedItemI
               role="radio"
               aria-checked={checked}
               onClick={() => onChange(mode)}
-              className={`relative flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-                checked
-                  ? "border-brand bg-tentacle-surface"
-                  : "border-line-subtle hover:border-line-strong hover:bg-tentacle-surface"
-              }`}
+              className="ui-tile flex min-w-0 items-start gap-3 p-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
             >
-              <Icon aria-hidden className={`mt-0.5 h-5 w-5 shrink-0 ${checked ? "text-brand" : "text-content-tertiary"}`} />
+              <Icon aria-hidden weight={checked ? "fill" : "regular"} className={`mt-0.5 h-5 w-5 shrink-0 ${checked ? "text-accent" : "text-content-tertiary"}`} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-content-primary">{t(heroModeLabelKey(mode))}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-content-tertiary">{t(heroModeHintKey(mode))}</span>
+                <span className="block text-[15px] font-semibold leading-snug text-content-primary">{t(heroModeLabelKey(mode))}</span>
+                <span className="mt-1 block text-[13px] leading-relaxed text-content-secondary">{t(heroModeHintKey(mode))}</span>
               </span>
-              {checked && <Check aria-hidden className="h-4 w-4 shrink-0 text-brand" />}
             </button>
           );
         })}
       </div>
 
-      {recoHeroKindOf(value) && <p className="text-xs text-content-tertiary">{t("heroFallbackNote")}</p>}
+      {recoHeroKindOf(value) && <p className="text-[13px] text-content-tertiary">{t("heroFallbackNote")}</p>}
 
       {value === "fixed" && (
         favorites && favorites.length > 0 ? (
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-content-secondary">{t("heroFixedPickTitle")}</span>
+            <span className="text-xs font-semibold text-content-tertiary">{t("heroFixedPickTitle")}</span>
             <select
               className={`${SETTING_FIELD} max-w-sm`}
               value={fixedItemId ?? ""}
@@ -95,7 +89,7 @@ export function HeroSourcePicker({ modes, value, onChange, favorites, fixedItemI
             </select>
           </label>
         ) : favorites ? (
-          <p className="text-xs text-content-tertiary">{t("heroFixedNoFavorites")}</p>
+          <p className="text-[13px] text-content-tertiary">{t("heroFixedNoFavorites")}</p>
         ) : null
       )}
     </div>

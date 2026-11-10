@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { EnvelopeIcon as Mail } from "@phosphor-icons/react/dist/csr/Envelope";
-import { SettingsSection } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import type { IncomingInvitationDto } from "@tentacle-tv/shared";
 import { requestFamilyPoster } from "../familyPosterStore";
 import { useFamilyText } from "../useFamilyText";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE } from "./familyUi";
+import { BRAND_BUTTON } from "./familyUi";
 
 /** Les invitations reçues : « Répondre » rouvre l'AFFICHE (même remise à plus
  *  tard) — une seule façon de répondre, qui dit ce qu'accepter implique. */
@@ -13,7 +13,7 @@ export function IncomingInvitationsSection({ incoming }: { incoming: readonly In
   const { formatDate } = useFamilyText();
   if (incoming.length === 0) return null;
   return (
-    <SettingsSection title={t("incoming.title")}>
+    <SettingsCard title={t("incoming.title")}>
       <ul>
         {incoming.map((invitation, index) => (
           <li
@@ -27,12 +27,12 @@ export function IncomingInvitationsSection({ incoming }: { incoming: readonly In
               <p className="text-sm font-medium text-content-primary">{t("incoming.row", { owner: invitation.ownerName })}</p>
               <p className="mt-0.5 text-xs text-content-tertiary">{t("incoming.expires", { date: formatDate(invitation.expiresAt) })}</p>
             </div>
-            <button type="button" onClick={() => requestFamilyPoster(invitation.id)} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+            <button type="button" onClick={() => requestFamilyPoster(invitation.id)} className={BRAND_BUTTON}>
               {t("incoming.open")}
             </button>
           </li>
         ))}
       </ul>
-    </SettingsSection>
+    </SettingsCard>
   );
 }

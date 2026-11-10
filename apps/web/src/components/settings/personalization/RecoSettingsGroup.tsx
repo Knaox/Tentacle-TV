@@ -76,7 +76,7 @@ export function RecoSettingsGroup() {
       <SettingItem setting="recoBalance">
         <div className="flex items-center gap-3">
           {/* shrink-0 : en flex, min-width:auto écraserait la piste au lieu de laisser le libellé entier. */}
-          <span className="shrink-0 text-xs text-content-tertiary">{t("persoBalanceAdventurous")}</span>
+          <span className="shrink-0 text-[13px] font-medium text-content-tertiary">{t("persoBalanceAdventurous")}</span>
           <input
             type="range"
             min={0}
@@ -88,7 +88,7 @@ export function RecoSettingsGroup() {
             style={rangeFill(balance, 0, 100)}
             aria-label={t("persoBalance")}
           />
-          <span className="shrink-0 text-xs text-content-tertiary">{t("persoBalanceSafe")}</span>
+          <span className="shrink-0 text-[13px] font-medium text-content-tertiary">{t("persoBalanceSafe")}</span>
         </div>
       </SettingItem>
       <SettingItem

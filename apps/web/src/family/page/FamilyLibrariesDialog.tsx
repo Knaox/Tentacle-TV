@@ -7,7 +7,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { Modal } from "../../components/ui/Modal";
 import { useFamilyText } from "../useFamilyText";
 import { draftVerdict, initialDraft, isChecked, toggleAll, toggleLibrary, type LibrariesDraft } from "./familyLibrariesModel";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, ICON_PLAQUE, SECONDARY_BUTTON } from "./familyUi";
 
 const CHECKBOX = "h-4 w-4 shrink-0 accent-[var(--brand)]";
 
@@ -57,7 +57,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
     <Modal open onClose={close} maxWidth={480} labelledBy={titleId} describedBy={introId} dismissOnBackdrop={false}>
       <form onSubmit={submit} noValidate className="flex max-h-[85dvh] flex-col">
         <header className="flex items-start gap-3 border-b border-line-subtle p-6 pb-4">
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cta-brand-fg" style={BRAND_BUTTON_STYLE}>
+          <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${ICON_PLAQUE}`}>
             <Library size={20} />
           </span>
           <div className="min-w-0">
@@ -102,7 +102,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line-subtle p-4">
           <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>{t("parental.cancel")}</button>
-          <button type="submit" disabled={pending || !libraries.data || verdict !== "ready"} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+          <button type="submit" disabled={pending || !libraries.data || verdict !== "ready"} className={BRAND_BUTTON}>
             {t("libraries.save")}
           </button>
         </footer>

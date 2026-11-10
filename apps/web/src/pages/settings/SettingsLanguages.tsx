@@ -6,6 +6,7 @@ import { cacheLibrariesList, cacheLibraryPrefs, readLibrariesList, readLibraryPr
 import { queuePendingPref } from "../../offline/pendingPrefs";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { PageTransition } from "../../components/PageTransition";
+import { Spinner } from "../../components/ui/Spinner";
 import { LibraryPrefCard } from "../preferences/LibraryPrefCard";
 import { INTERFACE_LANGUAGES, LANGUAGE_CODES, LANGUAGE_KEYS } from "../preferences/languageOptions";
 import { SETTING_FIELD } from "../../components/settings/SettingToggleRow";
@@ -108,9 +109,9 @@ export function SettingsLanguages() {
 
   return (
     <PageTransition>
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         {offline && (
-          <div className="mb-4 rounded-lg bg-status-warning-bg px-3 py-2 text-xs font-medium text-status-warning-fg">
+          <div className="mb-5 rounded-field bg-status-warning-bg px-3.5 py-2.5 text-[13px] font-medium text-status-warning-fg">
             {t("preferences:offlineSavedLocally")}
           </div>
         )}
@@ -119,13 +120,13 @@ export function SettingsLanguages() {
           <SettingItem setting="libraryTracks">
             {!offline && !libraries && (
               <div className="flex justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+                <Spinner size="md" tone="neutral" />
               </div>
             )}
             {offline && displayLibraries.length === 0 && (
               <p className="py-4 text-center text-sm text-content-quaternary">{t("preferences:offlineNoCacheHint")}</p>
             )}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {displayLibraries.map((lib) => (
                 <LibraryPrefCard
                   key={lib.Id}
@@ -151,7 +152,7 @@ export function SettingsLanguages() {
                 value={i18n.language}
                 onChange={(e) => setInterfaceLanguage(e.target.value)}
                 aria-label={t("preferences:interfaceLanguage")}
-                className={`w-40 ${SETTING_FIELD}`}
+                className={`w-44 ${SETTING_FIELD}`}
               >
                 {INTERFACE_LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>{lang.label}</option>

@@ -2,7 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { FAMILY_PIN_LENGTH, isValidPin } from "@tentacle-tv/shared";
 import { Modal } from "../../components/ui/Modal";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, FIELD, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, FIELD, SECONDARY_BUTTON } from "./familyUi";
 
 interface PinDialogProps {
   open: boolean;
@@ -128,7 +128,7 @@ export function PinDialog({ open, title, pending, error, onSubmit, onRemove, req
             </button>
           )}
           <button type="button" onClick={close} disabled={pending} className={SECONDARY_BUTTON}>{t("cancel")}</button>
-          <button type="submit" disabled={pending} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>{t("pin.save")}</button>
+          <button type="submit" disabled={pending} className={BRAND_BUTTON}>{t("pin.save")}</button>
         </div>
       </form>
     </Modal>

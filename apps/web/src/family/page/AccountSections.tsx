@@ -2,7 +2,8 @@ import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { LockOpenIcon as LockOpen } from "@phosphor-icons/react/dist/csr/LockOpen";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
+import { SettingsRow } from "@tentacle-tv/ui";
+import { SettingsCard } from "../../components/settings/SettingsCard";
 import { useDissolveFamily, useServerCapability } from "@tentacle-tv/api-client";
 import { Modal } from "../../components/ui/Modal";
 import { useToast } from "../../contexts/ToastContext";
@@ -20,7 +21,7 @@ export function MyPinSection({ hasPin, badge }: { hasPin: boolean; badge?: React
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")} badge={badge}>
+      <SettingsCard title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")} badge={badge}>
         <SettingsRow
           icon={hasPin ? <Lock size={17} /> : <LockOpen size={17} />}
           label={hasPin ? t("myPin.on") : t("myPin.off")}
@@ -31,7 +32,7 @@ export function MyPinSection({ hasPin, badge }: { hasPin: boolean; badge?: React
             </button>
           }
         />
-      </SettingsSection>
+      </SettingsCard>
       {open && <OwnPinDialog hasPin={hasPin} onClose={() => setOpen(false)} />}
     </>
   );
@@ -48,7 +49,7 @@ export function DissolveSection() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("danger.title")}>
+      <SettingsCard title={t("danger.title")}>
         <SettingsRow
           label={t("danger.dissolve")}
           description={t("danger.dissolveHint")}
@@ -57,7 +58,7 @@ export function DissolveSection() {
           onClick={() => setOpen(true)}
           chevron
         />
-      </SettingsSection>
+      </SettingsCard>
       {open && <DissolveDialog onClose={() => setOpen(false)} />}
     </>
   );
