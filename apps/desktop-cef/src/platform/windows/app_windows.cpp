@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <dwmapi.h>
+#include <winreg.h>
 
 #include <SDL3/SDL.h>
 
@@ -73,12 +74,9 @@ void prepareWindow(SDL_Window* window, bool activate) {
   if (!hwnd) return;
   const BOOL dark = systemUsesDarkApps() ? TRUE : FALSE;
   DwmSetWindowAttribute(hwnd, kImmersiveDarkMode, &dark, sizeof dark);
-  if (activate) {
-    SDL_RaiseWindow(window);
-  } else {
-    // --background : la fenêtre paraît sans prendre le focus (bancs, jamais voler la main).
-    SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-  }
+  // --background (bancs) : rien de plus. SDL_ShowWindow active déjà la fenêtre sous Windows ;
+  // pour l'éviter, SDL lit SDL_WINDOW_ACTIVATE_WHEN_SHOWN=0 dans l'environnement.
+  if (activate) SDL_RaiseWindow(window);
 }
 
 std::string acceptLanguages() {

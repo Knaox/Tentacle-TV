@@ -132,7 +132,9 @@ void MpvPlayerPort::onPlayerEvent(const Json& event, int gen) {
     return g && *g == gen && player_;
   };
   // Windows : mpv crée SA chaîne d'échange (mode composition) à la naissance de sa sortie et
-  // la recrée avec elle ; la surface la reçoit à chaque reconfiguration.
+  // la recrée avec elle ; la surface la reçoit à chaque reconfiguration. Cas limite connu :
+  // l'adresse est lue dans mpv puis gardée un tour plus tard — une sortie détruite entre les
+  // deux (fin de fichier à cet instant précis) la rendrait caduque ; jamais constaté.
   if (surface_ && surface_->wantsMpvSwapchain()) {
     tentacle::VideoSurface* surface = surface_.get();
     player_->getProperty("display-swapchain", [this, surface, current](std::optional<Json> v) {
