@@ -5,7 +5,8 @@
 #   scripts/dev.sh run [opts…]         build web (coquille de bureau) + build natif, puis
 #                                      l'app sur le PROFIL D'ELECTRON (voir « Profil »)
 #   scripts/dev.sh run-server [opts…]  mode des bancs : page servie par $TENTACLE_URL (défaut :
-#                                      le banc), profil à part $cache/profiles/dev
+#                                      le banc), profil à part $cache/profiles/dev, données
+#                                      natives à part $cache/profiles/dev-data
 #   scripts/dev.sh build               le build natif seul (Release)
 #   scripts/dev.sh banc [up|status]    banc local (colima + Tentacle 1.42.0 + Jellyfin)
 #
@@ -197,7 +198,10 @@ run_server() {
   build
   sound_env "$mute"
   echo "dev : $url — profil $cache/profiles/dev — son $([[ -n "$mute" ]] && echo coupé || echo ouvert)"
-  exec "$app/Contents/MacOS/Tentacle" --url="$url" --profile="$cache/profiles/dev" ${args[@]+"${args[@]}"}
+  # --user-data à part : sans lui, les modules natifs (shell/paths.h : octave-art/, tentacle-local.db…)
+  # écriraient dans le VRAI dossier d'Electron. Les bancs n'y touchent jamais.
+  exec "$app/Contents/MacOS/Tentacle" --url="$url" --profile="$cache/profiles/dev" \
+    --user-data="$cache/profiles/dev-data" ${args[@]+"${args[@]}"}
 }
 
 banc() {
