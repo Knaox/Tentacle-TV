@@ -6,11 +6,12 @@
  * Dans l'application de développement, ce que les cartes demandent au survol (note, fiche)
  * part vers le serveur réel, qui ne connaît pas ces titres : le survol y reste partiel. Le
  * banc (`apps/web/bench/accueil`) branche un serveur factice et capture chaque vue, en sombre
- * et en clair. `?vue=banniere|rangees|cartes|avis|etats` n'en montre qu'une.
+ * et en clair. `?vue=banniere|rangees|cartes|avis|etats|barre` n'en montre qu'une.
  */
 
 import { useSearchParams } from "react-router-dom";
 
+import { LabBar } from "./labBar";
 import { LabCards } from "./labCards";
 import { LabNotices } from "./labNotices";
 import { LabStates } from "./labStates";
@@ -18,7 +19,7 @@ import { LAB_ROWS, labItems } from "./labItems";
 import { HeroBillboard } from "../../components/hero/HeroBillboard";
 import { MediaRow } from "../../components/rows/MediaRow";
 
-const VIEWS = ["banniere", "rangees", "cartes", "avis", "etats"] as const;
+const VIEWS = ["banniere", "rangees", "cartes", "avis", "etats", "barre"] as const;
 type View = (typeof VIEWS)[number];
 
 export function AccueilLab() {
@@ -39,6 +40,7 @@ export function AccueilLab() {
       {shows("cartes") && <LabCards />}
       {shows("avis") && <LabNotices />}
       {shows("etats") && <LabStates />}
+      {shows("barre") && <LabBar />}
     </div>
   );
 }

@@ -32,7 +32,7 @@ async function open({ theme, width, route = "/", libs = 3, etat = "ok", height =
   if (process.env.ACCUEIL_CONSOLE) page.on("console", (m) => console.log(`[page:${m.type()}] ${m.text().slice(0, 400)}`));
   const query = new URLSearchParams({ theme, route, libs: String(libs), etat });
   await page.goto(`${base}?${query}`);
-  await page.waitForSelector("[data-top-nav]", { timeout: 15_000 }).catch(async (error) => {
+  await page.waitForSelector("[data-hote-voile]", { timeout: 15_000 }).catch(async (error) => {
     console.error(`La coquille n'est pas montée (${route}) :\n${errors.join("\n")}\n${(await page.evaluate(() => document.body.innerText)).slice(0, 700)}`);
     throw error;
   });
@@ -44,8 +44,13 @@ async function open({ theme, width, route = "/", libs = 3, etat = "ok", height =
 for (const shot of SHOTS.filter((s) => s.name.includes(FILTER))) {
   for (const theme of shot.themes ?? ["dark", "light"]) {
     for (const width of shot.widths ?? [1440, 1024]) {
-      const page = await open({ theme, width, ...shot.open });
       const file = (suffix = "") => join(OUT, `accueil-${shot.name}${suffix}-${theme === "dark" ? "sombre" : "clair"}-${width}.png`);
+      // Une vue qui ne se monte pas n'arrête pas les autres : elle est dite à la fin.
+      const page = await open({ theme, width, ...shot.open }).catch((error) => {
+        errors.push(`${shot.name} (${theme}, ${width}) : ${error.message.split("\n")[0]}`);
+        return null;
+      });
+      if (!page) continue;
       try {
         await shot.run(page, { file, width });
       } catch (error) {

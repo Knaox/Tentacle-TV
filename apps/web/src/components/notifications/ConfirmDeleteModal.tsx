@@ -27,7 +27,7 @@ export function ConfirmDeleteModal({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+            className="btn btn-ghost"
           >
             {cancelLabel}
           </button>
@@ -35,15 +35,7 @@ export function ConfirmDeleteModal({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm font-semibold transition duration-150 hover:scale-[1.03] disabled:opacity-50"
-            style={{
-              background: "var(--status-error-bg)",
-              color: "var(--status-error-fg)",
-              // Bordure : nuance rouge fixe (hors table de correspondance -
-              // pas d'équivalent alpha-composable pour un style inline), reste
-              // cohérente visuellement dans les deux thèmes.
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-            }}
+            className="btn btn-danger"
           >
             {isPending ? "..." : confirmLabel}
           </button>

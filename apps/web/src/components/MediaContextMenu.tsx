@@ -42,7 +42,7 @@ export function MediaContextMenu({ item, x, y, onClose }: Props) {
       gap={2}
       role="menu"
       ariaLabel={t("common:moreInfo")}
-      className="lg-menu lg-menu-list min-w-[240px] overflow-y-auto overscroll-contain rounded-xl border border-line-subtle bg-surface-dropdown py-1 shadow-2xl backdrop-blur-lg"
+      className="lg-menu lg-menu-list ui-menu min-w-[240px] overflow-y-auto overscroll-contain"
     >
       <MenuToggles item={item} onDone={onClose} />
     </FloatingLayer>
@@ -71,9 +71,10 @@ function MenuToggles({ item, onDone }: { item: MediaItem; onDone: () => void }) 
               toggles.toggle(kind);
               onDone();
             }}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-content-secondary transition-colors hover:bg-fill-soft"
+            aria-checked={active}
+            className="ui-menu-item"
           >
-            <span className={active ? (kind === "favorite" ? "text-[var(--brand-accent)]" : "text-[var(--brand-light)]") : "text-content-tertiary"}>
+            <span className={active ? "text-accent" : "text-content-tertiary"}>
               <ToggleGlyph kind={kind} className="h-4 w-4" filled={active} />
             </span>
             {t(entry.labelKey)}

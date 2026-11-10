@@ -140,7 +140,16 @@ function backend(path: string, params: URLSearchParams, options: LabServerOption
   if (path === "/api/preferences/reco") {
     return { body: { stored: false, settings: { personalized: true, includeVigie: false, community: true, shareHistory: true, explorationBalance: 0.5, providerFilter: [], trendingNow: true } } };
   }
-  if (path.startsWith("/api/notifications")) return { body: { notifications: [], unreadCount: 0, items: [], total: 0 } };
+  if (path === "/api/notifications/unread-count") return { body: { count: 2 } };
+  if (path.startsWith("/api/notifications")) {
+    return {
+      body: [
+        { id: "n1", jellyfinUserId: LAB_USER.Id, type: "request_status", title: "Le Faucon maltais", body: "Votre demande est arrivée dans la bibliothèque.", refId: null, read: false, createdAt: "2026-11-10T16:20:00Z" },
+        { id: "n2", jellyfinUserId: LAB_USER.Id, type: "watchlist_share", title: "Camille vous partage sa liste", body: "12 titres", refId: null, read: false, createdAt: "2026-11-09T20:05:00Z" },
+        { id: "n3", jellyfinUserId: LAB_USER.Id, type: "ticket_reply", title: "Réponse à votre demande d'aide", body: "Le sous-titre est corrigé.", refId: null, read: true, createdAt: "2026-11-02T09:00:00Z" },
+      ],
+    };
+  }
   if (path === "/api/watchlist/pending" || path === "/api/likes/pending") return { body: [] };
   if (path === "/api/ratings") {
     return { body: [{ id: "r1", mediaType: "movie", tmdbId: 426, jellyfinItemId: "vertigo", seasonNumber: 0, episodeNumber: 0, score: 9, syncStatus: "synced", updatedAt: "2026-11-01T10:00:00Z" }] };

@@ -65,6 +65,25 @@ export const SHOTS = [
     },
   },
   {
+    name: "cloche",
+    open: { route: "/dev/accueil?vue=etats" },
+    async run(page, { file }) {
+      await page.locator("[data-top-nav] button[aria-haspopup='dialog']").last().click();
+      await settle(page);
+      await page.screenshot({ path: file() });
+    },
+  },
+  {
+    // La proposition « Hors ligne / Réglages dans la barre » : deux maquettes à comparer.
+    name: "barre-proposition",
+    open: { route: "/dev/accueil?vue=barre" },
+    widths: [1440],
+    async run(page, { file }) {
+      const box = await page.locator("[data-lab-view='barre']").boundingBox();
+      await page.screenshot({ path: file(), clip: box });
+    },
+  },
+  {
     name: "omnibox",
     async run(page, { file }) {
       await page.keyboard.press("Control+k");
@@ -88,10 +107,17 @@ export const SHOTS = [
         const box = await page.locator(`[data-lab-cards='${kind}']`).boundingBox();
         await page.screenshot({ path: file(`-survol-${kind}`), clip: box });
       }
-      // La feuille de la carte : son menu contextuel (clic droit).
-      await page.locator("[data-lab-cards='affiche'] [data-card-visual]").nth(1).click({ button: "right" });
+    },
+  },
+  {
+    // La feuille de la carte au bureau : son menu contextuel (clic droit). Vue à part — un
+    // défilement le referme, et les survols de la vue « cartes » font défiler.
+    name: "carte-menu",
+    open: { route: "/dev/accueil?vue=cartes" },
+    async run(page, { file }) {
+      await page.locator("[data-lab-cards='affiche'] [data-card-visual]").nth(2).click({ button: "right" });
       await settle(page);
-      await page.screenshot({ path: file("-menu") });
+      await page.screenshot({ path: file(), clip: { x: 0, y: 0, width: 1024, height: 620 } });
     },
   },
   {
