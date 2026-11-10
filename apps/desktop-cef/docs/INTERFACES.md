@@ -324,6 +324,19 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (`locale_linux.h` : LANGUAGE/LC_ALL/LC_MESSAGES/LANG → Accept-Language), EDID HDR (`edid_linux.h`).
 - Clavier (`shell_linux.cpp`) : `native_key_code` = keycode XKB (evdev + 8 sous Wayland, tel quel
   sous X11), `windows_key_code` commun, caractères par SDL ; IME par les évènements texte de SDL.
+- **Pompe** (`shell/message_pump_sdl.cpp`, Linux ET Windows) : même logique que macOS — repli à
+  250 ms, relance immédiate après une passe de CEF de 9 ms et plus (« pump wedge » : sans elle
+  l'app se figeait au démarrage, mesuré). Linux : le contexte GLib par défaut (la pompe UI de
+  Chromium est une `MessagePumpGlib`) est servi à chaque passe par `glib_pump_linux.h` (un fil
+  guetteur attend ses descripteurs, le fil principal fait check/dispatch). Diagnostic :
+  `TENTACLE_PUMP_TRACE=1`.
+- **Presse-papiers** (`clipboard_linux.cpp`) : Chromium hors écran ne l'atteint pas sous Wayland ;
+  pont par la fenêtre SDL (canaux internes `linux.clipboard.set|get` + script injecté) ; lecture
+  seulement dans la seconde qui suit une vraie frappe de collage (droits d'Electron).
+- **HiDPI** : `--disable-features=WaylandFractionalScaleV1` sous Wayland (sinon Ozone impose son
+  échelle, 1, à celle de `GetScreenInfo`). Unités : DIP de `shell/window_scale.h` (axe windows).
+- `postToMain` rend `false` quand la tâche n'a pas pu partir (avant `CefInitialize`, après
+  `CefShutdown`) ; `TENTACLE_NO_SHARED_TEXTURE=1` force le repli `OnPaint` (tous OS).
 
 - Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
   sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de

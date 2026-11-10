@@ -80,3 +80,18 @@ Une ligne par cas : le geste, puis l'attendu. Lancer : `pnpm dev:cef` à la raci
 - Lire un film sur un serveur à lecture directe (adresse privée de Jellyfin réglée) → la position de reprise est gardée par Jellyfin (relais `jellyfin_session_post`) ; `__shell.invoke('reseau.debug.trace')` liste `PlaybackInfo`, `Sessions/Playing…`.
 - Sillon : une recherche passe par l'appareil (`window.tentacle.invoke('client_fetch_log', {})` montre l'hôte, 200) ; un titre « direct » joue par `http://127.0.0.1:<port>/d/…` (`reseau.debug.directRelay` : `direct` > 0).
 - Ouvrir la fiche d'un film → la sortie de l'app dit `[reseau] préchargement <id> : … Kio · … Kio`.
+
+## Ce que le conteneur ne pouvait pas prouver (axe linux)
+
+| Geste | Attendu |
+|---|---|
+| machine **x86_64** (le banc est arm64) : `pnpm dev:cef` | même déroulé ; CEF linux64 épinglé (SHA-256 6873f975…) |
+| vrai GPU Intel/AMD (Mesa) | `shell.debug.layers` (console DevTools : `__shell.invoke('shell.debug.layers')`) dit `dmabuf oui (N images)` avec N qui monte : la page passe par le GPU, sans copie CPU |
+| NVIDIA (pilote propriétaire) | idem ; si la page reste NOIRE : relancer avec `TENTACLE_NO_SHARED_TEXTURE=1` et le signaler (import dmabuf refusé) |
+| vidéo sur vrai GPU, Wayland | pas de `gpu-sw` (réservé au banc) ; décodage `hwdec-current` vaapi ou nvdec |
+| HDR (GNOME 48+ ou KDE 6, écran HDR, HDR allumé) | `video-target-params/gamma` = `pq` dans le panneau de diagnostic pendant un film HDR10 (WSI Vulkan de Mesa ≥ 25.1 ou NVIDIA récent) |
+| copier un lien (bouton « Copier »), le coller dans un autre logiciel | le texte arrive ; et Ctrl+V d'une adresse de serveur dans la connexion |
+| IME réel (ibus) sous Wayland et X11 | composition visible près du curseur, texte validé |
+| GNOME : décorations de la fenêtre | barre de titre (libdecor) ; déplacer, agrandir, fermer |
+| deux écrans d'échelles différentes, glisser la fenêtre de l'un à l'autre | la page se redessine nette à la nouvelle échelle |
+| mise en veille du système pendant la lecture | refusée (inhibition logind de l'axe systeme) |

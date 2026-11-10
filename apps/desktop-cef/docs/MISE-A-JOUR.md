@@ -167,8 +167,14 @@ sur les trois. `helper-test.sh` et `dev-update.mjs` restent propres à macOS (Pl
 codesign, paquet `.app`).
 
 Linux (AppImage) :
-1. Brancher `tentacle_update_system` dans un build Linux de l'app — qui n'existe pas encore
-   (fenêtre, compositeur, vidéo : ébauches) ; version par `-DTENTACLE_APP_VERSION=X.Y.Z`.
+1. ~~Brancher `tentacle_update_system` dans un build Linux de l'app~~ — fait (lot cef-parite,
+   axe linux) : l'app Linux existe, la colle lie l'implémentation Linux (libcurl, libsodium),
+   `pnpm dev:cef` passe `-DTENTACLE_APP_VERSION` (versions.json → desktop) ; au banc Fedora 44,
+   `[maj] désactivée (flux, clé ou version absents)` comme sur macOS en développement. Les
+   commandes d'Electron `detect_linux_install_format`, `download_update`, `install_linux_update`
+   ne sont PAS déclarées : le front masque son propre programme de mise à jour Linux
+   (`supportsAppUpdate`), le moteur CEF et sa surcouche le remplacent — AppImage seulement ;
+   un `.deb`/`.rpm` relève du gestionnaire de paquets (Electron, lui, l'installait par `pkexec`).
 2. Une vraie AppImage (runtime type 2, squashfs monté) : relance par `$APPIMAGE`, arguments de
    `/proc/self/cmdline` vus depuis l'AppRun, profil CEF libéré avant la relance.
 3. x86_64 (le banc a tourné en aarch64), ext4/btrfs/xfs, le repli à deux `rename`, un dossier
