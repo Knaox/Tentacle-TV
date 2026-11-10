@@ -16,4 +16,10 @@ namespace tentacle::offline {
 /// `keptAudioPath(kept.userId, kept.trackKey ?? trackKey)`.
 void keptAudioPath(std::string userId, std::string trackKey, std::function<void(std::optional<std::string>)> done);
 
+/// La même, SYNCHRONE — pour `music::setKeptLookup` (axe medias), appelée par `audio_play` sur
+/// le fil principal, comme Electron (synchrone dans son processus principal). Le fil hors ligne
+/// répond en quelques millisecondes ; au-delà de 500 ms (disque endormi), le serveur, comme si
+/// rien n'était gardé. Jamais depuis le fil hors ligne lui-même.
+std::optional<std::string> keptAudioPathSync(const std::string& userId, const std::string& trackKey);
+
 }  // namespace tentacle::offline

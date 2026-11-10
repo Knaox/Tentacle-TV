@@ -1,5 +1,9 @@
 #include "offline/glue/kept_audio.h"
 
+#include <chrono>
+#include <future>
+#include <memory>
+
 #include "offline/core/music.h"
 #include "offline/glue/channels.h"
 #include "offline/glue/offline_thread.h"
@@ -19,6 +23,23 @@ void keptAudioPath(std::string userId, std::string trackKey, std::function<void(
     }
     postToMain([done, path] { done(path); });
   });
+}
+
+std::optional<std::string> keptAudioPathSync(const std::string& userId, const std::string& trackKey) {
+  if (thread::current()) return std::nullopt;  // l'attendre ici ne finirait jamais
+  auto answer = std::make_shared<std::promise<std::optional<std::string>>>();
+  auto future = answer->get_future();
+  thread::post([userId, trackKey, answer] {
+    std::optional<std::string> path;
+    try {
+      Runtime& rt = runtime();
+      path = music::keptAudioPath(rt.db(), rt.volume(), userId, trackKey, nowMs());
+    } catch (...) {
+    }
+    answer->set_value(path);
+  });
+  if (future.wait_for(std::chrono::milliseconds(500)) != std::future_status::ready) return std::nullopt;
+  return future.get();
 }
 
 }  // namespace tentacle::offline
