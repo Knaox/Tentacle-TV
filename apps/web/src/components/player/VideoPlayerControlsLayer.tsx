@@ -9,8 +9,10 @@
  * seule règle désormais, et un `z-20` explicite : l'empilement est dit, plutôt
  * que subi.
  *
- * Le fondu porte sur l'opacité seule, jamais sur un démontage : la barre garde
- * son état (menus ouverts, position de survol) d'une apparition à l'autre.
+ * Le fondu porte sur l'opacité de CETTE couche, qui reste montée. L'habillage, lui, quitte le
+ * DOM une fois le fondu joué (refonte de nov. 2026 : masqué, il ne doit rien coûter sous une
+ * vidéo en lecture) ; ce qu'il garde d'une apparition à l'autre — panneau ouvert, vitesse —
+ * vit dans `PlayerControls`, au-dessus de ce qui part.
  *
  * Extraite de `VideoPlayer.tsx` pour le ramener sous les 300 lignes. Elle ne
  * décide de rien d'autre — les commandes elles-mêmes vivent dans
@@ -38,7 +40,8 @@ export function VideoPlayerControlsLayer({
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <PlayerControls {...controls} />
+      {/* `visible` : masqué, l'habillage quitte le DOM une fois ce fondu joué (`useChromePresence`). */}
+      <PlayerControls {...controls} visible={visible} />
     </div>
   );
 }

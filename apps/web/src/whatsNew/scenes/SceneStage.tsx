@@ -35,11 +35,9 @@ export function SceneStage({ cycle = 0, children }: SceneStageProps) {
     <div
       ref={frameRef}
       aria-hidden
-      className="pointer-events-none relative aspect-video w-full select-none overflow-hidden rounded-[var(--radius-lg)] border border-line-subtle"
-      style={{
-        background:
-          "linear-gradient(135deg, rgba(var(--brand-rgb), 0.22) 0%, var(--surface-1) 40%, var(--surface-2) 72%, rgba(var(--brand-accent-rgb), 0.2) 100%)",
-      }}
+      // Le cadre d'une scène : une encre de carte, sans liseré ni lavis de marque — la couleur
+      // est à ce que la scène montre.
+      className="pointer-events-none relative aspect-video w-full select-none overflow-hidden rounded-card bg-surface-2 shadow-edge"
     >
       <div
         className="absolute left-0 top-0 origin-top-left"

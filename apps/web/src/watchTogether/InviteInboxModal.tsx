@@ -13,11 +13,10 @@
  */
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { Modal } from "../components/ui/Modal";
 import { useToast } from "../contexts/ToastContext";
-import { useLiquidGlassMode } from "../theme/glass";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { InviteRow } from "./WatchTogetherRows";
 
@@ -30,7 +29,6 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
   const { show } = useToast();
   const { invites, actions } = useWatchTogether();
   const [busy, setBusy] = useState(false);
-  const native = useLiquidGlassMode() === "native";
 
   // La dernière invitation honorée referme la modale : il n'y a plus rien à y
   // répondre, et une carte vide au milieu de l'écran ne dit rien.
@@ -47,23 +45,19 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
     }
   };
 
-  const content = (
-    <>
-      <div className="flex items-center justify-between border-b border-line-subtle px-6 py-4">
-        <h2 className="text-lg font-bold text-content-primary">{t("invitations")}</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("later")}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+  // La feuille commune (`Modal`) dans TOUS les cas : portail, focus piégé, Échap, voile sans flou
+  // hors verre natif. La boîte tenait sa propre modale ailleurs — un voile flouté plein écran,
+  // ni piège de focus ni Échap.
+  return (
+    <Modal open onClose={onClose} maxWidth={448} labelledBy="wt-inbox-title" className="flex max-h-[80vh] flex-col">
+      <div className="flex items-center justify-between gap-3 px-6 pb-3 pt-5">
+        <h2 id="wt-inbox-title" className="font-display text-heading-3 text-content-primary">{t("invitations")}</h2>
+        <button type="button" onClick={onClose} aria-label={t("later")} title={t("later")} className="icon-btn -mr-2 h-9 w-9">
+          <XIcon className="h-5 w-5" aria-hidden />
         </button>
       </div>
 
-      <div className="divide-y divide-line-subtle overflow-y-auto py-1">
+      <div className="divide-y divide-line-subtle overflow-y-auto border-t border-line-subtle py-1">
         {invites.map((invite) => (
           <InviteRow
             key={invite.inviteId}
@@ -74,47 +68,11 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
         ))}
       </div>
 
-      <div className="border-t border-line-subtle px-6 py-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary"
-        >
+      <div className="flex justify-end border-t border-line-subtle px-6 py-3">
+        <button type="button" onClick={onClose} className="btn btn-sm btn-ghost">
           {t("later")}
         </button>
       </div>
-    </>
-  );
-
-  // Verre natif : la feuille de `Modal` — une plaque d'un seul ton, focus
-  // piégé, Échap (lot lg7, R16) ; ses boutons prennent la peau des feuilles.
-  if (native) {
-    return (
-      <Modal open onClose={onClose} maxWidth={448} label={t("invitations")} className="flex max-h-[80vh] flex-col">
-        {content}
-      </Modal>
-    );
-  }
-
-  // Portal vers <body>, même motif que les autres modales : rendue depuis le
-  // fournisseur, la modale serait sinon piégée par le containing block d'un
-  // ancêtre filtré.
-  return createPortal(
-    <div
-      // Voile de modale : reste sombre dans les deux thèmes (standard iOS).
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-line-strong bg-surface-modal shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("invitations")}
-      >
-        {content}
-      </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

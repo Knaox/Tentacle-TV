@@ -1,3 +1,7 @@
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { ChatCircleTextIcon } from "@phosphor-icons/react/dist/csr/ChatCircleText";
+import { duration, easeOut } from "../../theme/motion";
+import { CHAT_ACCENT, CHAT_CAPSULE, CHAT_ICON_BUTTON, CHAT_INK } from "./chatSkin";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
@@ -19,17 +23,10 @@ import { useChatActivity } from "./useChatActivity";
  * (chatUiStore) — les messages restent lisibles via MessageToastLayer.
  *
  * Couleurs volontairement en dur (ici et dans ChatPanel/ReactionPicker/
- * EmojiTab/GifTab) : c'est l'« overlay de chat en lecture » — même verre
- * sombre flottant au-dessus de la vidéo ou de n'importe quelle page, donc
- * indépendant du thème choisi.
+ * EmojiTab/GifTab) : c'est l'« overlay de chat en lecture » — une encre sombre
+ * flottant au-dessus de la vidéo ou de n'importe quelle page, donc
+ * indépendante du thème choisi. Sa peau : `chatSkin.ts` (opaque, sans flou).
  */
-
-const GLASS: React.CSSProperties = {
-  background: "rgba(15,15,25,0.92)",
-  backdropFilter: "blur(16px)",
-  border: "1px solid rgba(139,92,246,0.35)",
-  boxShadow: "0 8px 30px rgba(0,0,0,0.5), 0 0 20px rgba(139,92,246,0.15)",
-};
 
 function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 640px)").matches);
@@ -42,15 +39,8 @@ function useIsMobile(): boolean {
   return mobile;
 }
 
-function ChatIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-      <path
-        strokeLinecap="round" strokeLinejoin="round"
-        d="M8 10.5h8M8 14h4.5M21 12a8.96 8.96 0 0 1-9 9 9.05 9.05 0 0 1-4.1-.98L3 21l.98-4.9A8.96 8.96 0 0 1 3 12a9 9 0 1 1 18 0Z"
-      />
-    </svg>
-  );
+function ChatIcon({ filled = false }: { filled?: boolean }) {
+  return <ChatCircleTextIcon size={20} weight={filled ? "fill" : "regular"} aria-hidden />;
 }
 
 export function ChatOverlay({
@@ -140,9 +130,9 @@ export function ChatOverlay({
         initial={{ opacity: 0, y: 32 }}
         animate={{ opacity: hidden ? 0 : 1, y: 0 }}
         exit={{ opacity: 0, y: 32 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="fixed inset-x-2 bottom-2 z-50 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl"
-        style={{ ...GLASS, pointerEvents: hidden ? "none" : "auto" }}
+        transition={{ duration: 0.2, ease: easeOut }}
+        className="fixed inset-x-2 bottom-2 z-50 flex max-h-[60vh] flex-col overflow-hidden rounded-panel"
+        style={{ ...CHAT_INK, pointerEvents: hidden ? "none" : "auto" }}
         {...activity.handlers}
       >
         <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
@@ -169,25 +159,27 @@ export function ChatOverlay({
       animate={{ opacity: hidden ? 0 : 1 }}
       transition={{ duration: 0.3 }}
       style={{ x: dragX, y: dragY, pointerEvents: hidden ? "none" : "auto" }}
-      className="fixed bottom-24 right-5 z-50 flex flex-col items-end"
+      // Au-dessus de la pilule de saut du lecteur (104 à 148 px du bas quand les contrôles sont
+      // là) : à 96 px, la bulle se posait dessus dès qu'un passage se proposait en séance.
+      className="fixed bottom-40 right-6 z-50 flex flex-col items-end"
       {...activity.handlers}
     >
       <AnimatePresence mode="wait" initial={false}>
         {open ? (
           <motion.div
             key="panel"
-            initial={{ opacity: 0, scale: 0.92, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 12 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className={`relative flex flex-col overflow-hidden rounded-2xl ${resizing ? "select-none" : ""}`}
-            style={{ ...GLASS, width: size.w, height: size.h }}
+            // Il sort de sa bulle (en bas à droite) : 180 ms depuis 96 %, 120 ms au retour.
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1, transition: { duration: duration.menuIn, ease: easeOut } }}
+            exit={{ opacity: 0, scale: 0.96, transition: { duration: duration.menuOut, ease: easeOut } }}
+            className={`relative flex flex-col overflow-hidden rounded-panel ${resizing ? "select-none" : ""}`}
+            style={{ ...CHAT_INK, width: size.w, height: size.h, transformOrigin: "bottom right" }}
           >
             {/* Poignée de redimensionnement — coin haut-gauche (le panneau est
                 ancré bas-droite : tirer vers la gauche/le haut agrandit). */}
             <div
               onPointerDown={startResize}
-              className="absolute left-0 top-0 z-10 h-6 w-6 cursor-nwse-resize p-1.5 text-white/25 transition-colors hover:text-white/70"
+              className="absolute left-0 top-0 z-10 h-6 w-6 cursor-nwse-resize p-1.5 text-white/35 transition-colors hover:text-white/80"
               aria-hidden
             >
               <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.3} className="h-full w-full">
@@ -204,25 +196,23 @@ export function ChatOverlay({
         ) : (
           <motion.button
             key="bubble"
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            whileHover={{ scale: 1.08 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: duration.menuOut, ease: easeOut }}
+            // La pression répond ; rien ne grossit au survol.
+            whileTap={{ scale: 0.97 }}
             onPointerDown={(e) => dragControls.start(e)}
             onClick={() => { if (!wasDraggedRef.current) chat.setOpen(true); }}
             aria-label={unread > 0 ? t("chatUnreadAria", { count: unread }) : t("chatOpenAria")}
-            className="relative flex h-12 w-12 cursor-pointer touch-none items-center justify-center rounded-full text-white/85"
-            style={GLASS}
+            className="relative flex h-12 w-12 cursor-pointer touch-none items-center justify-center rounded-pill text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            style={CHAT_CAPSULE}
           >
-            <ChatIcon />
+            <ChatIcon filled={unread > 0} />
             {unread > 0 && (
-              // Indicateur discret (pas de compteur) : simple point rose,
-              // même langage visuel que le point de présence du header.
-              <span className="absolute right-0 top-0 flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-60" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-pink-400" />
-              </span>
+              // Indicateur discret (pas de compteur) : un point à la teinte franche, IMMOBILE —
+              // une onde qui bat sans fin sur une vidéo coûte une composition par image.
+              <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full" style={{ background: CHAT_ACCENT, boxShadow: "0 0 0 2px #18181B" }} />
             )}
           </motion.button>
         )}
@@ -242,21 +232,21 @@ function ChatHeader({
   return (
     <div
       onPointerDown={onDragStart}
-      className={`flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-2.5 ${onDragStart ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
+      className={`flex shrink-0 items-center justify-between border-b border-white/10 py-2 pl-4 pr-2 ${onDragStart ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
     >
-      <span className="flex items-center gap-2 text-sm font-semibold text-white/90">
-        <span className="text-purple-300"><ChatIcon /></span>
+      <span className="flex items-center gap-2 font-display text-[15px] font-semibold tracking-tight text-white">
+        <span className="text-white/70"><ChatIcon /></span>
         {title}
       </span>
       <button
+        type="button"
         onClick={onClose}
         onPointerDown={(e) => e.stopPropagation()}
-        className="rounded-lg p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+        className={CHAT_ICON_BUTTON}
         aria-label={title}
+        title={title}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25 12 15.75 4.5 8.25" />
-        </svg>
+        <CaretDownIcon size={16} weight="bold" aria-hidden />
       </button>
     </div>
   );

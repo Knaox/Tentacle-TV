@@ -1,3 +1,5 @@
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { CHAT_ICON_BUTTON } from "../chatSkin";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import type { WtChatApi } from "@tentacle-tv/api-client";
@@ -30,8 +32,8 @@ export function ReactionPicker({
   const tabChip = (target: PickerTab, label: string) => (
     <button
       onClick={() => onTabChange(target)}
-      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-        tab === target ? "bg-white/10 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/80"
+      className={`rounded-pill px-3 py-1 text-xs font-semibold transition-colors duration-hover ${
+        tab === target ? "bg-white/[0.16] text-white" : "text-white/65 hover:bg-white/10 hover:text-white"
       }`}
     >
       {label}
@@ -62,11 +64,9 @@ export function ReactionPicker({
               <button
                 onClick={onClose}
                 aria-label={t("pickerClose")}
-                className="ml-auto rounded-lg p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                className={`ml-auto ${CHAT_ICON_BUTTON} !h-7 !w-7`}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6 6 18" />
-                </svg>
+                <XIcon size={14} weight="bold" aria-hidden />
               </button>
             </div>
 

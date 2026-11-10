@@ -1,6 +1,7 @@
 import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
 import { isGlassLayout } from "./player/glass/playerGlassMode";
 import { GlassSurface } from "./player/glass/GlassSurface";
+import { FastForwardIcon, RewindIcon } from "./icons/transport";
 
 export interface SkipFlash {
   delta: number;
@@ -11,8 +12,8 @@ export interface SkipFlash {
  * Badge éphémère « +30s / −10s » après un saut (boutons ±10/30, flèches
  * clavier, swipe) — pilule latérale côté du sens du saut, façon Netflix.
  *
- * Posé sur la vidéo → border-white/bg-black/text-white volontairement en dur
- * dans les deux thèmes clair/sombre.
+ * Posé sur la vidéo → l'encre des capsules et le blanc, en dur dans les deux
+ * thèmes clair/sombre.
  *
  * Et donc PAS de `backdrop-filter`. Sur les trois bureaux, mpv ne dessine pas
  * dans le moteur web : Windows lui donne une fenêtre native placée SOUS la
@@ -34,17 +35,9 @@ export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
       className={`pointer-events-none absolute top-[45%] z-30 ${forward ? "right-10 md:right-24" : "left-10 md:left-24"}`}
     >
       <Pill glass={glass}>
-        {!forward && (
-          <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M11 18V6l-8.5 6L11 18zm.5-6l8.5 6V6l-8.5 6z" />
-          </svg>
-        )}
+        {!forward && <RewindIcon className="h-5 w-5 text-white" aria-hidden />}
         <span className="text-lg font-extrabold tabular-nums text-white">{label}</span>
-        {forward && (
-          <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M13 6v12l8.5-6L13 6zm-.5 6L4 6v12l8.5-6z" />
-          </svg>
-        )}
+        {forward && <FastForwardIcon className="h-5 w-5 text-white" aria-hidden />}
       </Pill>
     </div>
   );
@@ -59,6 +52,6 @@ function Pill({ glass, children }: { glass: boolean; children: React.ReactNode }
     );
   }
   return (
-    <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 rounded-full border border-white/15 bg-black/65 px-5 py-2.5">{children}</div>
+    <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 rounded-pill bg-[rgba(24,24,27,0.74)] px-5 py-2.5">{children}</div>
   );
 }

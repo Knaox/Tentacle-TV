@@ -71,21 +71,20 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
             type="button"
             onClick={() => showAffinityView("deck")}
             aria-label={t("back")}
-            className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content-secondary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="icon-btn -ml-2"
           >
             <ArrowLeft aria-hidden className="h-5 w-5" />
           </button>
         ) : (
           <span
             aria-hidden
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
-            style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent"
           >
             <HeartHandshake className="h-5 w-5" />
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">
+          <h2 id={titleId} className="font-display text-heading-3 text-content-primary">
             {switching ? t("affinityChooseKind") : t("affinityFind")}
           </h2>
           <p className="mt-0.5 text-[13px] leading-relaxed text-content-tertiary">
@@ -99,7 +98,7 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
             type="button"
             onClick={closeAffinity}
             aria-label={t("close")}
-            className="-mr-2 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content-tertiary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="icon-btn -mr-2 -mt-1"
           >
             <X aria-hidden className="h-5 w-5" />
           </button>
@@ -108,12 +107,12 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
         {failed ? (
-          <div className="rounded-2xl border border-line-subtle px-4 py-4 text-center" role="alert">
+          <div className="rounded-tile bg-surface-2 px-4 py-4 text-center" role="alert">
             <p className="text-sm text-content-secondary">{t("affinityKindsError")}</p>
             <button
               type="button"
               onClick={() => setAttempt((n) => n + 1)}
-              className="mt-3 inline-flex h-9 items-center rounded-full border border-line-subtle bg-fill-soft px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="mt-3 btn btn-sm btn-soft"
             >
               {t("affinityRetry")}
             </button>
@@ -132,9 +131,9 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
                     type="button"
                     onClick={() => void pick(kind)}
                     disabled={!count || busy !== null}
-                    className="group flex w-full items-center gap-4 rounded-2xl border border-line-subtle bg-fill-faint px-4 py-3.5 text-left outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex w-full items-center gap-4 rounded-tile bg-surface-2 px-4 py-3.5 text-left outline-none transition-colors duration-hover hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[rgba(var(--brand-rgb),0.16)] text-[var(--brand-light)]">
+                    <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent">
                       <Icon className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -142,11 +141,11 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
                       <span className="block text-xs tabular-nums text-content-tertiary">{busy === kind ? t("affinityPreparing") : detail}</span>
                     </span>
                     {(current || resumable) && (
-                      <span className="rounded-full bg-fill-soft px-2 py-0.5 text-[11px] font-semibold text-content-secondary">
+                      <span className="chip">
                         {t(current ? "affinityCurrent" : "affinityResume")}
                       </span>
                     )}
-                    <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-content-quaternary transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-content-quaternary" />
                   </button>
                 </li>
               );

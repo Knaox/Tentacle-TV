@@ -68,11 +68,9 @@ export const PipLoadingView = memo(function PipLoadingView({ loading, leaving }:
   return (
     <div
       role="status" aria-live="polite"
-      className={`pointer-events-none absolute inset-0 overflow-hidden bg-[#0a0a12] transition-opacity motion-reduce:transition-none ${leaving ? "opacity-0" : "opacity-100"}`}
+      className={`pointer-events-none absolute inset-0 overflow-hidden bg-[#0B0B0C] transition-opacity motion-reduce:transition-none ${leaving ? "opacity-0" : "opacity-100"}`}
       style={{ transitionDuration: `${String(PIP_LOADING_EXIT_MS)}ms` }}
     >
-      {/* Le fond de repli, teinté marque, tant que l'image n'est pas là. */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.24),transparent_65%)]" />
       {loading.posterUrl && <Poster url={loading.posterUrl} />}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/25" />
       <div className="absolute inset-x-3 bottom-3 flex flex-col gap-1.5">

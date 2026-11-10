@@ -26,9 +26,9 @@ interface WatchTogetherPanelProps {
  * personnes quand on le décide.
  */
 
-const PILL = "inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full text-[13px] font-semibold outline-none transition-[background-color,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50";
-const PRIMARY = `${PILL} border border-cta-primary-border bg-cta-primary-bg font-bold text-cta-primary-fg hover:bg-cta-primary-bg-hover`;
-const SECONDARY = `${PILL} border border-line-subtle bg-fill-soft text-content-primary hover:bg-fill-medium`;
+// Les pilules du socle (`theme/buttons.css`) : l'action principale neutre, la secondaire douce.
+const PRIMARY = "btn btn-solid flex-1";
+const SECONDARY = "btn btn-soft flex-1";
 
 export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
   const { t } = useTranslation("watchTogether");
@@ -59,7 +59,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
   return (
     <div>
       <div className="lg-sep flex items-center justify-between border-b border-line-subtle px-4 py-3">
-        <span className="text-sm font-semibold text-content-primary">{t("title")}</span>
+        <span className="font-display text-[15px] font-semibold tracking-tight text-content-primary">{t("title")}</span>
         {room && (
           <span className="text-xs text-content-quaternary">
             {t("membersCount", { count: room.members.length })}
@@ -69,7 +69,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
 
       {invites.length > 0 && (
         <div className="lg-sep border-b border-line-subtle">
-          <p className="lg-menu-label px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
+          <p className="lg-menu-label ui-eyebrow px-4 pt-3">
             {t("invitations")}
           </p>
           {invites.map((invite) => (
@@ -97,7 +97,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
             ))}
             {pendingInvites.length > 0 && (
               <p className="flex items-center gap-2 px-4 py-2 text-xs text-content-tertiary">
-                <Hourglass aria-hidden className="h-3.5 w-3.5 text-[var(--brand-light)]" />
+                <Hourglass aria-hidden className="h-3.5 w-3.5 text-content-tertiary" />
                 {t("pendingInvitesCount", { count: pendingInvites.length })}
               </p>
             )}
@@ -120,7 +120,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
               type="button"
               onClick={() => run(() => actions.leave(), true)}
               disabled={busy}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full text-[13px] font-medium text-content-tertiary outline-none transition-colors hover:bg-danger-surface hover:text-status-error-fg focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-40"
+              className="btn btn-sm btn-ghost w-full hover:!bg-danger-surface hover:!text-status-error-fg"
             >
               <LogOut aria-hidden className="h-4 w-4" />
               {t("leaveGroup")}

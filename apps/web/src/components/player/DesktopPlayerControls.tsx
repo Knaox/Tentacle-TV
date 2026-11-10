@@ -8,16 +8,22 @@ import { formatDuration } from "../playerControls/utils";
 import { PlaybackRateControl } from "../playerControls/PlaybackRateControl";
 import { surfaceHasAlpha } from "../../lib/videoShadow";
 import {
-  BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
+  VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
 } from "../PlayerIcons";
+import { PauseIcon, PlayIcon } from "../icons/transport";
 import { rangeFill } from "../../lib/rangeFill";
 import { ReduceIcon } from "../../pictureInPicture/pipIcons";
 import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
 import { isGlassLayout } from "./glass/playerGlassMode";
 import { GlassPlayerChrome } from "./glass/GlassPlayerChrome";
+import { SkipBackGlyph, SkipForwardGlyph } from "./chrome/skipGlyphs";
 import { usePlaybackRate } from "../playerControls/usePlaybackRate";
+import { ChromeTop } from "./chrome/ChromeTop";
+import { useChromePresence } from "./chrome/useChromePresence";
 import type { DesktopPlayerControlsProps } from "./desktopPlayerControls.types";
+import "./chrome/playerChrome.css";
+import "./chrome/playerSeek.css";
 
 /**
  * La surface de la page a-t-elle un alpha par pixel ?
@@ -29,19 +35,15 @@ import type { DesktopPlayerControlsProps } from "./desktopPlayerControls.types";
 const WITHOUT_ALPHA = !surfaceHasAlpha();
 
 /**
- * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
- * et bottom bar (seekbar, transport, volume mpv 0-100, sélecteurs de pistes et
- * d'épisodes, fullscreen). Extraction mécanique de DesktopPlayer.
- *
- * Barres superposées à la vidéo (gradient bg-black/70 → transparent) →
- * text-white/bg-white volontairement en dur, identiques dans les deux thèmes.
- * (TrackSelector / EpisodeSelectorPanel qu'elles ouvrent sont eux tokenisés :
- * ce sont des panneaux détachés, pas posés sur la vidéo.)
- */
-/**
  * L'habillage du lecteur de bureau : le verre natif là où il se pose (macOS 26,
  * réglage allumé, vidéo sous la fenêtre — `glass/playerGlassMode.ts`), sinon
- * l'habillage d'avant, inchangé.
+ * l'habillage de la refonte (nov. 2026) — les mêmes formes, peintes par la page :
+ * la sortie et le titre en haut ; en bas la barre de lecture, puis deux CAPSULES
+ * d'encre (transport à gauche, son et réglages à droite — `chrome/playerChrome.css`).
+ *
+ * Posé sur la vidéo : blanc et encre en dur, identiques dans les deux thèmes.
+ * (TrackSelector / EpisodeSelectorPanel qu'il ouvre sont eux tokenisés : ce sont
+ * des menus détachés, pas posés sur la vidéo.)
  */
 export function DesktopPlayerControls(props: DesktopPlayerControlsProps) {
   const mode = usePlayerGlassMode();
@@ -65,165 +67,134 @@ function LegacyDesktopPlayerControls({
 }: DesktopPlayerControlsProps) {
   const { t } = useTranslation("player");
   const { dragProgress } = seekbar;
+  // Masqué, l'habillage quitte le DOM une fois son fondu joué : sa barre et ses boutons
+  // n'étaient rendus pour personne à chaque battement de position. Son état (panneaux,
+  // vitesse, glissement) vit dans `DesktopPlayer` et `DesktopPlayerControls`, au-dessus.
+  const { mounted, shown } = useChromePresence(visible);
+  if (!mounted) return null;
+  const muted = state.muted || state.volume === 0;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}>
-      {/* ⚠️ Ce qui peut se poser sur l'image de la surface à alpha est ÉTROIT,
-          et chaque frontière a été mesurée :
+    // ⚠️ Ce qui peut se poser sur l'image de la surface à alpha (macOS, Linux) est ÉTROIT,
+    // et chaque frontière a été mesurée :
+    //
+    //  - un voile plein cadre assombrissait 8 % de l'image ENTIÈRE, et une bande de 631 lignes
+    //    changeait de 10,2 niveaux à l'instant où il s'en allait — un tiers de l'écran qui saute ;
+    //  - une ombre de TEXTE dessinait un contour visible autour du minutage et de la barre.
+    //
+    // Ce qui a survécu (essai du 30.08) : le dégradé NOIR, ALLÉGÉ sur la surface à alpha
+    // (`data-alpha` : 45 % en haut, 52 % en bas, contre 62 et 78 ailleurs) et cantonné aux zones
+    // des barres. Le noir est invariant par prémultiplication : c'est LA couleur que cette
+    // surface compose juste — et c'est aussi celle des capsules. Le blanc partiel, lui, s'y
+    // délave vers le gris : les survols y rendent un peu plus sombres qu'ailleurs, assumé.
+    // Un contour de texte à copies pleines a été essayé et JUGÉ LAID (`videoShadow.ts`) : ne
+    // pas le remettre.
+    <div className="pl-chrome" data-shown={shown} data-alpha={WITHOUT_ALPHA ? undefined : "true"}>
+      <ChromeTop title={title} subtitle={subtitle} onBack={() => goBack()}>
+        {import.meta.env.DEV && <span className="pl-devbadge">mpv{isDirectPlay ? "" : " (transcode)"}</span>}
+      </ChromeTop>
 
-           - le voile plein cadre assombrissait 8 % de l'image ENTIÈRE. Sur une
-             image strictement fixe, une bande de 631 lignes changeait de 10,2
-             niveaux en moyenne à l'instant où il s'en allait — un tiers de
-             l'écran qui saute ;
-           - l'estomper au lieu de le démonter ne réglait rien : l'opacité du
-             conteneur multiplie son alpha, qui passait sous le seuil où Chromium
-             rogne la couche, et le trait net que ce voile devait supprimer
-             revenait à chaque extinction des contrôles ;
-           - une ombre de TEXTE, elle, dessinait un contour visible autour du
-             minutage et de la barre de progression, et le même artefact à
-             l'apparition comme à l'extinction.
+      <div className="pl-bar pl-bar--bottom" onClick={(e) => e.stopPropagation()}>
+        <AnimatePresence>
+          {showSettings && hasSettings && (
+            <TrackSelector
+              audioTracks={displayAudio} subtitleTracks={displaySubs}
+              currentAudio={curAudio} currentSubtitle={curSub}
+              currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
+              autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
+              onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
+              onQualityChange={onQualityChange}
+              applyToSeries={applyToSeries} seriesName={item?.SeriesName ?? undefined}
+              onClose={closePanels.settings}
+            />
+          )}
+          {showEpisodes && isEpisode && item?.SeriesId && (
+            useLocalEpisodes ? (
+              <LocalEpisodeSelectorPanel
+                currentEpisodeId={item.Id}
+                onClose={closePanels.episodes}
+              />
+            ) : (
+              <EpisodeSelectorPanel
+                seriesId={item.SeriesId}
+                currentEpisodeId={item.Id}
+                currentSeasonId={item.SeasonId}
+                onClose={closePanels.episodes}
+              />
+            )
+          )}
+        </AnimatePresence>
 
-          Ce qui a survécu à l'essai du 30.08, et pourquoi : le dégradé NOIR
-          revient sur la surface à alpha, ALLÉGÉ (45 % contre 70 % ailleurs) et
-          cantonné aux zones des barres — c'est lui qui détache texte et
-          icônes. Il n'est ni le voile plein cadre ni une ombre floutée : le
-          noir est invariant par prémultiplication (noir × alpha reste noir),
-          c'est LA couleur que cette surface compose juste. Le blanc partiel,
-          lui, s'y délave vers le gris — les `text-white/50-70` rendent un peu
-          plus gris qu'ailleurs, et posés sur le voile sombre, c'est assumé.
+        {/* La barre de lecture : tampon, position, glissement, vignette. */}
+        <DesktopSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} />
 
-          Un contour de texte à copies pleines (façon sous-titres) a aussi été
-          essayé ce jour-là : composition irréprochable, mais JUGÉ LAID —
-          l'utilisateur a tranché, le voile seul suffit. Sa pierre tombale est
-          dans `videoShadow.ts` ; ne pas le remettre.
-
-          Windows et le web gardent leurs deux dégradés pleins, au pixel près :
-          leur surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais
-          apparu. */}
-      {/* Top bar */}
-      <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`bg-gradient-to-b ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-10 pt-5`}>
-          <div className="flex items-center gap-4">
-            <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
-            <div>
-              <h2 className="text-lg font-semibold text-white">{title}</h2>
-              {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
-            </div>
-            {import.meta.env.DEV && (
-              <div className="ml-auto flex items-center gap-2 rounded-full bg-[rgba(var(--brand-rgb),0.3)] px-3 py-1">
-                <span className="h-2 w-2 rounded-full bg-[var(--brand)]" />
-                <span className="text-xs text-[var(--brand-light)]">mpv{isDirectPlay ? "" : " (transcode)"}</span>
-              </div>
+        <div className="pl-row">
+          <div className="pl-caps">
+            {hasPreviousEpisode && (
+              <button type="button" onClick={onPreviousEpisode} className="pl-btn" title={`${t("player:previousEpisodeLabel")} (P)`} aria-label={t("player:previousEpisodeLabel")}><PrevEpIcon /></button>
+            )}
+            <button type="button" onClick={() => skipBy(-10)} className="pl-btn" title={t("player:seekBackBy", { seconds: 10 })} aria-label={t("player:seekBackBy", { seconds: 10 })}>
+              <SkipBackGlyph seconds={10} />
+            </button>
+            <button type="button" onClick={() => togglePause()} className="pl-btn pl-btn--main" aria-label={state.paused ? t("player:play") : t("player:pause")}>
+              {state.paused ? <PlayIcon size={20} aria-hidden /> : <PauseIcon size={20} aria-hidden />}
+            </button>
+            <button type="button" onClick={() => skipBy(30)} className="pl-btn" title={t("player:seekForwardBy", { seconds: 30 })} aria-label={t("player:seekForwardBy", { seconds: 30 })}>
+              <SkipForwardGlyph seconds={30} />
+            </button>
+            {hasNextEpisode && (
+              <button type="button" onClick={onNextEpisode} className="pl-btn" title={`${t("player:nextEpisodeLabel")} (N)`} aria-label={t("player:nextEpisodeLabel")}><NextEpIcon /></button>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Bottom controls */}
-      <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative bg-gradient-to-t ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-5 pt-10`}>
-          <AnimatePresence>
-            {showSettings && hasSettings && (
-              <TrackSelector
-                audioTracks={displayAudio} subtitleTracks={displaySubs}
-                currentAudio={curAudio} currentSubtitle={curSub}
-                currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
-                autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
-                onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
-                onQualityChange={onQualityChange}
-                applyToSeries={applyToSeries}
-                onClose={closePanels.settings}
-              />
-            )}
-            {showEpisodes && isEpisode && item?.SeriesId && (
-              useLocalEpisodes ? (
-                <LocalEpisodeSelectorPanel
-                  currentEpisodeId={item.Id}
-                  onClose={closePanels.episodes}
-                />
-              ) : (
-                <EpisodeSelectorPanel
-                  seriesId={item.SeriesId}
-                  currentEpisodeId={item.Id}
-                  currentSeasonId={item.SeasonId}
-                  onClose={closePanels.episodes}
-                />
-              )
-            )}
-          </AnimatePresence>
-
-          {/* Progress bar with buffer + drag scrub */}
-          <DesktopSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} />
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {hasPreviousEpisode && (
-                <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="(P)"><PrevEpIcon /></button>
-              )}
-              <button onClick={() => skipBy(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
-                <span className="text-xs font-bold text-white/70">-10</span>
+          <span className="pl-time">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
+          <span className="pl-grow" />
+          <div className="pl-caps">
+            <div className="pl-volume">
+              <button type="button" onClick={() => toggleMute()} className="pl-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
+                {/* Quatre états qui suivent le volume : coupé, bas (≤33), moyen (≤66),
+                    fort — comme un OSD système. */}
+                {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
               </button>
-              <button onClick={() => togglePause()} className="rounded-full p-2 hover:bg-white/10">
-                {state.paused ? <PlayIcon /> : <PauseIcon />}
-              </button>
-              <button onClick={() => skipBy(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
-                <span className="text-xs font-bold text-white/70">+30</span>
-              </button>
-              {hasNextEpisode && (
-                <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="(N)"><NextEpIcon /></button>
-              )}
-              <div className="group/vol flex items-center gap-2">
-                <button onClick={() => toggleMute()} className="rounded-full p-2 hover:bg-white/10">
-                  {/* Quatre états qui suivent le volume : coupé, bas (≤33),
-                      moyen (≤66), fort — comme un OSD système. */}
-                  {state.muted || state.volume === 0
-                    ? <MuteIcon />
-                    : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
-                </button>
-                {/* Le curseur porte enfin le DÉGRADÉ, comme la barre de
-                    progression — `accent-color` ne savait prendre qu'une
-                    couleur unie, et l'agent utilisateur peignait la piste en
-                    gris clair sur fond noir. Tout est dans `.ctl-range`. */}
-                <input type="range" min={0} max={100} step={1} value={state.volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  style={rangeFill(state.volume, 0, 100)}
-                  className="ctl-range hidden w-20 group-hover/vol:block" />
-              </div>
-              <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
+              {/* Le curseur MESURE : il porte le dégradé de jauge (`.ctl-range`). */}
+              <input type="range" min={0} max={100} step={1} value={state.volume}
+                aria-label={t("player:volume")}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                style={rangeFill(state.volume, 0, 100)}
+                className="ctl-range pl-volume__range" />
             </div>
-            <div className="flex items-center gap-2">
-              <PlaybackRateControl
-                apply={setSpeed} resetKey={itemId} buttonClass="p-2" state={speed}
-                // Un seul panneau à la fois : pistes et épisodes se fermaient
-                // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
-                otherPanelOpen={showSettings || showEpisodes}
-                onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
-              />
-              {isEpisode && (
-                <button
-                  onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
-                  className={`rounded-full p-2 hover:bg-white/10 ${showEpisodes ? "bg-white/10" : ""}`}
-                  title={t("player:episodes")}
-                  aria-label={t("player:episodes")}
-                >
-                  <EpisodesIcon />
-                </button>
-              )}
-              {hasSettings && (
-                <button onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }} className="rounded-full p-2 hover:bg-white/10"><GearIcon /></button>
-              )}
-              {/* Le PiP juste avant le plein écran — la place qu'il a chez YouTube,
-                  Netflix, Apple TV ou IINA (retour de Damien : plus de second
-                  bouton en haut à gauche, qui ne garde que « Quitter »). */}
-              {onReduce && (
-                <button onClick={() => onReduce()} className="rounded-full p-2 text-white hover:bg-white/10" title={`${t("player:pip.reduce")} (I)`} aria-label={t("player:pip.reduce")}>
-                  <ReduceIcon />
-                </button>
-              )}
-              <button onClick={() => toggleFullscreen()} className="rounded-full p-2 hover:bg-white/10" title="(F)">
-                {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+            <PlaybackRateControl
+              apply={setSpeed} resetKey={itemId} state={speed}
+              // Un seul panneau à la fois : pistes et épisodes se fermaient
+              // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
+              otherPanelOpen={showSettings || showEpisodes}
+              onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
+            />
+            {isEpisode && (
+              <button type="button"
+                onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
+                className="pl-btn" aria-expanded={showEpisodes}
+                title={t("player:episodes")} aria-label={t("player:episodes")}
+              >
+                <EpisodesIcon />
               </button>
-            </div>
+            )}
+            {hasSettings && (
+              <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }} className="pl-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
+                <GearIcon />
+                {curSub !== null && <span className="pl-dot" aria-hidden />}
+              </button>
+            )}
+            {/* Le PiP juste avant le plein écran — la place qu'il a chez YouTube,
+                Netflix, Apple TV ou IINA (retour de Damien : plus de second
+                bouton en haut à gauche, qui ne garde que « Quitter »). */}
+            {onReduce && (
+              <button type="button" onClick={() => onReduce()} className="pl-btn" title={`${t("player:pip.reduce")} (I)`} aria-label={t("player:pip.reduce")}>
+                <ReduceIcon />
+              </button>
+            )}
+            <button type="button" onClick={() => toggleFullscreen()} className="pl-btn" title={`${state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} (F)`} aria-label={state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")}>
+              {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+            </button>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { CHAT_FIELD } from "../chatSkin";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-client";
@@ -26,7 +27,7 @@ const GifCell = memo(function GifCell({
     <button
       onClick={() => onSend(gif)}
       aria-label={sendLabel}
-      className={`overflow-hidden rounded-lg transition hover:ring-1 hover:ring-purple-400/60 ${sent ? "ring-2 ring-purple-400" : ""}`}
+      className={`overflow-hidden rounded-field transition-shadow duration-hover hover:shadow-[0_0_0_1.5px_rgba(255,255,255,0.5)] ${sent ? "shadow-[0_0_0_2px_#E58CF0]" : ""}`}
     >
       <img
         src={gif.url}
@@ -59,7 +60,7 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
     return (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
         <p className="text-xs font-medium text-white/70">{t("gifNotConfigured")}</p>
-        <p className="text-[11px] text-white/40">{t("gifNotConfiguredHint")}</p>
+        <p className="text-[11px] text-white/55">{t("gifNotConfiguredHint")}</p>
       </div>
     );
   }
@@ -74,7 +75,7 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
           onKeyUp={(e) => e.stopPropagation()}
           maxLength={100}
           placeholder={t("gifSearchPlaceholder")}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
+          className={`${CHAT_FIELD} h-8 w-full !px-3 !text-xs`}
         />
       </div>
 
@@ -82,13 +83,13 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
         {isLoading && !data ? (
           <div className="grid grid-cols-2 gap-1.5">
             {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="h-20 animate-pulse rounded-lg bg-white/5" />
+              <div key={i} className="h-20 rounded-field bg-white/[0.07]" />
             ))}
           </div>
         ) : data?.error ? (
-          <p className="px-2 pt-8 text-center text-xs text-white/40">{t("gifError")}</p>
+          <p className="px-2 pt-8 text-center text-xs text-white/60">{t("gifError")}</p>
         ) : data && data.results.length === 0 ? (
-          <p className="px-2 pt-8 text-center text-xs text-white/40">{t("gifNoResults")}</p>
+          <p className="px-2 pt-8 text-center text-xs text-white/60">{t("gifNoResults")}</p>
         ) : (
           <div className="grid grid-cols-2 items-start gap-1.5">
             {data?.results.map((gif) => (
@@ -104,7 +105,7 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
         )}
       </div>
 
-      <p className="shrink-0 px-2 pb-1 text-right text-[9px] text-white/25">{t("gifAttribution")}</p>
+      <p className="shrink-0 px-2 pb-1 text-right text-[9px] text-white/45">{t("gifAttribution")}</p>
     </div>
   );
 });

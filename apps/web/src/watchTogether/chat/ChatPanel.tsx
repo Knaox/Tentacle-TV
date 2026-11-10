@@ -1,3 +1,6 @@
+import { PaperPlaneRightIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneRight";
+import { SmileyIcon } from "@phosphor-icons/react/dist/csr/Smiley";
+import { CHAT_ACCENT, CHAT_FIELD, CHAT_ICON_BUTTON, CHAT_ICON_BUTTON_ON } from "./chatSkin";
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, typingLabelKey, type WtChatMessageDto } from "@tentacle-tv/shared";
@@ -37,17 +40,16 @@ const MessageRow = memo(function MessageRow({
       <div className={`min-w-0 max-w-[80%] ${isSelf ? "text-right" : ""}`}>
         {showAuthor && (
           <div className={`mb-0.5 flex items-baseline gap-2 text-[11px] ${isSelf ? "flex-row-reverse" : ""}`}>
-            {!isSelf && <span className="font-semibold text-purple-300">{message.username}</span>}
-            <span className="text-white/30">{formatTime(message.at)}</span>
+            {!isSelf && <span className="font-semibold" style={{ color: CHAT_ACCENT }}>{message.username}</span>}
+            {/* L'heure se LIT : 55 % de blanc, plus 30. */}
+            <span className="tabular-nums text-white/55">{formatTime(message.at)}</span>
           </div>
         )}
         <div
-          className={`inline-block whitespace-pre-wrap break-words rounded-2xl px-3 py-1.5 text-left text-sm text-white/90 ${isSelf ? "rounded-tr-md" : "rounded-tl-md"}`}
-          style={{
-            background: isSelf
-              ? "linear-gradient(135deg, rgba(139,92,246,0.45), rgba(236,72,153,0.35))"
-              : "rgba(255,255,255,0.08)",
-          }}
+          // Ses messages : le fond doux de la teinte franche ; ceux des autres : une encre claire.
+          // Plus de dégradé de marque — et le texte est blanc plein, il se lit sur les deux.
+          className={`inline-block whitespace-pre-wrap break-words rounded-tile px-3 py-1.5 text-left text-sm leading-snug text-white ${isSelf ? "rounded-tr-chip" : "rounded-tl-chip"}`}
+          style={{ background: isSelf ? "rgba(229, 140, 240, 0.24)" : "rgba(255, 255, 255, 0.1)" }}
         >
           {message.text}
         </div>
@@ -61,7 +63,7 @@ function TypingLine({ typing }: { typing: WtChatApi["state"]["typing"] }) {
   const { t } = useTranslation("watchTogether");
   const label = typingLabelKey(typing);
   return (
-    <p aria-live="polite" className="h-4 shrink-0 truncate px-4 text-[11px] italic text-white/45">
+    <p aria-live="polite" className="h-4 shrink-0 truncate px-4 text-[11px] italic text-white/60">
       {label ? t(label.key, label.params) : ""}
     </p>
   );
@@ -104,7 +106,7 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2"
       >
         {messages.length === 0 ? (
-          <p className="px-2 pt-6 text-center text-xs text-white/35">{t("chatEmpty")}</p>
+          <p className="px-2 pt-6 text-center text-xs text-white/60">{t("chatEmpty")}</p>
         ) : (
           messages.map((m, i) => {
             const prev = messages[i - 1];
@@ -133,8 +135,9 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
         {WT_QUICK_REACTIONS.map((emoji) => (
           <button
             key={emoji}
+            type="button"
             onClick={() => chat.sendReaction(emoji)}
-            className="rounded-lg px-1.5 py-0.5 text-lg transition-transform duration-100 hover:scale-125"
+            className="flex h-8 w-8 items-center justify-center rounded-pill text-lg transition-[background-color,transform] duration-hover hover:bg-white/10 active:scale-90"
             aria-label={emoji}
           >
             {emoji}
@@ -145,24 +148,20 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
           onClick={() => setPickerTab((cur) => (cur === "emoji" ? null : "emoji"))}
           aria-label={t("pickerOpenEmojis")}
           title={t("pickerOpenEmojis")}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            pickerTab === "emoji" ? "bg-purple-500/25 text-purple-200" : "text-white/60 hover:bg-white/10 hover:text-white"
-          }`}
+          type="button"
+          aria-pressed={pickerTab === "emoji"}
+          className={`${CHAT_ICON_BUTTON} ${pickerTab === "emoji" ? CHAT_ICON_BUTTON_ON : ""}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M8.5 14a4.2 4.2 0 0 0 7 0" />
-            <path strokeLinecap="round" d="M9 9.4v.01M15 9.4v.01" strokeWidth={2.6} />
-          </svg>
+          <SmileyIcon size={20} weight={pickerTab === "emoji" ? "fill" : "regular"} aria-hidden />
         </button>
         <button
           onClick={() => setPickerTab((cur) => (cur === "gif" ? null : "gif"))}
           aria-label={t("pickerOpenGifs")}
           title={t("pickerOpenGifs")}
-          className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide transition-colors ${
-            pickerTab === "gif"
-              ? "border-purple-400/50 bg-purple-500/25 text-purple-200"
-              : "border-white/15 text-white/60 hover:bg-white/10 hover:text-white"
+          type="button"
+          aria-pressed={pickerTab === "gif"}
+          className={`flex h-8 shrink-0 items-center rounded-pill px-2.5 text-[11px] font-bold tracking-wide outline-none transition-[background-color,color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/70 ${
+            pickerTab === "gif" ? "bg-white/[0.16] text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
           }`}
         >
           GIF
@@ -185,17 +184,18 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
           onKeyUp={(e) => e.stopPropagation()}
           maxLength={WT_CHAT_MAX_LENGTH}
           placeholder={t("chatPlaceholder")}
-          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-purple-400/50"
+          aria-label={t("chatPlaceholder")}
+          className={`${CHAT_FIELD} h-10`}
         />
         <button
           onClick={submit}
           disabled={!draft.trim()}
           aria-label={t("chatSend")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-black transition-colors duration-150 hover:bg-white/85 disabled:opacity-30"
+          type="button"
+          title={t("chatSend")}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-[#F4F2EE] text-[#131315] outline-none transition-[background-color,transform,opacity] duration-hover hover:bg-white active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-35"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.3 3.9a.5.5 0 0 1 .7-.6l16.6 8.25a.5.5 0 0 1 0 .9L4 20.7a.5.5 0 0 1-.7-.6L6 12Zm0 0h7" />
-          </svg>
+          <PaperPlaneRightIcon size={18} weight="fill" aria-hidden />
         </button>
       </div>
     </>

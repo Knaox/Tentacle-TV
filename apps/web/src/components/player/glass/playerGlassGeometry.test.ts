@@ -3,13 +3,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * L'overlay en verre suit la fenêtre et l'écran COMME l'habillage d'avant
- * (retour de Damien, lot lg3) : mêmes marges, aucune largeur plafonnée. Avant,
+ * L'overlay en verre suit la fenêtre et l'écran COMME l'habillage peint par la
+ * page (retour de Damien, lot lg3) : mêmes marges, aucune largeur plafonnée. Avant,
  * le bas tenait dans 760 px centrés — en plein écran sur 1920 px, la capsule du
  * temps restait au milieu quand la barre d'avant courait d'un bord à l'autre.
  *
- * Ce test lie les jetons du verre aux classes de l'habillage d'avant : changer
- * l'un sans l'autre casse ici, pas chez l'utilisateur.
+ * Ce test lie les jetons du verre aux marges de l'habillage de la page
+ * (`chrome/playerChrome.css`, refonte de nov. 2026) : changer l'un sans l'autre
+ * casse ici, pas chez l'utilisateur.
  */
 
 const HERE = __dirname;
@@ -31,13 +32,10 @@ function rule(file: string, selector: string): string {
   return css.slice(css.indexOf("{", at) + 1, css.indexOf("}", at));
 }
 
-describe("la géométrie du lecteur en verre suit celle de l'habillage d'avant", () => {
-  const legacy = readFileSync(join(HERE, "../DesktopPlayerControls.tsx"), "utf8");
-
-  it("mêmes marges : 24 px sur les côtés (px-6), 20 px en haut et en bas (pt-5, pb-5)", () => {
-    // Tailwind : 6 → 1,5 rem = 24 px ; 5 → 1,25 rem = 20 px.
-    expect(legacy).toMatch(/px-6 pb-10 pt-5/);
-    expect(legacy).toMatch(/px-6 pb-5 pt-10/);
+describe("la géométrie du lecteur en verre suit celle de l'habillage de la page", () => {
+  it("mêmes marges : 24 px sur les côtés, 20 px en haut et en bas", () => {
+    expect(rule("../chrome/playerChrome.css", ".pl-bar--top {")).toContain("padding: max(20px, env(safe-area-inset-top, 0px)) 24px 44px");
+    expect(rule("../chrome/playerChrome.css", ".pl-bar--bottom {")).toContain("padding: 64px 24px max(20px, env(safe-area-inset-bottom, 0px))");
     expect(token("--lg-player-inline")).toBe(24);
     expect(token("--lg-player-edge")).toBe(20);
   });
@@ -56,7 +54,8 @@ describe("la géométrie du lecteur en verre suit celle de l'habillage d'avant",
     expect(rule("playerGlassCapsules.css", ".lgp-groups {")).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto minmax\(0, 1fr\)/);
   });
 
-  it("les encarts du coin gardent la marge latérale d'avant (right-6)", () => {
+  it("les encarts du coin et les panneaux gardent la même marge latérale", () => {
     expect(rule("playerGlassOverlays.css", ".lgp-corner {")).toContain("right: var(--lg-player-inline)");
+    expect(rule("../chrome/playerPanels.css", ".pl-panel {")).toContain("right: 24px");
   });
 });

@@ -32,7 +32,7 @@ export const EmojiTab = memo(function EmojiTab({ onPick }: { onPick: (emoji: str
             onClick={() => scrollToCategory(cat.id)}
             title={t(cat.labelKey)}
             aria-label={t(cat.labelKey)}
-            className="shrink-0 rounded-lg px-1 py-0.5 text-base transition-colors hover:bg-white/10"
+            className="shrink-0 rounded-pill px-1.5 py-0.5 text-base transition-colors duration-hover hover:bg-white/10"
           >
             {cat.icon}
           </button>
@@ -42,7 +42,7 @@ export const EmojiTab = memo(function EmojiTab({ onPick }: { onPick: (emoji: str
       <div ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
         {EMOJI_CATEGORIES.map((cat) => (
           <div key={cat.id} ref={(el) => { sectionRefs.current[cat.id] = el; }}>
-            <p className="pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-white/35">
+            <p className="pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-white/55">
               {t(cat.labelKey)}
             </p>
             <div className="grid grid-cols-8">
@@ -51,7 +51,7 @@ export const EmojiTab = memo(function EmojiTab({ onPick }: { onPick: (emoji: str
                   key={`${cat.id}:${emoji}`}
                   onClick={() => onPick(emoji)}
                   aria-label={emoji}
-                  className="rounded-lg py-0.5 text-xl leading-7 transition-transform duration-100 hover:scale-125"
+                  className="rounded-field py-0.5 text-xl leading-7 transition-[background-color,transform] duration-hover hover:bg-white/10 active:scale-90"
                 >
                   {emoji}
                 </button>

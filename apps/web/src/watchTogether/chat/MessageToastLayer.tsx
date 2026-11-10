@@ -1,3 +1,4 @@
+import { CHAT_ACCENT, CHAT_CAPSULE } from "./chatSkin";
 import { memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { WtChatMessageDto } from "@tentacle-tv/shared";
@@ -26,15 +27,12 @@ const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto
     >
       <WtAvatar userId={message.userId} name={message.username} size={24} />
       <div
-        className="min-w-0 rounded-2xl rounded-tl-md px-3 py-1.5"
-        style={{
-          background: "rgba(15,15,25,0.85)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(139,92,246,0.25)",
-        }}
+        // L'encre des capsules, opaque : posé sur la vidéo, un flou se paierait à chaque image.
+        className="min-w-0 rounded-tile rounded-tl-chip px-3 py-1.5"
+        style={CHAT_CAPSULE}
       >
-        <span className="text-[11px] font-semibold text-purple-300">{message.username}</span>
-        <p className="line-clamp-2 break-words text-sm text-white/90">{message.text}</p>
+        <span className="text-[11px] font-semibold" style={{ color: CHAT_ACCENT }}>{message.username}</span>
+        <p className="line-clamp-2 break-words text-sm text-white">{message.text}</p>
       </div>
     </motion.div>
   );
@@ -42,7 +40,7 @@ const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto
 
 export function MessageToastLayer({ toasts }: { toasts: WtChatMessageDto[] }) {
   return (
-    <div className="pointer-events-none fixed bottom-40 right-5 z-50 flex flex-col items-end gap-1.5">
+    <div className="pointer-events-none fixed bottom-56 right-6 z-50 flex flex-col items-end gap-1.5">
       <AnimatePresence>
         {toasts.map((m) => <ToastRow key={m.id} message={m} />)}
       </AnimatePresence>

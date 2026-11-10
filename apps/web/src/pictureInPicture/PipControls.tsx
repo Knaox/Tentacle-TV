@@ -1,4 +1,6 @@
 import { useEffect, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
+import { guardWindow, useUpdateLocked } from "../components/update/updateLock";
 import { usePictureInPicture } from "./pictureInPictureContext";
 import { PipChrome } from "./PipChrome";
 import { pipFrameRadii, pipWheelFactor } from "./pipGeometry";
@@ -72,6 +74,12 @@ export function PipControls(props: PipControlsProps) {
   const masked = `transition-opacity ${resizing ? "opacity-0 duration-0" : "opacity-100 duration-150"}`;
   const { frame } = pip;
   const radii = pipFrameRadii(frame);
+  // Une mise à jour qui tourne verrouille AUSSI cette fenêtre (`update/updateLock.ts`) : le PiP
+  // est une autre fenêtre que celle de la pop-up — c'est par lui qu'une lecture continuait
+  // pendant une mise à jour. Son clavier est filtré, ses contrôles cèdent la place à un voile.
+  const locked = useUpdateLocked();
+  const { t } = useTranslation("notifications");
+  useEffect(() => (view === null ? undefined : guardWindow(view)), [view]);
 
   // Espace met en pause, comme dans le lecteur — dans la fenêtre PiP, et dans
   // l'application : sur macOS, le PiP rend le focus à la fenêtre principale
@@ -111,13 +119,19 @@ export function PipControls(props: PipControlsProps) {
       <div
         className="absolute" style={{ inset: frame.shadow }}
         {...surface}
-        onDoubleClick={(e) => { if (!onControl(e.target)) pip.expand(); }}
+        onDoubleClick={(e) => { if (!locked && !onControl(e.target)) pip.expand(); }}
       >
         <div className="absolute overflow-hidden" style={{ inset: frame.bezel, borderRadius: radii.inner }}>
           {waiting.shown !== null && <PipLoadingView loading={waiting.shown} leaving={waiting.leaving} />}
-          <div className={`absolute inset-0 ${masked}`}>
-            <PipOverlay {...props} visible={visible} loading={loading !== null} />
-          </div>
+          {locked ? (
+            <div role="status" className="absolute inset-0 flex items-center justify-center bg-black/75 px-4 text-center text-xs font-semibold text-white">
+              {t("updateRunningTitle")}
+            </div>
+          ) : (
+            <div className={`absolute inset-0 ${masked}`}>
+              <PipOverlay {...props} visible={visible} loading={loading !== null} />
+            </div>
+          )}
         </div>
       </div>
       {(docked ? DOCKED_CORNERS : ALL_CORNERS).map((corner) => (

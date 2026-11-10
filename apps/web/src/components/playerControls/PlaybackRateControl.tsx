@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PLAYBACK_RATES, formatRate, isNormalRate } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { SpeedIcon } from "../PlayerIcons";
@@ -38,13 +39,17 @@ import { popoverAnchorProps } from "../player/glass/popoverOrigin";
 import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
 import { useGlassDock } from "../player/glass/glassDock";
+import { PANEL_MOTION } from "../player/chrome/panelMotion";
+import { PanelHeader } from "../player/chrome/PanelHeader";
+import "../player/chrome/playerChrome.css";
+import "../player/chrome/playerPanels.css";
 
 interface PlaybackRateControlProps {
   /** Applique le taux au moteur (web : playbackRate ; desktop : mpv speed). */
   apply: (rate: number) => void;
   /** Change d'identité au changement de média → remise à 1×. */
   resetKey?: string;
-  /** Classes du bouton, la barre web et la barre desktop n'ont pas le même padding. */
+  /** Classes ajoutées au bouton de l'habillage (hors verre). */
   buttonClass?: string;
   /** Un AUTRE panneau du lecteur est ouvert : celui-ci se retire. */
   otherPanelOpen?: boolean;
@@ -134,11 +139,12 @@ export function PlaybackRateControl({
   );
 
   return (
-    <div ref={containerRef} className={glass ? "" : "relative"}>
+    <div ref={containerRef}>
       <button
+        type="button"
         {...(glass ? { ...GLASS_LENS_PROPS, ...popoverAnchorProps(PLAYER_MORPH.speed) } : {})}
         onClick={toggle}
-        className={glass ? "lgp-btn relative" : `relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
+        className={glass ? "lgp-btn relative" : `pl-btn ${buttonClass}`}
         title={t("player:speed")}
         aria-label={t("player:speed")}
         aria-haspopup="menu"
@@ -148,7 +154,7 @@ export function PlaybackRateControl({
         {/* Pastille du taux courant : seulement hors vitesse normale, sinon
             elle serait un « 1x » permanent qui n'apprend rien. */}
         {!isNormalRate(rate) && (
-          <span className="absolute -right-0.5 -top-0.5 rounded-full bg-tentacle-accent px-1 text-[9px] font-bold leading-[14px] text-cta-brand-fg">
+          <span className={glass ? "absolute -right-0.5 -top-0.5 rounded-full bg-tentacle-accent px-1 text-[9px] font-bold leading-[14px] text-cta-brand-fg" : "pl-badge"}>
             {formatRate(rate)}
           </span>
         )}
@@ -157,54 +163,33 @@ export function PlaybackRateControl({
       {glass && (dock ? createPortal(glassMenu, dock) : glassMenu)}
       <AnimatePresence>
         {open && !glass && (
-          // Panneau DÉTACHÉ, fond quasi-opaque `surface-dropdown` comme
-          // TrackSelector — donc pas de `backdrop-filter` : il ne resterait
-          // rien à flouter, et sur macOS/Linux toute couche à alpha composée
-          // sur la fenêtre de mpv se paie (cf. DesktopPlayerControls).
+          // Un MENU du socle, détaché et opaque comme celui des pistes — donc pas de
+          // `backdrop-filter` : il ne resterait rien à flouter, et sur macOS/Linux toute couche
+          // à alpha composée sur la fenêtre de mpv se paie (cf. DesktopPlayerControls). Il se
+          // cale sur la barre du bas (`.pl-panel`), au-dessus de sa capsule.
           <motion.div data-panneau-detache
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
+            ref={panelRef}
+            {...PANEL_MOTION}
             role="menu"
             aria-label={t("player:speed")}
-            className="absolute bottom-full right-0 z-50 mb-3 max-h-[60vh] w-40 overflow-y-auto rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-2 scrollbar-thin"
+            className="pl-panel ui-menu w-52"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Une croix pour refermer : le clic à l'extérieur marche, mais il
                 ne se devine pas — et les deux autres panneaux du lecteur en ont
                 une. */}
-            <div className="mb-1 flex items-center justify-between gap-2 px-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                {t("player:speed")}
-              </span>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label={t("player:close")}
-                title={t("player:close")}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
-              >
-                <CloseGlyph />
-              </button>
+            <PanelHeader title={t("player:speed")} onClose={() => setOpen(false)} />
+            <div className="pl-panel__scroll">
+              {PLAYBACK_RATES.map((value) => {
+                const active = value === rate;
+                return (
+                  <button key={value} type="button" role="menuitemradio" aria-checked={active} onClick={() => choose(value)} className="ui-menu-item pl-option">
+                    <span className="pl-option__check" aria-hidden>{active && <CheckIcon size={16} weight="bold" />}</span>
+                    <span className="num">{formatRate(value)}</span>
+                  </button>
+                );
+              })}
             </div>
-            {PLAYBACK_RATES.map((value) => {
-              const active = value === rate;
-              return (
-                <button
-                  key={value}
-                  role="menuitemradio"
-                  aria-checked={active}
-                  onClick={() => choose(value)}
-                  className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    active
-                      ? "bg-[rgba(var(--brand-rgb),0.25)] font-medium text-content-primary"
-                      : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
-                  }`}
-                >
-                  {formatRate(value)}
-                </button>
-              );
-            })}
           </motion.div>
         )}
       </AnimatePresence>

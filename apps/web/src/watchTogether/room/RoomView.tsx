@@ -22,8 +22,8 @@ import { PendingInviteRow, RoomMemberRow } from "./RoomMemberRow";
  * de lancer un film ou un épisode, la salle suit.
  */
 
-const PRIMARY =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg outline-none transition-[background-color,transform] duration-150 hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50";
+// La pilule principale du socle (`theme/buttons.css`) : neutre — inviter n'est pas lire.
+const PRIMARY = "btn btn-solid";
 
 function ProgramCard({ itemId }: { itemId: string }) {
   const { t } = useTranslation("watchTogether");
@@ -34,9 +34,9 @@ function ProgramCard({ itemId }: { itemId: string }) {
   const title = item?.SeriesName ?? item?.Name ?? "…";
   const subtitle = item?.SeriesName ? item.Name : item?.ProductionYear ? String(item.ProductionYear) : "";
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint p-2.5">
+    <div className="flex items-center gap-3 rounded-tile bg-surface-2 p-2.5">
       {broken ? (
-        <div aria-hidden className="h-[66px] w-11 shrink-0 rounded-lg bg-fill-soft" />
+        <div aria-hidden className="h-[66px] w-11 shrink-0 rounded-chip bg-fill-soft" />
       ) : (
         <img
           src={client.getImageUrl(item?.SeriesId && !item.ImageTags?.Primary ? item.SeriesId : itemId, "Primary", { width: 96, quality: 80 })}
@@ -44,7 +44,7 @@ function ProgramCard({ itemId }: { itemId: string }) {
           width={44}
           height={66}
           onError={() => setBroken(true)}
-          className="h-[66px] w-11 shrink-0 rounded-lg bg-fill-soft object-cover"
+          className="h-[66px] w-11 shrink-0 rounded-chip bg-fill-soft object-cover"
         />
       )}
       <div className="min-w-0 flex-1">
@@ -57,7 +57,8 @@ function ProgramCard({ itemId }: { itemId: string }) {
           closeRoomModal();
           navigate(`/watch/${itemId}`);
         }}
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[rgba(var(--brand-rgb),0.18)] px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] focus-visible:ring-2 focus-visible:ring-line-focus"
+        // LA lecture de la salle : le dégradé du logo, la seule action de lecture de la feuille.
+        className="btn btn-sm btn-play shrink-0"
       >
         <Play aria-hidden className="h-3.5 w-3.5" />
         {t("startPlayback")}
@@ -86,15 +87,12 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
   return (
     <>
       <header className="flex items-start gap-3 px-6 pb-4 pt-6">
-        <span
-          aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
-        >
-          <UsersRound className="h-5 w-5" />
+        {/* Un médaillon à la teinte franche : plus de dégradé de marque décoratif. */}
+        <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent">
+          <UsersRound weight="fill" className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">
+          <h2 id={titleId} className="font-display text-heading-3 text-content-primary">
             {fresh ? t("roomReady") : t("yourRoom")}
           </h2>
           <p className="mt-0.5 text-[13px] leading-relaxed text-content-tertiary">{t("roomHint")}</p>
@@ -103,7 +101,8 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
           type="button"
           onClick={closeRoomModal}
           aria-label={t("close")}
-          className="-mr-2 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+          title={t("close")}
+          className="icon-btn -mr-2 -mt-1 h-9 w-9"
         >
           <X aria-hidden className="h-5 w-5" />
         </button>
@@ -111,18 +110,18 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 pb-5">
         <section>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{t("onTheProgram")}</h3>
+          <h3 className="ui-eyebrow mb-2">{t("onTheProgram")}</h3>
           {room.itemId ? (
             <ProgramCard itemId={room.itemId} />
           ) : (
-            <p className="rounded-2xl border border-dashed border-line-subtle px-4 py-3 text-[13px] leading-relaxed text-content-tertiary">
+            <p className="rounded-tile bg-surface-2 px-4 py-3 text-[13px] leading-relaxed text-content-tertiary">
               {t("roomNoItem")}
             </p>
           )}
         </section>
 
         <section>
-          <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">
+          <h3 className="ui-eyebrow mb-1">
             {t("inTheRoom", { count: room.members.length })}
           </h3>
           <ul className="-mx-2">
@@ -144,7 +143,7 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
           type="button"
           onClick={() => void leave()}
           disabled={leaving}
-          className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-[13px] font-medium text-content-tertiary outline-none transition-colors hover:bg-danger-surface hover:text-status-error-fg focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
+          className="btn btn-ghost -ml-2 px-3 hover:!bg-danger-surface hover:!text-status-error-fg"
         >
           <LogOut aria-hidden className="h-4 w-4" />
           {t("leaveGroup")}

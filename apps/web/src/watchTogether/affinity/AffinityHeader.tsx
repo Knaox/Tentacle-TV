@@ -24,20 +24,19 @@ export function AffinityHeader({ state, titleId, onQuit }: { state: WtAffinitySt
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-white"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent"
         >
           <HeartHandshake className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">{t("affinityTitle")}</h2>
+          <h2 id={titleId} className="font-display text-heading-3 text-content-primary">{t("affinityTitle")}</h2>
           <p className="mt-0.5 text-[13px] text-content-tertiary">
             {t(KIND_LABEL_KEY[state.kind])} · {t("affinityDeckCount", { count: state.deckSize })}
             {" · "}
             <button
               type="button"
               onClick={() => showAffinityView("kinds")}
-              className="rounded font-semibold text-[var(--brand-light)] underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="rounded font-semibold text-accent underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-line-focus"
             >
               {t("affinityChange")}
             </button>
@@ -48,7 +47,7 @@ export function AffinityHeader({ state, titleId, onQuit }: { state: WtAffinitySt
           onClick={onQuit}
           aria-label={t("affinityQuitLabel")}
           title={t("affinityQuitLabel")}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="btn btn-sm btn-soft shrink-0"
         >
           <LogOut aria-hidden className="h-4 w-4" />
           {t("affinityQuit")}
@@ -73,7 +72,7 @@ function AffinityParticipants({ state }: { state: WtAffinityStateDto }) {
         return (
           <li
             key={member.userId}
-            className={`inline-flex items-center gap-2 rounded-full border border-line-subtle py-1 pl-1 pr-3 ${joined ? "bg-fill-faint" : "opacity-60"}`}
+            className={`inline-flex items-center gap-2 rounded-pill py-1 pl-1 pr-3 ${joined ? "bg-surface-2" : "bg-surface-2 opacity-60"}`}
           >
             <WtAvatar userId={member.userId} name={member.username} hasAvatar={member.hasAvatar} size={24} />
             <span className="text-xs font-medium text-content-primary">

@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { PauseIcon, PlayIcon } from "../components/PlayerIcons";
+import { PauseIcon, PlayIcon } from "../components/icons/transport";
+import { SkipBackGlyph, SkipForwardGlyph } from "../components/player/chrome/skipGlyphs";
 import { formatDuration } from "../components/playerControls/utils";
 import { useLiquidGlassMode } from "../theme/useLiquidGlass";
 import { usePictureInPicture } from "./pictureInPictureContext";
@@ -41,18 +42,19 @@ function PipButton({ label, onClick, children, variant = "chrome", plain = false
   /** Verre natif : le bouton de lecture sans le dégradé de marque. */
   plain?: boolean;
 }) {
+  // L'encre des capsules du lecteur (refonte de nov. 2026) ; lire / pause est le disque d'ivoire,
+  // comme dans l'habillage — plus un aplat rose. La pression répond (97 %), rien ne grossit au survol.
+  const ink = "bg-[rgba(24,24,27,0.74)] text-white hover:bg-[#18181B]";
   const look = {
-    chrome: "h-8 w-8 bg-black/45 hover:bg-black/70 active:bg-black/85",
-    skip: "h-9 min-w-9 px-2 text-xs font-bold tabular-nums text-white/90 bg-black/45 hover:bg-black/70 active:bg-black/85",
-    // Le seul bouton qui grandit au survol — et rien ne bouge sous mouvement réduit.
-    play: "h-12 w-12 shadow-[0_2px_10px_rgba(0,0,0,0.45)] transition-transform hover:scale-105 active:scale-95 motion-reduce:transform-none",
-  }[variant] + (variant === "play" && plain ? " bg-black/45 hover:bg-black/70 active:bg-black/85" : "");
+    chrome: `h-8 w-8 ${ink}`,
+    skip: `h-10 w-10 ${ink}`,
+    play: plain ? `h-12 w-12 ${ink}` : "h-12 w-12 bg-[#F4F2EE] text-[#131315] hover:bg-white",
+  }[variant];
   return (
     <button
       type="button" title={label} aria-label={label}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={`flex cursor-pointer items-center justify-center rounded-full text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/80 ${look}`}
-      style={variant === "play" && !plain ? { background: "var(--progress-fill)" } : undefined}
+      className={`flex cursor-pointer items-center justify-center rounded-pill outline-none transition-[background-color,transform] duration-hover active:scale-[0.97] motion-reduce:transform-none focus-visible:ring-2 focus-visible:ring-white/80 ${look}`}
     >
       {children}
     </button>
@@ -91,11 +93,11 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
           <PipButton label={t("pip.close")} onClick={pip.close}><CloseIcon /></PipButton>
         </div>
         {!loading && <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-4">
-          <PipButton variant="skip" label={t("pip.back10")} onClick={() => onSkip(-10)}>-10</PipButton>
+          <PipButton variant="skip" label={t("pip.back10")} onClick={() => onSkip(-10)}><SkipBackGlyph seconds={10} /></PipButton>
           <PipButton variant="play" plain={plain} label={paused ? t("pip.play") : t("pip.pause")} onClick={onTogglePause}>
-            {paused ? <PlayIcon /> : <PauseIcon />}
+            {paused ? <PlayIcon size={24} aria-hidden /> : <PauseIcon size={24} aria-hidden />}
           </PipButton>
-          <PipButton variant="skip" label={t("pip.forward30")} onClick={() => onSkip(30)}>+30</PipButton>
+          <PipButton variant="skip" label={t("pip.forward30")} onClick={() => onSkip(30)}><SkipForwardGlyph seconds={30} /></PipButton>
         </div>}
         {!loading && <div className="pointer-events-none absolute inset-x-3 bottom-2.5 flex items-baseline gap-2">
           <p className="min-w-0 flex-1 truncate text-xs font-medium text-white/90">{title}</p>
@@ -111,7 +113,7 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
         <div className={`absolute inset-0 ${plain ? "bg-white/30" : "bg-black/50"} ${fade}`} />
         <div
           className="absolute inset-0 origin-left"
-          style={{ transform: `scaleX(${String(progress)})`, background: plain ? PLAIN_FILL : "var(--progress-fill)" }}
+          style={{ transform: `scaleX(${String(progress)})`, background: plain ? PLAIN_FILL : "var(--gauge-gradient)" }}
         />
       </div>}
     </>

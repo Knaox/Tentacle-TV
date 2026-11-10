@@ -1,3 +1,5 @@
+import { duration, easeOut } from "../theme/motion";
+import { WT_NOTICE } from "./wtSkin";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,9 +14,8 @@ import { useWatchTogether } from "./WatchTogetherProvider";
  * diffusée). Clic → `joinPlayback` : la salle se gèle au clic et attend cet
  * appareil, puis le lecteur s'ouvre à la position de la pause.
  *
- * Couleurs volontairement en dur : barre flottante au même verre sombre que
- * l'overlay de chat en lecture (rgba(15,15,25,…) + liseré marque) — reste
- * identique quel que soit le thème de la page qu'elle survole.
+ * Un avis du socle (refonte de nov. 2026) : il suit le thème de la page qu'il survole,
+ * comme les autres avis de l'application.
  */
 export function GroupPlaybackPill() {
   const { room, actions } = useWatchTogether();
@@ -31,30 +32,18 @@ export function GroupPlaybackPill() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0, transition: { duration: duration.base, ease: easeOut } }}
+          exit={{ opacity: 0, y: 16, transition: { duration: duration.menuOut, ease: easeOut } }}
           className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2"
         >
-          <div
-            className="flex items-center gap-3 rounded-full py-2 pl-4 pr-2"
-            style={{
-              background: "rgba(15,15,25,0.92)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(139,92,246,0.35)",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.5), 0 0 20px rgba(139,92,246,0.15)",
-            }}
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-purple-400" />
-            </span>
-            <span className="text-sm text-white/85">{t("groupPlaybackActive")}</span>
-            <button
-              onClick={() => { void actions.joinPlayback(); }}
-              className="rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-black transition-colors duration-150 hover:bg-white/85"
-            >
+          {/* Un avis du socle, en pilule : opaque (plus de flou ni de lueur de marque), et son
+              témoin est immobile — une onde qui bat sans fin ne dit rien de plus qu'un point. */}
+          <div className={WT_NOTICE} role="status">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span className="truncate">{t("groupPlaybackActive")}</span>
+            {/* Rejoindre la LECTURE : l'action de lecture de l'avis. */}
+            <button type="button" onClick={() => { void actions.joinPlayback(); }} className="btn btn-sm btn-play">
               {t("rejoin")}
             </button>
           </div>

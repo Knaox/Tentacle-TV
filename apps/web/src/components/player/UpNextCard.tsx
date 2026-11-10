@@ -41,6 +41,8 @@
  */
 
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { PlayIcon } from "../icons/transport";
 import { motion } from "framer-motion";
 import { videoShadow } from "../../lib/videoShadow";
 import { Sweep, Veil } from "./overlayPill";
@@ -153,9 +155,7 @@ export function UpNextCard({
         <span
           className="absolute left-4 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white"
           style={{
-            background: "rgba(0, 0, 0, 0.72)",
-            border: "1px solid rgba(255, 255, 255, 0.16)",
-            textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+            background: "rgba(11, 11, 12, 0.72)",
           }}
         >
           <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-white/90" />
@@ -176,9 +176,7 @@ export function UpNextCard({
           className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-white/85 transition-colors duration-150 motion-reduce:transition-none hover:text-white"
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XIcon className="h-4 w-4" weight="bold" aria-hidden />
         </button>
       </div>
 
@@ -195,7 +193,7 @@ export function UpNextCard({
           // code d'épisode ET le nom de la série (« S04E04 — Re:Zero, Starting
           // Life in Another World »), que `truncate` coupait au tiers : la
           // carte annonçait un épisode sans dire lequel.
-          <p className="mt-0.5 line-clamp-2 text-[15px] font-semibold leading-snug text-content-primary">
+          <p className="mt-0.5 line-clamp-2 font-display text-[16px] font-semibold leading-snug tracking-tight text-content-primary">
             {episodeTitle}
           </p>
         )}
@@ -214,7 +212,11 @@ export function UpNextCard({
         <button
           type="button"
           onClick={onPlay}
-          className="group/play relative mt-4 flex min-h-11 w-full items-center justify-center overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg text-sm font-bold text-cta-primary-fg"
+          // L'ivoire en dur hors verre (cf. `SkipSegmentButton` : les jetons `--cta-primary-*`
+          // s'inversent en clair) ; le verre garde ses jetons, que `.lgp-panel` redéfinit.
+          className={`group/play relative mt-4 flex min-h-11 w-full items-center justify-center overflow-hidden rounded-pill text-sm font-bold ${
+            glass ? "border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg" : "bg-[#F4F2EE] text-[#131315]"
+          }`}
         >
           <Veil className="group-hover/play:opacity-100" />
           {/* AVANT le libellé, donc dessous : un élément positionné peint
@@ -223,9 +225,7 @@ export function UpNextCard({
               balayage repartirait de zéro à chaque battement. */}
           {counting && <Sweep key={String(totalSeconds)} durationMs={totalSeconds * 1000} />}
           <span className="relative flex items-center gap-2 tabular-nums">
-            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+            <PlayIcon className="h-4 w-4" aria-hidden />
             {counting
               ? t("player:playNowIn", { seconds: countdown })
               : t("player:playNow")}
@@ -268,9 +268,9 @@ export function UpNextCard({
       className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
       onClick={(e) => { e.stopPropagation(); }}
       style={{
+        // Une teinte, pas un liseré : la carte se détache par son encre et son ombre.
         background: "var(--surface-modal)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-xl)",
+        borderRadius: "var(--radius-2xl)",
         boxShadow: CARD_SHADOW,
       }}
     >

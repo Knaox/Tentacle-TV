@@ -30,13 +30,10 @@ export const WhatsNewFeatureList = memo(function WhatsNewFeatureList({ features,
                 type="button"
                 onClick={() => onSelect(i)}
                 aria-current={current ? "true" : undefined}
-                className={`relative flex w-full items-start gap-2.5 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-colors hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${current ? "bg-fill-soft" : ""}`}
+                // La nouveauté affichée : une teinte d'encre, et son libellé en gras — plus de filet
+                // au dégradé de marque.
+                className={`flex w-full items-start gap-2.5 rounded-field px-3 py-2.5 text-left transition-colors duration-hover hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${current ? "bg-fill-soft" : ""}`}
               >
-                <span
-                  aria-hidden
-                  className="absolute inset-y-2.5 left-0 w-0.5 rounded-full bg-gradient-to-b from-[var(--brand)] to-[var(--brand-accent)]"
-                  style={{ opacity: current ? 1 : 0, transition: "opacity var(--duration-base) var(--ease-out)" }}
-                />
                 <KindBadge kind={feature.kind} compact />
                 <span className={`text-sm leading-snug ${current ? "font-semibold text-content-primary" : "text-content-secondary"}`}>
                   {t(`whatsNew:${feature.titleKey}`)}

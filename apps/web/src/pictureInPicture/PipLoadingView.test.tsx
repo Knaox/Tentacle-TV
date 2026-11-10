@@ -23,7 +23,7 @@ describe("PipLoadingView", () => {
     expect(html).toContain("loading");
     expect(html).toContain("Dune · Partie deux");
     expect(html).toContain('src="https://x/backdrop.jpg"');
-    expect(html).toContain("bg-[#0a0a12]");
+    expect(html).toContain("bg-[#0B0B0C]");
     expect(html).toContain("opacity-100");
   });
 

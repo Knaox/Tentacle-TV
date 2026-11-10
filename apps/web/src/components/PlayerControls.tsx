@@ -8,11 +8,17 @@ import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
 import { formatDuration } from "./playerControls/utils";
 import { PlayerProgressBar } from "./playerControls/PlayerProgressBar";
 import { PlaybackRateControl } from "./playerControls/PlaybackRateControl";
+import { usePlaybackRate } from "./playerControls/usePlaybackRate";
 import {
-  BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon,
-  GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon, EpisodesIcon,
+  VolumeIcon, MuteIcon, GearIcon, FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, PipIcon, EpisodesIcon,
 } from "./PlayerIcons";
+import { PauseIcon, PlayIcon } from "./icons/transport";
+import { SkipBackGlyph, SkipForwardGlyph } from "./player/chrome/skipGlyphs";
+import { ChromeTop } from "./player/chrome/ChromeTop";
+import { useChromePresence } from "./player/chrome/useChromePresence";
 import { rangeFill } from "../lib/rangeFill";
+import "./player/chrome/playerChrome.css";
+import "./player/chrome/playerSeek.css";
 
 export interface PlayerControlsProps {
   playing: boolean;
@@ -52,18 +58,29 @@ export interface PlayerControlsProps {
   onQualityChange?: (key: QualityKey) => void;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
-  /** Épisode : case « Appliquer à cette série » (préférence de langues). */
+  /** Épisode : « Garder pour toute la série » (préférence de langues). */
   applyToSeries?: ApplyToSeriesControl;
   /** Applique la vitesse de lecture sur l'élément vidéo. */
   onPlaybackRateChange?: (rate: number) => void;
   /** Un panneau (pistes, épisodes) vient de s'ouvrir ou de se fermer. */
   onPanelsOpenChange?: (open: boolean) => void;
+  /**
+   * L'habillage est-il à l'écran ? Masqué, il n'est plus dans le DOM (`useChromePresence`) ;
+   * l'état qu'il doit garder — panneau ouvert, vitesse — vit ici, au-dessus de ce qui part.
+   */
+  visible?: boolean;
 }
 
-// Contrôles superposés à la vidéo (top/bottom bar en dégradé vers transparent)
-// → text-white/bg-white volontairement en dur dans les deux thèmes.
-// (TrackSelector / EpisodeSelectorPanel ouverts depuis ici sont eux tokenisés :
-// panneaux détachés à fond quasi-opaque, pas posés sur la vidéo.)
+const noRate = () => {};
+/** Le fondu de `VideoPlayerControlsLayer` (`duration-300`). */
+const LAYER_FADE_MS = 300;
+
+/**
+ * L'habillage du lecteur web (refonte de nov. 2026) : la sortie et le titre en haut ; en bas la
+ * barre de lecture, puis deux CAPSULES — le transport à gauche, le son et les réglages à droite
+ * (`player/chrome/playerChrome.css`). Posé sur la vidéo : blanc et encre en dur, dans les deux
+ * thèmes. Les panneaux qu'il ouvre (pistes, vitesse, épisodes) sont des menus, qui suivent le thème.
+ */
 export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
   item, itemId, mediaSourceId,
@@ -73,11 +90,14 @@ export function PlayerControls({
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
   onNextEpisode, onPreviousEpisode, applyToSeries, onPlaybackRateChange,
-  onPanelsOpenChange,
+  onPanelsOpenChange, visible = true,
 }: PlayerControlsProps) {
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
+  // La vitesse vit ICI : tenue par son bouton, elle retombait à 1× chaque fois que
+  // l'habillage, démonté une fois masqué, revenait à l'écran.
+  const speed = usePlaybackRate(onPlaybackRateChange ?? noRate, itemId, !!onPlaybackRateChange);
   // Les pilules de saut partagent le coin bas-droit avec ces panneaux : le
   // lecteur veut savoir quand l'un d'eux est ouvert pour les effacer.
   const panelsOpen = showSettings || showEpisodes;
@@ -85,35 +105,20 @@ export function PlayerControls({
     onPanelsOpenChange?.(panelsOpen);
     return () => onPanelsOpenChange?.(false);
   }, [panelsOpen, onPanelsOpenChange]);
+  // Le fondu est celui de la couche qui le porte (`VideoPlayerControlsLayer`, 300 ms) : ici on
+  // ne fait que partir du DOM une fois ce fondu joué.
+  const { mounted, shown } = useChromePresence(visible, LAYER_FADE_MS);
+  if (!mounted) return null;
+
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const hasSettings = audioTracks.length > 0 || subtitleTracks.length > 0;
+  const muted = volume === 0;
 
   return (
-    <div className="absolute inset-0 flex flex-col">
-      {/* Top bar — stops propagation so clicks don't toggle play */}
-      <div
-        className="bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5"
-        onClick={(e) => e.stopPropagation()}
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 1rem))" }}
-      >
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button onClick={onBack} className="rounded-full p-3 hover:bg-white/10 sm:p-2" aria-label={t("player:back")}><BackIcon /></button>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-semibold text-white sm:text-lg">{title}</h2>
-            {subtitle && <p className="truncate text-xs text-white/50 sm:text-sm">{subtitle}</p>}
-          </div>
-        </div>
-      </div>
+    <div className="pl-chrome pl-chrome--held" data-shown={shown}>
+      <ChromeTop title={title} subtitle={subtitle} onBack={onBack} />
 
-      {/* Middle spacer — clicks pass through to parent (toggle play) */}
-      <div className="flex-1" />
-
-      {/* Bottom bar — stops propagation */}
-      <div
-        className="relative bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-8 sm:px-6 sm:pb-5 sm:pt-10"
-        onClick={(e) => e.stopPropagation()}
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
-      >
+      <div className="pl-bar pl-bar--bottom" onClick={(e) => e.stopPropagation()}>
         <AnimatePresence>
           {showSettings && hasSettings && (
             <TrackSelector
@@ -122,7 +127,7 @@ export function PlayerControls({
               currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
               autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
               onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
-              applyToSeries={applyToSeries}
+              applyToSeries={applyToSeries} seriesName={item?.SeriesName ?? undefined}
               onClose={() => setShowSettings(false)}
             />
           )}
@@ -141,44 +146,43 @@ export function PlayerControls({
           item={item} mediaSourceId={mediaSourceId} onSeek={onSeek}
         />
 
-        {/* Button row — tactile-friendly: padding p-2.5 ≈ 44px target sur mobile */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+        <div className="pl-row">
+          <div className="pl-caps">
             {hasPreviousEpisode && (
-              <button onClick={onPreviousEpisode} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" title={t("player:previousEpisode")} aria-label={t("player:previousEpisode")}><PrevEpIcon /></button>
+              <button type="button" onClick={onPreviousEpisode} className="pl-btn" title={t("player:previousEpisode")} aria-label={t("player:previousEpisodeLabel")}><PrevEpIcon /></button>
             )}
-            <button onClick={() => onSkip ? onSkip(-10) : onSeek(Math.max(0, currentTime - 10))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipBack")} aria-label={t("player:skipBack")}>
-              <span className="text-xs font-bold text-white/70">-10</span>
+            <button type="button" onClick={() => onSkip ? onSkip(-10) : onSeek(Math.max(0, currentTime - 10))} className="pl-btn" title={t("player:seekBackBy", { seconds: 10 })} aria-label={t("player:seekBackBy", { seconds: 10 })}>
+              <SkipBackGlyph seconds={10} />
             </button>
-            <button onClick={onTogglePlay} className="rounded-full p-3 hover:bg-white/10 sm:p-2" aria-label={playing ? t("player:pause", "Pause") : t("player:play", "Play")}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
-            <button onClick={() => onSkip ? onSkip(30) : onSeek(Math.min(duration, currentTime + 30))} className="rounded-full p-2.5 hover:bg-white/10 sm:p-1.5" title={t("player:skipForward")} aria-label={t("player:skipForward")}>
-              <span className="text-xs font-bold text-white/70">+30</span>
+            <button type="button" onClick={onTogglePlay} className="pl-btn pl-btn--main" aria-label={playing ? t("player:pause", "Pause") : t("player:play", "Play")}>
+              {playing ? <PauseIcon size={20} aria-hidden /> : <PlayIcon size={20} aria-hidden />}
+            </button>
+            <button type="button" onClick={() => onSkip ? onSkip(30) : onSeek(Math.min(duration, currentTime + 30))} className="pl-btn" title={t("player:seekForwardBy", { seconds: 30 })} aria-label={t("player:seekForwardBy", { seconds: 30 })}>
+              <SkipForwardGlyph seconds={30} />
             </button>
             {hasNextEpisode && (
-              <button onClick={onNextEpisode} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" title={t("player:nextEpisode")} aria-label={t("player:nextEpisode")}><NextEpIcon /></button>
+              <button type="button" onClick={onNextEpisode} className="pl-btn" title={t("player:nextEpisode")} aria-label={t("player:nextEpisodeLabel")}><NextEpIcon /></button>
             )}
-            {/* Volume : icône seule sur mobile (slider trop encombrant), slider horizontal sur ≥sm au hover */}
-            <div className="group/vol flex items-center gap-2">
-              <button onClick={onToggleMute} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={volume === 0 ? t("player:unmute", "Unmute") : t("player:mute", "Mute")}>
-                {/* Quatre états qui suivent le volume (0–1 ici) : coupé, bas,
-                    moyen, fort. Même icône que le lecteur desktop. */}
-                {volume === 0 ? <MuteIcon /> : <VolumeIcon bars={volume <= 0.33 ? 1 : volume <= 0.66 ? 2 : 3} />}
+          </div>
+          {/* Le temps : caché sur un écran très étroit, pour laisser la place aux capsules. */}
+          <span className="pl-time hidden xs:inline">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
+          <span className="pl-grow" />
+          <div className="pl-caps">
+            <div className="pl-volume">
+              <button type="button" onClick={onToggleMute} className="pl-btn" aria-label={muted ? t("player:unmute", "Unmute") : t("player:mute", "Mute")} title={muted ? t("player:unmute", "Unmute") : t("player:mute", "Mute")}>
+                {/* Quatre états qui suivent le volume (0–1 ici) : coupé, bas, moyen, fort. */}
+                {muted ? <MuteIcon /> : <VolumeIcon bars={volume <= 0.33 ? 1 : volume <= 0.66 ? 2 : 3} />}
               </button>
               <input type="range" min={0} max={1} step={0.05} value={volume}
                 onChange={(e) => onVolumeChange(Number(e.target.value))}
                 style={rangeFill(volume, 0, 1)}
-                className="ctl-range hidden w-20 sm:group-hover/vol:block"
+                className="ctl-range pl-volume__range"
                 aria-label={t("player:volume", "Volume")}
                 role="slider" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(volume * 100)} />
             </div>
-            {/* Compteur temps : caché sur très petit écran pour libérer de la place aux contrôles */}
-            <span className="hidden whitespace-nowrap text-xs text-white/60 xs:inline sm:text-sm">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
-          </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {onPlaybackRateChange && (
               <PlaybackRateControl
-                apply={onPlaybackRateChange} resetKey={itemId}
-                buttonClass="p-2.5 sm:p-2"
+                apply={onPlaybackRateChange} resetKey={itemId} state={speed}
                 // Un seul panneau à la fois : pistes et épisodes se fermaient
                 // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
                 otherPanelOpen={showSettings || showEpisodes}
@@ -186,25 +190,23 @@ export function PlayerControls({
               />
             )}
             {isEpisode && (
-              <button
+              <button type="button"
                 onClick={() => { setShowEpisodes((p) => !p); setShowSettings(false); }}
-                className={`rounded-full p-2.5 hover:bg-white/10 sm:p-2 ${showEpisodes ? "bg-white/10" : ""}`}
-                title={t("player:episodes")}
-                aria-label={t("player:episodes")}
+                className="pl-btn" aria-expanded={showEpisodes}
+                title={t("player:episodes")} aria-label={t("player:episodes")}
               >
                 <EpisodesIcon />
               </button>
             )}
             {hasSettings && (
-              <button onClick={() => { setShowSettings((p) => !p); setShowEpisodes(false); }} className="relative rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={t("player:settings")}>
+              <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(false); }} className="pl-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
                 <GearIcon />
-                {currentSubtitle !== null && (
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-tentacle-accent" />
-                )}
+                {/* Des sous-titres sont allumés : le bouton le dit sans ouvrir le panneau. */}
+                {currentSubtitle !== null && <span className="pl-dot" aria-hidden />}
               </button>
             )}
             {typeof document !== "undefined" && document.pictureInPictureEnabled && (
-              <button
+              <button type="button"
                 onClick={() => {
                   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
                   else {
@@ -212,13 +214,13 @@ export function PlayerControls({
                     if (v) v.requestPictureInPicture().catch(() => {});
                   }
                 }}
-                className="hidden rounded-full p-2.5 hover:bg-white/10 sm:inline-flex sm:p-2"
-                aria-label={t("player:pictureInPicture")}
+                className="pl-btn hidden sm:inline-flex"
+                aria-label={t("player:pictureInPicture")} title={t("player:pictureInPicture")}
               >
                 <PipIcon />
               </button>
             )}
-            <button onClick={onToggleFullscreen} className="rounded-full p-2.5 hover:bg-white/10 sm:p-2" aria-label={fullscreen ? t("player:exitFullscreen", "Exit fullscreen") : t("player:fullscreen", "Fullscreen")}>
+            <button type="button" onClick={onToggleFullscreen} className="pl-btn" aria-label={fullscreen ? t("player:exitFullscreen", "Exit fullscreen") : t("player:fullscreen", "Fullscreen")} title={fullscreen ? t("player:exitFullscreen", "Exit fullscreen") : t("player:fullscreen", "Fullscreen")}>
               {fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
             </button>
           </div>
@@ -227,4 +229,3 @@ export function PlayerControls({
     </div>
   );
 }
-

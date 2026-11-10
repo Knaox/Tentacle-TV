@@ -126,8 +126,7 @@ function AffinityDeckEmpty() {
     <div className="flex max-w-sm flex-col items-center py-10 text-center" role="status">
       <span
         aria-hidden
-        className="grid h-14 w-14 place-items-center rounded-full text-white"
-        style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+        className="grid h-14 w-14 place-items-center rounded-pill bg-accent-soft text-accent"
       >
         <PartyPopper className="h-6 w-6" />
       </span>
@@ -136,7 +135,7 @@ function AffinityDeckEmpty() {
       <button
         type="button"
         onClick={() => showAffinityView("kinds")}
-        className="mt-5 inline-flex h-10 items-center rounded-full border border-line-subtle bg-fill-soft px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="mt-5 btn btn-sm btn-soft"
       >
         {t("affinityOtherKind")}
       </button>

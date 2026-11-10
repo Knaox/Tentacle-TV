@@ -69,13 +69,17 @@ describe("les couleurs du lecteur en verre", () => {
     expect(chip).not.toMatch(/border\s*:/);
   });
 
-  it("« Vous regardez encore » : blanc et accent uni en verre, dégradés d'avant hors porte", () => {
+  it("« Vous regardez encore » : blanc et accent uni en verre ; hors porte, l'ivoire et la jauge du décompte", () => {
     const glass = prompt("native");
     expect(glass).toContain("lgp-card__fill");
     expect(glass).toContain("lgp-card__primary");
     expect(glass).not.toContain("bg-gradient-to-r");
     const legacy = prompt("legacy");
-    expect(legacy.match(/bg-gradient-to-r from-\[var\(--brand\)\] to-\[var\(--brand-accent\)\]/g)).toHaveLength(2);
+    // Refonte de nov. 2026 : plus de dégradé de marque décoratif. Le décompte MESURE — il porte
+    // le dégradé de jauge ; « Continuer » est l'ivoire des capsules.
+    expect(legacy).not.toMatch(/from-\[var\(--brand\)\]/);
+    expect(legacy).toContain("bg-[image:var(--gauge-gradient)]");
+    expect(legacy).toContain("bg-[#F4F2EE]");
     expect(legacy).not.toContain("lgp-card__");
   });
 

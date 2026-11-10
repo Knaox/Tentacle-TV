@@ -19,7 +19,7 @@ export function WhatsNewFooter({ index, count, onSelect, onDone }: WhatsNewFoote
         type="button"
         onClick={() => onSelect(index - 1)}
         disabled={index === 0}
-        className={`rounded-full bg-fill-subtle px-4 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft disabled:pointer-events-none disabled:opacity-40 ${FOCUS}`}
+        className="btn btn-soft"
       >
         {t("whatsNew:previous")}
       </button>
@@ -37,10 +37,11 @@ export function WhatsNewFooter({ index, count, onSelect, onDone }: WhatsNewFoote
               className={`relative h-2.5 w-2.5 rounded-full bg-fill-strong ${FOCUS}`}
               style={{ transform: current ? "scale(1.3)" : "scale(1)", transition: "transform var(--duration-base) var(--ease-out)" }}
             >
-              {/* Le point courant se révèle en opacité par-dessus le gris — pas de fond animé. */}
+              {/* Le point courant se révèle en opacité par-dessus le gris — pas de fond animé.
+                  À l'encre : il dit où l'on est, il ne mesure rien (plus de dégradé de marque). */}
               <span
                 aria-hidden
-                className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)]"
+                className="absolute inset-0 rounded-full bg-content-primary"
                 style={{ opacity: current ? 1 : 0, transition: "opacity var(--duration-base) var(--ease-out)" }}
               />
             </button>
@@ -51,7 +52,8 @@ export function WhatsNewFooter({ index, count, onSelect, onDone }: WhatsNewFoote
       <button
         type="button"
         onClick={last ? onDone : () => onSelect(index + 1)}
-        className={`rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2 text-sm font-bold text-cta-brand-fg shadow-[0_6px_18px_rgba(var(--brand-rgb),0.35)] transition-transform hover:scale-[1.02] motion-reduce:!transform-none ${FOCUS}`}
+        // L'action principale NEUTRE du socle : avancer n'est pas lire.
+        className="btn btn-solid"
       >
         {last ? t("whatsNew:done") : t("whatsNew:next")}
       </button>

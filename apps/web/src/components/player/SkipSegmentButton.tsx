@@ -52,17 +52,25 @@
  * `videoShadow()` : macOS et Linux ont un canal alpha, où un flou large sort
  * en aplat noir.
  *
+ * # L'ivoire est en dur
+ *
+ * La pilule vit sur la vidéo : `bg-[#F4F2EE]` et `text-[#131315]`, dans les deux thèmes. Les
+ * jetons `--cta-primary-*` qu'elle lisait s'INVERSENT en clair depuis la refonte de nov. 2026
+ * (le bouton principal y devient encre) : la pilule y serait devenue sombre, croix noire
+ * comprise — invisible. Le lecteur en verre, lui, garde ses jetons (`.lgp-panel` les redéfinit).
+ *
  * ⚠️ La croix et son séparateur sont en NOIR LITTÉRAL, et il le faut.
  * `text-cta-primary-fg/70` ne compilait pas : le jeton vaut `var(--cta-primary-fg)`
  * sans le marqueur `<alpha-value>`, et Tailwind 3 supprime alors la déclaration
  * SANS RIEN DIRE. La croix héritait donc du blanc ambiant sur un fond blanc —
  * invisible au repos, révélée au survol par le seul `hover:` sans modificateur,
- * qui, lui, compile. Le fond de la pilule est blanc dans les DEUX thèmes
- * (`--cta-primary-bg: #FFFFFF` de part et d'autre) : du noir y est juste.
+ * qui, lui, compile. Le fond de la pilule est ivoire dans les DEUX thèmes
+ * (en dur, voir plus haut) : du noir y est juste.
  */
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type { SkipLabelKey } from "@tentacle-tv/shared";
 import { videoShadow } from "../../lib/videoShadow";
 import { Sweep, Veil } from "./overlayPill";
@@ -121,12 +129,12 @@ export function SkipSegmentButton({
     >
       <Rising>
         <div
-          className={`flex items-stretch overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg ${PILL_SHADOW}`}
+          className={`flex items-stretch overflow-hidden rounded-pill bg-[#F4F2EE] ${PILL_SHADOW}`}
         >
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
-            className="group/skip relative min-h-11 px-6 text-sm font-bold text-cta-primary-fg"
+            className="group/skip relative min-h-11 px-6 text-sm font-bold text-[#131315]"
           >
             <Veil className="rounded-l-full group-hover/skip:opacity-100" />
             {/* AVANT le libellé, donc dessous : un élément positionné peint
@@ -154,9 +162,7 @@ export function SkipSegmentButton({
                     la pilule rognerait un rectangle par le coin, et il en
                     resterait une écaille. */}
                 <Veil className="inset-1 rounded-full group-hover/x:opacity-100" />
-                <svg className="relative h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XIcon className="relative h-4 w-4" weight="bold" aria-hidden />
               </button>
             </>
           )}

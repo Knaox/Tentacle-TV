@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useRef } from "react";
+import { useUpdateLockPause } from "../components/update/useUpdateLockPause";
 import { useStillWatching, type StillWatchingController, type UseStillWatchingOptions } from "@tentacle-tv/api-client";
 
 const POINTER_MOVE_THROTTLE_MS = 1_000;
@@ -65,6 +66,9 @@ export function useStillWatchingActivity(
 
 /** Le contrôleur du lecteur, ses gestes déjà écoutés — ce que montent le lecteur web et celui du bureau. */
 export function usePlayerStillWatching(options: UseStillWatchingOptions): StillWatchingController {
+  // Une mise à jour qui tourne met la lecture en pause, et l'y garde (`update/updateLock.ts`) :
+  // posé ici, les deux lecteurs le montent avec leur vraie commande de pause.
+  useUpdateLockPause(options.playing, options.pause);
   const controller = useStillWatching(options);
   useStillWatchingActivity(controller);
   return controller;

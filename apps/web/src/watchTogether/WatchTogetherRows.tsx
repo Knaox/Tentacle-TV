@@ -107,15 +107,10 @@ export function MemberRow({
             {member.username}{isSelf ? ` (${t("you")})` : ""}
           </span>
           {member.isHost && (
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-              style={{ background: "rgba(139,92,246,0.2)", color: "#c4b5fd" }}
-            >
-              {t("host")}
-            </span>
+            <span className="chip chip-accent h-5 px-1.5 text-[10px] uppercase tracking-wide">{t("host")}</span>
           )}
         </div>
-        <span className="text-xs text-content-quaternary">{statusLabel}</span>
+        <span className="text-xs text-content-tertiary">{statusLabel}</span>
         {/* L'écart mesuré par sa balise (wt:tick) : la synchro rendue visible.
             Pas de flou ni d'animation — un chiffre, une couleur. */}
         {member.inPlayback && member.driftMs !== undefined && (
@@ -130,9 +125,10 @@ export function MemberRow({
       </div>
       {canKick && !isSelf && (
         <button
+          type="button"
           onClick={onKick}
           title={t("kick")}
-          className="rounded-lg px-2 py-1 text-xs text-status-error-fg transition-colors hover:bg-danger-surface hover:text-status-error-fg"
+          className="btn btn-sm btn-ghost !text-status-error-fg hover:!bg-danger-surface"
         >
           {t("kick")}
         </button>
@@ -158,16 +154,18 @@ export function InviteRow({
       </p>
       <div className="mt-2 flex gap-2">
         <button
+          type="button"
           onClick={() => onRespond(true)}
           disabled={busy}
-          className="rounded-lg bg-cta-primary-bg px-3 py-1.5 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-40"
+          className="btn btn-sm btn-solid"
         >
           {t("accept")}
         </button>
         <button
+          type="button"
           onClick={() => onRespond(false)}
           disabled={busy}
-          className="rounded-lg bg-fill-soft px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors hover:bg-fill-medium disabled:opacity-40"
+          className="btn btn-sm btn-soft"
         >
           {t("decline")}
         </button>

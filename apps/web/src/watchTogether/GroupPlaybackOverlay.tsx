@@ -61,7 +61,8 @@ export function GroupPlaybackOverlay({
           </GlassSurface>
         </div>
       ) : (
-        <div className={`pointer-events-none absolute right-4 top-16 z-20 flex items-center gap-1.5 transition-opacity duration-300 md:right-6 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
+        // Une capsule d'encre, comme celles de l'habillage ; à la place du titre côté droit.
+        <div className={`pointer-events-none absolute right-4 top-5 z-20 flex h-11 items-center gap-1.5 rounded-pill bg-[rgba(24,24,27,0.74)] px-2 transition-opacity duration-200 md:right-6 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
           {avatars}
         </div>
       )}
@@ -71,9 +72,8 @@ export function GroupPlaybackOverlay({
         {notice && (
           <motion.div
             initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.25 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] } }}
+            exit={{ opacity: 0, y: -12, transition: { duration: 0.12 } }}
             className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2"
           >
             {glass ? (
@@ -84,17 +84,12 @@ export function GroupPlaybackOverlay({
                 </div>
               </GlassSurface>
             ) : (
-              <div
-                /* Flou en CLASSE : un style en ligne échappe à la passe de
-                   verre du téléviseur (cf. `Toast.tsx`). */
-                className="flex items-center gap-2.5 rounded-full px-4 py-2 backdrop-blur-md"
-                style={{
-                  background: "rgba(15,15,25,0.85)",
-                  border: "1px solid rgba(251,191,36,0.3)",
-                }}
-              >
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-400/40 border-t-amber-400" />
-                <span className="text-sm text-white/85">{t(notice.key, notice.params)}</span>
+              // L'encre des capsules du lecteur, SANS flou : posée sur la vidéo, un
+              // `backdrop-filter` se recalcule à chaque image décodée (et ne floute rien sur le
+              // bureau, où mpv dessine sous la page).
+              <div className="flex items-center gap-2.5 rounded-pill bg-[rgba(24,24,27,0.74)] px-4 py-2">
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span className="text-sm text-white">{t(notice.key, notice.params)}</span>
               </div>
             )}
           </motion.div>

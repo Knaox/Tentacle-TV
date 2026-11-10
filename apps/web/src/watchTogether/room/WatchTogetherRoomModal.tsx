@@ -1,6 +1,7 @@
 import { useEffect, useId } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Modal } from "../../components/ui/Modal";
+import { duration, easeOut } from "../../theme/motion";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { closeRoomModal, useRoomModal } from "../roomModalStore";
 import { RoomView } from "./RoomView";
@@ -36,9 +37,11 @@ export function WatchTogetherRoomModal() {
     <Modal open onClose={closeRoomModal} labelledBy={titleId} maxWidth={480} className="overflow-hidden">
       <motion.div
         key={view}
-        initial={reduced ? false : { opacity: 0, x: forward ? 24 : -24 }}
+        // D'une vue à l'autre : un court glissement dans le sens du geste (12 px), sur la courbe
+        // de sortie du socle — l'entrée d'une vue dans une feuille déjà posée.
+        initial={reduced ? false : { opacity: 0, x: forward ? 12 : -12 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: duration.menuIn, ease: easeOut }}
         className="flex max-h-[min(640px,85vh)] flex-col"
       >
         {view === "room" ? <RoomView room={room} fresh={fresh} titleId={titleId} /> : <InviteView room={room} titleId={titleId} />}

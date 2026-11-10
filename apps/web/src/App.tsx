@@ -43,6 +43,7 @@ import { DevGlassLab } from "./dev/glassLab/devRoute";
 import { DevSocleLab } from "./dev/socleLab/devRoute";
 import { DevFichesLab } from "./dev/fichesLab/devRoute";
 import { DevHorsLigneLab } from "./dev/horsLigneLab/devRoute";
+import { DevLecteurLab } from "./dev/lecteurLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -160,6 +161,8 @@ export function App() {
           {DevFichesLab ? <Route path="/dev/fiches/*" element={<DevFichesLab />} /> : null}
           {/* Le labo du hors ligne : il ne monte ses écrans qu'avec le pont factice de son banc. */}
           {DevHorsLigneLab ? <Route path="/dev/hors-ligne/*" element={<DevHorsLigneLab />} /> : null}
+          {/* Le labo du lecteur : l'habillage sur une image fixe, données factices (paquets de développement seulement). */}
+          {DevLecteurLab ? <Route path="/dev/lecteur" element={<DevLecteurLab />} /> : null}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
