@@ -6,9 +6,11 @@
 #include "offline/core/utf8_path.h"
 #include "offline/glue/channels.h"
 #include "offline/glue/engine_runtime.h"
+#include "offline/glue/kept_audio.h"
 #include "offline/glue/local_scheme.h"
 #include "offline/glue/offline_thread.h"
 #include "offline/glue/runtime.h"
+#include "music/octave_shell.h"
 #include "registry.h"
 #include "shell/ipc.h"
 #include "shell/paths.h"
@@ -42,6 +44,11 @@ void installInShell(bridge::Registry& registry, const AppContext& ctx) {
   registry.event("downloads://changed");
   serveLocalScheme();
   installEngineRuntime();
+  // Octave lit la copie gardée d'un titre à la place du serveur (`audioKept.ts`) : la couture
+  // de l'axe medias, posée ici (après `music::installInShell`, appelé avant ce module).
+  music::setKeptLookup([](const std::string& userId, const std::string& trackKey) {
+    return keptAudioPathSync(userId, trackKey);
+  });
   std::fprintf(stderr, "[offline] dossier de données : %s\n", pathToUtf8(userData).c_str());
 }
 

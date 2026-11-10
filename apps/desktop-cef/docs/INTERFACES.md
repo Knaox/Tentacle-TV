@@ -250,7 +250,9 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   fil hors ligne : la fermeture ne touche ni le moteur ni la base), `keepSystemAwake` à chaque
   bascule occupé / attente du serveur, `onSystemResume` → reprise des pauses système.
 - Pour Octave (axe medias) : `offline::keptAudioPath(userId, trackKey, done)`
-  (`glue/kept_audio.h`, `done` sur le fil principal) — le chemin de la copie gardée, ou rien.
+  (`glue/kept_audio.h`, `done` sur le fil principal) — le chemin de la copie gardée, ou rien ;
+  sa variante synchrone bornée (500 ms) est posée par `installInShell` dans la couture
+  `music::setKeptLookup` (appelée par `audio_play` avec `kept`).
 - `tentacle://local/<media|meta>/…` : affiches, JSON, planches, sous-titres (liste FERMÉE de
   `localAssets.ts`), lus sur le fil hors ligne ; jeton fictif `local` ; CSP de l'application
   (`appscheme::appCsp()`) sur chaque réponse, comme Electron.

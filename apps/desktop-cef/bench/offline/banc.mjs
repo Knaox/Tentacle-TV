@@ -66,40 +66,42 @@ async function transfers() {
     const st = await until(async () => ((x) => (x && ["complete", "error"].includes(x.status) ? x : null))(await state(id)), 240000, id);
     log("épisode", id.slice(0, 6), st.variant, st.status, st.bytesDone, st.errorCode ?? "");
   }
-  // --- Album : trois titres à la fois -----------------------------------------------------
-  const tracks = await jellyfin(cdp, `/Users/${s.userId}/Items?Recursive=true&IncludeItemTypes=Audio&Fields=MediaSources`);
-  const album = tracks.Items.filter((t) => t.Album === ALBUM);
-  const plan = await (await fetch(`${s.server}/api/music/offline/plan`, {
-    method: "POST", headers: { Authorization: `Bearer ${s.token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ ids: album.map((t) => t.Id) }),
-  })).json().catch(() => null);
-  const planOf = (id) => (plan?.tracks ?? plan?.items ?? []).find?.((p) => p.id === id || p.itemId === id) ?? null;
-  const items = album.map((t) => {
-    const p = planOf(t.Id);
+  await keepAlbum();
+  const ev = await events(cdp);
+  log("évènements reçus : progress", ev.progress.length, "changed", ev.changed);
+}
+
+/** Un album gardé comme le front le garde (`keepItems.ts` : les `MusicTrack` du serveur, son plan). */
+async function keepAlbum() {
+  const api = async (path, init = {}) =>
+    (await fetch(`${s.server}${path}`, { ...init, headers: { Authorization: `Bearer ${s.token}`, "Content-Type": "application/json" } })).json();
+  const albums = await api("/api/music/albums?limit=50");
+  const summary = (albums.items ?? albums).find((a) => a.title === ALBUM);
+  const album = await api(`/api/music/albums/${summary.jellyfinId}`);
+  const plan = await api("/api/music/offline/plan", { method: "POST", body: JSON.stringify({ ids: album.tracks.map((t) => t.jellyfinId) }) });
+  const serverArtwork = (url) => (url && url.startsWith("/api/") && !url.includes("//") ? url : null);
+  const items = album.tracks.map((track) => {
+    const p = plan.tracks.find((x) => x.id === track.jellyfinId);
     return {
-      trackKey: `jf:${t.Id}`, origin: "library",
-      sourcePath: p?.path ?? `/api/downloads/original/${t.Id}?mediaSourceId=${t.MediaSources[0].Id}`,
-      variant: p?.variant ?? "original", preset: p?.preset ?? null, containerExt: p?.container ?? t.MediaSources[0].Container,
-      expectedSize: p ? p.expectedSize : t.MediaSources[0].Size, estimatedSize: p?.estimatedSize ?? null,
-      title: t.Name, artist: (t.Artists ?? []).join(", ") || null, album: t.Album, albumKey: `jf:${t.AlbumId}`,
-      discNumber: t.ParentIndexNumber ?? null, trackNumber: t.IndexNumber ?? null, durationMs: Math.round((t.RunTimeTicks ?? 0) / 1e4),
-      artworkPath: `/api/jellyfin/Items/${t.AlbumId}/Images/Primary`, trackJson: JSON.stringify({ key: `jf:${t.Id}`, title: t.Name }),
+      trackKey: track.key, title: track.title, artist: track.artists.map((a) => a.name).join(", ") || null,
+      album: track.album?.title ?? null, albumKey: track.album ? (track.album.jellyfinId ? `jf:${track.album.jellyfinId}` : track.album.mbid ?? track.album.title) : null,
+      discNumber: track.discNumber, trackNumber: track.trackNumber, durationMs: track.durationMs,
+      artworkPath: serverArtwork(track.artworkUrl), trackJson: JSON.stringify(track),
+      origin: "library", sourcePath: p.path, variant: p.variant, preset: p.preset, containerExt: p.container,
+      expectedSize: p.expectedSize, estimatedSize: p.estimatedSize,
     };
   });
-  log("plan du serveur :", plan ? "lu" : "absent (repli sur l'original)");
-  const collection = { key: `album:jf:${album[0].AlbumId}`, kind: "album", title: ALBUM, subtitle: null, coverItemId: album[0].AlbumId,
-    trackKeys: items.map((i) => i.trackKey) };
+  const collection = { key: album.key, kind: "album", title: album.title, subtitle: album.artists.map((a) => a.name).join(", ") || null,
+    coverItemId: album.jellyfinId, trackKeys: items.map((i) => i.trackKey) };
   log("album en file", JSON.stringify((await invoke(cdp, "downloads_music_enqueue", { userId: s.userId, serverUrl: RELAY, token: s.token, items, collection })).ok));
   let maxParallel = 0;
   const kept = await until(async () => {
     const l = (await invoke(cdp, "downloads_music_list", { userId: s.userId })).ok;
     maxParallel = Math.max(maxParallel, l.tracks.filter((t) => t.status === "downloading").length);
-    return l.tracks.length === items.length && l.tracks.every((t) => t.status === "complete") ? l : null;
+    return l.tracks.length >= items.length && l.tracks.every((t) => t.status === "complete") ? l : null;
   }, 120000, "album");
   log("album :", kept.tracks.length, "titres complets, au plus", maxParallel, "en même temps ; pochettes",
       kept.tracks.filter((t) => t.coverRel).length, "; collections", kept.collections.length);
-  const ev = await events(cdp);
-  log("évènements reçus : progress", ev.progress.length, "changed", ev.changed);
 }
 
 async function afterRelaunch() {
@@ -113,5 +115,6 @@ async function afterRelaunch() {
 }
 
 if (mode === "transferts") await transfers();
+else if (mode === "album") await keepAlbum();
 else await afterRelaunch();
 cdp.close();
