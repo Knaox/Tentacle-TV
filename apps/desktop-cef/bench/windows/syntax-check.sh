@@ -115,7 +115,9 @@ sed -e 's/_LIBCPP_HAS_THREAD_API_WIN32 0/_LIBCPP_HAS_THREAD_API_WIN32 1/' \
     -e 's/_LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS 1/_LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS 0/' \
     -e 's/#define _LIBCPP_PSTL_BACKEND_LIBDISPATCH/#define _LIBCPP_PSTL_BACKEND_SERIAL/' \
     "$sdk/usr/include/c++/v1/__config_site" > "$work/libcxx/__config_site"
-flags=(-target x86_64-w64-mingw32 "${common[@]}" -Wno-nonportable-include-path
+# mingw-w64 14 : IReference<boolean> et IReference<BYTE> se confondent dans windows.foundation.h
+# (touché dès windows.media.h, SMTC de l'axe medias) ; MSVC n'en a pas besoin.
+flags=(-target x86_64-w64-mingw32 "${common[@]}" -Wno-nonportable-include-path -D____FIReference_1_boolean_INTERFACE_DEFINED__
   -nostdinc -nostdinc++ -isystem "$work/libcxx" -isystem "$sdk/usr/include/c++/v1"
   -isystem "$(clang -print-resource-dir)/include" -isystem "$work/mingw/inc"
   -I"$cef_inc" -I"$root/src" -I"$root/src/bridge" -I"$root/src/display" -I"$root/src/music" -I"$root/src/update"
