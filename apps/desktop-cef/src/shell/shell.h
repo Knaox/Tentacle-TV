@@ -8,6 +8,7 @@
 #include <string>
 
 #include "compositor/compositor.h"
+#include "shell/browser_dialogs.h"
 #include "shell/client.h"
 #include "shell/frame_clock.h"
 #include "shell/input.h"
@@ -50,6 +51,10 @@ class Shell final : public ViewHost {
   bool onUnhandledKey(const CefKeyEvent& event) override;
   void onDocumentFullscreen(bool fullscreen) override { documentFullscreen_ = fullscreen; }
   void onResourceLoaded() override { nudgeFrameClock(); }
+  // navigateur : boîtes de la page (browser_dialogs.h)
+  CefRefPtr<CefDialogHandler> dialogHandler() override { return dialogs_; }
+  CefRefPtr<CefJSDialogHandler> jsDialogHandler() override { return dialogs_; }
+  CefRefPtr<CefDownloadHandler> downloadHandler() override { return dialogs_; }
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
   void wakeFrameClock();
   // La page annonce un changement (canal shell.wake) : UN BeginFrame tout de suite, sans
@@ -65,6 +70,7 @@ class Shell final : public ViewHost {
   Compositor* compositor_;
   ShellOptions options_;
   CefRefPtr<Client> client_;
+  CefRefPtr<BrowserDialogs> dialogs_;  // navigateur
   CefRefPtr<CefBrowser> browser_;
   InputRouter input_;
   int widthPt_ = 0, heightPt_ = 0;

@@ -54,7 +54,8 @@ bool Client::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame>
 // ignorée, sans quoi `Notification.requestPermission()` resterait en attente pour toujours
 // (mesuré : style Alloy, défaut IGNORE).
 //
-// Exception propre à CEF : l'accès au réseau local, pour tentacle://app seul. Chromium 156
+// Exceptions propres à CEF : l'accès au réseau local, pour tentacle://app seul, et les
+// téléchargements multiples (ci-dessous). Chromium 156
 // classe notre origine « publique » et soumet ces requêtes à la permission d'accès au réseau
 // local ; en rendu hors écran, aucune invite ne s'affiche : la demande restait en attente et
 // CHAQUE requête pendait (mesuré, banc sur 127.0.0.1 : « le serveur met trop de temps à
@@ -70,9 +71,12 @@ bool Client::OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t prom
                                      CEF_PERMISSION_TYPE_LOOPBACK_NETWORK;
   std::string origin = requestingOrigin.ToString();
   if (!origin.empty() && origin.back() == '/') origin.pop_back();
-  const bool localNetworkOnly =
-      requestedPermissions != 0 && (requestedPermissions & ~kLocalNetwork) == 0;
-  if (origin == appscheme::kAppOrigin && localNetworkOnly) {
+  // Les « téléchargements multiples » : le limiteur de Chrome (`DownloadRequestLimiter`) n'existe
+  // pas sous Electron, qui laisse chaque téléchargement aller à sa boîte d'enregistrement
+  // (mesuré sous CEF : le second téléchargement d'une page était refusé ici, en silence).
+  uint32_t granted = CEF_PERMISSION_TYPE_MULTIPLE_DOWNLOADS;
+  if (origin == appscheme::kAppOrigin) granted |= kLocalNetwork;
+  if (requestedPermissions != 0 && (requestedPermissions & ~granted) == 0) {
     callback->Continue(CEF_PERMISSION_RESULT_ACCEPT);
     return true;
   }

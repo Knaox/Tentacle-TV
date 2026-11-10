@@ -51,6 +51,7 @@ SDL_SystemCursor systemCursor(cef_cursor_type_t t) {
 Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
     : window_(window), compositor_(compositor), options_(std::move(options)) {
   client_ = new Client(this);
+  dialogs_ = new BrowserDialogs(window_);
   syncWindowGeometry();
   platform::installAppMenu([this](platform::EditCommand c) {
     if (!browser_) return;
@@ -71,6 +72,7 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
 }
 
 Shell::~Shell() {
+  dialogs_->detach();
   platform::uninstallNativeWheel();
   platform::stopFrameClock();
   for (auto& [_, c] : cursors_) SDL_DestroyCursor(c);
@@ -247,6 +249,7 @@ void Shell::wakeFrameClock() {
 }
 
 void Shell::onBrowserClosed() {
+  dialogs_->detach();
   platform::stopFrameClock();
   platform::setPageReceivesShortcuts(false);
   browser_ = nullptr;

@@ -4,6 +4,9 @@
 
 #include "compositor/compositor.h"
 #include "include/cef_client.h"
+#include "include/cef_dialog_handler.h"
+#include "include/cef_download_handler.h"
+#include "include/cef_jsdialog_handler.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_resource_request_handler.h"
@@ -31,6 +34,11 @@ class ViewHost {
   // Une ressource a fini de charger (n'importe quel cadre, iframes comprises) : la page va
   // sans doute peindre. Appelé sur le fil principal.
   virtual void onResourceLoaded() {}
+  // navigateur : boîtes de la page — fichiers, JavaScript, téléchargements
+  // (src/shell/browser_dialogs.h). nullptr : le défaut de CEF.
+  virtual CefRefPtr<CefDialogHandler> dialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefJSDialogHandler> jsDialogHandler() { return nullptr; }
+  virtual CefRefPtr<CefDownloadHandler> downloadHandler() { return nullptr; }
 };
 
 class Client final : public CefClient,
@@ -64,6 +72,10 @@ class Client final : public CefClient,
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+  // navigateur : objets à part, tenus par l'hôte (src/shell/browser_dialogs.h).
+  CefRefPtr<CefDialogHandler> GetDialogHandler() override { return host_->dialogHandler(); }
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return host_->jsDialogHandler(); }
+  CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return host_->downloadHandler(); }
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                 CefProcessId source,
                                 CefRefPtr<CefProcessMessage> message) override;

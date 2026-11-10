@@ -21,7 +21,7 @@ case "${1:-}" in
     [[ -z "$(pid)" ]] || { echo "déjà lancée : $(pid)"; exit 0; }
     export TENTACLE_ELECTRON_PROFILE="$cache/profiles/parite-navigateur"
     export TENTACLE_URL="${TENTACLE_URL:-http://127.0.0.1:3471}" TENTACLE_BUILD="$build"
-    export TENTACLE_OPEN_EXTERNAL=log
+    export TENTACLE_OPEN_EXTERNAL=log TENTACLE_DEBUG_DIALOGS=1
     mkdir -p "$TENTACLE_ELECTRON_PROFILE"
     (cd "$repo" && nohup pnpm dev:cef -- --skip-web --mute --background --devtools-port="$port" "$@" \
       >"$log" 2>&1 &)

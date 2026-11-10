@@ -262,6 +262,16 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   liste FERMÉE d'Electron (http, https, mailto, ms-windows-store, macappstore, itms-apps), URL
   canonique (`CefParseURL`), `SDL_OpenURL`. Bancs : `TENTACLE_OPEN_EXTERNAL=log` journalise
   `[externe] …` sans rien ouvrir.
+- **Boîtes de la page** (`src/shell/browser_dialogs.h`, objets à part donnés par `ViewHost::
+  dialogHandler()/jsDialogHandler()/downloadHandler()` ; règle pure `src/shell/dialog_rule.h` ;
+  natif `src/shell/native_dialogs.h` → `src/platform/<os>/dialogs_<os>.*`) : `<input type=file>`
+  (filtres d'Electron « Image Files »/« Custom Files » + « All Files », dernier dossier retenu),
+  `alert`/`confirm` (NSAlert en feuille / TaskDialog / GTK ; « OK », « Cancel »), `prompt` →
+  `null` sans boîte, `beforeunload` → la page reste sans question, téléchargement → boîte
+  d'enregistrement (titre = URL, Téléchargements puis dernier dossier), annulée = téléchargement
+  annulé. Linux : panneaux de fichiers = ceux de Chromium (portail XDG), comme Electron.
+  Bancs : `TENTACLE_DEBUG_DIALOGS=1` → canal `navigateur.debug.dialogs` (`state`, `answer`,
+  `queue` : réponses d'avance, un dialogue JavaScript bloquant la page).
 - **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
   « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
   MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de
