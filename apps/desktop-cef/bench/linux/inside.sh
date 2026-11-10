@@ -51,5 +51,7 @@ sleep 3
   -f lavfi -i sine=frequency=440 -t 120 -c:v libvpx -deadline realtime -cpu-used 8 -b:v 1M \
   -c:a libvorbis /tmp/banc/test.webm
 export TENTACLE_ELECTRON_PROFILE=/cache/profiles/parite-linux
+# Aucun GPU dans la VM : Mesa logiciel (llvmpipe, lavapipe), que mpv refuse sans gpu-sw.
+export TENTACLE_MPV_GPU_SW=1
 exec node /repo/apps/desktop-cef/scripts/dev.mjs run --skip-web --mute --background \
   --devtools-port=9427 "$@" > /tmp/banc/app.log 2>&1

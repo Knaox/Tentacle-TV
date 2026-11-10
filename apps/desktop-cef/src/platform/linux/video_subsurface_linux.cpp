@@ -117,6 +117,14 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
   int64_t mpvWid() const override { return int64_t(reinterpret_cast<intptr_t>(&target_)); }
   const char* mpvGpuContext() const override { return "wlhostvk"; }
   const char* mpvSizeOption() const override { return "wlhostvk-surface-size"; }
+  // Bancs sans GPU (llvmpipe/lavapipe) : mpv refuse un rendu logiciel sans `gpu-sw`. Jamais
+  // posé hors TENTACLE_MPV_GPU_SW=1 (bench/linux) : sur une vraie machine, un rendu logiciel
+  // doit rester un échec visible.
+  std::vector<std::pair<std::string, std::string>> mpvAttachOptions() const override {
+    const char* sw = std::getenv("TENTACLE_MPV_GPU_SW");
+    if (sw && std::strcmp(sw, "1") == 0) return {{"gpu-sw", "yes"}};
+    return {};
+  }
   SurfaceColorState colorState() const override {
     SurfaceColorState s;
     s.pixelFormat = "swapchain Vulkan de mpv (wlhostvk) — espace choisi par libplacebo";
