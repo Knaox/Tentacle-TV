@@ -1,3 +1,4 @@
+#include <algorithm>
 // Tests du pont : formes des charges attendues par le front de Tentacle, listes
 // blanches, étranglement, plein écran. Sans dépendance de test : un échec imprime
 // sa ligne et le code de sortie compte les échecs.
@@ -146,10 +147,11 @@ static void testWindow() {
   channels.fullscreenChanged(true);
   channels.fullscreenChanged(true);  // une seule émission par changement réel
   CHECK(ipc.payloadsOf("tentacle:window://fullscreen") == std::vector<Json>{true});
-  a = ipc.invoke("tentacle:open-external", {{"url", "file:///etc/passwd"}});
-  CHECK(!a.ok && win.opened.empty());
+  // `open-external` n'est plus une commande de la liste : comme sous Electron, c'est une
+  // capacité nommée de la coquille (src/lifecycle, liste fermée de `security.ts`).
   a = ipc.invoke("tentacle:open-external", {{"url", "https://tentacletv.app"}});
-  CHECK(a.ok && win.opened.size() == 1);
+  CHECK(!a.ok && win.opened.empty());
+  CHECK(std::find(reg.commands().begin(), reg.commands().end(), "open-external") == reg.commands().end());
   ipc.invoke("tentacle:prevent_display_sleep_start");
   CHECK(win.sleepBlocked);
 }

@@ -6,7 +6,8 @@
 //   node scripts/dev.mjs run [opts…]         build web (coquille de bureau) + build natif, puis
 //                                            l'app sur le PROFIL D'ELECTRON (scripts/dev/profile.mjs)
 //   node scripts/dev.mjs run-server [opts…]  mode des bancs : page servie par $TENTACLE_URL (défaut :
-//                                            le banc), profil à part $cache/profiles/dev
+//                                            le banc), profil à part $cache/profiles/dev, données
+//                                            natives à part $cache/profiles/dev-data
 //   node scripts/dev.mjs build               le build natif seul (Release)
 //   node scripts/dev.mjs deps                Linux/Windows : prérequis et dépendances seulement
 //   node scripts/dev.mjs banc [up|status]    banc local (colima + Tentacle 1.42.0 + Jellyfin)
@@ -97,7 +98,10 @@ async function runServer(rawArgs) {
   const env = os.env(soundEnv({ ...process.env }, mute));
   const profile = path.join(cache, "profiles", "dev");
   say(`${url} — profil ${profile} — son ${mute ? "coupé" : "ouvert"}`);
-  return launch(binary, [`--url=${url}`, `--profile=${profile}`, ...args], env);
+  // --user-data à part : sans lui, les modules natifs (shell/paths.h : octave-art/, tentacle-local.db…)
+  // écriraient dans le VRAI dossier d'Electron. Les bancs n'y touchent jamais (reseau, 5ee55a228).
+  const userData = path.join(cache, "profiles", "dev-data");
+  return launch(binary, [`--url=${url}`, `--profile=${profile}`, `--user-data=${userData}`, ...args], env);
 }
 
 async function banc(rawArgs) {

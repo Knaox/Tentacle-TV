@@ -2,11 +2,11 @@
 // build natif dans $cache/build/<nom>/ — l'exécutable et les ressources de CEF dans app/.
 import fs from "node:fs";
 import path from "node:path";
-import { buildName, cache, die, dry, root, run, say, warn, which } from "./common.mjs";
+import { buildName, cache, desktopVersion, die, dry, root, run, say, warn, which } from "./common.mjs";
 import { ensureCef } from "./cef.mjs";
 import { fetchArchive } from "./fetch.mjs";
 import { cefRuntimeLine, checkBuildPrereqs, missingCefRuntime, systemSdl3 } from "./linux-prereqs.mjs";
-import { ensureLibmpv, jobs, warnLibmpv } from "./mpv-linux.mjs";
+import { ensureLibmpv, jobs, mesonDepsMissing, warnLibmpv } from "./mpv-linux.mjs";
 
 /** SDL3 de repli : la version de Homebrew sur le Mac du lot, archive officielle épinglée. */
 export const SDL3_PIN = {
@@ -63,7 +63,8 @@ export const linux = {
   /** Prérequis et dépendances, avant le build web (on échoue tôt). */
   async prepare() {
     if (state.ready) return;
-    const { family, name } = checkBuildPrereqs();
+    const recommended = [...(systemSdl3() ? [] : ["sdl3"]), ...mesonDepsMissing()];
+    const { family, name } = checkBuildPrereqs(recommended);
     say(`${name} (${process.arch}) — famille ${family}`);
     state.cef = await ensureCef();
     checkCefRuntime(state.cef, family);
@@ -84,6 +85,8 @@ export const linux = {
     const defs = [
       "-DCMAKE_BUILD_TYPE=Release",
       `-DCEF_ROOT=${state.cef}`,
+      // Version courante du moteur de mise à jour (sans Info.plist hors macOS).
+      `-DTENTACLE_APP_VERSION=${desktopVersion()}`,
       state.mpv.kind === "fork" ? `-DMPV_PREFIX=${state.mpv.prefix}` : "-DTENTACLE_MPV_SYSTEM=ON",
       ...(state.sdl ? [`-DCMAKE_PREFIX_PATH=${state.sdl}`] : []),
     ];

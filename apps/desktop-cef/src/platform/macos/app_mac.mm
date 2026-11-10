@@ -8,6 +8,11 @@
 #include "include/cef_application_mac.h"
 #include "platform/macos/shell_menu_mac.h"
 
+namespace tentacle::platform {
+// Options du panneau « À propos » (lifecycle_window_mac.mm, `setAboutPanelOptions`) ou nil.
+NSDictionary* aboutPanelOptions();
+}  // namespace tentacle::platform
+
 @interface TentacleApplication : NSApplication <CefAppProtocol> {
   BOOL handlingSendEvent_;
 }
@@ -26,6 +31,15 @@
   // seulement si elle ne la consomme pas (shell/app_menu.h), comme dans Electron.
   if (tentacle::platform::holdKeyEquivalent(event)) return;
   [super sendEvent:event];
+}
+// « À propos de Tentacle TV » : nom, version de l'app et icône d'Electron, au lieu de ce que
+// macOS lirait dans l'Info.plist (axe systeme, `appIdentity.ts`).
+- (void)orderFrontStandardAboutPanel:(id)sender {
+  if (NSDictionary* options = tentacle::platform::aboutPanelOptions()) {
+    [self orderFrontStandardAboutPanelWithOptions:options];
+    return;
+  }
+  [super orderFrontStandardAboutPanel:sender];
 }
 // Jamais exit() depuis AppKit : on demande à la boucle SDL de fermer proprement
 // (fermeture du navigateur, CefShutdown).

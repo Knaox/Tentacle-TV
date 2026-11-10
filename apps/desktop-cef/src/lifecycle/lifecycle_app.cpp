@@ -1,0 +1,242 @@
+// Le cycle de vie dans la boucle de l'app : le déroulé de sortie (exit_flow.h) relié à SDL3,
+// au Shell, au lecteur du pont, aux transferts (hub) et à l'OS (lifecycle_platform.h).
+
+#include "lifecycle/lifecycle_app.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "app/args.h"
+#include "include/cef_app.h"
+#include "lifecycle/app_links.h"
+#include "lifecycle/drag_hit_test.h"
+#include "lifecycle/exit_flow.h"
+#include "lifecycle/hub.h"
+#include "lifecycle/lifecycle_debug.h"
+#include "lifecycle/lifecycle_app_internal.h"
+#include "lifecycle/lifecycle_platform.h"
+#include "lifecycle/lifecycle_shell.h"
+#include "lifecycle/texts.h"
+#include "shell/browser_app.h"
+#include "shell/main_thread.h"
+#include "shell/shell.h"
+
+namespace tentacle::lifecycle::app {
+namespace {
+
+struct State {
+  std::vector<std::string> argv;  // ligne de commande d'origine (sans --relaunch-after)
+  Shell* shell = nullptr;
+  SDL_Window* window = nullptr;
+  std::unique_ptr<ExitFlow> flow;
+  bool finished = false;
+  bool background = false;  // --background : bancs, sessions — rien qui s'impose à l'écran
+  bool debug = false;       // --debug-lifecycle : canaux de diagnostic
+  bool browserGone = false;
+  uint32_t wakeEvent = 0;
+};
+
+State& st() {
+  static State s;
+  return s;
+}
+
+void wakeLoop() {
+  if (!st().wakeEvent) return;
+  SDL_Event e{};
+  e.type = st().wakeEvent;
+  SDL_PushEvent(&e);
+}
+
+void after(int64_t ms, std::function<void()> fn) {
+  if (ms <= 0) postToMain(std::move(fn));
+  else postToMainDelayed(std::move(fn), ms);
+}
+
+// Minuteur répété sur le fil principal (tâches CEF) ; la fonction rendue l'arrête.
+std::function<void()> every(int64_t ms, std::function<void()> tick) {
+  auto alive = std::make_shared<bool>(true);
+  auto step = std::make_shared<std::function<void()>>();
+  std::weak_ptr<std::function<void()>> weak = step;
+  *step = [alive, tick = std::move(tick), weak, ms] {
+    if (!*alive) return;
+    tick();
+    if (auto again = weak.lock(); again && *alive) postToMainDelayed(*again, ms);
+  };
+  postToMainDelayed(*step, ms);
+  return [alive, step] { *alive = false; };
+}
+
+ExitPorts ports() {
+  const bool french = platform::systemLocaleIsFrench();
+  return ExitPorts{
+      [] { SDL_HideWindow(st().window); },
+      [] {
+        if (st().shell) st().shell->requestClose();
+      },
+      [] { platform::focusWindow(st().window); },
+      [] { return videoControls().running && videoControls().running(); },
+      [](std::function<void()> done) {
+        if (videoControls().stop) videoControls().stop(std::move(done));
+        else done();
+      },
+      [] {
+        if (videoControls().pause) videoControls().pause();
+      },
+      hub::transfersInFlight,
+      hub::transfersBusy,
+      hub::backgroundEnabled,
+      [french](int n, std::function<void(bool)> answer) {
+        platform::askQuit(st().window, quitTexts(n, french), std::move(answer));
+      },
+      [french](int n) {
+        const auto t = backgroundTransfersText(n, french);
+        // Un banc ne fait jamais surgir de notification (ni la demande d'autorisation) : journal.
+        if (st().background) {
+          std::fprintf(stderr, "[cycle] notification (banc) : %s — %s\n", t.title.c_str(), t.body.c_str());
+          return;
+        }
+        platform::notify(t.title, t.body);
+      },
+      hub::fireWindowClosed,
+      [](std::function<void()> done) {
+        hub::farewell().farewell(hub::sendFarewellStop, kFarewellDeadlineMs, after, std::move(done));
+      },
+      [] {
+        if (!platform::spawnSuccessor(st().argv)) std::fprintf(stderr, "[cycle] relance impossible\n");
+      },
+      [] {
+        st().finished = true;
+        wakeLoop();
+      },
+      [] { return int64_t(SDL_GetTicks()); },
+      after,
+      every,
+  };
+}
+
+bool draining() { return st().flow && st().flow->phase() == ExitFlow::Phase::Draining; }
+
+}  // namespace
+
+Shell* shell() { return st().shell; }
+
+void requestRelaunch() {
+  if (st().flow) st().flow->requestRelaunch();
+}
+
+void onSecondInstance(const std::vector<std::string>& argv) {
+  // `claimSingleInstance` : le lien d'abord ; sans fenêtre (transferts sans elle), on relance.
+  if (auto link = appLinkFromArgv(argv)) deliverAppLink(*link);
+  if (draining()) st().flow->reopen();
+  else platform::focusWindow(st().window);
+}
+
+void beforeSdl(int argc, char** argv, const AppOptions& opts) {
+  for (int i = 0; i < argc; ++i) {
+    const std::string a = argv[i];
+    if (a.rfind("--relaunch-after", 0) == 0) {
+      if (a == "--relaunch-after") ++i;  // forme « --clé valeur »
+      continue;
+    }
+    st().argv.push_back(a);
+  }
+  // Instance relancée : l'ancienne doit être sortie, sinon le verrou d'instance unique de CEF
+  // nous renverrait vers elle (`app.relaunch` d'Electron attend de même).
+  if (auto it = opts.extra.find("relaunch-after"); it != opts.extra.end()) {
+    const long pid = std::strtol(it->second.c_str(), nullptr, 10);
+    if (pid > 0) platform::waitForProcessExit(pid, 15'000);
+  }
+  platform::setNoActivation(opts.background);  // bancs : jamais voler le focus
+  st().background = opts.background;
+  st().debug = opts.extra.count("debug-lifecycle") > 0;
+  keepLaunchLink(argc, argv);
+  platform::installSystemEvents(
+      [](const std::string& url) {
+        // `open-url` : sans fenêtre (file finie en arrière-plan), la page rouverte le prendra.
+        if (deliverAppLink(url) && draining()) st().flow->reopen();
+      },
+      [] {
+        if (st().flow) st().flow->reopen();
+      });
+  setSecondInstanceHandler(onSecondInstance);
+  // Fermer la dernière fenêtre n'est PAS quitter : la croix passe par la garde de sortie, et
+  // peut laisser les transferts finir sans fenêtre (SDL enverrait sinon SDL_EVENT_QUIT).
+  SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0");
+  // SDL3 empêche d'office la veille de l'écran tant que l'app tourne (mesuré : une assertion
+  // PreventUserIdleDisplaySleep dès le lancement). Electron ne bloque rien hors lecture : l'écran
+  // n'est tenu que par `prevent_display_sleep_start` (powerSave.ts).
+  SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
+}
+
+void prepareWindow(SDL_Window* window) {
+  st().window = window;
+  // `window.ts` : 1280×800 (taille de départ, --size), minimum 900×600 DIP — en unités de
+  // fenêtre (pixels sous Windows et X11) —, aucune mémorisation.
+  const float k = windowUnitsToDip(window);
+  SDL_SetWindowMinimumSize(window, int(900 / k + 0.5f), int(600 / k + 0.5f));
+  platform::prepareMainWindow(window);
+  installDragHitTest(window);
+}
+
+bool handedToRunningInstance() { return CefGetExitCode() == CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED; }
+
+void attach(Shell* shell, SDL_Window* window) {
+  st().shell = shell;
+  st().window = window;
+  st().wakeEvent = SDL_RegisterEvents(1);
+  st().flow = std::make_unique<ExitFlow>(ports());
+  // SDL (Cocoa_RegisterApp) puis CEF ont posé LEUR gestionnaire GetURL : on reprend la main.
+  platform::reclaimSystemEvents();
+  if (st().debug) {
+    installDebugChannels(window, [] {
+      static const char* kNames[] = {"running", "closing", "draining", "quitting", "done"};
+      return std::string(kNames[static_cast<int>(st().flow->phase())]);
+    });
+  }
+}
+
+bool handleEvent(const SDL_Event& e) {
+  if (st().wakeEvent && e.type == st().wakeEvent) return true;
+  // macOS : un lien remis avant que le cycle de vie ne reprenne GetURL (au lancement) est
+  // devenu un « dépôt de fichier » de SDL ; c'est encore un lien d'app, on le remet à la page.
+  if (e.type == SDL_EVENT_DROP_FILE && std::getenv("TENTACLE_LIFECYCLE_TRACE")) {
+    std::fprintf(stderr, "[cycle] dépôt SDL : %s\n", e.drop.data ? e.drop.data : "(nul)");
+  }
+  if (e.type == SDL_EVENT_DROP_FILE && e.drop.data && appLinkOf(e.drop.data)) {
+    if (deliverAppLink(e.drop.data) && draining()) st().flow->reopen();
+    return true;
+  }
+  if (!st().flow) return false;
+  if (e.type == SDL_EVENT_QUIT) {
+    st().flow->requestQuit();
+    return true;
+  }
+  if (e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
+    st().flow->requestClose();
+    return true;
+  }
+  return false;
+}
+
+bool windowAlive() { return !st().flow || st().flow->phase() == ExitFlow::Phase::Running; }
+
+void afterEvents() {
+  if (st().browserGone || !st().shell || !st().shell->isClosed() || !st().flow) return;
+  st().browserGone = true;
+  st().flow->browserClosed();
+}
+
+int waitTimeoutMs() {
+  // Le navigateur se ferme dans la pompe de CEF, sans évènement SDL : on relit son état.
+  return st().flow && st().flow->phase() == ExitFlow::Phase::Closing ? 20 : -1;
+}
+
+bool running() { return !st().finished; }
+
+void afterShutdown() { hub::releaseWakeLocks(); }
+
+}  // namespace tentacle::lifecycle::app

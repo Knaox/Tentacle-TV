@@ -88,7 +88,7 @@ class WindowsVideoSurface final : public VideoSurface {
         {"target-colorspace-hint", "no"},
     };
   }
-  const char* mpvSizeOption() const override { return "d3d11-composition-size"; }
+  const char* mpvSurfaceSizeOption() const override { return "d3d11-composition-size"; }
   bool wantsMpvSwapchain() const override { return true; }
 
   void setMpvSwapchain(int64_t address) override {

@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <set>
 #include <thread>
+#include <utility>
 #include <unordered_map>
 
 #include "platform/video_surface.h"
@@ -37,7 +38,8 @@ mpv_format mpvFormat(PropFormat f) {
 // Options que le lecteur tient lui-même (sortie vidéo) : jamais prises de l'appelant. Le son
 // (`ao`, `mute`) suit `sound::forcedOptions`, posé après l'appelant.
 const std::set<std::string> kReserved = {"vo", "wid", "gpu-context", "moltenvk-surface-size",
-                                         "d3d11-output-mode", "d3d11-composition-size"};
+                                         "d3d11-output-mode", "d3d11-composition-size",
+                                         "wlhostvk-surface-size"};
 
 std::string sizeString(PixelSize px) { return std::to_string(px.w) + "x" + std::to_string(px.h); }
 
@@ -55,6 +57,7 @@ struct Player::Impl {
     std::unordered_map<uint64_t, Observer> observers;
     std::function<void(const Json&)> eventCb;
     VideoSurface* surface = nullptr;
+    bool renderApi = false;  // surface attachée par l'API de rendu (vo=libmpv, Linux)
     std::weak_ptr<Impl>* wakeCtx = nullptr;  // vit jusqu'à la libération de mpv
 
     static void wakeup(void* data) {  // fil quelconque
@@ -248,9 +251,16 @@ bool Player::attachVideoSurface(VideoSurface& surface) {
     Impl& s = *impl_;
     if (s.dead || s.opts.audioOnly || s.surface) return false;
     s.surface = &surface;
+    // API de rendu (Linux : X11, libmpv de la distribution) : le contexte de rendu existe
+    // AVANT vo=libmpv, sinon le VO refuse de naître.
+    if (surface.attachRenderApi(s.mpv)) {
+        s.renderApi = true;
+        s.setAsync("vo", "libmpv");
+        return true;
+    }
     // Taille du swapchain : suivie à chaque changement (fenêtre, plein écran, écran).
     std::weak_ptr<Impl> weak = impl_;
-    const std::string sizeOption = surface.mpvSizeOption();
+    const std::string sizeOption = surface.mpvSurfaceSizeOption();
     surface.onPixelSizeChanged([weak, sizeOption](PixelSize px) {
         if (auto i = weak.lock()) i->setAsync(sizeOption, sizeString(px));
     });
@@ -268,9 +278,11 @@ void Player::detachVideoSurface() {
     Impl& s = *impl_;
     if (!s.surface) return;
     s.surface->onPixelSizeChanged(nullptr);
-    s.surface = nullptr;
     s.setAsync("vo", "null");
-    s.setAsync("wid", -1);
+    // API de rendu : mpv_render_context_free coupe la vidéo s'il en reste ; sinon, plus de wid.
+    if (std::exchange(s.renderApi, false)) s.surface->detachRenderApi();
+    else s.setAsync("wid", -1);
+    s.surface = nullptr;
 }
 
 VideoSurface* Player::videoSurface() const { return impl_->surface; }
@@ -283,6 +295,8 @@ void Player::destroy(std::function<void()> done) {
         return;
     }
     if (s.surface) s.surface->onPixelSizeChanged(nullptr);
+    // Le contexte de rendu meurt AVANT le cœur (fil principal, contexte GL courant).
+    if (std::exchange(s.renderApi, false) && s.surface) s.surface->detachRenderApi();
     s.dead = true;
     s.surface = nullptr;
     s.replies.clear();

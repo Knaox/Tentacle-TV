@@ -25,11 +25,13 @@ message(STATUS "CEF ${TENTACLE_CEF_VERSION} : ${CEF_ROOT}")
 # la cible SDK et l'architecture. Notre code garde ses propres drapeaux (exceptions
 # permises pour nlohmann::json).
 list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
-# Architecture de la distribution (cef_variables.cmake : fichiers livrés, pile du fil principal).
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$")
-  set(PROJECT_ARCH "x86_64")
-else()
+# Architecture de la distribution : macOS arm64 (épinglée) ; Linux/Windows, celle de la machine.
+if(APPLE)
   set(PROJECT_ARCH "arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  set(PROJECT_ARCH "arm64")
+else()
+  set(PROJECT_ARCH "x86_64")
 endif()
 find_package(CEF REQUIRED)
 add_subdirectory("${CEF_LIBCEF_DLL_WRAPPER_PATH}" libcef_dll_wrapper EXCLUDE_FROM_ALL)
