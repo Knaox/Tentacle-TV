@@ -11,7 +11,7 @@ export function Shimmer({ width = "100%", height = "200px", className = "" }: Sh
   return (
     <div
       style={{ width, height }}
-      className={`animate-pulse rounded-xl bg-gradient-to-r from-fill-subtle via-fill-soft to-fill-subtle ${className}`}
+      className={`rounded-xl bg-fill-shimmer ${className}`}
     />
   );
 }

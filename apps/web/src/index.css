@@ -1,14 +1,10 @@
-/* Inter, EMBARQUÉE — plus jamais réclamée au réseau.
-   Elle venait de fonts.googleapis.com. Sans internet, ou quand la requête
-   n'aboutit pas, il ne restait que la pile de repli — `system-ui`, `sans-serif`.
-   Sur une machine où Chromium n'en résout aucune (mesuré sous Linux :
-   « Could not find any font: Noto Sans, sans »), l'application s'affichait
-   alors SANS AUCUN TEXTE : mise en page, fonds et icônes intacts, tous les
-   libellés invisibles. Un client de bureau, qui sert souvent un serveur de
-   salon sans accès extérieur, ne peut pas dépendre d'un tiers pour rester
-   lisible. La feuille `wght` porte les poids 100 à 900 en un seul fichier
-   variable par sous-ensemble ; le navigateur ne télécharge que ceux dont
-   l'`unicode-range` correspond. */
+/* Les polices sont EMBARQUÉES (theme/fonts.css) — jamais réclamées au réseau.
+   Elles venaient de fonts.googleapis.com. Sans internet, il ne restait que la pile de repli ;
+   sur une machine où Chromium n'en résout aucune (mesuré sous Linux : « Could not find any
+   font: Noto Sans, sans »), l'application s'affichait SANS AUCUN TEXTE. Un client de bureau,
+   qui sert souvent un serveur de salon sans accès extérieur, ne peut pas dépendre d'un tiers
+   pour rester lisible. Depuis la refonte de nov. 2026 : Figtree pour le texte, Bricolage
+   Grotesque pour les titres, Inter derrière elles pour le cyrillique et le grec. */
 @import "./theme/fonts.css";
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
@@ -106,15 +102,17 @@
    * bibliothèque de -0,028 à -0,025em. Un style en ligne, lui, battait tout :
    * c'est le piège de cette conversion, et le seul. */
   .titre-banniere {
+    font-family: var(--font-display);
     font-size: clamp(1.75rem, 3.6vw, 3.25rem);
-    line-height: 1.1;
-    letter-spacing: -0.025em;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
   }
 
   .titre-bibliotheque {
+    font-family: var(--font-display);
     font-size: clamp(2rem, 4.2vw, 3.5rem);
-    line-height: 1.05;
-    letter-spacing: -0.028em;
+    line-height: 1;
+    letter-spacing: -0.035em;
   }
 
   html, body {
@@ -144,12 +142,23 @@
      * en blanc pour toute l'app, avant même React, et rendait tout thème clair
      * impossible. `--surface-0` ci-dessus bascule déjà via `[data-theme]`. */
     @apply min-h-screen font-sans text-content-primary antialiased;
-    font-feature-settings: "ss01", "cv11"; /* Inter — better digits + alt 'a' */
-    letter-spacing: -0.005em;
   }
 
-  h1, h2, h3, h4 {
-    letter-spacing: -0.018em;
+  /* Les TITRES : Bricolage Grotesque, serrée — d'autant plus que le corps est grand (un grand
+   * titre lâche se lit « flottant »). Les titres de section d'un panneau (h3, h4) restent dans
+   * la police du texte : à 15 px, une police de titrage n'apporte que du bruit. */
+  h1, h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  h3, h4 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Un nombre qui change ne fait pas danser sa ligne. */
+  time, output, progress, meter, input[type="number"] {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Le bandeau de fenêtre, quand la page tient lieu de barre de titre.
@@ -219,13 +228,14 @@
     background-color: var(--surface-0);
   }
 
+  /* Le pouce : une encre neutre (il était violet — de la marque là où rien ne se lit ni ne se mesure). */
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(var(--brand-rgb), 0.32);
+    background-color: var(--surface-4);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(var(--brand-rgb), 0.55);
+    background-color: var(--fill-strong);
   }
 
   ::-webkit-scrollbar-corner {
@@ -233,15 +243,14 @@
   }
 }
 
-/* Faint brand-tinted ambient glow — subtle Tentacle signature behind everything */
-.brand-ambient {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 35% at 15% 8%, rgba(var(--brand-rgb), 0.10), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 88% 82%, rgba(var(--brand-accent-rgb), 0.06), transparent 70%);
+/* Les échelles de titre du préset (`text-display-*`, `text-heading-1/2`) portent la police des
+ * titres : Tailwind ne sait pas lier une famille à une taille. */
+.text-display-1,
+.text-display-2,
+.text-display-3,
+.text-heading-1,
+.text-heading-2 {
+  font-family: var(--font-display);
 }
 
 @layer utilities {
@@ -303,55 +312,17 @@ video::cue {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-/* Skeleton shimmer — gris neutre, jamais violet.
+/* Le squelette : une teinte CALME, immobile (refonte de nov. 2026).
  *
- * Le reflet est porté par un pseudo-élément TRANSLATÉ, et non plus par une
- * animation de `background-position`. Animer la position d'un fond repeint
- * l'élément entier à chaque image ; or ce squelette est instancié une fois par
- * carte pendant le chargement — une centaine sur l'accueil, exactement au
- * moment où le réseau et le décodage des affiches saturent déjà. Un `transform`
- * se compose, lui, sans repeindre.
- *
- * Le fond de base reste posé sur l'élément ; le pseudo-élément fait deux fois
- * sa largeur et le traverse, ce qui reproduit le balayage d'origine. */
-.skeleton-shimmer {
+ * Le balayage lumineux a disparu : une centaine de reflets animés pendant que le réseau et le
+ * décodage des affiches saturent déjà, pour dire « ça charge » à quelqu'un qui le voit. Une image
+ * attend sur sa couleur, puis paraît d'UN fondu (docs/REFONTE-UI.md, « Une image qui ne clignote
+ * pas ») ; un bloc de texte attend sur cette teinte. Le nom de classe reste — soixante appelants. */
+.skeleton-shimmer,
+.ui-skeleton {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.skeleton-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  /* Balayage BORNÉ, jamais infini. Une animation en cours force le navigateur à
-   * produire une image à chaque rafraîchissement de l'écran, qu'elle dessine
-   * quelque chose ou non : le compositeur ne se rendort pas, et le GPU ne
-   * redescend jamais en veille. Un squelette qui brille depuis quinze secondes
-   * n'informe plus personne — il entretient seulement cet éveil.
-   *
-   * Le cas qui rendait la borne indispensable : les cartes d'une rangée
-   * horizontale placées HORS du champ visible. Leur image est en `loading:
-   * lazy`, elle ne sera donc jamais demandée tant qu'on n'a pas fait défiler la
-   * rangée — leur squelette brillait littéralement pour toujours. Sur sept
-   * rangées, cela faisait une quarantaine d'animations infinies permanentes,
-   * invisibles, pour un GPU qui ne dormait plus jamais.
-   *
-   * Dix passages couvrent quinze secondes : très au-delà du temps de chargement
-   * d'une affiche, y compris sur un réseau lent. Passé ce délai le fond gris
-   * demeure — le squelette reste un squelette, seul le reflet s'arrête. */
-  animation: shimmerSweep 1.5s ease 10;
-}
-
-@keyframes shimmerSweep {
-  from { transform: translate3d(-100%, 0, 0); }
-  to { transform: translate3d(100%, 0, 0); }
+  background: var(--fill-shimmer);
 }
 
 /* Barre de progression dont l'avancement est INCONNU (téléchargement piloté par
