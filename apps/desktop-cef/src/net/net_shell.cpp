@@ -18,7 +18,9 @@
 #include "net/client_fetch_commands.h"
 #include "net/csp.h"
 #include "net/farewell.h"
+#include "net/fs_platform.h"
 #include "net/jellyfin_relay.h"
+#include "net/media_warm.h"
 #include "net/plugin_documents.h"
 #include "registry.h"
 #include "schemes/art_scheme.h"
@@ -32,6 +34,7 @@ namespace {
 
 std::unique_ptr<net::jellyfin::Relay> g_jellyfin;
 std::unique_ptr<net::cf::Commands> g_clientFetch;
+std::unique_ptr<net::warm::MediaWarmer> g_warmer;
 
 // Le relevé du banc (`__shell.invoke('reseau.debug.trace')`) : méthode, chemin SANS requête
 // (jamais un jeton), statut, durée — les 200 dernières requêtes natives des relais.
@@ -104,6 +107,14 @@ void registerClientFetchCommands(bridge::Registry& reg) {
   reg.command("client_fetch_log", [commands](const bridge::Json& a, bridge::Reply r) { commands->log(a, r); });
 }
 
+void registerMediaWarmCommands(bridge::Registry& reg) {
+  g_warmer = std::make_unique<net::warm::MediaWarmer>(
+      [](net::HttpRequest r, net::StreamHandler h) { return net::httpStream(std::move(r), 0, std::move(h)); },
+      [] { return net::nowMs(); }, [](std::string line) { std::fprintf(stderr, "[reseau] %s\n", line.c_str()); });
+  auto* warmer = g_warmer.get();
+  reg.command("media_warm", [warmer](const bridge::Json& a, bridge::Reply r) { net::warm::handleMediaWarm(*warmer, a, r); });
+}
+
 }  // namespace
 
 net::cf::PluginManifests* pluginManifests() { return g_clientFetch ? &g_clientFetch->manifests() : nullptr; }
@@ -119,6 +130,7 @@ void install(AppContext& ctx) {
   registerPluginCommands(reg);
   registerJellyfinCommands(reg);
   registerClientFetchCommands(reg);
+  registerMediaWarmCommands(reg);
   ipc::registerHandler("reseau.debug.trace", [](const Json&, ipc::Responder r) {
     std::lock_guard lock(g_traceMutex);
     r.reply(bridge::Json(std::vector<bridge::Json>(g_trace.begin(), g_trace.end())));

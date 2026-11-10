@@ -31,10 +31,11 @@ if(TARGET tentacle_bridge)
     direct_relay.cpp
     direct_relay_serve.cpp
     direct_source.cpp
+    media_warm.cpp
   )
   target_link_libraries(tentacle_net_commands PUBLIC tentacle_net_core tentacle_bridge)
   target_compile_options(tentacle_net_commands PRIVATE -Wall -Wextra -Wno-unused-parameter)
-  foreach(t jellyfin client_fetch client_fetch_policy direct_relay)
+  foreach(t jellyfin client_fetch client_fetch_policy direct_relay media_warm)
     add_executable(tentacle_${t}_tests tests/${t}_tests.cpp)
     target_link_libraries(tentacle_${t}_tests PRIVATE tentacle_net_commands)
     add_test(NAME tentacle_${t}_tests COMMAND tentacle_${t}_tests)

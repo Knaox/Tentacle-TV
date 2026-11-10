@@ -31,6 +31,10 @@ class StreamClient final : public CefURLRequestClient {
     lastActivity_ = nowMs();
     urlRequest_ = CefURLRequest::Create(r, this, nullptr);
     if (idleMs_ > 0) watchIdle(idleMs_);
+    if (request_.timeoutMs > 0) {  // délai TOTAL (media_warm : 15 s)
+      CefRefPtr<StreamClient> self(this);
+      postToDelayed(TID_UI, [self] { self->cancel(); }, request_.timeoutMs);
+    }
   }
 
   // Fil UI.

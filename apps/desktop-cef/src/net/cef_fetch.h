@@ -55,7 +55,8 @@ namespace tentacle::net {
 /// Une réponse lue AU FIL de son arrivée (relais des flux directs) : `onHead` une fois, avant
 /// toute donnée (ou à la fin pour un corps vide) ; `onData` par morceau ; `onEnd` une fois —
 /// `complete` faux si la réponse n'est pas arrivée entière (coupure, refus, délai). Sans octet
-/// pendant `idleTimeoutMs` (0 : jamais) : abandon. Le corps n'est jamais gardé en entier.
+/// pendant `idleTimeoutMs` (0 : jamais), ou passé `request.timeoutMs` en tout : abandon. Le corps
+/// n'est jamais gardé en entier ; jamais le cache HTTP.
 struct StreamHandler {
   std::function<void(int status, HeaderList headers)> onHead;
   std::function<void(std::string_view chunk)> onData;

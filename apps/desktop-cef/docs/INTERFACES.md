@@ -304,3 +304,6 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (`reseau::directRelayOrigin()`), direct sans identifiant du compte, repli sur le serveur avec ses
   en-têtes (`direct=failed` une fois), 502 après une coupure. Banc : `__shell.invoke('reseau.debug.adoptDirect',
   {source, trackKey, serverOrigin, headers})`, `reseau.debug.directRelay` → `{origin, direct, fallbacks, cuts}`.
+- `media_warm {url, ranges}` (`net/media_warm.h`) : tête et fin du fichier lues par plages (`Range`,
+  206 seulement, 4 Mio au plus, deux en vol, même demande après 10 min, 15 s) pour chauffer le
+  disque du serveur ; rien n'est gardé. Lecture en flux `net::httpStream` (sans cache).
