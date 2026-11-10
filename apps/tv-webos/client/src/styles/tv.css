@@ -49,6 +49,10 @@
  * pas un pis-aller. */
 :root {
   --tv-police: "LG Smart UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Les deux polices de la refonte du web (titres, texte) se lisent par ces jetons : sur la
+   * dalle, c'est la police du système pour les deux — et aucun fichier n'est téléchargé. */
+  --font-display: var(--tv-police);
+  --font-text: var(--tv-police);
 }
 
 html,
