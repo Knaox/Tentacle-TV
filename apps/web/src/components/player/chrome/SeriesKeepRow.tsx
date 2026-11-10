@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { ApplyToSeriesControl } from "../../../hooks/useApplyToSeries";
 import { seriesKeepLine } from "./seriesKeepLine";
-import "./playerChrome.css";
+import "./playerPanels.css";
 
 interface SeriesKeepRowProps {
   control: ApplyToSeriesControl;

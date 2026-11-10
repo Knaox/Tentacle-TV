@@ -23,6 +23,7 @@ import { ChromeTop } from "./chrome/ChromeTop";
 import { useChromePresence } from "./chrome/useChromePresence";
 import type { DesktopPlayerControlsProps } from "./desktopPlayerControls.types";
 import "./chrome/playerChrome.css";
+import "./chrome/playerSeek.css";
 
 /**
  * La surface de la page a-t-elle un alpha par pixel ?

@@ -1,0 +1,128 @@
+/* ── Ce qui se MESURE dans l'habillage du lecteur (refonte de nov. 2026) : la barre de lecture
+ * et le curseur du volume — web et bureau, hors verre natif ──
+ *
+ * La suite de `playerChrome.css` (300 lignes par fichier) : mêmes règles, mêmes interdits —
+ * `transform` et `opacity` seulement, aucun `backdrop-filter`. */
+
+/* ── La barre de lecture ── une cible de 18 px, un rail de 4 px qui s'épaissit en `scaleY`. */
+
+.pl-seek {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 18px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.pl-seek__rail {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--gauge-track);
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.pl-seek__buffer,
+.pl-seek__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left;
+}
+
+.pl-seek__buffer {
+  background-color: rgba(255, 255, 255, 0.26);
+}
+
+/* Ce qui se MESURE porte le dégradé de jauge — jamais un rose uni. */
+.pl-seek__fill {
+  background: var(--gauge-gradient);
+}
+
+/* La course de la poignée : toute la largeur, déplacée en `translateX` (jamais un `left`). */
+.pl-seek__travel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pl-seek__thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background-color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+  transition:
+    opacity var(--duration-hover) ease,
+    transform var(--duration-hover) var(--ease-out);
+}
+
+.pl-seek[data-active="true"] .pl-seek__rail {
+  transform: scaleY(1.7);
+}
+
+.pl-seek[data-active="true"] .pl-seek__thumb {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-seek:hover .pl-seek__rail {
+    transform: scaleY(1.7);
+  }
+
+  .pl-seek:hover .pl-seek__thumb {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-seek__rail,
+  .pl-seek__thumb {
+    transition-duration: 1ms;
+  }
+}
+
+/* Le volume : le curseur ne paraît qu'au survol ou au focus de son groupe. */
+.pl-volume {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pl-volume__range {
+  display: none;
+  width: 84px;
+  margin: 0 8px 0 2px;
+}
+
+.pl-volume:focus-within .pl-volume__range {
+  display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-volume:hover .pl-volume__range {
+    display: block;
+  }
+}
+
+@media (max-width: 520px) {
+  .pl-volume__range {
+    display: none !important;
+  }
+}

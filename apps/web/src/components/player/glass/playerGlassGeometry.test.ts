@@ -56,6 +56,6 @@ describe("la géométrie du lecteur en verre suit celle de l'habillage de la pag
 
   it("les encarts du coin et les panneaux gardent la même marge latérale", () => {
     expect(rule("playerGlassOverlays.css", ".lgp-corner {")).toContain("right: var(--lg-player-inline)");
-    expect(rule("../chrome/playerChrome.css", ".pl-panel {")).toContain("right: 24px");
+    expect(rule("../chrome/playerPanels.css", ".pl-panel {")).toContain("right: 24px");
   });
 });

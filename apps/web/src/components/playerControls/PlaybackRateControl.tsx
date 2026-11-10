@@ -42,6 +42,7 @@ import { useGlassDock } from "../player/glass/glassDock";
 import { PANEL_MOTION } from "../player/chrome/panelMotion";
 import { PanelHeader } from "../player/chrome/PanelHeader";
 import "../player/chrome/playerChrome.css";
+import "../player/chrome/playerPanels.css";
 
 interface PlaybackRateControlProps {
   /** Applique le taux au moteur (web : playbackRate ; desktop : mpv speed). */

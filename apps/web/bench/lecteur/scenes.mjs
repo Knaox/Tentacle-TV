@@ -16,6 +16,8 @@ export const SCENES = [
   { name: "web-pistes", query: "vue=web", themes: BOTH, steps: [click("Paramètres")] },
   { name: "web-pistes-serie", query: "vue=web&serie=1&st=forces", themes: BOTH, steps: [click("Paramètres")] },
   { name: "web-vitesse", query: "vue=web", themes: BOTH, steps: [click("Vitesse de lecture")] },
+  // La qualité : la dernière section du panneau des pistes (palier servi par « Auto »), amenée à l'écran.
+  { name: "web-qualite", query: "vue=web&auto=1", themes: BOTH, steps: [click("Paramètres"), (page) => page.evaluate(() => { const el = document.querySelector(".pl-panel__scroll"); el.scrollTop = el.scrollHeight; })] },
   { name: "web-episodes", query: "vue=web", themes: BOTH, steps: [click("Épisodes")], settle: 900 },
   { name: "bureau-repos", query: "vue=bureau" },
   { name: "bureau-pistes", query: "vue=bureau", themes: BOTH, steps: [click("Paramètres")] },

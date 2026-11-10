@@ -8,7 +8,7 @@ import { GlassPanel } from "./glass/GlassPanel";
 import { PLAYER_MORPH } from "./glass/playerGlassFusion";
 import { PANEL_MOTION } from "./chrome/panelMotion";
 import { PanelHeader } from "./chrome/PanelHeader";
-import "./chrome/playerChrome.css";
+import "./chrome/playerPanels.css";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { SeasonTabs, type SeasonTabItem } from "../episodes/SeasonTabs";
 import { useDownloadsList } from "../../downloads/useDownloadState";

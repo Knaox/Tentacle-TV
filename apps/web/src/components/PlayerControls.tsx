@@ -18,6 +18,7 @@ import { ChromeTop } from "./player/chrome/ChromeTop";
 import { useChromePresence } from "./player/chrome/useChromePresence";
 import { rangeFill } from "../lib/rangeFill";
 import "./player/chrome/playerChrome.css";
+import "./player/chrome/playerSeek.css";
 
 export interface PlayerControlsProps {
   playing: boolean;

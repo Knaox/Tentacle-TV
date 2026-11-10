@@ -15,7 +15,7 @@ import { PLAYER_MORPH } from "./player/glass/playerGlassFusion";
 import { PANEL_MOTION } from "./player/chrome/panelMotion";
 import { PanelHeader } from "./player/chrome/PanelHeader";
 import { SeriesKeepRow } from "./player/chrome/SeriesKeepRow";
-import "./player/chrome/playerChrome.css";
+import "./player/chrome/playerPanels.css";
 
 interface Track {
   index: number;

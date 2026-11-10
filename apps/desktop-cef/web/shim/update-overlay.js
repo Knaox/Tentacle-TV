@@ -8,13 +8,11 @@
 //   prompt "blocking" → la mise à jour de sécurité : un voile qui bloque l'app tout de
 //                       suite, lecture comprise, sans bouton pour la masquer ;
 //   prompt "none"     → rien (mineure : installée en silence au prochain redémarrage) ;
-//   phase "applying"  → l'installation est LANCÉE (« Redémarrer ») : le même voile, sans bouton,
-//                       jusqu'au redémarrage — plus rien ne se fait derrière.
+//   phase "applying"  → l'installation est LANCÉE : le même voile, sans bouton, jusqu'au redémarrage.
 // Tant que le voile est là, la surcouche l'ANNONCE au front par l'évènement de fenêtre
-// `tentacle:update-lock` ({ locked }) : le front met la lecture en pause, coupe ses raccourcis
-// et rend son arrière-plan inerte (apps/web/src/components/update/updateLock.ts). Le nom de cet
-// évènement traverse deux programmes : il ne se renomme pas. Un front qui ne l'écoute pas garde
-// le comportement d'avant (voile et piège de clavier de la surcouche seule).
+// `tentacle:update-lock` ({ locked }) : il met la lecture en pause, coupe ses raccourcis et rend
+// son arrière-plan inerte (apps/web/src/components/update/updateLock.ts). Ce nom traverse deux
+// programmes : il ne se renomme pas. Un front qui ne l'écoute pas garde le voile seul.
 // Les fonctions pures (viewFor, toastModel…) sont testées par bench/update/overlay.test.mjs.
 (function installUpdateOverlay(global) {
   "use strict";
@@ -121,15 +119,11 @@
     };
   }
 
-  // Le voile verrouille l'application derrière lui (lecture, raccourcis, focus) : le front l'apprend.
-  function locksApp(view) {
-    return view === "blocking";
-  }
+  function locksApp(view) { return view === "blocking"; }  // le voile verrouille l'application : le front l'apprend
 
   function blockingModel(s, lang) {
     const t = TEXT[lang], u = s.update || {}, ready = s.phase === "ready";
-    // Une majeure qu'on vient de lancer : ni raison de sécurité, ni bouton — elle s'installe.
-    if (s.phase === "applying" && s.prompt !== "blocking") {
+    if (s.phase === "applying" && s.prompt !== "blocking") {  // majeure lancée : ni raison de sécurité, ni bouton
       return { title: t.applyTitle(u.version || ""), body: t.applyBody, progress: "sweep", primary: null, links: [], warn: false };
     }
     const why = u.why && (u.why[lang] || u.why.fr || u.why.en);
@@ -154,8 +148,7 @@
   const ctx = { path: "", video: false, audio: false, rolledBackSeen: false };
   let snapshot = null, host = null, layer = null, shownKey = "", poll = 0, lockAnnounced = false;
 
-  // Dit au front que le voile est là (ou parti) — une fois par changement.
-  function announceLock(locked) {
+  function announceLock(locked) {  // dit au front que le voile est là (ou parti), une fois par changement
     if (locked === lockAnnounced) return;
     lockAnnounced = locked;
     try { window.dispatchEvent(new CustomEvent("tentacle:update-lock", { detail: { locked } })); } catch (e) { /* front absent */ }
@@ -283,14 +276,11 @@
     if (view === "blocking") { const b = el.querySelector(".btn:not([disabled])") || el.querySelector(".dialog"); if (b) b.focus(); }
   }
 
-  // Le voile ne laisse pas la page réagir au clavier (Tab reste dans le voile) : ni à l'appui,
-  // ni au relâcher — Espace active un bouton au relâcher, un raccourci du lecteur à l'appui.
+  // Le voile ne laisse pas la page réagir au clavier (Tab y reste), ni à l'appui ni au relâcher.
   function swallowKey(e) {
     if (!host || host.dataset.view !== "blocking" || e.composedPath().includes(host)) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if (e.type !== "keydown") return;
-    const target = layer.querySelector(".btn:not([disabled])") || layer.querySelector(".dialog");
+    e.preventDefault(); e.stopImmediatePropagation();
+    const target = e.type === "keydown" && (layer.querySelector(".btn:not([disabled])") || layer.querySelector(".dialog"));
     if (target) target.focus();
   }
   ["keydown", "keyup", "keypress"].forEach((type) => window.addEventListener(type, swallowKey, true));
