@@ -189,7 +189,10 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
             <RichOverview text={ep.Overview} />
           </p>
         )}
-        <div className="card-caption mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
+        {/* Les puces de qualité sont faites pour une IMAGE (voile d'encre) ; posées ici sur la
+            page, elles prennent le remplissage neutre du thème — sinon, en clair, des pavés
+            noirs sur le papier. */}
+        <div className="card-caption mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums [&_.lg-meta]:!bg-fill-soft [&_.lg-meta]:!text-content-secondary">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
           {rating && <EpisodeRatingLine {...rating} />}

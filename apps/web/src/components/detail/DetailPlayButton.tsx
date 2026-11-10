@@ -19,6 +19,11 @@ const PRIMARY_GLASS = {
   appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
   fallbackClassName: "btn btn-play btn-lg cta-primary",
 } as const;
+// Parcourir une collection n'est pas LIRE : l'action principale neutre du socle, sans dégradé.
+const BROWSE_GLASS = {
+  appearance: { material: "pane", level: "prominent", shape: "capsule" },
+  fallbackClassName: "btn btn-solid btn-lg cta-primary",
+} as const;
 
 export function DetailPlayButton({ item, collectionCount = 0, version = null }: {
   item: MediaItem;
@@ -43,7 +48,7 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
     if (collectionCount === 0) return null;
     return (
       <PressableGlass
-        {...PRIMARY_GLASS}
+        {...BROWSE_GLASS}
         onClick={() => document.getElementById(DETAIL_COLLECTION_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" })}
         className={`${PRIMARY_LAYOUT} px-6`}
       >

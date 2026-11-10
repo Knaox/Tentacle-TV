@@ -40,7 +40,7 @@ export const SearchEpisodeRow = memo(function SearchEpisodeRow({ item, terms, on
           if (!locked) selection.toggle(item.Id, e.shiftKey);
         }}
         className={`flex w-full items-center gap-3 rounded-tile p-2 text-left transition-colors duration-hover hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-          selection?.mark === "selected" ? "ring-2 ring-[var(--brand)]" : ""
+          selection?.mark === "selected" ? "ring-2 ring-accent" : ""
         } ${selection && locked ? "cursor-not-allowed opacity-40" : ""}`}
       >
         <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-field">

@@ -85,7 +85,10 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
      */
     <section className="relative w-full" aria-label={libraryName}>
       <div ref={boxRef} className="absolute inset-x-0 top-0 -bottom-[200px] overflow-hidden">
-        <div className="absolute inset-0 bg-surface-0" style={tone ? { backgroundColor: tone } : undefined} />
+        {/* L'assise de l'image : sa couleur dès qu'on la connaît. En thème CLAIR, une encre sombre
+            en attendant — le titre posé dessus est blanc (`on-media`), et les voiles noirs sur le
+            papier donnaient un gris sale. `bg-surface-0` reste : la feuille du client LG la vise. */}
+        <div className="absolute inset-0 bg-surface-0 [[data-theme=light]_&]:bg-[#131315]" style={tone ? { backgroundColor: tone } : undefined} />
 
         {/* UN fondu sur la couleur de l'image ; déjà vue, elle est là d'emblée (`BannerArt`). */}
         {url && <BannerArt key={backdropId} url={url} broken={broken} onError={reportFailure} />}

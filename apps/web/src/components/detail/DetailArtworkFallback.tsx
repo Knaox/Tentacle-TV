@@ -11,13 +11,15 @@ import { TentacleSvg } from "../ui/TentacleSvg";
  */
 
 /**
- * Le décor de la scène sans backdrop : une lumière d'encre sur le panneau, sous
- * les voiles habituels (`DETAIL_STAGE_LAYERS`), qui gardent au texte son
- * assise sombre dans les deux thèmes.
+ * Le décor de la scène sans backdrop : une lumière d'encre sur un fond d'encre, sous les
+ * voiles habituels (`DETAIL_STAGE_LAYERS`). SOMBRE dans les deux thèmes, comme une image : le
+ * bloc titre posé dessus est en `on-media` (blanc) — sur le panneau du thème clair, les voiles
+ * noirs donnaient un gris sale sous un texte blanc. Les valeurs sont les encres 1 et 3 du
+ * thème sombre, écrites ici parce qu'elles ne doivent PAS suivre le thème.
  */
 export const DETAIL_STAGE_FALLBACK_BACKGROUND = [
-  "radial-gradient(70% 80% at 78% 20%, var(--surface-3) 0%, transparent 72%)",
-  "var(--surface-1)",
+  "radial-gradient(70% 80% at 78% 20%, #242428 0%, transparent 72%)",
+  "#131315",
 ].join(", ");
 
 export function DetailStageFallback() {
