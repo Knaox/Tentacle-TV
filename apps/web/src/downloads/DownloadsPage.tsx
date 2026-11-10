@@ -1,8 +1,8 @@
 /**
  * Écran « Téléchargements » (/downloads, desktop uniquement).
- * En-tête de synthèse (compteurs, espace, avancement global, gestes sur la
- * file, mode hors ligne), puis les sections repliables : transferts en cours,
- * films, séries (groupées). Suppression confirmée (refcount côté moteur),
+ * En-tête (titre, Retour, espace, compteurs), le LOT en cours — un seul
+ * pourcentage, les gestes de file, les lignes de ce qui transite —, la bascule
+ * du mode hors ligne, puis les sections repliables : films, séries (groupées). Suppression confirmée (refcount côté moteur),
  * états vides. Invisible sans droit ET sans contenu (redirection racine) —
  * décision « droit retiré → l'existant reste lisible ».
  */
@@ -18,7 +18,9 @@ import { DownloadRow } from "./DownloadRow";
 import { DownloadsBulkBar } from "./DownloadsBulkBar";
 import { DownloadsEmptyState } from "./DownloadsEmptyState";
 import { DownloadsOverview } from "./DownloadsOverview";
+import { DownloadsQueuePanel } from "./DownloadsQueuePanel";
 import { DownloadsSection } from "./DownloadsSection";
+import { OfflineModeToggle } from "./OfflineModeToggle";
 import {
   byEpisodeNumber,
   pruneSelection as prune,
@@ -29,6 +31,7 @@ import {
 } from "@tentacle-tv/offline-core";
 import { formatBytes } from "./presets";
 import { DeleteDownloadModal } from "./DeleteDownloadModal";
+import { queueLotLabel } from "./queueLotLabel";
 import { useDownloadsList, useDownloadsVisibility, DOWNLOADS_LIST_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DISK_INFO_QUERY_KEY } from "./useDownloadState";
 import { clearProgress } from "@tentacle-tv/offline-core/react";
 
@@ -135,18 +138,44 @@ export function DownloadsPage() {
 
   const toggle = (id: number) => setSelection((prev) => toggleOne(prev, id));
 
-  return (
-    <div className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-24 md:px-8">
-      <h1 className="text-2xl font-bold text-content-primary">{t("nav:downloads")}</h1>
+  // Le panneau du lot nomme déjà la série quand tout ce qui transite en est : ses lignes
+  // disent alors l'épisode (« S01E04 · La Clôture »), sans la répéter.
+  const lotName = queueLotLabel(entries);
+  const lotOfOneSeries = lotName !== null && (lotName.kind === "season" || lotName.kind === "series");
 
-      <div className="mt-4">
-        <DownloadsOverview entries={entries} />
-      </div>
+  const rowFor = (entry: DownloadEntry, options: { hideSeries?: boolean; playable?: boolean } = {}) => (
+    <DownloadRow
+      key={entry.id}
+      entry={entry}
+      userId={userId ?? ""}
+      hideSeries={options.hideSeries}
+      onDelete={setToDelete}
+      {...(selectionActive ? { selection: { selected: selection.has(entry.id), onToggle: toggle } } : {})}
+      {...(options.playable ? { onPlay: handlePlay } : {})}
+    />
+  );
+
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-[1040px] flex-col gap-7 px-4 pb-20 pt-24 md:px-8">
+      <DownloadsOverview entries={entries} />
 
       {entries.length === 0 ? (
         <DownloadsEmptyState />
       ) : (
-        <div className="mt-6 space-y-4">
+        // Le lot en cours : son avancement, puis les lignes de ce qui transite.
+        <DownloadsQueuePanel entries={entries}>
+          {groups.active.length > 0 && (
+            <DownloadsSection bare title={t("downloads:activeCount", { count: groups.active.length })}>
+              {groups.active.map((entry) => rowFor(entry, { hideSeries: lotOfOneSeries }))}
+            </DownloadsSection>
+          )}
+        </DownloadsQueuePanel>
+      )}
+
+      <OfflineModeToggle />
+
+      {entries.length > 0 && (
+        <div className="flex flex-col gap-4">
           <DownloadsBulkBar
             active={selectionActive}
             count={selection.size}
@@ -159,58 +188,17 @@ export function DownloadsPage() {
             busy={deleting}
           />
 
-          <div className="space-y-8">
-          {groups.active.length > 0 && (
-            <DownloadsSection title={t("downloads:sectionActive")} summary={String(groups.active.length)}>
-              {groups.active.map((entry) => (
-                <DownloadRow
-                  key={entry.id}
-                  entry={entry}
-                  userId={userId ?? ""}
-                  onDelete={setToDelete}
-                  {...(selectionActive
-                    ? { selection: { selected: selection.has(entry.id), onToggle: toggle } }
-                    : {})}
-                />
-              ))}
-            </DownloadsSection>
-          )}
-
           {groups.movies.length > 0 && (
             <DownloadsSection title={t("downloads:sectionMovies")} summary={sizeSummary(t("downloads:deviceTitles", { count: groups.movies.length }), groups.movies)}>
-              {groups.movies.map((entry) => (
-                <DownloadRow
-                  key={entry.id}
-                  entry={entry}
-                  userId={userId ?? ""}
-                  onDelete={setToDelete}
-                  {...(selectionActive
-                    ? { selection: { selected: selection.has(entry.id), onToggle: toggle } }
-                    : {})}
-                  onPlay={handlePlay}
-                />
-              ))}
+              {groups.movies.map((entry) => rowFor(entry, { playable: true }))}
             </DownloadsSection>
           )}
 
           {groups.series.map(([seriesName, seriesEntries]) => (
             <DownloadsSection key={seriesName} title={seriesName} summary={sizeSummary(t("downloads:episodesCount", { count: seriesEntries.length }), seriesEntries)}>
-              {seriesEntries.map((entry) => (
-                <DownloadRow
-                  key={entry.id}
-                  entry={entry}
-                  userId={userId ?? ""}
-                  hideSeries
-                  onDelete={setToDelete}
-                  {...(selectionActive
-                    ? { selection: { selected: selection.has(entry.id), onToggle: toggle } }
-                    : {})}
-                  onPlay={handlePlay}
-                />
-              ))}
+              {seriesEntries.map((entry) => rowFor(entry, { hideSeries: true, playable: true }))}
             </DownloadsSection>
           ))}
-          </div>
         </div>
       )}
 

@@ -15,32 +15,38 @@ interface Props {
   title: string;
   /** « 12 épisodes · 18,4 Gio » — l'appelant compose. */
   summary?: string;
+  /** Posée DANS un panneau qui a déjà sa peau (la file) : l'en-tête et les lignes, sans panneau à elle. */
+  bare?: boolean;
   children: ReactNode;
 }
 
-export function DownloadsSection({ title, summary, children }: Props) {
+export function DownloadsSection({ title, summary, bare = false, children }: Props) {
   const { t } = useTranslation("downloads");
   const [open, setOpen] = useState(true);
+  const Frame = bare ? "div" : "section";
   return (
-    <section>
+    <Frame className={bare ? "border-t border-line-subtle" : "ui-panel lg-panel overflow-hidden"}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-label={t(open ? "sectionCollapse" : "sectionExpand", { title })}
-        className="group mb-3 flex w-full items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+        className={`group flex w-full items-center gap-3 px-5 text-left transition-colors duration-hover hover:bg-fill-faint focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--border-focus)] ${bare ? "py-2.5" : "py-4"}`}
       >
-        <h2 className="min-w-0 truncate text-sm font-semibold uppercase tracking-wide text-content-tertiary group-hover:text-content-secondary">
-          {title}
-        </h2>
-        {summary && <span className="flex-shrink-0 text-xs tabular-nums text-content-quaternary">{summary}</span>}
-        <span className="h-px flex-1 bg-line-subtle" aria-hidden />
+        {bare ? (
+          <span className="ui-eyebrow min-w-0 truncate">{title}</span>
+        ) : (
+          <h2 className="min-w-0 truncate font-display text-[18px] font-semibold leading-tight tracking-[-0.015em] text-content-primary">{title}</h2>
+        )}
+        {summary && <span className="num flex-shrink-0 text-xs text-content-tertiary">{summary}</span>}
+        <span className="flex-1" aria-hidden />
         <ChevronDown
           aria-hidden
-          className={`h-4 w-4 flex-shrink-0 text-content-quaternary transition-transform duration-200 motion-reduce:transition-none ${open ? "" : "-rotate-90"}`}
+          className={`h-4 w-4 flex-shrink-0 text-content-tertiary transition-transform duration-hover ease-out ${open ? "" : "-rotate-90"}`}
         />
       </button>
-      {open && <div className="space-y-2">{children}</div>}
-    </section>
+      {/* Des lignes de panneau : un filet entre elles, plus une carte bordée par titre. */}
+      {open && <div className="divide-y divide-line-subtle border-t border-line-subtle">{children}</div>}
+    </Frame>
   );
 }

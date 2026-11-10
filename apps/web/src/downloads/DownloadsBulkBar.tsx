@@ -13,6 +13,8 @@
  */
 
 import { useTranslation } from "react-i18next";
+import { ListChecksIcon } from "@phosphor-icons/react/dist/csr/ListChecks";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { AutoDeleteSelect } from "./AutoDeleteSelect";
 import type { SelectionState } from "@tentacle-tv/offline-core";
 
@@ -37,11 +39,8 @@ export function DownloadsBulkBar({
   if (!active) {
     return (
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onEnter}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-content-tertiary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary"
-        >
+        <button type="button" onClick={onEnter} className="btn btn-ghost btn-sm">
+          <ListChecksIcon size={16} aria-hidden />
           {t("selectMode")}
         </button>
       </div>
@@ -50,20 +49,16 @@ export function DownloadsBulkBar({
 
   const nothing = count === 0;
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-fill-faint p-2">
-      <button
-        type="button"
-        onClick={onToggleAll}
-        className="rounded-lg px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary"
-      >
+    <div className="lg-panel flex flex-wrap items-center gap-2 rounded-tile bg-surface-2 p-2">
+      <button type="button" onClick={onToggleAll} className="btn btn-soft btn-sm lg-content-control">
         {state === "totale" ? t("selectNone") : t("selectAll")}
       </button>
 
-      <span className="px-1 text-sm font-semibold text-content-primary">
+      <span className="num px-1.5 text-sm font-semibold text-content-primary">
         {t("selectedCount", { count: count })}
       </span>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         {/*
           `value` reste à null : la barre ne LIT pas un réglage commun — les
           lignes retenues peuvent en avoir cinq différents — elle en APPLIQUE
@@ -76,19 +71,11 @@ export function DownloadsBulkBar({
             if (!nothing) onAutoDelete(value);
           }}
         />
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={nothing || busy}
-          className="rounded-lg border border-danger-border bg-danger-surface px-3 py-1.5 text-sm font-semibold text-status-error-fg transition-colors duration-150 hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <button type="button" onClick={onDelete} disabled={nothing || busy} className="btn btn-danger btn-sm">
+          <TrashIcon size={16} aria-hidden />
           {t("bulkDelete")}
         </button>
-        <button
-          type="button"
-          onClick={onExit}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-content-tertiary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary"
-        >
+        <button type="button" onClick={onExit} className="btn btn-ghost btn-sm">
           {t("selectCancel")}
         </button>
       </div>
