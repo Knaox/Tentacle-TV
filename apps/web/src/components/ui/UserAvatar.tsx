@@ -57,9 +57,9 @@ export function UserAvatar({ userId, name, hasAvatar, size = 36, imageTag, class
       style={{
         width: size,
         height: size,
-        background: showImage
-          ? undefined
-          : "linear-gradient(135deg, var(--brand-dark), var(--brand))",
+        // Sans photo : une initiale à la teinte franche sur son lavis, pas un aplat violet de marque.
+        // Le lavis est posé sur une encre : le disque reste opaque sur une image ou une vidéo.
+        background: showImage ? undefined : "linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface-2)",
       }}
     >
       {showImage ? (
@@ -72,8 +72,8 @@ export function UserAvatar({ userId, name, hasAvatar, size = 36, imageTag, class
         />
       ) : (
         <span
-          className="font-bold leading-none text-cta-brand-fg"
-          style={{ fontSize: Math.max(10, Math.round(size * 0.42)) }}
+          className="font-bold leading-none"
+          style={{ fontSize: Math.max(10, Math.round(size * 0.42)), color: "var(--accent)" }}
         >
           {initial}
         </span>
