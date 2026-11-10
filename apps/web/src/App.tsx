@@ -41,6 +41,7 @@ import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
 import { webPluginRoutes } from "./hooks/pluginNavPages";
 import { DevGlassLab } from "./dev/glassLab/devRoute";
 import { DevSocleLab } from "./dev/socleLab/devRoute";
+import { DevAccueilLab } from "./dev/accueilLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -302,6 +303,8 @@ export function App() {
                   />
                 ))
             )}
+            {/* Le labo de l'accueil, DANS la coquille : sa barre du haut est la vraie (paquets de développement seulement). */}
+            {DevAccueilLab ? <Route path="dev/accueil" element={<DevAccueilLab />} /> : null}
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
