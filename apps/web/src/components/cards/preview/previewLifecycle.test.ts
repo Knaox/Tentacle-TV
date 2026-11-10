@@ -17,7 +17,7 @@ import {
  * que les appliquer.
  */
 
-const base = { hovered: true, hasSubject: true, disabled: false, gate: OPEN_GATE, keyboardInCard: false };
+const base = { hovered: true, hasSubject: true, disabled: false, gate: OPEN_GATE, keyboardInCard: false, pointerOnControl: false };
 
 describe("previewStage — montée cachée, puis vue", () => {
   const stage = (over: Partial<Parameters<typeof previewStage>[0]> = {}) =>
@@ -107,6 +107,11 @@ describe("engineHovered — ce que voit le moteur", () => {
 
   it("attend que le focus clavier quitte le plateau de la carte", () => {
     expect(engineHovered({ ...base, keyboardInCard: true })).toBe(false);
+  });
+
+  it("rien tant que la souris est sur un bouton de la carte (« Marquer comme vu »), et repart sur l'image", () => {
+    expect(engineHovered({ ...base, pointerOnControl: true })).toBe(false);
+    expect(engineHovered({ ...base, pointerOnControl: false })).toBe(true);
   });
 });
 
