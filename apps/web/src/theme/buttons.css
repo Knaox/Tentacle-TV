@@ -136,36 +136,44 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  /* Le dégradé ne s'anime pas (une image de fond repeint) : on l'éclaire d'un cran, d'un coup. */
-  .btn-play:hover {
-    filter: brightness(1.08);
-  }
-
-  .btn-solid:hover {
-    background-color: var(--cta-primary-bg-hover);
-  }
-
-  .btn-soft:hover,
-  .icon-btn.btn-soft:hover {
-    background-color: var(--fill-strong);
-  }
-
-  .btn-on-media:hover {
-    background-color: rgba(255, 255, 255, 0.24);
-  }
-
+  /* Le bouton sans peau (`.btn-ghost`, un `.icon-btn` nu) : un voile. EN TÊTE — les peaux,
+   * écrites après, l'emportent sur un bouton d'icône qui en porte une. */
   .btn-ghost:hover,
   .icon-btn:hover {
     background-color: var(--fill-soft);
     color: var(--text-primary);
   }
 
+  /* Le dégradé ne s'anime pas (une image de fond repeint) : on l'éclaire d'un cran, d'un coup. */
+  .btn-play:hover {
+    background-color: transparent;
+    color: var(--cta-brand-fg);
+    filter: brightness(1.08);
+  }
+
+  .btn-solid:hover {
+    background-color: var(--cta-primary-bg-hover);
+    color: var(--cta-primary-fg);
+  }
+
+  .btn-soft:hover {
+    background-color: var(--fill-strong);
+    color: var(--text-primary);
+  }
+
+  .btn-on-media:hover {
+    background-color: rgba(255, 255, 255, 0.24);
+    color: var(--on-media-primary);
+  }
+
   .btn-danger:hover {
     background-color: var(--danger-surface-hover);
+    color: var(--status-error-fg);
   }
 
   .btn-accent:hover {
     background-color: rgba(var(--accent-rgb), 0.26);
+    color: var(--accent);
   }
 
   .icon-btn[data-on="true"]:hover,

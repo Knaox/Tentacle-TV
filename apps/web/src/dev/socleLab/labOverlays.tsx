@@ -13,6 +13,7 @@ import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 
 import { CardFrame } from "../../components/cards/CardFrame";
+import { BackButton } from "../../components/ui/BackButton";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { FadeImage } from "../../components/ui/FadeImage";
@@ -92,6 +93,7 @@ export function LabOverlays() {
                 </Dropdown>
               </div>
             </Specimen>
+            <Specimen name="BackButton"><div className="flex items-center gap-2"><BackButton /><BackButton label="Réglages" /></div></Specimen>
             <Specimen name="Modal + ModalHeader"><button type="button" className="btn btn-soft" onClick={() => setSheet(true)}>Ouvrir une feuille</button></Specimen>
             <Specimen name="ConfirmDialog · danger"><button type="button" className="btn btn-danger" onClick={() => setConfirm(true)}>Supprimer…</button></Specimen>
           </LabRow>

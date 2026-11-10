@@ -6,6 +6,7 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router-dom";
 
 import "../../src/index.css";
 import { SocleLab } from "../../src/dev/socleLab/SocleLab";
@@ -18,7 +19,10 @@ if (theme === "light" || theme === "dark") setMode(theme);
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <SocleLab />
+      {/* Le bouton Retour lit le routeur. */}
+      <MemoryRouter>
+        <SocleLab />
+      </MemoryRouter>
     </ThemeProvider>
   </StrictMode>,
 );
