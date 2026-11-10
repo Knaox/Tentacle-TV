@@ -49,6 +49,7 @@ struct Player::Impl {
     bool dead = false;
     uint64_t nextId = 1;
     std::unordered_map<uint64_t, PlayerDone> replies;  // commandes et écritures
+    std::unordered_map<uint64_t, std::function<Json(const void*)>> readers;  // réponses lues en place
     std::unordered_map<uint64_t, std::function<void(std::optional<Json>)>> reads;
     struct Observer { PropFormat format; std::function<void(const Json&)> cb; };
     std::unordered_map<uint64_t, Observer> observers;
@@ -78,6 +79,7 @@ struct Player::Impl {
     }
 
     void fail(uint64_t id, int err) {  // erreur immédiate : livrée plus tard, comme une réponse
+        readers.erase(id);
         auto it = replies.find(id);
         if (it == replies.end()) return;
         auto done = std::move(it->second);
@@ -93,13 +95,16 @@ struct Player::Impl {
             switch (e->event_id) {
                 case MPV_EVENT_COMMAND_REPLY:
                 case MPV_EVENT_SET_PROPERTY_REPLY: {
+                    auto reader = readers.extract(id);
                     auto it = replies.find(id);
                     if (it == replies.end()) break;
                     auto done = std::move(it->second);
                     replies.erase(it);
                     Json result = nullptr;
-                    if (e->event_id == MPV_EVENT_COMMAND_REPLY && e->error >= 0)
-                        result = toJson(static_cast<mpv_event_command*>(e->data)->result);
+                    if (e->event_id == MPV_EVENT_COMMAND_REPLY && e->error >= 0) {
+                        const mpv_node& node = static_cast<mpv_event_command*>(e->data)->result;
+                        result = reader ? reader.mapped()(&node) : toJson(node);  // en place : rien recopié
+                    }
                     if (e->error < 0) done(std::string(mpv_error_string(e->error)), nullptr);
                     else done(std::nullopt, result);
                     break;
@@ -209,6 +214,12 @@ void Player::command(const Json& args, PlayerDone done) {
     if (r < 0) s.fail(id, r);
 }
 
+void Player::commandReading(const Json& args, std::function<Json(const void*)> read, PlayerDone done) {
+    if (impl_->dead) return;
+    impl_->readers[impl_->nextId] = std::move(read);  // l'identifiant que `command` va prendre
+    command(args, std::move(done));
+}
+
 void Player::setProperty(const std::string& name, const Json& value, PlayerDone done) {
     if (name == "mute" && sound::silent()) return impl_->setAsync(name, true, std::move(done));
     impl_->setAsync(name, value, std::move(done));
@@ -283,6 +294,7 @@ void Player::destroy(std::function<void()> done) {
     s.dead = true;
     s.surface = nullptr;
     s.replies.clear();
+    s.readers.clear();
     s.reads.clear();
     s.observers.clear();
     s.eventCb = nullptr;
