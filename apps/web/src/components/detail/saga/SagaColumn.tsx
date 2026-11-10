@@ -38,7 +38,8 @@ export const SagaColumn = memo(function SagaColumn({ entry, index, width }: {
       {entry.kind === "external" ? (
         <ExternalResultCard item={entry.item} />
       ) : current ? (
-        <div className="pointer-events-none rounded-xl ring-2 ring-[rgba(var(--brand-rgb),0.75)] ring-offset-2 ring-offset-surface-0">
+        // L'anneau à la teinte franche (un état ACTIF), au rayon de la carte plus son écart.
+        <div className="pointer-events-none rounded-[14px] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-surface-0">
           <PosterCard item={entry.item} index={index} width={width} />
         </div>
       ) : (
@@ -52,7 +53,7 @@ export const SagaColumn = memo(function SagaColumn({ entry, index, width }: {
       <p className="mt-auto h-5 truncate px-0.5 pt-1 text-xs font-medium leading-4 text-content-tertiary">
         {rank}
         {rank !== null && cue !== null && <span aria-hidden> · </span>}
-        {cue !== null && <span className="font-semibold text-brand-light">{cue}</span>}
+        {cue !== null && <span className="font-semibold text-accent">{cue}</span>}
       </p>
     </div>
   );

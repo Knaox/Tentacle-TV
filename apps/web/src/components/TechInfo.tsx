@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import type { MediaStream } from "@tentacle-tv/shared";
+
+const ROW = "flex flex-wrap items-center gap-x-3 gap-y-1";
+const TERM = "w-28 flex-shrink-0 font-semibold text-content-secondary";
 
 interface TechInfoProps {
   streams: MediaStream[];
 }
 
+/**
+ * « Infos techniques » : repliées par défaut — presque personne ne les ouvre —,
+ * derrière une pilule discrète ; ouvertes, un panneau du socle (une teinte, pas
+ * un liseré) : la vidéo, chaque piste audio, le nombre de sous-titres.
+ */
 export function TechInfo({ streams }: TechInfoProps) {
   const { t } = useTranslation("media");
   const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   const video = streams.find((s) => s.Type === "Video");
   const audioTracks = streams.filter((s) => s.Type === "Audio");
@@ -19,47 +29,45 @@ export function TechInfo({ streams }: TechInfoProps) {
   return (
     <div className="mt-4">
       <button
+        type="button"
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-2 text-sm text-content-tertiary transition-colors hover:text-content-secondary"
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="btn btn-ghost btn-sm -ml-3"
       >
-        <ChevronIcon open={open} />
+        <CaretRightIcon weight="bold" aria-hidden className={`h-3.5 w-3.5 transition-transform duration-hover ease-out ${open ? "rotate-90" : ""}`} />
         {t("media:techInfo")}
       </button>
       {open && (
-        <div className="mt-2 space-y-1.5 rounded-lg bg-fill-subtle p-3 text-xs text-content-tertiary">
+        // Une ligne par piste (`dl > div > dt + dd`) : en flex, le client LG (Chrome 53) n'a pas `display: contents`.
+        <dl id={panelId} className="ui-panel mt-2 max-w-3xl space-y-2 p-4 text-xs text-content-tertiary">
           {video && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-content-secondary">{t("media:video")}:</span>
-              <span>{video.Codec?.toUpperCase()} {video.Width}×{video.Height}</span>
-              {video.VideoRangeType && video.VideoRangeType !== "SDR" && (
-                <span className="rounded border border-line-strong px-1.5 py-0.5">{video.VideoRangeType}</span>
-              )}
+            <div className={ROW}>
+              <dt className={TERM}>{t("media:video")}</dt>
+              <dd className="flex flex-wrap items-center gap-2 tabular-nums">
+                <span>{video.Codec?.toUpperCase()} {video.Width}×{video.Height}</span>
+                {video.VideoRangeType && video.VideoRangeType !== "SDR" && <span className="chip">{video.VideoRangeType}</span>}
+              </dd>
             </div>
           )}
           {audioTracks.map((a, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="font-medium text-content-secondary">{t("media:audioTrack")} {i + 1}:</span>
-              <span>{a.DisplayTitle || a.Codec?.toUpperCase()}</span>
-              {a.Language && <span className="uppercase text-content-quaternary">{a.Language}</span>}
-              {a.Channels != null && <span>{a.Channels >= 8 ? "7.1" : a.Channels >= 6 ? "5.1" : `${a.Channels}.0`}</span>}
+            <div key={i} className={ROW}>
+              <dt className={TERM}>{t("media:audioTrack")} {i + 1}</dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                <span>{a.DisplayTitle || a.Codec?.toUpperCase()}</span>
+                {a.Language && <span className="uppercase text-content-quaternary">{a.Language}</span>}
+                {a.Channels != null && <span className="tabular-nums">{a.Channels >= 8 ? "7.1" : a.Channels >= 6 ? "5.1" : `${a.Channels}.0`}</span>}
+              </dd>
             </div>
           ))}
           {subtitleCount > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-content-secondary">{t("media:subtitleTracks")}:</span>
-              <span>{subtitleCount} {subtitleCount > 1 ? "tracks" : "track"}</span>
+            <div className={ROW}>
+              <dt className={TERM}>{t("media:subtitleTracks")}</dt>
+              <dd className="tabular-nums">{subtitleCount}</dd>
             </div>
           )}
-        </div>
+        </dl>
       )}
     </div>
-  );
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
   );
 }

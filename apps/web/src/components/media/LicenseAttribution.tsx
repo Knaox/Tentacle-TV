@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ScalesIcon } from "@phosphor-icons/react/dist/csr/Scales";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMediaLicense } from "../../hooks/useMediaLicense";
 import { externalLinkHandler } from "../../lib/openExternal";
@@ -11,6 +13,10 @@ const ROLE_I18N_KEYS: Record<string, string> = {
   Studio: "media:licenseStudio",
 };
 
+/** Un lien du panneau : la teinte franche, souligné au survol (la couleur seule ne dit pas « lien »). */
+const LINK = "text-accent underline-offset-4 hover:underline";
+const LABEL = "ui-eyebrow";
+
 interface LicenseAttributionProps {
   item: MediaItem;
 }
@@ -22,10 +28,12 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
   if (!license) return null;
 
   return (
-    <section className="mx-4 mt-6 rounded-xl border border-line-subtle bg-fill-faint p-5 md:mx-12">
+    // Un panneau du socle (une teinte, pas un liseré), aligné sur la gouttière des rangées.
+    <div className="row-gutter mt-6">
+    <section className="ui-panel p-5 md:p-6">
       {/* Header */}
-      <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-content-primary">
-        <LicenseIcon />
+      <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-content-primary">
+        <ScalesIcon className="h-5 w-5 text-content-tertiary" aria-hidden />
         {t("media:licenseTitle")}
       </h3>
 
@@ -42,10 +50,10 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
             <img
               src={license.license.badgeUrl}
               alt={license.license.fullName}
-              className="h-[31px] w-[88px] transition-opacity group-hover:opacity-80"
+              className="h-[31px] w-[88px] transition-opacity duration-hover group-hover:opacity-80"
             />
           )}
-          <span className="text-sm font-medium text-tentacle-accent-light transition-colors group-hover:text-tentacle-accent">
+          <span className={`text-sm font-medium ${LINK}`}>
             {license.license.fullName}
           </span>
         </a>
@@ -56,7 +64,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
         <div className="mb-3 flex flex-wrap gap-x-8 gap-y-2">
           {license.attribution.creators.map((creator) => (
             <div key={`${creator.role}-${creator.name}`}>
-              <p className="text-xs font-medium text-content-quaternary">
+              <p className={LABEL}>
                 {ROLE_I18N_KEYS[creator.role] ? t(ROLE_I18N_KEYS[creator.role]) : creator.role}
               </p>
               <p className="mt-0.5 text-sm text-content-secondary">
@@ -66,7 +74,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={externalLinkHandler(creator.url)}
-                    className="text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
+                    className={LINK}
                   >
                     {creator.name}
                   </a>
@@ -82,16 +90,16 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
       {/* Source */}
       {license.attribution.sourceUrl && (
         <div className="mb-3">
-          <p className="text-xs font-medium text-content-quaternary">{t("media:licenseSource")}</p>
+          <p className={LABEL}>{t("media:licenseSource")}</p>
           <a
             href={license.attribution.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={externalLinkHandler(license.attribution.sourceUrl)}
-            className="mt-0.5 inline-flex items-center gap-1 text-sm text-tentacle-accent-light transition-colors hover:text-tentacle-accent"
+            className={`mt-0.5 inline-flex items-center gap-1 text-sm ${LINK}`}
           >
             {license.attribution.sourceName || license.attribution.sourceUrl}
-            <ExternalLinkIcon />
+            <ArrowSquareOutIcon className="h-3.5 w-3.5" aria-hidden />
           </a>
         </div>
       )}
@@ -99,7 +107,7 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
       {/* Modifications */}
       {license.modifications && (
         <div className="mb-3">
-          <p className="text-xs font-medium text-content-quaternary">{t("media:licenseModifications")}</p>
+          <p className={LABEL}>{t("media:licenseModifications")}</p>
           <p className="mt-0.5 text-sm text-content-tertiary">{license.modifications}</p>
         </div>
       )}
@@ -107,23 +115,6 @@ export function LicenseAttribution({ item }: LicenseAttributionProps) {
       {/* Copyright notice */}
       <p className="text-xs text-content-quaternary">{license.attribution.copyrightNotice}</p>
     </section>
-  );
-}
-
-function LicenseIcon() {
-  return (
-    <svg className="h-5 w-5 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-      <circle cx="12" cy="12" r="10" />
-      <path strokeLinecap="round" d="M10 9.5a2.5 2.5 0 11 0 5" />
-    </svg>
-  );
-}
-
-function ExternalLinkIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6m4-3h6v6m-11 5L21 3" />
-    </svg>
+    </div>
   );
 }

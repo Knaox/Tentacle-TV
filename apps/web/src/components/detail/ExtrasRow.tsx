@@ -80,8 +80,8 @@ export function ExtrasRow({ owners = NO_OWNERS, remoteTrailers, title, catalog =
   };
 
   return (
-    // Même en-tête à rail de marque que les autres sections de la fiche ; le
-    // retrait passe de la section à la rangée pour que le rail s'aligne.
+    // Même en-tête que les autres sections de la fiche ; le retrait passe de
+    // la section à la rangée pour que les titres s'alignent.
     <section className="group/row">
       <RowHeader title={title ? `${t("common:extras")} — ${title}` : t("common:extras")} />
       <HorizontalScrollRow
@@ -154,9 +154,10 @@ function ExtraTile({
     <button
       type="button"
       onClick={onClick}
-      className="group/extra flex w-44 flex-shrink-0 cursor-pointer flex-col text-left sm:w-52"
+      className="group/extra flex w-44 flex-shrink-0 cursor-pointer flex-col rounded-card text-left outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--border-focus)] sm:w-52"
     >
-      <div className="relative aspect-video overflow-hidden rounded-md bg-surface-2 transition-transform duration-200 group-hover/extra:scale-[1.03]">
+      {/* La tuile grandit de 3 % sur place, comme une carte (`--card-hover-scale`, 1 sous mouvement réduit). */}
+      <div className="relative aspect-video overflow-hidden rounded-card bg-surface-2 transition-transform duration-card ease-out group-hover/extra:scale-[var(--card-hover-scale)]">
         {src ? (
           <img
             src={src}
@@ -182,12 +183,12 @@ function ExtraTile({
         {/* Halo lecture posé SUR la vignette : reste blanc/noir dans les deux
             thèmes (cf. règle « posé sur média »). Un voile en fondu
             d'OPACITÉ, pas une couleur de fond animée (peinture par image). */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity duration-200 group-hover/extra:opacity-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(11,11,12,0.4)] text-on-media-primary opacity-0 transition-opacity duration-hover group-hover/extra:opacity-100 group-focus-visible/extra:opacity-100">
           <PlayIcon />
         </div>
       </div>
-      <p className="mt-1.5 truncate text-sm font-medium text-content-primary" title={label}>{label}</p>
-      {sublabel && <p className="truncate text-xs text-content-quaternary">{sublabel}</p>}
+      <p className="mt-2 truncate text-sm font-semibold text-content-primary" title={label}>{label}</p>
+      {sublabel && <p className="truncate text-xs text-content-tertiary">{sublabel}</p>}
     </button>
   );
 }
