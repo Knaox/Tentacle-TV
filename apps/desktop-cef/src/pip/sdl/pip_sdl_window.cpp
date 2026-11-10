@@ -130,7 +130,7 @@ class SdlPipWindow final : public Window {
     } else if (kind == "scroll") {
       e.type = SDL_EVENT_MOUSE_WHEEL;
       e.wheel.windowID = id_;
-      e.wheel.y = float(dy / 40.0);
+      e.wheel.y = float(dy / platform::kSdlWheelNotchPixels);
       e.wheel.mouse_x = px, e.wheel.mouse_y = py;
     } else {
       return "type inconnu : " + kind;
