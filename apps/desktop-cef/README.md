@@ -10,6 +10,7 @@ Importé dans le monorepo (`apps/desktop-cef`) depuis le dépôt local `Tentacle
 `proto/cef-mpv-sdl3` au commit `0dbcfe7` ; son historique est resté dans ce dépôt-là.
 
 - Contrat entre les modules : [docs/INTERFACES.md](docs/INTERFACES.md)
+- Windows (prérequis, `pnpm dev:cef`, recette) : [docs/A-TESTER-WINDOWS.md](docs/A-TESTER-WINDOWS.md)
 - Ce que le bureau Electron offre et que CEF n'a pas encore : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md)
 - Étude de la référence : `docs/etude/` (écrite par les sessions du lot)
 - Dépendances, builds, profils, médias de test : `~/.cache/tentacle-cef/` (hors dépôt)

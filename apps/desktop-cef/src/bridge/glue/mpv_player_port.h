@@ -48,6 +48,9 @@ class MpvPlayerPort : public PlayerPort {
 
  private:
   bool ensureSurface(std::string* error);
+  // Évènement de l'instance courante : chaîne d'échange de mpv (Windows) et observateur de
+  // session (HDR de l'écran, glue/video_session.h), avant la page.
+  void onPlayerEvent(const Json& event, int generation);
 
   struct Dying {  // une instance qui s'arrête, et la couche qu'elle tient encore
     std::unique_ptr<tentacle::Player> player;

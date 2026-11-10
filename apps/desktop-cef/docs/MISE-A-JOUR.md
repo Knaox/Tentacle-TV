@@ -178,12 +178,15 @@ Linux (AppImage) :
    croisé tourne tel quel sur un exécuteur Linux.
 
 Windows (installation par utilisateur ; MSIX laissé à Windows) :
-1. Construire avec MSVC (`vcpkg install libsodium:x64-windows-static`) dans un build Windows de
-   l'app, qui n'existe pas encore ; version idéalement depuis la ressource VERSIONINFO.
+1. ~~Construire avec MSVC dans un build Windows de l'app~~ — **branché** (lot cef-parite, axe
+   windows) : `pnpm dev:cef` lie `tentacle_update_system` et l'assistant (`app/tentacle-update.exe`),
+   libsodium 1.0.22 MSVC statique épinglée par le lanceur, version = celle du bureau
+   (`-DTENTACLE_APP_VERSION`, aussi dans VERSIONINFO). Compilé à blanc, jamais construit par MSVC.
 2. Exécuter : `tentacle_update_tests.exe` (le premier passage réel), puis l'assistant.
-3. Écrire le contrôle d'éditeur à la préparation : `WinVerifyTrust` sur `Tentacle.exe` et
-   `tentacle-update.exe`, même certificat que l'app en cours (pendant du Team ID macOS), et le
-   refaire dans l'assistant avant l'échange.
+3. ~~Contrôle d'éditeur~~ — **écrit** (`src/platform/windows/update_signature_windows.cpp`) :
+   `WinVerifyTrust` sur `Tentacle.exe` et `tentacle-update.exe`, même sujet de certificat que l'app
+   en cours (pendant du Team ID macOS ; une app en cours non signée n'exige rien de plus), refait
+   par l'assistant avant l'échange (code 6). À éprouver avec un paquet signé.
 4. Éprouver : sous-processus de CEF qui retiennent le dossier, chemins longs, antivirus qui
    verrouille les fichiers fraîchement extraits, relance par la ligne de commande d'origine,
    `tar.exe` absent (Windows < 10 1803 : extraire en interne).

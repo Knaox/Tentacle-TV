@@ -192,7 +192,7 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - **`prepareWindowForVideo(nsWindow)`** : à appeler AVANT la 1re mise à l'écran de la fenêtre SDL3
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
 - **Deux chemins d'attache** (lot cef-parite, axe linux) — le lecteur choisit (`player.cpp`) :
-  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSurfaceSizeOption()` (défaut
+  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSizeOption()` (défaut
     `moltenvk-surface-size` ; Linux `wlhostvk-surface-size`), puis `gpu-context`, `wid`, `vo=gpu-next` ;
   - **API de rendu** (Linux : X11, ou libmpv de la distribution) : `attachRenderApi(mpv_handle*)`
     vrai → la surface a créé son `mpv_render_context` (OpenGL, contexte du compositeur) et le
@@ -208,6 +208,18 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   texture de NOTRE contexte EGL, posée sous la page (SDR). `TENTACLE_VIDEO_RENDER_API=1` force ce
   second chemin sous Wayland.
 - Windows : stubs (axe windows).
+
+- Par OS, ce que la sortie de mpv demande en plus (défauts = macOS, inchangé ; lot cef-parite,
+  axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSizeOption()`
+  (`moltenvk-surface-size` ; Windows `d3d11-composition-size`), `wantsMpvSwapchain()` /
+  `setMpvSwapchain(adresse)` : mpv crée lui-même sa chaîne d'échange (Windows, mode composition) ;
+  `MpvPlayerPort` relit `display-swapchain` à chaque `file-loaded` / `video-reconfig` et la remet
+  (0 : plus de sortie). `mpvWid() == 0` : aucun `wid` posé.
+- **Windows** (`src/platform/windows/video_surface_windows.cpp`) : un visuel DirectComposition du
+  compositeur du socle (même périphérique : `win::DcompContext`), contenu = la chaîne de mpv
+  (`gpu-api=d3d11`, `d3d11-output-mode=composition`, `target-colorspace-hint=no` à l'attache —
+  levé par la session HDR, comme Electron). `nativeLayer()` = `IDCompositionVisual*`. Cadre en
+  DIP, × `GetDpiForWindow/96` pour les pixels. Linux : stub (axe linux).
 
 ### Musique (octave) — `src/music/`
 - Canaux page ↔ natif = ceux de Tentacle (`audioBridgeContract.ts`) : commandes `audio_engine_start`,
@@ -244,6 +256,39 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `<profil>/update`), `--update-first-check-ms=`. Sans flux ni clé publique compilée
   (`-DTENTACLE_UPDATE_PUBLIC_KEYS=id:base64`), le moteur est éteint : aucun accès réseau.
 
+### Session vidéo (pont, lot cef-parite) — `src/bridge/glue/video_session.h`
+- `pont::setVideoSessionObserver(VideoSessionObserver*)` (depuis `modules.cpp`, entre `install` et
+  `installShim`) : `onVideoEvent(event, access)` à chaque `file-loaded` / `video-reconfig` de mpv,
+  `access.get(nom, cb)` / `access.set(nom, valeur)` sans effet une fois l'instance arrêtée ;
+  `onVideoStopped()` à `mpv_destroy` ou au remplacement de l'instance. Sert au HDR de l'écran
+  (`src/display`, comme `hdrSession.ts` d'Electron).
+
+### Unités de fenêtre (socle, lot cef-parite) — `src/shell/window_scale.h`
+- Tout ce que le proto appelle « points » est en **DIP**. `windowScale(window)` →
+  `{deviceScale = SDL_GetWindowDisplayScale, windowToDip = densité / deviceScale}` ;
+  `windowSizeDip(window, w, h)`. Identité sur macOS (mesuré : contenu 1, densité 2, échelle 2) ;
+  sous Windows et X11 SDL compte en pixels. `shell.window` → `width/height` en DIP, `scale` =
+  échelle d'affichage. `InputRouter::setWindowToDip` ; `--size` en DIP (× échelle du contenu).
+  `NativeKey::extraModifiers` : drapeaux de position (`EVENTFLAG_IS_LEFT/RIGHT/KEY_PAD`), 0 sur macOS.
+
+### Écran (axe windows, lot cef-parite) — `src/display/`
+- `display::install(ctx, pont::registry())` dans `modules.cpp` (avant `installShim`),
+  `display::shutdown()` APRÈS `pont::shutdown()`. Canaux d'Electron, sur les TROIS OS (comme
+  `ipc/videoHdr.ts`, `ipc/video.ts`) : `display_hdr_state {}` → `{supporte, enabled, bascule,
+  autoAutorise, edrCapable, coucheHdr, espaceCouche, transmission, pic}` ; `display_hdr_auto {on}`
+  → `null` (rejet `bad_payload` sans booléen) ; `mpv_harden_child_window {}` → `false`.
+- OS (`src/platform/display_hdr.h`, `src/platform/<os>/display_hdr_<os>.*`) : `probeDisplayHdr`,
+  `displayHdrNegotiated`, `enableDisplayHdr`, `restoreDisplayHdr`, `displayHdrToggled` ; Windows :
+  `QueryDisplayConfig` + `SET_ADVANCED_COLOR_STATE` (`hdr.ts`) ; macOS : headroom EDR de l'écran ;
+  Linux : rien constaté (à l'axe linux d'y mettre `video-target-params` s'il le veut).
+- Session HDR (`hdr_session.h`, règle testée `tentacle_display_tests`) : `hdrSession.ts` — Windows
+  seul ; bascule si la page l'autorise, `target-colorspace-hint=yes` si l'écran est (ou devient)
+  HDR, à la fin la transmission tombe PUIS l'écran est rendu.
+- Commandes propres à l'OS : `platform::installOsCommands(ctx, registry)` — Windows :
+  `check_msix_update` → `{version:"", mandatory}` | `null`, `download_and_install_msix_update` →
+  `null` ou rejet (code de `msix_rule.h`, `store-page-opened` après repli sur la page du Store),
+  évènement `msix-update-progress {progress, indeterminate}` ; macOS, Linux : rien.
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.
@@ -279,6 +324,13 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (`locale_linux.h` : LANGUAGE/LC_ALL/LC_MESSAGES/LANG → Accept-Language), EDID HDR (`edid_linux.h`).
 - Clavier (`shell_linux.cpp`) : `native_key_code` = keycode XKB (evdev + 8 sous Wayland, tel quel
   sous X11), `windows_key_code` commun, caractères par SDL ; IME par les évènements texte de SDL.
+
+- Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
+  sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
+  CEF (`WebFrame::sharedHandle` = poignée NT, `OpenSharedResource1`, copie GPU) ou pixels
+  (`OnPaint`) dans une chaîne d'échange pour la composition (FLIP séquentiel, `Present(0)`).
+  Pompe CEF : fenêtre de messages cachée (`message_pump_windows.cpp`), distribuée aussi par la
+  boucle modale de Win32 — CEF reste sur le fil principal (pas de `multi_threaded_message_loop`).
 
 ## Règles communes du code
 - Ce qui dépend de l'OS : `src/platform/<macos|linux|windows>/`, derrière une interface. Linux et
@@ -332,3 +384,22 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 - **Bancs** : `--debug-lifecycle` ouvre `lifecycle.debug.{state,transfers,close,focus,note,sheet,awake}`
   (`lifecycle_debug.cpp`) ; sous `--background`, ni activation ni notification (journalisées) ;
   `TENTACLE_LIFECYCLE_TRACE=1` trace GetURL, dépôts et `app_link_take`.
+
+### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
+- Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`
+  et AVANT `pont::installShim` (ses commandes entrent dans `capabilities`) ; `reseau::shutdown()`.
+- Client HTTP du principal : `net::httpFetch(HttpRequest, done)` (`net/cef_fetch.h`) — CefURLRequest
+  (pile de Chromium, profil courant), sans cookie ni `Origin` par défaut, `maxBytes`, `timeoutMs`,
+  `followRedirects`, `useCache` ; `done` sur le fil UI, une fois ; rend une fonction d'annulation.
+  À réutiliser par tout module qui fait du réseau natif (jamais une seconde pile).
+- Règles pures réutilisables : `net::parseHttpUrl` / `parseFormQuery` / `encodeUriComponent` /
+  `localeCompare` (`net/web_url.h`, l'URL du WHATWG et le texte de JavaScript), `net::sha256`
+  (`net/sha256.h`), `net::birthTimeMs` / `setModifiedTimeMs` (`net/fs_platform.h`).
+- Tâches : `net::postTo(TID_…, fn)`, `net::postToDisk(fn)` (séquence `TID_FILE_USER_BLOCKING`).
+
+### Schémas — `src/schemes/`
+- `tentacle://art` (`schemes/art_scheme.h`) : pochettes d'Octave à l'identique d'Electron
+  (`octaveArt/`) — `GET /?o=&u=`, `POST /clear`, cache `<userData>/octave-art` (mêmes noms de fichiers,
+  relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
+- `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
+  rendue de n'importe quel fil (`Respond`).

@@ -12,6 +12,7 @@
     "banc": "node scripts/dev.mjs banc",
     "test:update": "bench/update/test.sh",
     "dev:update": "node bench/update/dev-update.mjs",
-    "test:update:cross": "bench/update/cross-test.sh"
+    "test:update:cross": "bench/update/cross-test.sh",
+    "test:windows:syntax": "bench/windows/syntax-check.sh"
   }
 }

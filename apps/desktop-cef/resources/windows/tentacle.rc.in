@@ -1,0 +1,35 @@
+// Ressources de Tentacle.exe (configuré par cmake/TentacleWindows.cmake). Encodage : UTF-8.
+// Icône 1 : celle d'Electron (apps/desktop-electron/icons/icon.ico), reprise par SDL pour la
+// fenêtre et la barre des tâches (SDL_HINT_WINDOWS_INTRESOURCE_ICON, app_windows.cpp).
+#pragma code_page(65001)
+#include <winver.h>
+
+1 ICON "@TENTACLE_WINDOWS_ICON@"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION @TENTACLE_APP_VERSION_COMMAS@,0
+ PRODUCTVERSION @TENTACLE_APP_VERSION_COMMAS@,0
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "CompanyName", "Tentacle TV"
+      VALUE "FileDescription", "Tentacle"
+      VALUE "FileVersion", "@TENTACLE_APP_VERSION@"
+      VALUE "InternalName", "Tentacle"
+      VALUE "OriginalFilename", "Tentacle.exe"
+      VALUE "ProductName", "Tentacle"
+      VALUE "ProductVersion", "@TENTACLE_APP_VERSION@"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

@@ -69,6 +69,7 @@ class Shell final : public ViewHost {
   InputRouter input_;
   int widthPt_ = 0, heightPt_ = 0;
   float scale_ = 1.0f;
+  float windowToDip_ = 1.0f;  // shell/window_scale.h
   bool closed_ = false;
   bool cursorHidden_ = false;
   bool documentFullscreen_ = false;

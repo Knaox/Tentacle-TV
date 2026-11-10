@@ -7,9 +7,18 @@
 #include <sstream>
 
 #include "compositor/compositor.h"
+#include "glue/video_session.h"
 #include "platform/video_surface.h"
 #include "player/player.h"
 #include "shell/main_thread.h"
+#include "shell/window_scale.h"
+
+namespace tentacle::pont {
+namespace {
+VideoSessionObserver* g_sessionObserver = nullptr;
+}  // namespace
+void setVideoSessionObserver(VideoSessionObserver* observer) { g_sessionObserver = observer; }
+}  // namespace tentacle::pont
 
 namespace bridge {
 namespace {
@@ -28,7 +37,7 @@ MpvPlayerPort::MpvPlayerPort(SDL_Window* window, void* nativeWindow, tentacle::C
                              tentacle::VideoSurface* restingLayer)
     : window_(window), nativeWindow_(nativeWindow), compositor_(compositor), restingLayer_(restingLayer) {
   int w = 0, h = 0;
-  SDL_GetWindowSize(window_, &w, &h);  // en points sur macOS
+  tentacle::windowSizeDip(window_, w, h);  // DIP : points sur macOS, pixels/échelle sous Windows
   widthPt_ = w;
   heightPt_ = h;
 }
@@ -68,12 +77,16 @@ void MpvPlayerPort::start(const Json& options, Done done) {
   const int gen = ++*generation_;
   std::weak_ptr<int> alive = generation_;
   player_->onEvent([this, gen, alive](const Json& event) {
-    if (auto g = alive.lock(); g && *g == gen && listener_) listener_->onEvent(event);
+    auto g = alive.lock();
+    if (!g || *g != gen) return;
+    onPlayerEvent(event, gen);
+    if (listener_) listener_->onEvent(event);
   });
   done(std::nullopt);
 }
 
 void MpvPlayerPort::stop(std::function<void()> done) {
+  if (player_ && tentacle::pont::g_sessionObserver) tentacle::pont::g_sessionObserver->onVideoStopped();
   ++*generation_;  // plus aucun rappel de l'instance qui part
   // La couche quitte l'empilement tout de suite : la page reprend la main à l'écran.
   if (compositor_ && surface_) compositor_->setVideoLayer(restingLayer_);
@@ -108,6 +121,37 @@ bool MpvPlayerPort::ensureSurface(std::string* error) {
     return false;
   }
   return true;
+}
+
+void MpvPlayerPort::onPlayerEvent(const Json& event, int gen) {
+  const std::string name = event.is_object() ? event.value("event", "") : "";
+  if (name != "file-loaded" && name != "video-reconfig") return;
+  std::weak_ptr<int> alive = generation_;
+  auto current = [this, gen, alive] {
+    auto g = alive.lock();
+    return g && *g == gen && player_;
+  };
+  // Windows : mpv crée SA chaîne d'échange (mode composition) à la naissance de sa sortie et
+  // la recrée avec elle ; la surface la reçoit à chaque reconfiguration. Cas limite connu :
+  // l'adresse est lue dans mpv puis gardée un tour plus tard — une sortie détruite entre les
+  // deux (fin de fichier à cet instant précis) la rendrait caduque ; jamais constaté.
+  if (surface_ && surface_->wantsMpvSwapchain()) {
+    tentacle::VideoSurface* surface = surface_.get();
+    player_->getProperty("display-swapchain", [this, surface, current](std::optional<Json> v) {
+      if (!current() || surface_.get() != surface) return;  // instance ou surface remplacées
+      surface->setMpvSwapchain(v && v->is_number_integer() ? v->get<int64_t>() : 0);
+    });
+  }
+  if (!tentacle::pont::g_sessionObserver) return;
+  tentacle::pont::VideoSessionAccess access;
+  access.get = [this, current](const std::string& n, std::function<void(std::optional<Json>)> cb) {
+    if (current()) player_->getProperty(n, std::move(cb));
+    else cb(std::nullopt);
+  };
+  access.set = [this, current](const std::string& n, const Json& value) {
+    if (current()) player_->setProperty(n, value);
+  };
+  tentacle::pont::g_sessionObserver->onVideoEvent(name, access);
 }
 
 void MpvPlayerPort::command(const Json& args, Done done) {

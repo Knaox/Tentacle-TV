@@ -38,6 +38,7 @@ mpv_format mpvFormat(PropFormat f) {
 // Options que le lecteur tient lui-même (sortie vidéo) : jamais prises de l'appelant. Le son
 // (`ao`, `mute`) suit `sound::forcedOptions`, posé après l'appelant.
 const std::set<std::string> kReserved = {"vo", "wid", "gpu-context", "moltenvk-surface-size",
+                                         "d3d11-output-mode", "d3d11-composition-size",
                                          "wlhostvk-surface-size"};
 
 std::string sizeString(PixelSize px) { return std::to_string(px.w) + "x" + std::to_string(px.h); }
@@ -259,15 +260,16 @@ bool Player::attachVideoSurface(VideoSurface& surface) {
     }
     // Taille du swapchain : suivie à chaque changement (fenêtre, plein écran, écran).
     std::weak_ptr<Impl> weak = impl_;
-    const std::string sizeOption = surface.mpvSurfaceSizeOption();
+    const std::string sizeOption = surface.mpvSizeOption();
     surface.onPixelSizeChanged([weak, sizeOption](PixelSize px) {
         if (auto i = weak.lock()) i->setAsync(sizeOption, sizeString(px));
     });
     // Dans l'ordre (mpv traite les requêtes d'un client dans l'ordre) : la couche et sa
     // taille d'abord, la sortie vidéo en dernier — c'est elle qui fait naître le VO.
+    for (const auto& [name, value] : surface.mpvAttachOptions()) s.setAsync(name, value);
     s.setAsync(sizeOption, sizeString(surface.pixelSize()));
     s.setAsync("gpu-context", surface.mpvGpuContext());
-    s.setAsync("wid", surface.mpvWid());
+    if (surface.mpvWid() != 0) s.setAsync("wid", surface.mpvWid());  // Windows (composition) : aucun
     s.setAsync("vo", "gpu-next");
     return true;
 }

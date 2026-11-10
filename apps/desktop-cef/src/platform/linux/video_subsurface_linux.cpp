@@ -117,7 +117,7 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
   PixelSize pixelSize() const override { return px_; }
   int64_t mpvWid() const override { return int64_t(reinterpret_cast<intptr_t>(&target_)); }
   const char* mpvGpuContext() const override { return "wlhostvk"; }
-  const char* mpvSurfaceSizeOption() const override { return "wlhostvk-surface-size"; }
+  const char* mpvSizeOption() const override { return "wlhostvk-surface-size"; }
   SurfaceColorState colorState() const override {
     SurfaceColorState s;
     s.pixelFormat = "swapchain Vulkan de mpv (wlhostvk) — espace choisi par libplacebo";

@@ -15,6 +15,9 @@ struct NativeKey {
   int windowsCode = 0;         // VK_* (DOM keyCode)
   char16_t character = 0;      // caractère avec modificateurs
   char16_t unmodified = 0;     // caractère sans modificateurs
+  // Drapeaux CEF de position (EVENTFLAG_IS_LEFT/RIGHT/KEY_PAD) : Windows les tire du code de
+  // balayage, comme Chromium (KeyboardEvent.location) ; 0 sur macOS (CEF les recalcule).
+  uint32_t extraModifiers = 0;
 };
 
 NativeKey translate(const SDL_KeyboardEvent& ev);

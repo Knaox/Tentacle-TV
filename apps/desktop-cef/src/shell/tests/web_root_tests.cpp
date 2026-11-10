@@ -1,12 +1,11 @@
 // Tests de la règle de tentacle://app (shell/web_root.h), sur un faux build web jetable.
 // Sans dépendance de test, comme ceux du pont : un échec imprime sa ligne, le code de
 // sortie compte les échecs.
+#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <string>
-
-#include <unistd.h>
 
 #include "shell/web_root.h"
 
@@ -29,7 +28,8 @@ static void touch(const fs::path& p) {
 }
 
 int main() {
-  const fs::path tmp = fs::temp_directory_path() / ("tentacle-web-root-" + std::to_string(::getpid()));
+  const fs::path tmp = fs::temp_directory_path() /
+                        ("tentacle-web-root-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   const fs::path root = tmp / "web";
   touch(root / "index.html");
   touch(root / "assets" / "index-abc.js");
