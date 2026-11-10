@@ -291,3 +291,36 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   Windows ont au moins des stubs qui compilent dans l'esprit (pas forcément construits ici).
 - Aucun chemin absolu dans le code ; les chemins viennent de variables d'environnement
   (`TENTACLE_CEF_CACHE`, défaut `~/.cache/tentacle-cef`) ou d'arguments.
+
+## Réseau et données (axe reseau, lot cef-parite)
+
+### Dossier de données — `src/shell/paths.h` (lié à `tentacle_shell`)
+- `tentacle::paths::userData()` → `std::filesystem::path` absolu : le dossier de données
+  d'Electron (`dataPaths.ts`) — macOS `~/Library/Application Support/com.tentacle.media`,
+  Windows `%APPDATA%\com.tentacle.media`, Linux `$XDG_DATA_HOME` (absolu seulement) ou
+  `~/.local/share` + `/com.tentacle.media`. Sûr depuis n'importe quel fil ; ne crée rien.
+  Tout fichier partagé avec Electron (`octave-art/`, `tentacle-local.db`, médias gardés) se
+  range sous ce dossier, aux mêmes noms.
+- `--user-data=<dossier>` le remplace (lu par `paths::configure(opts.extra)`, juste après
+  `parseArgs` dans `src/app/app.cpp`). `pnpm dev:cef` passe `--user-data=<profil d'Electron visé>`
+  (`TENTACLE_ELECTRON_PROFILE`, sinon la règle) : stockage du front et données natives au même endroit.
+- Règle pure testée : `dataRoot(env)`, `dataFolder(env)` (`src/net/tests/paths_tests.cpp`).
+
+### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
+- Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`
+  et AVANT `pont::installShim` (ses commandes entrent dans `capabilities`) ; `reseau::shutdown()`.
+- Client HTTP du principal : `net::httpFetch(HttpRequest, done)` (`net/cef_fetch.h`) — CefURLRequest
+  (pile de Chromium, profil courant), sans cookie ni `Origin` par défaut, `maxBytes`, `timeoutMs`,
+  `followRedirects`, `useCache` ; `done` sur le fil UI, une fois ; rend une fonction d'annulation.
+  À réutiliser par tout module qui fait du réseau natif (jamais une seconde pile).
+- Règles pures réutilisables : `net::parseHttpUrl` / `parseFormQuery` / `encodeUriComponent` /
+  `localeCompare` (`net/web_url.h`, l'URL du WHATWG et le texte de JavaScript), `net::sha256`
+  (`net/sha256.h`), `net::birthTimeMs` / `setModifiedTimeMs` (`net/fs_platform.h`).
+- Tâches : `net::postTo(TID_…, fn)`, `net::postToDisk(fn)` (séquence `TID_FILE_USER_BLOCKING`).
+
+### Schémas — `src/schemes/`
+- `tentacle://art` (`schemes/art_scheme.h`) : pochettes d'Octave à l'identique d'Electron
+  (`octaveArt/`) — `GET /?o=&u=`, `POST /clear`, cache `<userData>/octave-art` (mêmes noms de fichiers,
+  relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
+- `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
+  rendue de n'importe quel fil (`Respond`).
