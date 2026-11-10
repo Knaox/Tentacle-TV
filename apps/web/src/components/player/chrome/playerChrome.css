@@ -1,0 +1,536 @@
+/* ── L'habillage du lecteur (refonte de nov. 2026) — web et bureau, hors verre natif ──
+ *
+ * Des CAPSULES d'encre posées sur l'image : le transport à gauche, les réglages à droite, la
+ * sortie en haut — et, entre les deux, la barre de lecture qui porte le dégradé de jauge.
+ * Le lecteur en verre (macOS 26, `glass/`) dessine les mêmes formes avec la primitive native ;
+ * ici, c'est la page qui les peint.
+ *
+ * Ce que cette feuille s'interdit, et pourquoi (CLAUDE.md, « Coût GPU ») :
+ *  - AUCUN `backdrop-filter`. Sur le bureau, mpv dessine SOUS la page : un flou n'y floute
+ *    rien. Sur le web, il referait son flou à chaque image décodée. La capsule est donc une
+ *    encre presque pleine, lisible sur n'importe quelle image.
+ *  - `transform` et `opacity` seulement. La barre s'épaissit en `scaleY`, se remplit en
+ *    `scaleX` ; jamais une hauteur ni une largeur qui s'anime.
+ *  - du NOIR à alpha et de l'opaque pour les fonds : sur la surface à canal alpha de macOS et
+ *    de Linux, un blanc translucide rend gris (`lib/videoShadow.ts`). Les survols blancs sont
+ *    discrets et assumés ; l'arête claire de la capsule s'efface là-bas (`data-alpha`).
+ *
+ * Posé sur la vidéo : le blanc et l'encre sont en dur, identiques en sombre et en clair. Les
+ * panneaux détachés (pistes, vitesse, épisodes) suivent le thème — ce sont des menus. */
+
+.pl-chrome {
+  /* Les jauges de l'habillage se lisent sur une image, quel que soit le thème. */
+  --gauge-track: rgba(255, 255, 255, 0.22);
+  --pl-ink: rgba(24, 24, 27, 0.74);
+  --pl-ink-solid: #18181b;
+  --pl-ivory: #f4f2ee;
+  --pl-scrim-top: 0.62;
+  --pl-scrim-bottom: 0.78;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* La surface à canal alpha (macOS, Linux) : un voile plus léger, seul noir qui s'y compose juste. */
+.pl-chrome[data-alpha="true"] {
+  --pl-scrim-top: 0.45;
+  --pl-scrim-bottom: 0.52;
+}
+
+.pl-chrome[data-shown="true"] {
+  opacity: 1;
+  transition-duration: 240ms;
+}
+
+/* Le fondu d'ENTRÉE d'un habillage qu'on vient de monter (il n'est plus dans le DOM quand il
+ * est masqué) : sans état précédent, une transition ne part de rien. */
+@starting-style {
+  .pl-chrome[data-shown="true"] {
+    opacity: 0;
+  }
+}
+
+/* Le lecteur web : la couche qui porte l'habillage joue le fondu ; lui reste plein. */
+.pl-chrome.pl-chrome--held {
+  opacity: 1;
+  transition: none;
+}
+
+.pl-bar {
+  position: relative;
+  pointer-events: none;
+}
+
+.pl-chrome[data-shown="true"] .pl-bar {
+  pointer-events: auto;
+}
+
+/* Les marges sont celles du lecteur en verre (`--lg-player-inline` : 24 px, `--lg-player-edge` :
+ * 20 px — `glass/playerGlassGeometry.test.ts` les tient ensemble) : couper le verre en pleine
+ * lecture ne déplace rien. */
+.pl-bar--top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 24px 44px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, var(--pl-scrim-top)), rgba(0, 0, 0, 0));
+}
+
+.pl-bar--bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 64px 24px max(20px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, calc(var(--pl-scrim-bottom) * 0.44)) 40%,
+    rgba(0, 0, 0, var(--pl-scrim-bottom))
+  );
+}
+
+/* ── Le titre ── */
+
+.pl-heading {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pl-title {
+  overflow: hidden;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pl-subtitle {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 13px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── La capsule et ses boutons ── */
+
+.pl-caps {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  height: 50px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background-color: var(--pl-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pl-chrome[data-alpha="true"] .pl-caps,
+.pl-chrome[data-alpha="true"] .pl-btn--solo {
+  box-shadow: none;
+}
+
+.pl-btn {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-hover) ease;
+}
+
+.pl-btn:active {
+  transform: scale(var(--press-scale));
+}
+
+.pl-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Un bouton SEUL sur l'image (la sortie) : sa propre pastille d'encre. */
+.pl-btn--solo {
+  width: 44px;
+  height: 44px;
+  background-color: var(--pl-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Lire / pause : le disque d'ivoire, le seul plein de la capsule. */
+.pl-btn--main {
+  background-color: var(--pl-ivory);
+  color: #131315;
+}
+
+.pl-btn[aria-expanded="true"],
+.pl-btn[data-on="true"] {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-btn:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+  }
+
+  .pl-btn--solo:hover {
+    background-color: var(--pl-ink-solid);
+  }
+
+  .pl-btn--main:hover {
+    background-color: #fff;
+  }
+}
+
+/* La pastille d'un état porté par un bouton (vitesse hors 1×, sous-titres allumés). */
+.pl-badge {
+  position: absolute;
+  top: 1px;
+  right: -1px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background-color: var(--pl-ivory);
+  color: #131315;
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+}
+
+.pl-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--pl-ivory);
+}
+
+.pl-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pl-time {
+  color: #fff;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pl-grow {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+/* Le volume : le curseur ne paraît qu'au survol ou au focus de son groupe. */
+.pl-volume {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pl-volume__range {
+  display: none;
+  width: 84px;
+  margin: 0 8px 0 2px;
+}
+
+.pl-volume:focus-within .pl-volume__range {
+  display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-volume:hover .pl-volume__range {
+    display: block;
+  }
+}
+
+/* ── La barre de lecture ── une cible de 18 px, un rail de 4 px qui s'épaissit en `scaleY`. */
+
+.pl-seek {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 18px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.pl-seek__rail {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--gauge-track);
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.pl-seek__buffer,
+.pl-seek__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left;
+}
+
+.pl-seek__buffer {
+  background-color: rgba(255, 255, 255, 0.26);
+}
+
+/* Ce qui se MESURE porte le dégradé de jauge — jamais un rose uni. */
+.pl-seek__fill {
+  background: var(--gauge-gradient);
+}
+
+/* La course de la poignée : toute la largeur, déplacée en `translateX` (jamais un `left`). */
+.pl-seek__travel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pl-seek__thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background-color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+  transition:
+    opacity var(--duration-hover) ease,
+    transform var(--duration-hover) var(--ease-out);
+}
+
+.pl-seek[data-active="true"] .pl-seek__rail {
+  transform: scaleY(1.7);
+}
+
+.pl-seek[data-active="true"] .pl-seek__thumb {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-seek:hover .pl-seek__rail {
+    transform: scaleY(1.7);
+  }
+
+  .pl-seek:hover .pl-seek__thumb {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Le témoin de développement (mpv, transcodage) — jamais dans un paquet livré. */
+.pl-devbadge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background-color: var(--pl-ink);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-chrome,
+  .pl-seek__rail,
+  .pl-seek__thumb,
+  .pl-btn {
+    transition-duration: 1ms;
+  }
+}
+
+/* Fenêtre étroite : le temps et le volume cèdent la place au transport et aux réglages. */
+@media (max-width: 520px) {
+  .pl-bar--top,
+  .pl-bar--bottom {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .pl-caps {
+    height: 46px;
+    padding: 0 3px;
+    gap: 0;
+  }
+
+  .pl-volume__range {
+    display: none !important;
+  }
+}
+
+/* ── Les panneaux détachés ── pistes, vitesse, épisodes : des MENUS du socle (`.ui-menu`),
+ * opaques, qui suivent le thème et SORTENT de leur capsule (origine en bas à droite). */
+
+.pl-panel {
+  position: absolute;
+  right: 24px;
+  bottom: calc(80px + max(0px, env(safe-area-inset-bottom, 0px) - 20px));
+  z-index: 50;
+  max-width: calc(100vw - 48px);
+  transform-origin: bottom right;
+}
+
+.pl-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px 2px 10px;
+}
+
+.pl-panel__title {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.pl-panel__scroll {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Une ligne de choix : la coche à la teinte franche dit l'option retenue — plus d'aplat de marque. */
+.pl-option__check {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 16px;
+  color: var(--accent);
+}
+
+.pl-option__meta {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-option .chip {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+/* « Garder pour toute la série » : une ligne qui dit ce qu'elle garde, et son interrupteur. */
+.pl-series {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px 10px;
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pl-series[aria-disabled="true"] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.pl-series__title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pl-series__line {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pl-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background-color: var(--fill-strong);
+  transition: background-color var(--duration-hover) ease;
+}
+
+.pl-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 200ms var(--ease-out);
+}
+
+[aria-checked="true"] > .pl-switch {
+  background-color: var(--accent);
+}
+
+[aria-checked="true"] > .pl-switch::after {
+  transform: translateX(16px);
+}
+
+.pl-series:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-series:hover {
+    background-color: var(--fill-subtle);
+  }
+}
+
+@media (max-width: 520px) {
+  .pl-panel {
+    right: 12px;
+    max-width: calc(100vw - 24px);
+  }
+}

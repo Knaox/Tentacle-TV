@@ -18,6 +18,12 @@ export interface ApplyToSeriesControl {
   /** Mutation en cours — case momentanément inerte. */
   pending: boolean;
   toggle: (checked: boolean) => void;
+  /**
+   * CE QUI est gardé, pour le dire en toutes lettres : la préférence enregistrée quand la case
+   * est cochée, sinon ce que les pistes en cours enregistreraient. Des langues et un mode,
+   * jamais des index. Facultatif : un appelant qui ne le donne pas garde une phrase générale.
+   */
+  choice?: TrackChoice;
 }
 
 /**
@@ -145,6 +151,8 @@ export function useApplyToSeries({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seriesId, saved, audioIndex, subtitleIndex, localRevision]);
 
+  const choice = useMemo(() => saved ?? currentChoice(), [saved, currentChoice]);
+
   if (!seriesId) return undefined;
-  return { checked, pending: setPref.isPending || delPref.isPending, toggle };
+  return { checked, pending: setPref.isPending || delPref.isPending, toggle, choice };
 }

@@ -4,7 +4,6 @@ import { useHoverEscape } from "../../hooks/useHoverGuard";
 interface UseScrubListenersOptions {
   isScrubbing: MutableRefObject<boolean>;
   scrubPct: MutableRefObject<number>;
-  thumbRef: MutableRefObject<HTMLDivElement | null>;
   barRef: MutableRefObject<HTMLDivElement | null>;
   duration: number;
   getPctFromEvent: (clientX: number) => number;
@@ -22,7 +21,7 @@ interface UseScrubListenersOptions {
  * the hover preview off when the cursor leaves for good.
  */
 export function useScrubListeners({
-  isScrubbing, scrubPct, thumbRef, barRef, duration, getPctFromEvent,
+  isScrubbing, scrubPct, barRef, duration, getPctFromEvent,
   setScrubbing, setHoverTime, setHoverX, onSeek, hoverActive,
 }: UseScrubListenersOptions): { endHover: () => void } {
   /**
@@ -42,9 +41,9 @@ export function useScrubListeners({
   useHoverEscape(barRef, hoverActive, endHover);
 
   useEffect(() => {
+    // La barre épaissie et sa poignée tiennent à `data-active` (`.pl-seek`, `playerChrome.css`).
     const resetUi = () => {
-      if (thumbRef.current) thumbRef.current.style.opacity = "";
-      if (barRef.current) barRef.current.style.height = "";
+      if (barRef.current) delete barRef.current.dataset.active;
     };
     const onMouseMove = (e: MouseEvent) => {
       if (!isScrubbing.current) return;
@@ -95,7 +94,7 @@ export function useScrubListeners({
       document.removeEventListener("touchend", onTouchEnd);
     };
   }, [
-    isScrubbing, scrubPct, thumbRef, barRef, duration, getPctFromEvent,
+    isScrubbing, scrubPct, barRef, duration, getPctFromEvent,
     setScrubbing, setHoverTime, setHoverX, onSeek,
   ]);
 

@@ -1,3 +1,5 @@
+import playerChrome from "./playerChrome";
+
 export default {
   pressToPlay: "Appuyez pour lire",
   skipIntro: "Passer l'intro",
@@ -284,4 +286,6 @@ export default {
     seasonWatched: "Saison vue",
     seasonPlaying: "Saison en cours",
   },
+  // ── L'habillage de la refonte (playerChrome.ts) ──
+  ...playerChrome,
 } as const;

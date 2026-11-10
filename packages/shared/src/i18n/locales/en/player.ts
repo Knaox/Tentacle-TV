@@ -1,3 +1,5 @@
+import playerChrome from "./playerChrome";
+
 export default {
   pressToPlay: "Tap to play",
   skipIntro: "Skip intro",
@@ -277,4 +279,6 @@ export default {
     seasonWatched: "Season watched",
     seasonPlaying: "Season playing",
   },
+  // ── The redesigned chrome (playerChrome.ts) ──
+  ...playerChrome,
 } as const;

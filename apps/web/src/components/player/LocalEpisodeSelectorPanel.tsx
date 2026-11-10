@@ -6,6 +6,9 @@ import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
 import { isGlassLayout } from "./glass/playerGlassMode";
 import { GlassPanel } from "./glass/GlassPanel";
 import { PLAYER_MORPH } from "./glass/playerGlassFusion";
+import { PANEL_MOTION } from "./chrome/panelMotion";
+import { PanelHeader } from "./chrome/PanelHeader";
+import "./chrome/playerChrome.css";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { SeasonTabs, type SeasonTabItem } from "../episodes/SeasonTabs";
 import { useDownloadsList } from "../../downloads/useDownloadState";
@@ -83,20 +86,15 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
   const glass = isGlassLayout(usePlayerGlassMode());
   const body = (
     <>
-      <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
-        <span className="flex items-center gap-2 text-sm font-semibold text-content-primary">
-          {t("player:episodes")}
-          <span className="rounded-full bg-fill-subtle px-2 py-0.5 text-[10px] font-medium text-content-tertiary">
-            {t("downloads:episodesDownloadedHint")}
-          </span>
-        </span>
-        <button onClick={onClose} aria-label={t("player:close")} className="text-lg leading-none text-content-quaternary transition-colors hover:text-content-primary">
-          &times;
-        </button>
+      <div className="px-1.5 pb-1 pt-1.5">
+        <PanelHeader
+          title={t("player:episodes")} onClose={onClose}
+          hint={<span className="chip">{t("downloads:episodesDownloadedHint")}</span>}
+        />
       </div>
 
       {seasonNumbers.length > 1 && (
-        <div className="border-b border-line-subtle px-2 py-2.5">
+        <div className="px-2 pb-2">
           <SeasonTabs
             seasons={tabs}
             selectedId={seasonKey(effectiveSeason)}
@@ -108,7 +106,7 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto border-t border-line-subtle p-1.5 scrollbar-thin">
         {episodes.map((ep) => (
           <LocalEpisodeItem key={ep.itemId} ep={ep} active={ep.itemId === currentEpisodeId} onClick={() => select(ep.itemId)} />
         ))}
@@ -132,10 +130,9 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
     // en lecture dont l'arrière-plan change à chaque image décodée. Même
     // arbitrage que son jumeau en ligne (`EpisodeSelectorPanel`).
     <motion.div data-panneau-detache
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
+      {...PANEL_MOTION}
+      role="dialog" aria-label={t("player:episodes")}
+      className="pl-panel ui-menu flex max-h-[65vh] w-[26rem] flex-col overflow-hidden !p-0"
       onClick={(e) => e.stopPropagation()}
     >
       {body}
@@ -161,17 +158,20 @@ function LocalEpisodeItem({ ep, active, onClick }: { ep: DownloadEntry; active: 
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
-        active ? "bg-[var(--brand-accent-soft)]" : "hover:bg-fill-subtle"
+      type="button"
+      aria-current={active ? "true" : undefined}
+      // L'épisode en cours : une teinte d'encre, et son numéro à la teinte franche — plus d'aplat rose.
+      className={`flex w-full items-center gap-3 rounded-field p-2 text-left transition-colors duration-hover ${
+        active ? "bg-fill-soft" : "hover:bg-fill-subtle"
       }`}
     >
-      <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
+      <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-chip bg-surface-2">
         {thumb && <img src={thumb} alt={ep.title ?? ""} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
         {!watched && <CardProgressBar percent={percent} />}
         <CardStatusMarkers statuses={watched ? WATCHED : NONE} className="right-1 top-1" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-tertiary"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-accent" : "text-content-tertiary"}`}>
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.title ?? ""}</p>

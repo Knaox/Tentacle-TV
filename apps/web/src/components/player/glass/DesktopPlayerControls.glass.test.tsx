@@ -4,9 +4,9 @@ import type { ReactElement, ReactNode } from "react";
 
 /**
  * L'aiguillage de l'habillage du lecteur de bureau : le verre ne remplace
- * l'habillage d'avant QUE là où le verre natif se pose. Partout ailleurs —
- * lecteur sans fournisseur, réglage coupé, OS ou montage sans verre natif —
- * le rendu d'avant, inchangé.
+ * l'habillage peint par la page QUE là où le verre natif se pose. Partout
+ * ailleurs — lecteur sans fournisseur, réglage coupé, OS ou montage sans verre
+ * natif — les capsules de la refonte (`chrome/`), sans une classe du verre.
  *
  * Rendu statique, comme les autres bancs de composants : `t()` rend la clé,
  * l'api-client est remplacé (chargé en vrai, il tire une seconde copie de React).
@@ -61,9 +61,25 @@ const controls = (visible = true): ReactElement => (
 const LEGACY = renderToStaticMarkup(controls());
 
 describe("l'habillage du lecteur de bureau", () => {
-  it("sans fournisseur (lecteur web, aperçus) : l'habillage d'avant, sans une classe du verre", () => {
-    expect(LEGACY).toContain("bg-gradient-to-t");
+  it("sans fournisseur (lecteur web, aperçus) : l'habillage de la page, sans une classe du verre", () => {
+    expect(LEGACY).toContain('class="pl-chrome"');
+    // Deux capsules : le transport, puis le son et les réglages.
+    expect(LEGACY.match(/class="pl-caps"/g)?.length).toBe(2);
     expect(LEGACY).not.toContain("lgp-");
+  });
+
+  it("la SORTIE est le premier contrôle de l'habillage : visible dès que les contrôles le sont", () => {
+    expect(LEGACY).toMatch(/<div class="pl-bar pl-bar--top"><button[^>]*data-player-back/);
+    expect(LEGACY).toContain('aria-label="player:back"');
+  });
+
+  it("la barre de lecture porte la jauge en `scaleX`, jamais une largeur", () => {
+    expect(LEGACY).toMatch(/class="pl-seek__fill" style="transform:scaleX\(0\.1\)"/);
+    expect(LEGACY).not.toMatch(/pl-seek[^>]*style="[^"]*width/);
+  });
+
+  it("contrôles masqués hors verre : plus rien dans le DOM", () => {
+    expect(renderToStaticMarkup(controls(false))).toBe("");
   });
 
   it("verre natif disponible : façon tvOS 26 — voile, texte nu, ronds de verre, plus aucun dégradé d'avant", () => {
@@ -88,12 +104,12 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(html.match(/--lgp-mat-delay:(\d+)ms/g)?.sort()).toEqual(
       ["--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:80ms"],
     );
-    expect(html).not.toContain("bg-gradient-to-t");
+    expect(html).not.toContain("pl-chrome");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");
   });
 
-  it("réglage allumé mais aucun verre natif (avant la fusion du socle, Intel, macOS < 26) : au pixel près l'habillage d'avant", () => {
+  it("réglage allumé mais aucun verre natif (avant la fusion du socle, Intel, macOS < 26) : au pixel près l'habillage de la page", () => {
     const html = renderToStaticMarkup(<PlayerGlassProvider>{controls()}</PlayerGlassProvider>);
     expect(html).toBe(LEGACY);
   });
