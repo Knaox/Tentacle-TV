@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { seasonKey } from "@tentacle-tv/offline-core";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { formatBytes } from "./presets";
 
 interface SeasonGroup {
@@ -46,22 +47,16 @@ function totalSize(items: readonly MediaItem[], sizeOf: (item: MediaItem) => num
   return known > 0 ? total : null;
 }
 
+/** La case du socle (`.ui-check`) ; déjà sur la machine : cochée, à l'encre — rien à reprendre. */
 function CheckBox({ checked, muted }: { checked: boolean; muted: boolean }) {
   return (
     <span
       aria-hidden
-      className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-        checked
-          ? muted
-            ? "border-line-subtle bg-fill-medium text-content-tertiary"
-            : "border-line-focus bg-cta-primary-bg text-cta-primary-fg"
-          : "border-line-strong bg-transparent text-transparent"
-      }`}
-      style={{ height: "1.125rem", width: "1.125rem" }}
+      className="ui-check"
+      data-checked={checked && !muted ? "true" : undefined}
+      style={checked && muted ? { background: "var(--fill-strong)", boxShadow: "none", color: "var(--text-secondary)" } : undefined}
     >
-      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
+      <CheckIcon size={13} weight="bold" />
     </span>
   );
 }
@@ -71,12 +66,15 @@ function Row({
   locked,
   label,
   detail,
+  lockedHint,
   onToggle,
 }: {
   checked: boolean;
   locked: boolean;
   label: string;
   detail: string;
+  /** « Téléchargé » : pourquoi la ligne ne se décoche pas. */
+  lockedHint: string;
   onToggle: () => void;
 }) {
   return (
@@ -87,16 +85,20 @@ function Row({
       aria-disabled={locked}
       disabled={locked}
       onClick={onToggle}
-      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-150 ${
-        locked ? "opacity-55" : "hover:bg-fill-soft"
+      className={`flex w-full items-center gap-3 rounded-field px-2.5 py-2 text-left transition-colors duration-hover ${
+        locked ? "cursor-default" : "hover:bg-fill-soft"
       }`}
     >
       <CheckBox checked={checked} muted={locked} />
-      <span className="min-w-0 flex-1 truncate text-sm text-content-secondary">{label}</span>
-      <span className="flex-shrink-0 text-xs tabular-nums text-content-quaternary">{detail}</span>
+      <span className={`min-w-0 flex-1 truncate text-sm ${locked ? "text-content-tertiary" : "text-content-primary"}`}>{label}</span>
+      {locked && <span className="chip chip-success flex-shrink-0">{lockedHint}</span>}
+      {detail !== "" && <span className="num flex-shrink-0 text-xs text-content-tertiary">{detail}</span>}
     </button>
   );
 }
+
+/** Le bloc des cases : une tuile d'encre, comme sur la maquette. */
+const LIST = "rounded-tile bg-surface-2 p-1";
 
 interface SeasonProps {
   episodes: readonly MediaItem[];
@@ -110,11 +112,9 @@ export function SeasonChecklist({ episodes, uncheckedSeasons, onDevice, sizeOf, 
   const { t } = useTranslation("downloads");
   const groups = useMemo(() => groupBySeason(episodes), [episodes]);
   return (
-    <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
-        {t("seasonsPickerLabel")}
-      </p>
-      <div className="space-y-0.5">
+    <div className="flex flex-col gap-2.5">
+      <span className="ui-eyebrow">{t("seasonsPickerLabel")}</span>
+      <div className={`${LIST} max-h-56 overflow-y-auto`}>
         {groups.map((group) => {
           const left = group.episodes.filter((item) => !onDevice.has(item.Id));
           const locked = left.length === 0;
@@ -132,6 +132,7 @@ export function SeasonChecklist({ episodes, uncheckedSeasons, onDevice, sizeOf, 
               locked={locked}
               label={group.number === null ? t("seasonUnknown") : t("seasonLabel", { num: group.number })}
               detail={detail}
+              lockedHint={t("downloadedBadge")}
               onToggle={() => onToggle(group.key)}
             />
           );
@@ -149,20 +150,23 @@ interface EpisodeProps {
   onToggle: (itemId: string) => void;
 }
 
-function episodeCode(item: MediaItem): string {
+/**
+ * Devant le nom : le numéro seul (« 3. ») quand toute la liste est d'UNE saison — le titre de
+ * la feuille la nomme déjà —, sinon le code complet (« S01E03 · »).
+ */
+function episodePrefix(item: MediaItem, oneSeason: boolean): string {
   if (item.IndexNumber == null) return "";
+  if (oneSeason) return `${item.IndexNumber}. `;
   return `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · `;
 }
 
 export function EpisodeChecklist({ items, selected, onDevice, sizeOf, onToggle }: EpisodeProps) {
   const { t } = useTranslation("downloads");
   const already = items.filter((item) => onDevice.has(item.Id)).length;
+  const oneSeason = new Set(items.map((item) => item.ParentIndexNumber ?? 1)).size === 1;
   return (
-    <div>
-      {already > 0 && (
-        <p className="mb-1.5 text-xs text-content-quaternary">{t("alreadyOnDevice", { count: already })}</p>
-      )}
-      <div className="max-h-56 space-y-0.5 overflow-y-auto">
+    <div className="flex flex-col gap-2">
+      <div className={`${LIST} max-h-56 overflow-y-auto`}>
         {items.map((item) => {
           const kept = onDevice.has(item.Id);
           const size = sizeOf(item);
@@ -171,13 +175,15 @@ export function EpisodeChecklist({ items, selected, onDevice, sizeOf, onToggle }
               key={item.Id}
               checked={kept || selected.has(item.Id)}
               locked={kept}
-              label={`${episodeCode(item)}${item.Name ?? ""}`}
+              label={`${episodePrefix(item, oneSeason)}${item.Name ?? ""}`}
               detail={size === null ? "" : formatBytes(size)}
+              lockedHint={t("downloadedBadge")}
               onToggle={() => onToggle(item.Id)}
             />
           );
         })}
       </div>
+      {already > 0 && <p className="text-xs text-content-tertiary">{t("alreadyOnDevice", { count: already })}</p>}
     </div>
   );
 }

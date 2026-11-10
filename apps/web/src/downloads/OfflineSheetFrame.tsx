@@ -1,73 +1,53 @@
 /**
- * Le cadre des feuilles du hors ligne (« garder hors ligne », « supprimer »).
+ * Le cadre des feuilles du hors ligne (« télécharger », « supprimer »).
  *
- * Verre natif (macOS 26) : la feuille de `Modal` — une plaque `surface` d'un
- * seul ton sur le voile flouté, en portail, focus piégé (lot lg7, R3). Avant,
- * un panneau en ligne à 7 % de blanc laissait la page traverser la feuille.
+ * La feuille du socle (`Modal`, docs/REFONTE-UI.md § 4) dans TOUS les modes : opaque, en
+ * portail, focus piégé, Échap et clic sur le voile ; 320 ms à l'entrée sur la courbe de tiroir,
+ * 200 à la sortie (`useSheetExit` : la feuille se referme avant d'être démontée). En verre
+ * natif (macOS 26), la même `Modal` pose sa plaque `surface`.
  *
- * Ailleurs : le cadre d'avant, au pixel près — portail, voile, panneau en
- * ligne, Échap. PORTAIL, toujours : ouvert depuis une capsule de verre, dont
- * le `backdrop-filter` (comme un `transform`) borne les `position: fixed`, il
- * tenait dans 240 × 54 px (garde : `components/ui/glass/modalPortal.test.ts`).
+ * PORTAIL, toujours : ouverte depuis une capsule de verre, dont le `backdrop-filter` (comme un
+ * `transform`) borne les `position: fixed`, la feuille tenait dans 240 × 54 px (garde :
+ * `components/ui/glass/modalPortal.test.ts`). Le voile d'attente ci-dessous aussi.
  */
 
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Modal } from "../components/ui/Modal";
-import { useLiquidGlassMode } from "../theme/glass";
+import { Spinner } from "../components/ui/Spinner";
 
 interface Props {
   label: string;
+  /** L'ouverture de `useSheetExit` : `false` joue la sortie. */
+  open: boolean;
   onClose: () => void;
   role?: "dialog" | "alertdialog";
-  /** Largeur d'avant : `md` (448 px) ou `sm` (384 px). */
+  /** `md` : la feuille de téléchargement (520 px) ; `sm` : une confirmation (420 px). */
   width: "md" | "sm";
-  /** Plan d'avant (`z-[200]`, `z-[210]`). */
-  legacyLayer: "z-[200]" | "z-[210]";
   children: ReactNode;
 }
 
-const WIDTH = { md: { px: 448, legacy: "max-w-md" }, sm: { px: 384, legacy: "max-w-sm" } } as const;
+const WIDTH = { md: 520, sm: 420 } as const;
 
-export function OfflineSheetFrame({ label, onClose, role = "dialog", width, legacyLayer, children }: Props) {
-  const native = useLiquidGlassMode() === "native";
-  if (native) {
-    return (
-      <Modal open onClose={onClose} maxWidth={WIDTH[width].px} label={label} role={role}>
-        {children}
-      </Modal>
-    );
-  }
+const sheetFocusTarget = (): HTMLElement | null => document.querySelector<HTMLElement>("[data-sheet-focus]:not([disabled])");
+
+export function OfflineSheetFrame({ label, open, onClose, role = "dialog", width, children }: Props) {
   return (
-    <LegacyFrame label={label} onClose={onClose} role={role} width={width} legacyLayer={legacyLayer}>
+    // Le premier focus va à l'action que la feuille désigne (`data-sheet-focus`), pas à la croix.
+    <Modal open={open} onClose={onClose} maxWidth={WIDTH[width]} label={label} role={role} initialFocus={sheetFocusTarget}>
       {children}
-    </LegacyFrame>
+    </Modal>
   );
 }
 
-function LegacyFrame({ label, onClose, role = "dialog", width, legacyLayer, children }: Props) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
+/**
+ * Le voile d'attente : la feuille n'a pas encore ce qu'il lui faut (les épisodes d'une série,
+ * la fiche complète d'un titre). Un voile et un anneau, en portail comme la feuille qui suit.
+ */
+export function SheetResolvingVeil({ label }: { label: string }) {
   return createPortal(
-    <div className={`fixed inset-0 ${legacyLayer} flex items-center justify-center p-4`} role={role} aria-modal="true" aria-label={label}>
-      <div className="lg-scrim absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
-      <div
-        className={`lg-sheet relative w-full ${WIDTH[width].legacy} origin-center animate-scale-in overflow-hidden rounded-2xl border border-line-subtle`}
-        style={{
-          background: "var(--surface-modal)",
-          boxShadow: "var(--shadow-modal)",
-          backdropFilter: "blur(var(--blur-modal))",
-          WebkitBackdropFilter: "blur(var(--blur-modal))",
-        }}
-      >
-        {children}
-      </div>
+    <div className="ui-scrim fixed inset-0 z-[100] flex items-center justify-center" aria-busy="true">
+      <Spinner tone="white" label={label} />
     </div>,
     document.body,
   );
