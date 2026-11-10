@@ -11,6 +11,7 @@
 //   prevent_display_sleep_start / _stop, player_surface_transparent
 #pragma once
 
+#include <functional>
 #include <optional>
 
 #include "ports.h"
@@ -24,12 +25,15 @@ class WindowChannels {
 
   /// À appeler par l'adaptateur de la fenêtre quand l'état réel change.
   void fullscreenChanged(bool on);
+  /// `player_surface_transparent {on}` de la page (verre natif : opaque, il se cache).
+  void setSurfaceListener(std::function<void(bool)> listener) { surfaceListener_ = std::move(listener); }
 
  private:
   Registry& registry_;
   WindowPort& window_;
   std::optional<bool> sessionStartedFullscreen_;  // nullopt : pas de session ouverte
   bool lastEmitted_ = false;
+  std::function<void(bool)> surfaceListener_;
 };
 
 }  // namespace bridge

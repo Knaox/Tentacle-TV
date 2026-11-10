@@ -13,12 +13,15 @@
 
 #include <nlohmann/json.hpp>
 
+#include <nlohmann/json.hpp>
+
 namespace bridge {
 class Registry;
 }
 
 namespace tentacle {
 struct AppContext;
+class Player;
 }
 
 namespace tentacle::pont {
@@ -40,5 +43,16 @@ bool videoRunning();
 void stopVideo(std::function<void()> done);
 /// `pause=yes`, écriture ASYNCHRONE (jamais de propriété mpv en synchrone).
 void pauseVideo();
+
+// Le verre natif (axe verre, src/glass).
+/// La configuration de `window.tentacle.liquidGlass` (`{refractsVideo}`), à poser AVANT
+/// `installShim` ; `null` (défaut) : pas de pont du verre — l'option de Réglages est absente.
+void setLiquidGlassShim(const nlohmann::json& config);
+/// La page laisse voir la vidéo (vraie couche posée : vrai) ou plus (fin de lecture, ou
+/// `player_surface_transparent {on: false}` de la page : faux). Un seul abonné.
+void setOnSurfaceTransparent(std::function<void(bool)> listener);
+/// Le lecteur de la lecture en cours (nullptr sans elle) — à utiliser tout de suite, sur le fil
+/// principal : l'instance peut s'arrêter au tour suivant.
+tentacle::Player* videoPlayer();
 
 }  // namespace tentacle::pont

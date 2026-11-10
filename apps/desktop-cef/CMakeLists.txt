@@ -173,6 +173,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/src/offline/CMakeLists.txt")
 endif()
 add_subdirectory(src/pip)  # pip : image dans l'image (règles, navigateur du PiP, fenêtre native)
 add_subdirectory(src/display)  # windows : écran HDR, mpv_harden_child_window, Microsoft Store
+add_subdirectory(src/glass)  # verre : Liquid Glass de macOS 26 (règles, verre natif, échantillonneur)
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"

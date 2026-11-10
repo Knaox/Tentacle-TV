@@ -41,6 +41,11 @@ class WebLayer {
   // Page immobile depuis un moment (veille profonde de l'horloge) : rendre la mémoire qui ne
   // sert qu'à enchaîner les images (macOS : drawables de réserve). L'image affichée reste.
   virtual void trim() {}
+  // La dernière image de la VUE, pour la mesurer (verre natif : `liquidGlass.sample`) — macOS :
+  // une IOSurfaceRef RETENUE (à rendre par CFRelease), nullptr sans image partagée. Elle vient du
+  // pool de CEF : lue plus tard, elle peut déjà porter une image plus récente (sans danger pour
+  // une médiane de luminance). Fil principal.
+  virtual void* retainLastFrame() { return nullptr; }
 };
 
 struct CompositorStats {
@@ -85,6 +90,16 @@ class Compositor {
   virtual void reclaimVideo() {}
   // La pile qui reçoit : la vidéo posée à `inset` points de ses bords (0 : plein cadre).
   virtual void setVideoInset(double inset) {}
+
+  // --- Verre natif (src/glass, macOS 26 ; axe verre) ---------------------------------------
+  // Pose `view` (macOS : NSView*) ENTRE la vidéo et la page, plein cadre : elle voit la vidéo,
+  // la page se dessine par-dessus (le verre d'Electron vit sous la vue web). nullptr la retire.
+  // Une seule à la fois ; le compositeur la retient tant qu'elle est posée. Faux si la plateforme
+  // ne sait pas.
+  virtual bool setUnderlay(void* view) { return false; }
+  // Le cadre de la couche vidéo MONTRÉE dans cette pile (points, origine en haut à gauche) ;
+  // faux s'il n'y en a pas (aucune couche, ou prêtée au PiP). `liquidGlass.sample` y lit l'image.
+  virtual bool shownVideoFrame(RectPt* frame) const { return false; }
 
   // Couche vidéo factice (aplat coloré) pour tester l'empilement sans mpv.
   static std::unique_ptr<VideoSurface> createFakeVideoSurface(SDL_Window* window,

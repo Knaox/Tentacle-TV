@@ -122,6 +122,8 @@ class WebLayerMac final : public WebLayer {
     return true;
   }
 
+  void* retainLastFrame() override { return lastSurface_ ? (void*)CFRetain(lastSurface_) : nullptr; }
+
  private:
 
   bool ensureTexture(id<MTLTexture> __strong& tex, int w, int h) {

@@ -64,3 +64,17 @@ Ce que les bancs en arrière-plan ne peuvent pas jouer (vrai Finder, touches, ap
 - Glisser une affiche ou un lien de Tentacle et le lâcher ailleurs dans la page → rien (ni navigation, ni onglet) ; Échap pendant un glisser d'un titre d'Octave → le glisser s'arrête, l'image fantôme disparaît.
 - App au premier plan : survoler un bouton-icône sans bouger ~1 s → bulle macOS (même délai que les autres apps) ; la bulle part au clic et quand l'app passe derrière.
 - Réglages › photo de profil › « Importer une photo » → feuille NSOpenPanel attachée à la fenêtre, « Afficher les options » → « Format: Image Files / All Files ».
+
+## Liquid Glass (axe verre) — macOS 26, Apple Silicon
+
+`pnpm dev:cef`, Réglages › Apparence › « Liquid Glass dans Tentacle » allumé, puis un film.
+
+- [ ] Contrôles du lecteur affichés → capsules en verre (retour, son, ±10/30 s, pause, vitesse, réglages, PiP, plein écran) : la vidéo se voit À TRAVERS, déformée au bord, comme sous Electron.
+- [ ] Bouger la souris après quelques secondes d'immobilité → les capsules MONTENT et s'allument en même temps que leurs glyphes (aucun décalage verre / icône) ; elles s'effacent plus vite qu'elles ne viennent.
+- [ ] Passage d'une scène très claire (neige) à une scène sombre → les glyphes des capsules passent du sombre au clair en une à deux secondes.
+- [ ] Fenêtre active puis inactive (cliquer une autre app) → le verre fonce et pâlit comme le verre du système, rien ne clignote.
+- [ ] Plein écran et retour, redimensionner la fenêtre pendant la lecture → les capsules restent collées à leurs boutons.
+- [ ] Film HDR10 ou Dolby Vision, verre posé → l'image reste en HDR (plus lumineuse que l'interface).
+- [ ] « Lecture en incrustation » (PiP) → aucun verre dans la fenêtre PiP ; retour au lecteur → le verre revient.
+- [ ] Réglage coupé → plus aucun verre natif, le lecteur d'avant ; macOS < 26 ou Intel : l'option n'existe pas / pas de verre du lecteur.
+- [ ] Coût, FENÊTRE VISIBLE (le banc refuse une fenêtre cachée) : `PONT_CDP_PORT=<port> node bench/glass/gpu.mjs 12 3` → WindowServer avec/sans verre (Electron : +3 à +5 points), 0 image perdue.

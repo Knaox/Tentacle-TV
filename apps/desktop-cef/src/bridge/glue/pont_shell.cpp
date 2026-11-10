@@ -61,6 +61,7 @@ struct State {
   std::unique_ptr<bridge::MpvPlayerPort> player;
   std::unique_ptr<bridge::VideoChannels> video;
   std::unique_ptr<bridge::WindowChannels> windowChannels;
+  Json liquidGlass;  // axe verre : configuration du pont du verre (null : absent)
 };
 std::unique_ptr<State> state;
 
@@ -148,6 +149,7 @@ void installShim(AppContext& ctx) {
   // focus de la fenêtre (macOS) : le cadre est celui d'Electron (src/lifecycle, axe systeme).
   config.titleBarHeight = tentacle::lifecycle::platform::titleBarHeight();
   config.windowFocus = tentacle::lifecycle::platform::hasWindowFocusBridge();
+  config.liquidGlass = state->liquidGlass;
   ipc::registerInjectedScript(state->registry.injectedScript(bridge::embeddedShimSource(), config));
   std::fprintf(stderr, "[pont] window.tentacle pour %s : %zu commandes, %zu évènements\n",
                origin.empty() ? "(aucune origine)" : origin.c_str(), state->registry.commands().size(),
@@ -155,6 +157,18 @@ void installShim(AppContext& ctx) {
 }
 
 void shutdown() { state.reset(); }
+
+void setLiquidGlassShim(const nlohmann::json& config) {
+  if (state) state->liquidGlass = config;
+}
+
+void setOnSurfaceTransparent(std::function<void(bool)> listener) {
+  if (!state) return;
+  state->windowChannels->setSurfaceListener(listener);
+  state->player->setSurfaceListener(std::move(listener));
+}
+
+tentacle::Player* videoPlayer() { return state && state->player ? state->player->currentPlayer() : nullptr; }
 
 bool videoRunning() { return state && state->player && state->player->running(); }
 

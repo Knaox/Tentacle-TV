@@ -90,6 +90,7 @@ void MpvPlayerPort::stop(std::function<void()> done) {
   ++*generation_;  // plus aucun rappel de l'instance qui part
   // La couche quitte l'empilement tout de suite : la page reprend la main à l'écran.
   if (compositor_ && surface_) compositor_->setVideoLayer(restingLayer_);
+  if (surface_ && surfaceListener_) surfaceListener_(false);
   if (!player_) {
     surface_.reset();
     return done();
@@ -116,6 +117,8 @@ bool MpvPlayerPort::ensureSurface(std::string* error) {
   surface_->setFrame({0, 0, widthPt_, heightPt_});
   if (compositor_) compositor_->setVideoLayer(surface_.get());
   surface_->show();
+  // Comme `macosSurface.ts` d'Electron : la page laisse voir la vidéo dès que la couche est là.
+  if (surfaceListener_) surfaceListener_(true);
   if (!player_->attachVideoSurface(*surface_)) {
     *error = "le lecteur refuse la surface video";
     return false;

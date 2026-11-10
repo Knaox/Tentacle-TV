@@ -13,6 +13,7 @@
 #include "lifecycle/lifecycle_shell.h"  // systeme : cycle de vie (src/lifecycle)
 #include "offline/glue/offline_shell.h"  // horsligne : titres gardés, session (src/offline)
 #include "display/display_channels.h"  // windows : écran HDR, annexes du lecteur, Store (src/display)
+#include "glass/glass_shell.h"  // verre : Liquid Glass de macOS 26 (src/glass)
 
 namespace tentacle {
 
@@ -29,6 +30,7 @@ void initModules(AppContext& ctx) {
   offline::installInShell(pont::registry(), ctx);  // horsligne : downloads_*, session_cache_*, avatar_cache_*
   pip::install(ctx, pont::registry());  // pip : commandes pip_*, fenêtre PiP
   display::install(ctx, pont::registry());  // windows : display_hdr_*, mpv_harden_child_window, Store
+  glass::install(ctx);  // verre : window.tentacle.liquidGlass (macOS 26), avant le shim
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }
@@ -39,6 +41,7 @@ void shutdownModules() {
   music::shutdownMusic();  // octave : la musique s'arrête, la sortie audio est rendue
   reseau::shutdown();  // reseau
   pip::shutdown();  // pip : le navigateur du PiP part avant CefShutdown
+  glass::shutdown();  // verre : retiré d'AppKit tant que la fenêtre vit
   pont::shutdown();
   offline::shutdown();  // horsligne : transferts arrêtés, base refermée (WAL replié), fil joint
   display::shutdown();  // windows : APRÈS le pont — l'écran HDR est rendu en dernier

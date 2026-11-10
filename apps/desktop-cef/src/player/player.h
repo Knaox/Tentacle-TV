@@ -60,6 +60,11 @@ public:
 
     // `args` : tableau (["seek", 30, "relative"]) ou objet nommé ({"name": "loadfile", …}).
     void command(const Json& args, PlayerDone done = {});
+    // Comme `command`, mais la réponse est LUE EN PLACE par `read` (un `const mpv_node*` valable
+    // pendant l'appel seulement, sur le fil principal) : ce qu'il rend devient `result`. Pour une
+    // réponse lourde qu'on ne recopie pas en JSON (`screenshot-raw` : l'image entière ; le verre
+    // n'en lit que sa grille — axe verre).
+    void commandReading(const Json& args, std::function<Json(const void* mpvNode)> read, PlayerDone done);
     void setProperty(const std::string& name, const Json& value, PlayerDone done = {});
     // Valeur typée par mpv, ou nullopt (propriété absente / indisponible).
     void getProperty(const std::string& name, std::function<void(std::optional<Json>)> done);
