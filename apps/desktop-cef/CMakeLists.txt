@@ -105,6 +105,9 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+if(EXISTS "${CMAKE_SOURCE_DIR}/src/offline/CMakeLists.txt")
+  add_subdirectory(src/offline)  # horsligne : titres gardés, session, tentacle://local
+endif()
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"

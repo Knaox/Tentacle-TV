@@ -224,6 +224,24 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `<profil>/update`), `--update-first-check-ms=`. Sans flux ni clé publique compilée
   (`-DTENTACLE_UPDATE_PUBLIC_KEYS=id:base64`), le moteur est éteint : aucun accès réseau.
 
+### Hors ligne (horsligne) — `src/offline/`
+- Branchement : `offline::installInShell(pont::registry(), ctx)` dans `initModules`, AVANT
+  `pont::installShim` (les commandes entrent dans `capabilities`) ; `offline::shutdown()` à la
+  FIN de `shutdownModules` (le fil hors ligne est joint, la base refermée — WAL replié).
+- Fil : tout le hors ligne vit sur UN fil à lui (`CefThread` « tentacle-offline »,
+  `glue/offline_thread.h`) — base, disque, moteur ; jamais sur le fil de l'interface. Les
+  commandes y sont postées (`glue/commands.h`), la réponse repasse par le socle.
+- Données : celles d'Electron, aux mêmes formats — `<userData>/tentacle-local.db` (schéma
+  `core/schema.cpp`, copie octet pour octet de `packages/offline-core/src/core/schema.ts`,
+  verrouillée par `tests/schema_tests.cpp`), `<userData>/avatars/<id>.jpg`.
+  `<userData>` : `--user-data=`, sinon `TENTACLE_ELECTRON_PROFILE`, sinon le dossier d'Electron
+  (`glue/user_data.cpp`, COUTURE en attendant `tentacle::paths::userData()` de l'axe reseau).
+- Canaux (`window.tentacle`, noms et charges d'Electron) : `session_cache_get/set/clear`,
+  `avatar_cache_put/get`.
+- CMake : `tentacle_offline_core` (pur : SQLite, fichiers, JSON — testé seul,
+  `cmake -S src/offline`), `tentacle_offline_glue` (CEF). SQLite : celui du système (macOS,
+  Linux), amalgamation 3.46.1 épinglée (SHA-256) sous Windows (`src/offline/sqlite.cmake`).
+
 ### Compositeur (socle) — `src/compositor/compositor.h`
 - `setVideoLayer(VideoSurface*)` (ou `nullptr`), `webLayer()` ; ordre fixe : vidéo en bas,
   page web au-dessus, page transparente là où elle ne dessine rien.
