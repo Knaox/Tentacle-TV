@@ -7,9 +7,18 @@
   - DPI par écran v2 : la page reste nette à 125 %, 150 %…, et suit l'écran de la fenêtre ;
   - activeCodePage UTF-8 (Windows 10 1903+) : les API « A », argv et std::filesystem lisent
     l'UTF-8 du proto (chemins avec accents, profil d'Electron) ;
-  - longPathAware : chemins de plus de 260 caractères (profils, caches).
+  - longPathAware : chemins de plus de 260 caractères (profils, caches) ;
+  - Common Controls 6 (comme chrome.exe et cefclient) : TaskDialogIndirect (boîtes de message
+    de l'axe navigateur, dialogs_windows.cpp — sans eux, repli sur MessageBoxW), styles visuels
+    des bulles (tooltip_windows.cpp).
 -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0"
+                        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
