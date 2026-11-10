@@ -23,7 +23,7 @@ add_compile_options(
   $<$<CONFIG:Debug>:/Od> $<$<CONFIG:Debug>:/Zi>
 )
 add_compile_definitions(
-  WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE
+  NOMINMAX UNICODE _UNICODE             # pas WIN32_LEAN_AND_MEAN : l’assistant de maj veut shellapi.h
   _WIN32_WINNT=0x0A00 WINVER=0x0A00      # Windows 10 (DPI par écran v2 : 1703 ; MSIX : 2004)
   SODIUM_STATIC                          # libsodium statique (src/update)
   _CRT_SECURE_NO_WARNINGS

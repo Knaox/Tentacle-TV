@@ -108,7 +108,11 @@ int runApp(int argc, char** argv) {
   // pendant l'initialisation.
   auto pump = MessagePump::create();
   CefRefPtr<BrowserApp> app = new BrowserApp(pump.get());
+#if defined(_WIN32)
+  CefMainArgs mainArgs(GetModuleHandleW(nullptr));  // CEF relit lui-même la ligne de commande
+#else
   CefMainArgs mainArgs(argc, argv);
+#endif
   CefSettings settings = makeSettings(opts);
   if (!CefInitialize(mainArgs, settings, app, nullptr)) {
     std::fprintf(stderr, "CefInitialize a échoué (code %d)\n", CefGetExitCode());

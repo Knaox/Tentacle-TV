@@ -12,7 +12,7 @@
 // Fil : principal (UI) seulement. Le contexte immédiat D3D11 est protégé (multithread) : mpv
 // a son PROPRE périphérique et ne le touche jamais, mais un pilote peut rappeler d'un autre fil.
 
-#include <d3d11_1.h>
+#include <d3d11_4.h>  // ID3D11Multithread ; inclut d3d11_1.h (ID3D11Device1)
 #include <dcomp.h>
 #include <dxgi1_6.h>
 
