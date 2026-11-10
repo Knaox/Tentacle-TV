@@ -5,18 +5,39 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
   find_package(nlohmann_json 3.11 REQUIRED CONFIG)
 endif()
 
-add_library(tentacle_music STATIC
-  audio_options.cpp
+# Le cœur : règles, file, moteur, transition douce, canaux — sans libmpv (une `AudioBackend`
+# l'abstrait) : testé seul (`tests/`, les cas des tests d'Electron).
+add_library(tentacle_music_core STATIC
   audio_types.cpp
-  audio_engine.cpp
-  audio_engine_state.cpp
+  audio_options.cpp
+  audio_rules.cpp
+  audio_format.cpp
+  audio_queue.cpp
+  engine_state.cpp
+  engine_ends.cpp
+  crossfade_rules.cpp
+  crossfade_pair.cpp
+  crossfade_decks.cpp
+  native_engine.cpp
+  native_engine_io.cpp
   octave_channels.cpp
-  mpv_audio_backend.cpp
 )
 # Les en-têtes s'incluent en `music/…` depuis `src/`.
-target_include_directories(tentacle_music PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
-target_link_libraries(tentacle_music PUBLIC nlohmann_json::nlohmann_json)
-target_compile_features(tentacle_music PUBLIC cxx_std_20)
+target_include_directories(tentacle_music_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_link_libraries(tentacle_music_core PUBLIC nlohmann_json::nlohmann_json)
+target_compile_features(tentacle_music_core PUBLIC cxx_std_20)
+if(NOT MSVC)
+  target_compile_options(tentacle_music_core PRIVATE -Wall -Wextra -Wno-unused-parameter)
+endif()
+foreach(t audio_queue audio_rules crossfade_decks file_ends)
+  add_executable(tentacle_music_${t}_tests tests/${t}_tests.cpp)
+  target_link_libraries(tentacle_music_${t}_tests PRIVATE tentacle_music_core)
+  add_test(NAME tentacle_music_${t}_tests COMMAND tentacle_music_${t}_tests)
+endforeach()
+
+# Le moteur sur libmpv : `Player` de vidéo-HDR (app), ou libmpv directe (banc de Homebrew).
+add_library(tentacle_music STATIC mpv_audio_backend.cpp)
+target_link_libraries(tentacle_music PUBLIC tentacle_music_core)
 target_compile_options(tentacle_music PRIVATE -Wall -Wextra -Wno-unused-parameter)
 
 # libmpv : celle du lecteur de vidéo-HDR (le fork) quand il est construit — la

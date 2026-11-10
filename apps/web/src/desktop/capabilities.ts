@@ -74,6 +74,16 @@ export function supportsSmtc(): boolean {
 }
 
 /**
+ * La coquille publie « À l'écoute » sur TOUS ses systèmes — macOS (Centre de contrôle),
+ * Windows (SMTC), Linux (MPRIS) — pour la vidéo ET la musique : Tentacle CEF. La commande
+ * qui le dit, `smtc_set_controls`, n'existe que là ; Electron ne la déclare pas et garde
+ * ses touches média réservées à Windows, sans fiche pour la musique.
+ */
+export function supportsSystemMediaSession(): boolean {
+  return hasNativeCommand("smtc_set_controls");
+}
+
+/**
  * Le PiP : réduire la lecture dans une petite fenêtre et continuer dans
  * l'application. Là où la coquille sait mettre la vidéo de mpv dans une petite
  * fenêtre — Linux sous Wayland avec la colle KWin, macOS Apple Silicon

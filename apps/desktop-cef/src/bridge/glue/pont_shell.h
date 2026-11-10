@@ -9,6 +9,9 @@
 #pragma once
 
 #include <functional>
+#include <string>
+
+#include <nlohmann/json.hpp>
 
 namespace bridge {
 class Registry;
@@ -25,6 +28,8 @@ void install(AppContext& ctx);
 bridge::Registry& registry();
 /// Une vidéo démarre : appelé à chaque `mpv_init` (octave y met la musique en pause).
 void setOnVideoClaim(std::function<void()> claim);
+/// Chaque propriété du lecteur vidéo, telle que mpv la donne (« À l'écoute », medias).
+void setVideoPropertyObserver(std::function<void(const std::string& name, const nlohmann::json& value)> observer);
 /// Pose le shim (`registerInjectedScript`) avec la liste FINALE des canaux.
 void installShim(AppContext& ctx);
 void shutdown();
