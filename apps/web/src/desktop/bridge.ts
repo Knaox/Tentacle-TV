@@ -34,6 +34,7 @@ export {
   supportsNativeAudio,
   supportsOfflineSession,
   supportsSmtc,
+  supportsSystemMediaSession,
 } from "./capabilities";
 export type { DesktopEvent, DesktopEventHandler, DesktopKind, Unlisten } from "./types";
 

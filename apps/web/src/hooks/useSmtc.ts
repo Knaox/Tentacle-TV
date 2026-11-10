@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { desktopPlatform, invoke, listen, supportsSmtc } from "../desktop/bridge";
+import { desktopPlatform, invoke, listen, supportsSmtc, supportsSystemMediaSession } from "../desktop/bridge";
 
 interface SmtcHandlers {
   onToggle: () => void;
@@ -22,14 +22,15 @@ interface UseSmtcOptions extends SmtcHandlers {
 }
 
 /**
- * SMTC n'existe que sur le bureau Windows.
+ * SMTC n'existe que sur le bureau Windows — sauf coquille qui publie « À l'écoute »
+ * partout (`supportsSystemMediaSession` : Tentacle CEF, macOS et Linux compris).
  *
  * La plateforme vient du pont : sous Electron elle est annoncée par le
  * processus principal, donc exacte, là où l'analyse du user agent restait une
  * approximation.
  */
 function smtcEnabled(): boolean {
-  return desktopPlatform() === "windows" && supportsSmtc();
+  return supportsSmtc() && (desktopPlatform() === "windows" || supportsSystemMediaSession());
 }
 
 async function invokeSmtc(cmd: string, args?: Record<string, unknown>): Promise<void> {
@@ -82,6 +83,15 @@ export function useSmtc(opts: UseSmtcOptions) {
       void invokeSmtc("smtc_clear");
     };
   }, []);
+
+  // Ce que « suivant » et « précédent » feraient : le système grise ce qui ne mène nulle part.
+  // Seulement là où la coquille le sait (`smtc_set_controls`, CEF) : Electron ne le déclare pas.
+  const canNext = opts.onNext !== undefined;
+  const canPrevious = opts.onPrevious !== undefined;
+  useEffect(() => {
+    if (!smtcEnabled() || !supportsSystemMediaSession()) return;
+    void invokeSmtc("smtc_set_controls", { next: canNext, previous: canPrevious });
+  }, [canNext, canPrevious]);
 
   // Métadonnées.
   useEffect(() => {
