@@ -25,6 +25,7 @@ import { patchFavorites } from "./useMusicFavorite";
 import { useMusicCapability } from "./useMusicLibrary";
 import { isSavingListPrefs } from "./useMusicListOrder";
 import { refreshIdleOrderPage } from "./orderOutbox/orderOutboxApi";
+import { coalesced } from "./eventCoalesce";
 
 function invalidateScopes(qc: QueryClient, scopes: readonly string[]): void {
   for (const scope of scopes) void qc.invalidateQueries({ queryKey: ["music", scope] });
@@ -51,7 +52,8 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
       return;
     case "music:resolved":
     case "music:pending":
-      invalidateScopes(qc, ["liked", "playlists", "playlist", "home", "match"]);
+      // Une rafale (une playlist importée qui se résout titre à titre) : une relecture par fenêtre.
+      coalesced(qc, `live:${event.type}`, () => invalidateScopes(qc, ["liked", "playlists", "playlist", "home", "match"]));
       return;
     case "music:shelves":
       // Un autre appareil du compte a posé un favori ou rangé une rubrique ; l'écho de NOTRE ordre ne relit rien.
