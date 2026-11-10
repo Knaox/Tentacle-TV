@@ -86,3 +86,25 @@ test("langue : celle de la page, sinon du stockage, sinon du système", () => {
   assert.equal(o.pickLang("", null, "de-DE"), "en");
   assert.equal(o.pickLang(undefined, undefined, undefined), "fr");
 });
+
+test("installation lancée : le voile bloque tout jusqu'au redémarrage, sans bouton", () => {
+  // « Redémarrer » sur une majeure : plus de notification qu'on peut ignorer — un voile.
+  const applying = major({ phase: "applying" });
+  assert.equal(o.viewFor(applying, idle), "blocking");
+  assert.equal(o.viewFor(applying, { ...idle, path: "/watch/abc", video: true }), "blocking");
+  const m = o.blockingModel(applying, "fr");
+  assert.equal(m.title, "Installation de Tentacle 1.1.0");
+  assert.equal(m.primary, null);          // rien à cliquer : elle s'installe
+  assert.equal(m.progress, "sweep");
+  assert.equal(m.warn, false);            // ce n'est pas une alerte de sécurité
+  assert.match(o.blockingModel(applying, "en").body, /Playback is paused/);
+  // La sécurité garde son texte et son bouton (désactivé pendant l'installation).
+  const sec = major({ prompt: "blocking", phase: "applying", update: { ...major().update, mandatory: true } });
+  assert.equal(o.blockingModel(sec, "fr").title, "Mise à jour de sécurité requise");
+  assert.equal(o.blockingModel(sec, "fr").primary.disabled, true);
+});
+
+test("le voile verrouille l'application : annoncé au front, jamais pour une notification", () => {
+  assert.equal(o.locksApp("blocking"), true);
+  for (const view of ["none", "toast", "waiting", "rolledBack"]) assert.equal(o.locksApp(view), false);
+});

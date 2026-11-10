@@ -7,7 +7,14 @@
 //                       ATTEND la fin d'une lecture (vidéo ou musique) pour paraître ;
 //   prompt "blocking" → la mise à jour de sécurité : un voile qui bloque l'app tout de
 //                       suite, lecture comprise, sans bouton pour la masquer ;
-//   prompt "none"     → rien (mineure : installée en silence au prochain redémarrage).
+//   prompt "none"     → rien (mineure : installée en silence au prochain redémarrage) ;
+//   phase "applying"  → l'installation est LANCÉE (« Redémarrer ») : le même voile, sans bouton,
+//                       jusqu'au redémarrage — plus rien ne se fait derrière.
+// Tant que le voile est là, la surcouche l'ANNONCE au front par l'évènement de fenêtre
+// `tentacle:update-lock` ({ locked }) : le front met la lecture en pause, coupe ses raccourcis
+// et rend son arrière-plan inerte (apps/web/src/components/update/updateLock.ts). Le nom de cet
+// évènement traverse deux programmes : il ne se renomme pas. Un front qui ne l'écoute pas garde
+// le comportement d'avant (voile et piège de clavier de la surcouche seule).
 // Les fonctions pures (viewFor, toastModel…) sont testées par bench/update/overlay.test.mjs.
 (function installUpdateOverlay(global) {
   "use strict";
@@ -30,6 +37,8 @@
       backTitle: "Mise à jour annulée", ok: "OK",
       backBody: (v) => `Tentacle ${v} n'a pas pu démarrer : la version précédente a été remise.`,
       close: "Fermer (plus tard)",
+      applyTitle: (v) => `Installation de Tentacle ${v}`,
+      applyBody: "L'application redémarre dans un instant. La lecture est en pause et plus rien n'est à faire.",
     },
     en: {
       arriving: (v) => `Tentacle ${v} is on its way`, downloading: "Downloading in the background…",
@@ -49,6 +58,8 @@
       backTitle: "Update rolled back", ok: "OK",
       backBody: (v) => `Tentacle ${v} could not start: the previous version was restored.`,
       close: "Close (later)",
+      applyTitle: (v) => `Installing Tentacle ${v}`,
+      applyBody: "The app restarts in a moment. Playback is paused and there is nothing left to do.",
     },
   };
 
@@ -67,6 +78,7 @@
   function viewFor(s, ctx) {
     if (!s) return "none";
     if (s.prompt === "blocking") return "blocking";  // la sécurité n'attend pas
+    if (s.phase === "applying") return "blocking";   // l'installation est lancée : plus rien derrière
     const wants = s.rolledBack && !ctx.rolledBackSeen ? "rolledBack" : s.prompt === "toast" ? "toast" : "none";
     if (wants === "none") return "none";
     return isBusy(ctx) ? "waiting" : wants;
@@ -109,16 +121,25 @@
     };
   }
 
+  // Le voile verrouille l'application derrière lui (lecture, raccourcis, focus) : le front l'apprend.
+  function locksApp(view) {
+    return view === "blocking";
+  }
+
   function blockingModel(s, lang) {
     const t = TEXT[lang], u = s.update || {}, ready = s.phase === "ready";
+    // Une majeure qu'on vient de lancer : ni raison de sécurité, ni bouton — elle s'installe.
+    if (s.phase === "applying" && s.prompt !== "blocking") {
+      return { title: t.applyTitle(u.version || ""), body: t.applyBody, progress: "sweep", primary: null, links: [], warn: false };
+    }
     const why = u.why && (u.why[lang] || u.why.fr || u.why.en);
     return { title: t.secTitle, body: why || t.secBody(u.version || ""),
       progress: ready || s.phase === "applying" ? null : typeof s.progress === "number" && s.phase === "downloading" ? s.progress : "sweep",
       primary: { label: ready ? t.secInstall : s.phase === "applying" ? t.restarting : t.secWait, action: "restart", disabled: !ready },
-      links: u.notesUrl ? [{ label: t.notes, action: "notes" }] : [] };
+      links: u.notesUrl ? [{ label: t.notes, action: "notes" }] : [], warn: true };
   }
 
-  const api = { pickLang, isBusy, viewFor, noteLines, toastModel, blockingModel, TEXT };
+  const api = { pickLang, isBusy, viewFor, locksApp, noteLines, toastModel, blockingModel, TEXT };
   if (typeof module === "object" && module.exports) module.exports = api;  // tests Node
   if (typeof window === "undefined" || window.top !== window || !window.__shell) return;
 
@@ -131,7 +152,14 @@
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   };
   const ctx = { path: "", video: false, audio: false, rolledBackSeen: false };
-  let snapshot = null, host = null, layer = null, shownKey = "", poll = 0;
+  let snapshot = null, host = null, layer = null, shownKey = "", poll = 0, lockAnnounced = false;
+
+  // Dit au front que le voile est là (ou parti) — une fois par changement.
+  function announceLock(locked) {
+    if (locked === lockAnnounced) return;
+    lockAnnounced = locked;
+    try { window.dispatchEvent(new CustomEvent("tentacle:update-lock", { detail: { locked } })); } catch (e) { /* front absent */ }
+  }
 
   function lang() {
     let stored = null;
@@ -165,7 +193,7 @@
   function progressBar(p) {
     if (p === null || p === undefined) return null;
     const fill = h("div", { class: p === "sweep" ? "fill sweep" : "fill" });
-    if (p !== "sweep") fill.style.width = `${Math.round(p * 100)}%`;
+    if (p !== "sweep") fill.style.transform = `scaleX(${p})`;
     return h("div", { class: "progress wide", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100",
       "aria-valuenow": p === "sweep" ? false : String(Math.round(p * 100)) },
       [h("div", { class: "track" }, [fill]), p === "sweep" ? null : h("span", { class: "pct", text: `${Math.round(p * 100)} %` })]);
@@ -189,13 +217,13 @@
   }
 
   function buildBlocking(m) {
-    return h("div", { class: "scrim" }, [h("section", { class: "glass dialog", role: "alertdialog", "aria-modal": "true",
+    return h("div", { class: "scrim" }, [h("section", { class: "glass dialog", role: "alertdialog", "aria-modal": "true", tabindex: "-1",
       "aria-labelledby": "maj-title", "aria-describedby": "maj-body" }, [
-      h("div", { class: "head" }, [h("div", { class: "icon warn", "aria-hidden": "true", html: ICON.shield }),
+      h("div", { class: "head" }, [h("div", { class: m.warn ? "icon warn" : "icon", "aria-hidden": "true", html: m.warn ? ICON.shield : ICON.up }),
         h("p", { class: "title", id: "maj-title", text: m.title })]),
       h("p", { class: "body", id: "maj-body", text: m.body }),
       progressBar(m.progress),
-      h("div", { class: "actions" }, [button(m.primary, "btn primary")]),
+      m.primary ? h("div", { class: "actions" }, [button(m.primary, "btn primary")]) : null,
       links(m.links),
     ])]);
   }
@@ -228,6 +256,7 @@
     if (view === "waiting" || view === "toast" || view === "rolledBack") poll = setInterval(render, 1000);
     if (!mount()) return;
     host.dataset.view = view;
+    announceLock(locksApp(view));
     if (view === "none" || view === "waiting") {
       const old = layer.firstElementChild;
       shownKey = "";
@@ -241,7 +270,7 @@
     const key = view + "|" + JSON.stringify({ ...model, progress: typeof p === "number" ? "n" : p });
     if (key === shownKey) {
       const fill = layer.querySelector(".fill:not(.sweep)"), pct = layer.querySelector(".pct");
-      if (fill && typeof p === "number") fill.style.width = `${Math.round(p * 100)}%`;
+      if (fill && typeof p === "number") fill.style.transform = `scaleX(${p})`;
       if (pct && typeof p === "number") pct.textContent = `${Math.round(p * 100)} %`;
       return;
     }
@@ -251,17 +280,20 @@
     layer.replaceChildren(el);
     if (first && el.hasAttribute("data-entering")) requestAnimationFrame(() => requestAnimationFrame(() => el.removeAttribute("data-entering")));
     else el.removeAttribute("data-entering");
-    if (view === "blocking") { const b = el.querySelector(".btn"); if (b && !b.disabled) b.focus(); }
+    if (view === "blocking") { const b = el.querySelector(".btn:not([disabled])") || el.querySelector(".dialog"); if (b) b.focus(); }
   }
 
-  // La mise à jour de sécurité ne laisse pas la page réagir au clavier (Tab reste dans le voile).
-  window.addEventListener("keydown", (e) => {
+  // Le voile ne laisse pas la page réagir au clavier (Tab reste dans le voile) : ni à l'appui,
+  // ni au relâcher — Espace active un bouton au relâcher, un raccourci du lecteur à l'appui.
+  function swallowKey(e) {
     if (!host || host.dataset.view !== "blocking" || e.composedPath().includes(host)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    const b = layer.querySelector(".btn");
-    if (b) b.focus();
-  }, true);
+    if (e.type !== "keydown") return;
+    const target = layer.querySelector(".btn:not([disabled])") || layer.querySelector(".dialog");
+    if (target) target.focus();
+  }
+  ["keydown", "keyup", "keypress"].forEach((type) => window.addEventListener(type, swallowKey, true));
 
   shell.on("update.state", (s) => { snapshot = s; render(); });
   shell.on("tentacle:mpv://event", (e) => {
