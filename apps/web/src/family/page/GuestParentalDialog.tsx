@@ -116,7 +116,7 @@ export function GuestParentalDialog({ guest, creatorName, member = false, onClos
         </header>
 
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
-          <p className="rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-xs leading-relaxed text-content-secondary">
+          <p className="rounded-field bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-content-secondary">
             {ceilingText.filter(Boolean).join(" ")}
           </p>
           {options.isError && <p role="alert" className="text-sm text-status-error-fg">{t("familyWeb:parental.optionsError")}</p>}

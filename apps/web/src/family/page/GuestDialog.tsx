@@ -57,7 +57,7 @@ export function GuestDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal open onClose={close} maxWidth={460} labelledBy={titleId} dismissOnBackdrop={false}>
       <form className="p-6" onSubmit={submit} noValidate>
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("guest.title")}</h2>
+        <h2 id={titleId} className="text-heading-3 text-content-primary">{t("guest.title")}</h2>
         <p className="mt-2 text-sm leading-relaxed text-content-tertiary">{t("guest.explain")}</p>
 
         <div className="mt-5 flex items-start gap-4">
@@ -100,8 +100,8 @@ export function GuestDialog({ onClose }: { onClose: () => void }) {
                   title={t(`guest.colors.${option}`)}
                   onClick={() => setColor(option)}
                   disabled={create.isPending}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-modal)] ${
-                    selected ? "scale-110 ring-2 ring-[var(--text-primary)]" : "hover:scale-105"
+                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform duration-press ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-modal)] ${
+                    selected ? "ring-2 ring-[var(--text-primary)] ring-offset-2 ring-offset-[var(--surface-modal)]" : ""
                   }`}
                   style={{ background: profileGradient(option) }}
                 >

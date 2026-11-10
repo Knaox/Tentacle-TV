@@ -55,7 +55,7 @@ export function NarrowLibrariesSection({ profile }: { profile: FamilyProfileDto 
               >
                 <Folder size={15} aria-hidden className="shrink-0 text-content-tertiary" />
                 <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                <span className={`flex h-5 w-5 items-center justify-center rounded border ${row.checked ? "border-[var(--brand)] bg-[var(--brand)] text-cta-brand-fg" : "border-line-strong"}`}>
+                <span className="ui-check" data-checked={row.checked}>
                   {row.checked && <Check size={13} aria-hidden />}
                 </span>
               </button>

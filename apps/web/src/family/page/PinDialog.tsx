@@ -123,7 +123,7 @@ export function PinDialog({ open, title, pending, error, onSubmit, onRemove, req
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
           {onRemove && (
             <button type="button" onClick={remove} disabled={pending}
-              className="mr-auto rounded-lg px-2 py-2 text-sm font-semibold text-status-error-fg hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-45">
+              className="btn btn-danger mr-auto">
               {t("myPin.remove")}
             </button>
           )}

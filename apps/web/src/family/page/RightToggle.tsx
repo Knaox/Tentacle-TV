@@ -25,13 +25,13 @@ export const RightToggle = memo(function RightToggle({ label, hint, checked, edi
     if (!checked) return null;
     return (
       <p className="mt-1 inline-flex items-center gap-1 text-xs text-content-tertiary">
-        <Check size={12} aria-hidden="true" className="text-[var(--brand-light)]" />
+        <Check size={12} weight="bold" aria-hidden="true" className="text-accent" />
         {label}
       </p>
     );
   }
   return (
-    <div className="mt-2 flex items-start justify-between gap-3 rounded-lg bg-fill-subtle px-3 py-2">
+    <div className="mt-2 flex items-start justify-between gap-3 rounded-field bg-surface-2 px-3 py-2.5">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-content-primary">{label}</p>
         <p className="mt-0.5 text-xs leading-relaxed text-content-tertiary">{hint}</p>

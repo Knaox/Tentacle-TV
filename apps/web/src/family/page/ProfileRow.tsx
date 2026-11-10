@@ -100,8 +100,8 @@ export const ProfileRow = memo(function ProfileRow({
           className="group relative flex-shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {avatar}
-          {/* Pastille posée sur la photo : reste à la couleur de la marque dans les deux thèmes. */}
-          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[var(--surface-1)] bg-[var(--brand)] text-cta-brand-fg transition-transform group-hover:scale-110">
+          {/* Pastille posée sur la photo : la teinte franche, dans les deux thèmes. */}
+          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[var(--surface-1)] bg-accent text-accent-on">
             <Camera size={10} aria-hidden="true" />
           </span>
         </button>
@@ -115,9 +115,7 @@ export const ProfileRow = memo(function ProfileRow({
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-content-tertiary">
           <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-              isGuest ? "bg-[rgba(var(--brand-rgb),0.14)] text-[var(--brand-light)]" : "bg-fill-soft text-content-secondary"
-            }`}
+            className={`chip h-5 px-1.5 text-[11px] ${isGuest ? "chip-accent" : ""}`}
           >
             {parent ? (
               <span className="inline-flex items-center gap-1">

@@ -23,26 +23,20 @@ export function FamilyPinCard() {
       {card && (
         <section
           aria-labelledby={titleId}
-          className="lg-content relative mb-6 overflow-hidden rounded-2xl border border-[rgba(var(--brand-rgb),0.35)] bg-surface-1 p-5"
+          className="lg-content ui-panel relative mb-6 overflow-hidden p-5 shadow-[inset_0_0_0_1.5px_var(--accent)]"
         >
-          <div
-            aria-hidden="true"
-            className="lg-content-ornament pointer-events-none absolute inset-0"
-            style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-accent-rgb), 0.10) 60%, transparent)" }}
-          />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
             <span
               aria-hidden="true"
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-cta-brand-fg"
-              style={{ backgroundImage: "var(--cta-brand-gradient)" }}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent"
             >
               <LockKeyhole size={20} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--brand-light)]">
+              <p className="ui-eyebrow">
                 {t("pinSuggest.eyebrow")}
               </p>
-              <h2 id={titleId} className="mt-1 text-base font-bold tracking-tight text-content-primary">
+              <h2 id={titleId} className="mt-1 text-heading-3 text-content-primary">
                 {t("pinSuggest.title")}
               </h2>
               <p className="mt-1 text-sm leading-relaxed text-content-secondary">{t("pinSuggest.body")}</p>
@@ -50,8 +44,7 @@ export function FamilyPinCard() {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="inline-flex h-11 flex-shrink-0 items-center justify-center rounded-lg px-5 text-sm font-bold text-cta-brand-fg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-              style={{ backgroundImage: "var(--cta-brand-gradient)" }}
+              className="btn btn-solid flex-shrink-0"
             >
               {t("pinSuggest.set")}
             </button>

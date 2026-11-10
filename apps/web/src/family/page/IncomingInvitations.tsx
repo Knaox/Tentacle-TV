@@ -20,7 +20,7 @@ export function IncomingInvitationsSection({ incoming }: { incoming: readonly In
             key={invitation.id}
             className={`flex flex-wrap items-center gap-3 px-4 py-3 ${index === incoming.length - 1 ? "" : "border-b border-line-subtle"}`}
           >
-            <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(var(--brand-rgb),0.14)] text-[var(--brand-light)]">
+            <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent">
               <Mail size={17} />
             </span>
             <div className="min-w-0 flex-1">

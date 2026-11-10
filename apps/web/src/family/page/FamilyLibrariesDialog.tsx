@@ -9,7 +9,7 @@ import { useFamilyText } from "../useFamilyText";
 import { draftVerdict, initialDraft, isChecked, toggleAll, toggleLibrary, type LibrariesDraft } from "./familyLibrariesModel";
 import { BRAND_BUTTON, ICON_PLAQUE, SECONDARY_BUTTON } from "./familyUi";
 
-const CHECKBOX = "h-4 w-4 shrink-0 accent-[var(--brand)]";
+const CHECKBOX = "h-4 w-4 shrink-0 accent-[var(--accent)]";
 
 /**
  * Les bibliothèques d'un invité ou d'un membre mineur (serveur 1.30.0,
@@ -76,7 +76,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
           ) : (
             <fieldset disabled={pending} className="space-y-1">
               <legend className="sr-only">{t("libraries.title", { name: profile.name })}</legend>
-              <label htmlFor={allId} className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-fill-subtle">
+              <label htmlFor={allId} className="flex cursor-pointer items-start gap-3 rounded-field px-2 py-2 hover:bg-fill-subtle">
                 <input id={allId} type="checkbox" className={`${CHECKBOX} mt-0.5`} checked={current === null}
                   onChange={() => setDraft(toggleAll(current, available))} />
                 <span>
@@ -87,7 +87,7 @@ export function FamilyLibrariesDialog({ profile, onClose }: { profile: FamilyPro
               <ul className="ml-7 space-y-1 border-l border-line-subtle pl-3">
                 {available.map((library) => (
                   <li key={library.id}>
-                    <label className={`flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-content-primary ${current === null ? "opacity-60" : "cursor-pointer hover:bg-fill-subtle"}`}>
+                    <label className={`flex items-center gap-3 rounded-field px-2 py-1.5 text-sm text-content-primary ${current === null ? "opacity-60" : "cursor-pointer hover:bg-fill-subtle"}`}>
                       <input type="checkbox" className={CHECKBOX} checked={isChecked(current, library.id)} disabled={current === null}
                         onChange={() => setDraft(toggleLibrary(current, library.id))} />
                       {library.name}
