@@ -254,3 +254,22 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `parseArgs` dans `src/app/app.cpp`). `pnpm dev:cef` passe `--user-data=<profil d'Electron visé>`
   (`TENTACLE_ELECTRON_PROFILE`, sinon la règle) : stockage du front et données natives au même endroit.
 - Règle pure testée : `dataRoot(env)`, `dataFolder(env)` (`src/net/tests/paths_tests.cpp`).
+
+### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
+- Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`
+  et AVANT `pont::installShim` (ses commandes entrent dans `capabilities`) ; `reseau::shutdown()`.
+- Client HTTP du principal : `net::httpFetch(HttpRequest, done)` (`net/cef_fetch.h`) — CefURLRequest
+  (pile de Chromium, profil courant), sans cookie ni `Origin` par défaut, `maxBytes`, `timeoutMs`,
+  `followRedirects`, `useCache` ; `done` sur le fil UI, une fois ; rend une fonction d'annulation.
+  À réutiliser par tout module qui fait du réseau natif (jamais une seconde pile).
+- Règles pures réutilisables : `net::parseHttpUrl` / `parseFormQuery` / `encodeUriComponent` /
+  `localeCompare` (`net/web_url.h`, l'URL du WHATWG et le texte de JavaScript), `net::sha256`
+  (`net/sha256.h`), `net::birthTimeMs` / `setModifiedTimeMs` (`net/fs_platform.h`).
+- Tâches : `net::postTo(TID_…, fn)`, `net::postToDisk(fn)` (séquence `TID_FILE_USER_BLOCKING`).
+
+### Schémas — `src/schemes/`
+- `tentacle://art` (`schemes/art_scheme.h`) : pochettes d'Octave à l'identique d'Electron
+  (`octaveArt/`) — `GET /?o=&u=`, `POST /clear`, cache `<userData>/octave-art` (mêmes noms de fichiers,
+  relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
+- `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
+  rendue de n'importe quel fil (`Respond`).
