@@ -24,12 +24,17 @@ if(TARGET tentacle_bridge)
   add_library(tentacle_net_commands STATIC
     arg_check.cpp
     jellyfin_relay.cpp
+    client_fetch_policy.cpp
+    client_fetch_run.cpp
+    client_fetch_commands.cpp
   )
   target_link_libraries(tentacle_net_commands PUBLIC tentacle_net_core tentacle_bridge)
   target_compile_options(tentacle_net_commands PRIVATE -Wall -Wextra -Wno-unused-parameter)
-  add_executable(tentacle_jellyfin_tests tests/jellyfin_tests.cpp)
-  target_link_libraries(tentacle_jellyfin_tests PRIVATE tentacle_net_commands)
-  add_test(NAME tentacle_jellyfin_tests COMMAND tentacle_jellyfin_tests)
+  foreach(t jellyfin client_fetch client_fetch_policy)
+    add_executable(tentacle_${t}_tests tests/${t}_tests.cpp)
+    target_link_libraries(tentacle_${t}_tests PRIVATE tentacle_net_commands)
+    add_test(NAME tentacle_${t}_tests COMMAND tentacle_${t}_tests)
+  endforeach()
 endif()
 
 # --- Tests des règles pures (sans CEF) ---------------------------------------------------
@@ -48,6 +53,7 @@ target_link_libraries(tentacle_art_key_probe PRIVATE tentacle_net_core)
 if(TARGET tentacle_shell AND TARGET tentacle_bridge)
   add_library(tentacle_net STATIC
     cef_fetch.cpp
+    cef_hop.cpp
     net_shell.cpp
     ../schemes/buffered_handler.cpp
     ../schemes/art_scheme.cpp

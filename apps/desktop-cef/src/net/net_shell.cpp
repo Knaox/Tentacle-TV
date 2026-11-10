@@ -14,6 +14,8 @@
 #include "glue/pont_shell.h"
 #include "net/arg_check.h"
 #include "net/cef_fetch.h"
+#include "net/cef_hop.h"
+#include "net/client_fetch_commands.h"
 #include "net/csp.h"
 #include "net/farewell.h"
 #include "net/jellyfin_relay.h"
@@ -29,6 +31,7 @@ namespace tentacle::reseau {
 namespace {
 
 std::unique_ptr<net::jellyfin::Relay> g_jellyfin;
+std::unique_ptr<net::cf::Commands> g_clientFetch;
 
 // Le relevé du banc (`__shell.invoke('reseau.debug.trace')`) : méthode, chemin SANS requête
 // (jamais un jeton), statut, durée — les 200 dernières requêtes natives des relais.
@@ -91,7 +94,19 @@ void registerJellyfinCommands(bridge::Registry& reg) {
   reg.command("jellyfin_kill_encodings", [relay](const bridge::Json& a, bridge::Reply r) { relay->killEncodings(a, r); });
 }
 
+void registerClientFetchCommands(bridge::Registry& reg) {
+  // Le manifeste se lit sans cookie ni cache (le `fetch` de Node d'Electron) ; le saut passe par
+  // le résolveur de Chromium, qui refuse les adresses privées (net/cef_hop.h).
+  g_clientFetch = std::make_unique<net::cf::Commands>(
+      [](net::HttpRequest r, net::HttpDone done) { net::httpFetch(std::move(r), std::move(done)); }, net::cf::cefHop());
+  auto* commands = g_clientFetch.get();
+  reg.command("client_fetch_run", [commands](const bridge::Json& a, bridge::Reply r) { commands->run(a, r); });
+  reg.command("client_fetch_log", [commands](const bridge::Json& a, bridge::Reply r) { commands->log(a, r); });
+}
+
 }  // namespace
+
+net::cf::PluginManifests* pluginManifests() { return g_clientFetch ? &g_clientFetch->manifests() : nullptr; }
 
 net::jellyfin::Relay* jellyfinRelay() { return g_jellyfin.get(); }
 
@@ -103,6 +118,7 @@ void install(AppContext& ctx) {
   bridge::Registry& reg = pont::registry();
   registerPluginCommands(reg);
   registerJellyfinCommands(reg);
+  registerClientFetchCommands(reg);
   ipc::registerHandler("reseau.debug.trace", [](const Json&, ipc::Responder r) {
     std::lock_guard lock(g_traceMutex);
     r.reply(bridge::Json(std::vector<bridge::Json>(g_trace.begin(), g_trace.end())));

@@ -289,3 +289,10 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   existe (expression génératrice CMake, sans ordre d'`add_subdirectory`). `reseau::jellyfinRelay()`.
 - Diagnostic du banc (hors `window.tentacle`) : `__shell.invoke('reseau.debug.trace')` → les 200
   dernières requêtes natives des relais `{method, url (sans requête), status, error, ms}`.
+- Requêtes déléguées (`plugins.clientFetch`) : `client_fetch_run {serverOrigin, headers, pluginId,
+  request}` → `ClientFetchOutcome`, `client_fetch_log` (`net/client_fetch_commands.h`). Règle à l'octet
+  du contrat partagé (`net/client_fetch_policy.h`), plafond 4/30/300 par extension, manifestes lus par
+  l'app sur `<serverOrigin>/api/plugins/active` (`net/client_fetch_run.h`, 5 min, 4 sessions) ; saut
+  réel `cf::cefHop()` (`net/cef_hop.h`) : résolution par Chromium (`ResolveHost`), une adresse privée
+  → `refused`, puis CefURLRequest sans cookie ni cache, redirections jugées une à une.
+  `reseau::pluginManifests()` (`net/net_shell.h`) : les `mediaHosts` pour les flux directs (axe medias).
