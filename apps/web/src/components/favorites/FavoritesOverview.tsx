@@ -1,9 +1,10 @@
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
 import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
 import { ClockCounterClockwiseIcon as History } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
 import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { favoriteWatchState, summarizeFavorites, type CollectionTypeTab } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -16,7 +17,7 @@ interface FavoritesOverviewProps {
 }
 
 interface TileProps {
-  icon: ReactNode;
+  icon: IconType;
   label: string;
   count: number;
   active: boolean;
@@ -24,45 +25,38 @@ interface TileProps {
 }
 
 /**
- * Une tuile : un compte ET un filtre, posée dans le dock de verre de la page
- * (qui porte le voile de lecture). Le survol passe par un calque en fondu
- * d'opacité, jamais par un `background-color` animé (règle GPU de CLAUDE.md).
- * Sous le verre de macOS 26, du contenu : le remplissage des groupes
- * (`lg-content`), la marque seulement en touche (`theme/liquidGlassContent.css`).
+ * Une tuile : un compte ET un filtre. La tuile de choix du socle (`.ui-tile`) : l'encre de
+ * carte au repos, le fond doux et le trait de la teinte franche une fois choisie
+ * (`aria-pressed`), la pression à 97 %. La pastille d'icône suit : neutre, puis l'aplat
+ * d'accent et l'icône PLEINE. Plus de dégradé de marque ni de calque de survol à part.
+ * Sous le verre de macOS 26, du contenu : le remplissage des groupes (`lg-content`), la marque
+ * seulement en touche (`theme/liquidGlassContent.css`).
  */
-const Tile = memo(function Tile({ icon, label, count, active, onToggle }: TileProps) {
+const Tile = memo(function Tile({ icon: Icon, label, count, active, onToggle }: TileProps) {
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onToggle}
       disabled={count === 0 && !active}
-      className={`lg-content group relative flex min-h-[64px] cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)] disabled:cursor-default disabled:opacity-45 ${
-        active
-          ? "border-[rgba(var(--brand-rgb),0.45)] bg-[rgba(var(--brand-rgb),0.16)]"
-          : "border-line-subtle bg-[color:var(--surface-1)]"
-      }`}
+      // `border border-transparent` : sans effet ici ; sous le verre natif, `lg-content` y pose
+      // son trait (`--lgd-stroke`) — il lui faut une bordure à teinter.
+      className="lg-content ui-tile flex min-h-[64px] cursor-pointer border border-transparent items-center gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] disabled:cursor-default disabled:opacity-45"
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-fill-soft opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-disabled:opacity-0"
-      />
-      <span
-        aria-hidden
-        className={`lg-content-badge relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-          active ? "text-white" : "text-[var(--brand-light)]"
+        className={`lg-content-badge flex h-9 w-9 shrink-0 items-center justify-center rounded-field ${
+          active ? "bg-accent text-accent-on" : "bg-fill-soft text-content-secondary"
         }`}
-        style={{
-          background: active
-            ? "linear-gradient(135deg, var(--brand-light), var(--brand-accent))"
-            : "rgba(var(--brand-rgb), 0.14)",
-        }}
       >
-        {icon}
+        <Icon size={18} weight={active ? "fill" : "regular"} />
       </span>
-      <span className="relative min-w-0">
-        <span className="block text-xl font-bold leading-none tabular-nums text-content-primary">{count}</span>
-        <span className={`mt-1 block truncate text-xs font-medium ${active ? "text-[var(--brand-light)]" : "text-content-tertiary"}`}>
+      <span className="min-w-0">
+        <span className="block font-display text-xl font-bold leading-none tabular-nums text-content-primary">{count}</span>
+        {/* `text-[var(--brand-light)]` : le crochet que le verre natif vise pour le libellé d'une
+            tuile choisie (`liquidGlassContent.css`) ; `[&]:text-accent`, émis après, est ce qui se
+            voit hors du verre — la teinte franche. */}
+        <span className={`mt-1 block truncate text-xs font-medium ${active ? "text-[var(--brand-light)] [&]:text-accent" : "text-content-tertiary"}`}>
           {label}
         </span>
       </span>
@@ -106,10 +100,10 @@ export const FavoritesOverview = memo(function FavoritesOverview({
 
   return (
     <div role="group" aria-label={t("quickFilters")} className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-      <Tile icon={<Clapperboard size={18} />} label={t("statMovies")} count={counts.movies} active={type === "Movie"} onToggle={() => toggleType("Movie")} />
-      <Tile icon={<Tv size={18} />} label={t("statSeries")} count={counts.series} active={type === "Series"} onToggle={() => toggleType("Series")} />
-      <Tile icon={<History size={18} />} label={t("statResume")} count={counts.resume} active={status === "IsResumable"} onToggle={() => toggleStatus("IsResumable")} />
-      <Tile icon={<EyeOff size={18} />} label={t("statUnplayed")} count={counts.notPlayed} active={status === "IsUnplayed"} onToggle={() => toggleStatus("IsUnplayed")} />
+      <Tile icon={Clapperboard} label={t("statMovies")} count={counts.movies} active={type === "Movie"} onToggle={() => toggleType("Movie")} />
+      <Tile icon={Tv} label={t("statSeries")} count={counts.series} active={type === "Series"} onToggle={() => toggleType("Series")} />
+      <Tile icon={History} label={t("statResume")} count={counts.resume} active={status === "IsResumable"} onToggle={() => toggleStatus("IsResumable")} />
+      <Tile icon={EyeOff} label={t("statUnplayed")} count={counts.notPlayed} active={status === "IsUnplayed"} onToggle={() => toggleStatus("IsUnplayed")} />
     </div>
   );
 });

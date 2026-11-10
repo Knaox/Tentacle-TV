@@ -13,10 +13,12 @@ export function useFavoritesGroupTitle() {
 }
 
 /**
- * L'en-tête d'une section : filet de marque, titre, compte, et le chevron qui
- * replie la section. Un vrai bouton (`aria-expanded`), toute la ligne cliquable. Pas d'`aria-controls` : les rangées d'une
- * section sont virtualisées, il n'y a pas UN élément à désigner.
- * Le chevron tourne par `transform` — la seule propriété animée.
+ * L'en-tête d'une section : son titre en Bricolage, son compte en puce neutre, un filet, et
+ * le chevron qui replie la section. Un vrai bouton (`aria-expanded`), toute la ligne
+ * cliquable. Pas d'`aria-controls` : les rangées d'une section sont virtualisées, il n'y a
+ * pas UN élément à désigner. Plus de filet de marque devant le titre ni de compte violet : le
+ * dégradé ne sert qu'à lire et à mesurer. Le chevron tourne par `transform` — la seule
+ * propriété animée.
  */
 export const FavoritesSectionHeader = memo(function FavoritesSectionHeader({
   title, count, collapsed, onToggle, first = false,
@@ -34,22 +36,15 @@ export const FavoritesSectionHeader = memo(function FavoritesSectionHeader({
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
-        className="group flex w-full cursor-pointer items-center gap-3 rounded-xl py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)]"
+        className="group flex w-full cursor-pointer items-center gap-3 rounded-field py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
       >
-        <span
-          aria-hidden
-          className="h-5 w-[3px] shrink-0 rounded-full"
-          style={{ background: "linear-gradient(180deg, var(--brand-light), var(--brand-accent))" }}
-        />
-        <span className="truncate text-lg font-bold tracking-[-0.2px] text-content-primary md:text-xl">{title}</span>
-        <span className="shrink-0 rounded-full bg-[rgba(var(--brand-rgb),0.16)] px-2.5 py-0.5 text-xs font-semibold tabular-nums text-[var(--brand-light)]">
-          {count}
-        </span>
+        <span className="truncate text-heading-2 text-content-primary">{title}</span>
+        <span className="chip shrink-0 tabular-nums">{count}</span>
         <span aria-hidden className="h-px flex-1 bg-line-subtle" />
         <ChevronDown
           aria-hidden
           size={18}
-          className={`shrink-0 text-content-tertiary transition-transform duration-200 group-hover:text-content-primary ${collapsed ? "-rotate-90" : ""}`}
+          className={`shrink-0 text-content-tertiary transition-[transform,color] duration-hover ease-out group-hover:text-content-primary ${collapsed ? "-rotate-90" : ""}`}
         />
       </button>
     </h2>

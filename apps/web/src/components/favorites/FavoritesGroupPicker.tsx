@@ -30,7 +30,7 @@ export const FavoritesGroupPicker = memo(function FavoritesGroupPicker({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span aria-hidden className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-content-tertiary">
-        <Layers className="h-3.5 w-3.5" />
+        <Layers size={14} weight="bold" />
         {t("groupBy")}
       </span>
       <div className="scrollbar-hide min-w-0 overflow-x-auto">
