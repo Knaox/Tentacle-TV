@@ -588,6 +588,7 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 - `media_warm {url, ranges}` (`net/media_warm.h`) : tête et fin du fichier lues par plages (`Range`,
   206 seulement, 4 Mio au plus, deux en vol, même demande après 10 min, 15 s) pour chauffer le
   disque du serveur ; rien n'est gardé. Lecture en flux `net::httpStream` (sans cache).
+
 ## Image dans l'image — PiP (axe pip, lot cef-parite)
 
 Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
@@ -624,10 +625,8 @@ Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
     (`pipDocking.ts`), focus rendu à la fenêtre principale.
   - **Linux, Windows** : la fenêtre PORTABLE sur SDL3 (`src/pip/sdl/`, filtre d'évènements SDL
     chaîné : la boucle de l'app ne voit jamais les évènements du PiP), prise par
-    `platform/<os>/pip_<os>.cpp` dès que le compositeur de l'OS rend `canLendVideo()` vrai. Reste à
-    l'axe linux : `canLendVideo` / `lendVideo` / `reclaimVideo` / `setVideoInset` dans SON
-    compositeur, une pile TRANSPARENTE pour la fenêtre PiP (`Options::makeStack`) ; Wayland : la
-    place des fenêtres (le titre de la colle KWin, `pip/rules/pip_captions.h`).
+    `platform/<os>/pip_<os>.cpp` dès que le compositeur de l'OS rend `canLendVideo()` vrai. Reste
+    sous Wayland : la place des fenêtres (le titre de la colle KWin, `pip/rules/pip_captions.h`).
   - **Linux (fait, Wayland seulement)** : `VideoSlot` (`platform/linux/video_slot_linux.h`) tient la
     couche de chaque pile, son cadre (à `inset` des bords) et le prêt, sur le modèle de
     `compositor_mac.mm` ; la pile qui MONTRE la couche lui donne sa fenêtre et son `GlHost`
