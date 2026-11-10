@@ -2,6 +2,8 @@
 // puis rendue, fermetures — dans l'ordre qui garde la vidéo vivante.
 #include "pip/tests/check.h"
 #include "pip/tests/fakes.h"
+#include "pip/rules/pip_frame.h"
+#include "pip/rules/pip_placement.h"
 
 using namespace pip_tests;
 
@@ -59,6 +61,36 @@ void openLendsVideo() {
   CHECK(f.controller.setMode(Mode::docked, std::nullopt));
   CHECK(w->captionText == "Tentacle TV · Mini player");
   CHECK(w->modes.back() == Mode::docked);
+}
+
+void modeNeedsNewWindow() {
+  // Wayland : ancré = surgissante de la principale, détaché = premier niveau. Changer de mode
+  // remplace la fenêtre : la vidéo rendue puis reprêtée, la nouvelle posée au repos, montrée.
+  journal.clear();
+  Fixture f;
+  f.platform.rolePerMode = true;
+  f.platform.desk.reduced = true;
+  f.open(Mode::floating);
+  FakeWindow* first = f.platform.last;
+  const Box firstBox = first->box;
+  journal.clear();
+  CHECK(f.controller.setMode(Mode::docked, std::nullopt));
+  FakeWindow* docked = f.platform.last;
+  CHECK(docked != first && f.platform.windowsMade == 2);
+  CHECK((journal == std::vector<std::string>{"reclaim", "hide", "window destroyed", "lend", "show"}));
+  CHECK(f.mainStack.borrower == &docked->stack && docked->stack.inset == 8);
+  CHECK(docked->captionText == "Tentacle TV · Mini player");
+  // La taille est gardée, la place est le coin de l'application.
+  CHECK(docked->box.width == firstBox.width && docked->box.height == firstBox.height);
+  CHECK(docked->box == cornerPlacement(frameFor(Os::macos), {firstBox.width, firstBox.height},
+                                       f.platform.desk.hostContent));
+  CHECK(f.controller.videoLent() && f.controller.mode() == Mode::docked);
+  // Le même mode ne recrée rien.
+  CHECK(f.controller.setMode(Mode::docked, std::nullopt) && f.platform.windowsMade == 2);
+  // Retour au détaché : une troisième fenêtre, la taille demandée par la page.
+  CHECK(f.controller.setMode(Mode::floating, Size{640, 360}));
+  CHECK(f.platform.windowsMade == 3 && f.platform.last->role == Mode::floating);
+  CHECK(f.platform.last->box.width == windowSize(frameFor(Os::macos), 640, 360).width);
 }
 
 void closeByPage() {
@@ -138,6 +170,7 @@ void restoreThenClose() {
 void runControllerTests() {
   withoutPip();
   openLendsVideo();
+  modeNeedsNewWindow();
   closeByPage();
   closedFromInside();
   quitWithPip();

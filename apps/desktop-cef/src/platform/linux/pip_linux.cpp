@@ -8,7 +8,8 @@
 // Wayland : un client ne place pas ses fenêtres (SDL n'y change que la taille) — la place du PiP
 // revient au compositeur (colle KWin d'Electron : le titre, `pip/rules/pip_captions.h`). Le
 // glisser lui est donc CONFIÉ (xdg_toplevel.move, `wayland_move_linux.h`) : détaché, le PiP se
-// déplace sous le pointeur comme par une barre de titre.
+// déplace sous le pointeur comme par une barre de titre. Ancré, c'est une SURGISSANTE de la
+// fenêtre principale (xdg_popup) : posée dans son coin, elle la suit et se réduit avec elle.
 
 #include "compositor/compositor.h"
 #include "pip/pip_platform.h"
@@ -27,6 +28,7 @@ std::unique_ptr<Platform> createPlatform(SDL_Window* host, void*, Compositor* ho
   platform::watchPointerPresses(host);
   o.systemMove = [](SDL_Window* pip) { return platform::beginCompositorMove(pip); };
   o.onEvent = [] { platform::drainPointerPresses(); };
+  o.popupWhenDocked = true;
   return sdl::createPlatform(host, std::move(o));
 }
 

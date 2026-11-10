@@ -42,6 +42,11 @@ struct Options {
   /// Wayland : le glisser confié au compositeur (`Window::beginSystemMove`). Sans : la session
   /// déplace la fenêtre en suivant le curseur.
   std::function<bool(SDL_Window* pip)> systemMove;
+  /// Wayland : ancrée, la fenêtre PiP est une SURGISSANTE de la principale (xdg_popup), placée
+  /// par rapport à elle — un client n'y place pas une fenêtre de premier niveau — et suivie par
+  /// le compositeur. Détachée, elle redevient de premier niveau : changer de mode la recrée
+  /// (`Window::holdsMode`).
+  bool popupWhenDocked = false;
   /// Chaque évènement SDL de la fenêtre PiP, avant son traitement (son filtre les avale : un
   /// observateur SDL ne les voit pas). Sans : rien.
   std::function<void()> onEvent;

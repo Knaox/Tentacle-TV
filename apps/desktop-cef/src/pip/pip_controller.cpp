@@ -4,6 +4,7 @@
 
 #include "compositor/compositor.h"
 #include "pip/rules/pip_captions.h"
+#include "pip/rules/pip_frame.h"
 
 namespace tentacle::pip {
 
@@ -39,6 +40,8 @@ void Controller::popupCreated(std::unique_ptr<Page> page, PageInput input) {
   pending_.reset();
   page_ = std::move(page);
   mode_ = d.mode;
+  aspect_ = d.aspect;
+  input_ = input;
   closing_ = false;
   const Box placeholder{0, 0, d.window.width, d.window.height};
   window_ = platform_.createWindow(placeholder, d.mode, caption(d.mode, std::nullopt),
@@ -62,8 +65,35 @@ void Controller::popupCreated(std::unique_ptr<Page> page, PageInput input) {
 bool Controller::setMode(Mode mode, std::optional<Size> video) {
   if (!session_) return false;
   mode_ = mode;
+  if (!window_->holdsMode(mode)) return rebuild(video);
   window_->setCaption(caption(mode, std::nullopt));
   session_->setMode(mode, video);
+  return true;
+}
+
+// Une fenêtre qui ne peut pas prendre le mode (Wayland : ancrée, une surgissante de la
+// principale ; détachée, une fenêtre de premier niveau) est remplacée : la même page, la vidéo
+// rendue puis reprêtée, la nouvelle posée d'emblée au repos.
+bool Controller::rebuild(std::optional<Size> video) {
+  const Box was = window_->bounds();
+  const Size size = video ? windowSize(frame_, video->width, video->height) : Size{was.width, was.height};
+  endSession();
+  releaseVideo();
+  window_->hide();
+  window_ = platform_.createWindow({0, 0, size.width, size.height}, mode_, caption(mode_, std::nullopt),
+                                   input_);
+  if (!window_) {
+    std::fprintf(stderr, "[pip] fenêtre native impossible au changement de mode : PiP refermé\n");
+    page_->close();
+    return false;
+  }
+  if (Compositor* pipStack = window_->compositor()) pipStack->setVideoInset(frame_.inset());
+  session_ = std::make_unique<Session>(*window_, platform_.desktop(), platform_.ticker(), frame_,
+                                       mode_, aspect_);
+  session_->settle();
+  if (video_ && window_->compositor()) lent_ = video_->lendVideo(window_->compositor(), home_);
+  page_->geometryChanged();
+  window_->showInactive();
   return true;
 }
 

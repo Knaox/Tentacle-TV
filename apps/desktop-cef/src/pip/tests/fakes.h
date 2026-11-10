@@ -108,6 +108,9 @@ class FakeWindow : public Window {
   void showInactive() override { shown = true; journal.push_back("show"); }
   void hide() override { shown = false; journal.push_back("hide"); }
   void applyMode(Mode m) override { modes.push_back(m); }
+  // Wayland : un rôle par mode (surgissante ancrée) — l'autre mode exige une autre fenêtre.
+  std::optional<Mode> role;
+  bool holdsMode(Mode m) override { return !role || *role == m; }
   void setCaption(const std::string& c) override { captionText = c; }
   void setEvents(WindowEvents e) override { events = std::move(e); }
   bool focused() override { return hasFocus; }
@@ -122,13 +125,16 @@ class FakePlatform : public Platform {
   FakeDesktop desk;
   FakeTicker clock;
   FakeWindow* last = nullptr;
-  int focusHostCalls = 0;
+  int focusHostCalls = 0, windowsMade = 0;
+  bool rolePerMode = false;  // Wayland : chaque fenêtre ne tient que son mode de naissance
   Desktop& desktop() override { return desk; }
   Ticker& ticker() override { return clock; }
-  std::unique_ptr<Window> createWindow(const Box& box, Mode, const std::string& caption,
+  std::unique_ptr<Window> createWindow(const Box& box, Mode mode, const std::string& caption,
                                        PageInput) override {
     auto w = std::make_unique<FakeWindow>(box);
     w->captionText = caption;
+    if (rolePerMode) w->role = mode;
+    ++windowsMade;
     last = w.get();
     return w;
   }

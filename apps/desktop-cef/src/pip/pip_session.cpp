@@ -43,6 +43,11 @@ Session::~Session() {
 
 void Session::enter() { animate(rest_, kShrinkMs); }
 
+void Session::settle() {
+  stopAnimation();
+  set(rest_);
+}
+
 void Session::restore(std::function<void()> done) {
   endGesture();
   const Box now = window_.bounds();

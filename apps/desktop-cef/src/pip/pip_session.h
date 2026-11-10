@@ -31,6 +31,8 @@ class Session {
 
   /// Le PiP montré : l'image glisse du lecteur à son coin.
   void enter();
+  /// Posé au repos d'emblée, sans animation (une fenêtre recréée au changement de mode).
+  void settle();
   /// Le retour au lecteur : l'image regagne la place qu'elle y aura ; `done` à l'arrivée.
   void restore(std::function<void()> done);
   /// Vers « flottant », le PiP reste où il est ; vers « ancré », il se range au coin.

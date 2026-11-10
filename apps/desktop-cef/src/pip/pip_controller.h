@@ -86,6 +86,7 @@ class Controller {
  private:
   void releaseVideo();
   void endSession();
+  bool rebuild(std::optional<Size> video);
 
   Platform& platform_;
   Compositor* video_;
@@ -96,6 +97,8 @@ class Controller {
   std::unique_ptr<Page> page_;
   std::unique_ptr<Window> window_;
   std::unique_ptr<Session> session_;
+  PageInput input_;      // gardée : une fenêtre recréée (rebuild) la reprend
+  double aspect_ = 0;    // celui de l'ouverture, pour la session d'une fenêtre recréée
   Mode mode_ = Mode::floating;
   bool lent_ = false;
   bool closing_ = false;

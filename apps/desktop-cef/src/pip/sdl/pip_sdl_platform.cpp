@@ -40,6 +40,44 @@ SDL_SystemCursor systemCursor(int t) {
   }
 }
 
+uint32_t cefModifiers() {
+  const SDL_Keymod k = SDL_GetModState();
+  uint32_t m = 0;
+  if (k & SDL_KMOD_SHIFT) m |= EVENTFLAG_SHIFT_DOWN;
+  if (k & SDL_KMOD_CTRL) m |= EVENTFLAG_CONTROL_DOWN;
+  if (k & SDL_KMOD_ALT) m |= EVENTFLAG_ALT_DOWN;
+  if (k & SDL_KMOD_GUI) m |= EVENTFLAG_COMMAND_DOWN;
+  const SDL_MouseButtonFlags b = SDL_GetMouseState(nullptr, nullptr);
+  if (b & SDL_BUTTON_LMASK) m |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+  if (b & SDL_BUTTON_MMASK) m |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
+  if (b & SDL_BUTTON_RMASK) m |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+  return m;
+}
+
+int cefButton(uint8_t b) {
+  return b == SDL_BUTTON_RIGHT ? MBT_RIGHT : b == SDL_BUTTON_MIDDLE ? MBT_MIDDLE : MBT_LEFT;
+}
+
+SDL_Window* createNativeWindow(SDL_Window* host, const Options& o, bool popup,
+                               const std::string& caption, int width, int height) {
+  SDL_WindowFlags flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  if (o.transparent) flags |= SDL_WINDOW_TRANSPARENT;
+  if (popup) {
+    // Ni prise du pointeur (SDL ne demande jamais xdg_popup.grab : rien ne la referme au
+    // premier clic ailleurs) ni clavier, dont la page du PiP ne se sert pas.
+    return SDL_CreatePopupWindow(host, 0, 0, width, height,
+                                 flags | SDL_WINDOW_POPUP_MENU | SDL_WINDOW_NOT_FOCUSABLE);
+  }
+  flags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_UTILITY | SDL_WINDOW_RESIZABLE;
+  return SDL_CreateWindow(caption.c_str(), width, height, flags);
+}
+
+SDL_Point positionOrigin(SDL_Window* host, bool popup) {
+  SDL_Point p{0, 0};
+  if (popup) SDL_GetWindowPosition(host, &p.x, &p.y);
+  return p;
+}
+
 namespace {
 
 /// Une minuterie répétée sur le fil principal (postToMainDelayed), arrêtable pendant un tour.

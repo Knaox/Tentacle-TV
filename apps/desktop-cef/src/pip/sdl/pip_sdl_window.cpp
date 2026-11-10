@@ -13,24 +13,6 @@
 namespace tentacle::pip::sdl {
 namespace {
 
-uint32_t modifiers() {
-  const SDL_Keymod k = SDL_GetModState();
-  uint32_t m = 0;
-  if (k & SDL_KMOD_SHIFT) m |= EVENTFLAG_SHIFT_DOWN;
-  if (k & SDL_KMOD_CTRL) m |= EVENTFLAG_CONTROL_DOWN;
-  if (k & SDL_KMOD_ALT) m |= EVENTFLAG_ALT_DOWN;
-  if (k & SDL_KMOD_GUI) m |= EVENTFLAG_COMMAND_DOWN;
-  const SDL_MouseButtonFlags b = SDL_GetMouseState(nullptr, nullptr);
-  if (b & SDL_BUTTON_LMASK) m |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-  if (b & SDL_BUTTON_MMASK) m |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
-  if (b & SDL_BUTTON_RMASK) m |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
-  return m;
-}
-
-int cefButton(uint8_t b) {
-  return b == SDL_BUTTON_RIGHT ? MBT_RIGHT : b == SDL_BUTTON_MIDDLE ? MBT_MIDDLE : MBT_LEFT;
-}
-
 class SdlPipWindow;
 std::map<SDL_WindowID, SdlPipWindow*>& live() {
   static std::map<SDL_WindowID, SdlPipWindow*> windows;
@@ -45,13 +27,11 @@ class SdlPipWindow final : public Window {
  public:
   SdlPipWindow(SDL_Window* host, const Options& o, const Box& box, Mode mode,
                const std::string& caption, PageInput input)
-      : host_(host), input_(std::move(input)), systemMove_(o.systemMove), onEvent_(o.onEvent) {
+      : host_(host), popupDocking_(o.popupWhenDocked), popup_(o.popupWhenDocked && mode == Mode::docked),
+        input_(std::move(input)), systemMove_(o.systemMove), onEvent_(o.onEvent) {
     k_ = dipFactor(host);
-    SDL_WindowFlags flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_UTILITY | SDL_WINDOW_RESIZABLE |
-                            SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-    if (o.transparent) flags |= SDL_WINDOW_TRANSPARENT;
-    window_ = SDL_CreateWindow(caption.c_str(), int(std::lround(box.width * k_)),
-                               int(std::lround(box.height * k_)), flags);
+    window_ = createNativeWindow(host, o, popup_, caption, int(std::lround(box.width * k_)),
+                                 int(std::lround(box.height * k_)));
     if (!window_) return;
     id_ = SDL_GetWindowID(window_);
     live()[id_] = this;
@@ -78,13 +58,15 @@ class SdlPipWindow final : public Window {
     int x = 0, y = 0, w = 0, h = 0;
     SDL_GetWindowPosition(window_, &x, &y);
     SDL_GetWindowSize(window_, &w, &h);
-    return toDip({x, y, w, h}, k_);
+    const SDL_Point o = positionOrigin(host_, popup_);
+    return toDip({x + o.x, y + o.y, w, h}, k_);
   }
 
   void setBounds(const Box& b) override {
     ours_ = true;  // un changement de taille venu de nous, pas de la main
     SDL_SetWindowSize(window_, int(std::lround(b.width * k_)), int(std::lround(b.height * k_)));
-    SDL_SetWindowPosition(window_, int(std::lround(b.x * k_)), int(std::lround(b.y * k_)));
+    const SDL_Point o = positionOrigin(host_, popup_);
+    SDL_SetWindowPosition(window_, int(std::lround(b.x * k_)) - o.x, int(std::lround(b.y * k_)) - o.y);
     ours_ = false;
     sync(false);
   }
@@ -94,7 +76,7 @@ class SdlPipWindow final : public Window {
     // Le compositeur prend le pointeur et ne rendra pas le relâcher : la page le reçoit tout de
     // suite, son geste finit (`usePipPointer`), le glisser continue chez le compositeur.
     if (input_.mouseButton) {
-      input_.mouseButton(last_.x, last_.y, modifiers() & ~EVENTFLAG_LEFT_MOUSE_BUTTON, MBT_LEFT, true, 1);
+      input_.mouseButton(last_.x, last_.y, cefModifiers() & ~EVENTFLAG_LEFT_MOUSE_BUTTON, MBT_LEFT, true, 1);
     }
     return true;
   }
@@ -107,8 +89,11 @@ class SdlPipWindow final : public Window {
   void hide() override { SDL_HideWindow(window_); }
 
   // Flottant : au-dessus de tout, sans propriétaire. Ancré : fenêtre POSSÉDÉE par la
-  // principale (Windows : devant elle, réduite avec elle — `pipDocking.ts`).
+  // principale (Windows : devant elle, réduite avec elle — `pipDocking.ts`) ; une surgissante
+  // l'est déjà. Wayland : un rôle ne change pas (surgissante ancrée, premier niveau détachée).
+  bool holdsMode(Mode mode) override { return !popupDocking_ || (mode == Mode::docked) == popup_; }
   void applyMode(Mode mode) override {
+    if (popup_) return;
     const bool floating = mode == Mode::floating;
     SDL_SetWindowParent(window_, floating ? nullptr : host_);
     SDL_SetWindowAlwaysOnTop(window_, floating);
@@ -168,21 +153,21 @@ class SdlPipWindow final : public Window {
     switch (e.type) {
       case SDL_EVENT_MOUSE_MOTION:
         last_ = {e.motion.x / k, e.motion.y / k};
-        if (input_.mouseMove) input_.mouseMove(last_.x, last_.y, modifiers(), false);
+        if (input_.mouseMove) input_.mouseMove(last_.x, last_.y, cefModifiers(), false);
         break;
       case SDL_EVENT_WINDOW_MOUSE_LEAVE:
-        if (input_.mouseMove) input_.mouseMove(last_.x, last_.y, modifiers(), true);
+        if (input_.mouseMove) input_.mouseMove(last_.x, last_.y, cefModifiers(), true);
         break;
       case SDL_EVENT_MOUSE_BUTTON_DOWN:
       case SDL_EVENT_MOUSE_BUTTON_UP:
         if (input_.mouseButton) {
-          input_.mouseButton(e.button.x / k, e.button.y / k, modifiers(), cefButton(e.button.button),
+          input_.mouseButton(e.button.x / k, e.button.y / k, cefModifiers(), cefButton(e.button.button),
                              e.type == SDL_EVENT_MOUSE_BUTTON_UP, std::max<int>(1, e.button.clicks));
         }
         break;
       case SDL_EVENT_MOUSE_WHEEL:  // la course de Chromium par cran (native_input.h)
         if (input_.wheel) {
-          input_.wheel(e.wheel.mouse_x / k, e.wheel.mouse_y / k, modifiers(),
+          input_.wheel(e.wheel.mouse_x / k, e.wheel.mouse_y / k, cefModifiers(),
                        -e.wheel.x * platform::kSdlWheelNotchPixels, e.wheel.y * platform::kSdlWheelNotchPixels);
         }
         break;
@@ -241,6 +226,7 @@ class SdlPipWindow final : public Window {
   }
 
   SDL_Window* host_;
+  bool popupDocking_ = false, popup_ = false;  // Options::popupWhenDocked ; celle-ci en est une
   SDL_Window* window_ = nullptr;
   SDL_WindowID id_ = 0;
   double k_ = 1;

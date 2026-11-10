@@ -76,6 +76,9 @@ class Window {
   virtual void hide() = 0;
   /// Niveaux, bureaux, ancrage à la fenêtre principale (macOS : `pipDocking.ts`).
   virtual void applyMode(Mode mode) = 0;
+  /// Peut-elle prendre ce mode ? Non sous Wayland, où l'ancrage en fait une fenêtre surgissante
+  /// de la principale et où un rôle ne change pas : le contrôleur en crée alors une autre.
+  virtual bool holdsMode(Mode mode) { return true; }
   /// Le titre (identifiant de la colle sous Linux ; un simple nom ailleurs).
   virtual void setCaption(const std::string& caption) = 0;
   virtual void setEvents(WindowEvents events) = 0;
