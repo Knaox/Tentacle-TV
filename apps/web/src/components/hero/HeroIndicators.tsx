@@ -67,7 +67,7 @@ export function HeroIndicators({ count, activeIndex, durationMs = 0, labels, onS
               key={i}
               type="button"
               onClick={() => onSelect(i)}
-              aria-label={labels?.[i] ?? t("common:slideNumber", { index: i + 1 })}
+              aria-label={labels?.[i] || t("common:slideNumber", { index: i + 1 })}
               aria-current={active}
               className="group/dot flex h-6 items-center px-[3px] outline-none"
             >

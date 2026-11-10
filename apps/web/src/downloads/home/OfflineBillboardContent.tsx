@@ -55,7 +55,7 @@ export function OfflineBillboardContent({ entry, animationKey }: { entry: Downlo
   const itemVariants = reduced ? undefined : fadeUp;
 
   return (
-    <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
+    <div className="absolute inset-x-0 bottom-6 z-10 pl-16 pr-4 sm:pr-8 md:bottom-10 md:pl-20 md:pr-12">
       <motion.div key={animationKey} className="max-w-xl" variants={groupVariants} initial="hidden" animate="show">
         <motion.div variants={itemVariants} className="mb-3.5">
           <HeroEyebrow label={eyebrowLabel} hint={eyebrowHint} />
