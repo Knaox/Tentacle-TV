@@ -1,5 +1,7 @@
 #include "shell/shell.h"
 
+#include <cstdlib>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -87,7 +89,9 @@ bool Shell::start() {
 #else
   wi.SetAsWindowless(kNullWindowHandle);
 #endif
-  wi.shared_texture_enabled = true;  // IOSurface (macOS) : zéro copie CPU
+  // IOSurface (macOS), dmabuf (Linux), D3D11 (Windows) : zéro copie CPU. Repli de diagnostic :
+  // TENTACLE_NO_SHARED_TEXTURE=1 → OnPaint (pilote dont l'import dmabuf échouerait, Linux).
+  wi.shared_texture_enabled = std::getenv("TENTACLE_NO_SHARED_TEXTURE") == nullptr;
   wi.external_begin_frame_enabled = platform::frameClockSupported();  // vsync (frame_clock.h)
   CefBrowserSettings bs;
   bs.windowless_frame_rate = options_.frameRate;
