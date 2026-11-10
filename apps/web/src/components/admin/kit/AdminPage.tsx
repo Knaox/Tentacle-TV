@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { PageTransition } from "../../PageTransition";
+import { BackButton } from "../../ui/BackButton";
+import { useAdminBack } from "./adminBack";
 
 /**
  * L'en-tête et le cadre de TOUTE page d'administration.
@@ -11,8 +13,9 @@ import { PageTransition } from "../../PageTransition";
  * et la largeur — pleine largeur sur desktop —, la page n'apporte que son
  * contenu.
  *
- * Même échelle de titre que les réglages (`text-heading-1`, cf.
- * `SettingsShell`) : les deux écrans de configuration se lisent pareil.
+ * Même en-tête que les réglages (`SettingsLayout`) : le bouton RETOUR, puis le
+ * titre dans la police des titres — les deux écrans de configuration se lisent
+ * pareil, et l'on ne s'y perd jamais (refonte de nov. 2026).
  */
 
 export interface AdminPageHeaderProps {
@@ -28,22 +31,26 @@ export interface AdminPageHeaderProps {
 }
 
 export function AdminPageHeader({ title, description, badges, actions, children }: AdminPageHeaderProps) {
+  const onBack = useAdminBack();
   return (
-    <header className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+    <header className="mb-7 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
       {/* `grow basis-80` : sans base, le bloc mesurait sa largeur maximale —
           768 px avec une description longue — et les actions passaient dessous
           dès 1024 px de large. Elles ne descendent plus que sur téléphone. */}
-      <div className="min-w-0 grow basis-80">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-heading-1 tracking-tight text-content-primary">{title}</h1>
-          {badges}
+      <div className="flex min-w-0 grow basis-80 items-start gap-3">
+        <BackButton fallback="/" onBack={onBack} className="-ml-1 shrink-0" />
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="text-[1.875rem] font-[650] leading-[1.15] tracking-[-0.02em] text-content-primary">{title}</h1>
+            {badges}
+          </div>
+          {description ? (
+            // La page est pleine largeur, pas la phrase : au-delà de ~65 signes
+            // par ligne, l'œil perd le fil.
+            <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-content-secondary">{description}</p>
+          ) : null}
+          {children ? <div className="mt-3">{children}</div> : null}
         </div>
-        {description ? (
-          // La page est pleine largeur, pas la phrase : au-delà de ~90 signes
-          // par ligne, l'œil perd le fil.
-          <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-content-tertiary">{description}</p>
-        ) : null}
-        {children ? <div className="mt-3">{children}</div> : null}
       </div>
       {actions ? <div className="flex flex-shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

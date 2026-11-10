@@ -2,6 +2,10 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SettingsShell } from "@tentacle-tv/ui";
+
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { BackButton } from "../ui/BackButton";
+import { AdminBackCtx } from "./kit/adminBack";
 import { useServerCapability } from "@tentacle-tv/api-client";
 
 import { getUserInfo } from "../userMenu/menuItems";
@@ -35,8 +39,15 @@ import { movedAdminTarget } from "./adminRedirects";
  * (`adminRedirects.ts`) : aucun lien ancien ne mène dans le vide.
  *
  * Sous `md`, la vue d'ensemble EST l'écran d'atterrissage (tuiles + liste des
- * sections) : le rail n'y est pas montré, et le retour n'existe qu'à
- * l'intérieur d'une section — il ramène à la vue d'ensemble, sans boucle.
+ * sections) : le rail n'y est pas montré, et le retour d'une section ramène à
+ * la vue d'ensemble, sans boucle.
+ *
+ * Le bouton RETOUR est dans l'en-tête de CHAQUE page (`AdminPageHeader` ;
+ * refonte de nov. 2026 : on ne se perd jamais). Passer d'une section à l'autre
+ * par le rail REMPLACE l'adresse au lieu d'empiler : l'administration est un
+ * seul lieu, et Retour ramène d'un geste là d'où l'on y est entré. L'écran
+ * d'une extension (`/admin/plugins/<id>`, une iframe sans en-tête à nous)
+ * reçoit le sien ici : il ramène aux Extensions.
  */
 export function AdminLayout() {
   const { t } = useTranslation("admin");
@@ -48,6 +59,10 @@ export function AdminLayout() {
   const sidebar = useGlassSidebar("admin");
   const remoteAccess = useServerCapability("admin.remoteAccess");
   const moved = movedAdminTarget({ pathname, hash }, { remoteAccess });
+  const isMobile = useIsMobile();
+  const pluginScreen = /^\/admin\/plugins\/[^/]+/.test(pathname);
+  // Fenêtre étroite : Retour ramène à la vue d'ensemble (la liste des sections), sauf depuis elle.
+  const narrowBack = isMobile && activeId !== OVERVIEW_ID ? () => navigate("/admin") : undefined;
 
   if (!isAdmin) return <Navigate to="/" replace />;
   if (moved) return <Navigate to={moved} replace />;
@@ -57,15 +72,20 @@ export function AdminLayout() {
       <SettingsShell
         sections={sections}
         activeId={activeId}
-        onSelect={(id) => navigate(adminSectionPath(id))}
+        onSelect={(id) => navigate(adminSectionPath(id), { replace: !isMobile })}
         navLabel={t("title")}
-        onBack={activeId === OVERVIEW_ID ? undefined : () => navigate("/admin")}
-        backLabel={t("navOverview")}
         selectionIndicator={sidebar.selection}
         sidebarSurface={sidebar.surface}
         fluid
       >
-        <Outlet />
+        <AdminBackCtx.Provider value={narrowBack}>
+          {pluginScreen ? (
+            <div className="mb-4">
+              <BackButton fallback="/admin/plugins" label={t("navPlugins")} />
+            </div>
+          ) : null}
+          <Outlet />
+        </AdminBackCtx.Provider>
       </SettingsShell>
     </div>
   );

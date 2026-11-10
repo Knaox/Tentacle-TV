@@ -8,6 +8,9 @@ import { ScopeBadge, type WebSettingScope } from "../../settings/ScopeBadge";
  * droite, puis le corps. Remplace les `cls.card` + `h2 text-lg` recopiés de
  * page en page, chacun avec ses marges.
  *
+ * Un PANNEAU du socle (`.ui-panel` : l'encre de panneau et son arête, plus de
+ * liseré ni de fond translucide — refonte de nov. 2026).
+ *
  * `flush` : le corps va bord à bord, pour une liste de lignes séparées par des
  * filets (le modèle de `SettingsRow`) — les filets s'arrêtent au bord de la
  * carte, qui les rogne. `tone="danger"` : zone destructive (réinitialisation,
@@ -63,8 +66,8 @@ export function AdminSection({
       // `overflow-hidden` en mode `flush` SEULEMENT : il rogne les filets et
       // les survols des lignes dans l'arrondi, mais couperait aussi un menu
       // déroulant (`Dropdown` est positionné en absolu, sans portail).
-      className={`scroll-mt-24 rounded-2xl border bg-fill-faint ${flush ? "overflow-hidden" : ""} ${
-        tone === "danger" ? "border-danger-border" : "border-line-subtle"
+      className={`lg-content ui-panel scroll-mt-24 ${flush ? "overflow-hidden" : ""} ${
+        tone === "danger" ? "border border-danger-border" : ""
       } ${className ?? ""}`}
     >
       {hasHeader ? (
@@ -78,7 +81,7 @@ export function AdminSection({
                 {title ? (
                   <h2
                     id={headingId}
-                    className={`text-base font-semibold ${tone === "danger" ? "text-status-error-fg" : "text-content-primary"}`}
+                    className={`text-heading-3 ${tone === "danger" ? "text-status-error-fg" : "text-content-primary"}`}
                   >
                     {title}
                   </h2>
@@ -88,7 +91,7 @@ export function AdminSection({
               </div>
             ) : null}
             {description ? (
-              <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-tertiary">{description}</p>
+              <p className="mt-1 max-w-[70ch] text-sm leading-relaxed text-content-secondary">{description}</p>
             ) : null}
           </div>
           {actions ? <div className="flex flex-shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}

@@ -17,7 +17,7 @@ const TONE: Record<StatusTone, { pill: string; dot: string }> = {
   error: { pill: "bg-status-error-bg text-status-error-fg", dot: "bg-status-error" },
   info: { pill: "bg-status-info-bg text-status-info-fg", dot: "bg-status-info" },
   neutral: { pill: "bg-fill-soft text-content-tertiary", dot: "bg-content-quaternary" },
-  brand: { pill: "bg-[var(--brand-soft)] text-[var(--brand-light)]", dot: "bg-[var(--brand)]" },
+  brand: { pill: "bg-accent-soft text-accent", dot: "bg-accent" },
 };
 
 export interface StatusPillProps {
