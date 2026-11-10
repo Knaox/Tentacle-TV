@@ -4,6 +4,8 @@
 # vivent dans le volume Docker `tentacle-cef-linux-cache` (gardé d'un passage à l'autre).
 #
 #   bench/linux/run.sh image                    construit l'image (une fois ; ~400 Mo de paquets)
+#   bench/linux/run.sh deps                     prérequis, CEF linuxarm64, libmpv du fork (lourd :
+#                                               sous le verrou deps-build du lot)
 #   bench/linux/run.sh build                    `node scripts/dev.mjs build` dans le conteneur
 #   bench/linux/run.sh up <compositeur> [opts]  lance l'app (mutter | kwin | sway | x11) et la
 #                                               laisse tourner ; DevTools sur 127.0.0.1:9427
@@ -35,10 +37,10 @@ case "${1:-}" in
     base=banc-fs:f44
     docker image inspect "$base" >/dev/null 2>&1 || base=fedora:44
     docker build -t "$image" --build-arg BASE="$base" "$here" ;;
-  build)
-    docker run --rm --pull=never --name "$name-build-$$" "${container_env[@]}" \
+  deps|build)
+    docker run --rm --pull=never --name "$name-$1-$$" "${container_env[@]}" \
       -v "$repo:/repo:ro" -v "$volume:/cache" "$image" \
-      node /repo/apps/desktop-cef/scripts/dev.mjs build ;;
+      node /repo/apps/desktop-cef/scripts/dev.mjs "$1" ;;
   up)
     comp="${2:?compositeur : mutter | kwin | sway | x11}"; shift 2
     docker rm -f "$name" >/dev/null 2>&1 || true
