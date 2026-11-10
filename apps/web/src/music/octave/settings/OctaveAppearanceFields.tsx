@@ -7,7 +7,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles } from "lucide-react";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { SettingsRow } from "@tentacle-tv/ui";
 import { SegmentedChoice } from "../../../components/settings/SegmentedChoice";
 import { ToggleSwitch } from "../../../components/settings/ToggleSwitch";

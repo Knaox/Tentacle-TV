@@ -6,7 +6,7 @@
  * jour ne le retire pas quand une playlist le perd.
  */
 
-import { AlertCircle } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";

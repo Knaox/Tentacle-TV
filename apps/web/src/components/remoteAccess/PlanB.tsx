@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { REMOTE_ACCESS_DOCS, REMOTE_ACCESS_GUIDE_ANCHOR, remoteAccessDocLabelKey, type RemoteAccessDoc } from "@tentacle-tv/shared";
 
 const LINKS: readonly RemoteAccessDoc[] = ["tailscaleDownload", "tailscaleQuickstart", "jellyfinTailscale"];

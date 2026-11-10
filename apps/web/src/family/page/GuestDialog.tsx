@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useCreateFamilyGuest } from "@tentacle-tv/api-client";
 import {
   FAMILY_GUEST_NAME_MAX,

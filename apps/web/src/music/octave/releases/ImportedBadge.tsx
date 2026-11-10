@@ -4,7 +4,7 @@
  * carte, sur un fond plein ; `inline` : dans la ligne de tête d'un album ou d'un artiste.
  */
 
-import { HardDriveUpload } from "lucide-react";
+import { UploadSimpleIcon as HardDriveUpload } from "@phosphor-icons/react/dist/csr/UploadSimple";
 import { useTranslation } from "react-i18next";
 
 export function ImportedBadge({ variant }: { variant: "overlay" | "inline" }) {

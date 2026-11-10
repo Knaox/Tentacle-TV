@@ -8,7 +8,11 @@
  */
 
 import { memo } from "react";
-import { AlertCircle, Clock3, Cloud, Library, Zap } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { ClockIcon as Clock3 } from "@phosphor-icons/react/dist/csr/Clock";
+import { CloudIcon as Cloud } from "@phosphor-icons/react/dist/csr/Cloud";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { LightningIcon as Zap } from "@phosphor-icons/react/dist/csr/Lightning";
 import { useTranslation } from "react-i18next";
 import type { TrackAvailability } from "@tentacle-tv/shared/music";
 

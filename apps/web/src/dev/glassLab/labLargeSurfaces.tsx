@@ -10,7 +10,16 @@
  */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Bell, Download, Heart, LogOut, Monitor, Palette, Settings, Shield, Sparkles, Users } from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { DownloadSimpleIcon as Download } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { PaletteIcon as Palette } from "@phosphor-icons/react/dist/csr/Palette";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
+import { ShieldIcon as Shield } from "@phosphor-icons/react/dist/csr/Shield";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 
 import { LiquidGlass } from "../../theme/glass";
 

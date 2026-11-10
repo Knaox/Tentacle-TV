@@ -1,12 +1,12 @@
 import { memo, useEffect, useState } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { noMotion } from "../../../theme/motion";
 import { CTL_GRADIENT } from "../../catalog/catalogOptions";
 
 export interface CapsuleItem {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: IconType;
 }
 
 /** Au-delà, la capsule défile : des segments de largeur fixe (128). */

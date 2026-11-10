@@ -1,7 +1,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Crown, MessageSquare, Users } from "lucide-react";
+import { CrownIcon as Crown } from "@phosphor-icons/react/dist/csr/Crown";
+import { ChatTextIcon as MessageSquare } from "@phosphor-icons/react/dist/csr/ChatText";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import {
   buttonStatus,
   deliveryOf,

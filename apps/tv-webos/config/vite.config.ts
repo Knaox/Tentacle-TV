@@ -12,6 +12,7 @@ import { excludedDirectoriesGuard } from "./excludedDirectoriesGuard";
 import { SUBSTITUTED_PACKAGES, SUBSTITUTED_FILES, EXCLUDED_WEB_DIRECTORIES } from "./substitutionTable";
 import { OPTIONS_LEGACY, BROWSER_BASELINE } from "./legacy";
 import { chrome53Compat } from "./postcss";
+import { phosphorWeights } from "../../web/tooling/phosphorWeights";
 
 /**
  * Variante de build du client, pour un téléviseur LG.
@@ -73,6 +74,8 @@ export default defineConfig({
     // jamais atteindre un téléviseur d'utilisateur.
     serveHarness(resolve(TARGET, "harness")),
     react(),
+    // Les icônes n'embarquent que les trois graisses employées (apps/web/tooling/phosphorWeights.ts).
+    phosphorWeights(),
     legacy(OPTIONS_LEGACY),
   ],
 
@@ -153,11 +156,16 @@ export default defineConfig({
     // s'y analyse en secondes, pas en millisecondes.
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-query": ["@tanstack/react-query"],
-          "vendor-i18n": ["i18next", "react-i18next"],
-          "vendor-icones": ["lucide-react"],
+        // Par FONCTION, à cause des icônes : Phosphor s'importe fichier par fichier
+        // (`@phosphor-icons/react/dist/csr/…`). Nommer le paquet dans une table ferait entrer
+        // son index — les mille cinq cents icônes — dans le fragment.
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/@phosphor-icons/react/")) return "vendor-icones";
+          if (/\/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) return "vendor-react";
+          if (/\/node_modules\/@tanstack\/(react-query|query-core)\//.test(id)) return "vendor-query";
+          if (/\/node_modules\/(i18next|react-i18next)\//.test(id)) return "vendor-i18n";
+          return undefined;
         },
       },
     },

@@ -5,7 +5,7 @@
  */
 
 import { memo } from "react";
-import { CircleMinus } from "lucide-react";
+import { MinusCircleIcon as CircleMinus } from "@phosphor-icons/react/dist/csr/MinusCircle";
 import { useTranslation } from "react-i18next";
 
 const HOVER_CLASS = "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100";

@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, MessageCircle, User } from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { ChatCircleIcon as MessageCircle } from "@phosphor-icons/react/dist/csr/ChatCircle";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import type { SupportTicket } from "@tentacle-tv/api-client";
 import { Badge } from "./Badge";
 import { categoryLabelKey, STATUS_VARIANT, TICKET_STATUS_LABEL_KEYS } from "./ticketMeta";

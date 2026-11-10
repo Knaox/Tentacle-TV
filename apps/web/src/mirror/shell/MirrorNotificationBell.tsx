@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bell, BellOff } from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { BellSlashIcon as BellOff } from "@phosphor-icons/react/dist/csr/BellSlash";
 import type { NotificationPeriod } from "@tentacle-tv/api-client";
 import { BottomSheet } from "../ui/BottomSheet";
 import { useFormFactor } from "../useFormFactor";
@@ -39,7 +40,7 @@ export function MirrorNotificationBell() {
         aria-label={c.unread > 0 ? `${t("title")}, ${c.unread}` : t("title")}
         className="mirror-press relative -m-3 flex p-3 text-content-primary"
       >
-        <Bell size={21} strokeWidth={2} aria-hidden />
+        <Bell size={21} aria-hidden />
         {c.unread > 0 && (
           <span className="absolute right-[6px] top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-cta-brand-fg">
             {c.unread > 9 ? "9+" : c.unread}

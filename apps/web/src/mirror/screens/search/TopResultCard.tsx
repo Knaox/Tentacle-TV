@@ -1,6 +1,9 @@
 import { memo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Film, Info, Play, Plus } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useSeriesGapOffer } from "../../../components/seasons/SeriesGapsScope";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
@@ -123,7 +126,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
                 aria-label={`${t("requests:requestMissing")} — ${item.Name}`}
                 className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] px-4 text-sm font-bold text-brand-light active:opacity-75"
               >
-                <Plus size={15} strokeWidth={2.5} aria-hidden />
+                <Plus weight="bold" size={15} aria-hidden />
                 {t("requests:missingSeasons", { count: gap.count })}
               </button>
             )}

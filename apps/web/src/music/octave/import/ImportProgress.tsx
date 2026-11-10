@@ -5,7 +5,8 @@
  * l'import continue, un avis dit sa fin.
  */
 
-import { Check, Loader2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { useTranslation } from "react-i18next";
 import { importFraction, type ImportFlowState, type ImportPhase } from "@tentacle-tv/api-client";
 import { SourceMark } from "./SourceMark";

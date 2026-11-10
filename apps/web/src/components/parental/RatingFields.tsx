@@ -1,6 +1,6 @@
 import { memo, useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import type { UnratedItemType, UserRightsOptions } from "@tentacle-tv/shared";
 import { CHECKBOX, FIELD_HINT, FIELD_LABEL, SELECT } from "./fieldStyles";
 import { currentRating, ratingChoices, ratingLabel, toggleInList, unratedTypesShown } from "./parentalModel";

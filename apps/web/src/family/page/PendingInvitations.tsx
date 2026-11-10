@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock } from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
 import { SettingsSection } from "@tentacle-tv/ui";
 import type { OutgoingInvitationDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "../../components/ui/UserAvatar";

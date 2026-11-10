@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { useServerCapability } from "@tentacle-tv/api-client";
 import { REMOTE_ACCESS_GUIDE_ANCHOR, type PublicIpReport, type RemoteAccessSettingsPatch, type RemoteAccessState } from "@tentacle-tv/shared";
 import { AdminSection } from "../admin/kit";

@@ -3,13 +3,18 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bookmark, ChevronRight, Heart, Layers, Smartphone, type LucideIcon } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useDownloadsVisibility } from "../../downloads/useDownloadState";
 import { HEADER_TOTAL } from "./metrics";
 
 interface Entry {
   path: string;
-  Icon: LucideIcon;
+  Icon: IconType;
   label: string;
   /** Un filet le sépare de ce qui précède (ce n'est plus une liste). */
   apart?: boolean;
@@ -56,7 +61,7 @@ export function HeaderContentMenu() {
         aria-haspopup="menu"
         className="mirror-press -m-3 flex p-3 text-content-primary"
       >
-        <Layers size={21} strokeWidth={2} aria-hidden />
+        <Layers size={21} aria-hidden />
       </button>
 
       {createPortal(

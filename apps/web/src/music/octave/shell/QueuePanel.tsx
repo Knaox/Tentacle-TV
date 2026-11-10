@@ -11,7 +11,9 @@
  */
 
 import { memo, useCallback, useMemo, useRef, type CSSProperties, type RefObject } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretUpIcon as ChevronUp } from "@phosphor-icons/react/dist/csr/CaretUp";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { type QueueItem, queueActions, queueContextTitleKey, queueSections } from "@tentacle-tv/shared/octave";
 import { Artwork } from "../components/Artwork";

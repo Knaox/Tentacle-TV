@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import type { SegmentSetupRun } from "@tentacle-tv/shared";
 import { outcomeTone, RUN_STEPS, stepState, type OutcomeTone } from "./segmentRunModel";
 

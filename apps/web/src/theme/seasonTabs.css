@@ -23,16 +23,17 @@
  * voile de survol, dont seule l'OPACITÉ change — jamais un fond animé. */
 
 :root {
-  --season-tab-gradient: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid-deep) 55%, var(--brand-accent-deep) 100%);
-  --season-tab-border: rgba(255, 255, 255, 0.14);
-  /* Le point « en cours » : l'accent clair tient 3:1 sur la surface, même
-   * posée sur une image blanche. */
-  --season-tab-dot: var(--brand-accent-light);
+  /* La saison affichée : une pastille PLEINE et neutre (refonte de nov. 2026), plus un dégradé.
+   * Le nom `-gradient` reste : le lecteur de verre le redéfinit sur son accent. */
+  --season-tab-gradient: var(--cta-primary-bg);
+  --season-tab-on-fg: var(--cta-primary-fg);
+  --season-tab-border: transparent;
+  /* Le point « en cours » : la teinte franche. */
+  --season-tab-dot: var(--accent);
 }
 
 :root[data-theme="light"] {
-  --season-tab-border: rgba(11, 11, 16, 0.1);
-  --season-tab-dot: var(--brand-accent-deep);
+  --season-tab-border: rgba(19, 19, 21, 0.09);
 }
 
 /* Une bande posée sur une feuille toujours noire (le lecteur du miroir) garde
@@ -40,11 +41,13 @@
  * nacrées sur du noir détonneraient. Les jetons se redéfinissent pour la
  * seule bande. */
 [data-season-tabs][data-tone="dark"] {
-  --glass-tint-strong: rgba(10, 10, 18, 0.72);
-  --season-tab-border: rgba(255, 255, 255, 0.14);
-  --season-tab-dot: var(--brand-accent-light);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.78);
+  --glass-tint-strong: rgba(19, 19, 21, 0.72);
+  --season-tab-border: transparent;
+  --season-tab-dot: #E58CF0;
+  --season-tab-gradient: #F4F2EE;
+  --season-tab-on-fg: #131315;
+  --text-primary: #F4F2EE;
+  --text-secondary: rgba(244, 242, 238, 0.74);
   --fill-soft: rgba(255, 255, 255, 0.08);
   --fill-medium: rgba(255, 255, 255, 0.12);
 }
@@ -68,8 +71,8 @@
   box-shadow: inset 0 0 0 1px var(--season-tab-border);
   cursor: pointer;
   transition:
-    color var(--duration-fast) var(--ease-out),
-    transform var(--duration-instant) var(--ease-out);
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
 }
 
 /* AU DOIGT, la cible native reprend ses droits. */
@@ -93,9 +96,8 @@
   z-index: -1;
   border-radius: inherit;
   background: var(--season-tab-gradient);
-  box-shadow: var(--ctl-glow-segment);
   opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
 .season-tab::after {
@@ -106,15 +108,17 @@
   border-radius: inherit;
   background: var(--fill-medium);
   opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
-.season-tab:hover::after {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .season-tab:hover::after {
+    opacity: 1;
+  }
 }
 
 .season-tab:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 
 .season-tab:focus-visible {
@@ -123,7 +127,7 @@
 }
 
 .season-tab[aria-selected="true"] {
-  color: var(--cta-brand-fg);
+  color: var(--season-tab-on-fg);
   font-weight: 600;
   box-shadow: none;
 }
@@ -150,8 +154,8 @@
 }
 
 .season-tab[aria-selected="true"] .season-tab-count {
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--cta-brand-fg);
+  background: rgba(127, 127, 127, 0.22);
+  color: var(--season-tab-on-fg);
 }
 
 /* La saison de l'épisode à reprendre : le même point que « Épisode actuel »
@@ -165,7 +169,7 @@
 }
 
 .season-tab[aria-selected="true"] .season-tab-dot {
-  background: var(--cta-brand-fg);
+  background: var(--season-tab-on-fg);
 }
 
 .season-tab-watched {
@@ -176,5 +180,5 @@
 }
 
 .season-tab[aria-selected="true"] .season-tab-watched {
-  color: var(--cta-brand-fg);
+  color: var(--season-tab-on-fg);
 }

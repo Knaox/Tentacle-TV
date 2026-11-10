@@ -43,7 +43,7 @@ describe("« Qui regarde ? » — la rangée", () => {
     expect(html).toContain('aria-label="profilePicker:tileLabel{&quot;name&quot;:&quot;damien&quot;}"');
     expect(html).toContain("profilePicker:tileLabelPin{&quot;name&quot;:&quot;zoe&quot;}");
     expect(html).toContain("family:kindGuest");
-    expect(html.match(/lucide-lock/g)?.length).toBe(2);
+    expect(html.match(/data-icon="lock"/g)?.length).toBe(2);
     expect(html).toContain("manageProfiles");
   });
 
@@ -51,7 +51,7 @@ describe("« Qui regarde ? » — la rangée", () => {
     const current = profile("zoe", { hasPin: true, pinLock: false, current: true });
     const html = view({ kind: "picker", profiles: [FAMILY[0]!, current, FAMILY[2]!], canManage: true, notice: null, entering: null });
     // Seule Léa, qui demandera vraiment son code, garde le cadenas fermé.
-    expect(html.match(/lucide-lock/g)?.length).toBe(1);
+    expect(html.match(/data-icon="lock"/g)?.length).toBe(1);
     expect(html).toContain('aria-label="profilePicker:tileLabelCurrent{&quot;name&quot;:&quot;zoe&quot;}, profilePicker:current"');
     expect(html).not.toContain("profilePicker:tileLabelPin{&quot;name&quot;:&quot;zoe&quot;}");
     expect(html.match(/ring-content-primary/g)?.length).toBe(1);
@@ -59,7 +59,7 @@ describe("« Qui regarde ? » — la rangée", () => {
 
   it("un profil sans code : ni cadenas ni anneau", () => {
     const html = view({ kind: "picker", profiles: [FAMILY[0]!, profile("max")], canManage: true, notice: null, entering: null });
-    expect(html).not.toContain("lucide-lock");
+    expect(html).not.toContain('data-icon="lock"');
     expect(html).not.toContain("ring-content-primary");
     expect(html).not.toContain("profilePicker:current");
   });

@@ -5,7 +5,7 @@
  */
 
 import { memo } from "react";
-import { Play } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { ExternalMusicMood } from "@tentacle-tv/shared/music";
@@ -40,7 +40,7 @@ export const MoodCard = memo(function MoodCard({ mood }: { mood: ExternalMusicMo
           }}
           className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
         >
-          <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
+          <Play className="ml-0.5 h-5 w-5" />
         </button>
       </MoodArtwork>
     </Link>

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Play } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { splitMinutes } from "@tentacle-tv/shared";
 import type { PlayCta } from "./detailMetrics";
 
@@ -52,7 +52,7 @@ export const PlayCtaButton = memo(function PlayCtaButton({ cta, title, maxWidth,
               strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - cta.progress)} />
           </svg>
         )}
-        <Play size={16} fill="currentColor" aria-hidden className="relative ml-0.5" />
+        <Play size={16} aria-hidden className="relative ml-0.5" />
       </span>
       <span className="flex min-w-0 flex-col items-start leading-tight">
         <span className="max-w-full truncate text-[16px] font-bold tracking-[0.2px]">{cta.label}</span>

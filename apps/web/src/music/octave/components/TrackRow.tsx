@@ -10,7 +10,8 @@
  */
 
 import { memo, useCallback } from "react";
-import { CloudOff, Pause, Play } from "lucide-react";
+import { CloudSlashIcon as CloudOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../../components/icons/transport";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import type { TrackActions } from "../actions/useTrackActions";
@@ -96,7 +97,7 @@ function NumberCell({ number, current, playing, locked = false }: { number: numb
       </span>
       {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
       <span className={`octave-row-play absolute inset-0 flex items-center justify-center transition-opacity duration-150 ${locked ? "text-content-tertiary" : "text-content-primary"}`} aria-hidden>
-        <HoverIcon className="h-4 w-4" fill={locked ? "none" : "currentColor"} />
+        <HoverIcon weight={locked ? "regular" : "fill"} className="h-4 w-4" />
       </span>
     </div>
   );

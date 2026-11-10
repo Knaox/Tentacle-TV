@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Undo2, X } from "lucide-react";
+import { ArrowUUpLeftIcon as Undo2 } from "@phosphor-icons/react/dist/csr/ArrowUUpLeft";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useRestoreWatchlistItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useGlassControl } from "../ui/glass/useGlassControl";

@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { BarChart3, FastForward, SkipForward, TrendingUp } from "lucide-react";
+import { ChartBarIcon as BarChart3 } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { FastForwardIcon as FastForward, SkipForwardIcon as SkipForward } from "../../../../../components/icons/transport";
+import { TrendUpIcon as TrendingUp } from "@phosphor-icons/react/dist/csr/TrendUp";
 import {
   setPlaybackSettings, useOwnPlaybackSettings, useTrendingNowSetting,
 } from "@tentacle-tv/api-client";

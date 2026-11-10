@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, LoaderCircle, Send, X } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PaperPlaneTiltIcon as Send } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { WtInvitableUserDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { useInvitableUsers } from "@tentacle-tv/api-client";
 import { matchesSearch } from "@tentacle-tv/shared";
@@ -59,7 +63,7 @@ function UserRow({ user, selected, invited, onToggle }: {
               selected ? "border-transparent bg-[var(--brand)] text-white" : "border-line-strong text-transparent"
             }`}
           >
-            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            <Check weight="bold" className="h-3.5 w-3.5" />
           </span>
         )}
       </button>

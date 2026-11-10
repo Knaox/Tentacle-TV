@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Folder } from "lucide-react";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
 import { useLibraries } from "@tentacle-tv/api-client";
 import type { LibraryView } from "@tentacle-tv/shared";
 import { GridSkeleton } from "../../catalog";

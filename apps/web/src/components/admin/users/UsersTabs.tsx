@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { MailPlus, Users } from "lucide-react";
+import { EnvelopeSimpleOpenIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimpleOpen";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 
 export type UsersTab = "users" | "invites";
 

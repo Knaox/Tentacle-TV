@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Database, Globe, Server, Zap } from "lucide-react";
+import { DatabaseIcon as Database } from "@phosphor-icons/react/dist/csr/Database";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { LightningIcon as Zap } from "@phosphor-icons/react/dist/csr/Lightning";
 import { StatTile, type StatTone } from "../kit";
 import {
   summarizeDatabase,

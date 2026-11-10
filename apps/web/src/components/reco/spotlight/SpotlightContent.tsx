@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles } from "lucide-react";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { motion, useReducedMotion } from "framer-motion";
 import { recoMatchOf, type RecoRowItem } from "@tentacle-tv/api-client";
 import { formatDuration, type MediaItem } from "@tentacle-tv/shared";

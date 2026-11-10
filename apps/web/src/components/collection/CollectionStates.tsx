@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ListFilter, type LucideIcon } from "lucide-react";
+import { FunnelSimpleIcon as ListFilter } from "@phosphor-icons/react/dist/csr/FunnelSimple";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { EmptyFrame } from "../library/LibraryGridEmpty";
 import { LibraryGridSkeleton } from "../library/LibraryGridStates";
 import { useItemsPerRow } from "../../hooks/useItemsPerRow";
@@ -17,16 +18,16 @@ const CTA_SECONDARY =
 
 interface EmptyAction {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconType;
   onClick: () => void;
 }
 
 interface CollectionEmptyProps {
-  icon: LucideIcon;
+  icon: IconType;
   title: string;
   body: string;
   /** Ce que la page fera une fois remplie, en étapes numérotées (Mes favoris). */
-  steps?: { icon: LucideIcon; label: string }[];
+  steps?: { icon: IconType; label: string }[];
   primary: EmptyAction;
   secondary?: EmptyAction;
   /** Sous les sorties : le partage, qui garde un sens même sur une liste vide. */

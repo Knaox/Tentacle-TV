@@ -1,6 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Check, ChevronLeft, Languages, Maximize, Pause, RotateCcw, RotateCw, Volume2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { TranslateIcon as Languages } from "@phosphor-icons/react/dist/csr/Translate";
+import { CornersOutIcon as Maximize } from "@phosphor-icons/react/dist/csr/CornersOut";
+import { PauseIcon as Pause } from "../../../components/icons/transport";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
 import type { SceneProps } from "../../types";
 import { useSceneMedia } from "../../sceneMedia";
 import { CARD_TONES, FauxCursor, Place, SceneStage, instant, sceneTween, useSceneClock } from "..";
@@ -78,7 +85,7 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
         <div className="absolute inset-x-0 bottom-0 h-[110px]" style={{ background: SCRIM_BOTTOM }} />
       </Place>
       <FauxGlass x={18} y={16} w={34} h={34} shape="circle" level="clear" onMedia visible={shown} className="flex items-center justify-center">
-        <ChevronLeft size={18} strokeWidth={2.2} aria-hidden />
+        <ChevronLeft size={18} aria-hidden />
       </FauxGlass>
       <FauxGlass x={62} y={16} w={240} h={34} level="clear" onMedia visible={shown} className="flex items-center px-4">
         <span className="truncate text-[12px] font-semibold">{backdrop?.title ?? " "}</span>
@@ -103,7 +110,7 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
       </FauxGlass>
       <FauxGlass {...row} x={TRANSPORT.x} w={TRANSPORT.w} {...folded(shown, TRANSPORT.x, TRANSPORT.w)} className="flex items-center justify-evenly">
         <RotateCcw size={14} aria-hidden />
-        <Pause size={18} fill="currentColor" strokeWidth={0} aria-hidden />
+        <Pause size={18} aria-hidden />
         <RotateCw size={14} aria-hidden />
       </FauxGlass>
       <FauxGlass {...row} x={SETTINGS.x} w={SETTINGS.w} {...folded(shown, SETTINGS.x, SETTINGS.w)} className="flex items-center justify-evenly">

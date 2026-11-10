@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell } from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
 import {
   useNotifications,
   useUnreadCount,
@@ -116,7 +116,7 @@ export function NotificationBell() {
         // jetons n'existent que là (`windowGlassNav.css`) — ailleurs, le disque d'avant.
         style={{ background: open ? "var(--lg-chrome-button-open, var(--fill-soft))" : "var(--lg-chrome-button-rest, var(--fill-subtle))" }}
       >
-        <Bell className="h-5 w-5" strokeWidth={2} />
+        <Bell className="h-5 w-5" />
         {count > 0 && (
           <span
             aria-hidden

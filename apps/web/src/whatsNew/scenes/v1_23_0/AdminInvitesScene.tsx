@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Copy } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
 import { buildInviteUrl } from "@tentacle-tv/shared";
 import type { SceneProps } from "../../types";
 import { getBackendBase } from "../../../lib/backendBase";

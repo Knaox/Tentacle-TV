@@ -1,13 +1,23 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Clock, EyeOff, Film, Folder, Info, Monitor, Shield, Smartphone, Tag, Tv, UserPlus, Users, type LucideIcon,
-} from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { ShieldIcon as Shield } from "@phosphor-icons/react/dist/csr/Shield";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import { TagIcon as Tag } from "@phosphor-icons/react/dist/csr/Tag";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useAppConfig, useFamilyLibraries, useServerCapability } from "@tentacle-tv/api-client";
 import { familyRightsSummary, type FamilyProfileDto, type RightsSummaryKind, type RightsSummaryTone } from "@tentacle-tv/shared";
 
 /** Le repère de chaque ligne (le texte dit le sens) — les icônes du mobile, en Lucide. */
-const ICONS: Readonly<Record<RightsSummaryKind, LucideIcon>> = {
+const ICONS: Readonly<Record<RightsSummaryKind, IconType>> = {
   libraries: Folder,
   age: Shield,
   unrated: EyeOff,

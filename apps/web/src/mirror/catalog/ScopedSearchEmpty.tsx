@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { PenLine, Search } from "lucide-react";
+import { PencilSimpleLineIcon as PenLine } from "@phosphor-icons/react/dist/csr/PencilSimpleLine";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useTentacleSearch } from "@tentacle-tv/api-client";
 import { foldForSearch } from "@tentacle-tv/shared";
 

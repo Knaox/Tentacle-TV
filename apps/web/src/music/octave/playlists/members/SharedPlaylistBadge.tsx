@@ -5,7 +5,7 @@
  */
 
 import { memo } from "react";
-import { Users } from "lucide-react";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { useTranslation } from "react-i18next";
 import { usePlaylistSharingRules } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";

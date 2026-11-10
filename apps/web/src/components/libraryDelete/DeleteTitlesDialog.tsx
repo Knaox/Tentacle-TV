@@ -1,6 +1,6 @@
 import { useCallback, useId, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
 import { useLibraryDeletion, type DeletableEntry, type DeletionRunSummary } from "@tentacle-tv/api-client";
 import { confirmationPreview } from "@tentacle-tv/shared";
 import { Modal } from "../ui/Modal";
@@ -80,7 +80,7 @@ export function DeleteTitlesDialog({ open, entries, onClose, onFinished }: Props
               />
             )}
             <div id={descId} className="mt-4 flex gap-3 rounded-xl border border-danger-border bg-danger-surface p-3.5">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--status-error-fg)]" strokeWidth={2.2} aria-hidden />
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--status-error-fg)]" aria-hidden />
               <div className="text-sm leading-relaxed text-content-primary">
                 <p className="font-semibold">{t("diskWarning")}</p>
                 {takesChildren && <p className="mt-1 text-content-secondary">{t("seriesNote")}</p>}

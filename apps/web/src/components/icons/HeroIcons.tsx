@@ -1,47 +1,34 @@
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { InfoIcon as InfoBase } from "@phosphor-icons/react/dist/csr/Info";
+import { StarIcon as StarBase } from "@phosphor-icons/react/dist/csr/Star";
+import { PlayIcon as PlayBase } from "./transport";
+
+/**
+ * Les pictogrammes de la bannière — les NOMS d'avant, dessinés désormais par Phosphor
+ * (refonte de nov. 2026, docs/REFONTE-UI.md). Du code nouveau importe l'icône du paquet.
+ */
 export function PlayIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
+  return <PlayBase className="h-5 w-5" aria-hidden />;
 }
 
 export function StarIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
+  return <StarBase weight="fill" className="h-3.5 w-3.5" aria-hidden />;
 }
 
 export function ChevronLeftIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-  );
+  return <CaretLeftIcon weight="bold" className="h-5 w-5" aria-hidden />;
 }
 
 export function ChevronRightIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
+  return <CaretRightIcon weight="bold" className="h-5 w-5" aria-hidden />;
 }
 
 export function ChevronDownIcon({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  );
+  return <CaretDownIcon weight="bold" className={className} aria-hidden />;
 }
 
 export function InfoIcon({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25h1.5v5.25M12 7.5h.008M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  return <InfoBase className={className} aria-hidden />;
 }

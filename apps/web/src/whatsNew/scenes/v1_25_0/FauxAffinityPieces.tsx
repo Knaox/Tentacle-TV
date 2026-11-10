@@ -1,5 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { Heart, HeartHandshake, LogOut, Play, Undo2, X, type LucideIcon } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { ArrowUUpLeftIcon as Undo2 } from "@phosphor-icons/react/dist/csr/ArrowUUpLeft";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { ScenePoster } from "../../sceneMedia";
 import { CARD_TONES } from "../FauxCard";
 import { Place } from "../Place";
@@ -35,7 +41,7 @@ export function FauxAffinityHeader({ x, y, w, friend, judged, visible }: {
     <Place x={x} y={y} w={w} visible={visible} transition={sceneTween}>
       <div className="flex items-start gap-2">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl text-white" style={{ background: BRAND_GRADIENT }}>
-          <HeartHandshake size={14} strokeWidth={2.2} aria-hidden />
+          <HeartHandshake size={14} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold leading-tight text-content-primary">{t("affinityTitle")}</p>
@@ -64,7 +70,7 @@ export function FauxAffinityHeader({ x, y, w, friend, judged, visible }: {
 /** Les trois gestes de l'affinité (`SwipeControls` à deux verdicts) : pas pour moi · annuler · j'aime. */
 export function FauxAffinityControls({ x, y, visible }: { x: number; y: number; visible: boolean }) {
   const { t } = useTranslation("swipe");
-  const specs: ReadonlyArray<{ key: string; Icon: LucideIcon; lg: boolean; tone: string }> = [
+  const specs: ReadonlyArray<{ key: string; Icon: IconType; lg: boolean; tone: string }> = [
     { key: "dislike", Icon: X, lg: true, tone: "text-rose-400" },
     { key: "undoShort", Icon: Undo2, lg: false, tone: "text-content-secondary" },
     { key: "like", Icon: Heart, lg: true, tone: "text-emerald-400" },
@@ -75,7 +81,7 @@ export function FauxAffinityControls({ x, y, visible }: { x: number; y: number; 
         {specs.map(({ key, Icon, lg, tone }) => (
           <div key={key} className="flex w-[60px] flex-col items-center gap-1">
             <span className={`flex items-center justify-center rounded-full border border-line-subtle bg-surface-2 ${lg ? "h-10 w-10" : "h-8 w-8"} ${tone}`}>
-              <Icon size={lg ? 18 : 14} strokeWidth={key === "dislike" ? 3 : 2.2} className={key === "like" ? "fill-current" : ""} />
+              <Icon size={lg ? 18 : 14} weight={key === "like" ? "fill" : "bold"} />
             </span>
             <span className="whitespace-nowrap text-[8px] font-medium text-content-tertiary">{t(key)}</span>
           </div>
@@ -103,7 +109,7 @@ export function FauxAffinityMatch({ x, y, w, poster, friend, visible }: {
             {poster ? <img src={poster.url} alt="" draggable={false} className="h-full w-full object-cover" /> : <span className="block h-full w-full" style={{ background: CARD_TONES[0] }} />}
           </span>
           <span className="absolute -bottom-2 -right-2 grid h-7 w-7 place-items-center rounded-full text-white ring-[3px] ring-[var(--surface-1)]" style={{ background: BRAND_GRADIENT }}>
-            <Heart size={13} fill="currentColor" aria-hidden />
+            <Heart weight="fill" size={13} aria-hidden />
           </span>
         </div>
         <p className="mt-3 bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-[22px] font-extrabold tracking-tight text-transparent">
@@ -116,7 +122,7 @@ export function FauxAffinityMatch({ x, y, w, poster, friend, visible }: {
           <FauxAvatar name={friend} tone={3} size={20} />
         </div>
         <span className="mt-3 inline-flex h-8 w-[200px] items-center justify-center gap-1.5 rounded-full border border-cta-primary-border bg-cta-primary-bg text-[11px] font-bold text-cta-primary-fg">
-          <Play size={11} fill="currentColor" aria-hidden />
+          <Play size={11} aria-hidden />
           {t("affinityWatchTogether")}
         </span>
         <span className="mt-1.5 inline-flex h-7 w-[200px] items-center justify-center rounded-full border border-line-subtle bg-fill-soft text-[10px] font-semibold text-content-primary">

@@ -4,7 +4,9 @@
  */
 
 import { memo } from "react";
-import { Volume1, Volume2, VolumeX } from "lucide-react";
+import { SpeakerLowIcon as Volume1 } from "@phosphor-icons/react/dist/csr/SpeakerLow";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
+import { SpeakerXIcon as VolumeX } from "@phosphor-icons/react/dist/csr/SpeakerX";
 import { useTranslation } from "react-i18next";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { RangeSlider } from "./RangeSlider";

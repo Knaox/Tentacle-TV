@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import type { FavoritesGroup } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useFavoritesGroupTitle } from "../../../components/favorites/FavoritesSectionHeader";

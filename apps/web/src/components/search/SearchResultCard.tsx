@@ -15,7 +15,7 @@
 
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "../MediaContextMenu";
@@ -130,7 +130,7 @@ export function SearchResultCard({
         </p>
         {gap && (
           <p className="mt-0.5 flex items-center gap-1 px-0.5 text-xs font-medium text-[var(--brand-light)]">
-            <Plus className="h-3 w-3 shrink-0" strokeWidth={2.6} aria-hidden />
+            <Plus weight="bold" className="h-3 w-3 shrink-0" aria-hidden />
             <span className="truncate">{t("requests:missingSeasons", { count: gap.count })}</span>
           </p>
         )}

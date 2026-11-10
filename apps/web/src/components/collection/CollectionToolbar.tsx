@@ -28,7 +28,7 @@ export function CollectionToolbar({ filters, name, showFavorite, actions }: Coll
           <button
             key={tab.key}
             onClick={() => filters.setType(tab.key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
               filters.type === tab.key
                 ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
                 : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"

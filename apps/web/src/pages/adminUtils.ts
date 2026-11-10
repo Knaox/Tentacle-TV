@@ -15,38 +15,35 @@ export const creds = (): RequestCredentials | undefined =>
   isDesktopApp() ? undefined : "include";
 
 /**
- * Tokens visuels admin alignés sur le MASTER design-system.
- * - CTA : pill sobre, un SEUL style de bouton primaire dans toute l'admin
- * - Buttons height 44 (h-11), touch target ≥ 44pt garanti
- * - Tokens-only : aucune valeur hex hardcodée (var(--brand), var(--status-*))
+ * Les classes de l'administration — depuis la refonte de nov. 2026, des RACCOURCIS vers les
+ * contrôles du socle (`theme/buttons.css`, `theme/overlays.css`, mode d'emploi :
+ * docs/REFONTE-UI.md). Les clés ne changent pas : cent vingt appelants les composent.
  *
- * Le halo violet (`bpStyle`) a été retiré : c'était la signature la plus datée
- * de l'écran, et il était par ailleurs recopié à l'identique dans une douzaine
- * de fichiers. L'élévation est désormais portée par la bordure fine et l'état
- * de survol, pas par une lueur colorée.
+ * - Boutons : des pilules de 40 px, une seule peau par rôle, la pression à 97 % ;
+ * - Panneaux : une encre (`--surface-1`) et son arête, plus de liseré ni de fond translucide ;
+ * - Champs : 40 px, rayon de 10, l'anneau de focus à la teinte franche.
  */
 export const cls = {
-  // Card layouts (radius 12, border subtle, surface fill-faint)
-  card: "mb-8 rounded-xl border border-line-subtle bg-fill-faint p-6",
-  sub: "rounded-lg border border-line-subtle bg-fill-faint p-4 space-y-3",
+  // Panneau (rayon 20) et sous-bloc (tuile, rayon 16).
+  card: "ui-panel mb-8 p-6",
+  sub: "ui-tile p-4 space-y-3",
 
-  // Inputs (height 44, focus ring violet)
-  inp: "w-full h-11 rounded-lg bg-fill-subtle border border-line-subtle px-3 text-sm text-content-primary outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)] placeholder:text-content-quaternary",
+  // Champ et son libellé.
+  inp: "field",
   lbl: "mb-1 block text-xs font-medium text-content-tertiary",
 
-  // CTA primary — liseré + survol, sans halo. En clair, `--cta-primary-border`
-  // détache le bouton blanc du fond nacré ; en sombre il vaut `transparent`.
-  bp: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg text-sm font-bold transition-all hover:bg-cta-primary-bg-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+  // L'action principale — neutre : le dégradé du logo est réservé à la lecture.
+  bp: "btn btn-solid",
 
-  // CTA secondary (gris translucide)
-  bs: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-fill-soft border border-line-subtle text-content-primary text-sm font-semibold transition hover:bg-fill-medium disabled:opacity-50 disabled:cursor-not-allowed",
+  // L'action secondaire.
+  bs: "btn btn-soft",
 
-  // CTA brand (violet ghost) — actions intermédiaires non-CTA primaire
-  bbrand: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.35)] text-content-primary text-sm font-semibold transition hover:bg-[rgba(var(--brand-rgb),0.25)] disabled:opacity-50 disabled:cursor-not-allowed",
+  // L'action intermédiaire, à la teinte franche (ni principale ni secondaire).
+  bbrand: "btn btn-accent",
 
-  // CTA danger (surface error tokenisée)
-  bd: "inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--status-error-bg)] border border-danger-border text-[var(--status-error-fg)] text-sm font-semibold transition hover:bg-danger-surface-hover disabled:opacity-50 disabled:cursor-not-allowed",
+  // L'action destructive.
+  bd: "btn btn-danger",
 
-  // Status pill / chip
-  chip: "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold tracking-wide",
+  // Puce d'état : l'appelant y pose sa couleur.
+  chip: "chip",
 };

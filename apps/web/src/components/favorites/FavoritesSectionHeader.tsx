@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { favoritesGroupLabel, type FavoritesGroup } from "@tentacle-tv/api-client";
 
 /** Le libellé traduit d'une section — partagé par la grille du bureau et le miroir. */

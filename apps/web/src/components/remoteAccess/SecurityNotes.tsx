@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 
 /** Ce qui protège ce serveur, en trois lignes : rien d'exposé par défaut, aucun secret dans une adresse, HTTPS conseillé. */
 export const SecurityNotes = memo(function SecurityNotes() {

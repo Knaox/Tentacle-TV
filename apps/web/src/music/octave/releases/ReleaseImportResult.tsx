@@ -3,7 +3,7 @@
  * plusieurs), « Ouvrir l'album » en action principale ; un échec dit pourquoi, en mots, avec « Réessayer ».
  */
 
-import { AlertCircle } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { useTranslation } from "react-i18next";
 import { releaseArrival, releaseFileCounts, type ReleaseFlowState } from "@tentacle-tv/api-client";
 import { releaseArtSized, type MusicAlbum } from "@tentacle-tv/shared/music";

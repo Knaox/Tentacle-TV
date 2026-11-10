@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Send } from "lucide-react";
+import { PaperPlaneTiltIcon as Send } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
 import { useReplyTicket } from "@tentacle-tv/api-client";
 import { useChromeInsets, useMirrorChrome } from "../../../useMirrorLayout";
 import { Spinner } from "../shared/Spinner";

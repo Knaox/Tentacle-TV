@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Share2 } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { openExternal } from "../../../lib/openExternal";
 import { canShareNatively, shareListUrl, shareNatively } from "../../../lib/share";
 import { ShareLinkField } from "../ShareLinkField";

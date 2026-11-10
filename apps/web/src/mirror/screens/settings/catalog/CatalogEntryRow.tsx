@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { useFamilyOverview } from "@tentacle-tv/api-client";
 import {
   SETTINGS_PANE_SCOPES, answerableInvitations, pendingInvitationCount, settingScopeOf,

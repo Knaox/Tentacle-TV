@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import type { AvatarCharacter } from "@tentacle-tv/shared";
 import { avatarThumbUrl } from "./avatarImages";
 
@@ -75,7 +75,7 @@ export const AvatarTile = memo(function AvatarTile({
         </span>
         {chosen && (
           <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-[var(--brand)] text-cta-brand-fg">
-            <Check size={13} strokeWidth={3} aria-hidden />
+            <Check weight="bold" size={13} aria-hidden />
           </span>
         )}
       </span>

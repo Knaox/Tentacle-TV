@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { TentacleSvg } from "../../../../components/ui/TentacleSvg";
 import { isDesktopApp } from "../../../../desktop/bridge";
 import { useDesktopVersion } from "../../../../hooks/useDesktopVersion";

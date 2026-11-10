@@ -5,7 +5,12 @@
  */
 
 import { useMemo, useState } from "react";
-import { AlertCircle, ChevronDown, CloudCheck, FolderDown, Library, SearchX } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CloudCheckIcon as CloudCheck } from "@phosphor-icons/react/dist/csr/CloudCheck";
+import { FolderSimpleIcon as FolderDown } from "@phosphor-icons/react/dist/csr/FolderSimple";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
 import { useTranslation } from "react-i18next";
 import type { ImportFlowState } from "@tentacle-tv/api-client";
 import { importReport, type ImportReportPart } from "@tentacle-tv/shared/octave";

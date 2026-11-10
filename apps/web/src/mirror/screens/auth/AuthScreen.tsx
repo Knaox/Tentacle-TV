@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { TentacleSvg } from "../../../components/ui/TentacleSvg";
 import { LanguageToggle } from "../../../components/auth/LanguageToggle";
 import { FadeIn } from "../misc/shared/FadeIn";

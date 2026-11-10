@@ -21,7 +21,8 @@
  */
 
 import { memo } from "react";
-import { ListMusic, Pause, Play, SkipForward } from "lucide-react";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { PauseIcon as Pause, PlayIcon as Play, SkipForwardIcon as SkipForward } from "../../../components/icons/transport";
 import { useTranslation } from "react-i18next";
 import { useLiquidGlassSurface } from "../../../theme/glass";
 import { AvailabilityMark } from "../components/AvailabilityMark";
@@ -142,7 +143,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
           aria-label={t(wantsPlay ? "player.pause" : "player.play")}
           className="octave-play flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          {wantsPlay ? <Pause className="relative h-5 w-5" fill="currentColor" aria-hidden /> : <Play className="relative ml-0.5 h-5 w-5" fill="currentColor" aria-hidden />}
+          {wantsPlay ? <Pause className="relative h-5 w-5" aria-hidden /> : <Play className="relative ml-0.5 h-5 w-5" aria-hidden />}
         </button>
         <button
           type="button"
@@ -150,7 +151,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
           aria-label={t("player.next")}
           className="octave-touch flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          <SkipForward className="h-5 w-5" fill="currentColor" aria-hidden />
+          <SkipForward className="h-5 w-5" aria-hidden />
         </button>
         <StopButton shape="close" className="octave-touch h-11 w-11 text-content-tertiary" />
       </div>

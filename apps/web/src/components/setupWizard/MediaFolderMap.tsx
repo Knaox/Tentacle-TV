@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeftRight, Folder, HardDrive } from "lucide-react";
+import { ArrowsLeftRightIcon as ArrowLeftRight } from "@phosphor-icons/react/dist/csr/ArrowsLeftRight";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
 import type { PathStyle, SetupContext } from "@tentacle-tv/shared";
 
 /**

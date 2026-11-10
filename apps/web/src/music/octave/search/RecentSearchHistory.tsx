@@ -6,7 +6,8 @@
  */
 
 import { memo, useEffect, useState } from "react";
-import { Clock, X } from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import type { OctaveSearchHistory } from "@tentacle-tv/api-client";
 import { recentTracksOf } from "@tentacle-tv/shared/octave";

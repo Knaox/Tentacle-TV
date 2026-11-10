@@ -10,7 +10,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pause, Play, RotateCw } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play } from "../components/icons/transport";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { pauseDownload, resumeDownload, type DownloadEntry } from "./api";
 
 const RUNNING = new Set(["queued", "downloading"]);

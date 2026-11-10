@@ -1,5 +1,9 @@
 import { memo } from "react";
-import { Cloud, Monitor, Music2, Server, UserCog } from "lucide-react";
+import { CloudIcon as Cloud } from "@phosphor-icons/react/dist/csr/Cloud";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { MusicNoteIcon as Music2 } from "@phosphor-icons/react/dist/csr/MusicNote";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { UserGearIcon as UserCog } from "@phosphor-icons/react/dist/csr/UserGear";
 import { useTranslation } from "react-i18next";
 import type { SettingScope } from "@tentacle-tv/shared";
 

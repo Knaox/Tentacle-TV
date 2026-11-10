@@ -5,7 +5,8 @@
  */
 
 import { useId, useMemo, useState } from "react";
-import { Check, Search } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useTranslation } from "react-i18next";
 import { musicSearchText, useImportedReleases, useMusicHome, useMusicSearch } from "@tentacle-tv/api-client";
 import type { MusicAlbum } from "@tentacle-tv/shared/music";

@@ -1,5 +1,11 @@
 import { memo } from "react";
-import { Heart, Repeat, Star, ThumbsDown, ThumbsUp, Sparkles, type LucideIcon } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { RepeatIcon as Repeat } from "@phosphor-icons/react/dist/csr/Repeat";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { ThumbsDownIcon as ThumbsDown } from "@phosphor-icons/react/dist/csr/ThumbsDown";
+import { ThumbsUpIcon as ThumbsUp } from "@phosphor-icons/react/dist/csr/ThumbsUp";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { StatsTitleReason } from "@tentacle-tv/shared";
 import type { StatsFormat } from "./useStatsFormat";
 
@@ -8,10 +14,10 @@ export interface ReasonChip {
   label: string;
   /** Ce que lit un lecteur d'écran quand le libellé ne suffit pas (« Votre note : 8 sur 10 »). */
   ariaLabel?: string;
-  Icon?: LucideIcon;
+  Icon?: IconType;
 }
 
-const ICONS: Record<StatsTitleReason["kind"], LucideIcon> = {
+const ICONS: Record<StatsTitleReason["kind"], IconType> = {
   rating: Star,
   superlike: Sparkles,
   like: ThumbsUp,
@@ -53,7 +59,7 @@ export const ReasonChips = memo(function ReasonChips({ chips, className }: { chi
           key={key}
           className="inline-flex h-5 items-center gap-1 rounded-full bg-fill-soft px-2 text-[11px] font-semibold tabular-nums text-content-secondary"
         >
-          {Icon && <Icon size={11} aria-hidden className="text-[var(--brand-light)]" fill={FILLED.has(key) ? "currentColor" : "none"} />}
+          {Icon && <Icon weight={FILLED.has(key) ? "fill" : "regular"} size={11} aria-hidden className="text-[var(--brand-light)]" />}
           {label}
         </span>
       ))}

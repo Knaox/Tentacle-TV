@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { useMediaItem, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
 import { withoutLibraryTwins, type ExternalSearchItem, type SearchProvider } from "@tentacle-tv/shared";
 import { Spinner } from "../../../components/ui/Spinner";

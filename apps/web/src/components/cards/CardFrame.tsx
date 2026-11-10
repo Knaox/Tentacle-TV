@@ -4,8 +4,6 @@ interface CardFrameProps {
   hovered: boolean;
   /** Classe de ratio : `aspect-[2/3]` pour une affiche, `aspect-video` pour une vignette. */
   aspect: string;
-  /** Amplitude du lift — la vignette 16:9 étant plus large, elle monte moins. */
-  lift?: { scale: number; y: number };
   /**
    * La carte est CELLE que la page désigne — l'épisode de la fiche, ou celui
    * que « Lecture » vise. Un liseré de marque cerne la vignette, à l'intérieur
@@ -37,9 +35,10 @@ const FOCUS_RING =
 
 /**
  * Cadre de survol commun à toutes les cartes média — la signature visuelle du
- * catalogue, définie à UN seul endroit : la carte SORT de la page. Un lift
- * (elle monte et grandit) et une élévation qui passe à `--elev-card-hover`,
- * deux couches d'ombre en fondu croisé. Rien de plus, et surtout AUCUN contour.
+ * catalogue, définie à UN seul endroit : la carte grandit de 3 % SUR PLACE
+ * (`--card-hover-scale`, refonte de nov. 2026 — elle ne monte plus) et son
+ * élévation passe à `--elev-card-hover`, deux couches d'ombre en fondu croisé.
+ * Rien de plus, et surtout AUCUN contour.
  *
  * Le `transform` vit sur le conteneur EXTÉRIEUR pour que tout bouge ensemble.
  *
@@ -62,7 +61,6 @@ const FOCUS_RING =
 export function CardFrame({
   hovered,
   aspect,
-  lift = { scale: 1.06, y: -8 },
   highlighted = false,
   concealed,
   ref,
@@ -89,7 +87,7 @@ export function CardFrame({
       data-concealed={concealed}
       className="media-tile relative motion-reduce:!transform-none"
       style={{
-        transform: hovered ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
+        transform: hovered ? "scale(var(--card-hover-scale))" : "scale(1)",
         // La transition d'opacité est déjà celle de `.media-tile` (theme/cards.css).
         opacity: concealed ? 0 : undefined,
       }}

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Play } from "lucide-react";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { useJellyfinClient, watchProgress } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
@@ -60,7 +61,7 @@ export const ResumeRail = memo(function ResumeRail({
                   statusClassName="right-2 top-2"
                 />
                 <span aria-hidden className="absolute bottom-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black">
-                  {pending ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
+                  {pending ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} className="ml-0.5" />}
                 </span>
                 {percent != null && percent < 100 && (
                   <div className="absolute inset-x-0 bottom-0">

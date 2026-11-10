@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { Reorder, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { RotateCcw } from "lucide-react";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
 import { FloatingLayer } from "../floating/FloatingLayer";
 import { PinnedRow, ShelfRow } from "./NavBarEditorRow";
 import type { NavBarEditor, NavEntry } from "./useNavDestinations";

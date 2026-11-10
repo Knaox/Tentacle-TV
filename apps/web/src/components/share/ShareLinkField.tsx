@@ -1,6 +1,9 @@
 import { useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CircleAlert, Copy, type LucideIcon } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useCopyFeedback, type CopyStatus } from "../../hooks/useCopyFeedback";
 import { copyShortcutLabel } from "../../lib/shortcutLabel";
 
@@ -12,7 +15,7 @@ const TONE: Record<CopyStatus, string> = {
   copied: "bg-status-success-bg text-status-success-fg",
   failed: "animate-shake bg-status-error-bg text-status-error-fg",
 };
-const ICON: Record<CopyStatus, LucideIcon> = { idle: Copy, copied: Check, failed: CircleAlert };
+const ICON: Record<CopyStatus, IconType> = { idle: Copy, copied: Check, failed: CircleAlert };
 const LABEL: Record<CopyStatus, string> = { idle: "copyLink", copied: "linkCopied", failed: "copyFailed" };
 
 /**
@@ -63,7 +66,7 @@ export function ShareLinkField({ url }: { url: string }) {
         >
           {/* `key` : l'icône change avec l'état, et son entrée se rejoue. */}
           <span key={status} className={`flex ${status === "idle" ? "" : "animate-scale-in"}`}>
-            <Icon aria-hidden strokeWidth={2.2} className="h-3.5 w-3.5" />
+            <Icon aria-hidden className="h-3.5 w-3.5" />
           </span>
           <span aria-live="polite">{t(LABEL[status])}</span>
         </button>

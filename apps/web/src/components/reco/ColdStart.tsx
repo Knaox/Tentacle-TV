@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Check, Sparkles } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import {
   ratingKey,
   useColdStartTitles,
@@ -199,7 +200,7 @@ function ColdStartCard({
           }`}
           aria-hidden
         >
-          <Check size={15} strokeWidth={3} />
+          <Check weight="bold" size={15} />
         </div>
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-medium text-content-primary">{title.name}</p>

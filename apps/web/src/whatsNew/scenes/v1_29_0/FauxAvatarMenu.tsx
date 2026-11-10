@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { UsersRound } from "lucide-react";
+import { UsersThreeIcon as UsersRound } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { InfoIcon, SettingsIcon, StatsIcon } from "../../../components/userMenu/icons";
 import type { Animated } from "../Place";
@@ -36,7 +36,7 @@ export function FauxAvatarMenu({ profile, hoverSwitch, ...animated }: FauxAvatar
         </div>
       </div>
       <div className="border-b border-line-subtle py-1.5">
-        <MenuRow icon={<UsersRound size={15} strokeWidth={1.8} aria-hidden />} label={t("profilePicker:switcher.title")} hovered={hoverSwitch} />
+        <MenuRow icon={<UsersRound size={15} aria-hidden />} label={t("profilePicker:switcher.title")} hovered={hoverSwitch} />
       </div>
       <div className="py-1.5">
         <MenuRow icon={<StatsIcon className="h-[15px] w-[15px]" />} label={t("nav:stats")} />

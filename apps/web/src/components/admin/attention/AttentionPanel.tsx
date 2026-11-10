@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import type { AdminAttention } from "@tentacle-tv/shared";
 import { AdminSection, StatusPill } from "../kit";
 import { AttentionEntry } from "./AttentionEntry";

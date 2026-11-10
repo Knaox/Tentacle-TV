@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarDotsIcon as CalendarRange } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import type { ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { TentacleLogo } from "../../ui/TentacleLogo";
 import { useStatsFormat } from "../../stats/useStatsFormat";

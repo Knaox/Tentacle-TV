@@ -1,6 +1,6 @@
 /** Octave — une recherche ou un filtre qui ne garde rien : le dire, et offrir de tout réafficher. */
 
-import { SearchX } from "lucide-react";
+import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
 import { useTranslation } from "react-i18next";
 import { EMPTY_ACTION_CLASS, EmptyState } from "../components/ViewStates";
 

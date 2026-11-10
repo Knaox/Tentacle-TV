@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Bell, Search } from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import type { SceneProps } from "../../types";
 import { posterAt, useSceneMedia } from "../../sceneMedia";
 import { CARD_TONES, FauxCard, FauxCursor, Place, SceneStage, instant, sceneSpring, useSceneClock } from "..";

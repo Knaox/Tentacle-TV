@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Sweep, Veil } from "../../../components/player/overlayPill";
 import { useIsTablet } from "../../useMirrorLayout";
 
@@ -76,7 +76,7 @@ export function OverlayPill({
                 aria-hidden
                 className="absolute inset-1 rounded-full bg-black/[0.07] opacity-0 group-active/cross:opacity-100"
               />
-              <X size={isTablet ? 20 : 16} color={CROSS_BLACK} strokeWidth={2.2} className="relative" />
+              <X size={isTablet ? 20 : 16} color={CROSS_BLACK} className="relative" />
             </button>
           </>
         )}

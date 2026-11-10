@@ -1,6 +1,8 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpLeft, Clock, X } from "lucide-react";
+import { ArrowUpLeftIcon as ArrowUpLeft } from "@phosphor-icons/react/dist/csr/ArrowUpLeft";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useResumeItems, useSearchDiscover } from "@tentacle-tv/api-client";
 import { MediaCard } from "../../cards/MediaCard";
 import { Rail, useRailCardWidth } from "./SearchSection";

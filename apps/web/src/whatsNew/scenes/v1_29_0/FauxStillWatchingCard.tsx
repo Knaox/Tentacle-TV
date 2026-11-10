@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Hourglass, Pause } from "lucide-react";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { PauseIcon as Pause } from "../../../components/icons/transport";
 import { easeOut } from "../../../theme/motion";
 import { Place } from "../Place";
 import { instant } from "../sceneMotion";
@@ -49,7 +50,7 @@ export function FauxStillWatchingCard({
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(16,14,24,0.96)] p-3.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.5)] ring-1 ring-black/20">
         <div className="flex items-start gap-2.5">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)]">
-            {asking ? <Hourglass size={13} strokeWidth={2.2} /> : <Pause size={13} strokeWidth={2.2} />}
+            {asking ? <Hourglass size={13} /> : <Pause size={13} />}
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[12px] font-semibold leading-snug">

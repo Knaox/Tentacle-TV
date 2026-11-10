@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowsDownUpIcon as ArrowUpDown } from "@phosphor-icons/react/dist/csr/ArrowsDownUp";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { LibraryShelf } from "@tentacle-tv/api-client";

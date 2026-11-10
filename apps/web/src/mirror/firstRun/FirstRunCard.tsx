@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { LayoutList, Lock, Smile, type LucideIcon } from "lucide-react";
+import { RowsIcon as LayoutList } from "@phosphor-icons/react/dist/csr/Rows";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { SmileyIcon as Smile } from "@phosphor-icons/react/dist/csr/Smiley";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import {
   FIRST_RUN_PROGRESS_KEY, FIRST_RUN_SKIP_KEY, firstRunPrimaryKey, firstRunStepOf, type FirstRunStep, type FirstRunStepDescriptor,
 } from "@tentacle-tv/shared";
@@ -10,7 +13,7 @@ import { useHomeRowsEditorModel } from "../../components/settings/personalizatio
 import { PrimaryCta } from "../screens/misc/shared/PrimaryCta";
 
 /** Les signes du catalogue partagé, en Lucide. */
-const STEP_ICONS: Record<FirstRunStepDescriptor["icon"], LucideIcon> = { lock: Lock, layout: LayoutList, smile: Smile };
+const STEP_ICONS: Record<FirstRunStepDescriptor["icon"], IconType> = { lock: Lock, layout: LayoutList, smile: Smile };
 /** La colonne de lecture (le `CONTENT_MAX_WIDTH` du mobile sur iPad). */
 const CONTENT_MAX = 640;
 

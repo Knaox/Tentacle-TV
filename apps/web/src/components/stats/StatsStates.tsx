@@ -1,6 +1,14 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, CalendarSearch, Clock, Compass, Moon, RefreshCw, ServerCog, Sparkles, TriangleAlert } from "lucide-react";
+import { ChartBarIcon as BarChart3 } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { CalendarDotsIcon as CalendarSearch } from "@phosphor-icons/react/dist/csr/CalendarDots";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { MoonIcon as Moon } from "@phosphor-icons/react/dist/csr/Moon";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
+import { GearFineIcon as ServerCog } from "@phosphor-icons/react/dist/csr/GearFine";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 import { CollectionEmpty } from "../collection/CollectionStates";
 import { EmptyState } from "../ui/EmptyState";
 import { useStatsFormat } from "./useStatsFormat";

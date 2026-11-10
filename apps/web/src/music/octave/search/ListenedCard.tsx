@@ -15,7 +15,8 @@
 
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { Play, Search } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { Artwork } from "../components/Artwork";
@@ -43,7 +44,7 @@ function TrackButton({ tracks, index, contextId }: { tracks: readonly MusicTrack
       aria-label={t("track.play", { title: track.title })}
       className={`group/track flex h-7 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] ${locked ? "text-content-tertiary" : "text-content-secondary"} transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary ${FOCUS}`}
     >
-      <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-octave-accent-text" fill="currentColor" aria-hidden />
+      <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-octave-accent-text" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{track.title}</span>
     </button>
   );

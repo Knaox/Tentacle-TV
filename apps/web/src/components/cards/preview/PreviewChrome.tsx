@@ -1,6 +1,7 @@
 import { memo, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { Volume2, VolumeX } from "lucide-react";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
+import { SpeakerXIcon as VolumeX } from "@phosphor-icons/react/dist/csr/SpeakerX";
 import { useBrokenImage } from "../../../hooks/useBrokenImage";
 import { stopCardClick } from "../cardEvents";
 
@@ -51,7 +52,7 @@ export const PreviewSoundControl = memo(function PreviewSoundControl({
         }}
         className="card-preview-mute"
       >
-        {muted ? <VolumeX aria-hidden strokeWidth={2} /> : <Volume2 aria-hidden strokeWidth={2} />}
+        {muted ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
       </button>
     </div>
   );

@@ -55,7 +55,7 @@ export function WatchedSelectionToolbar({
     <button
       onClick={onDownload}
       disabled={count === 0 || isBusy}
-      className="lg-fb-btn rounded-lg bg-fill-subtle px-4 py-1.5 text-sm font-medium text-content-secondary ring-1 ring-line-subtle transition-all hover:bg-fill-soft hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-40"
+      className="lg-fb-btn rounded-lg bg-fill-subtle px-4 py-1.5 text-sm font-medium text-content-secondary ring-1 ring-line-subtle transition hover:bg-fill-soft hover:text-content-primary disabled:cursor-not-allowed disabled:opacity-40"
     >
       {downloadLabel}
     </button>
@@ -64,7 +64,7 @@ export function WatchedSelectionToolbar({
     <button
       onClick={onMarkWatched}
       disabled={count === 0 || isBusy}
-      className="lg-fb-btn lg-fb-primary rounded-lg bg-[rgba(var(--brand-rgb),0.2)] px-4 py-1.5 text-sm font-medium text-tentacle-accent ring-1 ring-[rgba(var(--brand-rgb),0.3)] transition-all hover:bg-[rgba(var(--brand-rgb),0.3)] disabled:cursor-not-allowed disabled:opacity-40"
+      className="lg-fb-btn lg-fb-primary rounded-lg bg-[rgba(var(--brand-rgb),0.2)] px-4 py-1.5 text-sm font-medium text-tentacle-accent ring-1 ring-[rgba(var(--brand-rgb),0.3)] transition hover:bg-[rgba(var(--brand-rgb),0.3)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       {t("common:markWatched")}
     </button>
@@ -73,7 +73,7 @@ export function WatchedSelectionToolbar({
     <button
       onClick={onMarkUnwatched}
       disabled={count === 0 || isBusy}
-      className="lg-fb-btn rounded-lg bg-fill-subtle px-4 py-1.5 text-sm font-medium text-content-secondary ring-1 ring-line-subtle transition-all hover:bg-fill-soft disabled:cursor-not-allowed disabled:opacity-40"
+      className="lg-fb-btn rounded-lg bg-fill-subtle px-4 py-1.5 text-sm font-medium text-content-secondary ring-1 ring-line-subtle transition hover:bg-fill-soft disabled:cursor-not-allowed disabled:opacity-40"
     >
       {t("common:markUnwatched")}
     </button>

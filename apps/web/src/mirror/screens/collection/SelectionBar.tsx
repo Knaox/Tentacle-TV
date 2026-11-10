@@ -1,6 +1,9 @@
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { CheckSquare, MinusSquare, Trash2, X } from "lucide-react";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { MinusSquareIcon as MinusSquare } from "@phosphor-icons/react/dist/csr/MinusSquare";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useMirrorChrome } from "../../useMirrorLayout";
 import { TAB_BAR_TOTAL } from "../../shell/metrics";
 

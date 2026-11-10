@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyIcon as LockKeyhole } from "@phosphor-icons/react/dist/csr/LockKey";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { Place, type Animated } from "../Place";
 
 interface FauxPinSuggestProps extends Animated {

@@ -1,7 +1,9 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Check, Copy, Share2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { buildInviteUrl, type CreatedInviteDto } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";

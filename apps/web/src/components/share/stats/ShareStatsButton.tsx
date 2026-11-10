@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Share2 } from "lucide-react";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { usePublicSharingAllowed } from "@tentacle-tv/api-client";
 import type { ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { ShareStatsModal } from "./ShareStatsModal";

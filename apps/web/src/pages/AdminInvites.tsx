@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { MailPlus, Plus } from "lucide-react";
+import { EnvelopeSimpleOpenIcon as MailPlus } from "@phosphor-icons/react/dist/csr/EnvelopeSimpleOpen";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { buildInviteUrl, inviteStatus, type AdminInviteDto } from "@tentacle-tv/shared";
 import { cls } from "./adminUtils";
 import { EmptyState } from "../components/ui/EmptyState";

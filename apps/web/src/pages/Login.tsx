@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Server, User, Lock } from "lucide-react";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { useAuth } from "@tentacle-tv/api-client";
 import { isDesktopApp } from "../desktop/bridge";
 import { setSessionExpired, useSessionExpired } from "../auth/sessionState";

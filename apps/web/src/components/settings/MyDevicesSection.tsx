@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Tv } from "lucide-react";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
 import { useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
 

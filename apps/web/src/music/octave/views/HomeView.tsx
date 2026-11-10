@@ -12,7 +12,8 @@
  */
 
 import { useMemo } from "react";
-import { Music2, Search } from "lucide-react";
+import { MusicNoteIcon as Music2 } from "@phosphor-icons/react/dist/csr/MusicNote";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AlbumCard, PlaylistCard, Shelf } from "../components/Cards";

@@ -6,7 +6,10 @@
  */
 
 import { useId, useRef, useState, type DragEvent } from "react";
-import { FileAudio, Link2, Upload, X } from "lucide-react";
+import { FileAudioIcon as FileAudio } from "@phosphor-icons/react/dist/csr/FileAudio";
+import { LinkIcon as Link2 } from "@phosphor-icons/react/dist/csr/Link";
+import { UploadSimpleIcon as Upload } from "@phosphor-icons/react/dist/csr/UploadSimple";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { RELEASE_ACCEPT } from "@tentacle-tv/api-client";
 import { RELEASE_FILES_PER_JOB, recognizeReleaseUrl, type ReleaseSource } from "@tentacle-tv/shared/music";

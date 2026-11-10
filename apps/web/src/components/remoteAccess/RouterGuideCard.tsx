@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ROUTER_GUIDES, ROUTER_GUIDES_VERIFIED_ON, routerGuide, routerGuideUrl, type RouterGuide } from "@tentacle-tv/shared";
 import { AdminNotice } from "../admin/kit";
 import { cls } from "../../pages/adminUtils";

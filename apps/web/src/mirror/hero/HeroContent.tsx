@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Info, Play, Star } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { PlayIcon as Play } from "../../components/icons/transport";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { WatchedGlyph } from "../../components/cards/cardGlyphs";
@@ -58,7 +60,7 @@ export function HeroContent({ item, active, onPlay, onInfo }: {
             {(hasProgress || isWatched) && (
               <span className="flex items-center gap-[5px] rounded-[3px] bg-cta-primary-bg px-[7px] py-[3px] text-[9.5px] font-extrabold uppercase tracking-[1.6px] text-cta-primary-fg">
                 {/* « Vu » : le glyphe du modèle des cartes, pas une coche à part. */}
-                {hasProgress ? <Play size={9} fill="currentColor" aria-hidden /> : <WatchedGlyph className="h-2.5 w-2.5" filled />}
+                {hasProgress ? <Play size={9} aria-hidden /> : <WatchedGlyph className="h-2.5 w-2.5" filled />}
                 {hasProgress ? t("continueLabel") : t("watched")}
               </span>
             )}
@@ -139,7 +141,7 @@ export function HeroContent({ item, active, onPlay, onInfo }: {
       <CascadeGroup order={2} active={active}>
         <div className={HERO_CTA_ROW}>
           <button type="button" onClick={() => onPlay(item)} className={heroPlayClass(isTablet)} aria-label={`${playLabel} ${item.Name}`}>
-            <Play size={20} fill="currentColor" aria-hidden />
+            <Play size={20} aria-hidden />
             {playLabel}
           </button>
           <button

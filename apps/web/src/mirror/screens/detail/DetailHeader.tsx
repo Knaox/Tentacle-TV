@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Maximize2 } from "lucide-react";
+import { ArrowsOutSimpleIcon as Maximize2 } from "@phosphor-icons/react/dist/csr/ArrowsOutSimple";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailActionsRow } from "./DetailActionsRow";

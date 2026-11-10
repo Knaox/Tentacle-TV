@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, ExternalLink } from "lucide-react";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import type { SetupCheck, SetupPlugin, SetupTask, SetupTrailers } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { StatusPill, type StatusTone } from "../kit";

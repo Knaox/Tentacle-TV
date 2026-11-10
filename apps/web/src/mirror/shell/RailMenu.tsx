@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, type LucideIcon } from "lucide-react";
+import { ListIcon as Menu } from "@phosphor-icons/react/dist/csr/List";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { HEADER_TOTAL } from "./metrics";
 import type { ExtensionPlugin, MirrorTab } from "./useMirrorTabs";
 import { useSlidingIndicator } from "./useSlidingIndicator";
@@ -15,7 +16,7 @@ const ROW_H = 46;
 interface Item {
   key: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: IconType;
   path: string;
   active: boolean;
 }

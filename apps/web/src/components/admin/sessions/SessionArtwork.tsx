@@ -1,4 +1,5 @@
-import { Film, Music } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
 import { isListening, type AdminNowPlayingDto } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";

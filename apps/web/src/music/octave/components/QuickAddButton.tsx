@@ -5,7 +5,7 @@
  */
 
 import { memo } from "react";
-import { ListPlus } from "lucide-react";
+import { ListPlusIcon as ListPlus } from "@phosphor-icons/react/dist/csr/ListPlus";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicTrack } from "@tentacle-tv/shared/music";

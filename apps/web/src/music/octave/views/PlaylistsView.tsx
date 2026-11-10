@@ -4,7 +4,8 @@
  */
 
 import { useState } from "react";
-import { ListMusic, Plus } from "lucide-react";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCreateMusicPlaylist, useMusicPlaylists } from "@tentacle-tv/api-client";

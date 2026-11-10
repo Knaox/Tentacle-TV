@@ -4,7 +4,7 @@
  */
 
 import { memo } from "react";
-import { Heart } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useLiked } from "../actions/likeOverrides";
@@ -40,7 +40,7 @@ export const HeartButton = memo(function HeartButton({ track, actions, size = "s
         liked ? "text-octave-accent-text" : `text-content-tertiary hover:text-content-primary ${quiet ? "octave-hover-reveal opacity-0 group-hover:opacity-100 focus-visible:opacity-100" : ""}`
       }${className ? ` ${className}` : ""}`}
     >
-      <Heart className={icon} fill={liked ? "currentColor" : "none"} strokeWidth={liked ? 0 : 2} />
+      <Heart weight={liked ? "fill" : "regular"} className={icon} />
     </button>
   );
 });

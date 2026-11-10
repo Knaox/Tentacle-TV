@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { PLATFORMS } from "../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../hooks/useLibraryFilters";
 
@@ -40,7 +40,7 @@ function Pill({ label, onRemove }: { label: string; onRemove?: () => void }) {
           aria-label={t("removeFilter", { name: label })}
           className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
         >
-          <X aria-hidden className="h-3 w-3" strokeWidth={2.6} />
+          <X weight="bold" aria-hidden className="h-3 w-3" />
         </button>
       ) : (
         <span className="w-2" aria-hidden />

@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Download, Info, ShieldCheck } from "lucide-react";
+import { DownloadSimpleIcon as Download } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { StatusPill } from "../../../components/admin/kit";
 import { PluginIcon } from "../../../components/admin-plugins/PluginIcon";
 import { Place, type Placed } from "..";

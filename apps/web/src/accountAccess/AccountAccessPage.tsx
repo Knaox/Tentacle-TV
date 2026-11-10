@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Ban, Clock, Lock, LogIn } from "lucide-react";
+import { ProhibitIcon as Ban } from "@phosphor-icons/react/dist/csr/Prohibit";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { SignInIcon as LogIn } from "@phosphor-icons/react/dist/csr/SignIn";
 import type { AccountAccessPage as AccessPageState } from "@tentacle-tv/api-client";
 import { accountAccessView, reopeningCopy, scheduleClock, type AccountAccessBlocked, type ScheduleLine } from "@tentacle-tv/shared";
 import { AccessFrame } from "./AccessFrame";

@@ -19,7 +19,9 @@
 import { memo, useCallback, useEffect, useRef, type RefObject } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { MonitorSmartphone, Pin, Settings2 } from "lucide-react";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
+import { PushPinIcon as Pin } from "@phosphor-icons/react/dist/csr/PushPin";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../floating/FloatingLayer";
 import { isActivePath, type NavBarEditor, type NavLibrary, type NavListEntry } from "./useNavDestinations";
@@ -76,7 +78,7 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
           <img src={art} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" />
         )}
         <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
-        <Icon aria-hidden className="relative h-4 w-4 shrink-0 text-[var(--on-media-primary)]" strokeWidth={2} />
+        <Icon aria-hidden className="relative h-4 w-4 shrink-0 text-[var(--on-media-primary)]" />
         <span className="relative min-w-0 flex-1 truncate text-sm font-semibold text-[var(--on-media-primary)]">{library.label}</span>
         {library.count > 0 && (
           <span className="relative shrink-0 text-[11px] tabular-nums text-[var(--on-media-secondary)]">
@@ -96,7 +98,7 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
             library.pinned ? "opacity-100" : "opacity-0 group-hover/tile:opacity-100"
           }`}
         >
-          <Pin aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} fill={library.pinned ? "currentColor" : "none"} />
+          <Pin weight={library.pinned ? "fill" : "regular"} aria-hidden className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
@@ -122,7 +124,7 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
           active ? "bg-fill-soft font-semibold text-content-primary" : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
         }`}
       >
-        <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" strokeWidth={1.9} />
+        <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" />
         <span className="truncate">{entry.label}</span>
       </Link>
       {/* Une page que son extension cache de la barre s'ouvre d'ici, sans épingle. */}
@@ -134,7 +136,7 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
         title={label}
         className={`${PIN_BUTTON} ${entry.pinned ? "text-[var(--brand-light)]" : "text-content-quaternary hover:text-content-secondary"}`}
       >
-        <Pin aria-hidden className="h-4 w-4" strokeWidth={2} fill={entry.pinned ? "currentColor" : "none"} />
+        <Pin weight={entry.pinned ? "fill" : "regular"} aria-hidden className="h-4 w-4" />
       </button>}
     </div>
   );
@@ -198,7 +200,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
           onClick={onClose}
           className="lg-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          <MonitorSmartphone aria-hidden className="h-4 w-4 text-content-tertiary" strokeWidth={1.9} />
+          <MonitorSmartphone aria-hidden className="h-4 w-4 text-content-tertiary" />
           {t("pairDevice")}
         </Link>
         <button
@@ -206,7 +208,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
           onClick={onCustomize}
           className="lg-menu-button inline-flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          <Settings2 aria-hidden className="h-4 w-4 text-[var(--brand-light)]" strokeWidth={2} />
+          <Settings2 aria-hidden className="h-4 w-4 text-[var(--brand-light)]" />
           {t("customizeBar")}
         </button>
       </div>

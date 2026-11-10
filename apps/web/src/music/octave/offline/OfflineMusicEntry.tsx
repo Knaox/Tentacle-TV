@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Music } from "lucide-react";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useActiveProfile } from "../../../auth/profileSession";

@@ -1,6 +1,6 @@
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { useFamilyParentalOptions, useSetFamilyGuestParental, useSetFamilyMemberParental } from "@tentacle-tv/api-client";
 import { GUEST_PARENTAL_NONE, type FamilyProfileDto, type GuestParentalControls } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";

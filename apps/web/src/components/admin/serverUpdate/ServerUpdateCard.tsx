@@ -1,5 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { CircleCheck, ExternalLink, Hourglass, RefreshCw, Server, TriangleAlert } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 import {
   buildUpdateCommands,
   resolveServerUpdate,

@@ -19,14 +19,15 @@ export function GlassCard({ children, className = "", onClick }: GlassCardProps)
     <motion.div
       {...(interactive
         ? {
-            whileHover: { scale: 1.02 },
-            whileTap: { scale: 0.98 },
+            // La pression seule, 120 ms (refonte de nov. 2026) — plus de grossissement au survol.
+            whileTap: { scale: 0.97 },
+            transition: { type: "tween", duration: 0.12, ease: [0.23, 1, 0.32, 1] },
             onClick,
             role: "button",
             tabIndex: 0,
           }
         : {})}
-      className={`rounded-2xl border border-line-subtle bg-fill-subtle backdrop-blur-xl shadow-xl ${className}`}
+      className={`rounded-sheet bg-glass-tint-strong shadow-elev-3 backdrop-blur-xl ${className}`}
     >
       {children}
     </motion.div>

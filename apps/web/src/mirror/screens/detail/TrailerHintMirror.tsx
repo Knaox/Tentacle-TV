@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CircleHelp, X } from "lucide-react";
+import { QuestionIcon as CircleHelp } from "@phosphor-icons/react/dist/csr/Question";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useFicheTrailerHint } from "@tentacle-tv/api-client";
 import { trailerGuideHref, type MediaItem } from "@tentacle-tv/shared";
 import { useWebTrailerPlatform } from "../../../components/detail/trailerPlatform";
@@ -23,7 +24,7 @@ export const TrailerHintMirror = memo(function TrailerHintMirror({ item }: { ite
       {phase === "hint" ? (
         <>
           <Link to={trailerGuideHref()} className="mirror-detail-fade-press flex min-h-[44px] items-center gap-2 px-1">
-            <CircleHelp size={15} strokeWidth={2} aria-hidden />
+            <CircleHelp size={15} aria-hidden />
             <span className="underline decoration-line-strong underline-offset-4">{t("hintLink")}</span>
           </Link>
           <button

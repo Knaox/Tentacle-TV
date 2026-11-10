@@ -1,7 +1,8 @@
 import { memo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpenIcon as BookOpen } from "@phosphor-icons/react/dist/csr/BookOpen";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { libraryRescanErrorCode, useLibraryRescan, useServerCapability } from "@tentacle-tv/api-client";
 import { setupDocUrl } from "@tentacle-tv/shared";
 import { TentacleSvg } from "../ui/TentacleSvg";

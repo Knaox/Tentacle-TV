@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Camera, RefreshCw } from "lucide-react";
+import { CameraIcon as Camera } from "@phosphor-icons/react/dist/csr/Camera";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { useAvatarUpload } from "../../../hooks/useAvatarUpload";
 import { useAvatarGallery } from "../../../profiles/avatarGallery/useAvatarGallery";
 import { AVATAR_GRADIENT_BG } from "../../../components/userMenu/menuItems";

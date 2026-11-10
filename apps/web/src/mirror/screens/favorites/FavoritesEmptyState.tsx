@@ -1,7 +1,11 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Compass, Heart, Layers, Share2, Sparkles } from "lucide-react";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { CollectionEmptyState } from "../collection/CollectionStates";
 import { ShareMyListButton } from "../collection/ShareMyListButton";
 

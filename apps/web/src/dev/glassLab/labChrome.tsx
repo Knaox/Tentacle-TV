@@ -14,7 +14,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { Database, Palette, Play, Shield, Sparkles, Users } from "lucide-react";
+import { DatabaseIcon as Database } from "@phosphor-icons/react/dist/csr/Database";
+import { PaletteIcon as Palette } from "@phosphor-icons/react/dist/csr/Palette";
+import { PlayIcon as Play } from "../../components/icons/transport";
+import { ShieldIcon as Shield } from "@phosphor-icons/react/dist/csr/Shield";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 import { TopNav } from "../../components/nav/TopNav";

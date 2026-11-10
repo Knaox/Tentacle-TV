@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Lock, UserCog, X } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { UserGearIcon as UserCog } from "@phosphor-icons/react/dist/csr/UserGear";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { profileColorStops, type FamilyProfileColor } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";
@@ -73,7 +75,7 @@ export function FauxProfilePicker({ profiles, hoveredId, cancel, ...animated }: 
               </span>
               {profile.pin && (
                 <span className="absolute bottom-0 right-0 flex h-[22px] w-[22px] items-center justify-center rounded-full border border-line-subtle bg-surface-2 text-content-primary">
-                  <Lock size={11} strokeWidth={2.4} aria-hidden />
+                  <Lock weight="bold" size={11} aria-hidden />
                 </span>
               )}
             </Place>

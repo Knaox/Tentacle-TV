@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Music, Pause, SkipBack, SkipForward } from "lucide-react";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
+import { PauseIcon as Pause, SkipBackIcon as SkipBack, SkipForwardIcon as SkipForward } from "../../../components/icons/transport";
 import type { SceneProps } from "../../types";
 import { CARD_TONES, FauxCursor, Place, SceneStage, instant, sceneTween, useSceneClock } from "..";
 import { OctaveLogo } from "../../../music/octave/components/OctaveLogo";
@@ -112,11 +113,11 @@ function NowPlaying({ step, reduced }: { step: number; reduced: boolean }) {
             scale={1} dx={-280 + 280 * (step >= 4 ? 0.38 : 0.3)} transition={reduced ? instant : { duration: 3, ease: "linear" }} />
         </div>
         <div className="mt-4 flex w-[280px] items-center justify-center gap-6 text-white">
-          <SkipBack size={16} fill="currentColor" aria-hidden />
+          <SkipBack size={16} aria-hidden />
           <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundImage: "var(--cta-brand-gradient)" }}>
-            <Pause size={16} fill="currentColor" strokeWidth={0} aria-hidden />
+            <Pause size={16} aria-hidden />
           </span>
-          <SkipForward size={16} fill="currentColor" aria-hidden />
+          <SkipForward size={16} aria-hidden />
         </div>
       </Place>
     </>

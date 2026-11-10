@@ -161,7 +161,7 @@ describe("les profils du bureau face au serveur", () => {
     expect(html).toContain('data-key="switchProfile"');
     expect(html).toContain("switcher.title");
     expect(html).not.toContain("data-avatar");
-    expect(html).not.toContain("lucide-lock");
+    expect(html).not.toContain('data-icon="lock"');
     // « Gérer les profils » en session personnelle.
     expect(html).toContain('data-key="manageProfiles"');
     expect(html).toContain("launchSetting.title");

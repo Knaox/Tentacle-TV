@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle } from "lucide-react";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { useAdminMetadataRegions, useAdminRegionProviders, useUpdateAdminMetadata } from "@tentacle-tv/api-client";
 import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { TRAILER_GUIDE_PARTS } from "@tentacle-tv/shared";
 import { STACKED_TOP } from "../../mirror/screens/collection/CollectionHero";
 

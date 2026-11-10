@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu } from "lucide-react";
+import { ListIcon as Menu } from "@phosphor-icons/react/dist/csr/List";
 import { RAIL_WIDTH } from "../responsive";
 import { HEADER_TOTAL } from "./metrics";
 import type { MirrorTab } from "./useMirrorTabs";

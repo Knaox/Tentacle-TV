@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AtSign, Camera, Monitor, MonitorPlay, RefreshCw } from "lucide-react";
+import { AtIcon as AtSign } from "@phosphor-icons/react/dist/csr/At";
+import { CameraIcon as Camera } from "@phosphor-icons/react/dist/csr/Camera";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { DESKTOP_ONLY_SETTINGS } from "@tentacle-tv/shared";
 import { getUserInfo } from "../../../../../components/userMenu/menuItems";
 import { useAvatarUpload } from "../../../../../hooks/useAvatarUpload";

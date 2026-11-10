@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { isFamilyActive, toggleFamily, type PlatformCatalogEntry } from "@tentacle-tv/api-client";
 import { PlatformLogo } from "../../../components/reco/PlatformLogo";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";

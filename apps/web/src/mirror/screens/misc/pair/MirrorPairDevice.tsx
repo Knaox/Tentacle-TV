@@ -1,6 +1,8 @@
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, Clock, Tv } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { useContentPadding } from "../../../useMirrorLayout";
 import { AmbientGlow } from "../shared/AmbientGlow";
 import { useBackOrHome } from "../shared/backOrHome";

@@ -1,6 +1,6 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontalIcon as SlidersHorizontal } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { useJellyfinClient, type JellyfinClient } from "@tentacle-tv/api-client";
 import type { ViewingStatsSignals, ViewingStatsTaste, ViewingStatsTasteTitle } from "@tentacle-tv/shared";
 import { RECO_REFINE_PATH } from "../../lib/recoSections";

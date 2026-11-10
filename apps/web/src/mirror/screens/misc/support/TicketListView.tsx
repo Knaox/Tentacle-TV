@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, ChevronLeft, Inbox, Plus } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { TrayIcon as Inbox } from "@phosphor-icons/react/dist/csr/Tray";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useChromeInsets, useContentPadding, useMirrorChrome } from "../../../useMirrorLayout";
 import { Spinner } from "../shared/Spinner";
 import { Chip } from "./Chip";

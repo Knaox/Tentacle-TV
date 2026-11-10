@@ -1,5 +1,8 @@
 import { forwardRef, type ButtonHTMLAttributes, type MouseEvent } from "react";
-import { Check, CircleAlert, LoaderCircle, type LucideIcon } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 /**
  * Le bouton du tableau de bord : une pilule, une icône, un mot — et un état
@@ -63,7 +66,7 @@ const SIZE = {
 
 interface ActionPillProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconType;
   tone?: PillTone;
   status?: PillStatus;
   size?: keyof typeof SIZE;
@@ -112,7 +115,7 @@ export const ActionPill = forwardRef<HTMLButtonElement, ActionPillProps>(functio
       {Icon && (
         // `key` : l'icône change avec l'état, et son entrée se rejoue.
         <span key={status} className={`flex shrink-0 items-center justify-center ${status === "idle" ? "" : "animate-scale-in"}`}>
-          <Icon aria-hidden strokeWidth={2.2} className={`${dims.icon} ${iconTone} ${busy ? "animate-spin" : ""}`} />
+          <Icon aria-hidden className={`${dims.icon} ${iconTone} ${busy ? "animate-spin" : ""}`} />
         </span>
       )}
       {!iconOnly && <span>{text}</span>}

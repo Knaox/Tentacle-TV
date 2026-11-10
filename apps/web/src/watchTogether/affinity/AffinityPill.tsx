@@ -1,7 +1,8 @@
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { HeartHandshake, X } from "lucide-react";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useMirror } from "../../mirror/useFormFactor";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";

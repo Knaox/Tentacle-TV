@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, LockOpen } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { LockOpenIcon as LockOpen } from "@phosphor-icons/react/dist/csr/LockOpen";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
 import { useDissolveFamily, useServerCapability } from "@tentacle-tv/api-client";
 import { Modal } from "../../components/ui/Modal";

@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Search } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useFamilyCandidates, useSendFamilyInvitation } from "@tentacle-tv/api-client";
 import { candidateView, type FamilyCandidateDto } from "@tentacle-tv/shared";
 import { Modal } from "../../components/ui/Modal";

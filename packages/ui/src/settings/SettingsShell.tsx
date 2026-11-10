@@ -155,8 +155,8 @@ export function SettingsShell({
                          c'était la signature la plus datée de l'ancien écran. */
                       className={`lgc-sidebar-item relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
                         active
-                          ? "bg-fill-soft font-medium text-content-primary"
-                          : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
+                          ? "bg-fill-soft font-semibold text-content-primary"
+                          : "font-medium text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
                       }`}
                     >
                       {active ? selectionIndicator : null}
@@ -164,7 +164,7 @@ export function SettingsShell({
                         <span
                           aria-hidden="true"
                           className={`lgc-sidebar-icon relative flex w-[18px] shrink-0 justify-center ${
-                            active ? "text-content-primary" : "text-content-tertiary"
+                            active ? "text-accent" : "text-content-tertiary"
                           }`}
                         >
                           {section.icon}

@@ -1,7 +1,8 @@
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, Film } from "lucide-react";
+import { ArrowUpRightIcon as ArrowUpRight } from "@phosphor-icons/react/dist/csr/ArrowUpRight";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useWebTrailerPlatform } from "../../../components/detail/trailerPlatform";
@@ -43,9 +44,9 @@ export const TrailerPill = memo(function TrailerPill({ item, maxWidth }: { item:
         className="mirror-detail-fade-press flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-line-subtle bg-fill-subtle px-5 text-content-primary"
         style={{ maxWidth }}
       >
-        <Film size={18} strokeWidth={2} aria-hidden />
+        <Film size={18} aria-hidden />
         <span className="truncate text-[15px] font-semibold tracking-[0.2px]">{t("trailer")}</span>
-        {external && <ArrowUpRight size={16} strokeWidth={2} aria-hidden className="text-content-secondary" />}
+        {external && <ArrowUpRight size={16} aria-hidden className="text-content-secondary" />}
       </button>
       {playerOpen && target?.kind === "relay" && (
         <CatalogTrailerPlayer entries={entries} start={target.entry} language={language} onClose={() => setPlayerOpen(false)} />

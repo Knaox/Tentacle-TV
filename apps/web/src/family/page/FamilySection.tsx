@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus, Users } from "lucide-react";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { SettingsSection } from "@tentacle-tv/ui";
 import {
   useCancelFamilyInvitation,

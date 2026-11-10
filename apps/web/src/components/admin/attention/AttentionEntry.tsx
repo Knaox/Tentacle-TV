@@ -1,10 +1,25 @@
 import { memo, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import {
-  ChevronDown, ChevronRight, CircleArrowUp, Database, DatabaseZap, Eye, EyeOff, Globe, HardDriveDownload, KeyRound, LockOpen,
-  OctagonAlert, Puzzle, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
-} from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { ArrowCircleUpIcon as CircleArrowUp } from "@phosphor-icons/react/dist/csr/ArrowCircleUp";
+import { DatabaseIcon as Database, DatabaseIcon as DatabaseZap } from "@phosphor-icons/react/dist/csr/Database";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
+import { LockOpenIcon as LockOpen } from "@phosphor-icons/react/dist/csr/LockOpen";
+import { WarningOctagonIcon as OctagonAlert } from "@phosphor-icons/react/dist/csr/WarningOctagon";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { CloudSlashIcon as ServerOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { SkipForwardIcon as SkipForward } from "../../icons/transport";
+import { SlidersHorizontalIcon as SlidersHorizontal } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { PlugsIcon as Unplug } from "@phosphor-icons/react/dist/csr/Plugs";
+import { LightningIcon as Zap } from "@phosphor-icons/react/dist/csr/Lightning";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useHintSupported, useSetHintDismissed } from "@tentacle-tv/api-client";
 import type { DismissibleHint } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
@@ -19,7 +34,7 @@ import type { AttentionContext } from "./useAdminAttention";
  * en retrait sous « N masquées », avec « Rétablir » pour seul geste.
  */
 
-const ICON: Record<EntryId, LucideIcon> = {
+const ICON: Record<EntryId, IconType> = {
   jellyfinNotConfigured: Unplug,
   jellyfinUnreachable: ServerOff,
   jellyfinKeyRejected: KeyRound,

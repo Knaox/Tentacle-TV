@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogOut, Play, UserPlus, UsersRound, X } from "lucide-react";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { PlayIcon as Play } from "../../components/icons/transport";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
+import { UsersThreeIcon as UsersRound } from "@phosphor-icons/react/dist/csr/UsersThree";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { WtRoomStateDto } from "@tentacle-tv/shared";
 import { useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
 import { useToast } from "../../contexts/ToastContext";
@@ -55,7 +59,7 @@ function ProgramCard({ itemId }: { itemId: string }) {
         }}
         className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[rgba(var(--brand-rgb),0.18)] px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] focus-visible:ring-2 focus-visible:ring-line-focus"
       >
-        <Play aria-hidden className="h-3.5 w-3.5" fill="currentColor" />
+        <Play aria-hidden className="h-3.5 w-3.5" />
         {t("startPlayback")}
       </button>
     </div>
@@ -87,7 +91,7 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
           className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
           style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
         >
-          <UsersRound className="h-5 w-5" strokeWidth={2.2} />
+          <UsersRound className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">
@@ -148,7 +152,7 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
         {/* Inviter, c'est « Créer et rejoindre » : un hôte qui l'a perdu garde son salon, sans inviter. */}
         {isHost && mayCreate ? (
           <button type="button" className={PRIMARY} onClick={() => showRoomView("invite")}>
-            <UserPlus aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+            <UserPlus aria-hidden className="h-4 w-4" />
             {t("inviteMembers")}
           </button>
         ) : (

@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRightIcon as ArrowUpRight } from "@phosphor-icons/react/dist/csr/ArrowUpRight";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { resolveGuideLink, type TrailerGuideLink, type TrailerGuideLinkContext } from "@tentacle-tv/shared";
 import { externalLinkHandler } from "../../lib/openExternal";
 

@@ -1,10 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { CheckCircle, CheckSquare, Trash2, type LucideIcon } from "lucide-react";
+import { CheckCircleIcon as CheckCircle } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { NotificationFilter } from "@tentacle-tv/api-client";
 
 /** Un bouton texte du système de boutons sobres (`PlainButton`) : accent, neutre ou rouge, jamais un pavé. */
 function Plain({ Icon, label, tone = "neutral", disabled, onPress }: {
-  Icon?: LucideIcon;
+  Icon?: IconType;
   label: string;
   tone?: "accent" | "neutral" | "destructive";
   disabled?: boolean;

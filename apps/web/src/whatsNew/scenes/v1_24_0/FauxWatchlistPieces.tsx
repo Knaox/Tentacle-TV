@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { BookmarkMinus, Play, Undo2, X } from "lucide-react";
+import { BookmarksSimpleIcon as BookmarkMinus } from "@phosphor-icons/react/dist/csr/BookmarksSimple";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { ArrowUUpLeftIcon as Undo2 } from "@phosphor-icons/react/dist/csr/ArrowUUpLeft";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { ScenePoster } from "../../sceneMedia";
 import { CARD_TONES } from "../FauxCard";
 
@@ -10,7 +13,7 @@ export function FauxResumeTile({ poster, tone }: { poster: ScenePoster | null; t
     <span className="relative block aspect-video w-full overflow-hidden rounded-lg bg-fill-subtle ring-1 ring-line-subtle">
       {image ? <img src={image} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0" style={{ background: CARD_TONES[tone % CARD_TONES.length] }} />}
       <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-      <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-black"><Play size={9} fill="currentColor" className="ml-px" /></span>
+      <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-black"><Play size={9} className="ml-px" /></span>
       <span className="absolute inset-x-2 bottom-1.5 truncate text-[9px] font-semibold text-white">{poster?.title ?? " "}</span>
       {poster?.progress != null && (
         <span className="absolute inset-x-0 bottom-0 block h-[2px] bg-black/55">
@@ -49,7 +52,7 @@ export function FauxWatchlistRow({ poster, tone }: { poster: ScenePoster | null;
         </span>
       </span>
       <span className="flex h-[26px] items-center gap-1 rounded-full border border-cta-primary-border bg-cta-primary-bg px-2.5 text-[9px] font-bold text-cta-primary-fg">
-        <Play size={9} fill="currentColor" />
+        <Play size={9} />
         {percent !== null ? t("resume") : t("play")}
       </span>
       <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-line-subtle bg-fill-subtle text-content-tertiary">

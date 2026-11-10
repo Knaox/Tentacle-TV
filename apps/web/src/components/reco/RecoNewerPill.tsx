@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 
 interface RecoNewerPillProps {
   /** Une page recalculée attend, avec du nouveau (`useRecoPageVisit().hasNewer`). */

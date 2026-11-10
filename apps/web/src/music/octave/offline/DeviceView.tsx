@@ -18,7 +18,8 @@
  */
 
 import { useMemo } from "react";
-import { ChevronLeft, WifiOff } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";

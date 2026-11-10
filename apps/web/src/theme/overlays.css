@@ -1,0 +1,297 @@
+/* ── Surfaces, champs et calques du socle (refonte de nov. 2026) — docs/REFONTE-UI.md ──
+ *
+ * Le contenu est OPAQUE et se distingue par sa teinte (`.ui-panel`, `.ui-tile`) ; ce qui flotte
+ * au-dessus (menu, feuille, avis, infobulle) est la couche haute. Jamais de verre sur du verre.
+ *
+ * Les entrées et les sorties de ces calques sont jouées par leurs composants (`Modal`,
+ * `Dropdown`, `NoticeHost`, `Tooltip`) avec les durées de `theme/motion.ts` ; cette feuille ne
+ * porte que la peau, et le mouvement de ce qui n'a pas de composant. */
+
+/* ── Panneau et tuile ── le liseré d'avant est une ombre intérieure discrète. */
+
+.ui-panel {
+  border-radius: var(--radius-2xl);
+  background-color: var(--surface-1);
+  box-shadow: var(--shadow-edge);
+}
+
+.ui-tile {
+  border-radius: var(--radius-xl);
+  background-color: var(--surface-2);
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-hover) ease;
+}
+
+/* Une tuile qu'on presse (un choix, une carte de réglage) : `button.ui-tile` ou `role="radio"`. */
+button.ui-tile:active,
+.ui-tile[role="radio"]:active,
+.ui-tile[role="checkbox"]:active {
+  transform: scale(var(--press-scale));
+}
+
+.ui-tile[aria-pressed="true"],
+.ui-tile[aria-checked="true"] {
+  background-color: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* ── Champ ── une pilule pour une recherche (`.field-pill`), 10 px de rayon pour une saisie. */
+
+.field {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--fill-subtle);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-text);
+  font-size: 14px;
+  outline: none;
+  transition: box-shadow var(--duration-hover) ease;
+}
+
+.field::placeholder {
+  color: var(--text-quaternary);
+}
+
+textarea.field {
+  height: auto;
+  padding: 10px 14px;
+  line-height: 1.45;
+}
+
+.field.field-pill {
+  border-radius: var(--radius-pill);
+}
+
+.field:focus,
+.field:focus-visible {
+  box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 3px rgba(var(--accent-rgb), 0.22);
+}
+
+.field[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 1.5px var(--status-error);
+}
+
+.field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Case à cocher ── la boîte seule ; l'état vient de `aria-checked` sur elle ou son parent.
+ *   <button role="checkbox" aria-checked="true"><span class="ui-check">…coche…</span> Libellé</button> */
+
+.ui-check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1.5px var(--fill-strong);
+  color: transparent;
+  transition: background-color var(--duration-press) ease;
+}
+
+.ui-check[aria-checked="true"],
+.ui-check[data-checked="true"],
+[aria-checked="true"] > .ui-check {
+  background-color: var(--accent);
+  box-shadow: none;
+  color: var(--on-accent);
+}
+
+/* ── Menu et déroulant ── il SORT de son bouton : l'origine de l'échelle est posée par le
+ * composant (`transform-origin`), 180 ms à l'entrée, 120 à la sortie. Ouvert au clavier : sans
+ * animation. */
+
+.ui-menu {
+  min-width: 220px;
+  padding: 6px;
+  border-radius: var(--radius-xl);
+  background-color: var(--surface-dropdown);
+  box-shadow: var(--shadow-dropdown);
+  color: var(--text-primary);
+}
+
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-menu-out) ease,
+    color var(--duration-menu-out) ease;
+}
+
+.ui-menu-item[aria-checked="true"],
+.ui-menu-item[aria-selected="true"],
+.ui-menu-item[aria-current="true"],
+.ui-menu-item[aria-current="page"] {
+  color: var(--text-primary);
+}
+
+/* Le choix du clavier se voit comme le survol — et ne s'anime pas plus que lui. */
+.ui-menu-item:focus-visible,
+.ui-menu-item[data-active="true"] {
+  outline: none;
+  background-color: var(--fill-soft);
+  color: var(--text-primary);
+}
+
+.ui-menu-item:disabled,
+.ui-menu-item[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-menu-item-danger {
+  color: var(--status-error-fg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-menu-item:hover {
+    background-color: var(--fill-soft);
+    color: var(--text-primary);
+  }
+
+  .ui-menu-item-danger:hover {
+    background-color: var(--danger-surface);
+    color: var(--status-error-fg);
+  }
+
+  button.ui-tile:hover,
+  a.ui-tile:hover {
+    background-color: var(--surface-3);
+  }
+
+  .ui-tile[aria-pressed="true"]:hover,
+  .ui-tile[aria-checked="true"]:hover {
+    background-color: var(--accent-soft);
+  }
+}
+
+.ui-menu-label {
+  padding: 10px 10px 4px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-menu-separator {
+  height: 1px;
+  margin: 6px 4px;
+  background-color: var(--border-subtle);
+}
+
+/* ── Feuille et voile ── la peau d'une modale ; `Modal` la pose et la fait entrer (320 ms, courbe
+ * de tiroir) et sortir (200 ms). Toujours dans un PORTAIL (modalPortal.test.ts). */
+
+.ui-scrim {
+  background-color: var(--surface-overlay);
+}
+
+.ui-sheet {
+  border-radius: var(--radius-3xl);
+  background-color: var(--surface-modal);
+  box-shadow: var(--shadow-modal);
+  color: var(--text-primary);
+}
+
+/* ── Avis ── un message temporaire, en bas, opaque. */
+
+.ui-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: var(--radius-xl);
+  background-color: var(--surface-3);
+  box-shadow: var(--shadow-dropdown);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── Infobulle ── petite, opaque, sans flèche. */
+
+.ui-tip {
+  padding: 6px 9px;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-4);
+  box-shadow: var(--elev-2);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+/* ── Touche de clavier ── le rappel d'un raccourci. */
+
+.ui-kbd {
+  padding: 4px 6px;
+  border-radius: 5px;
+  background-color: var(--fill-soft);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ── Surtitre ── la petite ligne en capitales au-dessus d'un titre ou d'un groupe. */
+
+.ui-eyebrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* ── Image qui ne clignote pas ── la couleur de l'image d'abord, puis UN fondu.
+ *
+ *   <div class="ui-image" style="background-color: #5b4033">
+ *     <img data-loaded="true" … />   ← posé à `onLoad` ; `data-instant` si elle était en cache
+ *   </div>
+ *
+ * Le composant `FadeImage` (components/ui) fait tout cela ; la classe sert à qui rend sa balise. */
+
+.ui-image {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+}
+
+.ui-image > img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--duration-card) ease-out;
+}
+
+.ui-image > img[data-loaded="true"] {
+  opacity: 1;
+}
+
+/* Déjà vue (en cache) : elle est là d'emblée, sans fondu. */
+.ui-image > img[data-instant="true"] {
+  transition: none;
+}

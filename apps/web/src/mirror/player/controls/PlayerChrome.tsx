@@ -1,6 +1,9 @@
 import type { MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Captions, List, Settings } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { SubtitlesIcon as Captions } from "@phosphor-icons/react/dist/csr/Subtitles";
+import { ListIcon as List } from "@phosphor-icons/react/dist/csr/List";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useViewport } from "../../useFormFactor";
 import { useIsTablet } from "../../useMirrorLayout";

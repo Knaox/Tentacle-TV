@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { ChevronRight, Clapperboard, Database } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { DatabaseIcon as Database } from "@phosphor-icons/react/dist/csr/Database";
 import { AdminSection, StatusPill, type StatusTone } from "../kit";
 import { useServicesHealth } from "./overviewApi";
 import type { HealthState } from "./overviewSummary";

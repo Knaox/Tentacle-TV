@@ -8,37 +8,26 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
+// Les contrôles du socle (apps/web/src/theme/buttons.css) : une pilule, trois tailles, la
+// pression à 97 %. `primary` est l'action principale NEUTRE — le dégradé du logo ne sert qu'à
+// l'action de lecture (`btn-play`), jamais à un bouton ordinaire.
 const variantClasses: Record<Variant, string> = {
-  // `text-cta-brand-fg` et non `text-content-primary` : le texte est posé sur le
-  // dégradé de marque, sa lisibilité dépend de l'accent et non du schéma.
-  primary: "text-cta-brand-fg shadow-lg shadow-[rgba(var(--brand-rgb),0.2)]",
-  secondary: "bg-fill-soft text-content-primary hover:bg-fill-medium border border-line-subtle",
-  ghost: "text-content-secondary hover:bg-fill-soft hover:text-content-primary",
-  danger: "bg-danger-surface text-status-error-fg hover:bg-danger-surface-hover border border-danger-border",
-};
-
-const variantStyles: Record<Variant, Record<string, string>> = {
-  primary: { background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" },
-  secondary: {},
-  ghost: {},
-  danger: {},
+  primary: "btn-solid",
+  secondary: "btn-soft",
+  ghost: "btn-ghost",
+  danger: "btn-danger",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-xs rounded-lg gap-1.5",
-  md: "px-5 py-2.5 text-sm rounded-lg gap-2",
-  lg: "px-7 py-3 text-base rounded-xl gap-2.5",
+  sm: "btn-sm",
+  md: "",
+  lg: "btn-lg",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", size = "md", className = "", style, children, ...props }, ref) => {
+  ({ variant = "primary", size = "md", className = "", children, ...props }, ref) => {
     return (
-      <button
-        ref={ref}
-        className={`inline-flex items-center justify-center font-semibold transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-        style={{ ...variantStyles[variant], ...style }}
-        {...props}
-      >
+      <button ref={ref} className={`btn ${variantClasses[variant]} ${sizeClasses[size]} ${className}`} {...props}>
         {children}
       </button>
     );

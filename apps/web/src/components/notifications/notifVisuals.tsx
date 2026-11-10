@@ -1,4 +1,16 @@
-import { AlertTriangle, Ban, Bell, CheckCircle2, Clock, Film, Hourglass, LifeBuoy, ListVideo, Truck, Users, XCircle, type LucideIcon } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { ProhibitIcon as Ban } from "@phosphor-icons/react/dist/csr/Prohibit";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { LifebuoyIcon as LifeBuoy } from "@phosphor-icons/react/dist/csr/Lifebuoy";
+import { QueueIcon as ListVideo } from "@phosphor-icons/react/dist/csr/Queue";
+import { TruckIcon as Truck } from "@phosphor-icons/react/dist/csr/Truck";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
+import { XCircleIcon as XCircle } from "@phosphor-icons/react/dist/csr/XCircle";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { isFamilyNotificationType } from "@tentacle-tv/shared";
 import { notificationStateMeta, type AppNotification, type NotificationTone } from "@tentacle-tv/api-client";
 
@@ -11,7 +23,7 @@ export const TONE_STYLE: Record<NotificationTone, { fg: string; bg: string }> = 
   danger: { fg: "var(--status-error-fg)", bg: "var(--status-error-bg)" },
 };
 
-const STATE_ICON: Record<string, LucideIcon> = {
+const STATE_ICON: Record<string, IconType> = {
   available: CheckCircle2,
   progress: Truck,
   pending: Hourglass,
@@ -24,7 +36,7 @@ const STATE_ICON: Record<string, LucideIcon> = {
  * L'icône d'une notification : celle de son ÉTAT s'il en a un, sinon celle de
  * sa famille (support, Famille, liste partagée, titre). Jamais d'emoji.
  */
-export function notifIcon(n: AppNotification): { Icon: LucideIcon; tone: NotificationTone | null } {
+export function notifIcon(n: AppNotification): { Icon: IconType; tone: NotificationTone | null } {
   const meta = notificationStateMeta(n.state);
   if (meta) return { Icon: STATE_ICON[meta.state] ?? Bell, tone: meta.tone };
   if (n.type.startsWith("ticket_")) return { Icon: LifeBuoy, tone: null };

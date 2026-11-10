@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckSquare } from "lucide-react";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
 import { ShareMyListButton } from "../share/ShareMyListButton";
 import { chipCls } from "../library/filterChip";
 
@@ -30,7 +30,7 @@ export function CollectionActions({ shareKind, onSelect, extra }: CollectionActi
           onClick={onSelect}
           className={`${chipCls(false)} inline-flex cursor-pointer items-center gap-1.5`}
         >
-          <CheckSquare aria-hidden className="h-3.5 w-3.5" strokeWidth={2.1} />
+          <CheckSquare aria-hidden className="h-3.5 w-3.5" />
           {t("common:select")}
         </button>
       )}

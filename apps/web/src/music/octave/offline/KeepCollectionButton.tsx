@@ -14,7 +14,8 @@
  */
 
 import { useMemo, useRef, useState } from "react";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, CornerLeftUp, Folder, HardDrive } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { ArrowElbowLeftUpIcon as CornerLeftUp } from "@phosphor-icons/react/dist/csr/ArrowElbowLeftUp";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
 import type { BrowseResult } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";

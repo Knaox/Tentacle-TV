@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import type { LibraryPlan, PathStyle } from "@tentacle-tv/shared";
 import { ExplorerPick } from "./ExplorerPick";
 import { FolderBrowser } from "./FolderBrowser";

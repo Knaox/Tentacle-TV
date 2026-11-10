@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus } from "lucide-react";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
 import { librarySeasonNumbers, seasonPick } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
@@ -121,7 +122,7 @@ export function SeasonRequestDialog({ target, open, onClose }: {
             aria-busy={sending || undefined}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-5 text-sm font-bold text-cta-brand-fg shadow-[0_2px_10px_rgba(var(--brand-rgb),0.45)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />}
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus weight="bold" className="h-4 w-4" aria-hidden />}
             {pick.submitLabel ?? t("seasonsSubmitIdle")}
           </button>
         </div>

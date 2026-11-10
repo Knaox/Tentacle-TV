@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, Sparkles } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { useTentacleSearch } from "@tentacle-tv/api-client";
 import { foldForSearch } from "@tentacle-tv/shared";
 import { openOmnibox } from "./omniboxStore";
@@ -38,12 +39,12 @@ export const SearchSuggestions = memo(function SearchSuggestions({ query, onAppl
     <div className="flex flex-wrap items-center justify-center gap-2">
       {correction !== null && (
         <button type="button" className={PRIMARY} onClick={() => onApply(correction)}>
-          <Sparkles aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+          <Sparkles aria-hidden className="h-4 w-4" />
           {t("tryCorrection", { term: correction })}
         </button>
       )}
       <button type="button" className={correction === null ? PRIMARY : SECONDARY} onClick={() => openOmnibox(q)}>
-        <Search aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+        <Search aria-hidden className="h-4 w-4" />
         {t("searchEverywhere")}
       </button>
     </div>

@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { useUnlockFamilyManage } from "@tentacle-tv/api-client";
 import { FAMILY_PIN_LENGTH, isValidPin } from "@tentacle-tv/shared";
 import { useFamilyText } from "../useFamilyText";

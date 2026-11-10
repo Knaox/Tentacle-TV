@@ -5,7 +5,10 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play } from "../components/icons/transport";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { SquareIcon as Square } from "@phosphor-icons/react/dist/csr/Square";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import type { DownloadEntry } from "./api";
 
 /**

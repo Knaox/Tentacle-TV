@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, Lock, ShieldCheck } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";
 

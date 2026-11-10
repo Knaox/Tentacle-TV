@@ -1,29 +1,29 @@
-import {
-  Compass,
-  List,
-  BarChart2,
-  Search,
-  Star,
-  Heart,
-  Settings,
-  Film,
-  Tv,
-  Music,
-  Download,
-  Bell,
-  Calendar,
-  Clock,
-  TrendingUp,
-  Bookmark,
-  Play,
-  type LucideIcon,
-} from "lucide-react";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { ListIcon as List } from "@phosphor-icons/react/dist/csr/List";
+import { ChartBarIcon as BarChart2 } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
+import { DownloadSimpleIcon as Download } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { CalendarBlankIcon as Calendar } from "@phosphor-icons/react/dist/csr/CalendarBlank";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { TrendUpIcon as TrendingUp } from "@phosphor-icons/react/dist/csr/TrendUp";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { PlayIcon as Play } from "./icons/transport";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 /**
- * Map kebab-case icon names (from plugin metadata) to lucide-react components.
- * Extend this map as plugins declare new icons.
+ * Les noms d'icônes que les extensions déclarent (métadonnées, entrées de navigation) → leur
+ * composant. Ces noms sont ceux de lucide et TRAVERSENT le réseau : ils ne changent pas, des
+ * extensions publiées hors du dépôt les envoient. Seule la cible a changé — Phosphor, depuis la
+ * refonte de nov. 2026. Le nom du fichier et de ses fonctions reste, pour la même raison.
  */
-const iconMap: Record<string, LucideIcon> = {
+const iconMap: Record<string, IconType> = {
   compass: Compass,
   list: List,
   "bar-chart-2": BarChart2,
@@ -44,11 +44,11 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 /** Le composant d'une icône de plugin, ou `null` si ce nom n'est pas dans la table. */
-export function lucideIconFor(name: string | null | undefined): LucideIcon | null {
+export function lucideIconFor(name: string | null | undefined): IconType | null {
   return (name && iconMap[name]) || null;
 }
 
-/** Resolve a lucide icon name string to a JSX element (h-5 w-5). Falls back to text. */
+/** Le nom d'icône d'une extension → son élément (h-5 w-5) ; un nom inconnu s'écrit en texte. */
 export function getLucideIcon(name: string): React.ReactNode {
   const Icon = iconMap[name];
   if (Icon) return <Icon className="h-5 w-5" />;

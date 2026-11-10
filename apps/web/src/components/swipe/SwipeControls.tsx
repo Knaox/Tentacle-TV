@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Heart, SkipForward, Star, Undo2, X, type LucideIcon } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { SkipForwardIcon as SkipForward } from "../icons/transport";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { ArrowUUpLeftIcon as Undo2 } from "@phosphor-icons/react/dist/csr/ArrowUUpLeft";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
 
 interface SwipeControlsProps {
@@ -18,7 +23,7 @@ interface SwipeControlsProps {
 interface ControlSpec {
   key: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: IconType;
   size: "sm" | "lg";
   tone: string;
   onPress: () => void;
@@ -74,7 +79,7 @@ export const SwipeControls = memo(function SwipeControls({
                   : "border-line-subtle bg-surface-2 hover:bg-surface-3"
               } ${tone}`}
             >
-              <Icon size={lg ? 26 : 20} strokeWidth={key === "dislike" ? 3 : 2.2} className={key === "like" || key === "superlike" ? "fill-current" : ""} aria-hidden />
+              <Icon size={lg ? 26 : 20} weight={key === "like" || key === "superlike" ? "fill" : "bold"} aria-hidden />
             </button>
             {/* Sur téléphone, les icônes seules (le libellé reste lu : aria-label). */}
             <span className="hidden whitespace-nowrap text-center text-[0.72rem] font-medium leading-tight text-content-tertiary sm:block">

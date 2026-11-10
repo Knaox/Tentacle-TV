@@ -6,7 +6,9 @@
  */
 
 import { useCallback, useId, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretUpIcon as ChevronUp } from "@phosphor-icons/react/dist/csr/CaretUp";
+import { DotsSixVerticalIcon as GripVertical } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
 import { useTranslation } from "react-i18next";
 import { ROW_HEIGHT, rowShift } from "@tentacle-tv/shared/octave";
 import { Modal } from "../../../components/ui/Modal";

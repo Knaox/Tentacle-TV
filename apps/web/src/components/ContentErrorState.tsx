@@ -43,7 +43,7 @@ export function ContentErrorState({ onRetry }: { onRetry?: () => void }) {
         type="button"
         onClick={handleRetry}
         disabled={retrying}
-        className="mt-6 inline-flex h-10 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+        className="mt-6 inline-flex h-10 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
       >
         {t("common:retry")}
       </button>

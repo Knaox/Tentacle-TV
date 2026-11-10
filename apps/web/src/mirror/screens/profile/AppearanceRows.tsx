@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Globe, Sun } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { SunIcon as Sun } from "@phosphor-icons/react/dist/csr/Sun";
 import type { ThemeMode } from "@tentacle-tv/theme";
 import type { SettingScope } from "@tentacle-tv/shared";
 import { useThemeMode } from "../../../theme/useThemeMode";

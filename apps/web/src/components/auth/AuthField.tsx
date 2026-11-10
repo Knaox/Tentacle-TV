@@ -1,13 +1,16 @@
 import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, Eye, EyeOff, type LucideIcon } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 type NativeInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "size">;
 
 interface AuthFieldProps extends NativeInputProps {
   label: string;
   /** Pictogramme à gauche du champ — décoratif, le libellé porte le sens. */
-  icon?: LucideIcon;
+  icon?: IconType;
   /** Aide persistante sous le champ. */
   hint?: ReactNode;
   /** Erreur propre au champ : bordure, `aria-invalid` et message relié. */
@@ -42,7 +45,6 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
           <Icon
             aria-hidden
             size={18}
-            strokeWidth={1.75}
             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-content-quaternary"
           />
         )}
@@ -99,7 +101,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
           aria-controls={props.id}
           className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-content-tertiary transition-colors hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
         >
-          <Toggle aria-hidden size={18} strokeWidth={1.75} />
+          <Toggle aria-hidden size={18} />
         </button>
       }
     />

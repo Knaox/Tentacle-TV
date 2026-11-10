@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Heart } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import { creditRoleKey, formatCalendarDate, type CreditRole, type PersonLife } from "@tentacle-tv/shared";
 import { PersonPortrait } from "../../../components/person/PersonPortrait";
 
@@ -80,7 +80,7 @@ export const PersonHeader = memo(function PersonHeader({ id, name, imageTag, lif
           }`}
           style={{ WebkitTapHighlightColor: "transparent" }}
         >
-          <Heart size={18} fill={like.liked ? "currentColor" : "none"} aria-hidden />
+          <Heart weight={like.liked ? "fill" : "regular"} size={18} aria-hidden />
         </button>
       </div>
     </div>

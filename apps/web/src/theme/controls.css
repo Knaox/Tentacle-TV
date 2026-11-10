@@ -1,41 +1,25 @@
 /* ── Les trois contrôles de réglage : choix segmenté, interrupteur, curseur ──
  *
- * Ils avaient trois défauts communs, et c'est pour cela qu'ils vivent
- * désormais dans une seule feuille.
+ * Refonte de nov. 2026 (docs/REFONTE-UI.md) : plus de dégradé de marque ni de lueur sur un
+ * contrôle. L'option retenue d'un choix segmenté est une pastille NEUTRE (`--surface-4`) ;
+ * l'interrupteur allumé prend la teinte franche (`--accent`) ; le curseur, qui MESURE, garde le
+ * dégradé du logo (`--gauge-gradient`).
  *
- * 1. Ils peignaient du VIOLET PLAT (`--brand` seul) là où toute l'application
- *    porte le dégradé signature violet → rose. Un aplat saturé posé dans une
- *    carte de verre ne ressemble à rien d'autre dans le produit : il se lit
- *    comme un bouton tombé là, pas comme un état.
- * 2. Le curseur n'était même pas dessiné : `accent-color` laissait l'agent
- *    utilisateur peindre sa piste GRIS CLAIR, sur fond noir.
- * 3. Aucun n'avait d'état pressé, et deux n'avaient pas de survol.
+ * Ce qui ne change pas : l'état actif vit sur un CALQUE séparé dont seule l'opacité change.
  *
- * ── Ce qui est commun aux trois
+ * ⚠️ Jamais de `box-shadow` animée : elle repeint à chaque image. Seuls `transform` et
+ * `opacity` composent — ces contrôles s'alignent par dizaines dans un écran de réglages.
  *
- * Le repos est une surface de VERRE (`--fill-*` + liseré `--border-subtle`) ;
- * l'état actif porte le dégradé de marque ; l'élévation vient d'une LUEUR
- * posée en permanence sur un calque séparé, dont seule l'opacité change.
- *
- * ⚠️ Jamais de `box-shadow` animée, jamais de `background-color` animée :
- * l'une comme l'autre repeignent à chaque image. Seuls `transform` et
- * `opacity` composent. C'est la règle de `cards.css`, mesurée là-bas, et elle
- * vaut ici pour la même raison — ces contrôles s'alignent par dizaines dans un
- * écran de réglages.
- *
- * Les durées viennent des jetons : « animations réduites » les met à 0 ms, la
- * préférence est donc respectée par construction, sans `!important`. */
+ * Les durées viennent des jetons : « animations réduites » les met à 0 ms, la préférence est
+ * donc respectée par construction, sans `!important`. */
 
-/* Le dégradé signature, une seule fois. Les trois contrôles le réutilisent —
- * changer la marque ne demande alors qu'une ligne. */
+/* Les noms restent (le miroir, Octave et le lecteur de verre les lisent ou les redéfinissent). */
 :root {
-  --ctl-gradient: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-accent) 100%);
-  --ctl-glow: 0 2px 10px rgba(var(--brand-rgb), 0.35), 0 0 0 1px rgba(var(--brand-rgb), 0.45);
-  /* Le choix segmenté a sa propre lueur, plus discrète et SANS liseré de
-   * marque : c'est le liseré qui faisait lire l'option retenue comme un bouton
-   * d'action posé là, au lieu d'un état parmi trois. L'interrupteur et le
-   * curseur, eux, sont des objets isolés — ils gardent la lueur pleine. */
-  --ctl-glow-segment: 0 1px 6px rgba(var(--brand-rgb), 0.28);
+  /* L'aplat d'accent, écrit en image : une piste de curseur le pose en calque de fond. */
+  --ctl-gradient: linear-gradient(var(--accent), var(--accent));
+  --ctl-glow: none;
+  /* La pastille retenue d'un choix segmenté : son arête et une ombre courte, aucune couleur. */
+  --ctl-glow-segment: var(--shadow-edge), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* ══ 1. Le choix segmenté ══════════════════════════════════════════════════
@@ -50,11 +34,10 @@
 .ctl-segment {
   position: relative;
   isolation: isolate;
-  /* Un cran sous le rayon du groupe (10 px) : l'option s'inscrit dedans au
-   * lieu d'en épouser le bord. */
-  border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
-  font-weight: 500;
+  /* Une pilule dans une pilule : le groupe est arrondi de même (`.lg-segmented`, plus bas). */
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-weight: 600;
   /* À LA SOURIS. WCAG 2.2 AA demande 24 px CSS sur le web ; les 44 px d'avant
    * venaient des règles natives iOS/Android, qui ne régissent pas un écran de
    * réglages piloté au pointeur — et qui coûtaient, à la dizaine de contrôles,
@@ -63,8 +46,16 @@
   padding-inline: 0.75rem;
   font-size: 13px;
   transition:
-    color var(--duration-fast) var(--ease-out),
-    transform var(--duration-instant) var(--ease-out);
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* Le GROUPE : une pilule d'encre, sans liseré. La classe est posée par `SegmentedChoice` et la
+ * barre des utilisateurs, à côté de `lg-segmented` (que le verre natif reprend, lgControls.css). */
+.ctl-segmented {
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  padding: 3px;
 }
 
 /* AU DOIGT, la cible native reprend ses droits — c'est là qu'elle se mesure. */
@@ -82,10 +73,10 @@
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: var(--ctl-gradient);
+  background: var(--surface-4);
   box-shadow: var(--ctl-glow-segment);
   opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
 /* Le survol d'une option NON retenue : un simple voile, sur son propre calque
@@ -98,24 +89,25 @@
   border-radius: inherit;
   background: var(--fill-soft);
   opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
-.ctl-segment:hover {
-  color: var(--text-primary);
-}
+@media (hover: hover) and (pointer: fine) {
+  .ctl-segment:hover {
+    color: var(--text-primary);
+  }
 
-.ctl-segment:hover::after {
-  opacity: 1;
+  .ctl-segment:hover::after {
+    opacity: 1;
+  }
 }
 
 .ctl-segment:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 
 .ctl-segment[aria-checked="true"] {
-  color: var(--cta-brand-fg);
-  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .ctl-segment[aria-checked="true"]::before {
@@ -138,8 +130,8 @@
   isolation: isolate;
   border-radius: var(--radius-pill);
   background: var(--fill-strong);
-  border: 1px solid var(--border-subtle);
-  transition: transform var(--duration-instant) var(--ease-out);
+  border: 1px solid transparent;
+  transition: transform var(--duration-press) var(--ease-out);
 }
 
 .ctl-switch::before {
@@ -148,10 +140,10 @@
   inset: -1px;
   z-index: -1;
   border-radius: inherit;
-  background: var(--ctl-gradient);
+  background: var(--accent);
   box-shadow: var(--ctl-glow);
   opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
+  transition: opacity var(--duration-hover) ease;
 }
 
 .ctl-switch[aria-checked="true"]::before {
@@ -159,7 +151,7 @@
 }
 
 .ctl-switch:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 
 .ctl-switch:disabled {
@@ -177,7 +169,7 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   transform: translateX(2px);
-  transition: transform var(--duration-base) var(--ease-out);
+  transition: transform 200ms var(--ease-out);
 }
 
 /* ⚠️ `left: 0` ci-dessus est INDISPENSABLE : un absolu sans ancre horizontale
@@ -215,23 +207,23 @@
 .ctl-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid transparent;
   background:
-    var(--ctl-gradient) 0 / var(--range-fill, 0%) 100% no-repeat,
-    var(--fill-medium);
+    var(--gauge-gradient) 0 / var(--range-fill, 0%) 100% no-repeat,
+    var(--gauge-track);
 }
 
 .ctl-range::-moz-range-track {
   height: 6px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  background: var(--fill-medium);
+  border: 1px solid transparent;
+  background: var(--gauge-track);
 }
 
 .ctl-range::-moz-range-progress {
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--ctl-gradient);
+  background: var(--gauge-gradient);
 }
 
 /* ── Pouce ──
@@ -253,9 +245,9 @@
   margin-top: -7px; /* (18 − 6) / 2 + 1px de liseré : centre le pouce sur la piste */
   border-radius: var(--radius-pill);
   background: #ffffff;
-  border: 2px solid rgba(var(--brand-rgb), 0.9);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  transition: transform var(--duration-fast) var(--ease-out);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: transform var(--duration-hover) var(--ease-out);
 }
 
 .ctl-range::-moz-range-thumb {
@@ -263,9 +255,9 @@
   width: 18px;
   border-radius: var(--radius-pill);
   background: #ffffff;
-  border: 2px solid rgba(var(--brand-rgb), 0.9);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  transition: transform var(--duration-fast) var(--ease-out);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: transform var(--duration-hover) var(--ease-out);
 }
 
 .ctl-range:hover::-webkit-slider-thumb,
@@ -282,12 +274,12 @@
  * fait toute la largeur, et un anneau de 400 px ne désigne rien. */
 .ctl-range:focus-visible::-webkit-slider-thumb {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.3);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.35);
 }
 
 .ctl-range:focus-visible::-moz-range-thumb {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.3);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.35);
 }
 
 /* ── Les listes déroulantes natives (`<select>`) ──

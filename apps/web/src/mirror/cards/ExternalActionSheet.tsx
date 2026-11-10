@@ -1,6 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { EyeOff, Film, Loader2, Plus, Tv } from "lucide-react";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { useDeleteRating, useItemRating, useRateItem } from "@tentacle-tv/api-client";
 import { externalCardActionEntries, resolveExternalCardOverlay, type ExternalCardVariant } from "@tentacle-tv/shared";
 import { ActionSheet } from "../ui/ActionSheet";
@@ -99,7 +103,7 @@ function SheetBody({ target, variant, onClose, extra, onDismiss }: {
             onClick={() => { actions.request(); if (actions.state?.request?.mode === "open") onClose(); }}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-[15px] font-bold text-cta-brand-fg active:opacity-85 disabled:opacity-70"
           >
-            {actions.requesting ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Plus size={18} strokeWidth={2.5} aria-hidden />}
+            {actions.requesting ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Plus weight="bold" size={18} aria-hidden />}
             {request.label}
           </button>
         </div>

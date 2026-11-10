@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { SearchX, Users } from "lucide-react";
+import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { EmptyState } from "../../ui/EmptyState";
 import { AdminNotice } from "../kit";
 import { cls } from "../../../pages/adminUtils";

@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";

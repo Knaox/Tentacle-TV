@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { KeyRound } from "lucide-react";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
 import { packagedHelpKey } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { cls } from "../../../pages/adminUtils";

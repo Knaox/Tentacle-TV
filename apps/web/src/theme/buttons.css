@@ -1,0 +1,270 @@
+/* ── Les boutons du socle (refonte de nov. 2026) — mode d'emploi : docs/REFONTE-UI.md ──
+ *
+ * TOUS les boutons sont des pilules. Trois tailles (32, 40, 52), six peaux, et un seul geste :
+ * la pression répond en 120 ms à 97 %, DÈS l'appui (`:active`, pas au relâcher).
+ *
+ *   .btn                 la base : pilule de 40 px, sans peau
+ *   .btn-sm · .btn-lg    32 px · 52 px
+ *   .btn-play            l'action de LECTURE — le dégradé du logo, libellé blanc. Une par écran.
+ *   .btn-solid           l'action principale neutre (ivoire en sombre, encre en clair)
+ *   .btn-soft            l'action secondaire, sur la page ou un panneau
+ *   .btn-on-media        l'action secondaire posée sur une image
+ *   .btn-ghost           l'action discrète : rien au repos, un voile au survol
+ *   .btn-danger          l'action destructive
+ *   .btn-accent          l'action intermédiaire, à la teinte franche
+ *   .icon-btn            le bouton rond d'une icône (mêmes tailles : .btn-sm, .btn-lg)
+ *   [data-on="true"]     un bouton d'icône ALLUMÉ (favori, vu…) : la teinte franche
+ *
+ * Ce qui s'anime : `transform` (la pression), `background-color` et `color` (le survol, 160 ms).
+ * Jamais `transition: all`, jamais une ombre animée. Le survol ne vaut qu'à la souris
+ * (`hover: hover` et `pointer: fine`) : au doigt, il resterait collé après le toucher.
+ *
+ * Sous le verre natif (`data-liquid-glass="native"`), ces classes passent en `fallbackClassName`
+ * de `GlassButton` / `PressableGlass` : la primitive les retire et pose le verre. */
+
+.btn,
+.icon-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-text);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.btn {
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.btn.btn-sm {
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  font-size: 13px;
+}
+
+.btn.btn-lg {
+  gap: 10px;
+  height: 52px;
+  padding: 0 26px;
+  font-size: 16px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  color: var(--text-secondary);
+}
+
+.icon-btn.btn-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.icon-btn.btn-lg {
+  width: 52px;
+  height: 52px;
+}
+
+.btn:active,
+.icon-btn:active {
+  transform: scale(var(--press-scale));
+}
+
+.btn:disabled,
+.icon-btn:disabled,
+.btn[aria-disabled="true"],
+.icon-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Les peaux ── */
+
+.btn-play {
+  background-image: var(--cta-brand-gradient);
+  color: var(--cta-brand-fg);
+}
+
+.btn-solid {
+  background-color: var(--cta-primary-bg);
+  color: var(--cta-primary-fg);
+}
+
+.btn-soft {
+  background-color: var(--fill-soft);
+  color: var(--text-primary);
+}
+
+.btn-on-media {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: var(--on-media-primary);
+}
+
+.btn-ghost {
+  color: var(--text-secondary);
+}
+
+.btn-danger {
+  background-color: var(--status-error-bg);
+  color: var(--status-error-fg);
+}
+
+/* L'action intermédiaire : à la teinte franche, en fond doux (jamais un aplat d'accent). */
+.btn-accent {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Un bouton d'icône ALLUMÉ : la teinte franche, et l'icône passe en plein (côté composant). */
+.icon-btn[data-on="true"],
+.icon-btn[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Le bouton sans peau (`.btn-ghost`, un `.icon-btn` nu) : un voile. EN TÊTE — les peaux,
+   * écrites après, l'emportent sur un bouton d'icône qui en porte une. */
+  .btn-ghost:hover,
+  .icon-btn:hover {
+    background-color: var(--fill-soft);
+    color: var(--text-primary);
+  }
+
+  /* Le dégradé ne s'anime pas (une image de fond repeint) : on l'éclaire d'un cran, d'un coup. */
+  .btn-play:hover {
+    background-color: transparent;
+    color: var(--cta-brand-fg);
+    filter: brightness(1.08);
+  }
+
+  .btn-solid:hover {
+    background-color: var(--cta-primary-bg-hover);
+    color: var(--cta-primary-fg);
+  }
+
+  .btn-soft:hover {
+    background-color: var(--fill-strong);
+    color: var(--text-primary);
+  }
+
+  .btn-on-media:hover {
+    background-color: rgba(255, 255, 255, 0.24);
+    color: var(--on-media-primary);
+  }
+
+  .btn-danger:hover {
+    background-color: var(--danger-surface-hover);
+    color: var(--status-error-fg);
+  }
+
+  .btn-accent:hover {
+    background-color: rgba(var(--accent-rgb), 0.26);
+    color: var(--accent);
+  }
+
+  .icon-btn[data-on="true"]:hover,
+  .icon-btn[aria-pressed="true"]:hover {
+    color: var(--accent);
+  }
+}
+
+/* Le focus clavier : un anneau détaché, à la teinte franche. Sur une image, il passe au blanc. */
+.btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.btn-play:focus-visible,
+.btn-on-media:focus-visible {
+  outline-color: var(--on-media-primary);
+  outline-offset: 3px;
+}
+
+/* ── Puces et pastilles ── 24 px, rayon de puce (6). Une information, jamais un bouton. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--fill-soft);
+  color: var(--text-secondary);
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chip-accent {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip-success {
+  background-color: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.chip-warning {
+  background-color: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+
+.chip-danger {
+  background-color: var(--status-error-bg);
+  color: var(--status-error-fg);
+}
+
+/* Sur une image : un voile d'encre, lisible sur n'importe quelle affiche. */
+.chip-on-media {
+  background-color: rgba(11, 11, 12, 0.72);
+  color: var(--on-media-primary);
+}
+
+/* ── La jauge ── ce qui se MESURE (lecture, file hors ligne) porte le dégradé du logo.
+ *
+ * Le remplissage est un enfant mis à l'échelle (`transform: scaleX`), jamais une largeur :
+ *   <div class="gauge"><i style="transform: scaleX(0.42)"></i></div> */
+
+.gauge {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--gauge-track);
+}
+
+.gauge > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gauge-gradient);
+  transform-origin: left;
+}
+
+/* Une jauge qui avance d'elle-même (un transfert) : le pas se lisse, linéaire. */
+.gauge[data-live="true"] > i {
+  transition: transform var(--duration-card) linear;
+}
+
+/* Un nombre qui change (durée, pourcentage, compteur) ne fait pas danser sa ligne. */
+.num {
+  font-variant-numeric: tabular-nums;
+}

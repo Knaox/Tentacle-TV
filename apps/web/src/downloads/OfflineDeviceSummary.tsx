@@ -12,7 +12,7 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { HardDrive } from "lucide-react";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
 import type { DownloadListEntry } from "@tentacle-tv/offline-core";
 import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
@@ -54,7 +54,7 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
             aria-hidden
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-[rgba(var(--brand-rgb),0.35)] bg-[rgba(var(--brand-rgb),0.14)] text-[var(--brand-light)]"
           >
-            <HardDrive className="h-5 w-5" strokeWidth={1.8} />
+            <HardDrive className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-content-primary">{t("heroLabel")}</p>

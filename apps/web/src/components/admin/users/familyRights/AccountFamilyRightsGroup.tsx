@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { useAccountFamilyRights, useServerCapability, useSetAccountFamilyRights } from "@tentacle-tv/api-client";
 import type { FamilyCreationRightValue } from "@tentacle-tv/shared";
 import { RightsGroup } from "../rights/RightsGroup";

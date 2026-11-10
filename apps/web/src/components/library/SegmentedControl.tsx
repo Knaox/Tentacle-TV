@@ -70,7 +70,7 @@ export function SegmentedControl<T extends string>({
       role={radio ? "radiogroup" : "group"}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="lg-seg inline-flex shrink-0 items-center rounded-full bg-[color:var(--surface-2)] p-[3px] ring-1 ring-line-strong"
+      className="lg-seg inline-flex shrink-0 items-center gap-0.5 rounded-full bg-[color:var(--surface-2)] p-[3px]"
     >
       {options.map((opt, i) => {
         const selected = opt.value === value;
@@ -86,9 +86,9 @@ export function SegmentedControl<T extends string>({
             title={opt.icon ? opt.label : undefined}
             tabIndex={radio ? (i === tabbable ? 0 : -1) : undefined}
             onClick={() => onChange(opt.value)}
-            className={`relative isolate inline-flex min-h-[28px] cursor-pointer items-center whitespace-nowrap rounded-full text-xs font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
+            className={`relative isolate inline-flex min-h-[32px] cursor-pointer items-center whitespace-nowrap rounded-full text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               opt.icon ? "w-9 justify-center" : "px-3.5"
-            } ${selected ? "text-cta-brand-fg" : "text-content-secondary hover:text-content-primary"}`}
+            } ${selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"}`}
           >
             {selected && (
               <motion.span
@@ -96,17 +96,16 @@ export function SegmentedControl<T extends string>({
                 layoutId={markerId}
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
                 className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
-                style={{
-                  background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.95), rgba(var(--brand-accent-rgb),0.9))",
-                  boxShadow: "0 2px 10px rgba(var(--brand-rgb),0.35)",
-                }}
+                // La pastille retenue : NEUTRE (`--surface-4`), son arête et une ombre courte —
+                // plus de dégradé de marque (refonte de nov. 2026).
+                style={{ background: "var(--surface-4)", boxShadow: "var(--ctl-glow-segment)" }}
               />
             )}
             {opt.icon ?? opt.label}
             {opt.count !== undefined && (
               <span
                 className={`lg-seg-count ml-1.5 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
-                  selected ? "bg-black/20 text-cta-brand-fg" : "bg-fill-soft text-content-tertiary"
+                  selected ? "bg-fill-medium text-content-primary" : "bg-fill-soft text-content-tertiary"
                 }`}
               >
                 {opt.count}

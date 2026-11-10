@@ -7,7 +7,7 @@
 
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Blend } from "lucide-react";
+import { IntersectIcon as Blend } from "@phosphor-icons/react/dist/csr/Intersect";
 import { useTranslation } from "react-i18next";
 import { useLiquidGlassSurface } from "../../../../theme/glass";
 import { useCrossfadeMs } from "../../../engine/crossfadeSetting";

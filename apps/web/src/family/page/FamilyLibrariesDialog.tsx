@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Library } from "lucide-react";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
 import { useFamilyLibraries, useSetFamilyLibraries } from "@tentacle-tv/api-client";
 import type { FamilyProfileDto } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";

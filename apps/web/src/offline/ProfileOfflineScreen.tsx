@@ -10,7 +10,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { WifiOff } from "lucide-react";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
 import { useConnectivity } from "./useConnectivity";

@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play, SkipBackIcon as SkipBack, SkipForwardIcon as SkipForward } from "../../../components/icons/transport";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { PLAYER } from "../playerColors";
 import { TouchButton } from "./TouchButton";
 

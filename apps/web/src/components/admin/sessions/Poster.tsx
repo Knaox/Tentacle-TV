@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Film, type LucideIcon } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 /**
  * L'affiche d'une lecture — ou, si elle ne se charge pas (média sans image,
@@ -12,7 +13,7 @@ export function Poster({ src, width, height, className, icon: Icon = Film }: {
   height: number;
   className: string;
   /** Le dessin de l'aplat : une pellicule pour une vidéo, une note pour une écoute. */
-  icon?: LucideIcon;
+  icon?: IconType;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   if (src === null || failed === src) {

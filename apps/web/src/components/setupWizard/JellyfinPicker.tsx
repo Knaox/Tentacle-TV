@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCw } from "lucide-react";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import type { JellyfinDiscoveryResponse, JellyfinProbeResult } from "@tentacle-tv/shared";
 import { AdminNotice } from "../admin/kit";
 import { Field } from "../admin/services/Field";

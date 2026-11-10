@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import { Airplay } from "lucide-react";
+import { ScreencastIcon as Airplay } from "@phosphor-icons/react/dist/csr/Screencast";
 import { PLAYER } from "../playerColors";
 import { TouchButton } from "./TouchButton";
 

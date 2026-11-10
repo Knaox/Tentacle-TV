@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Compass, Info, Sparkles, Star } from "lucide-react";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
 import {
   recoAmbilightSourceUrl,
   recoBackdropUrl,
@@ -58,7 +61,7 @@ export function RecoHeroContent({ item, active, canOpen, onOpen }: {
           {item.year != null && <span className="text-on-media-secondary">{item.year}</span>}
           {item.voteAverage != null && item.voteAverage > 0 && (
             <span className="flex items-center gap-1 text-on-media-primary">
-              <Star size={12} className="text-[var(--brand-accent)]" fill="currentColor" aria-hidden />
+              <Star weight="fill" size={12} className="text-[var(--brand-accent)]" aria-hidden />
               {item.voteAverage.toFixed(1)}
             </span>
           )}

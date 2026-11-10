@@ -1,16 +1,22 @@
-/* Tentacle TV — Design Tokens (thème cinéma sombre)
- * Loaded by index.css before Tailwind layers.
- * Use these via `var(--token)` or via Tailwind arbitrary values: bg-[color:var(--surface-1)]
+/* Tentacle TV — jetons du thème (refonte de nov. 2026 : encres neutres, un seul accent).
+ * Chargé par index.css avant les couches Tailwind. Mode d'emploi : docs/REFONTE-UI.md.
+ *
+ * Une surface se distingue par sa TEINTE, plus par un liseré blanc : cinq encres, de la page à
+ * la sélection. Le dégradé du logo ne sert qu'à LIRE (`--cta-brand-gradient`) et à MESURER
+ * (`--gauge-gradient`) ; un état actif prend la teinte franche `--accent`. Jamais d'orange.
+ *
+ * Aucun nom ne change : l'iframe des extensions, le miroir, Octave et le client LG les lisent.
  */
 
 :root {
-  /* ── Surfaces (pure black, no navy) ─────────────────────────── */
-  --surface-0: #000000;        /* page background */
-  --surface-1: #0a0a0a;        /* cards default */
-  --surface-2: #141414;        /* hover, modal panels */
-  --surface-3: #1f1f1f;        /* elevated chrome (dropdowns) */
-  --surface-overlay: rgba(0, 0, 0, 0.7);
-  --surface-0-tint: #070710;   /* fin du dégradé cinématique du fond racine */
+  /* ── Surfaces : cinq encres neutres (ni noir pur, ni bleu nuit) ─ */
+  --surface-0: #0B0B0C;        /* la page */
+  --surface-1: #131315;        /* panneau, feuille */
+  --surface-2: #1B1B1E;        /* carte, tuile, champ */
+  --surface-3: #242428;        /* survol, menu, avis */
+  --surface-4: #303036;        /* sélection */
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+  --surface-0-tint: #0E0E10;   /* fin du dégradé cinématique du fond racine */
 
   /* ── Brand (Tentacle violet — kept, used sparingly) ─────────── */
   --brand: #8B5CF6;
@@ -29,6 +35,15 @@
   /* Le rose PROFOND — `brand.accentDark` de la palette partagée (mobile) : la
    * fin du dégradé des boutons de lecture, lisible sous un libellé blanc. */
   --brand-accent-dark: #DB2777;
+
+  /* ── Accent : la teinte FRANCHE des états actifs ─────────────────
+   * Favori, vu, onglet courant, interrupteur allumé, case cochée, anneau de focus. Un aplat, jamais un
+   * dégradé : le dégradé du logo est réservé à l'action de lecture et aux jauges. `--on-accent` est
+   * l'encre posée sur l'aplat ; `--accent-soft` le fond d'une tuile ou d'une puce choisie. */
+  --accent: #E58CF0;
+  --accent-rgb: 229, 140, 240;
+  --accent-soft: rgba(var(--accent-rgb), 0.16);
+  --on-accent: #27062E;
 
   /* ── Arrêts intermédiaires du dégradé de marque ─────────────────
    *
@@ -89,23 +104,23 @@
   --octopus-head-light: color-mix(in srgb, var(--brand-light) 65%, white);
 
   /* ── Text ───────────────────────────────────────────────────── */
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.78);
-  --text-tertiary: rgba(255, 255, 255, 0.55);
-  --text-quaternary: rgba(255, 255, 255, 0.34);
-  --text-disabled: rgba(255, 255, 255, 0.22);
+  --text-primary: #F4F2EE;
+  --text-secondary: rgba(244, 242, 238, 0.74);
+  --text-tertiary: rgba(244, 242, 238, 0.55);
+  --text-quaternary: rgba(244, 242, 238, 0.36);
+  --text-disabled: rgba(244, 242, 238, 0.24);
 
   /* ── Action / CTA (primaire neutre, pas un aplat de marque) ─── */
-  --cta-primary-bg: #FFFFFF;
-  --cta-primary-bg-hover: rgba(255, 255, 255, 0.85);
-  --cta-primary-fg: #000000;
+  --cta-primary-bg: #F4F2EE;
+  --cta-primary-bg-hover: #FFFFFF;
+  --cta-primary-fg: #131315;
 
-  --cta-secondary-bg: rgba(109, 109, 110, 0.55);
-  --cta-secondary-bg-hover: rgba(109, 109, 110, 0.78);
-  --cta-secondary-fg: #FFFFFF;
+  --cta-secondary-bg: rgba(255, 255, 255, 0.12);
+  --cta-secondary-bg-hover: rgba(255, 255, 255, 0.2);
+  --cta-secondary-fg: #F4F2EE;
 
-  --cta-ghost-bg: rgba(255, 255, 255, 0.08);
-  --cta-ghost-bg-hover: rgba(255, 255, 255, 0.14);
+  --cta-ghost-bg: rgba(255, 255, 255, 0.06);
+  --cta-ghost-bg-hover: rgba(255, 255, 255, 0.11);
   /* Pilule blanche pleine en sombre : pas de liseré, mais le token est émis
    * pour que le CTA applique un `border` inconditionnel (visible en clair). */
   --cta-primary-border: transparent;
@@ -118,25 +133,28 @@
    * (5,7:1 au départ) — l'Apple TV garde le vif, ses libellés de 26 pt sont du
    * « grand texte ». Mêmes arrêts que `ctaGradient` du mobile. */
   --cta-brand-gradient: linear-gradient(120deg, var(--brand-dark) 0%, var(--brand-accent-dark) 100%);
+  /* La JAUGE (lecture, file hors ligne, volume) : le dégradé du logo, vif — il ne porte aucun texte. */
+  --gauge-gradient: linear-gradient(90deg, var(--brand) 0%, var(--brand-accent) 100%);
+  --gauge-track: rgba(255, 255, 255, 0.18);
 
   /* ── Borders ────────────────────────────────────────────────── */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(var(--brand-rgb), 0.85);
+  --border-focus: rgba(var(--accent-rgb), 0.9);
 
   /* ── Fills (remplissages neutres translucides — bg-tentacle-fill-*) ─── */
   --fill-faint: rgba(255, 255, 255, 0.03);
   --fill-subtle: rgba(255, 255, 255, 0.05);
-  --fill-soft: rgba(255, 255, 255, 0.08);
-  --fill-medium: rgba(255, 255, 255, 0.12);
-  --fill-strong: rgba(255, 255, 255, 0.28);
-  --fill-shimmer: rgba(255, 255, 255, 0.05);
+  --fill-soft: rgba(255, 255, 255, 0.09);
+  --fill-medium: rgba(255, 255, 255, 0.13);
+  --fill-strong: rgba(255, 255, 255, 0.24);
+  --fill-shimmer: rgba(255, 255, 255, 0.06);
 
   /* ── Verre (GlassSurface) ───────────────────────────────────── */
-  --glass-tint: rgba(20, 20, 26, 0.6);
-  --glass-tint-strong: rgba(10, 10, 18, 0.72);
-  --glass-panel: #0a0a0a;
-  --glass-backdrop: rgba(0, 0, 0, 0.55);
+  --glass-tint: rgba(19, 19, 21, 0.72);
+  --glass-tint-strong: rgba(19, 19, 21, 0.86);
+  --glass-panel: #131315;
+  --glass-backdrop: rgba(0, 0, 0, 0.6);
 
   /* ── Texte sur média (affiche/backdrop) — CONSTANT entre schémas ─── */
   --on-media-primary: #FFFFFF;
@@ -166,11 +184,13 @@
   --status-info-bg: rgba(59, 130, 246, 0.15);
   --status-info-fg: #60A5FA;
 
-  /* ── Surface tiers — extended for popups/modals ─────────────── */
-  --surface-modal: rgba(15, 15, 21, 0.96);
-  --surface-dropdown: rgba(20, 20, 26, 0.95);
-  --surface-sheet: rgba(15, 15, 21, 0.96);
-  --surface-toolbar: rgba(20, 20, 26, 0.92);
+  /* ── Calques : feuille, menu — OPAQUES ──────────────────────────
+   * Sans flou dessous (CLAUDE.md, « Coût GPU »), la moindre transparence laisse lire la page à
+   * travers le calque. Le verre natif pose ses propres remplissages (lgOverlays.css). */
+  --surface-modal: #131315;
+  --surface-dropdown: #1E1E22;
+  --surface-sheet: #131315;
+  --surface-toolbar: rgba(19, 19, 21, 0.9);
 
   /* ── Blur scale — unify all overlays ────────────────────────── */
   --blur-overlay: 24px;
@@ -179,9 +199,20 @@
   --blur-sheet: 16px;
 
   /* ── Modal/dropdown shadow scale ────────────────────────────── */
-  --shadow-modal: 0 25px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-dropdown: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 40px 90px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --shadow-dropdown: 0 20px 50px -14px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-sheet: 0 -16px 48px -12px rgba(0, 0, 0, 0.7);
+  /* Le liseré d'avant, devenu une ombre INTÉRIEURE discrète : l'arête haute d'une surface posée. */
+  --shadow-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  /* Le contour d'une image (carte, affiche) : un trait intérieur à peine visible, jamais une bordure. */
+  --shadow-image-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+
+  /* ── Typographie ────────────────────────────────────────────────
+   * Titres en Bricolage Grotesque, texte en Figtree — embarquées (theme/fonts.css), jamais un CDN.
+   * Inter reste DERRIÈRE Figtree : elle porte le cyrillique et le grec des titres de la bibliothèque.
+   * Le client LG redéfinit ces deux jetons sur la police de la dalle. */
+  --font-display: "Bricolage Grotesque Variable", "Figtree Variable", "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-text: "Figtree Variable", "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* ── Logo sizes (single source of truth) ────────────────────── */
   --logo-size-sm: 28px;
@@ -190,15 +221,28 @@
   --logo-size-xl: 96px;
 
   /* ── Motion ─────────────────────────────────────────────────── */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* La courbe de tiroir (feuilles, modales) — celle d'iOS, par Ionic. */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  --duration-instant: 80ms;
-  --duration-fast: 150ms;
-  --duration-base: 240ms;
-  --duration-slow: 400ms;
-  --duration-page: 600ms;
+  --duration-instant: 120ms;
+  --duration-fast: 160ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --duration-page: 140ms;
+  /* Les durées par RÔLE — à préférer aux paliers ci-dessus dans tout code nouveau. */
+  --duration-press: 120ms;      /* pression d'un bouton, dès l'appui */
+  --duration-hover: 160ms;      /* survol, couleur */
+  --duration-menu-in: 180ms;    /* menu, déroulant, infobulle : entrée */
+  --duration-menu-out: 120ms;   /* … et sortie */
+  --duration-card: 220ms;       /* survol d'une carte */
+  --duration-sheet-in: 320ms;   /* feuille, modale : entrée (courbe de tiroir) */
+  --duration-sheet-out: 200ms;  /* … et sortie */
+  /* Amplitudes : la pression d'un contrôle, le survol d'une carte (sur place, sans la lever). */
+  --press-scale: 0.97;
+  --card-hover-scale: 1.03;
 
   /* ── Card hover ─────────────────────────────────────────────── */
   --hover-delay: 800ms;
@@ -213,31 +257,35 @@
   --row-gutter-desktop: 56px;
 
   /* ── Elevation (shadows) ────────────────────────────────────── */
-  --elev-1: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --elev-2: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --elev-3: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --elev-1: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --elev-2: 0 10px 26px -10px rgba(0, 0, 0, 0.7);
+  --elev-3: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
   /* Élévation de survol d'une carte — deux couches, aucun liseré. La recette et
    * son raisonnement vivent dans theme/cards.css, avec les règles qu'elles
    * servent. */
   --elev-card-hover:
-    0 22px 44px -14px rgba(0, 0, 0, 0.9),
-    0 0 16px rgba(255, 255, 255, 0.1);
+    0 18px 36px -16px rgba(0, 0, 0, 0.9);
 
-  /* ── Radii ──────────────────────────────────────────────────── */
+  /* ── Rayons : cinq valeurs et la pilule ─────────────────────────
+   * sm 6 (puce, pastille) · md 10 / lg 12 (champ, carte) · xl 16 (tuile, menu) · 2xl 20 (panneau) ·
+   * 3xl 24 (feuille, bannière) · pill (TOUS les boutons). `xs` ne sert qu'aux traits (jauges). */
   --radius-xs: 4px;
   --radius-sm: 6px;
-  --radius-md: 8px;
+  --radius-md: 10px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
   --radius-pill: 9999px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * SCHÉMA CLAIR
  *
- * Miroir de `buildLightPalette()` (packages/theme/src/schemes/light.ts) — la
- * correspondance est vérifiée par `cssVars.test.ts`, ces deux sources ne
- * peuvent pas diverger silencieusement.
+ * Le thème clair reçoit le même soin que le sombre : un papier chaud (jamais un blanc bleuté), des
+ * encres neutres, la même hiérarchie par la teinte. Les NOMS déclarés ici sont tenus par
+ * `cssVars.test.ts` (packages/theme) : tout jeton de couleur de `:root` y est redéclaré, ou
+ * figure dans la liste des constantes entre schémas.
  *
  * `:root[data-theme="light"]` (0,2,0) l'emporte sur `:root` (0,1,0) : aucun
  * `!important` nécessaire. L'attribut est posé sur <html> par un script inline
@@ -252,17 +300,18 @@
 :root[data-theme="light"] {
   /* ── Surfaces — fond racine légèrement teinté pour que les cartes
    *    blanches et le verre s'y détachent ─────────────────────────── */
-  --surface-0: #F4F4F7;
+  --surface-0: #F3F2EF;
   --surface-1: #FFFFFF;
-  --surface-2: #ECECF1;
-  --surface-3: #E2E2E8;
-  --surface-overlay: rgba(0, 0, 0, 0.4);
-  --surface-0-tint: #EFEFF4;
+  --surface-2: #ECEBE7;
+  --surface-3: #E3E1DC;
+  --surface-4: #D6D4CE;
+  --surface-overlay: rgba(19, 19, 21, 0.4);
+  --surface-0-tint: #EEEDE9;
 
-  --surface-modal: rgba(255, 255, 255, 0.96);
-  --surface-dropdown: rgba(255, 255, 255, 0.95);
-  --surface-sheet: rgba(255, 255, 255, 0.96);
-  --surface-toolbar: rgba(255, 255, 255, 0.92);
+  --surface-modal: #FFFFFF;
+  --surface-dropdown: #FFFFFF;
+  --surface-sheet: #FFFFFF;
+  --surface-toolbar: rgba(255, 255, 255, 0.9);
 
   /* ── Marque — l'accent lisible sur fond clair est la nuance FONCÉE.
    *    `--brand-rgb` suit, donc les ~138 `rgba(var(--brand-rgb), X)` du
@@ -279,40 +328,47 @@
   --brand-accent-light: #EC4899;
   --brand-accent-dark: #B42062;
 
+  /* ── Accent — sur du papier, la teinte franche est PROFONDE (6,3:1 sur blanc) et son encre claire. */
+  --accent: #A21CAF;
+  --accent-rgb: 162, 28, 175;
+  --accent-soft: rgba(var(--accent-rgb), 0.1);
+  --on-accent: #FFFFFF;
+  --gauge-track: rgba(19, 19, 21, 0.14);
+
   /* ── Texte ──────────────────────────────────────────────────── */
-  --text-primary: #0B0B10;
-  --text-secondary: rgba(11, 11, 16, 0.72);
-  --text-tertiary: rgba(11, 11, 16, 0.55);
-  --text-quaternary: rgba(11, 11, 16, 0.36);
-  --text-disabled: rgba(11, 11, 16, 0.24);
+  --text-primary: #131315;
+  --text-secondary: rgba(19, 19, 21, 0.74);
+  --text-tertiary: rgba(19, 19, 21, 0.56);
+  --text-quaternary: rgba(19, 19, 21, 0.4);
+  --text-disabled: rgba(19, 19, 21, 0.26);
 
   /* ── CTA — bouton BLANC + fin liseré sombre + ombre douce, plutôt
    *    qu'un aplat violet ou un slab noir. ─────────────────────────── */
-  --cta-primary-bg: #FFFFFF;
-  --cta-primary-bg-hover: #F1F1F5;
-  --cta-primary-fg: #111114;
-  --cta-primary-border: rgba(0, 0, 0, 0.14);
+  --cta-primary-bg: #131315;
+  --cta-primary-bg-hover: #2A2A2E;
+  --cta-primary-fg: #F4F2EE;
+  --cta-primary-border: transparent;
 
-  --cta-secondary-bg: rgba(120, 120, 128, 0.16);
-  --cta-secondary-bg-hover: rgba(120, 120, 128, 0.28);
-  --cta-secondary-fg: #0B0B10;
+  --cta-secondary-bg: rgba(19, 19, 21, 0.08);
+  --cta-secondary-bg-hover: rgba(19, 19, 21, 0.14);
+  --cta-secondary-fg: #131315;
 
-  --cta-ghost-bg: rgba(0, 0, 0, 0.05);
-  --cta-ghost-bg-hover: rgba(0, 0, 0, 0.1);
+  --cta-ghost-bg: rgba(19, 19, 21, 0.04);
+  --cta-ghost-bg-hover: rgba(19, 19, 21, 0.08);
 
   /* ── Bordures ───────────────────────────────────────────────── */
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.16);
-  --border-focus: rgba(var(--brand-rgb), 0.85);
+  --border-subtle: rgba(19, 19, 21, 0.09);
+  --border-strong: rgba(19, 19, 21, 0.18);
+  --border-focus: rgba(var(--accent-rgb), 0.9);
 
   /* ── Remplissages — inversés en noir translucide ────────────── */
-  --fill-faint: rgba(0, 0, 0, 0.03);
-  --fill-subtle: rgba(0, 0, 0, 0.04);
-  --fill-soft: rgba(0, 0, 0, 0.06);
-  --fill-medium: rgba(0, 0, 0, 0.1);
-  --fill-strong: rgba(0, 0, 0, 0.22);
+  --fill-faint: rgba(19, 19, 21, 0.03);
+  --fill-subtle: rgba(19, 19, 21, 0.045);
+  --fill-soft: rgba(19, 19, 21, 0.07);
+  --fill-medium: rgba(19, 19, 21, 0.11);
+  --fill-strong: rgba(19, 19, 21, 0.22);
   /* Le reflet du shimmer reste un ÉCLAT CLAIR, plus marqué sur fond clair. */
-  --fill-shimmer: rgba(255, 255, 255, 0.45);
+  --fill-shimmer: rgba(19, 19, 21, 0.06);
 
   /* ── Statuts — assombris pour tenir le contraste AA sur fond clair ─── */
   --status-success: #059669;
@@ -331,11 +387,11 @@
 
   /* ── Verre nacré — plus opaque qu'en sombre : sur #F4F4F7 un voile trop
    *    translucide aplatit les cartes. Compensé par l'élévation ci-dessous. */
-  --glass-tint: rgba(255, 255, 255, 0.72);
-  --glass-tint-strong: rgba(255, 255, 255, 0.82);
+  --glass-tint: rgba(255, 255, 255, 0.76);
+  --glass-tint-strong: rgba(255, 255, 255, 0.88);
   --glass-panel: #FFFFFF;
   /* Le scrim de modale reste un voile SOMBRE, seulement plus léger. */
-  --glass-backdrop: rgba(0, 0, 0, 0.3);
+  --glass-backdrop: rgba(19, 19, 21, 0.32);
 
   /* ── Actions destructives ───────────────────────────────────── */
   --danger-surface: rgba(220, 38, 38, 0.08);
@@ -345,16 +401,17 @@
   /* ── Élévation — des ombres NOIRES à 0.4-0.7 sont invisibles sur fond
    *    clair et salissantes. On passe à des ombres douces et courtes, qui
    *    portent la hiérarchie que la luminosité assurait en sombre. ──── */
-  --elev-1: 0 1px 2px rgba(11, 11, 16, 0.06), 0 1px 3px rgba(11, 11, 16, 0.08);
-  --elev-2: 0 4px 12px rgba(11, 11, 16, 0.08), 0 1px 3px rgba(11, 11, 16, 0.06);
-  --elev-3: 0 12px 32px rgba(11, 11, 16, 0.12), 0 2px 8px rgba(11, 11, 16, 0.06);
+  --elev-1: 0 1px 2px rgba(19, 19, 21, 0.06), 0 1px 3px rgba(19, 19, 21, 0.08);
+  --elev-2: 0 6px 16px -6px rgba(19, 19, 21, 0.14), 0 1px 3px rgba(19, 19, 21, 0.06);
+  --elev-3: 0 18px 44px -16px rgba(19, 19, 21, 0.22), 0 2px 8px rgba(19, 19, 21, 0.06);
   --elev-card-hover:
-    0 20px 40px -12px rgba(11, 11, 16, 0.3),
-    0 6px 12px -6px rgba(11, 11, 16, 0.18);
+    0 18px 36px -16px rgba(19, 19, 21, 0.32);
 
-  --shadow-modal: 0 24px 64px rgba(11, 11, 16, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --shadow-dropdown: 0 12px 32px rgba(11, 11, 16, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --shadow-sheet: 0 -8px 32px rgba(11, 11, 16, 0.12);
+  --shadow-modal: 0 32px 80px -24px rgba(19, 19, 21, 0.3), 0 0 0 1px rgba(19, 19, 21, 0.08);
+  --shadow-dropdown: 0 16px 40px -14px rgba(19, 19, 21, 0.22), 0 0 0 1px rgba(19, 19, 21, 0.07);
+  --shadow-sheet: 0 -12px 40px -12px rgba(19, 19, 21, 0.18);
+  --shadow-edge: inset 0 0 0 1px rgba(19, 19, 21, 0.05);
+  --shadow-image-edge: inset 0 0 0 1px rgba(19, 19, 21, 0.08);
 }
 
 /* La politique `prefers-reduced-motion` (durées à zéro, Liquid Glass figé,

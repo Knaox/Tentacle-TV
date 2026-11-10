@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { HardDrive } from "lucide-react";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
 import { fadeUp } from "../../theme/motion";
 
 /**
@@ -20,7 +20,7 @@ export function OfflineDeviceLine({ parts }: { parts: ReadonlyArray<string | nul
       variants={fadeUp}
       className="mt-3 text-sm leading-relaxed text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
     >
-      <HardDrive aria-hidden className="mr-2 inline-block h-4 w-4 -translate-y-px align-middle text-[var(--brand-light)]" strokeWidth={1.8} />
+      <HardDrive aria-hidden className="mr-2 inline-block h-4 w-4 -translate-y-px align-middle text-[var(--brand-light)]" />
       <span className="whitespace-nowrap font-semibold text-on-media-primary">{t("heroLabel")}</span>
       {shown.map((part) => (
         <span key={part}>

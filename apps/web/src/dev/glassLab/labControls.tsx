@@ -13,7 +13,9 @@
  */
 
 import { useState, type CSSProperties } from "react";
-import { ArrowDownWideNarrow, CheckSquare, Share2 } from "lucide-react";
+import { SortDescendingIcon as ArrowDownWideNarrow } from "@phosphor-icons/react/dist/csr/SortDescending";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 
 import { SegmentedControl } from "../../components/library/SegmentedControl";
 import { chipCls } from "../../components/library/filterChip";

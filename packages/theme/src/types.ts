@@ -16,6 +16,8 @@ export interface SurfaceColorTokens {
   s1: string;
   s2: string;
   s3: string;
+  /** La sélection — cinquième encre du web (refonte de nov. 2026). */
+  s4: string;
   overlay: string;
   modal: string;
   dropdown: string;
@@ -48,6 +50,23 @@ export interface BrandColorTokens {
    * (`--cta-brand-gradient`), lisible sous un libellé blanc (≥ 4,5:1).
    */
   accentDark: string;
+}
+
+/**
+ * La teinte FRANCHE des états actifs (favori, vu, onglet, interrupteur, focus) : un aplat, jamais
+ * un dégradé. `on` est l'encre posée dessus, `soft` le fond d'une tuile ou d'une puce choisie.
+ */
+export interface AccentColorTokens {
+  base: string;
+  /** Triplet RGB — source unique des variantes `rgba()` de l'accent. */
+  rgb: string;
+  soft: string;
+  on: string;
+}
+
+/** Les jauges (lecture, file hors ligne) : le dégradé du logo sur une piste neutre. */
+export interface GaugeColorTokens {
+  track: string;
 }
 
 export interface TextColorTokens {
@@ -166,6 +185,8 @@ export interface StatusColorTokens {
 export interface ColorTokens {
   surface: SurfaceColorTokens;
   brand: BrandColorTokens;
+  accent: AccentColorTokens;
+  gauge: GaugeColorTokens;
   text: TextColorTokens;
   cta: CtaColorTokens;
   border: BorderColorTokens;
@@ -191,6 +212,10 @@ export interface ShadowTokens {
   elev2: string;
   elev3: string;
   cardHover: string;
+  /** L'arête d'une surface posée : l'ancien liseré, devenu une ombre intérieure. */
+  edge: string;
+  /** Le contour intérieur d'une image (carte, affiche). */
+  imageEdge: string;
 }
 
 export interface RadiusTokens {
@@ -199,6 +224,10 @@ export interface RadiusTokens {
   md: string;
   lg: string;
   xl: string;
+  /** 20 px — panneau. */
+  xl2: string;
+  /** 24 px — feuille, bannière. */
+  xl3: string;
   pill: string;
 }
 
@@ -206,6 +235,8 @@ export interface MotionEasingTokens {
   out: string;
   inOut: string;
   spring: string;
+  /** La courbe de tiroir des feuilles et des modales. */
+  drawer: string;
 }
 
 export interface MotionDurationTokens {
@@ -214,6 +245,14 @@ export interface MotionDurationTokens {
   base: string;
   slow: string;
   page: string;
+  /** Durées par rôle (cf. docs/REFONTE-UI.md). */
+  press: string;
+  hover: string;
+  menuIn: string;
+  menuOut: string;
+  card: string;
+  sheetIn: string;
+  sheetOut: string;
 }
 
 export interface MotionTokens {
@@ -221,6 +260,10 @@ export interface MotionTokens {
   duration: MotionDurationTokens;
   hoverDelay: string;
   hoverScale: string;
+  /** Échelle d'un contrôle pressé. */
+  pressScale: string;
+  /** Échelle d'une carte survolée, sur place. */
+  cardHoverScale: string;
 }
 
 export interface LayoutTokens {
@@ -253,6 +296,8 @@ export interface SpacingTokens {
 
 export interface TypographyFontFamily {
   sans: string;
+  /** Les titres (Bricolage Grotesque) — le web et le bureau. */
+  display: string;
 }
 
 export interface TypographyFontSize {

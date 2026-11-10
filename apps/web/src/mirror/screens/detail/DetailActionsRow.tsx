@@ -1,6 +1,10 @@
 import { memo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CircleCheck, Heart, Plus, type LucideProps } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import type { IconProps } from "@phosphor-icons/react";
 import { useCardToggles } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PLAY_MAX_WIDTH } from "./detailMetrics";
@@ -58,8 +62,8 @@ export const DetailActionsRow = memo(function DetailActionsRow({ item }: { item:
  * lui, ne change pas (seule la couleur dit l'état).
  */
 function ActionButton({ Icon, IconActive, label, active, activeColor, onPress }: {
-  Icon: ComponentType<LucideProps>;
-  IconActive?: ComponentType<LucideProps>;
+  Icon: ComponentType<IconProps>;
+  IconActive?: ComponentType<IconProps>;
   label: string;
   active: boolean;
   activeColor: string;
@@ -87,7 +91,7 @@ function ActionButton({ Icon, IconActive, label, active, activeColor, onPress }:
             : undefined
         }
       >
-        <Glyph size={22} strokeWidth={2} style={{ color: active ? activeColor : "var(--text-primary)" }} aria-hidden />
+        <Glyph size={22} style={{ color: active ? activeColor : "var(--text-primary)" }} aria-hidden />
       </span>
       <span
         className="max-w-[80px] truncate text-center text-[11.5px] font-semibold tracking-[0.2px]"

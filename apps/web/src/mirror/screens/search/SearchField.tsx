@@ -1,6 +1,8 @@
 import { forwardRef, memo, type KeyboardEvent, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { CornerDownRight, Search, X } from "lucide-react";
+import { ArrowElbowDownRightIcon as CornerDownRight } from "@phosphor-icons/react/dist/csr/ArrowElbowDownRight";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Spinner } from "../../../components/ui/Spinner";
 
 interface Props {

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useFamilyParentalOptions, useSetFamilyGuestParental, useSetFamilyMemberParental } from "@tentacle-tv/api-client";
 import {
   GUEST_PARENTAL_NONE, currentCappedByCeiling, currentParentalAge, parentalAgeChoices, parentalAgeSlots, parentalRatingNames, withParentalAge,

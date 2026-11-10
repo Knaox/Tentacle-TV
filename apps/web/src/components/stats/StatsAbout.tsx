@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
-import { ChevronDown, Info } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import type { ViewingStats } from "@tentacle-tv/shared";
 import { useStatsVoice } from "./statsVoice";
 import { useStatsFormat } from "./useStatsFormat";

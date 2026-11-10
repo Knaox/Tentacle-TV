@@ -1,6 +1,8 @@
 import { forwardRef, useId, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle, Search, X } from "lucide-react";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { openOmnibox } from "./omniboxStore";
 
 /**
@@ -68,7 +70,6 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
     >
       <Search
         aria-hidden
-        strokeWidth={2.2}
         className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-[var(--brand-light)]" : "text-content-tertiary group-focus-within:text-[var(--brand-light)]"}`}
       />
       <input
@@ -102,7 +103,7 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
           title={t("clearSearch")}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          <X aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+          <X aria-hidden className="h-4 w-4" />
         </button>
       )}
     </div>

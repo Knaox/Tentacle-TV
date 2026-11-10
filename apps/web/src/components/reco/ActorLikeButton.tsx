@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Heart } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 
 interface ActorLikeButtonProps {
   name: string;
@@ -35,7 +35,7 @@ export function ActorLikeButton({ name, liked, pending, onToggle }: ActorLikeBut
           : "border-line-strong bg-surface-modal text-content-secondary opacity-0 group-hover/actor:opacity-100"
       }`}
     >
-      <Heart size={13} fill={liked ? "currentColor" : "none"} aria-hidden />
+      <Heart weight={liked ? "fill" : "regular"} size={13} aria-hidden />
     </button>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, SlidersVertical } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { SlidersIcon as SlidersVertical } from "@phosphor-icons/react/dist/csr/Sliders";
 import { recoRowTitleText, type RecoPage } from "@tentacle-tv/api-client";
 import { FadeIn } from "../../hero/FadeIn";
 import { SkeletonRow } from "../../hero/Skeletons";

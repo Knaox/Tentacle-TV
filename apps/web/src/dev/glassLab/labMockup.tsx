@@ -10,7 +10,13 @@
  */
 
 import { useState } from "react";
-import { Heart, Home, Library, ListMusic, Pause, Play, Search, Shuffle } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HouseIcon as Home } from "@phosphor-icons/react/dist/csr/House";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../components/icons/transport";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
 import { PressableGlass } from "../../components/ui/glass/PressableGlass";
 import { GlassAmbient } from "../../theme/glass";
 
@@ -77,7 +83,7 @@ export function LabMockup({ top, poster }: { top: number; poster: string }) {
           </section>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             <PressableGlass appearance={{ material: "pane", level: "prominent", shape: "capsule" }} className="flex h-14 items-center gap-3 px-8 text-[17px] font-bold" fallbackClassName="hero-cta-primary rounded-full">
-              <Play size={18} fill="currentColor" aria-hidden /> Lecture
+              <Play size={18} aria-hidden /> Lecture
             </PressableGlass>
             <PressableGlass appearance={{ material: "pane", shape: "capsule" }} className="flex h-14 items-center gap-3 px-7 text-[17px] font-semibold" fallbackClassName="rounded-full border border-line-subtle">
               <Shuffle size={18} aria-hidden /> Aléatoire
@@ -120,7 +126,7 @@ export function LabMockup({ top, poster }: { top: number; poster: string }) {
             </div>
           </div>
           <PressableGlass appearance={{ material: "pane", level: "prominent", shape: "circle" }} className="flex h-[58px] w-[58px] items-center justify-center" fallbackClassName="hero-cta-primary rounded-full" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Lecture"}>
-            {playing ? <Pause size={22} fill="currentColor" aria-hidden /> : <Play size={22} fill="currentColor" aria-hidden />}
+            {playing ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
           </PressableGlass>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div className="lg-bead" style={{ padding: "6px 12px", fontSize: 12, fontWeight: 600 }}>Opus</div>

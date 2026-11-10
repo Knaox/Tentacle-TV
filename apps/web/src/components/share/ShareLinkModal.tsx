@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Share2 } from "lucide-react";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { useMyShareLink, useCreateShareLink, useRevokeShareLink, type ShareListKind } from "@tentacle-tv/api-client";
 import { useToast } from "../../contexts/ToastContext";
 import { canShareNatively, shareListUrl, shareNatively } from "../../lib/share";

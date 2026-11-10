@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckSquare, Heart } from "lucide-react";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import { groupFavorites, summarizeFavorites, useBatchRemoveFavorites, useFavoritesAll } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMultiSelect } from "../../../hooks/useMultiSelect";

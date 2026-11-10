@@ -7,7 +7,14 @@
  */
 
 import type { ComponentType } from "react";
-import { CheckCheck, CircleMinus, Heart, HeartOff, ListEnd, ListPlus, ListStart, X } from "lucide-react";
+import { ChecksIcon as CheckCheck } from "@phosphor-icons/react/dist/csr/Checks";
+import { MinusCircleIcon as CircleMinus } from "@phosphor-icons/react/dist/csr/MinusCircle";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HeartBreakIcon as HeartOff } from "@phosphor-icons/react/dist/csr/HeartBreak";
+import { ArrowLineDownIcon as ListEnd } from "@phosphor-icons/react/dist/csr/ArrowLineDown";
+import { ListPlusIcon as ListPlus } from "@phosphor-icons/react/dist/csr/ListPlus";
+import { ArrowLineUpIcon as ListStart } from "@phosphor-icons/react/dist/csr/ArrowLineUp";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { openPlaylistChooserForMany } from "../playlistChooserStore";

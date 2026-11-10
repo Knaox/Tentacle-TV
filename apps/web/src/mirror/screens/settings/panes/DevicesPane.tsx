@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Cast } from "lucide-react";
+import { ScreencastIcon as Cast } from "@phosphor-icons/react/dist/csr/Screencast";
 import { MyDevicesSection } from "../../../../components/settings/MyDevicesSection";
 import { SettingsRow } from "../ui/SettingsRow";
 import { SettingsSection } from "../ui/SettingsSection";

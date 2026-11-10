@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal } from "lucide-react";
+import { DotsThreeIcon as MoreHorizontal } from "@phosphor-icons/react/dist/csr/DotsThree";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolveBannerImage, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";

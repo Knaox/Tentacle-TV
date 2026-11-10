@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ShieldWarningIcon as ShieldAlert } from "@phosphor-icons/react/dist/csr/ShieldWarning";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 import type { CompatVersionView, JellyfinCompatReport } from "@tentacle-tv/shared";
 import { StatusPill } from "../kit";
 import {

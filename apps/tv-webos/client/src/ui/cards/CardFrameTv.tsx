@@ -4,7 +4,6 @@ import { CardFrame as WebFrame } from "@/components/cards/CardFrame?original";
 interface CardFrameProps {
   hovered: boolean;
   aspect: string;
-  lift?: { scale: number; y: number };
   children: ReactNode;
 }
 
@@ -13,8 +12,8 @@ interface CardFrameProps {
  *
  * `hoverPass` retire les règles `:hover` de la feuille, mais les deux calques
  * d'élévation de `.media-tile` sont pilotés par un **attribut**,
- * `data-hovered` (cf. `theme/cards.css`), qu'aucune passe CSS n'atteint. Le
- * lift, lui, est un `transform` en style en ligne. Les deux viennent d'un
+ * `data-hovered` (cf. `theme/cards.css`), qu'aucune passe CSS n'atteint.
+ * L'échelle du survol, elle, est un `transform` en style en ligne. Les deux viennent d'un
  * `useState` local à chaque type de carte, réveillé par `onMouseEnter` — mesuré
  * en direct sur la dalle de test : l'attribut basculait bien à `true`.
  *
@@ -26,9 +25,9 @@ interface CardFrameProps {
  * de la fiche fait voyager, et la boîte de ratio. On retire un comportement, pas
  * une structure.
  */
-export function CardFrame({ aspect, lift, children }: CardFrameProps) {
+export function CardFrame({ aspect, children }: CardFrameProps) {
   return (
-    <WebFrame hovered={false} aspect={aspect} lift={lift}>
+    <WebFrame hovered={false} aspect={aspect}>
       {children}
     </WebFrame>
   );

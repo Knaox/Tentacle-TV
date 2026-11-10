@@ -2,7 +2,8 @@ import { useEffect, useRef, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { EyeOff, Info } from "lucide-react";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import { useCardFace, useCardRatingTarget, useCardToggles, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import {
   cardActionEntries,

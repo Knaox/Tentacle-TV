@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, RotateCcw } from "lucide-react";
+import { SortDescendingIcon as ArrowDownWideNarrow } from "@phosphor-icons/react/dist/csr/SortDescending";
+import { SortAscendingIcon as ArrowUpNarrowWide } from "@phosphor-icons/react/dist/csr/SortAscending";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
 import { LibraryActiveFilterPills } from "../LibraryActiveFilterPills";
 import { GenreMenu, PlatformMenu, RatingMenu, SortMenu, YearMenu } from "./LibraryFilterMenus";
 import { LanguageMenus } from "./LanguageMenus";
@@ -77,8 +79,8 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
               className="lg-content-control flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--surface-2)] text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors hover:bg-fill-medium hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
             >
               {desc
-                ? <ArrowDownWideNarrow aria-hidden className="h-4 w-4" strokeWidth={2.1} />
-                : <ArrowUpNarrowWide aria-hidden className="h-4 w-4" strokeWidth={2.1} />}
+                ? <ArrowDownWideNarrow aria-hidden className="h-4 w-4" />
+                : <ArrowUpNarrowWide aria-hidden className="h-4 w-4" />}
             </button>
             {props.actions && (
               <>
@@ -139,7 +141,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
               onClick={props.onReset}
               className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 text-xs font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
             >
-              <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} />
+              <RotateCcw aria-hidden className="h-3.5 w-3.5" />
               {t("common:resetFilters")}
             </button>
           )}

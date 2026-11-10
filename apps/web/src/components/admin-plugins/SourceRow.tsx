@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, ShieldCheck, Trash2 } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { ToggleSwitch } from "../settings/ToggleSwitch";
 import { StatusPill } from "../admin/kit";
 import { ConfirmButton } from "../admin/sessions/ConfirmButton";
@@ -38,7 +40,7 @@ export const SourceRow = memo(function SourceRow({ source, state, now, restartin
           source.official ? "bg-[var(--brand-soft)] text-[var(--brand-light)]" : "bg-fill-soft text-content-secondary"
         } ${enabled ? "" : "opacity-60"}`}
       >
-        <Icon strokeWidth={2.2} className="h-5 w-5" />
+        <Icon className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">

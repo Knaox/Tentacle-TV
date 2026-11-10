@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Mail } from "lucide-react";
+import { EnvelopeIcon as Mail } from "@phosphor-icons/react/dist/csr/Envelope";
 import { SettingsSection } from "@tentacle-tv/ui";
 import type { IncomingInvitationDto } from "@tentacle-tv/shared";
 import { requestFamilyPoster } from "../familyPosterStore";

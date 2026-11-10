@@ -35,7 +35,7 @@ export const ChartTooltip = memo(function ChartTooltip({ x, y, containerWidth, t
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-20 rounded-xl bg-[color:var(--surface-3)] px-3 py-2.5 shadow-[var(--elev-2)] ring-1 ring-line-strong"
+      className="pointer-events-none absolute z-20 rounded-tile bg-surface-4 px-3 py-2.5 shadow-elev-2"
       style={{ left, top: Math.max(0, y), width: WIDTH, transform: "translateY(-100%)" }}
     >
       {headline && <p className="text-base font-semibold tabular-nums text-content-primary">{headline}</p>}

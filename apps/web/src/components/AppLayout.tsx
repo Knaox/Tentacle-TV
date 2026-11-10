@@ -67,8 +67,6 @@ function DesktopLayout() {
 
   return (
     <div className="lgc-shell min-h-screen bg-surface-0" style={covered ? { visibility: "hidden" } : undefined}>
-      {/* Subtle brand ambient glow behind everything */}
-      <div className="brand-ambient" aria-hidden />
       {/* Liquid Glass (natif) : les taches de la maquette, sous le contenu
           (`theme/paneShell.css`) ; ailleurs, rien n'est rendu. */}
       <GlassAmbient className="lgc-ambient" />

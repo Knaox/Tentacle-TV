@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { MoonIcon as Moon } from "@phosphor-icons/react/dist/csr/Moon";
+import { SunIcon as Sun } from "@phosphor-icons/react/dist/csr/Sun";
 import { SettingsRow } from "@tentacle-tv/ui";
 import type { ThemeMode } from "@tentacle-tv/theme";
 

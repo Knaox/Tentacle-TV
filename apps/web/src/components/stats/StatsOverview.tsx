@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Info } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import { heroFigure, VIEWING_STATS_PERIODS, type ViewingStats, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { SegmentedControl } from "../library/SegmentedControl";
 import { useStatsFormat } from "./useStatsFormat";

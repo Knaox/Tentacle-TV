@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 
 interface Props {
   value: string;

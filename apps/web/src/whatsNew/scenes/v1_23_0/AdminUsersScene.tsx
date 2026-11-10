@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Activity, MonitorSmartphone, Users } from "lucide-react";
+import { PulseIcon as Activity } from "@phosphor-icons/react/dist/csr/Pulse";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { SceneProps } from "../../types";
 import { FauxCursor, Place, SceneStage, useSceneClock } from "..";
 import { FauxStatTile } from "./FauxStatTile";

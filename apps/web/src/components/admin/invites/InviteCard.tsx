@@ -1,7 +1,10 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Check, Copy, Share2, Trash2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { inviteStatus, type AdminInviteDto, type InviteStatus } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
 import { StatusPill, type StatusTone } from "../kit";

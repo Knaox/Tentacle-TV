@@ -101,7 +101,7 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
       onClick={() => onPlay(entry)}
       onKeyDown={onKeyDown}
     >
-      <CardFrame hovered={hovered} aspect="aspect-video" lift={{ scale: 1.04, y: -7 }} highlighted={current}>
+      <CardFrame hovered={hovered} aspect="aspect-video" highlighted={current}>
         {sprite && frameUrl
           ? <CardTrickplayImage frame={{ url: frameUrl, info: sprite.selection.info, col: sprite.col, row: sprite.row }} alt={title} fallback={image} />
           : image}

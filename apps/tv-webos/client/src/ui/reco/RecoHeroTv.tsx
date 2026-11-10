@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Sparkles } from "lucide-react";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { reasonToText, useJellyfinClient, useSeriesWatchState, type RecoRowItem } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
 import { CARD_HEIGHT, FRAME_GUTTER } from "@/components/hero/HeroBillboard";

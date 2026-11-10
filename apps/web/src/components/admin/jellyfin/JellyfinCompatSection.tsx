@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import type { JellyfinCompatReport } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
 import { AdminNotice, AdminSection } from "../kit";

@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Gauge, Wifi, WifiOff } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { GaugeIcon as Gauge } from "@phosphor-icons/react/dist/csr/Gauge";
+import { WifiHighIcon as Wifi } from "@phosphor-icons/react/dist/csr/WifiHigh";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { SettingsRow } from "@tentacle-tv/ui";
 
 import { useDataSaverActive, useDataSaverSetting } from "../../offline/useDataSaver";

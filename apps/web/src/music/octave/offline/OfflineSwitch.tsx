@@ -13,7 +13,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { Wifi, WifiOff } from "lucide-react";
+import { WifiHighIcon as Wifi } from "@phosphor-icons/react/dist/csr/WifiHigh";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { useTranslation } from "react-i18next";
 import { useActiveProfile } from "../../../auth/profileSession";
 import { PressableGlass } from "../../../components/ui/glass/PressableGlass";
@@ -61,7 +62,7 @@ export function OfflineSwitchMenuItem({ className, onDone }: { className: string
       }}
       data-octave-offline-switch={kind}
     >
-      <Icon aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
+      <Icon aria-hidden className="h-[18px] w-[18px]" />
       {t(`switch.${kind}`)}
     </button>
   );

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, Play } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { PlayIcon as Play } from "../../components/icons/transport";
 import { WtApiError, dismissAffinityMatch, applyAffinityPush, showAffinityNotice } from "@tentacle-tv/api-client";
 import { formatNames, memberName } from "@tentacle-tv/shared";
 import type { WtAffinityMatchDto, WtAffinityStateDto } from "@tentacle-tv/shared";
@@ -96,7 +97,7 @@ export function AffinityMatchView({
           animate={{ scale: 1 }}
           transition={{ delay: reduced ? 0 : 0.18, type: "spring", stiffness: 420, damping: 16 }}
         >
-          <Heart className="h-5 w-5" fill="currentColor" />
+          <Heart weight="fill" className="h-5 w-5" />
         </motion.span>
       </motion.div>
 
@@ -124,7 +125,7 @@ export function AffinityMatchView({
         {/* La vue arrive par-dessus la pile, modale déjà ouverte : le focus
             de la modale ne se rejoue pas, il vient d'ici. */}
         <button type="button" onClick={() => void watch()} disabled={answering !== null} className={PRIMARY} autoFocus>
-          <Play aria-hidden className="h-4 w-4" fill="currentColor" />
+          <Play aria-hidden className="h-4 w-4" />
           {answering === "watch" ? t("affinityLaunching") : t("affinityWatchTogether")}
         </button>
         <button type="button" onClick={() => void keepSwiping()} disabled={answering !== null} className={SECONDARY}>

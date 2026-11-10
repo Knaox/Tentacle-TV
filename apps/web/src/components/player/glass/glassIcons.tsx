@@ -9,6 +9,9 @@
  * Le nombre (lot lg8) : 8,6 unités en graisse 800, cerné d'un liseré NOIR à alpha
  * peint SOUS le chiffre (`paint-order`) — à 7,4 unités sans liseré, il tombait à
  * 1,8:1 sur un gris moyen quand le reste de l'icône tenait 5,7:1 (banc lg8 de C).
+ *
+ * Dessinés À LA MAIN, et ils le restent (refonte de nov. 2026) : ce pictogramme porte un NOMBRE —
+ * la durée du saut, un réglage de l'utilisateur — qu'aucune icône de Phosphor ne sait écrire.
  */
 
 interface SkipGlyphProps {

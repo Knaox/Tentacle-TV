@@ -80,7 +80,7 @@ function DeleteButton({ count, onClick, disabled, isDeleting, removal }: { count
     <button
       onClick={onClick}
       disabled={disabled}
-      className="lg-fb-btn lg-fb-danger rounded-lg bg-danger-surface px-4 py-1.5 text-sm font-medium text-status-error-fg ring-1 ring-danger-border transition-all hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+      className="lg-fb-btn lg-fb-danger rounded-lg bg-danger-surface px-4 py-1.5 text-sm font-medium text-status-error-fg ring-1 ring-danger-border transition hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
     >
       {isDeleting ? t("common:loading") : t(removal ? "common:removeCount" : "common:deleteCount", { count })}
     </button>

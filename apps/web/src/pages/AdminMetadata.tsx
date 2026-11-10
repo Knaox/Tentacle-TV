@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { RotateCw } from "lucide-react";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { useAdminMetadataStatus } from "@tentacle-tv/api-client";
 import { cls } from "./adminUtils";
 import { getUserInfo } from "../components/userMenu/menuItems";

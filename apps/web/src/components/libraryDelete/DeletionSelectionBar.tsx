@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Trash2, X } from "lucide-react";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { DeletionSelection } from "./useDeletionSelection";
 
 interface Props {
@@ -79,11 +80,11 @@ export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, not
         disabled={count === 0}
         className="lg-fb-btn lg-fb-danger inline-flex h-10 items-center gap-2 rounded-lg border border-danger-border bg-danger-surface px-4 text-sm font-semibold text-[var(--status-error-fg)] transition-colors hover:bg-danger-surface-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <Trash2 className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+        <Trash2 className="h-4 w-4" aria-hidden />
         {t("delete")}
       </button>
       <button type="button" onClick={selection.exit} className={`${SECONDARY} gap-1.5`} title={t("escapeHint")}>
-        <X className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+        <X className="h-4 w-4" aria-hidden />
         {t("done")}
       </button>
     </>

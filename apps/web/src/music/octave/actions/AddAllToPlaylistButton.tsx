@@ -4,7 +4,7 @@
  * (« 2 des 11 titres sont déjà dans X » : tout, sans les doublons, ou rien). Rien si aucun titre ne peut y entrer.
  */
 
-import { ListPlus } from "lucide-react";
+import { ListPlusIcon as ListPlus } from "@phosphor-icons/react/dist/csr/ListPlus";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { openPlaylistChooserForMany } from "./playlistChooserStore";

@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { Check, Lock } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import type { SelectMark } from "./useDeletionSelection";
 
 /**
@@ -19,7 +20,7 @@ export const SelectionMark = memo(function SelectionMark({ mark }: { mark: Selec
         aria-hidden
         className="pointer-events-none absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white/80"
       >
-        <Lock className="h-3.5 w-3.5" strokeWidth={2.4} />
+        <Lock weight="bold" className="h-3.5 w-3.5" />
       </span>
     );
   }
@@ -35,7 +36,7 @@ export const SelectionMark = memo(function SelectionMark({ mark }: { mark: Selec
             : "border-white/80 bg-black/45 group-hover/card:border-white"
       }`}
     >
-      {checked && <Check className="h-4 w-4" strokeWidth={3} />}
+      {checked && <Check weight="bold" className="h-4 w-4" />}
     </span>
   );
 });

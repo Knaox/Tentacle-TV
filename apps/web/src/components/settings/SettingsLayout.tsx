@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { HardDriveDownload, Languages, Palette, Play, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { TranslateIcon as Languages } from "@phosphor-icons/react/dist/csr/Translate";
+import { PaletteIcon as Palette } from "@phosphor-icons/react/dist/csr/Palette";
+import { PlayIcon as Play } from "../icons/transport";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 import { firstWideSection, visibleWideSections, type WideSettingsSectionId } from "@tentacle-tv/shared";
 

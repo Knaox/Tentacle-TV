@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Sheet } from "../ui/Sheet";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { AdminNotice } from "../admin/kit";

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Film, Filter } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { FunnelIcon as Filter } from "@phosphor-icons/react/dist/csr/Funnel";
 
 /**
  * Rien à montrer (`components/catalog/CatalogGridStates` de l'app) : une

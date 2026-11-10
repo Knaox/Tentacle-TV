@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { SettingScope } from "@tentacle-tv/shared";
 import { ScopeBadge } from "./ScopeBadge";
 
@@ -51,7 +51,7 @@ export const CompactSegmented = memo(function CompactSegmented({ options, value,
  * 132 ; en deçà, le segmenté passe dessous (retour à la ligne flex).
  */
 export function SettingsChoiceRow({ icon: Icon, label, options, value, onChange, last, scope }: {
-  icon?: LucideIcon;
+  icon?: IconType;
   label: string;
   /** La portée du réglage : la pastille sous le libellé. */
   scope?: SettingScope | null;
@@ -65,7 +65,7 @@ export function SettingsChoiceRow({ icon: Icon, label, options, value, onChange,
       <div className="flex grow basis-[132px] items-center gap-2">
         {Icon ? (
           <span aria-hidden className="flex w-[22px] shrink-0 justify-center text-content-secondary">
-            <Icon size={19} strokeWidth={2} />
+            <Icon size={19} />
           </span>
         ) : null}
         <span className="flex min-w-0 shrink flex-col">

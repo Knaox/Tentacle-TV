@@ -1,5 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { Gauge, Globe, House, Server, Share2, Smartphone, type LucideIcon } from "lucide-react";
+import { GaugeIcon as Gauge } from "@phosphor-icons/react/dist/csr/Gauge";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { HouseIcon as House } from "@phosphor-icons/react/dist/csr/House";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { LINK_BENEFITS, type LinkCheckId } from "@tentacle-tv/shared";
 
 /**
@@ -8,7 +14,7 @@ import { LINK_BENEFITS, type LinkCheckId } from "@tentacle-tv/shared";
  * texte dans la vue d'ensemble et dans l'assistant d'installation.
  */
 
-const ICON: Record<string, LucideIcon> = {
+const ICON: Record<string, IconType> = {
   away: Globe,
   apps: Smartphone,
   shares: Share2,

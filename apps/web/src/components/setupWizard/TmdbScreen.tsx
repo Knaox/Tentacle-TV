@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import type { SetupContext } from "@tentacle-tv/shared";
 import { DoneLine } from "./AccountParts";
 import { TmdbKeyEntry } from "./TmdbKeyEntry";

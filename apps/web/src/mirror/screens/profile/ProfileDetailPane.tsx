@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { HEADER_TOTAL } from "../../shell/metrics";
 
 /** Au-delà, une ligne de réglage devient une piste d'atterrissage. */

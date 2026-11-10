@@ -5,7 +5,7 @@
  */
 
 import { memo } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useTranslation } from "react-i18next";
 import type { SelectGesture } from "@tentacle-tv/shared/octave";
 
@@ -36,7 +36,7 @@ export const SelectCell = memo(function SelectCell({ title, selected, selecting,
           aria-hidden
           className={`flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors duration-150 ${selected ? "octave-brand-fill border-transparent" : "border-content-tertiary bg-transparent"}`}
         >
-          {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+          {selected && <Check weight="bold" className="h-3 w-3" />}
         </span>
       </button>
   );

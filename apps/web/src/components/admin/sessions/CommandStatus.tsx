@@ -1,6 +1,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CircleAlert, LoaderCircle, Pause, Play } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../icons/transport";
 import type { Feedback } from "@tentacle-tv/shared";
 
 /**
@@ -41,7 +44,7 @@ export const CommandStatus = memo(function CommandStatus({ isPaused, feedback }:
   } else if ((command === "Pause" || command === "Unpause") && phase === "done") {
     content = (
       <span className="inline-flex animate-scale-in items-center gap-1.5 font-medium text-status-success-fg">
-        <Check size={12} aria-hidden strokeWidth={2.6} />
+        <Check weight="bold" size={12} aria-hidden />
         {isPaused ? t("paused") : t("playing")}
       </span>
     );

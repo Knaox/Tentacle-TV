@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Play, X } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient, type EndCardRating } from "@tentacle-tv/api-client";
 import { stripOverviewHtml } from "../../../lib/overviewHtml";
@@ -130,7 +131,7 @@ export function NextEpisodeFullscreen({
               onPress={onPlay}
               countdownMs={armed?.remainingMs ?? null}
               initialProgress={armed?.initialProgress ?? 0}
-              icon={<Play size={15} color={PLAYER.textInverse} fill={PLAYER.textInverse} />}
+              icon={<Play size={15} color={PLAYER.textInverse} />}
             />
             <button
               type="button"

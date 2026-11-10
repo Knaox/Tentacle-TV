@@ -1,6 +1,6 @@
 import type { ShadowTokens } from "../types";
 
-/** Verbatim from `apps/web/src/theme/tokens.css` (--shadow-* and --elev-* groups). */
+/** Ce que la TV lit ; le web a ses ombres dans `tokens.css` (cf. la note de `colors.ts`). */
 export const DEFAULT_SHADOW_TOKENS: ShadowTokens = {
   modal:
     "0 25px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06)",
@@ -12,4 +12,6 @@ export const DEFAULT_SHADOW_TOKENS: ShadowTokens = {
   elev3: "0 16px 48px rgba(0, 0, 0, 0.7)",
   cardHover:
     "0 22px 44px -14px rgba(0, 0, 0, 0.9), 0 0 16px rgba(255, 255, 255, 0.1)",
+  edge: "inset 0 1px 0 rgba(255, 255, 255, 0.07)",
+  imageEdge: "inset 0 0 0 1px rgba(255, 255, 255, 0.07)",
 };

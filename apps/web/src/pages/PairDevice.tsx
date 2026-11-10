@@ -186,7 +186,7 @@ export function PairDevice() {
                         onPaste={i === 0 ? handlePaste : undefined}
                         autoFocus={i === 0}
                         disabled={status === "pairing"}
-                        className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition-all xs:h-16 xs:w-14 xs:text-2xl ${
+                        className={`h-14 w-12 rounded-xl text-center text-xl font-bold font-mono outline-none transition xs:h-16 xs:w-14 xs:text-2xl ${
                           status === "error"
                             ? "bg-danger-surface ring-2 ring-status-error text-content-primary"
                             : char

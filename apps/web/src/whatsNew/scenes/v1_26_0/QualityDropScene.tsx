@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Check, Settings } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
 import type { SceneProps } from "../../types";
 import { NoticeCard } from "../../../components/notices/NoticeCard";
 import { FauxCursor, Place, ScenePlayerPanel, SceneStage, useSceneClock } from "..";

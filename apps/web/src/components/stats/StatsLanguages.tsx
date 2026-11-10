@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Headphones } from "lucide-react";
+import { HeadphonesIcon as Headphones } from "@phosphor-icons/react/dist/csr/Headphones";
 import { LISTENING_VERSIONS, listeningHeadline, listeningState, type ViewingStats } from "@tentacle-tv/shared";
 import { HBarList, type HBarItem } from "./HBarList";
 import { StatsSection } from "./StatsSection";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import type { SetupStep } from "@tentacle-tv/shared";
 import { LanguageToggle } from "../auth/LanguageToggle";
 import { TentacleLogo } from "../ui/TentacleLogo";

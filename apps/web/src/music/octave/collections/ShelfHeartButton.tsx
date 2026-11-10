@@ -4,7 +4,7 @@
  */
 
 import { memo } from "react";
-import { Heart } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import { useTranslation } from "react-i18next";
 import { shelfFavoriteOf, useMusicShelves, useToggleShelfFavorite, type MusicShelfSubject } from "@tentacle-tv/api-client";
 
@@ -24,7 +24,7 @@ export const ShelfHeartButton = memo(function ShelfHeartButton({ subject, classN
       onClick={() => toggle.mutate({ subject, favorite: !favorite })}
       className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-[color,transform] duration-150 hover:bg-fill-subtle active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${favorite ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"} ${className}`}
     >
-      <Heart className="h-6 w-6" fill={favorite ? "currentColor" : "none"} aria-hidden />
+      <Heart weight={favorite ? "fill" : "regular"} className="h-6 w-6" aria-hidden />
     </button>
   );
 });

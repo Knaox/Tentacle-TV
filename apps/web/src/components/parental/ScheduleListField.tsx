@@ -1,6 +1,10 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Clock, Plus, TriangleAlert, X } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { AccessScheduleDay, AccessScheduleDto } from "@tentacle-tv/shared";
 import { CHIP_REMOVE, FIELD_HINT, FIELD_LABEL, SELECT, SMALL_BUTTON } from "./fieldStyles";
 import {

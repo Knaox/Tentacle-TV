@@ -9,7 +9,10 @@
  */
 
 import { memo } from "react";
-import { Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play, SkipBackIcon as SkipBack, SkipForwardIcon as SkipForward } from "../../../components/icons/transport";
+import { RepeatIcon as Repeat } from "@phosphor-icons/react/dist/csr/Repeat";
+import { RepeatOnceIcon as Repeat1 } from "@phosphor-icons/react/dist/csr/RepeatOnce";
+import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
 import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
@@ -47,7 +50,7 @@ export const Transport = memo(function Transport({ size = "md" }: { size?: "md" 
         {shuffle && activeDot}
       </button>
       <button type="button" disabled={!hasTrack} aria-label={t("player.previous")} title={t("player.previous")} onClick={() => player.previous()} className={iconButton}>
-        <SkipBack className={skipIcon} fill="currentColor" aria-hidden />
+        <SkipBack className={skipIcon} aria-hidden />
       </button>
       <button
         type="button"
@@ -57,10 +60,10 @@ export const Transport = memo(function Transport({ size = "md" }: { size?: "md" 
         onClick={() => player.togglePlay()}
         className={`octave-play flex ${mainBox} shrink-0 cursor-pointer items-center justify-center rounded-full disabled:cursor-default disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0`}
       >
-        {wantsPlay ? <Pause className={`${mainIcon} relative`} fill="currentColor" aria-hidden /> : <Play className={`${mainIcon} relative ml-0.5`} fill="currentColor" aria-hidden />}
+        {wantsPlay ? <Pause className={`${mainIcon} relative`} aria-hidden /> : <Play className={`${mainIcon} relative ml-0.5`} aria-hidden />}
       </button>
       <button type="button" disabled={!hasTrack} aria-label={t("player.next")} title={t("player.next")} onClick={() => player.next()} className={iconButton}>
-        <SkipForward className={skipIcon} fill="currentColor" aria-hidden />
+        <SkipForward className={skipIcon} aria-hidden />
       </button>
       <button
         type="button"

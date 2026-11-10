@@ -21,7 +21,8 @@
 import { useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
-import { Download, HardDrive } from "lucide-react";
+import { DownloadSimpleIcon as Download } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
 import { NavTab } from "../components/nav/NavTab";
 
 export function OfflineNavLinks() {

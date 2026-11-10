@@ -1,6 +1,10 @@
 import { useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, Monitor, Smartphone, Tv, type LucideProps } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { IconProps } from "@phosphor-icons/react";
 import { useFamilyLaunchPolicy, useSetFamilyLaunchPolicy } from "@tentacle-tv/api-client";
 import { FAMILY_LAUNCH_ASK_PLATFORMS, type FamilyLaunchAskPlatform, type FamilyLaunchSettings } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
@@ -9,7 +13,7 @@ import { SettingToggleRow } from "../../settings/SettingToggleRow";
 import { AdminSection } from "../kit";
 import { asksNowhere, launchSettingsBody, launchSettingsOf, sameLaunchSettings, togglePlatform } from "./launchSettingsModel";
 
-const ICONS: Record<FamilyLaunchAskPlatform, ComponentType<LucideProps>> = {
+const ICONS: Record<FamilyLaunchAskPlatform, ComponentType<IconProps>> = {
   desktop: Monitor,
   web: Globe,
   mobile: Smartphone,

@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { Info } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import { formatCommunityRating } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, PlayGlyph, StarGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { StarRating } from "../../../components/rating/StarRating";
@@ -97,7 +97,7 @@ function Actions({ listed }: { listed: boolean }) {
         <WatchedGlyph className="h-[9px] w-[9px]" filled={false} />
       </span>
       <span className={quiet} style={{ ...at(1), left: PREVIEW_W - ACTION.x - ACTION.size }}>
-        <Info className="h-[9px] w-[9px]" strokeWidth={2} aria-hidden />
+        <Info className="h-[9px] w-[9px]" aria-hidden />
       </span>
     </>
   );

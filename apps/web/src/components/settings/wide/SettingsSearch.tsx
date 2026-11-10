@@ -1,7 +1,9 @@
 import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Search, X } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { searchWideSettings, wideSettingPath, type WideSettingsContext } from "@tentacle-tv/shared";
 import { ScopeBadge } from "../ScopeBadge";
 import { useCatalogText } from "./wideSettingsMeta";

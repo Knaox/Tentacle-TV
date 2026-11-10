@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { stopCardClick } from "./cardEvents";
 import { GLASS_LENS_PROPS, useLiquidGlassSurface } from "../../theme/glass";
 import { useTrayGlassAllowed } from "./CardTrayParts";

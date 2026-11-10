@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { CornerDownRight, Globe, Info, Loader, PenLine, type LucideIcon } from "lucide-react";
+import { ArrowElbowDownRightIcon as CornerDownRight } from "@phosphor-icons/react/dist/csr/ArrowElbowDownRight";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { SpinnerIcon as Loader } from "@phosphor-icons/react/dist/csr/Spinner";
+import { PencilSimpleLineIcon as PenLine } from "@phosphor-icons/react/dist/csr/PencilSimpleLine";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { ExternalSearchState } from "@tentacle-tv/api-client";
 import {
   foldForSearch,
@@ -148,7 +153,7 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
 });
 
 /** Une ligne d'information discrète au-dessus des résultats : icône 14, texte 13 tertiaire. */
-function Notice({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+function Notice({ icon: Icon, text }: { icon: IconType; text: string }) {
   return (
     <p className="mt-3 flex items-center gap-2 px-4 text-[13px] font-medium text-content-tertiary">
       <Icon size={14} className="shrink-0" aria-hidden />

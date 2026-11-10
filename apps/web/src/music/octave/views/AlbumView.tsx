@@ -12,7 +12,7 @@
  */
 
 import { useMemo } from "react";
-import { Library } from "lucide-react";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";

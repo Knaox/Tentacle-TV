@@ -9,7 +9,7 @@
 
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import {
   formatEpisodeCode,
   itemMeta,
@@ -235,7 +235,7 @@ export const MissingSeasonsRow = memo(function MissingSeasonsRow({ item, count, 
           <HighlightedText text={item.Name} terms={terms} />
         </p>
         <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-[var(--brand-light)]">
-          <Plus className="h-3 w-3 shrink-0" strokeWidth={2.6} aria-hidden />
+          <Plus weight="bold" className="h-3 w-3 shrink-0" aria-hidden />
           {t("requests:missingSeasons", { count })}
         </p>
       </div>

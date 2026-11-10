@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useJellyfinClient, type ColdStartTitle } from "@tentacle-tv/api-client";
 import { Pressable } from "../../ui/Pressable";
 

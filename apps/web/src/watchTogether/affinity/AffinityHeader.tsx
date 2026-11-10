@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { HeartHandshake, LogOut } from "lucide-react";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
@@ -26,7 +27,7 @@ export function AffinityHeader({ state, titleId, onQuit }: { state: WtAffinitySt
           className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-white"
           style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
         >
-          <HeartHandshake className="h-5 w-5" strokeWidth={2.2} />
+          <HeartHandshake className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">{t("affinityTitle")}</h2>

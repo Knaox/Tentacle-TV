@@ -1,6 +1,8 @@
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleCheck, Info, LoaderCircle } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import type { AdminRecoFanout } from "@tentacle-tv/api-client";
 import { useInViewport } from "../../../hooks/useInViewport";
 import { fanoutView, relativeWhen } from "./recoFanout";

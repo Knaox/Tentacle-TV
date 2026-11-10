@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Award, Code, Server } from "lucide-react";
+import { MedalIcon as Award } from "@phosphor-icons/react/dist/csr/Medal";
+import { CodeIcon as Code } from "@phosphor-icons/react/dist/csr/Code";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
 import { useContentPadding } from "../../../useMirrorLayout";
 import { AmbientGlow } from "../shared/AmbientGlow";
 import { useBackOrHome } from "../shared/backOrHome";

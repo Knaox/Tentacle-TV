@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { CircleCheck, ExternalLink, LoaderCircle } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { JELLYFIN_WINDOWS_DOWNLOAD_URL } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { JellyfinInstallProgress } from "./JellyfinInstallProgress";

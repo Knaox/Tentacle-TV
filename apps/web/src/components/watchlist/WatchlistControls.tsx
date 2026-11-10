@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutGrid, List } from "lucide-react";
+import { SquaresFourIcon as LayoutGrid } from "@phosphor-icons/react/dist/csr/SquaresFour";
+import { ListIcon as List } from "@phosphor-icons/react/dist/csr/List";
 import {
   WATCH_STAGE_FILTERS,
   type CollectionTypeTab,

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { CircleCheck } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import type { StillWatchingTrialState } from "@tentacle-tv/api-client";
 
 interface StillWatchingTrialRowProps {
@@ -27,7 +27,7 @@ export function StillWatchingTrialRow({ trial }: StillWatchingTrialRowProps) {
         <p role="status" className="mt-1 text-xs leading-relaxed text-content-tertiary">
           {armed ? (
             <span className="flex items-start gap-1.5 text-content-secondary">
-              <CircleCheck aria-hidden="true" size={14} strokeWidth={2.2} className="mt-px shrink-0 text-[var(--brand-light)]" />
+              <CircleCheck aria-hidden="true" size={14} className="mt-px shrink-0 text-[var(--brand-light)]" />
               <span>{t("stillWatchingTrialArmed")}</span>
             </span>
           ) : (

@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Check, Heart, Star } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
 import type { ScenePoster } from "../../sceneMedia";
 import { CARD_TONES } from "../FauxCard";
 import { sceneSpring } from "../sceneMotion";
@@ -57,7 +59,7 @@ export function FauxSwipeCard({ poster, tone, pose }: { poster: ScenePoster | nu
       </div>
       {poster?.rating != null && poster.rating > 0 && (
         <span className="absolute right-2 top-2 inline-flex items-center gap-0.5 rounded-full border border-white/25 bg-black/65 px-1.5 py-0.5 text-[8px] font-semibold tabular-nums text-white">
-          <Star size={8} className="fill-current text-amber-300" aria-hidden />
+          <Star size={8} weight="fill" className="text-amber-300" aria-hidden />
           {poster.rating.toFixed(1)}
         </span>
       )}
@@ -67,7 +69,7 @@ export function FauxSwipeCard({ poster, tone, pose }: { poster: ScenePoster | nu
         animate={{ opacity: pose.kind === "drag" ? 1 : 0 }}
         transition={{ duration: 0.2 }}
       >
-        <Heart size={10} className="fill-current" aria-hidden />
+        <Heart size={10} weight="fill" aria-hidden />
         {t("stampLike")}
       </motion.span>
     </motion.div>

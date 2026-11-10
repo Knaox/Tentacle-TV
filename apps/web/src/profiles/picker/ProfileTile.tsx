@@ -1,6 +1,6 @@
 import { forwardRef, memo, type CSSProperties, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { profileColorStops } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 import type { PickerProfile } from "./pickerTypes";
@@ -104,7 +104,7 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
               aria-hidden
               className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border border-line-subtle bg-surface-2 text-content-primary"
             >
-              <Lock size={15} strokeWidth={2.4} />
+              <Lock weight="bold" size={15} data-icon="lock" />
             </span>
           )}
         </span>

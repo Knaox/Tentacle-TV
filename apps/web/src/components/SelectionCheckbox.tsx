@@ -11,7 +11,7 @@ export const SelectionCheckbox = memo(function SelectionCheckbox({ checked, onCl
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(e); }}
-      className={`absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full transition-all ${
+      className={`absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full transition ${
         checked
           ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] shadow-[0_0_8px_rgba(var(--brand-rgb), 0.45)]"
           : "border border-white/40 bg-black/40 backdrop-blur-sm"

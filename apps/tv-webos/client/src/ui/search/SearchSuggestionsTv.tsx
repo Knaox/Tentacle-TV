@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 
 export interface SearchSuggestion {
   /** Ce qui remplace la saisie quand on la choisit. */
@@ -36,7 +36,7 @@ export const SearchSuggestionsTv = memo(function SearchSuggestionsTv({ suggestio
               data-kind={suggestion.kind}
               onClick={() => onPick(suggestion.query)}
             >
-              <Search className="tv-search-suggestion-icon" size={22} strokeWidth={2.2} aria-hidden />
+              <Search className="tv-search-suggestion-icon" size={22} aria-hidden />
               <span className="tv-search-suggestion-text">{suggestion.query}</span>
             </button>
           </li>

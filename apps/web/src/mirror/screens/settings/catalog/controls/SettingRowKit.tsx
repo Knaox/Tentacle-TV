@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { SettingScope } from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../../../../components/settings/ToggleSwitch";
 import { CompactSegmented, type ChoiceOption } from "../../ui/SettingsChoiceRow";
@@ -17,7 +17,7 @@ export interface ControlRowProps {
  * phrase de l'option CHOISIE (on lit ce qu'elle fait sans liste à dérouler).
  */
 export function SegmentedSettingRow({ icon: Icon, label, scope, options, value, onChange, hint, last }: {
-  icon: LucideIcon;
+  icon: IconType;
   label: string;
   scope: SettingScope | null;
   options: readonly ChoiceOption[];
@@ -30,7 +30,7 @@ export function SegmentedSettingRow({ icon: Icon, label, scope, options, value, 
     <div className={`flex flex-col gap-2 px-3 py-2.5 ${last ? "" : "border-b border-line-subtle"}`}>
       <div className="flex items-start gap-2">
         <span aria-hidden className="flex w-[22px] shrink-0 justify-center pt-0.5 text-content-secondary">
-          <Icon size={19} strokeWidth={2} />
+          <Icon size={19} />
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-[15px] font-medium tracking-[-0.075px] text-content-primary">{label}</span>
@@ -47,7 +47,7 @@ export function SegmentedSettingRow({ icon: Icon, label, scope, options, value, 
 
 /** Un oui / non : la ligne de réglage et son interrupteur. */
 export function SwitchSettingRow({ icon, label, description, scope, value, onChange, last }: {
-  icon: LucideIcon;
+  icon: IconType;
   label: string;
   description?: string;
   scope: SettingScope | null;

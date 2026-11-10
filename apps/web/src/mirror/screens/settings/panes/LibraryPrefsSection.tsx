@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Folder, Info, WifiOff } from "lucide-react";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import {
   useDeleteLibraryPreference, useLibraries, useLibraryPreferences, useSetLibraryPreference, useUserId,
   type LibraryPreference,

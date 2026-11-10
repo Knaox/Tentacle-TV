@@ -1,18 +1,16 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Database,
-  Globe,
-  HardDriveDownload,
-  HeartHandshake,
-  LayoutDashboard,
-  LifeBuoy,
-  MonitorPlay,
-  Puzzle,
-  Server,
-  Settings2,
-  Users,
-} from "lucide-react";
+import { DatabaseIcon as Database } from "@phosphor-icons/react/dist/csr/Database";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { SquaresFourIcon as LayoutDashboard } from "@phosphor-icons/react/dist/csr/SquaresFour";
+import { LifebuoyIcon as LifeBuoy } from "@phosphor-icons/react/dist/csr/Lifebuoy";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { SettingsShellSection } from "@tentacle-tv/ui";
 import { useAppConfig, useServerCapabilities } from "@tentacle-tv/api-client";
 import { isFamilyAvailable, type ServerCapability } from "@tentacle-tv/shared";

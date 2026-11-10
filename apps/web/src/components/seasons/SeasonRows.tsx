@@ -1,5 +1,7 @@
 import { memo, type RefObject } from "react";
-import { Check, Clock, Lock } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import type { SeasonPickRow, SeasonPickTone } from "@tentacle-tv/shared";
 
 /**
@@ -24,7 +26,7 @@ function SettledRow({ row }: { row: SeasonPickRow }) {
       <span className="min-w-0 flex-1 truncate text-sm text-content-tertiary">{row.label}</span>
       {status.label !== "" && (
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${pill}`}>
-          <Glyph className="h-3.5 w-3.5" strokeWidth={2.4} aria-hidden />
+          <Glyph weight="bold" className="h-3.5 w-3.5" aria-hidden />
           {status.label}
         </span>
       )}
@@ -63,7 +65,7 @@ function CheckRow({ row, onToggle, inputRef }: {
               : "border-line-strong bg-fill-subtle"
           }`}
         >
-          {row.selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+          {row.selected && <Check weight="bold" className="h-3.5 w-3.5" />}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{row.label}</span>
         {row.detail && <span className="shrink-0 text-xs tabular-nums text-content-tertiary">{row.detail}</span>}

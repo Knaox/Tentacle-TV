@@ -3,7 +3,7 @@
  * à la fin, dans l'ordre. Seulement si le compte peut y ajouter (`canAdd`) et qu'une voie existe.
  */
 
-import { Import } from "lucide-react";
+import { ArrowSquareInIcon as Import } from "@phosphor-icons/react/dist/csr/ArrowSquareIn";
 import { useTranslation } from "react-i18next";
 import { useImportInto } from "@tentacle-tv/api-client";
 import { useOctaveProvider } from "../../mode/useOctaveProvider";

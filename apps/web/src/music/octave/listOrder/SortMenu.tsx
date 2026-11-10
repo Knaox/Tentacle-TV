@@ -6,7 +6,8 @@
  */
 
 import { useRef, useState } from "react";
-import { ArrowDownUp, Check } from "lucide-react";
+import { ArrowsDownUpIcon as ArrowDownUp } from "@phosphor-icons/react/dist/csr/ArrowsDownUp";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { useTranslation } from "react-i18next";
 import { MUSIC_LIST_SORT_KEYS, defaultDirection, type MusicListDirection, type MusicListPrefs, type MusicListSortKey } from "@tentacle-tv/shared/music";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";

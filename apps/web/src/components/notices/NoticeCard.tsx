@@ -1,5 +1,13 @@
 import { memo } from "react";
-import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, WifiOff, X, type LucideIcon } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { GaugeIcon as Gauge } from "@phosphor-icons/react/dist/csr/Gauge";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
+import { PauseIcon as Pause } from "../icons/transport";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
@@ -15,7 +23,7 @@ export interface NoticeCardAction {
   onClick: () => void;
 }
 
-const ICONS: Record<NoticeIcon, LucideIcon> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge, wifiOff: WifiOff };
+const ICONS: Record<NoticeIcon, IconType> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge, wifiOff: WifiOff };
 
 /** La couleur de la gravité : la barre de gauche, la pastille, la barre du temps. */
 const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {
@@ -31,7 +39,7 @@ const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {
  */
 const SURFACES = {
   app: {
-    root: "border-line-strong bg-surface-3 text-content-primary",
+    root: "border-transparent bg-surface-3 text-content-primary",
     meta: "text-content-tertiary",
     line: "text-content-secondary",
     secondary: "border-line-strong text-content-secondary hover:bg-fill-soft hover:text-content-primary",
@@ -129,7 +137,7 @@ export const NoticeCard = memo(function NoticeCard({
               <button
                 type="button"
                 onClick={primary.onClick}
-                className="inline-flex min-h-[36px] cursor-pointer items-center rounded-[18px] border border-cta-primary-border bg-cta-primary-bg px-4 py-1.5 text-sm font-semibold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus"
+                className="inline-flex min-h-[36px] cursor-pointer items-center rounded-full border border-cta-primary-border bg-cta-primary-bg px-4 py-1.5 text-sm font-semibold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus"
               >
                 {primary.label}
               </button>
@@ -138,7 +146,7 @@ export const NoticeCard = memo(function NoticeCard({
               <button
                 type="button"
                 onClick={secondary.onClick}
-                className={`inline-flex min-h-[36px] cursor-pointer items-center rounded-[18px] border px-4 py-1.5 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus ${look.secondary}`}
+                className={`inline-flex min-h-[36px] cursor-pointer items-center rounded-full border px-4 py-1.5 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus ${look.secondary}`}
               >
                 {secondary.label}
               </button>
@@ -150,7 +158,7 @@ export const NoticeCard = memo(function NoticeCard({
         type="button"
         onClick={onClose}
         aria-label={t("notices:close")}
-        className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center self-start rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-line-focus ${look.close}`}
+        className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center self-start rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-line-focus ${look.close}`}
       >
         <X size={18} aria-hidden />
       </button>
@@ -177,7 +185,7 @@ export const NoticeCard = memo(function NoticeCard({
       ref={glass.ref}
       {...glass.props}
       role={severity === "blocking" ? "alert" : "status"}
-      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
+      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-tile border py-3 pl-3 pr-1 shadow-menu ${look.root}`}
     >
       {glass.layers}
       {content}

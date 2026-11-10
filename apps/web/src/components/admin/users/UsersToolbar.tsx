@@ -1,6 +1,6 @@
 import { useId, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { ScopedSearchField } from "../../search/ScopedSearchField";
 import { SegmentLens } from "../../ui/glass/SegmentLens";
 import { USER_FILTERS, USER_SORTS, type UserFilter, type UserSort } from "./userListModel";
@@ -83,7 +83,7 @@ function FilterGroup({ value, counts, onChange }: {
       role="radiogroup"
       aria-label={t("usersFilterLabel")}
       onKeyDown={onKeyDown}
-      className="lg-segmented inline-flex max-w-full gap-0.5 rounded-[10px] border border-line-subtle bg-tentacle-surface p-0.5"
+      className="ctl-segmented lg-segmented inline-flex max-w-full gap-0.5"
     >
       {USER_FILTERS.map((option, index) => (
         <button

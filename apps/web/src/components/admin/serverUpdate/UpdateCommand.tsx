@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Copy } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
 import type { ServerUpdateCommands } from "@tentacle-tv/shared";
 import { useCopyFeedback } from "../../../hooks/useCopyFeedback";
 import { cls } from "../../../pages/adminUtils";

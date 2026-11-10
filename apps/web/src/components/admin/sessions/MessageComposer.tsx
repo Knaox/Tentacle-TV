@@ -1,6 +1,8 @@
 import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, LoaderCircle, Send } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PaperPlaneTiltIcon as Send } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
 import { Modal } from "../../ui/Modal";
 import { ModalHeader } from "../../ui/ModalHeader";
 import { MessageBannerCard } from "../../session/SessionMessageHost";

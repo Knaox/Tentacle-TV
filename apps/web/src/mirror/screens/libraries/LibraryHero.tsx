@@ -1,6 +1,9 @@
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Film, Layers, Tv, type LucideIcon } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { LibraryView } from "@tentacle-tv/shared";
 import { useInViewport } from "../../../hooks/useInViewport";
@@ -21,7 +24,7 @@ interface RandomItem {
 }
 
 /** L'icône d'un type de bibliothèque (`collectionIcon` de l'app : film, tv, layers). */
-export function collectionIcon(type?: string): LucideIcon {
+export function collectionIcon(type?: string): IconType {
   switch (type?.toLowerCase()) {
     case "movies": return Film;
     case "tvshows": return Tv;

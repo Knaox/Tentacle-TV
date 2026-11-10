@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye } from "lucide-react";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
 import { startImpersonation } from "../../../lib/impersonation";
 import { cls } from "../../../pages/adminUtils";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
