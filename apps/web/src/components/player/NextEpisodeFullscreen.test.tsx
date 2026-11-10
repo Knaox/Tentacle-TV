@@ -87,7 +87,8 @@ describe("NextEpisodeFullscreen — la matière de la pilule", () => {
 
   it("sans bannière, un repli sombre en dur — jamais une surface de l'application", () => {
     const html = render();
-    expect(html).toContain("linear-gradient(135deg, #2b2436");
+    // Les encres neutres de la refonte (nov. 2026), plus un violet de marque.
+    expect(html).toContain("linear-gradient(135deg, #242428");
     expect(html).not.toContain("var(--surface-1)");
   });
 

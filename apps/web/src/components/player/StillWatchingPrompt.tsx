@@ -83,15 +83,19 @@ const CARD_SHADOW = videoShadow("shadow-[0_12px_40px_rgba(0,0,0,0.5)]", "ring-1 
  */
 const LOOK = {
   legacy: {
-    card: `w-[min(340px,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-white/10 bg-[rgba(16,14,24,0.96)] p-5 text-white ${CARD_SHADOW}`,
-    icon: "bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)]",
-    body: "text-white/70",
-    track: "bg-white/10",
-    fill: "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]",
-    primary: "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] font-semibold text-white",
-    secondary: "border border-white/15 font-medium text-white/85",
-    ring: "focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#100e18]",
-    secondaryVeil: "bg-white/[0.12]",
+    // Refonte de nov. 2026 : une encre de panneau en dur (posée sur la vidéo, elle ne suit pas
+    // le thème), sans liseré ; le décompte MESURE — il porte le dégradé de jauge ; « Continuer »
+    // est l'ivoire des capsules, plus un dégradé de marque.
+    card: `w-[min(340px,calc(100vw-3rem))] overflow-hidden rounded-panel bg-[#131315] p-5 text-white ${CARD_SHADOW}`,
+    icon: "bg-white/10 text-white",
+    body: "text-white/75",
+    track: "bg-white/[0.14]",
+    fill: "bg-[image:var(--gauge-gradient)]",
+    primary: "bg-[#F4F2EE] font-bold text-[#131315]",
+    secondary: "bg-white/[0.12] font-semibold text-white",
+    ring: "focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#131315]",
+    secondaryVeil: "bg-white/[0.1]",
+    primaryVeil: "bg-black/[0.07]",
   },
   glass: {
     card: "lgp-card w-[min(340px,calc(100vw-3rem))] p-5",
@@ -104,6 +108,7 @@ const LOOK = {
     secondary: "lgp-card__secondary font-medium",
     ring: "focus-visible:ring-[var(--lg-player-focus)]",
     secondaryVeil: "lgp-card__veil",
+    primaryVeil: "bg-white/[0.12]",
   },
 } as const;
 type Look = (typeof LOOK)[keyof typeof LOOK];
@@ -164,7 +169,7 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
               {asking ? <Hourglass size={18} /> : <Pause size={18} />}
             </span>
             <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="text-base font-semibold leading-snug">
+              <h2 id={titleId} className="font-display text-base font-semibold leading-snug tracking-tight">
                 {asking ? t("player:stillWatching.title") : t("player:stillWatching.pausedTitle")}
               </h2>
               {/* Le décompte change chaque seconde : il ne se relit pas à voix haute à chaque fois. */}
@@ -211,7 +216,7 @@ function PromptButton({ primary, onPress, look, children }: { primary: boolean; 
           Sur le dégradé (opaque), un voile blanc se compose juste ; sur le verre, seul le noir. */}
       <span
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 ${primary ? "bg-white/[0.12]" : look.secondaryVeil} opacity-0 transition-opacity duration-150 group-hover/sw:opacity-100 motion-reduce:transition-none`}
+        className={`pointer-events-none absolute inset-0 ${primary ? look.primaryVeil : look.secondaryVeil} opacity-0 transition-opacity duration-150 group-hover/sw:opacity-100 motion-reduce:transition-none`}
       />
       <span className="relative">{children}</span>
     </button>

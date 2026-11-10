@@ -14,12 +14,18 @@ import type { ComponentType } from "react";
 import { WatchTogetherContext } from "@tentacle-tv/api-client";
 import { labParam } from "./labFixtures";
 import { labWtContext } from "./labWatchTogether";
+import { LabOverlays } from "./labOverlays";
+import { LabPip } from "./labPip";
 import { LabPlayerDesktop } from "./labPlayerDesktop";
+import { LabScreens } from "./labScreens";
 import { LabPlayerWeb } from "./labPlayerWeb";
 
 const VIEWS: Record<string, ComponentType> = {
   web: LabPlayerWeb,
   bureau: LabPlayerDesktop,
+  encarts: LabOverlays,
+  ecrans: LabScreens,
+  pip: LabPip,
 };
 
 const IDLE = labWtContext();

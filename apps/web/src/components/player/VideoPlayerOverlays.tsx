@@ -4,6 +4,7 @@ import { useEndCardRating } from "@tentacle-tv/api-client";
 import { LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackSpinner } from "./PlaybackSpinner";
 import { PlaybackOverlay } from "./PlaybackOverlay";
+import { PlayIcon } from "../icons/transport";
 import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
@@ -73,8 +74,7 @@ export function VideoPlayerOverlays({
       ) : (
         // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
         // Tenue sans interruption du montage jusqu'à la première image.
-        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0a0a12]" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.20),transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0B0B0C]" onClick={(e) => e.stopPropagation()}>
           {posterUrl && <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
           <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20"><LoadingBar /></div>
@@ -89,7 +89,7 @@ export function VideoPlayerOverlays({
             if (v) v.play().then(() => setShowPlayButton(false)).catch(() => {});
           }}>
           <div className="flex flex-col items-center gap-3">
-            <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <PlayIcon className="h-20 w-20 text-white/90" aria-hidden />
             <span className="text-sm text-white/70">{t("player:pressToPlay")}</span>
           </div>
         </div>

@@ -29,6 +29,8 @@
 
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { PlayIcon } from "../icons/transport";
 import { motion, useReducedMotion } from "framer-motion";
 import type { EndCardRating } from "@tentacle-tv/api-client";
 import { videoShadow } from "../../lib/videoShadow";
@@ -149,7 +151,7 @@ export function NextEpisodeFullscreen({
         // que le cadre d'aperçu des réglages.
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, #2b2436 0%, #16131c 55%, #0a0a0d 100%)" }}
+          style={{ background: "linear-gradient(135deg, #242428 0%, #131315 55%, #0B0B0C 100%)" }}
         />
       )}
       {/* Assombrissement par dégradés NOIRS empilés — un latéral qui ancre le
@@ -180,9 +182,7 @@ export function NextEpisodeFullscreen({
         className="absolute right-5 top-5 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-white/85 outline-none transition-colors duration-150 motion-reduce:transition-none hover:text-white focus-visible:ring-2 focus-visible:ring-white/70"
         style={{ background: "rgba(0,0,0,0.65)" }}
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <XIcon className="h-4 w-4" weight="bold" aria-hidden />
       </button>
 
       {/* Panneau bas-gauche, composition d'affiche : vignette, sur-titre,
@@ -196,10 +196,10 @@ export function NextEpisodeFullscreen({
         {/* Vignette de l'épisode suivant — nue : la pilule porte déjà le geste,
             une pastille « play » par-dessus le disait une seconde fois. */}
         <div
-          className="relative w-full max-w-[280px] shrink-0 overflow-hidden rounded-xl sm:w-72 sm:max-w-none"
+          className="relative w-full max-w-[280px] shrink-0 overflow-hidden rounded-card sm:w-72 sm:max-w-none"
           style={{ boxShadow: THUMB_SHADOW }}
         >
-          <div className="aspect-[16/9] w-full" style={{ background: "#16131c" }}>
+          <div className="aspect-[16/9] w-full" style={{ background: "#1B1B1E" }}>
             {episodeThumbUrl && (
               <img src={episodeThumbUrl} alt="" draggable={false} className="h-full w-full object-cover" />
             )}
@@ -224,7 +224,7 @@ export function NextEpisodeFullscreen({
           )}
           {title && (
             <h2
-              className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl"
+              className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl"
               style={{ textShadow: "0 2px 14px rgba(0,0,0,0.7)" }}
             >
               {title}
@@ -245,7 +245,7 @@ export function NextEpisodeFullscreen({
             <button
               type="button"
               onClick={onPlayNow}
-              className="group/play relative flex min-h-11 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+              className="group/play relative flex min-h-11 cursor-pointer items-center justify-center overflow-hidden rounded-pill bg-[#F4F2EE] px-7 text-sm font-bold text-[#131315] outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
               style={{ boxShadow: PILL_SHADOW }}
             >
               <Veil className="group-hover/play:opacity-100" />
@@ -259,18 +259,16 @@ export function NextEpisodeFullscreen({
                 />
               )}
               <span className="relative flex items-center gap-2 tabular-nums">
-                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <PlayIcon className="h-4 w-4" aria-hidden />
                 {counting ? t("player:playNowIn", { seconds: countdown }) : t("player:playNow")}
               </span>
             </button>
 
-            {/* Secondaire fantôme — couleurs seules au survol, aucun flou. */}
+            {/* Secondaire : l'encre des capsules du lecteur — aucun flou, plus de liseré. */}
             <button
               type="button"
               onClick={onDismiss}
-              className="min-h-11 cursor-pointer rounded-full border border-white/25 px-6 text-sm font-semibold text-white/85 outline-none transition-colors duration-150 motion-reduce:transition-none hover:border-white/50 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70"
+              className="min-h-11 cursor-pointer rounded-pill bg-[rgba(24,24,27,0.74)] px-6 text-sm font-semibold text-white outline-none transition-[background-color,transform] duration-hover motion-reduce:transition-none hover:bg-[#18181B] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/70"
             >
               {t("player:backToDetails")}
             </button>

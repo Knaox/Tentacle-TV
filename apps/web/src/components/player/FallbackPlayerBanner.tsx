@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 
 /**
  * Le bandeau qui DIT la bascule vers le lecteur de secours.
@@ -18,15 +19,18 @@ export function FallbackPlayerBanner() {
   if (ferme) return null;
   return (
     <div className="fixed inset-x-0 top-0 z-[60] flex justify-center p-3 pointer-events-none">
-      <div className="pointer-events-auto flex items-center gap-3 rounded-lg bg-zinc-900/95 px-4 py-2 text-sm text-white ring-1 ring-white/15">
-        <span className="font-semibold text-amber-300">{t("player:fallbackPlayerTitle")}</span>
+      {/* Un avis posé sur la vidéo : l'encre des capsules, en dur dans les deux thèmes. */}
+      <div role="status" className="pointer-events-auto flex items-center gap-3 rounded-tile bg-[#18181B] py-2 pl-4 pr-2 text-sm text-white">
+        <span className="font-semibold text-[#FCD34D]">{t("player:fallbackPlayerTitle")}</span>
         <span className="text-white/80">{t("player:fallbackPlayerHint")}</span>
         <button
+          type="button"
           onClick={() => setFerme(true)}
           aria-label={t("common:close")}
-          className="ml-1 rounded px-1.5 text-white/60 hover:bg-white/10 hover:text-white"
+          title={t("common:close")}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-pill text-white/70 transition-[background-color,color,transform] duration-hover hover:bg-white/10 hover:text-white active:scale-[0.97]"
         >
-          ×
+          <XIcon size={16} weight="bold" aria-hidden />
         </button>
       </div>
     </div>

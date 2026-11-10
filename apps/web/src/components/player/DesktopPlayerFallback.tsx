@@ -23,11 +23,8 @@ export function DesktopPlayerError({ failure, onBack }: { failure: PlaybackFailu
     : t("player:mpvError", { error: failure.detail ?? "?" });
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
-      <p className="text-lg text-red-400">{message}</p>
-      <button
-        onClick={onBack}
-        className="h-11 rounded-lg bg-white px-5 font-bold text-black hover:bg-white/90"
-      >
+      <p role="alert" className="max-w-xl px-8 text-center text-lg text-[#FCA5A5]">{message}</p>
+      <button type="button" onClick={onBack} className="flex min-h-11 items-center rounded-pill bg-[#F4F2EE] px-6 text-sm font-bold text-[#131315] transition-[background-color,transform] duration-hover hover:bg-white active:scale-[0.97]">
         {t("common:back")}
       </button>
     </div>

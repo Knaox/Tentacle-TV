@@ -2,18 +2,21 @@ import type { FlashKind, PlaybackFlash } from "../hooks/usePlaybackFlash";
 import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
 import { isGlassLayout } from "./player/glass/playerGlassMode";
 import { GlassSurface } from "./player/glass/GlassSurface";
+import { SpeakerHighIcon } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
+import { SpeakerXIcon } from "@phosphor-icons/react/dist/csr/SpeakerX";
+import { PauseIcon, PlayIcon } from "./icons/transport";
 
 /**
  * L'icône qui s'affiche au centre à chaque bascule du lecteur — lecture/pause
  * et son coupé/rétabli.
  *
- * # Les tracés viennent de `PlayerIcons`
+ * # Un seul style dans le cercle
  *
- * ⚠️ Et pas d'ailleurs. Le premier jet mélangeait des tracés pleins improvisés
- * pour la pause avec le haut-parleur au trait des contrôles : deux styles dans
- * le même cercle, et le résultat jurait. Tout est donc au TRAIT, comme la barre
- * de contrôles (`PlayerIcons.tsx`) — même géométrie, mêmes extrémités
- * arrondies, seule l'épaisseur est réduite pour tenir à cette taille.
+ * ⚠️ Le premier jet mélangeait des tracés pleins improvisés pour la pause avec
+ * le haut-parleur au trait des contrôles : deux styles dans le même cercle, et
+ * le résultat jurait. Depuis la refonte de nov. 2026 le transport est PLEIN
+ * partout (`icons/transport`) ; le haut-parleur du badge l'est donc aussi —
+ * les quatre symboles sont ceux de Phosphor, à la même graisse.
  *
  * # Ce que ce badge ne fait pas
  *
@@ -56,54 +59,23 @@ export function PlaybackBadge({ flash }: { flash: PlaybackFlash | null }) {
       className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
       aria-hidden="true"
     >
-      <div className="flex h-[92px] w-[92px] animate-[playbackFlash_0.7s_ease-out_forwards] items-center justify-center rounded-full border border-white/15 bg-black/65">
+      <div className="flex h-[84px] w-[84px] animate-[playbackFlash_0.7s_ease-out_forwards] items-center justify-center rounded-full bg-[rgba(24,24,27,0.74)]">
         <Trace kind={flash.kind} />
       </div>
     </div>
   );
 }
 
-/** Les quatre tracés, au trait, dans le `viewBox` 24x24 de `PlayerIcons`. */
+/**
+ * Les quatre symboles : le transport est PLEIN (`icons/transport`, règle de la refonte), le
+ * haut-parleur vient du jeu des contrôles — le badge montre ce que le bouton montre.
+ */
 function Trace({ kind }: { kind: FlashKind }) {
-  const common = {
-    className: "h-11 w-11 text-white",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-
-  if (kind === "pause") {
-    return (
-      <svg {...common}>
-        <path d="M9 5v14M15 5v14" strokeWidth={2.4} />
-      </svg>
-    );
-  }
-  if (kind === "play") {
-    // Décalé d'un point : un triangle centré géométriquement paraît trop à gauche.
-    return (
-      <svg {...common} className="ml-1 h-11 w-11 text-white">
-        <path d="M8 5.5l11 6.5-11 6.5z" strokeWidth={2} />
-      </svg>
-    );
-  }
-  // Haut-parleur des contrôles, aux ondes près : trois arcs quand le son est là,
-  // la croix à leur place quand il est coupé.
-  return (
-    <svg {...common}>
-      <path d="M12 6l-4 4H4v4h4l4 4V6z" strokeWidth={2} />
-      {kind === "mute" ? (
-        <path d="M16.5 9.5l5 5M21.5 9.5l-5 5" strokeWidth={2} />
-      ) : (
-        <>
-          <path d="M15.4 9.4a3.6 3.6 0 010 5.2" />
-          <path d="M18 7a7 7 0 010 10" />
-          <path d="M20.6 4.6a10.5 10.5 0 010 14.8" />
-        </>
-      )}
-    </svg>
-  );
+  const size = "h-10 w-10 text-white";
+  if (kind === "pause") return <PauseIcon className={size} aria-hidden />;
+  // Décalé d'un point : un triangle centré géométriquement paraît trop à gauche.
+  if (kind === "play") return <PlayIcon className={`ml-1 ${size}`} aria-hidden />;
+  return kind === "mute"
+    ? <SpeakerXIcon className={size} weight="fill" aria-hidden />
+    : <SpeakerHighIcon className={size} weight="fill" aria-hidden />;
 }
