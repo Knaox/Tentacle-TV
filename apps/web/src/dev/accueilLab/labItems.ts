@@ -58,10 +58,12 @@ const MOVIES: LabTitle[] = [
 /** Les images connues du banc : une affiche ou un fond absents retombent sur l'autre. */
 const POSTERS = new Set(["bbb", "casablanca", "charade", "charge", "cosmos", "forbidden", "friday", "gojira", "metropolis", "nbnw", "notld", "rashomon", "roman", "seven", "sintel", "spring", "sprite", "sunset", "third", "tos", "vertigo"]);
 
-function movie(title: LabTitle): MediaItem {
+function movie(title: LabTitle, index: number): MediaItem {
   const backdrop = title.backdrop;
   return {
     Id: title.id,
+    // Un identifiant TMDB : sans lui, le survol n'offre pas la note.
+    ProviderIds: { Tmdb: String(9000 + index) },
     Name: title.name,
     Type: "Movie",
     Overview: title.overview,
@@ -82,7 +84,7 @@ function movie(title: LabTitle): MediaItem {
   } as MediaItem;
 }
 
-export const LAB_MOVIES: MediaItem[] = MOVIES.map(movie);
+export const LAB_MOVIES: MediaItem[] = MOVIES.map((title, index) => movie(title, index));
 
 /** La série du labo, et ses trois épisodes. */
 export const LAB_SERIES: MediaItem = {

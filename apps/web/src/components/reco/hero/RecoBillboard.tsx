@@ -1,3 +1,4 @@
+import { useBillboardGestures } from "../../hero/useBillboardGestures";
 import { useTranslation } from "react-i18next";
 import { useHeldRecoItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
@@ -50,6 +51,9 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
     active: activity.rotating,
   });
 
+  // Comme la bannière de l'accueil : ← →, molette horizontale, glissé du doigt.
+  const gestures = useBillboardGestures({ onPrev: prevWithGrace, onNext: nextWithGrace });
+
   // Le clamp du hook passe par un effet : entre un retrait optimiste (« Ne
   // plus me proposer ») et ce recalage, on borne à la main.
   const item = slides[Math.min(index, slides.length - 1)];
@@ -74,11 +78,17 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
             fiche » fait voler jusqu'à la fiche (cf. HeroBillboard). */}
         <div
           data-hero-frame
-          className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
+          role="group"
+          aria-roledescription="carousel"
+          aria-label={t("heroRegionAria")}
+          tabIndex={0}
+          className={`group/billboard relative w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 ${CARD_HEIGHT}`}
           style={{
             borderRadius: "var(--hero-frame-radius)",
             boxShadow: "var(--hero-frame-ring)",
+            touchAction: "pan-y",
           }}
+          {...gestures}
           onMouseEnter={arrows.onMouseEnter}
           onMouseLeave={arrows.onMouseLeave}
         >
@@ -88,8 +98,7 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
             count={slides.length}
             activeIndex={Math.min(index, slides.length - 1)}
             durationMs={ROTATE_MS}
-            arrowsMounted={arrows.mounted}
-            arrowsShown={arrows.hovered}
+            labels={slides.map((slide) => slide.title)}
             onSelect={selectWithGrace}
             onPrev={prevWithGrace}
             onNext={nextWithGrace}

@@ -152,7 +152,7 @@ function backend(path: string, params: URLSearchParams, options: LabServerOption
   }
   if (path === "/api/watchlist/pending" || path === "/api/likes/pending") return { body: [] };
   if (path === "/api/ratings") {
-    return { body: [{ id: "r1", mediaType: "movie", tmdbId: 426, jellyfinItemId: "vertigo", seasonNumber: 0, episodeNumber: 0, score: 9, syncStatus: "synced", updatedAt: "2026-11-01T10:00:00Z" }] };
+    return { body: [{ id: "r1", mediaType: "movie", tmdbId: 9007, jellyfinItemId: "vertigo", seasonNumber: 0, episodeNumber: 0, score: 9, syncStatus: "synced", updatedAt: "2026-11-01T10:00:00Z" }] };
   }
   if (path === "/api/search/discover") {
     return { body: { ready: true, genres: ["Animation", "Science-fiction", "Thriller", "Comédie", "Drame", "Western"].map((name, i) => ({ name, count: 12 - i })) } };

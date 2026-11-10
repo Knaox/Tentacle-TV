@@ -84,7 +84,8 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
   const openable = canOpen(item);
 
   return (
-    <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
+    // Même ancrage que la bannière de l'accueil (`HeroContent`) : en bas, hors de la flèche « précédent ».
+    <div className="absolute inset-x-0 bottom-6 z-10 pl-16 pr-4 sm:pr-8 md:bottom-10 md:pl-20 md:pr-12">
       <motion.div
         key={animationKey}
         className="max-w-xl"
@@ -98,7 +99,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
 
         <motion.h1
           variants={itemVariants}
-          className="titre-banniere mb-3.5 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words"
+          className="titre-banniere mb-3.5 text-[clamp(2.25rem,4.6vw,4.25rem)] font-[780] leading-[0.98] text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words"
         >
           {item.title}
         </motion.h1>
@@ -111,7 +112,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
           {item.voteAverage != null && (
             <span className="flex items-center gap-1 font-semibold text-on-media-primary">
               {/* Étoile de MARQUE — jamais dorée. */}
-              <span aria-hidden className="text-[var(--brand-accent)]">
+              <span aria-hidden className="text-on-media-primary">
                 <StarIcon />
               </span>
               {item.voteAverage.toFixed(1)}
@@ -128,8 +129,8 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
             marque sans backdrop-filter, libre de passer sur deux lignes. */}
         {reasonText && (
           <motion.div variants={itemVariants} className="mb-3.5">
-            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[rgba(var(--brand-rgb),0.5)] bg-[rgba(var(--brand-rgb),0.24)] px-3 py-1 text-xs font-medium text-on-media-primary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
-              <Sparkles size={12} aria-hidden className="shrink-0 text-[var(--brand-accent-light)]" />
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[rgba(11,11,12,0.6)] px-3 py-1 text-xs font-medium text-on-media-primary">
+              <Sparkles size={12} aria-hidden className="shrink-0 text-[#E58CF0]" />
               {reasonText}
             </span>
           </motion.div>
