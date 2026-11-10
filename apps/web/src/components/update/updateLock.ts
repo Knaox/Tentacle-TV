@@ -74,6 +74,8 @@ const inZone = (event: Event): boolean => inside(event, (element) => element.has
 const inShellOverlay = (event: Event): boolean => inside(event, (element) => element.tagName === SHELL_OVERLAY_TAG);
 
 function onKey(event: Event): void {
+  // Hors verrou — c'est-à-dire presque toujours — cet écouteur ne coûte que ce test.
+  if (!isUpdateLocked()) return;
   const key = (event as KeyboardEvent).key;
   const verdict = keyVerdict({ locked: isUpdateLocked(), key, inZone: inZone(event), inShellOverlay: inShellOverlay(event) });
   if (verdict === "pass") return;
