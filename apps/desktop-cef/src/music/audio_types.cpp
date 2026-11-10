@@ -180,6 +180,25 @@ json toJson(const BridgeState& s) {
           {"error", orNull(s.error)}};
 }
 
+json toJson(const Source& s) {
+  json j = {{"url", s.url},
+            {"origin", s.origin},
+            {"complete", s.complete},
+            {"sizeBytes", orNull(s.sizeBytes)},
+            {"durationMs", orNull(s.durationMs)},
+            {"replayGain", nullptr},
+            {"expiresAt", orNull(s.expiresAt)}};
+  if (s.replayGain)
+    j["replayGain"] = {{"trackGainDb", orNull(s.replayGain->trackGainDb)}, {"trackPeak", orNull(s.replayGain->trackPeak)},
+                       {"albumGainDb", orNull(s.replayGain->albumGainDb)}, {"albumPeak", orNull(s.replayGain->albumPeak)}};
+  if (s.direct) j["direct"] = {{"url", s.direct->url}, {"expiresAt", orNull(s.direct->expiresAt)}};
+  if (s.kept) {
+    j["kept"] = {{"userId", s.kept->userId}};
+    if (s.kept->trackKey) j["kept"]["trackKey"] = *s.kept->trackKey;
+  }
+  return j;
+}
+
 json toJson(const Control& c) {
   json j = {{"action", c.action}};
   if (c.action == "muted") j["value"] = c.flag;

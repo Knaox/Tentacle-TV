@@ -54,8 +54,9 @@ endif()
 
 # La colle avec le socle (fil principal) et le pont (registre des canaux).
 if(TARGET tentacle_shell AND TARGET tentacle_bridge)
-  target_sources(tentacle_music PRIVATE octave_shell.cpp)
-  target_link_libraries(tentacle_music PUBLIC tentacle_shell tentacle_bridge)
+  # octave_direct : les flux directs par le relais de l'axe reseau (cible tentacle_net, déclarée plus loin).
+  target_sources(tentacle_music PRIVATE octave_shell.cpp octave_direct.cpp)
+  target_link_libraries(tentacle_music PUBLIC tentacle_shell tentacle_bridge tentacle_net)
   # `src/app/modules.cpp` (dans tentacle_shell) appelle la colle : lien dans les deux sens.
   target_link_libraries(tentacle_shell PUBLIC tentacle_music)
 endif()

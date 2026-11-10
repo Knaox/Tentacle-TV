@@ -18,6 +18,7 @@ void initModules(AppContext& ctx) {
   pont::setOnVideoClaim([] { music::videoClaim(); });  // octave : une vidéo met la musique en pause
   media_session::install(ctx, pont::registry());  // medias : smtc_*, « À l'écoute » (après octave)
   reseau::install(ctx);  // reseau : schémas tentacle://art|plugin, canaux jellyfin_*, client_fetch_*…
+  music::installDirectSources();  // medias : flux directs d'Octave par le relais de reseau (après reseau)
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }

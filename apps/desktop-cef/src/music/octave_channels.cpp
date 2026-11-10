@@ -165,6 +165,7 @@ void OctaveChannels::start(const json& a, Reply reply, Fail fail) {
   }
   serverOrigin_ = s.serverOrigin;
   serverHeaders_ = s.headers;
+  if (prefetch_) prefetch_(DirectSession{s.serverOrigin, s.headers});
   engine_->start(s, [reply, fail](std::optional<std::string> err, json caps) {
     if (err) return fail("engine_start", *err);
     reply(std::move(caps));

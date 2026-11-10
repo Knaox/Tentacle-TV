@@ -45,6 +45,11 @@ void seekFromSystem(double positionMs);
 void setKeptLookup(KeptLookup lookup);
 // Requêtes déléguées (reseau) : adopter le flux direct d'une source (`directSources.ts`).
 void setDirectAdopter(DirectAdopter adopter);
+// À `audio_engine_start` : la session du moteur (lecture d'avance des hôtes déclarés).
+void setDirectPrefetch(std::function<void(const DirectSession&)> prefetch);
+// Les flux directs d'Octave par le relais local de l'axe reseau (`reseau::adoptDirectSource`,
+// `setDirectCutListener`, `pluginManifests`) : depuis `modules.cpp`, APRÈS `reseau::install`.
+void installDirectSources();
 // Le relais local dit un flux direct coupé en pleine lecture (`directRelay.onCut`).
 void sourceCut(const std::string& url);
 // La fenêtre fermée pour de bon (l'app reste pour finir un transfert) : la musique s'arrête

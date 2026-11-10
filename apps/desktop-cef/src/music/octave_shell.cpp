@@ -161,7 +161,12 @@ void setKeptLookup(KeptLookup lookup) {
 }
 
 void setDirectAdopter(DirectAdopter adopter) {
-  if (channels()) channels()->setDirectAdopter(std::move(adopter));
+  if (!channels()) return;
+  channels()->setDirectAdopter(std::move(adopter));
+}
+
+void setDirectPrefetch(std::function<void(const DirectSession&)> prefetch) {
+  if (channels()) channels()->setDirectPrefetch(std::move(prefetch));
 }
 
 void sourceCut(const std::string& url) {

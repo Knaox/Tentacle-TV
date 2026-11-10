@@ -62,6 +62,8 @@ class OctaveChannels {
 
   void setKeptLookup(KeptLookup lookup) { kept_ = std::move(lookup); }
   void setDirectAdopter(DirectAdopter adopter) { direct_ = std::move(adopter); }
+  // À `audio_engine_start` : lire d'avance les hôtes déclarés (le premier flux direct n'attend pas).
+  void setDirectPrefetch(std::function<void(const DirectSession&)> prefetch) { prefetch_ = std::move(prefetch); }
 
   // Une lecture VIDÉO démarre : la musique qui joue passe en pause (la page reçoit l'état et
   // `remote: pause`). Rend vrai si elle jouait.
@@ -91,6 +93,7 @@ class OctaveChannels {
   Emit emit_;
   KeptLookup kept_;
   DirectAdopter direct_;
+  std::function<void(const DirectSession&)> prefetch_;
   std::unique_ptr<CrossfadeDecks> engine_;
   std::optional<std::string> serverOrigin_;
   std::map<std::string, std::string> serverHeaders_;

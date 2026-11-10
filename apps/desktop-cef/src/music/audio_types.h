@@ -114,5 +114,7 @@ bool validReplayGainMode(const std::string& mode);
 nlohmann::json toJson(const AudioFormat& f);
 nlohmann::json toJson(const BridgeState& s);
 nlohmann::json toJson(const Control& c);
+// La source telle que la page l'envoie (`AudioBridgeSource`), sans `fadeInS` (interne).
+nlohmann::json toJson(const Source& s);
 
 }  // namespace tentacle::music

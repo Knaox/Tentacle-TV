@@ -123,6 +123,20 @@ static void sources() {
   CHECK(!expiresSoon(src("x"), 1000, 60000));
 }
 
+static void sourceRoundTrip() {
+  // La source passe au relais de l'axe reseau en JSON et en revient : rien ne se perd.
+  Source s = src("x", false, "plugin");
+  s.sizeBytes = 1234;
+  s.durationMs = 200000;
+  s.expiresAt = 1.7e12;
+  s.replayGain = ReplayGainValues{-6.5, 0.98, std::nullopt, std::nullopt};
+  s.direct = DirectStream{"https://cdn.example/a", 1.8e12};
+  s.kept = KeptRef{"u1", std::string("t9")};
+  Source back;
+  CHECK(!parseSource(toJson(s), back));
+  CHECK(back == s);
+}
+
 static void level() {
   CHECK(kLevelFilter.rfind(std::string("@") + kLevelLabel + ":lavfi=[astats=", 0) == 0);
   CHECK(kLevelFilter.find("metadata=1") != std::string::npos && kLevelFilter.find("measure_perchannel=none") != std::string::npos);
@@ -214,6 +228,7 @@ int main() {
   growing();
   codecs();
   sources();
+  sourceRoundTrip();
   level();
   crossfadeFilter();
   crossfadeTiming();
