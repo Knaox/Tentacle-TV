@@ -9,6 +9,7 @@
 #include "app/app.h"
 #include "registry.h"
 #include "shell/builtin_handlers.h"
+#include "shell/external_url.h"
 #include "shell/ipc.h"
 #include "shell/main_thread.h"
 #include "glue/mpv_player_port.h"
@@ -43,7 +44,8 @@ class SdlWindow : public bridge::WindowPort {
   // Le blocage d'Electron (`powerSave.ts`), idempotent et rendu à la sortie : IOPMAssertion
   // (macOS), PowerSetRequest (Windows), SDL + renfort logind (Linux) — src/lifecycle.
   void preventDisplaySleep(bool on) override { tentacle::lifecycle::preventDisplaySleep(on); }
-  bool openExternal(const std::string& url) override { return SDL_OpenURL(url.c_str()); }
+  // Liste fermée d'Electron et mode banc : l'ouverture sûre de l'axe navigateur.
+  bool openExternal(const std::string& url) override { return tentacle::openExternalSafely(url); }
 
  private:
   SDL_Window* window_;

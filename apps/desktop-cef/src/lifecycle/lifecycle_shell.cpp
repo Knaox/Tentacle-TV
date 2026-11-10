@@ -14,6 +14,7 @@
 #include "app/app.h"
 #include "lifecycle/app_links.h"
 #include "lifecycle/external_url.h"
+#include "shell/external_url.h"  // navigateur : URL canonique, mode banc
 #include "lifecycle/lifecycle_app_internal.h"
 #include "lifecycle/lifecycle_platform.h"
 #include "registry.h"
@@ -80,7 +81,9 @@ void keepLaunchLink(int argc, char** argv) {
 
 bool openExternalSafely(const std::string& url) {
   if (!externalUrlAllowed(url)) return false;
-  return SDL_OpenURL(url.c_str());
+  // Par l'ouverture de l'axe navigateur (même liste, URL rendue canonique) : elle seule tient
+  // le mode banc (`TENTACLE_OPEN_EXTERNAL=log`), qui journalise sans ouvrir chez l'utilisateur.
+  return tentacle::openExternalSafely(url);
 }
 
 void install(AppContext& ctx, bridge::Registry& registry) {
