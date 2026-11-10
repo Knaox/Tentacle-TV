@@ -150,6 +150,11 @@ Point Controller::viewToScreen(Point view) const {
   return {b.x + view.x, b.y + view.y};
 }
 
+std::optional<Box> Controller::windowBounds() const {
+  if (!window_) return std::nullopt;
+  return window_->bounds();
+}
+
 Compositor* Controller::compositor() const { return window_ ? window_->compositor() : nullptr; }
 
 }  // namespace tentacle::pip

@@ -152,7 +152,8 @@ Json MpvPlayerPort::surfaceState() const {
 void MpvPlayerPort::windowResized(double widthPt, double heightPt) {
   widthPt_ = widthPt;
   heightPt_ = heightPt;
-  if (surface_) surface_->setFrame({0, 0, widthPt_, heightPt_});
+  // Le cadre de la couche est l'affaire du compositeur (Compositor::resize) : pendant le PiP,
+  // elle est dans la fenêtre PiP, et la fenêtre principale ne doit plus la recadrer.
 }
 
 }  // namespace bridge

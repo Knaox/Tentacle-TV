@@ -106,6 +106,7 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
+add_subdirectory(src/pip)  # pip : image dans l'image (règles, navigateur du PiP, fenêtre native)
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"

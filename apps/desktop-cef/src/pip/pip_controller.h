@@ -77,6 +77,10 @@ class Controller {
   Point viewToScreen(Point view) const;
   /// La pile de couches de la fenêtre PiP (sa page), ou nullptr avant sa naissance.
   Compositor* compositor() const;
+  /// Diagnostic : le cadre de la fenêtre PiP, son mode, la vidéo prêtée.
+  std::optional<Box> windowBounds() const;
+  Mode mode() const { return mode_; }
+  bool videoLent() const { return lent_; }
 
  private:
   void releaseVideo();
