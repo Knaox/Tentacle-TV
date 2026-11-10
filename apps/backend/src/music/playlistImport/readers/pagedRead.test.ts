@@ -84,7 +84,7 @@ describe("readAllPages", () => {
 });
 
 describe("Deezer — 9 000 titres", () => {
-  it("la tête puis 9 pages de 1 000 en parallèle, pochette et explicite de chaque titre", async () => {
+  it("la tête puis 18 pages de 500 en parallèle, pochette et explicite de chaque titre", async () => {
     const seen: string[] = [];
     const track = (i: number) => ({ id: i, title: `T${i}`, duration: 200, isrc: "FR9W12641013", explicit_lyrics: i % 10 === 0, artist: { name: "A" }, album: { title: "Al", cover_medium: "https://cdn-images.dzcdn.net/images/cover/x/250x250.jpg" } });
     const fetcher: ImportFetcher = async (url): Promise<FetchedPage> => {
@@ -97,7 +97,7 @@ describe("Deezer — 9 000 titres", () => {
     const pl = await readDeezer(fetcher, "playlist", "42");
     expect(pl.tracks).toHaveLength(9_000);
     expect(pl.truncated).toBe(false);
-    expect(seen).toHaveLength(1 + 9);
+    expect(seen).toHaveLength(1 + 18);
     expect(pl.tracks[8_999]).toMatchObject({ index: 8_999, title: "T8999", artworkUrl: "https://cdn-images.dzcdn.net/images/cover/x/250x250.jpg" });
     expect(pl.tracks.filter((t) => t.explicit)).toHaveLength(900);
   });
