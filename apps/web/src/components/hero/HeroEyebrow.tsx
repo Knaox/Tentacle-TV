@@ -14,19 +14,12 @@ interface HeroEyebrowProps {
 export function HeroEyebrow({ label, hint }: HeroEyebrowProps) {
   return (
     <div className="flex items-center gap-2.5">
-      <span
-        aria-hidden
-        className="h-4 w-[3px] flex-shrink-0 rounded-full"
-        style={{
-          background: "linear-gradient(180deg, var(--brand-light), var(--brand-accent))",
-          boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
-        }}
-      />
-      <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-on-media-primary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
+      {/* Un surtitre d'encre (refonte de nov. 2026) : plus de barre au dégradé de marque. */}
+      <span className="text-xs font-semibold uppercase tracking-[0.06em] text-on-media-primary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
         {label}
       </span>
       {hint && (
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-media-secondary">
+        <span className="text-xs font-semibold uppercase tracking-[0.06em] text-on-media-secondary">
           {hint}
         </span>
       )}

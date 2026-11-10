@@ -20,8 +20,9 @@ import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 export const HERO_PLAY_CLASS = "hero-cta-primary rounded-full";
 export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
 /** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
-export const HERO_INFO_CLASS =
-  "rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+// « Plus d'infos » : un voile clair sur l'image, SANS flou — posé sur un fond qui voyage sans
+// fin, un `backdrop-filter` y serait refait à chaque palier (règle « Coût GPU », 1).
+export const HERO_INFO_CLASS = "btn-on-media rounded-full transition-colors duration-hover";
 
 /**
  * Les deux boutons du héros, prêts à étaler sur `PressableGlass` : la mise en

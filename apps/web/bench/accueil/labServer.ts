@@ -149,8 +149,7 @@ function backend(path: string, params: URLSearchParams, options: LabServerOption
     return { body: { ready: true, genres: ["Animation", "Science-fiction", "Thriller", "Comédie", "Drame", "Western"].map((name, i) => ({ name, count: 12 - i })) } };
   }
   if (path === "/api/search") return { body: search(params.get("q") ?? "") };
-  if (path === "/api/watch-together/group") return { body: { group: null } };
-  if (path === "/api/watch-together/invites") return { body: { invites: [] } };
+  if (path === "/api/watch-together/invites") return { body: [] };
   return null;
 }
 

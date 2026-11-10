@@ -5,6 +5,7 @@ import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
 import { useCardToggles } from "@tentacle-tv/api-client";
 import { stopCardClick } from "./cardEvents";
 import { GLASS_LENS_PROPS, useLiquidGlassSurface } from "../../theme/glass";
+import { ON_MEDIA_ACCENT_TEXT } from "./onMedia";
 
 /**
  * • `compact` — colonne d'angle (la plus discrète).
@@ -16,7 +17,7 @@ type QuickActionsVariant = "compact" | "bar" | "inline";
 const VARIANT_STYLE: Record<QuickActionsVariant, { box: string; icon: string; dir: string }> = {
   compact: { box: "h-7 w-7", icon: "h-3.5 w-3.5", dir: "flex-col" },
   bar: { box: "h-8 w-8", icon: "h-4 w-4", dir: "flex-row" },
-  inline: { box: "h-9 w-9", icon: "h-4 w-4", dir: "flex-row" },
+  inline: { box: "h-11 w-11", icon: "h-5 w-5", dir: "flex-row" },
 };
 
 interface CardQuickActionsProps {
@@ -38,7 +39,10 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const { box, icon, dir } = VARIANT_STYLE[variant];
   // Le verre (mode natif) sur la bannière seulement : une instance à l'écran.
   const glass = variant === "inline";
-  const off = "border-white/40 text-white hover:border-white";
+  // Au repos, l'ivoire ; allumée, la teinte franche (et le glyphe plein) — les trois bascules,
+  // plus seulement le cœur : un état actif se dit de la même façon partout.
+  const off = "text-on-media-primary";
+  const on = ON_MEDIA_ACCENT_TEXT;
 
   const listLabel = toggles.watchlist ? t("removeFromWatchlist") : t("addToWatchlist");
   const favLabel = toggles.favorite ? t("removeFromFavorites") : t("addToFavorites");
@@ -47,17 +51,17 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   return (
     <div className={`flex ${dir} gap-1.5`}>
       <QuickButton glass={glass} box={box} active={toggles.watchlist} label={listLabel}
-        state={toggles.watchlist ? "border-white text-white" : off}
+        state={toggles.watchlist ? on : off}
         onClick={() => toggles.toggleList()}>
         <BookmarkGlyph className={icon} filled={toggles.watchlist} />
       </QuickButton>
       <QuickButton glass={glass} box={box} active={toggles.favorite} accent label={favLabel}
-        state={toggles.favorite ? "border-[var(--brand-accent)] text-[var(--brand-accent)]" : off}
+        state={toggles.favorite ? on : off}
         onClick={() => toggles.toggleFavorite()}>
         <HeartGlyph className={icon} filled={toggles.favorite} />
       </QuickButton>
       <QuickButton glass={glass} box={box} active={toggles.watched} label={watchedLabel}
-        state={toggles.watched ? "border-white text-white" : off}
+        state={toggles.watched ? on : off}
         onClick={() => toggles.toggleWatched()}>
         <WatchedGlyph className={icon} filled={toggles.watched} />
       </QuickButton>
@@ -84,7 +88,9 @@ function QuickButton({ glass, box, active, accent = false, label, state, onClick
   children: ReactNode;
 }) {
   const layout = `${box} flex items-center justify-center`;
-  const skin = `rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105 ${state}`;
+  // Un rond de voile, sans liseré ni flou : la pression répond (97 %), le survol éclaircit le voile.
+  const veil = glass ? "bg-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.24)]" : "bg-[rgba(11,11,12,0.72)] hover:bg-[rgba(11,11,12,0.86)]";
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out active:scale-[0.97] ${veil} ${state}`;
   const surface = useLiquidGlassSurface({
     material: "bead",
     // Posée sur une image (affiche, bannière, fiche) : le verre SOMBRE, quel que
