@@ -16,8 +16,8 @@ import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
-import { SettingsSection } from "@tentacle-tv/ui";
 import { ScopeBadge } from "../../../components/settings/ScopeBadge";
+import { SettingsCard } from "../../../components/settings/SettingsCard";
 import { octavePaths } from "../octavePaths";
 import { useOctaveAvailability } from "../mode/useOctaveAvailability";
 import { OctaveAppearanceFields } from "./OctaveAppearanceFields";
@@ -45,7 +45,7 @@ export function OctaveAppearanceSettings() {
   if (!available) return null;
   return (
     <div ref={anchor} id={OCTAVE_APPEARANCE_ANCHOR} className="scroll-mt-6" data-octave-appearance>
-      <SettingsSection title={t("appearance.title")} caption={t("appearance.caption")} badge={<ScopeBadge scope="octave" />}>
+      <SettingsCard title={t("appearance.title")} caption={t("appearance.caption")} badge={<ScopeBadge scope="octave" />}>
         <OctaveAppearanceFields last={false} />
         {/* Les mêmes réglages, DANS Octave : on y voit l'effet en direct. */}
         <Link
@@ -55,7 +55,7 @@ export function OctaveAppearanceSettings() {
           {t("settings.open")}
           <ChevronRight size={16} aria-hidden className="text-content-tertiary" />
         </Link>
-      </SettingsSection>
+      </SettingsCard>
     </div>
   );
 }
