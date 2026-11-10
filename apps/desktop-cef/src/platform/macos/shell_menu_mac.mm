@@ -89,7 +89,9 @@ void installAppMenu(std::function<void(EditCommand)> edit) {
   g_target = [TentacleEditTarget new];
   // Le plein écran est un élément explicite du menu Fenêtre (⌃⌘F) : AppKit n'en ajoute pas.
   [NSUserDefaults.standardUserDefaults registerDefaults:@{@"NSFullScreenMenuItemEverywhere" : @NO}];
-  NSString* name = NSProcessInfo.processInfo.processName;
+  // Le nom que le système montre (`app.getName()` d'Electron : « Tentacle TV », Info.plist) ;
+  // l'exécutable, lui, garde le nom du paquet (axe systeme).
+  NSString* name = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleName"] ?: NSProcessInfo.processInfo.processName;
   NSMenu* bar = [[NSMenu alloc] initWithTitle:@""];
 
   NSMenu* app = submenu(bar, name);

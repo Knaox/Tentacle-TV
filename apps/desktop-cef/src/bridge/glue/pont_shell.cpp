@@ -11,6 +11,8 @@
 #include "shell/builtin_handlers.h"
 #include "shell/ipc.h"
 #include "glue/mpv_player_port.h"
+#include "lifecycle/lifecycle.h"
+#include "lifecycle/lifecycle_platform.h"
 #include "player/sound_policy.h"
 #include "video_channels.h"
 #include "window_channels.h"
@@ -36,11 +38,9 @@ class SdlWindow : public bridge::WindowPort {
   explicit SdlWindow(SDL_Window* w) : window_(w) {}
   bool isFullscreen() const override { return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0; }
   void setFullscreen(bool on) override { SDL_SetWindowFullscreen(window_, on); }
-  void preventDisplaySleep(bool on) override {
-    // Multiplateforme : IOPMAssertion sous macOS, inhibiteur sous Linux, SetThreadExecutionState sous Windows.
-    if (on) SDL_DisableScreenSaver();
-    else SDL_EnableScreenSaver();
-  }
+  // Le blocage d'Electron (`powerSave.ts`), idempotent et rendu à la sortie : IOPMAssertion
+  // (macOS), PowerSetRequest (Windows), SDL + renfort logind (Linux) — src/lifecycle.
+  void preventDisplaySleep(bool on) override { tentacle::lifecycle::preventDisplaySleep(on); }
   bool openExternal(const std::string& url) override { return SDL_OpenURL(url.c_str()); }
 
  private:
@@ -123,7 +123,10 @@ void installShim(AppContext& ctx) {
 #else
   config.platform = "linux";
 #endif
-  config.titleBarHeight = 0;  // le socle garde la barre de titre standard
+  // La bande d'hôte que la page dessine (`macosTitleBar.ts` : 38 sur macOS, 0 ailleurs) et le
+  // focus de la fenêtre (macOS) : le cadre est celui d'Electron (src/lifecycle, axe systeme).
+  config.titleBarHeight = tentacle::lifecycle::platform::titleBarHeight();
+  config.windowFocus = tentacle::lifecycle::platform::hasWindowFocusBridge();
   ipc::registerInjectedScript(state->registry.injectedScript(bridge::embeddedShimSource(), config));
   std::fprintf(stderr, "[pont] window.tentacle pour %s : %zu commandes, %zu évènements\n",
                origin.empty() ? "(aucune origine)" : origin.c_str(), state->registry.commands().size(),
@@ -131,5 +134,17 @@ void installShim(AppContext& ctx) {
 }
 
 void shutdown() { state.reset(); }
+
+bool videoRunning() { return state && state->player && state->player->running(); }
+
+void stopVideo(std::function<void()> done) {
+  if (!videoRunning()) return done();
+  state->player->stop(std::move(done));
+}
+
+void pauseVideo() {
+  if (!videoRunning()) return;
+  state->player->setProperty("pause", true, [](std::optional<std::string>) {});
+}
 
 }  // namespace tentacle::pont

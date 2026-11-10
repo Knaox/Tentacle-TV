@@ -1,14 +1,6 @@
 #include "window_channels.h"
 
 namespace bridge {
-namespace {
-
-bool isWebUrl(const std::string& url) {
-  // Le filtre vit côté natif, jamais dans la page (`preload/index.ts`).
-  return url.rfind("https://", 0) == 0 || url.rfind("http://", 0) == 0;
-}
-
-}  // namespace
 
 WindowChannels::WindowChannels(Registry& registry, WindowPort& window)
     : registry_(registry), window_(window), lastEmitted_(window.isFullscreen()) {
@@ -50,11 +42,8 @@ WindowChannels::WindowChannels(Registry& registry, WindowPort& window)
   // transparence au-dessus de la vidéo (compositeur du socle) : rien à faire.
   registry_.command("player_surface_transparent", [](const Json&, Reply reply) { reply.ok(nullptr); });
 
-  registry_.command("open-external", [this](const Json& payload, Reply reply) {
-    const std::string url = payload.value("url", "");
-    if (!isWebUrl(url) || !window_.openExternal(url)) return reply.fail("refused", "lien refuse");
-    reply.ok(nullptr);
-  });
+  // `open-external` n'est pas ici : capacité nommée de la coquille, hors liste comme sous
+  // Electron (`registerShellCapabilities`), avec la liste fermée des schémas — src/lifecycle.
 }
 
 void WindowChannels::fullscreenChanged(bool on) {

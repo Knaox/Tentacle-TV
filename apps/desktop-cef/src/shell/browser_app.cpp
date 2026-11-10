@@ -10,6 +10,8 @@
 namespace tentacle {
 namespace {
 
+std::function<void(const std::vector<std::string>&)> g_secondInstance;
+
 // Chromium ne garde que la DERNIÈRE occurrence d'une liste de fonctionnalités : on fusionne
 // avec ce qui est déjà sur la ligne de commande (argv, ou ce que le navigateur transmet à ses
 // enfants) au lieu de l'écraser.
@@ -73,6 +75,21 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
 
 void BrowserApp::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) {
   appscheme::registerScheme(registrar);  // le même appel dans les helpers (renderer_app.cpp)
+}
+
+void setSecondInstanceHandler(std::function<void(const std::vector<std::string>&)> handler) {
+  g_secondInstance = std::move(handler);
+}
+
+bool BrowserApp::OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine> commandLine,
+                                             const CefString& currentDirectory) {
+  // Toujours « traité » : le comportement par défaut de CEF ouvrirait une fenêtre Chrome.
+  std::vector<CefString> raw;
+  commandLine->GetArgv(raw);
+  std::vector<std::string> argv;
+  for (const auto& a : raw) argv.push_back(a.ToString());
+  if (g_secondInstance) g_secondInstance(argv);
+  return true;
 }
 
 void BrowserApp::OnScheduleMessagePumpWork(int64_t delayMs) {

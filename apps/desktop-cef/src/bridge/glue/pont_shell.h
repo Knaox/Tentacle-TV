@@ -29,4 +29,11 @@ void setOnVideoClaim(std::function<void()> claim);
 void installShim(AppContext& ctx);
 void shutdown();
 
+// Le lecteur vidéo vu du cycle de vie (axe systeme, src/lifecycle) : fermer la fenêtre l'arrête,
+// l'adieu à Jellyfin le met en pause pendant qu'il poste.
+bool videoRunning();
+void stopVideo(std::function<void()> done);
+/// `pause=yes`, écriture ASYNCHRONE (jamais de propriété mpv en synchrone).
+void pauseVideo();
+
 }  // namespace tentacle::pont

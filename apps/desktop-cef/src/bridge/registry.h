@@ -24,6 +24,9 @@ struct ShimConfig {
   std::string version;               // `window.tentacle.version`
   std::string platform;              // "darwin" | "linux" | "win32"
   double titleBarHeight = 0;         // bandeau que la page dessine (0 : vrai cadre)
+  bool windowFocus = false;          // `window.tentacle.windowFocus` (macOS, axe systeme)
+  std::string montage;               // Linux : "wayland" | "x11" (`window.tentacle.montage`), "" ailleurs
+  std::string windowing;             // Linux : "libre" | "plein-ecran" (`window.tentacle.fenetrage`)
 };
 
 class Registry {

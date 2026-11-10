@@ -107,6 +107,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/src/update/CMakeLists.txt")
   add_subdirectory(src/update)  # maj : mise à jour automatique, assistant dans le paquet
 endif()
 add_subdirectory(src/net)  # reseau : tentacle://art, tentacle://plugin, relais, requêtes déléguées
+add_subdirectory(src/lifecycle)  # systeme : cycle de vie, fenêtre d'Electron, instance unique, liens
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"
@@ -122,6 +123,7 @@ if(APPLE)
     MAIN_SOURCES src/app/main_mac.mm
     HELPER_SOURCES src/app/helper_main_mac.mm
     RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
+              "${CMAKE_SOURCE_DIR}/../desktop-electron/icons/icon.icns"  # systeme : l'icône d'Electron (Dock, « À propos »)
   )
 else()
   # Ébauche Linux/Windows : un exécutable unique, ressources CEF copiées à côté.
