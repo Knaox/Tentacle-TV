@@ -234,8 +234,7 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - Données : celles d'Electron, aux mêmes formats — `<userData>/tentacle-local.db` (schéma
   `core/schema.cpp`, copie octet pour octet de `packages/offline-core/src/core/schema.ts`,
   verrouillée par `tests/schema_tests.cpp`), `<userData>/avatars/<id>.jpg`.
-  `<userData>` : `--user-data=`, sinon `TENTACLE_ELECTRON_PROFILE`, sinon le dossier d'Electron
-  (`glue/user_data.cpp`, COUTURE en attendant `tentacle::paths::userData()` de l'axe reseau).
+  `<userData>` = `tentacle::paths::userData()` (axe reseau).
 - Canaux (`window.tentacle`, noms et charges d'Electron) : `session_cache_get/set/clear`,
   `avatar_cache_put/get` ; stockage `downloads_get_root/set_root/background_get/background_set/
   disk_free/disk_usage/asset_base` ; lecture `downloads_local_source/playback_set/
@@ -243,7 +242,8 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `downloads_state_for_item`, `downloads_set_auto_delete`, `downloads_music_list`,
   `downloads_music_collections`. Évènements `downloads://progress`, `downloads://changed`.
 - `tentacle://local/<media|meta>/…` : affiches, JSON, planches, sous-titres (liste FERMÉE de
-  `localAssets.ts`), lus sur le fil hors ligne ; jeton fictif `local`.
+  `localAssets.ts`), lus sur le fil hors ligne ; jeton fictif `local` ; CSP de l'application
+  (`appscheme::appCsp()`) sur chaque réponse, comme Electron.
 - Compatibilité prouvée par `bench/offline/compat.sh <tentacle_offline_compat>` : le cœur
   TypeScript d'Electron (exécuté par Node) et le C++ jouent `scenario.json`, chacun relit la base
   de l'autre — sorties de la page, lignes et schéma identiques.

@@ -78,7 +78,6 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge)
     glue/runtime.cpp
     glue/session_channels.cpp
     glue/storage_channels.cpp
-    glue/user_data.cpp
   )
   target_link_libraries(tentacle_offline_glue PUBLIC tentacle_offline_core tentacle_shell tentacle_bridge)
   target_compile_options(tentacle_offline_glue PRIVATE -Wall -Wextra -Wno-unused-parameter)

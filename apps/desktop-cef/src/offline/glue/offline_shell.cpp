@@ -8,15 +8,17 @@
 #include "offline/glue/local_scheme.h"
 #include "offline/glue/offline_thread.h"
 #include "offline/glue/runtime.h"
-#include "offline/glue/user_data.h"
 #include "registry.h"
 #include "shell/ipc.h"
+#include "shell/paths.h"
 
 namespace tentacle::offline {
 
 void installInShell(bridge::Registry& registry, const AppContext& ctx) {
   thread::start();
-  const std::filesystem::path userData = resolveUserData(*ctx.options);
+  // Le dossier de données d'Electron (axe reseau : `--user-data`, sinon la règle de
+  // `dataPaths.ts` sur les trois OS).
+  const std::filesystem::path userData = paths::userData();
   // Le contexte se pose SUR le fil hors ligne : c'est le seul qui y touchera. Les évènements
   // partent par la plomberie du socle (sûre de tout fil, et qui survit au registre du pont,
   // refermé avant ce module) sous le nom que le shim attend (`tentacle:<évènement>`).

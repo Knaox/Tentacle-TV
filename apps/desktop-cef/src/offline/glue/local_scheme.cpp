@@ -21,6 +21,7 @@
 #include "offline/core/local_assets.h"
 #include "offline/glue/offline_thread.h"
 #include "offline/glue/runtime.h"
+#include "shell/app_scheme.h"
 
 namespace tentacle::offline {
 namespace {
@@ -81,6 +82,9 @@ class LocalHandler final : public CefResourceHandler {
     if (answer_.mime.find("charset=utf-8") != std::string::npos) response->SetCharset("utf-8");
     CefResponse::HeaderMap headers;
     headers.emplace("Content-Type", answer_.mime);
+    // Electron pose la CSP de l'application sur TOUTE réponse `tentacle://` hors greffons
+    // (`index.ts` → `installContentSecurityPolicy`), celles de `tentacle://local` comprises.
+    if (const std::string csp = appscheme::appCsp(); !csp.empty()) headers.emplace("Content-Security-Policy", csp);
     if (answer_.ok) {
       headers.emplace("Cache-Control", "public, max-age=86400");
       // Deux ORIGINES du même schéma : sans cet en-tête, les `<img>` passeraient mais tout
