@@ -49,6 +49,11 @@ export interface LocalSource {
   /** Bibliothèque de l'item — préférences de pistes hors ligne. */
   libraryId: string | null;
   /**
+   * Série de l'épisode (`null` pour un film) : « Appliquer à cette série »
+   * l'emporte sur le choix propre à l'épisode, même sans DTO serveur.
+   */
+  seriesId: string | null;
+  /**
    * Flux audio Jellyfin gardé dans une variante Allégée (une seule piste) ;
    * `null` pour un Original, qui garde toutes ses pistes. Sert à nommer la
    * piste comme en ligne (`DisplayTitle` du snapshot).
@@ -118,7 +123,7 @@ export function localSource(
     .get(userId, itemId);
   const meta = db
     .prepare(
-      `SELECT title, series_name, runtime_ticks, library_id, index_number, parent_index_number
+      `SELECT title, series_name, runtime_ticks, library_id, series_id, index_number, parent_index_number
        FROM item_meta WHERE item_id = ?`,
     )
     .get(itemId);
@@ -139,6 +144,7 @@ export function localSource(
     indexNumber: meta === undefined ? null : integerOrNull(meta, "index_number"),
     parentIndexNumber: meta === undefined ? null : integerOrNull(meta, "parent_index_number"),
     libraryId: meta === undefined ? null : textOrNull(meta, "library_id"),
+    seriesId: meta === undefined ? null : textOrNull(meta, "series_id"),
     audioStreamIndex: file.audioStreamIndex,
   };
 }

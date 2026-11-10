@@ -86,7 +86,7 @@ Json localSource(Database& db, const Volume& volume, const std::string& userId, 
   const auto state = db.prepare("SELECT position_ticks, played FROM playback_state WHERE jellyfin_user_id = ? AND item_id = ?")
                          .get(userId, itemId);
   const auto meta = db.prepare(
-                          "SELECT title, series_name, runtime_ticks, library_id, index_number, parent_index_number\n"
+                          "SELECT title, series_name, runtime_ticks, library_id, series_id, index_number, parent_index_number\n"
                           "       FROM item_meta WHERE item_id = ?")
                         .get(itemId);
   const auto metaText = [&](const char* column) { return meta ? opt(textOrNull(*meta, column)) : Json(nullptr); };
@@ -107,6 +107,7 @@ Json localSource(Database& db, const Volume& volume, const std::string& userId, 
       {"indexNumber", metaNumber("index_number")},
       {"parentIndexNumber", metaNumber("parent_index_number")},
       {"libraryId", metaText("library_id")},
+      {"seriesId", metaText("series_id")},
       {"audioStreamIndex", opt(file.audioStreamIndex)},
   };
 }

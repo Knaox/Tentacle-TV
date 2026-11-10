@@ -104,9 +104,9 @@ describe("source locale", () => {
     const db = openInMemory();
     seedComplete(db, 4);
     db.prepare(
-      `INSERT INTO item_meta (item_id, kind, series_name, title, index_number,
+      `INSERT INTO item_meta (item_id, kind, series_id, series_name, title, index_number,
                               parent_index_number, library_id, created_at, updated_at)
-       VALUES ('item1', 'episode', 'Une serie', 'Un episode', 4, 2, 'lib-1', 1, 1)`,
+       VALUES ('item1', 'episode', 'serie-1', 'Une serie', 'Un episode', 4, 2, 'lib-1', 1, 1)`,
     ).run();
 
     const source = localSource(db, nodeVolume(root), "u", "item1", 3_000);
@@ -116,6 +116,8 @@ describe("source locale", () => {
     expect(source?.indexNumber).toBe(4);
     expect(source?.parentIndexNumber).toBe(2);
     expect(source?.libraryId).toBe("lib-1");
+    // La série : sa préférence de pistes l'emporte sur celle de l'épisode.
+    expect(source?.seriesId).toBe("serie-1");
   });
 });
 

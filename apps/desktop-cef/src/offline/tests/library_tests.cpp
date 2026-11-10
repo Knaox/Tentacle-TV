@@ -104,6 +104,7 @@ TEST(lecture_fichier_disparu_et_allege) {
   const Json source = localSource(*db2, root.volume, "u", "item1", 3000);
   CHECK(!source.is_null() && source["seriesName"] == "Une serie" && source["indexNumber"] == 4);
   CHECK(source["parentIndexNumber"] == 2 && source["libraryId"] == "lib-1" && source["variant"] == "light");
+  CHECK(source["seriesId"] == "s");  // la préférence de pistes de la série, sans DTO serveur
 }
 
 TEST(lecture_progression_et_file) {
