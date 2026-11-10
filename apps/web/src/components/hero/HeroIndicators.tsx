@@ -36,7 +36,7 @@ interface HeroIndicatorsProps {
  * Posés sur l'affiche : encre et ivoire CONSTANTS dans les deux thèmes (règle « posé sur média »).
  */
 const ARROW =
-  "icon-btn absolute top-1/2 z-10 -mt-6 h-12 w-12 bg-[rgba(19,19,21,0.55)] text-on-media-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[rgba(19,19,21,0.8)] hover:text-on-media-primary focus-visible:outline-on-media-primary";
+  "icon-btn absolute top-1/2 z-10 -mt-6 h-12 w-12 rounded-full bg-[rgba(19,19,21,0.55)] text-on-media-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[rgba(19,19,21,0.8)] hover:text-on-media-primary focus-visible:outline-on-media-primary";
 
 export function HeroIndicators({ count, activeIndex, durationMs = 0, labels, onSelect, onPrev, onNext }: HeroIndicatorsProps) {
   const { t } = useTranslation("common");

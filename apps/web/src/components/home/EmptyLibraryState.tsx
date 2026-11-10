@@ -71,7 +71,9 @@ export const EmptyLibraryState = memo(function EmptyLibraryState() {
               href={setupDocUrl("addContent", i18n.language ?? "en")}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-solid"
+              // `cta-primary` : marqueur sans style — le client LG y pose son focus d'entrée
+              // (`[class*="cta-primary"]`), comme sur la classe d'avant.
+              className="btn btn-solid cta-primary"
             >
               <BookOpen size={16} aria-hidden="true" />
               {t("emptyHomeGuide")}

@@ -29,7 +29,7 @@ const ICONS: Record<NoticeIcon, IconType> = { server: Server, key: KeyRound, che
 const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {
   blocking: { accent: "bg-status-error", chip: "bg-status-error-bg text-status-error-fg" },
   recommendation: { accent: "bg-status-warning", chip: "bg-status-warning-bg text-status-warning-fg" },
-  info: { accent: "bg-brand", chip: "bg-fill-soft text-content-primary" },
+  info: { accent: "bg-accent", chip: "bg-fill-soft text-content-primary" },
 };
 
 /**
