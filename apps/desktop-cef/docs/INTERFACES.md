@@ -253,7 +253,10 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - `--user-data=<dossier>` le remplace (lu par `paths::configure(opts.extra)`, juste après
   `parseArgs` dans `src/app/app.cpp`). `pnpm dev:cef` passe `--user-data=<profil d'Electron visé>`
   (`TENTACLE_ELECTRON_PROFILE`, sinon la règle) : stockage du front et données natives au même endroit.
-- Règle pure testée : `dataRoot(env)`, `dataFolder(env)` (`src/net/tests/paths_tests.cpp`).
+- Garde des bancs : sans `--user-data`, un `--profile` rangé sous le cache de développement
+  (`cacheRoot()`, `~/.cache/tentacle-cef`) donne `<profil>/user-data` — jamais le dossier d'Electron ;
+  hors de ce cache (l'app installée), la règle d'Electron. `pnpm dev:server` : `$cache/profiles/dev-data`.
+- Règle pure testée : `dataRoot(env)`, `dataFolder(env)`, la garde (`src/net/tests/paths_tests.cpp`).
 
 ### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
 - Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`
