@@ -3,6 +3,8 @@ import { AnimatePresence } from "framer-motion";
 import { Routes } from "react-router-dom";
 import { useMirror } from "../../mirror/useFormFactor";
 import { usePageLocation } from "../../pictureInPicture/usePageLocation";
+import { PageEntranceContext } from "./PageEntranceContext";
+import { pageEntranceId } from "./pageEntranceMemory";
 import { RouteExit, type RouteExitCustom } from "./RouteExit";
 import { PLAYER_GROUP, routeGroupKey } from "./routeKeys";
 
@@ -40,7 +42,11 @@ export function AnimatedRoutes({ children }: { children: ReactNode }) {
       <AnimatePresence initial={false} custom={custom}>
         {!onPlayer && (
           <RouteExit key={group} instant={instant}>
-            <Routes location={location}>{children}</Routes>
+            {/* L'identité d'entrée des pages hors coquille (la fiche) ; celles de la coquille
+                reçoivent la leur, plus près, d'`AnimatedOutlet`. */}
+            <PageEntranceContext.Provider value={pageEntranceId(location)}>
+              <Routes location={location}>{children}</Routes>
+            </PageEntranceContext.Provider>
           </RouteExit>
         )}
       </AnimatePresence>

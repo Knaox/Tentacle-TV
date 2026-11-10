@@ -26,11 +26,11 @@ export const RecoRefineTeaser = memo(function RecoRefineTeaser({
       <Link
         to={RECO_REFINE_PATH}
         replace
-        className="group flex items-center gap-4 rounded-2xl border border-[rgba(var(--brand-rgb),0.35)] bg-[color:var(--surface-2)] p-4 transition-colors hover:border-[rgba(var(--brand-rgb),0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] sm:p-5"
+        className="group flex items-center gap-4 rounded-tile bg-surface-2 p-4 transition-colors duration-hover hover:bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus sm:p-5"
       >
         <span
           aria-hidden
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg shadow-[0_4px_14px_rgba(var(--brand-rgb),0.35)]"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent"
         >
           <GalleryHorizontalEnd size={22} />
         </span>
@@ -38,7 +38,7 @@ export const RecoRefineTeaser = memo(function RecoRefineTeaser({
           <span className="block text-base font-semibold text-content-primary">{t("teaserTitle")}</span>
           <span className="mt-0.5 block text-sm text-content-secondary">{t("teaserBody")}</span>
         </span>
-        <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-4 py-2 text-sm font-semibold text-cta-brand-fg sm:inline-flex">
+        <span className="btn btn-sm btn-soft hidden shrink-0 sm:inline-flex">
           {t("teaserCta")}
           <ArrowRight size={15} aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5" />
         </span>

@@ -63,16 +63,12 @@ export function RecoFiltersMenu() {
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-          activeCount > 0
-            ? "border-[rgba(var(--brand-rgb),0.5)] bg-[var(--brand-soft)] text-[var(--brand)]"
-            : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
-        }`}
+        className={`btn ${activeCount > 0 ? "btn-accent" : "btn-soft"}`}
       >
         <SlidersHorizontal size={15} aria-hidden />
         {t("filtersButton")}
         {activeCount > 0 && (
-          <span className="rounded-full bg-[var(--brand)] px-1.5 text-[11px] font-bold leading-4 text-cta-brand-fg">
+          <span className="num rounded-full bg-accent px-1.5 text-[11px] font-bold leading-4 text-accent-on">
             {activeCount}
           </span>
         )}
@@ -101,15 +97,13 @@ export function RecoFiltersMenu() {
                   onPointerEnter={() => warm(toggleFamily(selected, entry))}
                   onFocus={() => warm(toggleFamily(selected, entry))}
                   onClick={() => setSelected(toggleFamily(selected, entry))}
-                  className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors ${
-                    active
-                      ? "border-[rgba(var(--brand-rgb),0.5)] bg-[var(--brand-soft)]"
-                      : "border-transparent hover:bg-fill-soft"
+                  className={`flex items-center gap-2.5 rounded-field px-2.5 py-2 text-left transition-colors duration-hover ${
+                    active ? "bg-accent-soft" : "hover:bg-fill-soft"
                   }`}
                 >
                   <PlatformLogo logoPath={entry.logoPath} label={entry.label} />
                   <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{entry.label}</span>
-                  {active && <Check size={14} className="shrink-0 text-[var(--brand)]" aria-hidden />}
+                  {active && <Check size={14} weight="bold" className="shrink-0 text-accent" aria-hidden />}
                 </button>
               );
             })}

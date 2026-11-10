@@ -7,6 +7,9 @@
  * pointeur immobile ne doit pas voler la sélection au clavier.
  */
 
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
@@ -46,16 +49,16 @@ function RowShell({ index, active, onHover, onActivate, children }: RowProps & {
       data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
-      className={`relative flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 transition-colors duration-100 ${
+      className={`relative flex min-h-[52px] cursor-pointer items-center gap-3 rounded-card px-3 py-1.5 transition-colors duration-100 ${
         active ? "bg-fill-soft" : ""
       }`}
     >
       {active && (
-        <span aria-hidden className="lg-row-mark absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-gradient-to-b from-[var(--brand)] to-[var(--brand-accent)]" />
+        <span aria-hidden className="lg-row-mark absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-accent" />
       )}
       {children}
       {active && (
-        <kbd aria-hidden className="ml-1 hidden shrink-0 rounded-md border border-line-subtle bg-fill-subtle px-1.5 py-0.5 text-[10px] text-content-tertiary sm:inline">
+        <kbd aria-hidden className="ui-kbd ml-1 hidden shrink-0 sm:inline">
           ↵
         </kbd>
       )}
@@ -73,7 +76,7 @@ function WatchState({ item }: { item: SearchMediaItem | MediaItem }) {
   const data = item.UserData;
   if (data?.Played) {
     return (
-      <span role="img" aria-label={t("watched")} title={t("watched")} className="shrink-0 text-[var(--brand-light)]">
+      <span role="img" aria-label={t("watched")} title={t("watched")} className="shrink-0 text-accent">
         <WatchedGlyph className="h-4 w-4" filled />
       </span>
     );
@@ -82,7 +85,7 @@ function WatchState({ item }: { item: SearchMediaItem | MediaItem }) {
   if (progress <= 0) return null;
   return (
     <span aria-hidden className="h-1 w-10 shrink-0 overflow-hidden rounded-full bg-fill-medium">
-      <span className="block h-full rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]" style={{ width: `${Math.min(100, progress)}%` }} />
+      <span className="block h-full origin-left rounded-full" style={{ transform: `scaleX(${Math.min(100, progress) / 100})`, background: "var(--gauge-gradient)" }} />
     </span>
   );
 }
@@ -99,7 +102,7 @@ export const ItemRow = memo(function ItemRow({ hit, terms, ...row }: RowProps & 
         </p>
         <p className="mt-0.5 truncate text-xs text-content-tertiary">
           {itemMeta(t, hit.item, i18n.language)}
-          {reason && <span className="text-[var(--brand-light)]"> · {reason}</span>}
+          {reason && <span className="text-accent"> · {reason}</span>}
         </p>
       </div>
       <WatchState item={hit.item} />
@@ -146,11 +149,8 @@ export const RecentRow = memo(function RecentRow({ query, onRemove, ...row }: Ro
   const { t } = useTranslation("search");
   return (
     <RowShell {...row}>
-      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fill-subtle text-content-tertiary">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-          <circle cx="12" cy="12" r="8.5" />
-          <path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-field bg-fill-subtle text-content-tertiary">
+        <ClockCounterClockwiseIcon size={16} />
       </span>
       <p className="min-w-0 flex-1 truncate text-sm text-content-secondary">{query}</p>
       <button
@@ -159,11 +159,9 @@ export const RecentRow = memo(function RecentRow({ query, onRemove, ...row }: Ro
         aria-label={t("removeRecent")}
         title={t("removeRecent")}
         onClick={(e) => { e.stopPropagation(); onRemove(query); }}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-content-quaternary transition-colors hover:bg-fill-medium hover:text-content-primary"
+        className="icon-btn btn-sm"
       >
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.2}>
-          <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-        </svg>
+        <XIcon size={14} weight="bold" aria-hidden />
       </button>
     </RowShell>
   );
@@ -189,11 +187,8 @@ export const AllResultsRow = memo(function AllResultsRow({ query, ...row }: RowP
   const { t } = useTranslation("search");
   return (
     <RowShell {...row}>
-      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand-light)]">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
-        </svg>
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-field bg-accent-soft text-accent">
+        <MagnifyingGlassIcon size={16} />
       </span>
       <p className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{t("allResults", { query })}</p>
     </RowShell>
@@ -234,7 +229,7 @@ export const MissingSeasonsRow = memo(function MissingSeasonsRow({ item, count, 
         <p className="truncate text-sm text-content-secondary">
           <HighlightedText text={item.Name} terms={terms} />
         </p>
-        <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-[var(--brand-light)]">
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-accent">
           <Plus weight="bold" className="h-3 w-3 shrink-0" aria-hidden />
           {t("requests:missingSeasons", { count })}
         </p>

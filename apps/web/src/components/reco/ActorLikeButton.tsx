@@ -29,10 +29,9 @@ export function ActorLikeButton({ name, liked, pending, onToggle }: ActorLikeBut
         e.stopPropagation();
         onToggle();
       }}
-      className={`absolute right-0 top-0 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-md transition-opacity duration-150 focus-visible:opacity-100 ${
-        liked
-          ? "border-transparent bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg opacity-100"
-          : "border-line-strong bg-surface-modal text-content-secondary opacity-0 group-hover/actor:opacity-100"
+      // Aimé : le cœur plein à la teinte franche, sur l'encre du menu — plus d'aplat au dégradé de marque.
+      className={`absolute right-0 top-0 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-surface-dropdown shadow-elev-1 transition-[opacity,transform] duration-press ease-out active:scale-[0.97] focus-visible:opacity-100 ${
+        liked ? "text-accent opacity-100" : "text-content-secondary opacity-0 group-hover/actor:opacity-100"
       }`}
     >
       <Heart weight={liked ? "fill" : "regular"} size={13} aria-hidden />

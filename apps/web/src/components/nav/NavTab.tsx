@@ -1,7 +1,9 @@
 /**
- * Un onglet de la barre : icône ET libellé (une icône seule ne se devine pas),
- * et, pour l'onglet courant, un indicateur au dégradé de la marque qui GLISSE
- * d'un onglet à l'autre (`layoutId` partagé — le segmented control d'iOS).
+ * Un onglet de la barre : une pilule au LIBELLÉ seul (refonte de nov. 2026 — le
+ * prototype validé ; l'icône de la destination reste dans « Plus » et dans
+ * « Personnaliser la barre », où une liste se parcourt), et, pour l'onglet
+ * courant, une pastille NEUTRE qui GLISSE d'un onglet à l'autre (`layoutId`
+ * partagé — le segmented control d'iOS).
  *
  * `NavTabBody` est le même dessin sans lien ni indicateur : c'est lui que la
  * rangée fantôme mesure (`usePriorityOverflow`). Il est rendu en gras, la
@@ -28,10 +30,10 @@ import { useWindowGlass } from "../../desktop/windowGlass";
 import type { NavIcon } from "./useNavDestinations";
 
 export const TAB_CLASS =
-  "lgc-tab group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
+  "lgc-tab group relative flex h-[38px] shrink-0 items-center gap-1.5 rounded-pill px-3.5 text-sm outline-none transition-colors duration-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
 
-/** Rayon de la pastille en verre : la moitié de `h-9`, une capsule concentrique au groupe. */
-const LENS_RADIUS = 18;
+/** Rayon de la pastille en verre : la moitié de la hauteur d'un onglet, une capsule concentrique au groupe. */
+const LENS_RADIUS = 19;
 
 export function ActiveIndicator({ reduced }: { reduced: boolean }) {
   // Liquid Glass (mode natif) : la pastille NEUTRE de la barre d'onglets
@@ -45,7 +47,7 @@ export function ActiveIndicator({ reduced }: { reduced: boolean }) {
     <motion.span
       layoutId={morph?.layoutId ?? "nav-active"}
       aria-hidden
-      className="lgc-lens absolute inset-0 rounded-[11px]"
+      className="lgc-lens absolute inset-0 rounded-pill"
       // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode
       // natif — ailleurs, le repli est le dessin d'avant.
       style={{
@@ -62,9 +64,9 @@ export function TabIcon({ icon: Icon, active }: { icon: NavIcon; active: boolean
   return (
     <Icon
       aria-hidden
-      strokeWidth={active ? 2.2 : 1.9}
-      className={`relative h-[17px] w-[17px] shrink-0 transition-colors duration-150 ${
-        active ? "text-[var(--brand-light)]" : "text-content-quaternary group-hover:text-content-secondary"
+      weight={active ? "fill" : "regular"}
+      className={`relative h-[17px] w-[17px] shrink-0 transition-colors duration-hover ${
+        active ? "text-accent" : "text-content-tertiary group-hover:text-content-secondary"
       }`}
     />
   );
@@ -73,7 +75,7 @@ export function TabIcon({ icon: Icon, active }: { icon: NavIcon; active: boolean
 export function tabTone(active: boolean): string {
   return active
     ? "font-semibold text-content-primary"
-    : "font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary";
+    : "font-semibold text-content-secondary hover:bg-fill-subtle hover:text-content-primary";
 }
 
 export const NavTab = memo(function NavTab({ id, label, path, icon, active, reduced, onIntent, onMenu }: {
@@ -81,7 +83,8 @@ export const NavTab = memo(function NavTab({ id, label, path, icon, active, redu
   id?: string;
   label: string;
   path: string;
-  icon: NavIcon;
+  /** Dessinée quand elle est donnée (les deux onglets du mode hors ligne) ; la barre en ligne n'en passe pas. */
+  icon?: NavIcon;
   active: boolean;
   reduced: boolean;
   /** Survol ou focus : l'intention d'y aller (préchargement). */
@@ -103,17 +106,17 @@ export const NavTab = memo(function NavTab({ id, label, path, icon, active, redu
       className={`${TAB_CLASS} ${tabTone(active)}`}
     >
       {active && <ActiveIndicator reduced={reduced} />}
-      <TabIcon icon={icon} active={active} />
+      {icon && <TabIcon icon={icon} active={active} />}
       <span className="relative whitespace-nowrap">{label}</span>
     </Link>
   );
 });
 
 /** Le dessin d'un onglet, pour la mesure — jamais affiché. */
-export function NavTabBody({ label, icon: Icon, trailing }: { label: string; icon: NavIcon; trailing?: ReactNode }) {
+export function NavTabBody({ label, leading, trailing }: { label: string; leading?: ReactNode; trailing?: ReactNode }) {
   return (
     <span className={`${TAB_CLASS} font-semibold`}>
-      <Icon aria-hidden className="h-[17px] w-[17px] shrink-0" />
+      {leading}
       <span className="whitespace-nowrap">{label}</span>
       {trailing}
     </span>

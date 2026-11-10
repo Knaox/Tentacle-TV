@@ -47,8 +47,8 @@ export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: Re
             to={path}
             replace
             aria-current={selected ? "page" : undefined}
-            className={`relative isolate flex min-h-[36px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
-              selected ? "text-cta-brand-fg" : "text-content-secondary hover:text-content-primary"
+            className={`relative isolate flex min-h-[36px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+              selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"
             }`}
           >
             {selected && (
@@ -57,10 +57,8 @@ export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: Re
                 layoutId="reco-section-marker"
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
                 className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
-                style={{
-                  background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.95), rgba(var(--brand-accent-rgb),0.9))",
-                  boxShadow: "0 2px 10px rgba(var(--brand-rgb),0.35)",
-                }}
+                // L'option retenue : une pastille NEUTRE (carnet, § 3) — plus de dégradé de marque.
+                style={{ background: "var(--surface-4)", boxShadow: "var(--shadow-edge)" }}
               />
             )}
             <Icon size={15} aria-hidden />

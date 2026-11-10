@@ -44,9 +44,9 @@ export const RecoNewerPill = memo(function RecoNewerPill({ visible, onShow }: Re
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
             transition={{ duration: reduced ? 0.01 : 0.22, ease: "easeOut" }}
             aria-label={t("newerShowAria")}
-            className="pointer-events-auto flex min-h-[40px] items-center gap-2 rounded-full border border-[rgba(var(--brand-rgb),0.55)] bg-[color:var(--surface-2)] px-4 text-sm font-semibold text-content-primary shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:border-[rgba(var(--brand-rgb),0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+            className="pointer-events-auto flex min-h-[40px] items-center gap-2 rounded-pill bg-surface-3 px-4 text-sm font-semibold text-content-primary shadow-menu transition-[transform,background-color] duration-press ease-out hover:bg-surface-4 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
-            <RefreshCw size={15} aria-hidden className="text-[var(--brand-accent)]" />
+            <RefreshCw size={15} aria-hidden className="text-accent" />
             {t("newerAvailable")}
           </motion.button>
         )}

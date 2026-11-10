@@ -324,4 +324,8 @@ export default {
   sheetExpand: "Agrandir",
   sheetCollapse: "Réduire",
   sheetHandleHint: "Glissez vers le haut pour agrandir, vers le bas pour réduire ou fermer",
+  // La bannière de l'accueil (refonte de nov. 2026) : son nom, ses pastilles.
+  featuredCarousel: "À la une",
+  featuredTitles: "Titres à la une",
+  slideNumber: "Titre {{index}}",
 } as const;

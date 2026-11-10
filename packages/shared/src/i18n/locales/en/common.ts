@@ -314,4 +314,8 @@ export default {
   sheetExpand: "Expand",
   sheetCollapse: "Collapse",
   sheetHandleHint: "Swipe up to expand, down to collapse or close",
+  // La bannière de l'accueil (refonte de nov. 2026) : son nom, ses pastilles.
+  featuredCarousel: "Featured",
+  featuredTitles: "Featured titles",
+  slideNumber: "Title {{index}}",
 } as const;

@@ -180,7 +180,7 @@
   color: rgb(255 255 255 / 0.8);
 }
 
-/* La note globale : l'étoile de marque de l'affiche (rose), le chiffre en blanc. */
+/* La note globale : l'étoile ivoire de l'affiche, le chiffre en blanc. */
 .card-preview-score {
   font-weight: 600;
   color: rgb(255 255 255 / 0.92);
@@ -192,7 +192,7 @@
   width: 0.92em;
   height: 0.92em;
   margin-inline-end: 0.28em;
-  color: var(--brand-accent);
+  color: rgb(255 255 255 / 0.92);
 }
 
 /* La qualité : sobre, monochrome — seul le 4K porte la marque (préférence
@@ -209,7 +209,7 @@
 }
 
 .card-preview-quality[data-accent="true"] {
-  color: color-mix(in srgb, var(--brand) 55%, white);
+  color: #e58cf0;
 }
 
 .card-preview-episode {
@@ -245,7 +245,7 @@
   inset-block: 0;
   left: 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+  background: var(--gauge-gradient);
 }
 
 .card-preview-progress-time {

@@ -32,8 +32,8 @@ export const FacetChip = memo(function FacetChip({
       onClick={() => onActivate(index)}
       className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition-colors duration-100 ${
         active
-          ? "border-[rgba(var(--brand-rgb),0.55)] bg-[var(--brand-soft)] text-content-primary"
-          : "lg-fill border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft"
+          ? "border-transparent bg-accent-soft text-content-primary"
+          : "lg-fill border-transparent bg-fill-soft text-content-secondary hover:bg-fill-medium"
       }`}
     >
       {showKind && (

@@ -31,7 +31,7 @@ interface NotificationPanelProps {
   t: TFunction;
 }
 
-const ICON_BUTTON = "flex h-8 w-8 items-center justify-center rounded-lg transition-colors";
+const ICON_BUTTON = "icon-btn btn-sm";
 
 /**
  * Le contenu du panneau des notifications : un en-tête (titre, non lues,
@@ -65,14 +65,14 @@ export function NotificationPanel({
             <button type="button" onClick={onDeleteSelected} disabled={sel.count === 0} title={t("notifications:deleteSelected")} aria-label={t("notifications:deleteSelected")} className={`${ICON_BUTTON} text-status-error-fg hover:bg-danger-surface disabled:opacity-40`}>
               <Trash2 className="h-4 w-4" />
             </button>
-            <button type="button" onClick={sel.exitSelectionMode} className="h-8 rounded-lg px-2.5 text-xs font-medium text-content-secondary hover:bg-fill-soft">
+            <button type="button" onClick={sel.exitSelectionMode} className="btn btn-sm btn-ghost">
               {t("notifications:cancel")}
             </button>
           </>
         ) : (
           <>
             {unread > 0 && (
-              <button type="button" onClick={onMarkAllRead} className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[var(--brand-light)] hover:bg-[var(--brand-soft)]">
+              <button type="button" onClick={onMarkAllRead} className="btn btn-sm btn-ghost text-accent">
                 <CheckCheck className="h-4 w-4" />
                 {t("notifications:markAllRead")}
               </button>
@@ -129,8 +129,7 @@ function EmptyNotifications({ t }: { t: TFunction }) {
     <div className="flex flex-col items-center px-8 py-10 text-center">
       <span
         aria-hidden
-        className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-[var(--brand-light)]"
-        style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.18), rgba(var(--brand-accent-rgb),0.14))" }}
+        className="mb-4 flex h-14 w-14 items-center justify-center rounded-tile bg-fill-soft text-content-secondary"
       >
         <BellRing className="h-6 w-6" />
       </span>

@@ -45,18 +45,18 @@ export const NotifRow = memo(function NotifRow({
       aria-pressed={selectionMode ? isSelected : undefined}
       onClick={activate}
       onKeyDown={onKeyDown}
-      className={`lg-row-soft group relative flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 outline-none transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.5)] ${
-        !notif.read ? "bg-[rgba(var(--brand-rgb),0.06)]" : ""
+      className={`lg-row-soft group relative flex cursor-pointer items-start gap-3 rounded-card px-3 py-2.5 outline-none transition-colors duration-hover hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:ring-2 focus-visible:ring-line-focus ${
+        !notif.read ? "bg-fill-faint" : ""
       } ${isDeleting ? "pointer-events-none animate-fade-out" : ""}`}
     >
       {!notif.read && !selectionMode && (
-        <span aria-hidden className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[var(--brand)]" />
+        <span aria-hidden className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-accent" />
       )}
       {selectionMode ? (
         <span
           aria-hidden
           className={`mt-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border transition-colors ${
-            isSelected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-cta-brand-fg" : "border-line-strong"
+            isSelected ? "border-transparent bg-accent text-accent-on" : "border-line-strong"
           }`}
         >
           {isSelected && <Check weight="bold" className="h-3.5 w-3.5" />}
@@ -89,7 +89,7 @@ export const NotifRow = memo(function NotifRow({
             onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
             aria-label={t("notifications:delete")}
             title={t("notifications:delete")}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary opacity-0 transition-opacity hover:bg-fill-soft hover:text-status-error-fg focus-visible:opacity-100 group-hover:opacity-100"
+            className="flex h-7 w-7 items-center justify-center rounded-pill text-content-quaternary opacity-0 transition-opacity duration-hover hover:bg-fill-soft hover:text-status-error-fg focus-visible:opacity-100 group-hover:opacity-100"
           >
             <X className="h-3.5 w-3.5" />
           </button>

@@ -116,10 +116,10 @@ export function PosterTile({
     >
       <CardImage src={imageUrl} alt={item.Name} />
 
-      {/* Compteur d'épisodes récemment ajoutés : posé sur un aplat de MARQUE
-          (dégradé brand) et non sur l'affiche — d'où le token dédié. */}
+      {/* Compteur d'épisodes récemment ajoutés : une puce à la teinte franche
+          (constante, posée sur média) — plus un aplat au dégradé de marque. */}
       {grouped && (
-        <div className="absolute left-2 top-2 z-30 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-cta-brand-fg shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
+        <div className="num absolute left-[7px] top-[7px] z-30 flex h-[22px] items-center rounded-chip bg-[#E58CF0] px-1.5 text-xs font-bold leading-none text-[#27062E]">
           +{addedCount}
         </div>
       )}
@@ -133,6 +133,8 @@ export function PosterTile({
         communityRating={rating}
         hideRating={hovered && (actionsVisible || !grouped)}
         hideStatus={actionsVisible}
+        // Une affiche en cours porte aussi sa jauge, en bas : la note monte au-dessus d'elle.
+        ratingClassName={!watched && progress != null && progress >= 1 ? "bottom-[15px] left-[7px]" : undefined}
       />
 
       {/* Puces qualité/langues AU-DESSUS du voile, sauf sur un lot

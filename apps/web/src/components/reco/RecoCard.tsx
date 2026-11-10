@@ -169,8 +169,9 @@ export const RecoCard = memo(function RecoCard({
 
           {/* Coin haut-gauche : « À la demande » (hors bibliothèque — le titre
               s'obtient via Vigie, il n'est pas sur le serveur) puis
-              « Découverte ». Blanc/noir constant et dégradé de marque : posés
-              sur média. Au survol d'un titre en bibliothèque, les puces
+              « Découverte ». Encre constante et teinte franche : posés
+              sur média (plus de dégradé de marque). PAS la classe `.chip` :
+              elle interdit le retour à la ligne, et un état long en a besoin. Au survol d'un titre en bibliothèque, les puces
               qualité/langues montent à cette place : les badges s'effacent
               (opacité seule). */}
           {(!item.jellyfinItemId || item.exploration) && (
@@ -181,12 +182,12 @@ export const RecoCard = memo(function RecoCard({
               style={{ right: topLabelInsetRight(item.jellyfinItemId ? 0 : pillGlyphs, 8) }}
             >
               {!item.jellyfinItemId && (
-                <span className="max-w-full rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="max-w-full rounded-chip bg-[rgba(11,11,12,0.72)] px-2 py-1 text-[10px] font-semibold uppercase leading-tight tracking-[0.06em] text-on-media-primary">
                   <RecoOnDemandLabel item={item} />
                 </span>
               )}
               {item.exploration && (
-                <span className="max-w-full rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg">
+                <span className="max-w-full rounded-chip bg-[#E58CF0] px-2 py-1 text-[10px] font-semibold uppercase leading-tight tracking-[0.06em] text-[#27062E]">
                   {t("explorationBadge")}
                 </span>
               )}

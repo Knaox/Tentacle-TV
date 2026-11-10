@@ -19,12 +19,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useIsMobile } from "../../../hooks/useIsMobile";
-import { easeOut, duration } from "../../../theme/motion";
 import { useGlassControl } from "../../ui/glass/useGlassControl";
 import { optionPath, stepIndex } from "../omniboxModel";
 import { pushRecentSearch } from "../recentSearches";
@@ -42,7 +41,6 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
   const compact = useIsMobile();
   // Verre natif (panneau flottant) : le ton du dessous, auquel ses textes s'adaptent.
   const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
-  const reduced = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(seed);
   const [active, setActive] = useState(-1);
@@ -161,10 +159,11 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
     <div className="fixed inset-0 z-[100]">
       <motion.div
         aria-hidden
-        className="absolute inset-0 bg-[rgba(var(--scrim-page-rgb),0.62)] backdrop-blur-[6px]"
-        initial={reduced ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: duration.fast, ease: easeOut }}
+        // Un voile PLEIN, sans flou : la page dessous bouge (la bannière voyage), un flou plein
+        // écran y serait refait à chaque palier. Le verre natif garde le sien (`lg-scrim`).
+        // AUCUNE entrée animée : la palette s'ouvre d'un raccourci clavier, cent fois par jour.
+        className="lg-scrim absolute inset-0 bg-[rgba(var(--scrim-page-rgb),0.62)]"
+        initial={false}
         onMouseDown={onClose}
       />
       <div
@@ -179,10 +178,8 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
           aria-label={t("dialog")}
           className={compact
             ? "flex h-[100dvh] w-full flex-col bg-surface-modal"
-            : "lg-sheet lg-palette pointer-events-auto flex max-h-[min(78vh,720px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-line-subtle bg-surface-modal shadow-[var(--shadow-modal)]"}
-          initial={reduced ? false : { opacity: 0, y: -10, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: duration.base, ease: easeOut }}
+            : "lg-sheet lg-palette pointer-events-auto flex max-h-[min(78vh,720px)] w-full max-w-[760px] flex-col overflow-hidden rounded-panel bg-surface-modal shadow-sheet"}
+          initial={false}
         >
           <OmniboxInput
             ref={inputRef}

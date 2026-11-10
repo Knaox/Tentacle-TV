@@ -76,7 +76,7 @@ export function RecoHero({ item }: RecoHeroProps) {
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand-accent)]">
+          <p className="ui-eyebrow">
             {t("heroKicker")}
           </p>
           <h2 className="mt-1 text-2xl font-bold text-content-primary md:text-4xl">{item.title}</h2>

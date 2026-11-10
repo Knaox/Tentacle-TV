@@ -111,21 +111,22 @@ export function NotificationBell() {
         aria-label={count > 0 ? `${t("notifications:title")} — ${t("notifications:unreadCount", { count })}` : t("notifications:title")}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-colors duration-200 hover:bg-fill-soft hover:text-content-secondary"
-        // Dans le groupe de verre de la barre (macOS 26), un simple glyphe : ses
-        // jetons n'existent que là (`windowGlassNav.css`) — ailleurs, le disque d'avant.
-        style={{ background: open ? "var(--lg-chrome-button-open, var(--fill-soft))" : "var(--lg-chrome-button-rest, var(--fill-subtle))" }}
+        // Un rond du groupe « actions » de la barre : sans fond au repos, le verre du groupe
+        // est sa surface. Ouvert, il garde son voile (jeton du verre natif, sinon l'encre).
+        data-on={count > 0 || undefined}
+        className="icon-btn relative"
+        style={open ? { background: "var(--lg-chrome-button-open, var(--fill-soft))" } : undefined}
       >
-        <Bell className="h-5 w-5" />
+        <Bell size={20} weight={count > 0 ? "fill" : "regular"} aria-hidden />
         {count > 0 && (
           <span
             aria-hidden
-            className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-cta-brand-fg"
+            className="num absolute right-0 top-0 flex h-[18px] min-w-[18px] items-center justify-center rounded-pill px-1 text-[10px] font-bold leading-none"
             style={{
-              // Liquid Glass : l'accent uni, sans halo (jetons `--lg-chrome-badge-*`,
-              // posés en mode natif seulement) ; ailleurs, le dessin d'avant.
-              background: "var(--lg-chrome-badge-bg, linear-gradient(135deg, var(--brand), var(--brand-accent)))",
-              boxShadow: "var(--lg-chrome-badge-shadow, 0 2px 6px rgba(var(--brand-rgb), 0.45))",
+              // Un état actif : la teinte franche, unie (plus de dégradé de marque ni de halo).
+              // `--lg-chrome-badge-bg` : le jeton du verre natif, posé là seulement.
+              background: "var(--lg-chrome-badge-bg, var(--accent))",
+              color: "var(--on-accent)",
             }}
           >
             {badge}
@@ -141,14 +142,8 @@ export function NotificationBell() {
         align="end"
         role="dialog"
         ariaLabel={t("notifications:title")}
-        className="lg-menu lg-menu-wide flex w-[24rem] flex-col overflow-hidden rounded-2xl"
-        style={{
-          background: "var(--surface-dropdown)",
-          backdropFilter: "blur(var(--blur-dropdown))",
-          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
-          border: "1px solid var(--border-subtle)",
-          boxShadow: "var(--shadow-dropdown)",
-        }}
+        // Un menu de la couche de verre : OPAQUE hors verre natif, donc sans flou (carnet, § 4).
+        className="lg-menu lg-menu-wide flex w-[24rem] flex-col overflow-hidden rounded-tile bg-surface-dropdown shadow-menu"
       >
         <NotificationPanel
           notifications={notifications}

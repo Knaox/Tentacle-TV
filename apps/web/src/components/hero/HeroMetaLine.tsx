@@ -14,11 +14,7 @@ interface HeroMetaLineProps {
 /** Séparateur en pastille de marque — remplace les « · » en texte. */
 function Dot() {
   return (
-    <span
-      aria-hidden
-      className="h-1 w-1 flex-shrink-0 rounded-full"
-      style={{ background: "rgba(var(--brand-rgb), 0.85)" }}
-    />
+    <span aria-hidden className="h-[3px] w-[3px] flex-shrink-0 rounded-full bg-on-media-muted" />
   );
 }
 
@@ -34,23 +30,14 @@ export function HeroMetaLine({ item, quality, runtime, showQuality }: HeroMetaLi
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-on-media-secondary">
       {item.ProductionYear && <span className="font-semibold text-on-media-primary">{item.ProductionYear}</span>}
 
-      {item.OfficialRating && (
-        <span className="rounded border border-on-media-muted px-1.5 py-0.5 text-[10px] font-bold tracking-wider">
-          {item.OfficialRating}
-        </span>
-      )}
+      {item.OfficialRating && <span className="chip chip-on-media">{item.OfficialRating}</span>}
 
       {item.CommunityRating != null && (
-        <>
-          <Dot />
-          <span className="flex items-center gap-1 font-medium">
-            {/* Étoile de marque — jamais dorée. */}
-            <span aria-hidden className="text-[var(--brand-accent)]">
-              <StarIcon />
-            </span>
-            {item.CommunityRating.toFixed(1)}
-          </span>
-        </>
+        // La note : une puce d'encre, l'étoile ivoire — jamais dorée, plus au dégradé.
+        <span className="chip chip-on-media num">
+          <StarIcon />
+          {item.CommunityRating.toFixed(1)}
+        </span>
       )}
 
       {runtime && (

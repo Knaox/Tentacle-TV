@@ -31,7 +31,7 @@ export function HomeRecoFilterChip() {
   const label = active.length > 0 ? active.map((entry) => entry.label).join(", ") : t("homeFilterGeneric");
 
   return (
-    <span className="ml-1 flex min-w-0 items-center gap-1.5 rounded-full border border-[rgba(var(--brand-rgb),0.5)] bg-[var(--brand-soft)] py-0.5 pl-1.5 pr-1 text-xs font-medium text-[var(--brand)]">
+    <span className="ml-1 flex min-w-0 items-center gap-1.5 rounded-full bg-accent-soft py-0.5 pl-1.5 pr-1 text-xs font-medium text-accent">
       {active.slice(0, LOGOS_MAX).map((entry) => (
         <PlatformLogo key={entry.key} logoPath={entry.logoPath} label={entry.label} className="h-4 w-4" />
       ))}
@@ -41,7 +41,7 @@ export function HomeRecoFilterChip() {
         onClick={clear}
         aria-label={t("homeFilterRemove")}
         title={t("homeFilterRemove")}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[rgba(var(--brand-rgb),0.2)]"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-hover hover:bg-fill-soft"
       >
         <X size={12} aria-hidden />
       </button>

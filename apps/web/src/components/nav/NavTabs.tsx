@@ -50,6 +50,7 @@ export function NavTabs({ slack }: { slack?: OverflowSlack } = {}) {
   const shown = primary.slice(0, visible);
   const overflowActive = primary.slice(visible).find((d) => isActivePath(d.path, pathname)) ?? null;
   const moreLabel = overflowActive?.label ?? t("more");
+  // « Plus » porte une icône : la sienne, ou celle de la page courante qu'il abrite.
   const MoreIcon = overflowActive?.icon ?? LayoutGrid;
 
   // Changer de page referme « Plus » ; l'éditeur, lui, reste ouvert — on peut
@@ -64,14 +65,13 @@ export function NavTabs({ slack }: { slack?: OverflowSlack } = {}) {
 
   return (
     <div className="lgc-tabs relative flex min-w-0 flex-1 items-center">
-      <nav ref={containerRef} aria-label={t("railLabel")} className="lgc-tabs-nav flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+      <nav ref={containerRef} aria-label={t("railLabel")} className="lgc-tabs-nav flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
         {shown.map((d) => (
           <NavTab
             key={d.key}
             id={d.key}
             label={d.label}
             path={d.path}
-            icon={d.icon}
             active={isActivePath(d.path, pathname)}
             reduced={reduced}
             onIntent={d.key === "recommendations" ? recoIntent : undefined}
@@ -93,15 +93,15 @@ export function NavTabs({ slack }: { slack?: OverflowSlack } = {}) {
           {overflowActive !== null && <ActiveIndicator reduced={reduced} />}
           <TabIcon icon={MoreIcon} active={overflowActive !== null} />
           <span className="relative max-w-[160px] truncate whitespace-nowrap">{moreLabel}</span>
-          <ChevronDown aria-hidden className={`relative h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${panel !== null ? "rotate-180" : ""}`} />
+          <ChevronDown aria-hidden className={`relative h-3.5 w-3.5 shrink-0 transition-transform duration-menu-in ease-out ${panel !== null ? "rotate-180" : ""}`} />
         </button>
       </nav>
 
       {/* La rangée fantôme : tous les onglets et « Plus », mis en page mais
           invisibles et hors du flux — la mesure de `usePriorityOverflow`. */}
-      <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0 flex gap-1">
-        {primary.map((d) => <NavTabBody key={d.key} label={d.label} icon={d.icon} />)}
-        <NavTabBody label={moreLabel} icon={MoreIcon} trailing={CHEVRON} />
+      <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0 flex gap-0.5">
+        {primary.map((d) => <NavTabBody key={d.key} label={d.label} />)}
+        <NavTabBody label={moreLabel} leading={<MoreIcon aria-hidden className="h-[17px] w-[17px] shrink-0" />} trailing={CHEVRON} />
       </div>
 
       {panel === "more" && (

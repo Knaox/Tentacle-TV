@@ -7,61 +7,37 @@
 
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { searchShortcutLabel } from "../../lib/shortcutLabel";
-import { useLiquidGlassSurface } from "../../theme/glass";
+import { NavGroup } from "../nav/NavGroup";
 import { openOmnibox } from "./omniboxStore";
-
-function SearchIcon({ className }: { className: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export const SearchLauncher = memo(function SearchLauncher({ variant, className = "" }: {
   variant: "field" | "icon";
   className?: string;
 }) {
   const { t } = useTranslation("search");
-  // Liquid Glass (mode natif) : la peau du champ change, jamais sa boîte. Hors
-  // mode natif, la peau d'avant (`fallbackClassName`), classe pour classe.
-  const field = useLiquidGlassSurface({
-    // La pastille du socle, sans givre dans la capsule de la barre (`windowGlassNav.css`).
-    material: "bead",
-    shape: "capsule",
-    interactive: true,
-    className: `lgc-field group flex h-10 items-center gap-2.5 px-3.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`,
-    fallbackClassName:
-      "rounded-xl border border-line-subtle bg-fill-subtle text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary",
-  });
   if (variant === "icon") {
     return (
+      <button type="button" onClick={() => openOmnibox()} aria-label={t("open")} title={t("open")} className={`icon-btn ${className}`}>
+        <MagnifyingGlassIcon size={20} aria-hidden />
+      </button>
+    );
+  }
+  // Le champ EST un groupe de la barre (refonte de nov. 2026) : son verre est celui du groupe,
+  // le bouton n'en porte aucun — jamais de verre sur du verre. `lgc-field` : repère du verre natif.
+  return (
+    <NavGroup className={className} contentClassName="">
       <button
         type="button"
         onClick={() => openOmnibox()}
         aria-label={t("open")}
-        title={t("open")}
-        className={`flex h-9 w-9 items-center justify-center rounded-xl text-content-secondary transition-colors hover:bg-fill-subtle hover:text-content-primary ${className}`}
+        className="lgc-field flex h-full w-full items-center gap-2.5 rounded-pill pl-3.5 pr-2 text-left text-sm text-content-secondary outline-none transition-colors duration-hover hover:text-content-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus"
       >
-        <SearchIcon className="h-[18px] w-[18px]" />
+        <MagnifyingGlassIcon size={16} className="shrink-0" aria-hidden />
+        <span className="min-w-0 flex-1 truncate">{t("launcher")}</span>
+        <kbd className="ui-kbd hidden shrink-0 font-sans xl:inline">{searchShortcutLabel()}</kbd>
       </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => openOmnibox()}
-      aria-label={t("open")}
-      {...field.props}
-    >
-      {field.layers}
-      <SearchIcon className="h-4 w-4 shrink-0 transition-colors group-hover:text-[var(--brand-light)]" />
-      <span className="min-w-0 flex-1 truncate">{t("launcher")}</span>
-      <kbd className="hidden shrink-0 rounded-md border border-line-subtle bg-fill-soft px-1.5 py-0.5 font-sans text-[11px] font-medium text-content-quaternary xl:inline">
-        {searchShortcutLabel()}
-      </kbd>
-    </button>
+    </NavGroup>
   );
 });

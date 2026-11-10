@@ -46,6 +46,7 @@ import { DevHorsLigneLab } from "./dev/horsLigneLab/devRoute";
 import { DevLecteurLab } from "./dev/lecteurLab/devRoute";
 import { DevReglagesLab } from "./dev/reglagesLab/devRoute";
 import { DevOctaveLab } from "./dev/octaveLab/devRoute";
+import { DevAccueilLab } from "./dev/accueilLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -315,6 +316,8 @@ export function App() {
                   />
                 ))
             )}
+            {/* Le labo de l'accueil, DANS la coquille : sa barre du haut est la vraie (paquets de développement seulement). */}
+            {DevAccueilLab ? <Route path="dev/accueil" element={<DevAccueilLab />} /> : null}
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />

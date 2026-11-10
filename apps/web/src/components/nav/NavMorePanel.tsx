@@ -24,6 +24,7 @@ import { PushPinIcon as Pin } from "@phosphor-icons/react/dist/csr/PushPin";
 import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../floating/FloatingLayer";
+import { ON_MEDIA_ACCENT_TEXT, ON_MEDIA_PILL } from "../cards/onMedia";
 import { isActivePath, type NavBarEditor, type NavLibrary, type NavListEntry } from "./useNavDestinations";
 
 interface NavMorePanelProps {
@@ -37,7 +38,7 @@ interface NavMorePanelProps {
 }
 
 const PIN_BUTTON =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg outline-none transition-colors hover:bg-fill-subtle focus-visible:ring-2 focus-visible:ring-line-focus";
+  "icon-btn btn-sm";
 
 // Trois bibliothèques tiennent sur une ligne ; deux ou quatre, sur deux
 // colonnes — jamais une tuile orpheline sous une ligne pleine quand on l'évite.
@@ -46,12 +47,17 @@ function libraryColumns(count: number): string {
   return count === 2 || count === 4 ? "grid-cols-2" : "grid-cols-3";
 }
 
+/** Au-delà de trois lignes de tuiles, elles se resserrent : vingt bibliothèques tiennent sans défiler à 900 px. */
+const COMPACT_ABOVE = 9;
+
 function SectionTitle({ children }: { children: string }) {
-  return <p className="lg-menu-label mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
+  return <p className="lg-menu-label ui-eyebrow mb-2 px-1">{children}</p>;
 }
 
-const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogglePin }: {
+const LibraryTile = memo(function LibraryTile({ library, active, compact, onClose, onTogglePin }: {
   library: NavLibrary;
+  /** Beaucoup de bibliothèques : des tuiles plus basses, pour que le panneau tienne à l'écran. */
+  compact: boolean;
   active: boolean;
   onClose: () => void;
   onTogglePin: (library: NavLibrary) => void;
@@ -69,15 +75,16 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
         to={library.path}
         onClick={onClose}
         aria-current={active ? "page" : undefined}
-        className={`lg-tile group relative flex h-[76px] items-end gap-2 overflow-hidden rounded-xl border p-3 outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-          active ? "border-[var(--nav-active-ring)]" : "border-line-subtle"
+        // La page courante : un trait à la teinte franche, DANS l'arrondi (un état actif, pas un contour).
+        className={`lg-tile group relative flex ${compact ? "h-[56px]" : "h-[76px]"} items-end gap-2 overflow-hidden rounded-card bg-surface-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+          active ? "shadow-[inset_0_0_0_2px_var(--accent)]" : ""
         }`}
-        style={art === null ? { background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.35), var(--fill-soft))" } : undefined}
       >
         {art !== null && (
-          <img src={art} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" />
+          <img src={art} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-80" />
         )}
-        <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
+        {/* Le voile qui porte le libellé ; au survol il s'éclaircit — l'image, elle, ne bouge pas. */}
+        <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-[rgba(11,11,12,0.88)] via-[rgba(11,11,12,0.45)] to-[rgba(11,11,12,0.05)] transition-opacity duration-hover group-hover:opacity-80" />
         <Icon aria-hidden className="relative h-4 w-4 shrink-0 text-[var(--on-media-primary)]" />
         <span className="relative min-w-0 flex-1 truncate text-sm font-semibold text-[var(--on-media-primary)]">{library.label}</span>
         {library.count > 0 && (
@@ -94,8 +101,8 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
           aria-label={`${pinLabel} — ${library.label}`}
           title={pinLabel}
           // Épinglée : l'épingle se voit toujours. Sinon, au survol ou au focus.
-          className={`lg-tile-pin absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-black/55 text-[var(--on-media-primary)] outline-none transition-opacity hover:bg-black/75 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${
-            library.pinned ? "opacity-100" : "opacity-0 group-hover/tile:opacity-100"
+          className={`lg-tile-pin absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-pill outline-none transition-[opacity,transform] duration-press ease-out active:scale-[0.97] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${ON_MEDIA_PILL} ${
+            library.pinned ? `opacity-100 ${ON_MEDIA_ACCENT_TEXT}` : "text-on-media-primary opacity-0 group-hover/tile:opacity-100"
           }`}
         >
           <Pin weight={library.pinned ? "fill" : "regular"} aria-hidden className="h-3.5 w-3.5" />
@@ -120,11 +127,9 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
         to={entry.path}
         onClick={onClose}
         aria-current={active ? "page" : undefined}
-        className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-line-focus ${
-          active ? "bg-fill-soft font-semibold text-content-primary" : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
-        }`}
+        className={`ui-menu-item min-w-0 flex-1 ${active ? "bg-fill-soft font-semibold" : ""}`}
       >
-        <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" />
+        <Icon aria-hidden weight={active ? "fill" : "regular"} className={`h-4 w-4 shrink-0 ${active ? "text-accent" : "text-content-tertiary"}`} />
         <span className="truncate">{entry.label}</span>
       </Link>
       {/* Une page que son extension cache de la barre s'ouvre d'ici, sans épingle. */}
@@ -134,7 +139,7 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
         aria-pressed={entry.pinned}
         aria-label={`${label} — ${entry.label}`}
         title={label}
-        className={`${PIN_BUTTON} ${entry.pinned ? "text-[var(--brand-light)]" : "text-content-quaternary hover:text-content-secondary"}`}
+        className={PIN_BUTTON}
       >
         <Pin weight={entry.pinned ? "fill" : "regular"} aria-hidden className="h-4 w-4" />
       </button>}
@@ -170,14 +175,14 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
       panelRef={panelRef}
       role="dialog"
       ariaLabel={t("more")}
-      className="lg-menu lg-menu-wide lg-more w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
+      className="lg-menu lg-menu-wide lg-more w-[620px] overflow-y-auto overscroll-contain rounded-tile bg-surface-dropdown p-4 shadow-menu"
     >
       {libraries.length > 0 && (
         <section>
           <SectionTitle>{t("libraries")}</SectionTitle>
           <div className={`grid gap-2 ${libraryColumns(libraries.length)}`}>
             {libraries.map((library) => (
-              <LibraryTile key={library.key} library={library} active={isActivePath(library.path, pathname)} onClose={onClose} onTogglePin={togglePin} />
+              <LibraryTile key={library.key} library={library} active={isActivePath(library.path, pathname)} compact={libraries.length > COMPACT_ABOVE} onClose={onClose} onTogglePin={togglePin} />
             ))}
           </div>
         </section>
@@ -198,7 +203,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
         <Link
           to="/pair-device"
           onClick={onClose}
-          className="lg-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="lg-row ui-menu-item w-auto"
         >
           <MonitorSmartphone aria-hidden className="h-4 w-4 text-content-tertiary" />
           {t("pairDevice")}
@@ -206,9 +211,10 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
         <button
           type="button"
           onClick={onCustomize}
-          className="lg-menu-button inline-flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+          data-nav-customize
+          className="lg-menu-button btn btn-sm btn-soft"
         >
-          <Settings2 aria-hidden className="h-4 w-4 text-[var(--brand-light)]" />
+          <Settings2 aria-hidden className="h-4 w-4" />
           {t("customizeBar")}
         </button>
       </div>

@@ -12,6 +12,8 @@
  * `aria-activedescendant` — le lecteur d'écran suit la sélection au clavier.
  */
 
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { forwardRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -37,10 +39,7 @@ export const OmniboxInput = forwardRef<HTMLInputElement, OmniboxInputProps>(func
   const { t } = useTranslation("search");
   return (
     <div className="lg-sep relative flex h-16 shrink-0 items-center gap-3 border-b border-line-subtle px-4 sm:px-5">
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-[var(--brand-light)]" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-        <circle cx="11" cy="11" r="6.5" />
-        <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
-      </svg>
+      <MagnifyingGlassIcon size={20} aria-hidden className="shrink-0 text-content-secondary" />
       <div className="relative min-w-0 flex-1">
         {completion !== null && (
           <div aria-hidden className={`pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre ${FONT}`}>
@@ -73,15 +72,13 @@ export const OmniboxInput = forwardRef<HTMLInputElement, OmniboxInputProps>(func
           onClick={() => onChange("")}
           aria-label={t("clear")}
           title={t("clear")}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+          className="icon-btn btn-sm"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-          </svg>
+          <XIcon size={16} weight="bold" aria-hidden />
         </button>
       )}
       {compact ? (
-        <button type="button" onClick={onClose} className="shrink-0 px-1 text-sm font-medium text-[var(--brand-light)]">
+        <button type="button" onClick={onClose} className="btn btn-sm btn-ghost shrink-0">
           {t("cancel")}
         </button>
       ) : (
@@ -89,14 +86,14 @@ export const OmniboxInput = forwardRef<HTMLInputElement, OmniboxInputProps>(func
           type="button"
           onClick={onClose}
           aria-label={t("close")}
-          className="shrink-0 rounded-md border border-line-subtle bg-fill-subtle px-2 py-1 text-[11px] font-medium text-content-tertiary transition-colors hover:text-content-primary"
+          className="ui-kbd shrink-0 transition-colors duration-hover hover:text-content-primary"
         >
           {t("escape")}
         </button>
       )}
       {fetching && (
         <span aria-hidden className="absolute inset-x-0 bottom-[-1px] h-[2px] overflow-hidden">
-          <span className="omnibox-progress absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-[var(--brand)] to-transparent" />
+          <span className="omnibox-progress absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent" />
         </span>
       )}
     </div>

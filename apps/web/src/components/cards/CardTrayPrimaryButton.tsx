@@ -7,10 +7,10 @@ import { useTrayGlassAllowed } from "./CardTrayParts";
 /**
  * Le ton de l'action primaire d'un plateau :
  *
- *   • `brand` — le dégradé de marque, la SEULE couleur du survol : « Demander »
- *     sur une carte hors bibliothèque ;
- *   • `quiet` — un verre plus dense que ses voisins, cerclé, sans couleur :
- *     une action primaire qui ne doit pas crier (« Lire »).
+ *   • `brand` — la teinte franche de la marque, la SEULE couleur du survol :
+ *     « Demander » sur une carte hors bibliothèque ;
+ *   • `quiet` — un disque ivoire, sans couleur : une action primaire qui ne
+ *     doit pas crier (« Lire »).
  */
 export type CardTrayPrimaryTone = "brand" | "quiet";
 
@@ -30,9 +30,10 @@ interface CardTrayPrimaryButtonProps {
 }
 
 const TONES: Record<CardTrayPrimaryTone, string> = {
-  brand:
-    "bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg ring-1 ring-inset ring-white/25 shadow-[0_2px_10px_rgba(var(--brand-rgb),0.5)]",
-  quiet: "bg-white/20 text-white ring-1 ring-inset ring-white/30 hover:bg-white/30",
+  // « Demander » : l'aplat à la teinte franche, son encre dessus (le dégradé du logo ne sert plus
+  // qu'à lire et à mesurer). « Lire » : le disque ivoire, glyphe à l'encre — le premier que l'œil trouve.
+  brand: "bg-[#E58CF0] text-[#27062E] hover:bg-[#EDA4F5]",
+  quiet: "bg-on-media-primary text-[#131315] hover:bg-white",
 };
 
 /**
@@ -54,7 +55,7 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
   // Verre natif : une pastille ronde comme ses voisines — « Lire » en verre
   // clair, « Demander » avec la marque DANS le verre (`prominent`).
   const layout = `${box} flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${busy ? "cursor-wait" : ""}`;
-  const skin = `rounded-full transition-transform duration-150 ${busy ? "" : "hover:scale-110 active:scale-95"} ${TONES[tone]}`;
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out ${busy ? "" : "active:scale-[0.97]"} ${TONES[tone]}`;
   const glassAllowed = useTrayGlassAllowed();
   const glass = useLiquidGlassSurface({
     level: tone === "brand" ? "prominent" : "clear",

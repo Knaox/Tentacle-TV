@@ -53,10 +53,9 @@ export const EmptyLibraryState = memo(function EmptyLibraryState() {
       <div className="flex w-full max-w-xl flex-col items-center text-center animate-fade-slide-up">
         <span
           aria-hidden="true"
-          className="inline-flex h-36 w-36 items-center justify-center rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(var(--brand-rgb), 0.32) 0%, rgba(var(--brand-rgb), 0) 70%)" }}
+          className="inline-flex h-36 w-36 items-center justify-center rounded-full bg-surface-2"
         >
-          <TentacleSvg size={112} style={{ filter: "drop-shadow(0 6px 24px rgba(var(--brand-rgb), 0.45))" }} />
+          <TentacleSvg size={112} />
         </span>
 
         <h1 id="empty-library-title" className="mt-6 text-2xl font-extrabold tracking-tight text-content-primary sm:text-3xl">
@@ -72,7 +71,9 @@ export const EmptyLibraryState = memo(function EmptyLibraryState() {
               href={setupDocUrl("addContent", i18n.language ?? "en")}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-cta-primary-border bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              // `cta-primary` : marqueur sans style — le client LG y pose son focus d'entrée
+              // (`[class*="cta-primary"]`), comme sur la classe d'avant.
+              className="btn btn-solid cta-primary"
             >
               <BookOpen size={16} aria-hidden="true" />
               {t("emptyHomeGuide")}
@@ -82,7 +83,7 @@ export const EmptyLibraryState = memo(function EmptyLibraryState() {
             type="button"
             onClick={recheck}
             disabled={busy || rescan.isSuccess}
-            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition-colors hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-soft"
           >
             <RefreshCw size={16} aria-hidden="true" className={busy ? "animate-spin motion-reduce:animate-none" : undefined} />
             {canScan ? t("metadataHint:rescan") : t("emptyHomeRefresh")}

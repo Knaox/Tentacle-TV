@@ -60,11 +60,8 @@ const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1
 const CROSSFADE = { duration: FADE_DURATION_S, ease: FADE_EASE };
 
 /** Le décor d'une bannière sans image : deux lueurs de marque sur le fond de page. */
-const FALLBACK_BACKGROUND = {
-  backgroundImage:
-    "radial-gradient(120% 90% at 85% 10%, rgba(var(--brand-rgb), 0.32), transparent 60%), " +
-    "radial-gradient(90% 80% at 0% 100%, rgba(var(--brand-accent-rgb), 0.2), transparent 65%)",
-};
+/** Le fond de repli : une encre de carte (refonte de nov. 2026 — plus de lavis au dégradé de marque). */
+const FALLBACK_CLASS = "absolute inset-0 bg-surface-2";
 
 export function HeroBackdrop({ item, url, onFailure }: HeroBackdropProps) {
   // URL résolue par la bannière (`homeHeroImageUrl`), partagée avec le halo et
@@ -116,7 +113,7 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
   if (imageKey === null) {
     return (
       <>
-        <div className="absolute inset-0 bg-surface-0" style={FALLBACK_BACKGROUND} />
+        <div className={FALLBACK_CLASS} />
         {overlays}
       </>
     );
@@ -125,9 +122,9 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
   return (
     <>
       {/* Le fond de REPLI, sous l'image : un titre sans image (ou dont l'image
-          a échoué) garde un décor de marque, jamais un cadre noir. Statique —
+          a échoué) garde un fond d'encre, jamais un cadre noir. Statique —
           rien n'y est animé, il ne coûte qu'une peinture. */}
-      <div className="absolute inset-0 bg-surface-0" style={FALLBACK_BACKGROUND} />
+      <div className={FALLBACK_CLASS} />
 
       <AnimatePresence initial={entry.presenceInitial}>
         {url && (

@@ -94,7 +94,10 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
   const itemVariants = reduced ? undefined : fadeUp;
 
   return (
-    <div className="absolute inset-x-0 bottom-[15%] z-10 px-4 sm:px-8 md:bottom-[18%] md:px-14 lg:bottom-[20%]">
+    // Ancré en BAS de la carte, sur la ligne des pastilles (le prototype validé) — plus au
+    // cinquième de sa hauteur : le texte ne flotte plus au milieu de l'image.
+    // La marge gauche laisse la flèche « précédent » (toujours là) hors du texte.
+    <div className="absolute inset-x-0 bottom-6 z-10 pl-16 pr-4 sm:pr-8 md:bottom-10 md:pl-20 md:pr-12">
       <motion.div
         key={animationKey}
         className="max-w-xl"
@@ -120,7 +123,9 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
         ) : (
           <motion.h1
             variants={itemVariants}
-            className="titre-banniere mb-4 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words"
+            // Le grand titre de la refonte : plus gros et plus gras que `.titre-banniere` (qui garde
+            // la police et le crénage), posé APRÈS elle — un utilitaire l'emporte sur la classe.
+            className="titre-banniere mb-4 text-[clamp(2.25rem,4.6vw,4.25rem)] font-[780] leading-[0.98] text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words"
           >
             {displayName}
           </motion.h1>
@@ -148,18 +153,15 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
         )}
 
         {hasProgress && (
+          // Ce qui se MESURE porte le dégradé de jauge ; le remplissage est une échelle, jamais une largeur.
           <motion.div variants={itemVariants} className="mb-5 flex max-w-md items-center gap-3">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-on-media-muted">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgba(255,255,255,0.18)]">
               <div
-                className="h-full rounded-full transition-[width] duration-500"
-                style={{
-                  width: `${progress}%`,
-                  background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
-                  boxShadow: "0 0 10px rgba(var(--brand-rgb), 0.55)",
-                }}
+                className="h-full origin-left rounded-full"
+                style={{ transform: `scaleX(${Math.min(1, Math.max(0, progress / 100))})`, background: "var(--gauge-gradient)" }}
               />
             </div>
-            <span className="text-xs font-medium text-on-media-secondary">{Math.round(progress)}%</span>
+            <span className="num text-xs font-medium text-on-media-secondary">{Math.round(progress)} %</span>
           </motion.div>
         )}
 
