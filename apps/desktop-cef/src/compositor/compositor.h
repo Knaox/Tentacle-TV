@@ -72,6 +72,20 @@ class Compositor {
   // Diagnostic : l'arbre de couches tel que Core Animation le voit (ordre, visibilité, cadres).
   virtual std::string describeLayers() const = 0;
 
+  // --- PiP (src/pip) : la vidéo prêtée à la pile d'une AUTRE fenêtre, puis rendue ----------
+  // La couche vidéo courante — et toute couche posée par setVideoLayer() pendant le prêt, sauf
+  // `home` (la couche factice du repos, qui reste ici) — passe sous la page de `borrower`, au
+  // cadre que celui-ci lui donne (setVideoInset) ; cette pile-ci n'en montre plus. La couche
+  // ne change ni d'instance ni de réglages : mpv continue d'y dessiner, HDR/EDR compris.
+  // `borrower` doit vivre jusqu'à reclaimVideo(). Rend faux si la plateforme ne sait pas.
+  virtual bool lendVideo(Compositor* borrower, VideoSurface* home) { return false; }
+  // Ce compositeur sait-il prêter sa vidéo ? Sans, pas de PiP sur ce système (pip_* absentes).
+  virtual bool canLendVideo() const { return false; }
+  // La couche revient ici, plein cadre (jamais après la destruction de `borrower`).
+  virtual void reclaimVideo() {}
+  // La pile qui reçoit : la vidéo posée à `inset` points de ses bords (0 : plein cadre).
+  virtual void setVideoInset(double inset) {}
+
   // Couche vidéo factice (aplat coloré) pour tester l'empilement sans mpv.
   static std::unique_ptr<VideoSurface> createFakeVideoSurface(SDL_Window* window,
                                                               uint32_t rgb);

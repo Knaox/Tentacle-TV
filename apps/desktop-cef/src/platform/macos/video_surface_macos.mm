@@ -261,6 +261,21 @@ public:
         sizeCb_ = std::move(cb);
     }
 
+    // PiP : la couche passe dans une autre fenêtre (peut-être sur un autre écran, d'une autre
+    // échelle) — on suit désormais la sienne.
+    void setHostWindow(void* nativeWindow) override {
+        NSWindow* window = (__bridge NSWindow*)nativeWindow;
+        if (![window isKindOfClass:[NSWindow class]] || window == window_) return;
+        [NSNotificationCenter.defaultCenter removeObserver:observer_];
+        window_ = window;
+        observer_ = [NSNotificationCenter.defaultCenter
+            addObserverForName:NSWindowDidChangeBackingPropertiesNotification
+                        object:window
+                         queue:nil
+                    usingBlock:^(NSNotification*) { this->updateDrawableSize(); }];
+        updateDrawableSize();
+    }
+
 private:
     void updateDrawableSize() {
         const CGFloat scale = window_.backingScaleFactor;

@@ -8,6 +8,7 @@
 #include "music/octave_shell.h"  // octave : mode musique (src/music)
 #include "media_session/media_session_shell.h"  // medias : « À l'écoute », touches média
 #include "net/net_shell.h"  // reseau : tentacle://art, tentacle://plugin, relais (src/net)
+#include "pip/glue/pip_install.h"  // pip : image dans l'image (src/pip)
 #include "update/update_shell.h"  // maj : mise à jour automatique (src/update)
 #include "lifecycle/lifecycle_shell.h"  // systeme : cycle de vie (src/lifecycle)
 #include "offline/glue/offline_shell.h"  // horsligne : titres gardés, session (src/offline)
@@ -25,6 +26,7 @@ void initModules(AppContext& ctx) {
   lifecycle::onWindowClosed([] { music::stopAudio(); });  // systeme + medias : la musique s'arrête avec la fenêtre (stopAudio d'Electron)
   music::installDirectSources();  // medias : flux directs d'Octave par le relais de reseau (après reseau)
   offline::installInShell(pont::registry(), ctx);  // horsligne : downloads_*, session_cache_*, avatar_cache_*
+  pip::install(ctx, pont::registry());  // pip : commandes pip_*, fenêtre PiP
   pont::installShim(ctx);  // pont — en dernier : capabilities figées
   maj::install(ctx);  // maj : moteur de mise à jour, canaux update.*, surcouche
 }
@@ -34,6 +36,7 @@ void shutdownModules() {
   media_session::shutdown();  // medias : la session disparaît, les touches reviennent au système
   music::shutdownMusic();  // octave : la musique s'arrête, la sortie audio est rendue
   reseau::shutdown();  // reseau
+  pip::shutdown();  // pip : le navigateur du PiP part avant CefShutdown
   pont::shutdown();
   offline::shutdown();  // horsligne : transferts arrêtés, base refermée (WAL replié), fil joint
 }

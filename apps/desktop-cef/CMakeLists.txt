@@ -48,6 +48,7 @@ add_library(tentacle_shell STATIC
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
   src/shell/paths.cpp  # reseau : dossier de données d'Electron, --user-data
+  src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.
 add_library(tentacle_renderer STATIC
@@ -114,6 +115,7 @@ add_subdirectory(src/net)  # reseau : tentacle://art, tentacle://plugin, relais,
 if(EXISTS "${CMAKE_SOURCE_DIR}/src/offline/CMakeLists.txt")
   add_subdirectory(src/offline)  # horsligne : titres gardés, session, tentacle://local
 endif()
+add_subdirectory(src/pip)  # pip : image dans l'image (règles, navigateur du PiP, fenêtre native)
 if(APPLE)
   target_link_libraries(tentacle_shell PUBLIC
     "-framework Cocoa" "-framework Metal" "-framework QuartzCore" "-framework IOSurface"

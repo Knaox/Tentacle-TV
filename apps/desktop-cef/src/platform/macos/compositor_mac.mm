@@ -13,6 +13,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+
 @interface TentacleLayerHostView : NSView
 @end
 
@@ -35,13 +37,15 @@ NSDictionary* noActions() {
 
 class CompositorMac final : public Compositor {
  public:
-  explicit CompositorMac(NSWindow* window) {
+  // `transparent` : la pile de la fenêtre PiP — rien sous la page que la vidéo prêtée, le
+  // bureau se voit autour (la marge d'ombre du cadre).
+  explicit CompositorMac(NSWindow* window, bool transparent = false) : window_(window) {
     NSView* content = window.contentView;
     host_ = [[TentacleLayerHostView alloc] initWithFrame:content.bounds];
     root_ = [CALayer layer];
     root_.geometryFlipped = YES;  // origine en haut à gauche, comme CEF et SDL
     root_.actions = noActions();
-    root_.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
+    root_.backgroundColor = transparent ? nil : CGColorGetConstantColor(kCGColorBlack);
     host_.layer = root_;  // vue hôte de couches : la couche est à nous, AppKit n'y dessine pas
     host_.wantsLayer = YES;
     host_.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
@@ -78,18 +82,54 @@ class CompositorMac final : public Compositor {
   void setVideoLayer(VideoSurface* surface) override {
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
-    if (video_) {
-      CALayer* old = (__bridge CALayer*)video_->nativeLayer();
-      [old removeFromSuperlayer];
-    }
-    video_ = surface;
-    if (video_) {
-      CALayer* layer = (__bridge CALayer*)video_->nativeLayer();
-      [videoContainer_ addSublayer:layer];
-      video_->setFrame({0, 0, width_, height_});
-      video_->show();
+    if (borrower_) {
+      // Prêtée (PiP) : une vraie couche va chez l'emprunteur ; la couche du repos reste ici.
+      const bool lend = surface && surface != home_;
+      if (!lend) borrower_->setVideoLayer(nullptr);
+      if (shown_) detach(shown_);
+      video_ = surface;
+      if (lend) borrower_->setVideoLayer(surface);
+      else if (surface) attach(surface);
+    } else {
+      if (video_) detach(video_);
+      video_ = surface;
+      if (video_) attach(video_);
     }
     [CATransaction commit];
+  }
+
+  bool canLendVideo() const override { return true; }
+
+  bool lendVideo(Compositor* borrower, VideoSurface* home) override {
+    if (!borrower || borrower == this) return false;
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    borrower_ = borrower;
+    home_ = home;
+    VideoSurface* current = video_;
+    if (current && current != home_) {
+      detach(current);
+      borrower_->setVideoLayer(current);  // la MÊME couche : mpv y dessine sans le savoir
+    }
+    [CATransaction commit];
+    return true;
+  }
+
+  void reclaimVideo() override {
+    if (!borrower_) return;
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    borrower_->setVideoLayer(nullptr);
+    borrower_ = nullptr;
+    home_ = nullptr;
+    if (shown_) detach(shown_);
+    if (video_) attach(video_);
+    [CATransaction commit];
+  }
+
+  void setVideoInset(double inset) override {
+    inset_ = inset;
+    if (shown_) shown_->setFrame(videoFrame());
   }
 
   WebLayer* webLayer() override { return web_.get(); }
@@ -101,7 +141,7 @@ class CompositorMac final : public Compositor {
     [CATransaction setDisableActions:YES];
     root_.contentsScale = scale;
     videoContainer_.frame = CGRectMake(0, 0, widthPt, heightPt);
-    if (video_) video_->setFrame({0, 0, widthPt, heightPt});
+    if (shown_) shown_->setFrame(videoFrame());
     mac::webLayerSetScale(web_.get(), scale);
     [CATransaction commit];
   }
@@ -138,17 +178,46 @@ class CompositorMac final : public Compositor {
     for (CALayer* c in l.sublayers) describe(c, depth + 1, out);
   }
 
+  // Le cadre de la vidéo : plein cadre, ou à `inset_` des bords (pile du PiP).
+  RectPt videoFrame() const {
+    return {inset_, inset_, std::max(1.0, width_ - 2 * inset_), std::max(1.0, height_ - 2 * inset_)};
+  }
+  void attach(VideoSurface* surface) {
+    surface->setHostWindow((__bridge void*)window_);  // échelle et écran de CETTE fenêtre
+    CALayer* layer = (__bridge CALayer*)surface->nativeLayer();
+    [videoContainer_ addSublayer:layer];
+    surface->setFrame(videoFrame());
+    surface->show();
+    shown_ = surface;
+  }
+  void detach(VideoSurface* surface) {
+    CALayer* layer = (__bridge CALayer*)surface->nativeLayer();
+    if (layer.superlayer == videoContainer_) [layer removeFromSuperlayer];
+    if (shown_ == surface) shown_ = nullptr;
+  }
+
+  __weak NSWindow* window_ = nil;
   TentacleLayerHostView* host_ = nil;
   NSArray* observers_ = nil;
   CALayer* root_ = nil;
   CALayer* videoContainer_ = nil;
   std::unique_ptr<WebLayer> web_;
-  VideoSurface* video_ = nullptr;
+  VideoSurface* video_ = nullptr;   // la couche vidéo posée par le lecteur (ou la factice)
+  VideoSurface* shown_ = nullptr;   // celle qui est DANS cette pile (≠ video_ pendant un prêt)
+  Compositor* borrower_ = nullptr;  // PiP : la pile qui montre la vidéo à notre place
+  VideoSurface* home_ = nullptr;    // la couche du repos, jamais prêtée
+  double inset_ = 0;
   double width_ = 0, height_ = 0;
   CompositorStats stats_;
 };
 
 }  // namespace
+
+namespace mac {
+std::unique_ptr<Compositor> createCompositor(NSWindow* window, bool transparent) {
+  return window ? std::make_unique<CompositorMac>(window, transparent) : nullptr;
+}
+}  // namespace mac
 
 std::unique_ptr<Compositor> Compositor::create(SDL_Window* window) {
   SDL_PropertiesID props = SDL_GetWindowProperties(window);

@@ -40,6 +40,9 @@ void webLayerSetLiveResize(WebLayer* layer, bool on);
 void webLayerFillStats(WebLayer* layer, CompositorStats& stats);
 // Page entièrement transparente (alpha nul partout) dans cette IOSurface BGRA ?
 bool surfaceFullyTransparent(IOSurfaceRef surface);
+// Une pile de couches dans une NSWindow quelconque (la fenêtre PiP : `transparent`, rien sous
+// la page que la vidéo prêtée).
+std::unique_ptr<Compositor> createCompositor(NSWindow* window, bool transparent);
 // Pipelines de la couche web (compositor_web_pipeline_mac.mm).
 void buildWebPipelines(id<MTLDevice> device, id<MTLRenderPipelineState> __strong& opaque,
                        id<MTLRenderPipelineState> __strong& blend);

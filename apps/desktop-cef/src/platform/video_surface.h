@@ -59,6 +59,9 @@ public:
     virtual SurfaceColorState colorState() const = 0;
     // Rappel (fil principal) quand la taille en pixels change (cadre, écran, Retina).
     virtual void onPixelSizeChanged(std::function<void(PixelSize)> cb) = 0;
+    // La couche change de fenêtre porteuse (PiP : Compositor::lendVideo) — son échelle Retina
+    // et son suivi d'écran deviennent ceux de `nativeWindow`. Appelé par le compositeur.
+    virtual void setHostWindow(void* nativeWindow) {}
 };
 
 // À appeler sur la fenêtre principale AVANT sa première mise à l'écran (fenêtre SDL3 créée
