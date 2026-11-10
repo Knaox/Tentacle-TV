@@ -63,6 +63,7 @@ export const SHOTS = [
   { name: "admin-telechargements", vue: "admin-telechargements" },
   { name: "admin-systeme", vue: "admin-systeme" },
   { name: "qui-regarde", vue: "qui-regarde", ready: "button", fullPage: false },
+  { name: "qui-regarde-code", vue: "qui-regarde", params: { q: "pin=1" }, ready: "button", fullPage: false },
   { name: "connexion", vue: "connexion", params: { session: "none" }, ready: "form", fullPage: false },
   { name: "inscription", vue: "inscription", params: { session: "none" }, ready: "form", fullPage: false },
   { name: "jumelage", vue: "jumelage" },
