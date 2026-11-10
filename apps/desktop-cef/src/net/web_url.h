@@ -29,9 +29,11 @@ struct WebUrl {
   std::string host;      // minuscules ; IPv6 entre crochets
   std::string port;      // vide : absent ou port par défaut du schéma
   std::string path;      // `url.pathname`, encodé, commence par « / »
-  std::optional<std::string> query;  // sans le « ? »
-  std::string origin() const;        // `url.origin`
-  std::string href() const;          // sans fragment ni identifiants
+  std::optional<std::string> query;     // sans le « ? », tel qu'écrit
+  std::optional<std::string> fragment;  // sans le « # », tel qu'écrit
+  std::string origin() const;           // `url.origin`
+  /// `url.href` sans identifiants : requête et fragment encodés comme le WHATWG.
+  std::string href() const;
 };
 
 /// `new URL(input)` pour http(s) ; nullopt si l'adresse est invalide OU d'un autre schéma.

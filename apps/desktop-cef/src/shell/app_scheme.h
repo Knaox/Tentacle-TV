@@ -7,9 +7,13 @@
 // serveur, le front ne verrait rien de ce qu'Electron a rangé sous `tentacle://app`, même
 // avec le même dossier de profil.
 //
-// Seul l'hôte `app` est servi. `tentacle://local`, `tentacle://art` et `tentacle://plugin`
-// (téléchargements, pochettes d'Octave, greffons) n'existent pas encore ici
-// (docs/PARITE-ELECTRON.md) : leurs requêtes échouent.
+// Ce fichier sert l'hôte `app`. `tentacle://art` et `tentacle://plugin` (pochettes d'Octave,
+// greffons) sont servis par l'axe réseau (`src/schemes/`), `tentacle://local` par le hors
+// ligne.
+//
+// CSP (axe réseau, `net/csp.h`) : comme Electron (`index.ts` → `installContentSecurityPolicy`),
+// toute réponse du schéma hors greffons porte la politique de l'application ; posée par
+// `setAppCsp` une fois les empreintes d'`index.html` calculées, lue par chaque hôte (`appCsp`).
 
 #include <string>
 
@@ -29,5 +33,13 @@ void registerScheme(CefRawPtr<CefSchemeRegistrar> registrar);
 /// Processus principal, après `CefInitialize` : sert `webRoot` (le build web) sous
 /// tentacle://app. Faux, avec un message, si le dossier n'a pas d'`index.html`.
 bool serveWebRoot(const std::string& webRoot);
+
+/// Le dossier servi par `serveWebRoot` (absolu), vide tant qu'il n'y en a pas.
+std::string servedWebRoot();
+
+/// La politique de l'application, posée sur toute réponse de tentacle:// hors greffons ; vide
+/// = aucune. Sûrs depuis n'importe quel fil.
+void setAppCsp(std::string csp);
+std::string appCsp();
 
 }  // namespace tentacle::appscheme

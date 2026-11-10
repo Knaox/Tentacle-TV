@@ -58,6 +58,7 @@ void BufferedHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64_
   response->SetStatus(response_.status);
   response->SetStatusText(response_.statusText);
   if (!response_.mimeType.empty()) response->SetMimeType(response_.mimeType);
+  if (!response_.charset.empty()) response->SetCharset(response_.charset);
   response->SetHeaderMap(response_.headers);
   responseLength = int64_t(response_.body.size());
 }
