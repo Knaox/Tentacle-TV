@@ -154,6 +154,7 @@ void waitForProcessExit(long pid, int timeoutMs) {
 }
 
 void installSystemEvents(std::function<void(const std::string&)>, std::function<void()>) {}
+void reclaimSystemEvents() {}
 
 void prepareMainWindow(SDL_Window* window) { setWindowIconFromPng(window); }
 double titleBarHeight() { return 0; }  // vrai cadre : la page ne dessine aucune bande
@@ -166,6 +167,7 @@ bool g_noActivation = false;
 
 void setNoActivation(bool on) { g_noActivation = on; }
 std::string windowDebug(SDL_Window*) { return "{}"; }
+std::string sheetDebug(SDL_Window*, int) { return "{}"; }  // boîtes modales SDL : rien d'attaché
 
 void focusWindow(SDL_Window* window) {
   if (!window || g_noActivation) return;

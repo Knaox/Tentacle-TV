@@ -63,6 +63,7 @@ if(TARGET tentacle_shell)
     drag_hit_test.cpp
     hub.cpp
     lifecycle_app.cpp
+    lifecycle_debug.cpp
     lifecycle_shell.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../shell/client_drag_regions.cpp  # CefDragHandler du Client
     ${lifecycle_os})

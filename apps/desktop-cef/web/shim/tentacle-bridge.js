@@ -77,6 +77,10 @@
     });
   }
 
+  // Un nouveau document : il n'écoute pas encore les liens d'app (`app-link`) — le natif les
+  // garde pour `app_link_take` jusqu'à ce qu'il les demande.
+  Promise.resolve(shell.invoke("lifecycle.pageStarted", {})).catch(() => undefined);
+
   function refuse(command) {
     return Promise.reject(new Error(`canal refuse: ${command}`));
   }

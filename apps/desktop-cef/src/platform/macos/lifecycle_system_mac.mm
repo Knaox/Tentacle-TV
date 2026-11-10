@@ -43,6 +43,7 @@ std::function<void()> g_resume;
 @implementation TentacleSystemEvents
 - (void)getUrl:(NSAppleEventDescriptor*)event withReplyEvent:(NSAppleEventDescriptor*)reply {
   NSString* url = [event paramDescriptorForKeyword:keyDirectObject].stringValue;
+  if (getenv("TENTACLE_LIFECYCLE_TRACE")) fprintf(stderr, "[cycle] GetURL reçu : %s\n", url.UTF8String);
   if (url && g_openUrl) g_openUrl(url.UTF8String);
 }
 - (void)reopen:(NSAppleEventDescriptor*)event withReplyEvent:(NSAppleEventDescriptor*)reply {
@@ -50,6 +51,20 @@ std::function<void()> g_resume;
 }
 - (void)didWake:(NSNotification*)note {
   if (g_resume) g_resume();
+}
+- (void)claim {
+  NSAppleEventManager* m = NSAppleEventManager.sharedAppleEventManager;
+  [m setEventHandler:self andSelector:@selector(getUrl:withReplyEvent:)
+       forEventClass:kInternetEventClass andEventID:kAEGetURL];
+  [m setEventHandler:self andSelector:@selector(reopen:withReplyEvent:)
+       forEventClass:kCoreEventClass andEventID:kAEReopenApplication];
+}
+// SDL3 pose SON gestionnaire GetURL à la fin du lancement (il en fait un « dépôt de fichier ») :
+// on reprend la main juste après, avant que le lien du lancement ne soit remis.
+- (void)didFinishLaunching:(NSNotification*)note {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self claim];
+  });
 }
 @end
 
@@ -94,10 +109,16 @@ void askQuit(SDL_Window* window, const QuitTexts& texts, std::function<void(bool
   alert.alertStyle = NSAlertStyleWarning;
   alert.messageText = ns(texts.message);
   alert.informativeText = ns(texts.detail);
-  NSButton* quit = [alert addButtonWithTitle:ns(texts.quitApp)];
-  NSButton* cancel = [alert addButtonWithTitle:ns(texts.cancelLabel)];
-  quit.keyEquivalent = @"";
-  cancel.keyEquivalent = @"\r";
+  [alert addButtonWithTitle:ns(texts.quitApp)];
+  [alert addButtonWithTitle:ns(texts.cancelLabel)];
+  // La séquence d'Electron (`dialog_mac.mm`, defaultId = cancelId = 1) : le premier bouton perd
+  // Entrée, « Annuler » est mis en avant et prend Échap.
+  [alert layout];
+  NSArray<NSButton*>* buttons = alert.buttons;
+  [buttons[1] highlight:YES];
+  buttons[0].keyEquivalent = @"";
+  buttons[1].keyEquivalent = @"\r";
+  buttons[1].keyEquivalent = @"\e";
   auto once = std::make_shared<std::function<void(bool)>>(std::move(answer));
   auto respond = ^(NSModalResponse r) {
     if (!*once) return;
@@ -179,11 +200,13 @@ void waitForProcessExit(long pid, int timeoutMs) {
 void installSystemEvents(std::function<void(const std::string&)> openUrl, std::function<void()> reopen) {
   g_openUrl = std::move(openUrl);
   g_reopen = std::move(reopen);
-  NSAppleEventManager* m = NSAppleEventManager.sharedAppleEventManager;
-  [m setEventHandler:events() andSelector:@selector(getUrl:withReplyEvent:)
-       forEventClass:kInternetEventClass andEventID:kAEGetURL];
-  [m setEventHandler:events() andSelector:@selector(reopen:withReplyEvent:)
-       forEventClass:kCoreEventClass andEventID:kAEReopenApplication];
+  [events() claim];
+  [NSNotificationCenter.defaultCenter addObserver:events() selector:@selector(didFinishLaunching:)
+                                             name:NSApplicationDidFinishLaunchingNotification object:nil];
+}
+
+void reclaimSystemEvents() {
+  if (g_openUrl || g_reopen) [events() claim];
 }
 
 }  // namespace tentacle::lifecycle::platform

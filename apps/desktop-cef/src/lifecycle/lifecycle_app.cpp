@@ -15,6 +15,7 @@
 #include "lifecycle/drag_hit_test.h"
 #include "lifecycle/exit_flow.h"
 #include "lifecycle/hub.h"
+#include "lifecycle/lifecycle_debug.h"
 #include "lifecycle/lifecycle_app_internal.h"
 #include "lifecycle/lifecycle_platform.h"
 #include "lifecycle/lifecycle_shell.h"
@@ -32,6 +33,8 @@ struct State {
   SDL_Window* window = nullptr;
   std::unique_ptr<ExitFlow> flow;
   bool finished = false;
+  bool background = false;  // --background : bancs, sessions — rien qui s'impose à l'écran
+  bool debug = false;       // --debug-lifecycle : canaux de diagnostic
   bool browserGone = false;
   uint32_t wakeEvent = 0;
 };
@@ -91,6 +94,11 @@ ExitPorts ports() {
       },
       [french](int n) {
         const auto t = backgroundTransfersText(n, french);
+        // Un banc ne fait jamais surgir de notification (ni la demande d'autorisation) : journal.
+        if (st().background) {
+          std::fprintf(stderr, "[cycle] notification (banc) : %s — %s\n", t.title.c_str(), t.body.c_str());
+          return;
+        }
         platform::notify(t.title, t.body);
       },
       hub::fireWindowClosed,
@@ -143,6 +151,8 @@ void beforeSdl(int argc, char** argv, const AppOptions& opts) {
     if (pid > 0) platform::waitForProcessExit(pid, 15'000);
   }
   platform::setNoActivation(opts.background);  // bancs : jamais voler le focus
+  st().background = opts.background;
+  st().debug = opts.extra.count("debug-lifecycle") > 0;
   keepLaunchLink(argc, argv);
   platform::installSystemEvents(
       [](const std::string& url) {
@@ -173,10 +183,27 @@ void attach(Shell* shell, SDL_Window* window) {
   st().window = window;
   st().wakeEvent = SDL_RegisterEvents(1);
   st().flow = std::make_unique<ExitFlow>(ports());
+  // SDL (Cocoa_RegisterApp) puis CEF ont posé LEUR gestionnaire GetURL : on reprend la main.
+  platform::reclaimSystemEvents();
+  if (st().debug) {
+    installDebugChannels(window, [] {
+      static const char* kNames[] = {"running", "closing", "draining", "quitting", "done"};
+      return std::string(kNames[static_cast<int>(st().flow->phase())]);
+    });
+  }
 }
 
 bool handleEvent(const SDL_Event& e) {
   if (st().wakeEvent && e.type == st().wakeEvent) return true;
+  // macOS : un lien remis avant que le cycle de vie ne reprenne GetURL (au lancement) est
+  // devenu un « dépôt de fichier » de SDL ; c'est encore un lien d'app, on le remet à la page.
+  if (e.type == SDL_EVENT_DROP_FILE && std::getenv("TENTACLE_LIFECYCLE_TRACE")) {
+    std::fprintf(stderr, "[cycle] dépôt SDL : %s\n", e.drop.data ? e.drop.data : "(nul)");
+  }
+  if (e.type == SDL_EVENT_DROP_FILE && e.drop.data && appLinkOf(e.drop.data)) {
+    if (deliverAppLink(e.drop.data) && draining()) st().flow->reopen();
+    return true;
+  }
   if (!st().flow) return false;
   if (e.type == SDL_EVENT_QUIT) {
     st().flow->requestQuit();

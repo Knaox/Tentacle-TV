@@ -51,6 +51,8 @@ long currentPid();
 /// (Windows et Linux passent par la ligne de commande, et la seconde instance par CEF).
 void installSystemEvents(std::function<void(const std::string& url)> openUrl,
                          std::function<void()> reopen);
+/// Reprend ces gestionnaires une fois SDL et CEF initialisés (chacun pose le sien pour GetURL).
+void reclaimSystemEvents();
 
 /// La fenêtre principale d'Electron (`window.ts`, `macosTitleBar.ts`) : macOS, barre de titre
 /// masquée, contenu sous la bande, feux placés, sans ombre ; ailleurs, l'icône. Avant l'affichage.
@@ -68,5 +70,8 @@ void focusWindow(SDL_Window* window);
 void setNoActivation(bool on);
 /// Diagnostic des bancs (`lifecycle.debug.window`) : cadre, feux, ombre — JSON ; "{}" hors macOS.
 std::string windowDebug(SDL_Window* window);
+/// Diagnostic des bancs : la feuille native attachée à la fenêtre (boîte, sélecteur) — textes,
+/// boutons et touches ; `end` ≥ 0 la ferme avec ce code (NSAlertFirstButtonReturn = 1000…).
+std::string sheetDebug(SDL_Window* window, int end);
 
 }  // namespace tentacle::lifecycle::platform

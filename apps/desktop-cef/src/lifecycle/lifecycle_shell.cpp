@@ -7,6 +7,7 @@
 #include <SDL3/SDL.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -26,11 +27,17 @@ VideoControls g_video;
 AppLinks g_links;
 bridge::Registry* g_registry = nullptr;
 SDL_Window* g_window = nullptr;
+// La page du document courant a demandé `app_link_take` : elle écoute `app-link`
+// (`useDesktopAppLinks` : la demande, puis l'écoute, au même tour). Remis à faux à chaque
+// nouveau document (le shim le dit à sa pose).
+bool g_pageListening = false;
 
-// La page écoute-t-elle ? Une page existe et a fini de charger (`!webContents.isLoading()`).
+// La page écoute-t-elle ? (`!webContents.isLoading()` d'Electron.) Sous CEF, « pas en
+// chargement » est vrai AVANT la première navigation : un lien remis à ce moment se perdait
+// (mesuré, lien du lancement). On attend donc que le document l'ait demandé.
 bool pageReady() {
   Shell* shell = app::shell();
-  if (!shell || shell->isClosed()) return false;
+  if (!shell || shell->isClosed() || !g_pageListening) return false;
   auto browser = shell->browser();
   return browser && !browser->IsLoading();
 }
@@ -89,7 +96,11 @@ void install(AppContext& ctx, bridge::Registry& registry) {
   // Liens `tentacle://octave/…` : le lien du lancement attend que la page le demande.
   registry.event(kAppLinkEvent);
   registry.command("app_link_take", [](const bridge::Json&, bridge::Reply reply) {
+    g_pageListening = true;
     auto link = g_links.take();
+    if (std::getenv("TENTACLE_LIFECYCLE_TRACE")) {
+      std::fprintf(stderr, "[cycle] app_link_take → %s\n", link ? link->c_str() : "(rien)");
+    }
     reply.ok(link ? bridge::Json(*link) : bridge::Json(nullptr));
   });
 
@@ -111,6 +122,10 @@ void install(AppContext& ctx, bridge::Registry& registry) {
     app::requestRelaunch();
   });
 
+  ipc::registerHandler("lifecycle.pageStarted", [](const Json&, ipc::Responder r) {
+    g_pageListening = false;
+    r.reply();
+  });
   // Diagnostic des bancs, hors `window.tentacle` : la fenêtre telle qu'AppKit la voit.
   ipc::registerHandler("lifecycle.debug.window", [](const Json&, ipc::Responder r) {
     r.reply(Json::parse(platform::windowDebug(g_window), nullptr, false));

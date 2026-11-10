@@ -163,6 +163,34 @@ void setAboutPanel(const std::string& name, const std::string& version) {
   g_aboutOptions = options;
 }
 
+namespace {
+void collect(NSView* view, NSMutableArray* texts, NSMutableArray* buttons) {
+  for (NSView* v in view.subviews) {
+    if ([v isKindOfClass:NSButton.class] && ((NSButton*)v).title.length) {
+      NSButton* b = (NSButton*)v;
+      [buttons addObject:@{@"title" : b.title, @"key" : b.keyEquivalent ?: @""}];
+    } else if ([v isKindOfClass:NSTextField.class] && ((NSTextField*)v).stringValue.length) {
+      [texts addObject:((NSTextField*)v).stringValue];
+    }
+    collect(v, texts, buttons);
+  }
+}
+}  // namespace
+
+std::string sheetDebug(SDL_Window* window, int end) {
+  NSWindow* w = nsWindow(window);
+  NSWindow* sheet = w.attachedSheet;
+  if (!sheet) return "{\"sheet\":false}";
+  NSMutableArray* texts = [NSMutableArray array];
+  NSMutableArray* buttons = [NSMutableArray array];
+  collect(sheet.contentView, texts, buttons);
+  NSDictionary* out = @{@"sheet" : @YES, @"class" : NSStringFromClass(sheet.class), @"texts" : texts,
+                        @"buttons" : buttons};
+  NSData* json = [NSJSONSerialization dataWithJSONObject:out options:0 error:nil];
+  if (end >= 0) [w endSheet:sheet returnCode:end];
+  return std::string((const char*)json.bytes, json.length);
+}
+
 }  // namespace tentacle::lifecycle::platform
 
 namespace tentacle::platform {
