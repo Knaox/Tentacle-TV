@@ -41,6 +41,34 @@ export function sourcePlace(ranks: readonly (number | null)[], rank: number): nu
 }
 
 /**
+ * `sourcePlace` pour BEAUCOUP de titres sur les mêmes entrées (lot « pg », 10/11 : 6 000 attentes face à 3 000
+ * entrées refaisaient 18 millions de pas à chaque rendu) : les rangs triés une fois, chaque place par dichotomie.
+ * Rend exactement ce que rendrait `sourcePlace(ranks, rank)`.
+ */
+export function sourcePlacer(ranks: readonly (number | null)[]): (rank: number) => number | null {
+  // Par rang distinct : la DERNIÈRE entrée (le repère « par en dessous ») et la PREMIÈRE (« par au-dessus »).
+  const last = new Map<number, number>();
+  const first = new Map<number, number>();
+  ranks.forEach((r, k) => {
+    if (r === null) return;
+    last.set(r, k);
+    if (!first.has(r)) first.set(r, k);
+  });
+  const sorted = [...last.keys()].sort((a, b) => a - b);
+  return (rank) => {
+    let lo = 0;
+    let hi = sorted.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (sorted[mid]! <= rank) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo > 0) return last.get(sorted[lo - 1]!)! + 1;
+    return lo < sorted.length ? first.get(sorted[lo]!)! : null;
+  };
+}
+
+/**
  * Des entrées remises dans l'ordre de la source (la réparation d'une playlist importée) : par rang, à rang égal
  * dans l'ordre d'avant ; une entrée hors source reste juste après celle qui la précédait (en tête si rien ne la
  * précédait). Rien n'est retiré ni dupliqué.

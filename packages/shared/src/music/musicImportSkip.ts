@@ -24,9 +24,11 @@ export type ImportSkipReason =
   /** L'extension n'a pas répondu, ou a échoué. */
   | "unavailable"
   /** Le serveur n'a aucune extension qui prenne les titres hors bibliothèque. */
-  | "noExtension";
+  | "noExtension"
+  /** L'extension (d'avant les lots, 1.43.0) n'en prend pas autant d'un coup : au-delà de `MUSIC_IMPORT_BATCH.legacyCap`. */
+  | "extensionLimit";
 
-export const IMPORT_SKIP_REASONS: readonly ImportSkipReason[] = ["notFound", "region", "sourceRefused", "duplicate", "notAllowed", "quota", "unavailable", "noExtension"];
+export const IMPORT_SKIP_REASONS: readonly ImportSkipReason[] = ["notFound", "region", "sourceRefused", "duplicate", "notAllowed", "quota", "unavailable", "noExtension", "extensionLimit"];
 
 export function isImportSkipReason(value: unknown): value is ImportSkipReason {
   return typeof value === "string" && (IMPORT_SKIP_REASONS as readonly string[]).includes(value);

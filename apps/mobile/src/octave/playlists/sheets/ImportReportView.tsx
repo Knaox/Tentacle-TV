@@ -53,7 +53,7 @@ export const ImportReportView = memo(function ImportReportView({ summary }: { su
       ) : null}
       {listed && report.missing.length > 0 ? (
         <View style={[styles.list, { backgroundColor: theme.colors.fill.subtle }]}>
-          {report.missing.map((track) => (
+          {report.listed.map((track) => (
             <View key={track.index} style={styles.row} accessible accessibilityLabel={`${track.title}, ${t(`report.reason.${track.reason}`)}`}>
               <Text style={[typography.caption, styles.rank, { color: tertiary }]}>{track.index + 1}</Text>
               <View style={styles.flex}>
@@ -65,6 +65,7 @@ export const ImportReportView = memo(function ImportReportView({ summary }: { su
               </View>
             </View>
           ))}
+          {report.unlisted > 0 ? <Text style={[typography.caption, styles.more, { color: tertiary }]}>{t("report.more", { count: report.unlisted })}</Text> : null}
         </View>
       ) : null}
     </View>
@@ -78,6 +79,7 @@ const styles = StyleSheet.create({
   toggle: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, alignSelf: "flex-start" },
   pressed: { opacity: 0.6 },
   list: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  more: { paddingVertical: 6 },
   row: { flexDirection: "row", gap: 10, paddingVertical: 6 },
   rank: { width: 28, textAlign: "right", fontVariant: ["tabular-nums"] },
   flex: { flex: 1, minWidth: 0 },

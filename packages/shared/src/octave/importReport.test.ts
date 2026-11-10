@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { IMPORT_SKIP_REASONS, isImportSkipReason, type ImportAbsentTrack } from "../music";
-import { IMPORT_REPORT_FOLD_AT, importReport, missingOf, skippedOf, skipReasonOf, type ImportMissingTrack } from "./importReport";
+import { IMPORT_REPORT_FOLD_AT, IMPORT_REPORT_LIST_MAX, importReport, missingOf, skippedOf, skipReasonOf, type ImportMissingTrack } from "./importReport";
 
 const absent = (index: number, extra: Partial<ImportAbsentTrack> = {}): ImportAbsentTrack => ({
   index, position: 0, title: `Titre ${index}`, artists: ["Artiste"], album: null, durationMs: 180_000, isrc: null, sourceId: null, ...extra,
@@ -70,5 +70,15 @@ describe("importReport : « X sur N titres »", () => {
   it("la liste des motifs est fermée", () => {
     expect(IMPORT_SKIP_REASONS.every(isImportSkipReason)).toBe(true);
     expect(isImportSkipReason("Error: boom")).toBe(false);
+  });
+
+  it("6 000 titres non importés : 300 montrés dans l'ordre de la source, les autres comptés (lot « pg »)", () => {
+    const list = Array.from({ length: 6_000 }, (_, i) => missing(6_000 - i, "noExtension"));
+    const report = importReport({ total: 9_000, inLibrary: 3_000, outside: 0, own: 0, missing: list });
+    expect(report.listed).toHaveLength(IMPORT_REPORT_LIST_MAX);
+    expect(report.listed[0]?.index).toBe(1);
+    expect(report.unlisted).toBe(5_700);
+    expect(report.missing).toHaveLength(6_000);
+    expect(importReport({ total: 3, inLibrary: 1, outside: 0, own: 0, missing: [missing(2, "notFound")] }).unlisted).toBe(0);
   });
 });

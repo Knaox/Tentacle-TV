@@ -9,7 +9,6 @@ import {
   coreReadsImport,
   extensionImportSource,
   recognizeImportUrl,
-  type ImportAbsentTrack,
   type ImportedPlaylist,
   type ImportReadRefusal,
   type ImportTracksAccepted,
@@ -20,13 +19,14 @@ import {
   type MusicImportRequest,
   type MusicImportSource,
 } from "@tentacle-tv/shared/music";
-import { missingOf, skippedOf, type ImportMissingTrack, type ImportOutsideOutcome } from "@tentacle-tv/shared/octave";
+import { missingOf, type ImportMissingTrack, type ImportOutsideOutcome } from "@tentacle-tv/shared/octave";
+import { confideAbsent, type ConfideOutcome } from "./importConfide";
 
+export { OUTSIDE_POLL_MS, OUTSIDE_WAIT_MS } from "./importConfide";
 export const CORE_POLL_MS = 400;
-export const OUTSIDE_POLL_MS = 700;
-/** L'extension a au plus ce temps pour dire où elle en est ; au-delà, le résumé part et elle continue seule. */
-export const OUTSIDE_WAIT_MS = 90_000;
 const POLL_RETRIES = 5;
+/** Les refus de l'extension qui laissent le cœur lire (sa page publique, bornée) quand elle devait lire d'abord. */
+const READ_FIRST_FALLBACK: readonly ImportReadRefusal[] = ["unavailable", "budget", "unsupported"];
 
 export type ImportUserInput = { kind: "url"; url: string } | { kind: "text"; text: string };
 
@@ -75,8 +75,14 @@ export interface ImportPort {
   /** L'extension lit-elle cette source (`importRead` + `importSources`) ? */
   canRead: (source: MusicImportSource) => boolean;
   read: (url: string, signal: AbortSignal) => Promise<{ ok: true; playlist: ImportedPlaylist } | { ok: false; refusal: ImportReadRefusal }>;
+  /** L'extension lit-elle cette source EN ENTIER, avant le cœur (`importReadFirst`, 1.43.0) ? */
+  readsFirst?: (source: MusicImportSource) => boolean;
   /** L'extension prend-elle les absents (`importTracks`) ? */
   canConfide: boolean;
+  /** … par lots (`importBatches`, 1.43.0) ? */
+  batches?: boolean;
+  /** Un REFUS de l'extension (HTTP < 500), jamais relancé ; absent : rien n'est un refus (tout se relance). */
+  isRefusal?: (error: unknown) => boolean;
   confide: (request: ImportTracksRequest, signal: AbortSignal) => Promise<ImportTracksAccepted | null>;
   progress: (operationId: string, signal: AbortSignal) => Promise<ImportTracksProgress>;
   cancel: (operationId: string) => void;
@@ -130,32 +136,20 @@ async function readThenImport(port: ImportPort, url: string, base: Omit<MusicImp
   return runCore(port, { ...base, playlist: read.playlist }, signal, emit);
 }
 
-/** Les absents confiés à l'extension ; rend ce qu'elle a pris et ce qu'elle n'a pas trouvé. */
-async function confide(port: ImportPort, playlistId: string, source: MusicImportSource, absent: ImportAbsentTrack[], signal: AbortSignal, emit: (patch: Partial<ImportFlowState>) => void) {
-  const accepted = await port.confide({ playlistId, source: extensionImportSource(source), tracks: absent }, signal).catch((error: unknown) => {
-    if (signal.aborted) throw error;
-    return null;
-  });
-  if (!accepted) return { added: 0, own: 0, outcome: { kind: "refused", reason: null } as ImportOutsideOutcome };
-  const deadline = port.now() + OUTSIDE_WAIT_MS;
-  let last: ImportTracksProgress | null = null;
-  try {
-    while (port.now() < deadline) {
-      last = await port.progress(accepted.operationId, signal).catch((error: unknown) => {
-        if (signal.aborted) throw error;
-        return last;
-      });
-      if (last) emit({ outside: { total: last.total, processed: last.processed, added: last.added } });
-      if (last && last.state !== "running") break;
-      await port.sleep(OUTSIDE_POLL_MS, signal);
-    }
-  } catch (error) {
-    port.cancel(accepted.operationId);
-    throw error;
+/** Lire par l'extension d'abord ; ses refus « je ne peux pas » rendent la main au cœur (`null`). */
+async function readFirst(port: ImportPort, url: string, base: Omit<MusicImportRequest, "url" | "text" | "playlist">, signal: AbortSignal, emit: (patch: Partial<ImportFlowState>) => void): Promise<MusicImportJob | null> {
+  const read = await port.read(url, signal);
+  if (!read.ok) {
+    if (READ_FIRST_FALLBACK.includes(read.refusal)) return null;
+    throw new FlowStop(read.refusal);
   }
-  const failed = last?.state === "failed" && (last?.added ?? 0) === 0;
-  const outcome: ImportOutsideOutcome = failed ? { kind: "refused", reason: last?.reason ?? null } : { kind: "done", skipped: skippedOf(last) };
-  return { added: last?.added ?? 0, own: last?.own ?? 0, outcome };
+  emit({ source: read.playlist.source, name: read.playlist.name, total: read.playlist.tracks.length });
+  return runCore(port, { ...base, playlist: read.playlist }, signal, emit);
+}
+
+/** Les absents qui ne sont PAS dans la playlist, chacun avec son motif ; un titre jamais confié dit `extensionLimit`. */
+function missingAfter(absent: Parameters<typeof missingOf>[0], outside: ConfideOutcome): ImportMissingTrack[] {
+  return missingOf(absent, outside.outcome).map((t) => (outside.overflow.has(t.index) ? { ...t, reason: "extensionLimit" as const } : t));
 }
 
 /** Le déroulé ENTIER ; chaque étape se dit par `emit` (état complet). Rejette seulement si `signal` est annulé. */
@@ -175,7 +169,9 @@ export async function runImport(input: ImportUserInput, port: ImportPort, emit: 
       patch({ source: url.source });
       // Un lien Tentacle face à un serveur qui ne les lit pas : aucune extension ne le lirait mieux.
       if (url.source === "tentacle" && !port.tentacleShare) throw new FlowStop("unsupported");
-      if (!coreReadsImport(url.source, port.tentacleShare === true)) {
+      const first = port.canRead(url.source) && port.readsFirst?.(url.source) ? await readFirst(port, url.url, base, signal, patch) : null;
+      if (first) job = first;
+      else if (!coreReadsImport(url.source, port.tentacleShare === true)) {
         if (!port.canRead(url.source)) throw new FlowStop("needsExtension");
         job = await readThenImport(port, url.url, base, signal, patch);
       } else {
@@ -186,16 +182,18 @@ export async function runImport(input: ImportUserInput, port: ImportPort, emit: 
     }
     if (job.stage === "failed" || !job.result) throw new FlowStop(job.failure ?? "failed");
     const result = job.result;
-    let outside: { added: number; own: number; outcome: ImportOutsideOutcome } = { added: 0, own: 0, outcome: { kind: "none" } };
+    let outside: ConfideOutcome = { added: 0, own: 0, outcome: { kind: "none" } as ImportOutsideOutcome, overflow: new Set() };
     if (result.absent.length > 0 && port.canConfide) {
       patch({ phase: "outside", outside: { total: result.absent.length, processed: 0, added: 0 } });
-      outside = await confide(port, result.playlistId, result.source, result.absent, signal, patch);
+      const ctx = { playlistId: result.playlistId, source: extensionImportSource(result.source), importId: job.jobId, name: result.name, artworkUrl: result.artworkUrl ?? null };
+      const confidePort = { ...port, isRefusal: port.isRefusal ?? (() => false) };
+      outside = await confideAbsent(confidePort, ctx, result.absent, signal, (o) => patch({ outside: o }));
     }
     patch({
       phase: "done",
       summary: {
         playlistId: result.playlistId, name: result.name, source: result.source, total: result.total, inLibrary: result.added,
-        outside: outside.added, own: outside.own, missing: missingOf(result.absent, outside.outcome), truncated: result.truncated,
+        outside: outside.added, own: outside.own, missing: missingAfter(result.absent, outside), truncated: result.truncated,
         outsideRefused: outside.outcome.kind === "refused",
       },
     });

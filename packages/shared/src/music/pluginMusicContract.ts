@@ -92,8 +92,19 @@ export interface PluginMusicManifest {
   importRead?: string;
   /** Les sources que `importRead` sait lire (liste fermée `MusicImportSource`, sans `text`). */
   importSources?: MusicImportSource[];
+  /**
+   * Parmi `importSources`, celles que `importRead` lit EN ENTIER (lot « pg », 1.43.0) quand le cœur n'en lit qu'une
+   * page publique bornée (Spotify, Apple Music : 100 titres) : le client les lui confie AVANT le cœur, et revient au
+   * cœur si elle refuse (`unavailable`, `budget`, `unsupported`). Absent : le cœur d'abord, comme avant.
+   */
+  importReadFirst?: MusicImportSource[];
   /** Import — POST `ImportTracksRequest` → 202 `ImportTracksAccepted` ; GET/DELETE `<importTracks>/<operationId>`. */
   importTracks?: string;
+  /**
+   * `importTracks` reçoit les absents PAR LOTS (lot « pg », 1.43.0 : `musicImportExtension.ts`, `importId`, `total`,
+   * idempotence par (`importId`, `index`)). Absent (extension d'avant) : un seul appel, au plus `legacyCap` titres.
+   */
+  importBatches?: boolean;
   /**
    * Sorties importées (lot « sf », musicReleases.ts) — un chemin de BASE : `<releases>/link`, `<releases>/files`,
    * `<releases>/jobs/<id>`, `GET <releases>`. Va avec `releaseSources` ; l'un sans l'autre : aucune entrée « Importer ».
@@ -337,6 +348,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     if (path) out[key] = path;
   }
   if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
+  if (m.importBatches === true && out.importTracks) out.importBatches = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
@@ -344,6 +356,10 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
+  }
+  if (Array.isArray(m.importReadFirst) && out.importSources) {
+    const first = out.importSources.filter((k) => k !== "youtube" && (m.importReadFirst as unknown[]).includes(k));
+    if (first.length > 0) out.importReadFirst = first;
   }
   if (Array.isArray(m.releaseSources)) {
     const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));

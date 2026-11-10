@@ -16,6 +16,7 @@ struct SchemeResponse {
   int status = 200;
   std::string statusText = "OK";
   std::string mimeType;              // vide : aucun Content-Type
+  std::string charset;               // « utf-8 » → Content-Type: text/html; charset=utf-8
   CefResponse::HeaderMap headers;
   std::string body;
 };

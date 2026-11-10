@@ -6,7 +6,7 @@
  */
 
 import { MUSIC_IMPORT_LIMITS, type ImportedPlaylist, type ImportedTrack } from "../../contract/musicImport";
-import { artistList, durationOf, field, ImportReadFailure, isrcOf, numbered } from "./readerKit";
+import { artistList, durationOf, field, httpsUrl, ImportReadFailure, isrcOf, numbered } from "./readerKit";
 
 const COLUMNS = {
   title: ["track name", "track title", "title", "song", "song name", "name", "titre", "track"],
@@ -15,6 +15,10 @@ const COLUMNS = {
   duration: ["duration (ms)", "duration_ms", "track duration (ms)", "duration", "durée", "length", "time"],
   isrc: ["isrc"],
   playlist: ["playlist name", "playlist", "nom de la playlist"],
+  // Lot « pg » : la pochette, le contenu explicite et l'identifiant de l'export (Exportify : « Album Image URL »…).
+  artwork: ["album image url", "album artwork url", "artwork url", "image url", "cover url"],
+  explicit: ["explicit", "explicite"],
+  sourceId: ["track uri", "spotify uri", "spotify track uri", "uri"],
 } as const;
 
 type Column = keyof typeof COLUMNS;
@@ -99,7 +103,9 @@ export function readText(text: string): ImportedPlaylist {
         album: field(at("album")),
         durationMs: parseDuration(at("duration")),
         isrc: isrcOf(at("isrc")),
-        sourceId: null,
+        sourceId: field(at("sourceId")),
+        artworkUrl: httpsUrl(at("artwork")),
+        ...(/^(?:true|yes|oui|1)$/i.test(at("explicit") ?? "") ? { explicit: true as const } : {}),
       });
     }
   } else {

@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <mutex>
 #include <system_error>
 
 #include "include/cef_parser.h"
@@ -14,6 +15,10 @@
 namespace tentacle::appscheme {
 namespace {
 namespace fs = std::filesystem;
+
+std::mutex g_mutex;
+std::string g_webRoot;
+std::string g_appCsp;  // axe réseau : la CSP de l'application (setAppCsp)
 
 std::string mimeTypeOf(const fs::path& file) {
   std::string ext = file.extension().string();
@@ -31,6 +36,7 @@ CefResponse::HeaderMap appHeaders() {
   // mode CORS même vers sa propre origine. Sans cet en-tête, le module principal est rejeté
   // et l'écran reste noir (même piège qu'Electron, `appProtocol.ts`).
   headers.emplace("Access-Control-Allow-Origin", kAppOrigin);
+  if (std::string csp = appCsp(); !csp.empty()) headers.emplace("Content-Security-Policy", csp);
   return headers;
 }
 
@@ -80,8 +86,28 @@ bool serveWebRoot(const std::string& webRoot) {
     return false;
   }
   CefRegisterSchemeHandlerFactory(kScheme, kAppHost, new WebRootFactory(root));
-  std::fprintf(stderr, "[app] %s sert %s\n", kAppOrigin, root.string().c_str());  // wchar_t sous Windows
+  {
+    std::lock_guard lock(g_mutex);
+    g_webRoot = root.string();
+  }
+  std::fprintf(stderr, "[app] %s sert %s
+", kAppOrigin, root.string().c_str());  // wchar_t sous Windows
   return true;
+}
+
+std::string servedWebRoot() {
+  std::lock_guard lock(g_mutex);
+  return g_webRoot;
+}
+
+void setAppCsp(std::string csp) {
+  std::lock_guard lock(g_mutex);
+  g_appCsp = std::move(csp);
+}
+
+std::string appCsp() {
+  std::lock_guard lock(g_mutex);
+  return g_appCsp;
 }
 
 }  // namespace tentacle::appscheme

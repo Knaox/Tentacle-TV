@@ -82,7 +82,7 @@ async function run(record: JobRecord, parsed: ImportRequestParsed, deps: ImportD
     await deps
       .remember?.({ playlistId: created.value, userId: record.userId, source: playlist.source, url, origin: "import", importedAt: now(), slots: slotsOf(playlist.tracks, kept) })
       .catch((error: unknown) => console.warn("[music] ordre de la source non gardé :", (error as Error).message));
-    job.result = { playlistId: created.value, name, source: playlist.source, total: playlist.tracks.length, added: itemIds.length, absent, truncated: playlist.truncated };
+    job.result = { playlistId: created.value, name, source: playlist.source, total: playlist.tracks.length, added: itemIds.length, absent, truncated: playlist.truncated, artworkUrl: playlist.artworkUrl };
     job.stage = "done";
   } catch (error) {
     fail(error instanceof ImportReadFailure ? error.failure : "failed");
