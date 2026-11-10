@@ -38,7 +38,9 @@ endforeach()
 # Le moteur sur libmpv : `Player` de vidéo-HDR (app), ou libmpv directe (banc de Homebrew).
 add_library(tentacle_music STATIC mpv_audio_backend.cpp)
 target_link_libraries(tentacle_music PUBLIC tentacle_music_core)
-target_compile_options(tentacle_music PRIVATE -Wall -Wextra -Wno-unused-parameter)
+if(NOT MSVC)
+  target_compile_options(tentacle_music PRIVATE -Wall -Wextra -Wno-unused-parameter)
+endif()
 
 # libmpv : celle du lecteur de vidéo-HDR (le fork) quand il est construit — la
 # musique tourne alors sur `Player` en audio seul ; sinon libmpv de Homebrew.
