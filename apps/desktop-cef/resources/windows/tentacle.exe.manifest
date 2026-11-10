@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Manifeste de Tentacle.exe (Tentacle CEF, Windows) — fusionné par l'éditeur de liens avec
+  celui qu'il produit (trustInfo asInvoker). Le même exécutable sert aux sous-processus de CEF.
+  - supportedOS Windows 10/11 : sans lui, Windows ment sur sa version et CEF le refuse
+    (compatibility.manifest des exemples de CEF) ;
+  - DPI par écran v2 : la page reste nette à 125 %, 150 %…, et suit l'écran de la fenêtre ;
+  - activeCodePage UTF-8 (Windows 10 1903+) : les API « A », argv et std::filesystem lisent
+    l'UTF-8 du proto (chemins avec accents, profil d'Electron) ;
+  - longPathAware : chemins de plus de 260 caractères (profils, caches).
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+    </application>
+  </compatibility>
+  <asmv3:application>
+    <asmv3:windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+      <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
+      <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+    </asmv3:windowsSettings>
+  </asmv3:application>
+</assembly>
