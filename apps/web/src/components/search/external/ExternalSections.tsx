@@ -43,8 +43,8 @@ export const ExternalSections = memo(function ExternalSections({ external, libra
     if (!holding) return null;
     return (
       <section className={className ?? "mt-10"} aria-busy="true" aria-label={t("externalSearching")}>
-        {/* La hauteur de l'en-tête d'une vraie section (titre `text-xl`). */}
-        <p className="mb-4 flex h-7 items-center text-sm text-content-quaternary">{t("externalSearching")}</p>
+        {/* La hauteur de l'en-tête d'une vraie section (`min-h-8`, `mb-3`). */}
+        <p className="mb-3 flex h-8 items-center text-sm text-content-tertiary">{t("externalSearching")}</p>
         <ExternalResultsSkeleton count={held} />
       </section>
     );

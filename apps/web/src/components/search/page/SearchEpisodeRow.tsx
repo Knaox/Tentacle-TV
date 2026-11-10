@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { useCardMarkers } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, type SearchMediaItem } from "@tentacle-tv/shared";
 import { CardProgressBar } from "../../cards/CardProgressBar";
 import { CardStatusMarkers } from "../../cards/CardStatusMarkers";
@@ -23,6 +24,8 @@ export const SearchEpisodeRow = memo(function SearchEpisodeRow({ item, terms, on
   const { t } = useTranslation("libraryDelete");
   const selection = useSearchSelection(item.Id);
   const locked = selection?.mark === "locked" || selection?.mark === "pending";
+  // « Vu » se lit par le modèle des cartes : le geste en cours (plateau, fiche) s'y voit au clic.
+  const watched = useCardMarkers(item, { communityRating: null, scope: "item" }).statuses.includes("watched");
   return (
     <li title={selection?.mark === "locked" ? t("notDeletable") : undefined}>
       <button
@@ -36,14 +39,14 @@ export const SearchEpisodeRow = memo(function SearchEpisodeRow({ item, terms, on
           if (!selection) return onOpen(item);
           if (!locked) selection.toggle(item.Id, e.shiftKey);
         }}
-        className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+        className={`flex w-full items-center gap-3 rounded-tile p-2 text-left transition-colors duration-hover hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
           selection?.mark === "selected" ? "ring-2 ring-[var(--brand)]" : ""
         } ${selection && locked ? "cursor-not-allowed opacity-40" : ""}`}
       >
-        <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-lg">
+        <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-field">
           {/* Les marques de toutes les cartes : la pastille « vu », sinon la
               barre de progression commune. */}
-          {item.UserData?.Played ? (
+          {watched ? (
             <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" />
           ) : (
             <CardProgressBar percent={item.UserData?.PlayedPercentage} />

@@ -5,10 +5,8 @@
  */
 
 import { memo } from "react";
-import { useBrokenImage } from "../../../hooks/useBrokenImage";
-import { initials, type ExternalSearchItem, type ExternalTone } from "@tentacle-tv/shared";
-
-const FALLBACK = "linear-gradient(160deg, rgba(var(--brand-rgb), 0.45) 0%, var(--fill-strong) 100%)";
+import type { ExternalSearchItem, ExternalTone } from "@tentacle-tv/shared";
+import { ThumbImage } from "../SearchThumbs";
 
 const TONE_CLASS: Record<ExternalTone, string> = {
   neutral: "bg-fill-medium text-content-secondary",
@@ -31,26 +29,9 @@ export const ExternalPoster = memo(function ExternalPoster({ item, className }: 
   item: ExternalSearchItem;
   className: string;
 }) {
-  const { broken, reportFailure } = useBrokenImage(item.imageUrl);
-  return (
-    <div className={`relative shrink-0 overflow-hidden bg-surface-2 ${className}`}>
-      {item.imageUrl !== null && !broken ? (
-        <img
-          src={item.imageUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onError={reportFailure}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-white/80" style={{ background: FALLBACK }}>
-          {initials(item.title)}
-        </div>
-      )}
-    </div>
-  );
+  // La même image à repli que les vignettes de la bibliothèque : l'encre
+  // d'abord, UN fondu, les initiales si l'affiche manque.
+  return <ThumbImage url={item.imageUrl} label={item.title} className={className} />;
 });
 
 export function ExternalBadge({ badge, onMedia = false, className = "" }: {
@@ -62,7 +43,7 @@ export function ExternalBadge({ badge, onMedia = false, className = "" }: {
   if (badge === null) return null;
   const tone = onMedia ? MEDIA_TONE_CLASS[badge.tone] : TONE_CLASS[badge.tone];
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone} ${className}`}>
+    <span className={`inline-flex h-5 shrink-0 items-center rounded-chip px-1.5 text-[11px] font-semibold leading-none ${tone} ${className}`}>
       {badge.label}
     </span>
   );

@@ -10,9 +10,16 @@ import { highlightRanges } from "@tentacle-tv/shared";
 export const HighlightedText = memo(function HighlightedText({
   text,
   terms,
+  plain = false,
 }: {
   text: string;
   terms: readonly string[];
+  /**
+   * Dans un grand titre (ou sur une image) : le mot trouvé garde la couleur et
+   * la graisse de sa ligne — un titre en graisse de titrage n'a pas à
+   * s'alléger là où il répond, ni à quitter sa couleur « sur média ».
+   */
+  plain?: boolean;
 }) {
   const parts = useMemo(() => {
     const ranges = highlightRanges(text, terms);
@@ -31,7 +38,7 @@ export const HighlightedText = memo(function HighlightedText({
     <>
       {parts.map((part, i) =>
         part.hit ? (
-          <mark key={i} className="bg-transparent font-semibold text-content-primary">
+          <mark key={i} className={plain ? "bg-transparent text-inherit [font-weight:inherit]" : "bg-transparent font-semibold text-content-primary"}>
             {part.text}
           </mark>
         ) : (

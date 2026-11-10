@@ -3,14 +3,80 @@
  * épisode, portrait d'une personne — adressées par leur TAG quand le moteur
  * l'a (image servie du cache, jamais redemandée), avec un repli dessiné en
  * jetons quand l'image manque ou casse : jamais un carré vide.
+ *
+ * Une image n'y clignote pas (docs/REFONTE-UI.md) : sa couleur — ou l'encre de
+ * carte — d'abord, puis UN fondu ; déjà vue pendant la séance, elle est là
+ * d'emblée (`lib/seenImages`).
  */
 
-import { memo, type ReactNode } from "react";
+import { memo, useState, type CSSProperties, type ReactNode } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { initials, type SearchMediaItem, type SearchPersonHit } from "@tentacle-tv/shared";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { markImageSeen, wasImageSeen } from "../../lib/seenImages";
 
-const FALLBACK = "linear-gradient(160deg, rgba(var(--brand-rgb), 0.45) 0%, var(--fill-strong) 100%)";
+/**
+ * L'image à REPLI des vignettes : la boîte `.ui-image` du socle (couleur
+ * d'attente, un seul fondu), et les initiales sur une encre neutre quand il
+ * n'y a pas d'image ou qu'elle casse. Partagée par les affiches, les
+ * portraits et les titres hors bibliothèque.
+ */
+export const ThumbImage = memo(function ThumbImage({
+  url,
+  label,
+  color,
+  eager = false,
+  className = "",
+  fallbackClassName = "text-[11px] font-bold",
+  style,
+  children,
+}: {
+  url: string | null;
+  /** Ce dont on tire les initiales du repli. */
+  label: string;
+  /** La couleur d'attente (`imageColorOf`) ; sans elle, l'encre de carte. */
+  color?: string | null;
+  eager?: boolean;
+  /** La boîte : taille, ratio, rayon. */
+  className?: string;
+  /** La taille des initiales du repli. */
+  fallbackClassName?: string;
+  style?: CSSProperties;
+  /** Posé SUR l'image : marqueurs, pastille. */
+  children?: ReactNode;
+}) {
+  const { broken, reportFailure } = useBrokenImage(url);
+  // L'état suit l'ADRESSE : une autre image repart de zéro, sans effet.
+  const [state, setState] = useState(() => ({ url, loaded: wasImageSeen(url), instant: wasImageSeen(url) }));
+  if (state.url !== url) setState({ url, loaded: wasImageSeen(url), instant: wasImageSeen(url) });
+  const shown = url !== null && !broken;
+
+  return (
+    <div className={`ui-image shrink-0 ${className}`} style={color && shown ? { ...style, backgroundColor: color } : style}>
+      {shown ? (
+        <img
+          src={url}
+          alt=""
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          draggable={false}
+          data-loaded={state.loaded}
+          data-instant={state.instant}
+          onLoad={() => {
+            markImageSeen(url);
+            setState((s) => (s.url === url ? { ...s, loaded: true } : s));
+          }}
+          onError={reportFailure}
+        />
+      ) : (
+        <div aria-hidden className={`flex h-full w-full items-center justify-center bg-surface-3 font-display text-content-tertiary ${fallbackClassName}`}>
+          {initials(label)}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+});
 
 export const PosterThumb = memo(function PosterThumb({
   item,
@@ -33,18 +99,10 @@ export const PosterThumb = memo(function PosterThumb({
     : item.SeriesId && item.SeriesPrimaryImageTag
       ? client.getImageUrl(item.SeriesId, "Primary", { height, quality: 85, tag: item.SeriesPrimaryImageTag })
       : null;
-  const { broken, reportFailure } = useBrokenImage(url);
   return (
-    <div className={`relative shrink-0 overflow-hidden bg-surface-2 ${className}`}>
-      {url !== null && !broken ? (
-        <img src={url} alt="" loading="lazy" decoding="async" draggable={false} onError={reportFailure} className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-white/80" style={{ background: FALLBACK }}>
-          {initials(item.Name)}
-        </div>
-      )}
+    <ThumbImage url={url} label={item.Name} className={className}>
       {children}
-    </div>
+    </ThumbImage>
   );
 });
 
@@ -61,22 +119,13 @@ export const PersonAvatar = memo(function PersonAvatar({
   const url = person.imageTag
     ? client.getImageUrl(person.id, "Primary", { height: size * 2, quality: 85, tag: person.imageTag })
     : null;
-  const { broken, reportFailure } = useBrokenImage(url);
   return (
-    <div
-      className={`relative shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-line-subtle ${className}`}
-      style={{ width: size, height: size }}
-    >
-      {url !== null && !broken ? (
-        <img src={url} alt="" loading="lazy" decoding="async" draggable={false} onError={reportFailure} className="h-full w-full object-cover" />
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center font-semibold text-white/90"
-          style={{ background: FALLBACK, fontSize: Math.max(11, Math.round(size * 0.36)) }}
-        >
-          {initials(person.name)}
-        </div>
-      )}
-    </div>
+    <ThumbImage
+      url={url}
+      label={person.name}
+      className={`rounded-full ${className}`}
+      fallbackClassName="font-semibold"
+      style={{ width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.36)) }}
+    />
   );
 });

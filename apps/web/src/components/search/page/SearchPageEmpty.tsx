@@ -2,6 +2,11 @@
  * La page de recherche sans requête : une invitation, les recherches récentes
  * à relancer d'un clic, et les genres les plus fournis de la bibliothèque —
  * jamais un écran blanc.
+ *
+ * Les tuiles de genre sont des tuiles d'ENCRE (`.ui-tile`) : plus de dégradé de
+ * marque décoratif (refonte de nov. 2026). En Liquid Glass (mode natif), la
+ * tuile prend le remplissage du contenu (`.lg-content`) et la marque ne reste
+ * qu'en TOUCHE : un filet d'accent (`.lg-genre-tile`, `data-lg-accent`).
  */
 
 import { memo, useState } from "react";
@@ -9,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchDiscover } from "@tentacle-tv/api-client";
 import { clearRecentSearches, readRecentSearches } from "../recentSearches";
 import { displayFacet } from "../omnibox/OmniboxChips";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
 
 export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre }: {
   onQuery: (query: string) => void;
@@ -19,19 +25,20 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
   const { data } = useSearchDiscover();
   return (
     <div className="px-4 pt-10 md:px-12">
-      <h1 className="text-3xl font-bold tracking-tight text-content-primary">{t("emptyTitle")}</h1>
-      <p className="mt-2 max-w-xl text-sm text-content-tertiary">{t("emptyHint")}</p>
+      <h1 className="text-display-3 text-content-primary">{t("emptyTitle")}</h1>
+      <p className="mt-2 max-w-[65ch] text-sm text-content-tertiary">{t("emptyHint")}</p>
       {recents.length > 0 && (
         <section className="mt-10">
-          <div className="mb-3 flex items-center gap-4">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{t("recent")}</h2>
-            <button type="button" onClick={() => setRecents(clearRecentSearches())} className="text-xs font-medium text-content-tertiary hover:text-content-primary">
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="ui-eyebrow font-sans">{t("recent")}</h2>
+            <button type="button" onClick={() => setRecents(clearRecentSearches())} className="btn btn-ghost btn-sm">
               {t("clearRecent")}
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
             {recents.map((query) => (
-              <button key={query} type="button" onClick={() => onQuery(query)} className="rounded-full border border-line-subtle bg-fill-subtle px-4 py-2 text-sm text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary">
+              <button key={query} type="button" onClick={() => onQuery(query)} className="btn btn-soft">
+                <ClockCounterClockwiseIcon aria-hidden size={16} className="text-content-tertiary" />
                 {query}
               </button>
             ))}
@@ -40,7 +47,7 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
       )}
       {data && data.genres.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{t("browseGenres")}</h2>
+          <h2 className="ui-eyebrow mb-3 font-sans">{t("browseGenres")}</h2>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
             {data.genres.map((genre, i) => (
               <button
@@ -48,13 +55,10 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
                 type="button"
                 onClick={() => onGenre(genre.name)}
                 data-lg-accent={i % 2 === 0 ? "brand" : "accent"}
-                className="lg-content lg-content-tile lg-genre-tile relative flex h-20 items-end overflow-hidden rounded-2xl border border-line-subtle p-4 text-left transition-transform duration-200 hover:-translate-y-0.5"
-                style={{ background: GENRE_TONES[i % GENRE_TONES.length] }}
+                className="lg-content lg-content-tile lg-genre-tile ui-tile relative flex h-20 flex-col justify-end overflow-hidden p-4 text-left hover:bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
-                <span className="relative">
-                  <span className="block text-base font-bold text-content-primary">{displayFacet(genre.name)}</span>
-                  <span className="block text-xs text-content-secondary">{t("countTitles", { count: genre.count })}</span>
-                </span>
+                <span className="block truncate font-display text-base font-semibold tracking-tight text-content-primary">{displayFacet(genre.name)}</span>
+                <span className="block text-xs tabular-nums text-content-tertiary">{t("countTitles", { count: genre.count })}</span>
               </button>
             ))}
           </div>
@@ -63,14 +67,3 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
     </div>
   );
 });
-
-/** Des dégradés tirés des jetons de marque — jamais une couleur en dur. En
- * Liquid Glass (mode natif), la tuile prend le remplissage neutre du contenu
- * (`.lg-content`, qui l'emporte sur ce fond en ligne) et la marque ne reste
- * qu'en TOUCHE : un filet d'accent (`.lg-genre-tile`, `data-lg-accent`). */
-const GENRE_TONES = [
-  "linear-gradient(135deg, rgba(var(--brand-rgb), 0.55), rgba(var(--brand-rgb), 0.18))",
-  "linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.5), rgba(var(--brand-accent-rgb), 0.15))",
-  "linear-gradient(135deg, rgba(var(--brand-rgb), 0.4), rgba(var(--brand-accent-rgb), 0.3))",
-  "linear-gradient(135deg, var(--fill-strong), var(--fill-soft))",
-];

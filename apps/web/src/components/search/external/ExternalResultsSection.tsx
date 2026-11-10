@@ -11,6 +11,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { ExternalResultCard } from "./ExternalResultCard";
 import type { ExternalSearchResult } from "@tentacle-tv/shared";
 
@@ -24,9 +25,9 @@ const GRID = { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" } as
 function SkeletonCell() {
   return (
     <li aria-hidden>
-      <div className="aspect-[2/3] rounded-md bg-fill-subtle" />
-      <div className="mt-2 h-5 w-3/4 py-1"><div className="h-full rounded bg-fill-subtle" /></div>
-      <div className="h-4 w-1/2 py-0.5"><div className="h-full rounded bg-fill-faint" /></div>
+      <div className="aspect-[2/3] rounded-card bg-surface-2" />
+      <div className="mt-2 h-5 w-3/4 py-1"><div className="h-full rounded-chip bg-surface-2" /></div>
+      <div className="h-4 w-1/2 py-0.5"><div className="h-full rounded-chip bg-surface-2" /></div>
     </li>
   );
 }
@@ -54,18 +55,16 @@ export const ExternalResultsSection = memo(function ExternalResultsSection({ res
 
   return (
     <section className={className} aria-label={provider.label}>
-      <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="text-xl font-bold tracking-tight text-content-primary">
+      {/* `min-h-8` : la hauteur d'un bouton « Tout voir », qu'il soit là ou non. */}
+      <div className="mb-3 flex min-h-8 items-center justify-between gap-4">
+        <h2 className="text-heading-2 text-content-primary">
           {provider.label}
-          <span className="ml-2 text-sm font-medium text-content-quaternary">{t("externalBy", { name: provider.source })}</span>
+          <span className="ml-2 font-sans text-sm font-medium tracking-normal text-content-tertiary">{t("externalBy", { name: provider.source })}</span>
         </h2>
         {result.moreHref !== null && (
-          <button
-            type="button"
-            onClick={() => navigate(result.moreHref as string)}
-            className="shrink-0 text-sm font-medium text-[var(--brand-light)] transition-opacity hover:opacity-80"
-          >
-            {t("externalSeeAll", { name: provider.source })} →
+          <button type="button" onClick={() => navigate(result.moreHref as string)} className="btn btn-ghost btn-sm -mr-2">
+            {t("externalSeeAll", { name: provider.source })}
+            <CaretRightIcon aria-hidden size={14} weight="bold" />
           </button>
         )}
       </div>

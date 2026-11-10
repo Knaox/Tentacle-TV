@@ -13,6 +13,7 @@ import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMediaItem, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
 import { personMeta, type SearchMediaItem } from "@tentacle-tv/shared";
+import { BackButton } from "../../ui/BackButton";
 import { PersonAvatar } from "../SearchThumbs";
 import { ExternalSections } from "../external/ExternalSections";
 import { useExternalFilmography } from "../external/useExternalFilmography";
@@ -45,24 +46,26 @@ export const SearchBrowseView = memo(function SearchBrowseView({ target, personN
   );
 
   return (
-    <div className="px-4 pt-8 md:px-12">
-      <header className="flex items-center gap-5">
+    <div className="px-4 pt-6 md:px-12">
+      {/* Une sous-vue de la recherche : on en revient toujours (lien direct : vers la recherche). */}
+      <BackButton fallback="/search" />
+      <header className="mt-5 flex items-center gap-5">
         {target.kind === "person" && (
           <PersonAvatar person={{ id: target.id, name: title, imageTag: person?.imageTag ?? null }} size={88} />
         )}
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{kicker}</p>
-          <h1 className="mt-1 truncate text-3xl font-bold tracking-tight text-content-primary md:text-4xl">{title}</h1>
-          <p className="mt-1.5 text-sm text-content-tertiary">
-            {person !== null ? personMeta(t, person) : data ? t("countTitles", { count: data.total }) : " "}
-            {data && data.total > 1 && <span className="text-content-quaternary"> · {sorted}</span>}
+          <p className="ui-eyebrow">{kicker}</p>
+          <h1 className="mt-1.5 truncate text-display-3 text-content-primary md:text-display-2">{title}</h1>
+          <p className="mt-2 text-sm tabular-nums text-content-secondary">
+            {person !== null ? personMeta(t, person) : data ? t("countTitles", { count: data.total }) : " "}
+            {data && data.total > 1 && <span className="text-content-tertiary"> · {sorted}</span>}
           </p>
         </div>
       </header>
       <div className="mt-8">
         {isLoading && (
           <div aria-hidden className="grid gap-x-4 gap-y-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
-            {Array.from({ length: 12 }, (_, i) => <div key={i} className="aspect-[2/3] rounded-md bg-fill-subtle" />)}
+            {Array.from({ length: 12 }, (_, i) => <div key={i} className="aspect-[2/3] rounded-card bg-surface-2" />)}
           </div>
         )}
         {isError && <p className="py-16 text-center text-content-tertiary">{t("noResults", { query: title })}</p>}
