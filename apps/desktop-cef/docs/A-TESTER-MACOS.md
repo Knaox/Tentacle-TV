@@ -44,3 +44,17 @@ Ce que les bancs ne prouvent pas sans voler le focus ni faire surgir une fenêtr
 - **Réglages › Téléchargements › Changer de dossier** → panneau en feuille, « Nouveau dossier » présent ; le choix est rendu à la page.
 - **Lecture d'un film, ne rien toucher 10 min** → l'écran ne s'éteint pas ; en pause/hors lecture il s'éteint au délai du système (`pmset -g assertions` : « Prevent display sleep » pendant la lecture seulement).
 - **Quitter en pleine lecture** → dans Jellyfin, la session n'est plus « en lecture » et la position de reprise est celle de la sortie (relais `jellyfin_session_post` de l'axe reseau branché).
+
+## Liquid Glass (axe verre) — macOS 26, Apple Silicon
+
+`pnpm dev:cef`, Réglages › Apparence › « Liquid Glass dans Tentacle » allumé, puis un film.
+
+- [ ] Contrôles du lecteur affichés → capsules en verre (retour, son, ±10/30 s, pause, vitesse, réglages, PiP, plein écran) : la vidéo se voit À TRAVERS, déformée au bord, comme sous Electron.
+- [ ] Bouger la souris après quelques secondes d'immobilité → les capsules MONTENT et s'allument en même temps que leurs glyphes (aucun décalage verre / icône) ; elles s'effacent plus vite qu'elles ne viennent.
+- [ ] Passage d'une scène très claire (neige) à une scène sombre → les glyphes des capsules passent du sombre au clair en une à deux secondes.
+- [ ] Fenêtre active puis inactive (cliquer une autre app) → le verre fonce et pâlit comme le verre du système, rien ne clignote.
+- [ ] Plein écran et retour, redimensionner la fenêtre pendant la lecture → les capsules restent collées à leurs boutons.
+- [ ] Film HDR10 ou Dolby Vision, verre posé → l'image reste en HDR (plus lumineuse que l'interface).
+- [ ] « Lecture en incrustation » (PiP) → aucun verre dans la fenêtre PiP ; retour au lecteur → le verre revient.
+- [ ] Réglage coupé → plus aucun verre natif, le lecteur d'avant ; macOS < 26 ou Intel : l'option n'existe pas / pas de verre du lecteur.
+- [ ] Coût, FENÊTRE VISIBLE (le banc refuse une fenêtre cachée) : `PONT_CDP_PORT=<port> node bench/glass/gpu.mjs 12 3` → WindowServer avec/sans verre (Electron : +3 à +5 points), 0 image perdue.

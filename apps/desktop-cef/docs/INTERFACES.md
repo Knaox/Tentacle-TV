@@ -410,3 +410,37 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 - **Bancs** : `--debug-lifecycle` ouvre `lifecycle.debug.{state,transfers,close,focus,note,sheet,awake}`
   (`lifecycle_debug.cpp`) ; sous `--background`, ni activation ni notification (journalisées) ;
   `TENTACLE_LIFECYCLE_TRACE=1` trace GetURL, dépôts et `app_link_take`.
+
+## Verre natif — Liquid Glass de macOS 26 (axe verre, lot cef-parite)
+
+Portage de `apps/desktop-electron/src/main/liquidGlass/` ; le front ne change pas (`theme/liquidGlassMode.ts`,
+`theme/glass/`, `useBackdropTone`). Carnet de la fonction : `docs/LIQUID-GLASS.md` (racine du dépôt).
+
+- **Verdict au démarrage** (`src/glass/availability.h`, règle d'Electron) : macOS 26 (ou « 16 »), classes
+  PUBLIQUES `NSGlassEffectView` / `NSGlassEffectContainerView` présentes ; `TENTACLE_LIQUID_GLASS=off` simule un
+  Mac sans verre, `native` saute la seule garde de version. Journal : `[liquid-glass] native|forced-off|…`.
+  Hors `native` : rien de branché, `window.tentacle.liquidGlass` ABSENT (l'option de Réglages › Apparence aussi).
+- **Pont** (`web/shim/tentacle-bridge.js`, config `liquidGlass: {refractsVideo}` posée par
+  `pont::setLiquidGlassShim`) : `supported`, `refractsVideo` (Apple Silicon), `setEnabled`, `upsert`, `remove`
+  (UN message par tâche, `batcher.ts`), `sample(rects)`. Canaux HORS `capabilities` : `liquidGlass.batch`,
+  `liquidGlass.sample` → `[luminance|null]`, `liquidGlass.pageStarted` (un nouveau document efface le verre de
+  l'ancien), `liquidGlass.debug.snapshot` (bancs : relu dans AppKit, + `liveViews`, `windowVisible`).
+- **Branchement** (`src/glass/glass_shell.h`) : `glass::install(ctx)` après `pont::install`, AVANT
+  `pont::installShim` ; `glass::shutdown()` dans `shutdownModules` (fenêtre encore vivante : tout part d'AppKit).
+- **Compositeur** (`src/compositor/compositor.h`) : `setUnderlay(view)` pose la racine du verre ENTRE la vidéo
+  (z 0) et la page (z 10) — sous-vue de l'hôte de couches, zPosition 5 ; `shownVideoFrame(&cadre)` (vidéo
+  montrée dans CETTE pile, rien quand elle est prêtée au PiP) ; `WebLayer::retainLastFrame()` (IOSurface).
+- **Pont** (`glue/pont_shell.h`) : `pont::videoPlayer()`, `pont::setOnSurfaceTransparent(fn)` (vrai : vraie
+  couche vidéo posée ; faux : arrêt, ou `player_surface_transparent {on:false}`). Verre caché sinon.
+- **Lecteur** (`player/player.h`) : `Player::commandReading(args, lire, done)` — `screenshot-raw video bgra` lu
+  EN PLACE, la grille seule (jamais l'image en JSON).
+- **Règles pures** (`tentacle_glass_core`, ni CEF ni AppKit) : `validate`, `geometry`, `spring_curve`,
+  `materialize`, `stage`, `regions`, `snapshot`, `luminance`, `video_layout` — tests : `ctest --test-dir
+  <build>/src/glass` (les `*.test.ts` d'Electron portés, le shim joué sous Node, le verrou du Mac App Store :
+  aucune API privée du verre dans le paquet macOS).
+- **Coutures d'OS** (`src/glass/glass_platform.h`) : `platform/macos/glass_backend_mac.mm` (AppKit, animateur de
+  `NSAnimationContext`), `glass_platform_mac.mm` (verdict, Apple Silicon, page lue hors du fil principal) ;
+  Linux, Windows : « not-macos » (`glass_linux.cpp`, `glass_windows.cpp`).
+- **Bancs** : `bench/glass/glass.mjs` (réglage, lecture, verre posé, matérialisation en vol, tons, retrait, 0 vue
+  vivante après), `bench/glass/gpu.mjs` (phases alternées avec/sans verre, temps GPU par processus, images
+  perdues ; refuse une fenêtre non composée).
