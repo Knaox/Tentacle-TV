@@ -6,7 +6,9 @@
  */
 
 import { useEffect, useId, useSyncExternalStore } from "react";
-import { CloudOff, Heart, ListPlus } from "lucide-react";
+import { CloudSlashIcon as CloudOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { ListPlusIcon as ListPlus } from "@phosphor-icons/react/dist/csr/ListPlus";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -91,7 +93,7 @@ function UnavailableAlbumDialog({ album, target }: { album: MusicAlbum; target: 
                   closeUnavailableAlbum();
                 }}
               >
-                <Heart className="h-4 w-4" fill={allLiked ? "currentColor" : "none"} aria-hidden />
+                <Heart weight={allLiked ? "fill" : "regular"} className="h-4 w-4" aria-hidden />
                 {t("unavailableAlbum.like")}
               </button>
               <button

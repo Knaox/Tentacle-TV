@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { useItemDeletion } from "./useItemDeletion";
 
 /**
@@ -21,7 +21,7 @@ export function SeasonDeleteAction({ seasonId, seasonName }: { seasonId: string 
           onClick={deletion.open}
           className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--status-error-fg)] transition-colors hover:bg-danger-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
         >
-          <Trash2 className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+          <Trash2 className="h-4 w-4" aria-hidden />
           {t("deleteSeason")}
         </button>
       )}

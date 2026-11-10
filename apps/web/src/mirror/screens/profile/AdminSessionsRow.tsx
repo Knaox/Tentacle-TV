@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Activity } from "lucide-react";
+import { PulseIcon as Activity } from "@phosphor-icons/react/dist/csr/Pulse";
 import type { AdminSessionsSnapshotDto } from "@tentacle-tv/shared";
 import { BACKEND, creds, hdrs } from "../../../pages/adminUtils";
 import { SettingsRow } from "../settings/ui/SettingsRow";

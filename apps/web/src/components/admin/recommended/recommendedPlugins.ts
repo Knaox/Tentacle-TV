@@ -1,4 +1,5 @@
-import { Compass, type LucideIcon } from "lucide-react";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { InstalledPlugin, MarketplacePlugin } from "../../admin-plugins/types";
 
 /**
@@ -13,7 +14,7 @@ export interface RecommendedPlugin {
   pluginId: string;
   /** Le nombre d'avantages listés (`rec_<pluginId>_benefit1…n`). */
   benefits: number;
-  icon: LucideIcon;
+  icon: IconType;
 }
 
 export const RECOMMENDED_PLUGINS: readonly RecommendedPlugin[] = [{ pluginId: "seer", benefits: 3, icon: Compass }];

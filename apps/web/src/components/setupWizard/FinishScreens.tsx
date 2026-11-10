@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { APP_LINKS, packagedHelpKey, remoteVerdict, type SetupCompleteResponse } from "@tentacle-tv/shared";
 import { RemoteAccessPanel } from "../remoteAccess/RemoteAccessPanel";
 import { useRemoteAccess } from "../remoteAccess/remoteAccessApi";

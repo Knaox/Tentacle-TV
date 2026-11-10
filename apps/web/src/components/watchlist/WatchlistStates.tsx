@@ -1,7 +1,9 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bookmark, Compass, Search } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import type { WatchStageFilter } from "@tentacle-tv/api-client";
 import { CollectionEmpty, CollectionNarrowEmpty } from "../collection/CollectionStates";
 

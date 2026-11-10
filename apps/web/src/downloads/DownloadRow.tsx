@@ -19,7 +19,7 @@ import {
   resumeDownload,
   type DownloadEntry,
 } from "./api";
-import { Film } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { AutoDeleteControl } from "./AutoDeleteControl";
 import { episodeCode, RetryAction, RowProgress, SmallAction, StatusBadge } from "./DownloadRowParts";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";

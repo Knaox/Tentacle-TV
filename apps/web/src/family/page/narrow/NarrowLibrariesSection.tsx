@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Check, Folder } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
 import { useFamilyLibraries, useSetFamilyLibraries } from "@tentacle-tv/api-client";
 import { parentalLibraryRows, toggleParentalLibrary, type FamilyProfileDto } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";

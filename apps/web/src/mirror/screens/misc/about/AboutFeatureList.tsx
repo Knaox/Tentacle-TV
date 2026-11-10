@@ -1,11 +1,17 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Bell, Monitor, PlayCircle, Rewind, Send, Smartphone, type LucideIcon } from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { PlayCircleIcon as PlayCircle } from "@phosphor-icons/react/dist/csr/PlayCircle";
+import { RewindIcon as Rewind } from "../../../../components/icons/transport";
+import { PaperPlaneTiltIcon as Send } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { GlassCard } from "../shared/GlassCard";
 import { brandTile, SECTION_HEADER_STYLE } from "../shared/sectionStyles";
 
 /** `FEATURE_KEYS` de l'app, mêmes icônes Feather (play-circle, rewind…). */
-const FEATURES: { key: string; Icon: LucideIcon }[] = [
+const FEATURES: { key: string; Icon: IconType }[] = [
   { key: "featurePlayer", Icon: PlayCircle },
   { key: "featureResume", Icon: Rewind },
   { key: "featureRequests", Icon: Send },
@@ -28,7 +34,7 @@ export const AboutFeatureList = memo(function AboutFeatureList() {
           <GlassCard key={key} padding={0}>
             <div className="flex items-center" style={{ gap: 14, padding: 14 }}>
               <span style={brandTile(36, 10)}>
-                <Icon size={18} strokeWidth={2} />
+                <Icon size={18} />
               </span>
               <span
                 className="flex-1 font-medium"

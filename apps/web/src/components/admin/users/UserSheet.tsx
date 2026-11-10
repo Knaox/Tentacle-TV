@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useServerCapability, type PairedDevice } from "@tentacle-tv/api-client";
 import { Sheet } from "../../ui/Sheet";
 import { UserAvatar } from "../kit";

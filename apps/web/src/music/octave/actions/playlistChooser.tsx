@@ -6,7 +6,8 @@
  */
 
 import { useId, useState, useSyncExternalStore } from "react";
-import { ListMusic, Plus } from "lucide-react";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useTranslation } from "react-i18next";
 import { usePlaylistChooserSections } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";

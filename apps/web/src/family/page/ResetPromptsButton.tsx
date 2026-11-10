@@ -1,6 +1,6 @@
 import { memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { RotateCcw } from "lucide-react";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
 import { useResetFamilyPrompts } from "@tentacle-tv/api-client";
 import type { FamilyProfileDto, PromptsResetOffer } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";

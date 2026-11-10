@@ -8,7 +8,8 @@
  */
 
 import { memo, startTransition, useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import type { MusicListDirection, MusicListPrefs, MusicListSortKey } from "@tentacle-tv/shared/music";
 import type { ListFilter } from "@tentacle-tv/shared/octave";

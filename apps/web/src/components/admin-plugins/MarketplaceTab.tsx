@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { SearchX, Store } from "lucide-react";
+import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
+import { StorefrontIcon as Store } from "@phosphor-icons/react/dist/csr/Storefront";
 import { EmptyState } from "../ui/EmptyState";
 import { AdminNotice } from "../admin/kit";
 import { ActionPill } from "../admin/sessions/ActionPill";

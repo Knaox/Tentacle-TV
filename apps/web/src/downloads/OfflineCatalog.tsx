@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
-import { WifiOff } from "lucide-react";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { PageTransition } from "../components/PageTransition";
 import { CARD_HEIGHT, FRAME_GUTTER } from "../components/hero/HeroBillboard";
 import { useOfflineMode } from "../offline/useOfflineMode";

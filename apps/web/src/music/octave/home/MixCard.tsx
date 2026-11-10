@@ -9,7 +9,7 @@
 
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { Pause, Play } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../../components/icons/transport";
 import { useTranslation } from "react-i18next";
 import { octavePaths } from "@tentacle-tv/shared/octave/mode";
 import type { MusicHomeMix } from "@tentacle-tv/shared/music";
@@ -49,7 +49,7 @@ export const MixCard = memo(function MixCard({ mix }: { mix: MusicHomeMix }) {
           }}
           className={`octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95 ${current ? "" : "octave-hover-only"}`}
         >
-          <Icon className={playing ? "h-5 w-5" : "ml-0.5 h-5 w-5"} fill="currentColor" />
+          <Icon weight="fill" className={playing ? "h-5 w-5" : "ml-0.5 h-5 w-5"} />
         </button>
       </div>
       <span className="min-w-0 px-0.5">

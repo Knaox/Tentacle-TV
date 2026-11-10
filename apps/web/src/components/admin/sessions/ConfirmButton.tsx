@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Square, type LucideIcon } from "lucide-react";
+import { SquareIcon as Square } from "@phosphor-icons/react/dist/csr/Square";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { ActionPill, type PillStatus } from "./ActionPill";
 import { FloatingLayer } from "../../floating/FloatingLayer";
 
@@ -31,7 +32,7 @@ export function ConfirmButton({
   className = "",
 }: {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconType;
   busyLabel?: string;
   /** La question : « Arrêter la lecture ? ». */
   title: string;

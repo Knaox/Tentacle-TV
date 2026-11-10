@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Info } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import { useOctaveRights, useServerCapability } from "@tentacle-tv/api-client";
 import type { UserRights, UserRightsOptions } from "@tentacle-tv/shared";
 import { toggleInList } from "../../../parental/parentalModel";

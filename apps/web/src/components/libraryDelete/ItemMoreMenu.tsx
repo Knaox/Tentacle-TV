@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { DotsThreeIcon as MoreHorizontal } from "@phosphor-icons/react/dist/csr/DotsThree";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Dropdown } from "../ui/Dropdown";
 import { CapsuleButton, DetailCapsule } from "../detail/DetailActionCapsule";
@@ -38,7 +39,7 @@ export function ItemMoreMenu({ item }: { item: MediaItem }) {
         <div className="relative">
           <DetailCapsule>
             <CapsuleButton active={open} onClick={() => setOpen((v) => !v)} label={t("moreActions")}>
-              <MoreHorizontal className="h-5 w-5" strokeWidth={2} aria-hidden />
+              <MoreHorizontal className="h-5 w-5" aria-hidden />
             </CapsuleButton>
           </DetailCapsule>
           <Dropdown open={open} onClose={() => setOpen(false)} placement="bottom-start" minWidth={240}>
@@ -52,7 +53,7 @@ export function ItemMoreMenu({ item }: { item: MediaItem }) {
                 }}
                 className="lg-row-danger flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-[var(--status-error-fg)] transition-colors duration-150 hover:bg-danger-surface focus-visible:bg-danger-surface focus-visible:outline-none"
               >
-                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2.2} aria-hidden />
+                <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
                 {t("deleteFromLibrary")}
               </button>
             </div>

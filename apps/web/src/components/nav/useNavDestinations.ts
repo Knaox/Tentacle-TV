@@ -19,10 +19,19 @@
 
 import { useMemo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  BookOpen, Bookmark, Clapperboard, Film, FolderOpen, Heart, House, Layers, Music, Puzzle, Sparkles, Tv,
-  type LucideProps,
-} from "lucide-react";
+import { BookOpenIcon as BookOpen } from "@phosphor-icons/react/dist/csr/BookOpen";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { FolderOpenIcon as FolderOpen } from "@phosphor-icons/react/dist/csr/FolderOpen";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HouseIcon as House } from "@phosphor-icons/react/dist/csr/House";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { IconProps } from "@phosphor-icons/react";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
@@ -32,7 +41,7 @@ import { webPluginNavPages } from "../../hooks/pluginNavPages";
 import { useNavBarLayout } from "../../hooks/useNavBarLayout";
 import { appendPinned, applyOrder, nudge, reorderPinned, type NavEntryKind } from "./navLayout";
 
-export type NavIcon = ComponentType<LucideProps>;
+export type NavIcon = ComponentType<IconProps>;
 
 export interface NavDestination {
   key: string;

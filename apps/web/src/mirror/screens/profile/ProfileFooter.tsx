@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BarChart3, LogOut } from "lucide-react";
+import { ChartBarIcon as BarChart3 } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
 import { SettingsRow } from "../settings/ui/SettingsRow";
 import { SettingsSection } from "../settings/ui/SettingsSection";
 

@@ -1,6 +1,9 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, CircleDashed, type LucideIcon } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleDashedIcon as CircleDashed } from "@phosphor-icons/react/dist/csr/CircleDashed";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { LinkEndpointVerdict, LinkIssue, LinkTone } from "@tentacle-tv/shared";
 
 /**
@@ -11,7 +14,7 @@ import type { LinkEndpointVerdict, LinkIssue, LinkTone } from "@tentacle-tv/shar
  * Icône ET texte : l'état ne se lit jamais à la seule couleur.
  */
 
-const ICON: Record<LinkTone, LucideIcon> = { success: CircleCheck, warning: CircleAlert, neutral: CircleDashed };
+const ICON: Record<LinkTone, IconType> = { success: CircleCheck, warning: CircleAlert, neutral: CircleDashed };
 const COLOR: Record<LinkTone, string> = {
   success: "text-status-success-fg",
   warning: "text-status-warning-fg",

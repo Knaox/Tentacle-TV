@@ -1,6 +1,8 @@
 import { memo, useRef, useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CheckCircle, Trash2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CheckCircleIcon as CheckCircle } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { formatNotifTitle, notifBodyText, notificationAgo, type AppNotification } from "@tentacle-tv/api-client";
 import { ROW_SWIPE_SLOP, decideRowSwipe } from "@tentacle-tv/shared";
 import { useLongPress } from "../ui/useLongPress";

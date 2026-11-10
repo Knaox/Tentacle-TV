@@ -8,7 +8,7 @@
  */
 
 import { memo } from "react";
-import { Settings2 } from "lucide-react";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OctaveLogo } from "../../components/OctaveLogo";
@@ -35,7 +35,7 @@ export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { o
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
           <li key={to}>
             <NavLink to={to} end={end} className={itemClass}>
-              <Icon className="octave-nav-icon h-6 w-6" strokeWidth={1.9} aria-hidden />
+              <Icon className="octave-nav-icon h-6 w-6" aria-hidden />
               <span className="max-w-full truncate">{t(key)}</span>
             </NavLink>
           </li>
@@ -44,7 +44,7 @@ export const OctaveCompactRail = memo(function OctaveCompactRail({ onExit }: { o
       </ul>
       <div className="flex-1" />
       <NavLink to={octavePaths.settings} className={itemClass} aria-label={t("octaveShell:settings.nav")}>
-        <Settings2 className="octave-nav-icon h-6 w-6" strokeWidth={1.9} aria-hidden />
+        <Settings2 className="octave-nav-icon h-6 w-6" aria-hidden />
       </NavLink>
       <OctaveProfileButton compact menu="beside" />
     </nav>

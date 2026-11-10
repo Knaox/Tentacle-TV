@@ -5,7 +5,11 @@
  * avec sa pochette DÈS que le serveur l'a lu (premier fichier d'un lot), sans attendre la fin.
  */
 
-import { Check, CircleAlert, Copy, Loader2, PauseCircle } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PauseCircleIcon as PauseCircle } from "@phosphor-icons/react/dist/csr/PauseCircle";
 import { useTranslation } from "react-i18next";
 import { releaseArrival, releaseFraction, type ReleaseFlowState } from "@tentacle-tv/api-client";
 import { releaseArtSized } from "@tentacle-tv/shared/music";

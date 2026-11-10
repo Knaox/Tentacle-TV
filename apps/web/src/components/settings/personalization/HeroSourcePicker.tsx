@@ -1,5 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Bookmark, Check, Clapperboard, PlayCircle, Shuffle, Sparkles, Tv, type LucideIcon } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { PlayCircleIcon as PlayCircle } from "@phosphor-icons/react/dist/csr/PlayCircle";
+import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroModeHintKey, heroModeLabelKey, recoHeroKindOf, type HeroMode } from "@tentacle-tv/shared";
 import { SETTING_FIELD } from "../SettingToggleRow";
@@ -17,7 +24,7 @@ import { SETTING_FIELD } from "../SettingToggleRow";
  * les sources « Pour vous » rappellent leur repli.
  */
 
-const ICONS: Readonly<Record<HeroMode, LucideIcon>> = {
+const ICONS: Readonly<Record<HeroMode, IconType>> = {
   resume: PlayCircle,
   random: Shuffle,
   reco: Sparkles,

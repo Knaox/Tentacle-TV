@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ImagePlus } from "lucide-react";
+import { ImageSquareIcon as ImagePlus } from "@phosphor-icons/react/dist/csr/ImageSquare";
 import { TILE_ART } from "./AvatarTile";
 
 interface UploadTileProps {
@@ -36,7 +36,7 @@ export function UploadTile({ tabbable, disabled, onFile }: UploadTileProps) {
             style={{ boxShadow: "0 0 0 2px var(--text-primary)" }}
           />
           <span className="avatar-tile__art flex h-full w-full items-center justify-center rounded-full border-2 border-dashed border-line-strong bg-fill-soft text-content-secondary transition-colors hover:bg-fill-medium">
-            <ImagePlus size={28} strokeWidth={1.75} aria-hidden />
+            <ImagePlus size={28} aria-hidden />
           </span>
         </span>
         <span className="line-clamp-2 max-w-full text-center text-xs font-medium leading-tight text-content-tertiary">{t("upload")}</span>

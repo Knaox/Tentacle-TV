@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { MonitorPlay } from "lucide-react";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { IN_BROWSER } from "../pickerPlatform";

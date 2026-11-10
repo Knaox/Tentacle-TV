@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useRef, useState, type MouseEvent, type ReactElement, type RefObject } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { DotsThreeIcon as MoreHorizontal } from "@phosphor-icons/react/dist/csr/DotsThree";
 import { useTranslation } from "react-i18next";
 import { shelfSubjectFavoritable, useMusicShelvesCapability, usePlaylistSharingRules, type MusicShelfSubject } from "@tentacle-tv/api-client";
 import { CollectionMenuPanel, subjectName } from "./CollectionMenu";

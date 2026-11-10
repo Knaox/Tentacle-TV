@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { LoaderCircle } from "lucide-react";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import type { InstallProgress, InstallStage } from "./localJellyfinModel";
 
 const STAGE_TITLE: Readonly<Record<InstallStage, string>> = {

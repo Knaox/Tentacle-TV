@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { RefreshCw } from "lucide-react";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { useToast } from "../../contexts/ToastContext";
 import { ActionPill, type PillStatus } from "../admin/sessions/ActionPill";
 import { useErrorText } from "./ActionError";

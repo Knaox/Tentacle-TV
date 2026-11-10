@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioLines, CircleCheck, Cpu, Hourglass, Package, type LucideIcon } from "lucide-react";
+import { WaveformIcon as AudioLines } from "@phosphor-icons/react/dist/csr/Waveform";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CpuIcon as Cpu } from "@phosphor-icons/react/dist/csr/Cpu";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { PackageIcon as Package } from "@phosphor-icons/react/dist/csr/Package";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { DeliveryKind } from "@tentacle-tv/shared";
 
 /**
@@ -27,7 +32,7 @@ interface DeliveryStyle {
   count: string;
   hint: string;
   tone: string;
-  Icon: LucideIcon;
+  Icon: IconType;
 }
 
 const STYLE: Record<DeliveryKind, DeliveryStyle> = {

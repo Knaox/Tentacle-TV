@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Cloud, MonitorSmartphone } from "lucide-react";
+import { CloudIcon as Cloud } from "@phosphor-icons/react/dist/csr/Cloud";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
 import type { SettingScope } from "@tentacle-tv/shared";
 
 /**

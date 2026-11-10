@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DoorOpen, Tv, Users } from "lucide-react";
+import { DoorOpenIcon as DoorOpen } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { useAcceptFamilyInvitation, useDeclineFamilyInvitation } from "@tentacle-tv/api-client";
 import type { IncomingInvitationDto } from "@tentacle-tv/shared";
 import { Modal } from "../components/ui/Modal";

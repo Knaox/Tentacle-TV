@@ -1,13 +1,15 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Lock, type LucideIcon } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 /** Ce que montre la page publique — dans l'ordre de la page. */
 const PUBLIC_KEYS = ["public_time", "public_profile", "public_tastes", "public_titles", "public_records", "public_loves"] as const;
 /** Ce que le serveur garde : la réponse publique ne le contient pas (liste blanche, cf. contractShare). */
 const PRIVATE_KEYS = ["private_hours", "private_devices", "private_dates", "private_place", "private_list"] as const;
 
-function Column({ title, keys, Icon, tone }: { title: string; keys: readonly string[]; Icon: LucideIcon; tone: string }) {
+function Column({ title, keys, Icon, tone }: { title: string; keys: readonly string[]; Icon: IconType; tone: string }) {
   const { t } = useTranslation("statsShare");
   return (
     <section aria-label={title} className="min-w-0">
@@ -15,7 +17,7 @@ function Column({ title, keys, Icon, tone }: { title: string; keys: readonly str
       <ul className="space-y-1.5">
         {keys.map((key) => (
           <li key={key} className="flex items-start gap-2 text-[13px] leading-snug text-content-secondary">
-            <Icon size={14} strokeWidth={2.4} aria-hidden className={`mt-0.5 shrink-0 ${tone}`} />
+            <Icon weight="bold" size={14} aria-hidden className={`mt-0.5 shrink-0 ${tone}`} />
             {t(key)}
           </li>
         ))}

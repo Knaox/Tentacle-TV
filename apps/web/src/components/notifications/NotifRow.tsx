@@ -1,5 +1,7 @@
 import { memo, type KeyboardEvent } from "react";
-import { Check, ChevronRight, X } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { formatNotifTitle, notifBodyText } from "@tentacle-tv/api-client";
 import type { AppNotification } from "@tentacle-tv/api-client";
 import type { TFunction } from "i18next";
@@ -57,7 +59,7 @@ export const NotifRow = memo(function NotifRow({
             isSelected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-cta-brand-fg" : "border-line-strong"
           }`}
         >
-          {isSelected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+          {isSelected && <Check weight="bold" className="h-3.5 w-3.5" />}
         </span>
       ) : (
         <span
@@ -65,7 +67,7 @@ export const NotifRow = memo(function NotifRow({
           className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
           style={toneStyle ? { color: toneStyle.fg, background: toneStyle.bg } : { color: "var(--text-tertiary)", background: "var(--fill-soft)" }}
         >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+          <Icon className="h-[18px] w-[18px]" />
         </span>
       )}
 
@@ -89,7 +91,7 @@ export const NotifRow = memo(function NotifRow({
             title={t("notifications:delete")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary opacity-0 transition-opacity hover:bg-fill-soft hover:text-status-error-fg focus-visible:opacity-100 group-hover:opacity-100"
           >
-            <X className="h-3.5 w-3.5" strokeWidth={2.25} />
+            <X className="h-3.5 w-3.5" />
           </button>
           {hasRoute && <ChevronRight aria-hidden className="h-4 w-4 text-content-disabled" />}
         </div>

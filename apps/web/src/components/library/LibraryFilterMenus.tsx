@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowsDownUpIcon as ArrowUpDown } from "@phosphor-icons/react/dist/csr/ArrowsDownUp";
 import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
@@ -72,7 +72,7 @@ export function SortMenu({
       value={current ? t(`common:${current.key}`) : null}
       neutral={toolbar}
       align={toolbar ? "right" : "left"}
-      icon={toolbar ? <ArrowUpDown aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} /> : undefined}
+      icon={toolbar ? <ArrowUpDown aria-hidden className="h-3.5 w-3.5" /> : undefined}
     >
       <div className="flex flex-col gap-0.5" role="menu">
         {SORT_OPTIONS.map((opt) => (

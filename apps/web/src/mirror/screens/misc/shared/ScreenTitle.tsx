@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -38,7 +38,7 @@ export function BackButton({ onPress, label }: { onPress: () => void; label: str
       className="mirror-press flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
       style={{ color: "var(--brand-light)", WebkitTapHighlightColor: "transparent" }}
     >
-      <ChevronLeft size={20} strokeWidth={2} />
+      <ChevronLeft size={20} />
     </button>
   );
 }

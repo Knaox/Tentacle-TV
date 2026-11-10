@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Users } from "lucide-react";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 
 /**
  * « Invité · famille de X » — un profil invité de la Famille ne paraît dans

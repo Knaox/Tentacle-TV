@@ -1,6 +1,10 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clapperboard, ExternalLink, Folder, ScanSearch, Tv } from "lucide-react";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { FolderIcon as Folder } from "@phosphor-icons/react/dist/csr/Folder";
+import { ScanIcon as ScanSearch } from "@phosphor-icons/react/dist/csr/Scan";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { setupDocUrl } from "@tentacle-tv/shared";
 import type { ContentFolder } from "./addContentModel";
 

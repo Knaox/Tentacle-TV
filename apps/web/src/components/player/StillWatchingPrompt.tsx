@@ -29,7 +29,8 @@
 
 import { useEffect, useId, useState, type HTMLAttributes, type ReactNode, type SyntheticEvent, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Hourglass, Pause } from "lucide-react";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { PauseIcon as Pause } from "../icons/transport";
 import type { StillWatchingController } from "@tentacle-tv/api-client";
 import { videoShadow } from "../../lib/videoShadow";
 import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
@@ -160,7 +161,7 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
         >
           <div className="flex items-start gap-3">
             <span aria-hidden="true" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${look.icon}`}>
-              {asking ? <Hourglass size={18} strokeWidth={2.2} /> : <Pause size={18} strokeWidth={2.2} />}
+              {asking ? <Hourglass size={18} /> : <Pause size={18} />}
             </span>
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="text-base font-semibold leading-snug">

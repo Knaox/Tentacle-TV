@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleCheck, CircleHelp, Lightbulb, LoaderCircle, OctagonAlert, type LucideIcon } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { QuestionIcon as CircleHelp } from "@phosphor-icons/react/dist/csr/Question";
+import { LightbulbIcon as Lightbulb } from "@phosphor-icons/react/dist/csr/Lightbulb";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { WarningOctagonIcon as OctagonAlert } from "@phosphor-icons/react/dist/csr/WarningOctagon";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { AdminAttention } from "@tentacle-tv/shared";
 
 /**
@@ -25,7 +30,7 @@ export const AttentionStatus = memo(function AttentionStatus({ attention, servic
   const blocking = attention.blocking.length;
   const recommendations = attention.recommendations.length;
 
-  const [tone, Icon, main, extra]: [Tone, LucideIcon, string, string | null] = !attention.settled
+  const [tone, Icon, main, extra]: [Tone, IconType, string, string | null] = !attention.settled
     ? ["neutral", LoaderCircle, t("statusChecking"), null]
     : blocking > 0
       ? ["error", OctagonAlert, t("statusBlocking", { count: blocking }), recommendations > 0 ? t("statusRecommendations", { count: recommendations }) : null]

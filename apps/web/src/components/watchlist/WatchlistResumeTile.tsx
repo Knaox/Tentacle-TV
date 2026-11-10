@@ -1,7 +1,7 @@
 import { memo, useRef, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { useJellyfinClient, watchProgress } from "@tentacle-tv/api-client";
 import { cardRatingFor, resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "../cards/CardFrame";

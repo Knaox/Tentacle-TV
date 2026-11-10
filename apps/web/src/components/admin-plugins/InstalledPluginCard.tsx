@@ -1,7 +1,8 @@
 import { memo, useId } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Settings2, ShieldCheck } from "lucide-react";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { ToggleSwitch } from "../settings/ToggleSwitch";
 import { StatusPill } from "../admin/kit";
 import { ActionError } from "./ActionError";
@@ -137,7 +138,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
             to={configureTo}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:border-line-strong hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
           >
-            <Settings2 aria-hidden strokeWidth={2.2} className="h-4 w-4 text-content-secondary" />
+            <Settings2 aria-hidden className="h-4 w-4 text-content-secondary" />
             {t("configure")}
           </Link>
         )}

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { KeyRound, Lock, User } from "lucide-react";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import { backendUrl } from "../main";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthField, PasswordField } from "../components/auth/AuthField";

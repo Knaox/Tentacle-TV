@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { StatusPill, UserAvatar } from "../../../components/admin/kit";
 import { relativeTime } from "../../../components/admin/users/userListModel";
 import { Place, sceneTween, type Placed } from "..";

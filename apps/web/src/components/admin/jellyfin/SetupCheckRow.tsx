@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BookOpen, CircleAlert, CircleCheck, CircleHelp, CircleMinus, ExternalLink, RotateCw, Sparkles, type LucideIcon } from "lucide-react";
+import { BookOpenIcon as BookOpen } from "@phosphor-icons/react/dist/csr/BookOpen";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { QuestionIcon as CircleHelp } from "@phosphor-icons/react/dist/csr/Question";
+import { MinusCircleIcon as CircleMinus } from "@phosphor-icons/react/dist/csr/MinusCircle";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { trailerGuideHref, type SetupActionId, type SetupCheck, type SetupState } from "@tentacle-tv/shared";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
 import { ActionPill } from "../sessions/ActionPill";
@@ -16,7 +24,7 @@ import { CONFIRMED_ACTIONS, LEVEL_LABEL, STATE_LABEL, splitLibraries, stateTone,
  * de Jellyfin, qui devient alors l'action principale de la ligne.
  */
 
-const ICON: Record<SetupState, LucideIcon> = {
+const ICON: Record<SetupState, IconType> = {
   done: CircleCheck,
   todo: CircleAlert,
   "pending-restart": RotateCw,

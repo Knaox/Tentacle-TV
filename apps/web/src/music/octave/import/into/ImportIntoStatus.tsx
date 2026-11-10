@@ -4,7 +4,8 @@
  * est entré, ce qui arrive encore dans la bibliothèque, ce qui a été refusé — et « Ouvrir la playlist ».
  */
 
-import { CircleAlert, Loader2 } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { useTranslation } from "react-i18next";
 import type { ImportIntoState, ReleaseFlowState } from "@tentacle-tv/api-client";
 import { ReleaseImportProgress } from "../../releases/ReleaseImportProgress";

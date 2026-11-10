@@ -1,5 +1,5 @@
 import type { Transition } from "framer-motion";
-import { Volume2 } from "lucide-react";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
 import { easeOut } from "../../../theme/motion";
 import { CARD_TONES } from "../FauxCard";
 import { Place, type Animated, type Placed } from "../Place";
@@ -67,7 +67,7 @@ export function FauxTrailerPreview({ trailer, shot, settled, listed, transition,
           <div className="absolute inset-0" style={{ background: `linear-gradient(0deg, ${PANEL_FACE} 0%, rgba(29, 29, 31, 0.5) 7%, rgba(29, 29, 31, 0) 17%)` }} />
           {/* Le son : un rond graphite, sans liseré. */}
           <span className="absolute right-1.5 top-1.5 flex h-[17px] w-[17px] items-center justify-center rounded-full text-white" style={{ background: "rgba(28, 28, 30, 0.6)" }}>
-            <Volume2 className="h-[9px] w-[9px]" strokeWidth={2} aria-hidden />
+            <Volume2 className="h-[9px] w-[9px]" aria-hidden />
           </span>
         </div>
         <Place x={0} y={VIDEO_H} w={PREVIEW_W} h={PREVIEW_H - VIDEO_H} visible={settled} dy={settled ? 0 : 6} transition={RISE}>

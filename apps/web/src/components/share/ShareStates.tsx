@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Link2Off, ListVideo } from "lucide-react";
+import { LinkBreakIcon as Link2Off } from "@phosphor-icons/react/dist/csr/LinkBreak";
+import { QueueIcon as ListVideo } from "@phosphor-icons/react/dist/csr/Queue";
 
 /**
  * Le chargement d'un partage dont on ne sait pas encore s'il est une liste

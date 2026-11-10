@@ -1,7 +1,7 @@
 import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Play } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { useFicheExtras, useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
 import {
   buildExtraEntries, catalogTiles, scopeName, sortTrailersByLang, withSeasonNames, type CatalogRow, type MediaItem, type RelayedTrailerEntry, type RichTrailer,

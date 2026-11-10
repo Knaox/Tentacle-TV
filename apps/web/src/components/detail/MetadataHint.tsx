@@ -2,7 +2,8 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Info, RefreshCw } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import {
   libraryRescanErrorCode,
   useAdminMetadataStatus,

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import type { SceneProps } from "../../types";
 import { AdminNotice } from "../../../components/admin/kit";
 import { FauxCursor, Place, SceneStage, sceneTween, useSceneClock } from "..";

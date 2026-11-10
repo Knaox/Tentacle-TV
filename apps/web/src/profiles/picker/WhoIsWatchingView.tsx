@@ -1,6 +1,8 @@
 import { memo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, UserCog, X } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { UserGearIcon as UserCog } from "@phosphor-icons/react/dist/csr/UserGear";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { ProfilePinPad } from "./ProfilePinPad";
 import { ProfileRow } from "./ProfileRow";
 import { StayOnDeviceToggle } from "./StayOnDeviceToggle";

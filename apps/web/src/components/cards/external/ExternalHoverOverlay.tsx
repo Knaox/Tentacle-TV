@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { EyeOff, Info, Plus } from "lucide-react";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import {
   externalCardActionEntries,
   resolveExternalCardOverlay,
@@ -108,7 +110,7 @@ function TrayEntry({ entry, actions, name, onDismiss, size }: {
         busy={actions.requesting}
         onPress={actions.request}
       >
-        <Plus className={icon} strokeWidth={2.5} aria-hidden />
+        <Plus weight="bold" className={icon} aria-hidden />
       </CardTrayPrimaryButton>
     );
   }

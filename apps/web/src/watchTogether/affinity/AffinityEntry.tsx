@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ChevronRight, HeartHandshake } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { closeRoomModal } from "../roomModalStore";
 import { openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
@@ -43,7 +44,7 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white"
           style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
         >
-          <HeartHandshake className="h-4 w-4" strokeWidth={2.2} />
+          <HeartHandshake className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] font-semibold text-content-primary">{t("affinityFind")}</span>
@@ -63,7 +64,7 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
           className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
           style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
         >
-          <HeartHandshake className="h-5 w-5" strokeWidth={2.2} />
+          <HeartHandshake className="h-5 w-5" />
         </span>
         <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-content-tertiary">{detail}</p>
         <button

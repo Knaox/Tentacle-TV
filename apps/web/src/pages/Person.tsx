@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Heart } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import type { SearchMediaItem } from "@tentacle-tv/shared";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { RowHeader } from "../components/rows/RowHeader";
@@ -138,7 +138,7 @@ function LikeButton({ name, liked, pending, toggle }: { name: string; liked: boo
           : "border-line-strong bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
       }`}
     >
-      <Heart size={18} fill={liked ? "currentColor" : "none"} aria-hidden />
+      <Heart weight={liked ? "fill" : "regular"} size={18} aria-hidden />
     </button>
   );
 }

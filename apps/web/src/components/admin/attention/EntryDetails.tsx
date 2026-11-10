@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import type { LinkIssue } from "@tentacle-tv/shared";
 import { AdminNotice } from "../kit";
 import { JELLYFIN_SETUP_ANCHOR } from "../jellyfin/SetupChecklist";

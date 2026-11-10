@@ -3,7 +3,7 @@
  * (« Voir sur Bandcamp » : l'acheter, la soutenir) quand c'est un lien — jamais pour des fichiers seuls.
  */
 
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { useTranslation } from "react-i18next";
 import { ImportedBadge } from "./ImportedBadge";
 

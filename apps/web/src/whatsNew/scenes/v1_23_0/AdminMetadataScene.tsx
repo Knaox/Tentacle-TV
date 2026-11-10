@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { CircleCheck, KeyRound } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
 import type { SceneProps } from "../../types";
 import { AdminNotice } from "../../../components/admin/kit";
 import { FauxCursor, Place, SceneStage, sceneTween, useSceneClock } from "..";

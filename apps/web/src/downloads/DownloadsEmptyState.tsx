@@ -8,7 +8,7 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { HardDriveDownload } from "lucide-react";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 
 const STEPS = ["emptyStep1", "emptyStep2", "emptyStep3"] as const;
 

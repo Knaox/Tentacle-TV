@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { FolderOpen, Trash2 } from "lucide-react";
+import { FolderOpenIcon as FolderOpen } from "@phosphor-icons/react/dist/csr/FolderOpen";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import type { LibraryPlan, LibraryType } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { isValidLibraryName } from "./wizardModel";

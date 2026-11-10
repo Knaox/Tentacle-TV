@@ -1,6 +1,8 @@
 import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Eye, EyeOff } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
 import type { SetupContext, SetupTmdbRequest } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { tmdbKeyHint } from "../admin/metadata/tmdbKey";

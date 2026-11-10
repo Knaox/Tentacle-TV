@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, CircleHelp, ExternalLink } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { QuestionIcon as CircleHelp } from "@phosphor-icons/react/dist/csr/Question";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { SETUP_HELP, packagedHelpKey, setupDocUrl, setupHelpTopic, type SetupPackaging, type SetupStep } from "@tentacle-tv/shared";
 
 /**

@@ -1,6 +1,8 @@
 import { useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, ShieldCheck, X } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Sheet } from "../ui/Sheet";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { StatusPill } from "../admin/kit";

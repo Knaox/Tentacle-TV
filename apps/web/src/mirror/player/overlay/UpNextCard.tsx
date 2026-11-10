@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Play, X } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { useViewport } from "../../useFormFactor";
@@ -102,7 +103,7 @@ export function UpNextCard({ nextEpisode, countdownSeconds, countdownTotalMs, co
             countdownMs={armed?.remainingMs ?? null}
             initialProgress={armed?.initialProgress ?? 0}
             fullWidth
-            icon={<Play size={15} color={PLAYER.textInverse} fill={PLAYER.textInverse} />}
+            icon={<Play size={15} color={PLAYER.textInverse} />}
           />
         </div>
       </div>

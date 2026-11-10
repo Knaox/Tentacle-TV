@@ -1,17 +1,30 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AlertTriangle, Activity, Bell, Captions, Cast, Clock, File, Film, HardDrive, Info, Lock, Package, Server, Shield, User, Users,
-  WifiOff,
-  type LucideIcon,
-} from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { PulseIcon as Activity } from "@phosphor-icons/react/dist/csr/Pulse";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { SubtitlesIcon as Captions } from "@phosphor-icons/react/dist/csr/Subtitles";
+import { ScreencastIcon as Cast } from "@phosphor-icons/react/dist/csr/Screencast";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { FileIcon as File } from "@phosphor-icons/react/dist/csr/File";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { HardDriveIcon as HardDrive } from "@phosphor-icons/react/dist/csr/HardDrive";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { PackageIcon as Package } from "@phosphor-icons/react/dist/csr/Package";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { ShieldIcon as Shield } from "@phosphor-icons/react/dist/csr/Shield";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import {
   detailText, problemCopyText,
   type ProblemActionKey, type ProblemIcon, type ProblemModel,
 } from "@tentacle-tv/shared";
 
 /** Le vocabulaire d'icônes du modèle, dessiné par Lucide (le jeu du web). */
-export const PROBLEM_ICONS: Record<ProblemIcon, LucideIcon> = {
+export const PROBLEM_ICONS: Record<ProblemIcon, IconType> = {
   wifiOff: WifiOff,
   server: Server,
   shield: Shield,

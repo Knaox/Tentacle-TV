@@ -1,4 +1,6 @@
-import { Check, SlidersHorizontal, X } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { SlidersHorizontalIcon as SlidersHorizontal } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { PlatformLogo } from "../../../components/reco/PlatformLogo";
 import { useSceneMedia } from "../../sceneMedia";

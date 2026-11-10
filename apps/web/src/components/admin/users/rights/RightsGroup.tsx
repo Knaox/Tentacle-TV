@@ -1,5 +1,5 @@
 import { memo, useId, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 
 interface RightsGroupProps {
   title: string;

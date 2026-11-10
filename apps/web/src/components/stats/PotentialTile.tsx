@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { Bookmark, ChevronRight } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { ViewingStatsTaste } from "@tentacle-tv/shared";
 import { CardImage } from "../cards/CardImage";

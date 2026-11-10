@@ -4,7 +4,8 @@
  */
 
 import { memo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { useTranslation } from "react-i18next";
 import { useOctaveHistory } from "./useOctaveHistory";
 import { useOctaveGlassStage } from "../glass/glassStage";

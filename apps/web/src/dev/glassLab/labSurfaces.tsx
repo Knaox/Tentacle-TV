@@ -9,25 +9,22 @@
  */
 
 import type { CSSProperties, ReactNode } from "react";
-import {
-  Bell,
-  Bookmark,
-  Check,
-  Heart,
-  Info,
-  LogOut,
-  Maximize,
-  Pause,
-  PictureInPicture2,
-  Play,
-  Plus,
-  RotateCcw,
-  RotateCw,
-  Search,
-  Settings,
-  Users,
-  Volume2,
-} from "lucide-react";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { CornersOutIcon as Maximize } from "@phosphor-icons/react/dist/csr/CornersOut";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../components/icons/transport";
+import { PictureInPictureIcon as PictureInPicture2 } from "@phosphor-icons/react/dist/csr/PictureInPicture";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { ArrowCounterClockwiseIcon as RotateCcw } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
 
 import {
   GlassSpecular,
@@ -126,7 +123,7 @@ export function LabHeroActions({ top }: { top: number }) {
   return (
     <div style={{ ...row, position: "fixed", top, left: 56, gap: 12, zIndex: 20 }}>
       <Glass as="button" level="prominent" shape="capsule" interactive style={{ ...row, height: 52, padding: "0 28px", gap: 10, fontSize: 18, fontWeight: 700, position: "relative" }}>
-        <Play size={20} fill="currentColor" /> Lecture
+        <Play size={20} /> Lecture
       </Glass>
       <Glass as="button" shape="capsule" interactive style={{ ...row, height: 52, padding: "0 24px", gap: 10, fontSize: 17, fontWeight: 600, position: "relative" }}>
         <Info size={20} /> Plus d'infos
@@ -144,7 +141,7 @@ export function LabCardTray({ poster, top, left }: { poster?: string; top: numbe
     <div style={{ position: "absolute", top, left, width: 240, height: 360, borderRadius: 18, overflow: "hidden", boxShadow: "0 20px 50px -18px rgba(0,0,0,0.7)", zIndex: 10 }}>
       {poster ? <img src={poster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} /> : null}
       <Glass shape="capsule" style={{ ...row, position: "absolute", left: 10, right: 10, bottom: 10, height: 46, padding: "0 4px", justifyContent: "space-between" }}>
-        <Icon label="Lire" size={38}><Play size={17} fill="currentColor" /></Icon>
+        <Icon label="Lire" size={38}><Play size={17} /></Icon>
         <Icon label="Ma liste" size={38}><Bookmark size={17} /></Icon>
         <Icon label="Favori" size={38}><Heart size={17} /></Icon>
         <Icon label="Vu" size={38}><Check size={17} /></Icon>
@@ -187,7 +184,7 @@ export function LabPlayer({ bottom }: { bottom: number }) {
     <div style={{ ...row, position: "fixed", left: 0, right: 0, bottom, justifyContent: "center", gap: 14, zIndex: 20 }}>
       <Glass level="clear" shape="capsule" style={{ ...row, height: 52, padding: "0 6px", gap: 2 }}>
         <Icon label="Reculer" size={44}><RotateCcw size={19} /></Icon>
-        <Icon label="Pause" size={48}><Pause size={22} fill="currentColor" /></Icon>
+        <Icon label="Pause" size={48}><Pause size={22} /></Icon>
         <Icon label="Avancer" size={44}><RotateCw size={19} /></Icon>
       </Glass>
       <Glass level="clear" shape="capsule" style={{ ...row, height: 52, width: 420, padding: "0 20px", gap: 14, fontVariantNumeric: "tabular-nums", fontSize: 14 }}>

@@ -1,6 +1,6 @@
 import { useId, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { ScopedSearchField } from "../../search/ScopedSearchField";
 import { SegmentLens } from "../../ui/glass/SegmentLens";
 import { USER_FILTERS, USER_SORTS, type UserFilter, type UserSort } from "./userListModel";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { cls } from "../../pages/adminUtils";
 
 /** Un geste du pied de l'écran : l'action principale, ou une action secondaire (« Passer », « Plus tard »). */

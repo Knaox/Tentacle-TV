@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RotateCw } from "lucide-react";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { packagedHelpKey } from "@tentacle-tv/shared";
 import { useNowTick } from "../../hooks/useAdminSessions";
 import { ConfirmDialog } from "../ui/ConfirmDialog";

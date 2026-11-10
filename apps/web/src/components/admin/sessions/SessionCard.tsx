@@ -1,7 +1,10 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Lock, MessageSquare, Pause, Play, Radio } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { ChatTextIcon as MessageSquare } from "@phosphor-icons/react/dist/csr/ChatText";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../icons/transport";
+import { RadioIcon as Radio } from "@phosphor-icons/react/dist/csr/Radio";
 import {
   buttonStatus,
   formatClock,

@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
-import { TriangleAlert } from "lucide-react";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 import { cls } from "../../../pages/adminUtils";
 import { Modal } from "../../ui/Modal";
 import { AdminSection } from "../kit";

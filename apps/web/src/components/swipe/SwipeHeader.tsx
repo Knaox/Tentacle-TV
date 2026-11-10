@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Heart, Star, X } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { SwipeCounts } from "@tentacle-tv/api-client";
 
 /**
@@ -30,7 +32,7 @@ export const SwipeHeader = memo(function SwipeHeader({ counts }: { counts: Swipe
             title={label}
             className="inline-flex items-center gap-1.5 rounded-full border border-line-subtle bg-fill-subtle px-2.5 py-1 text-sm font-semibold tabular-nums text-content-primary sm:px-3"
           >
-            <Icon size={14} className={`${tone} ${key === "dislike" ? "" : "fill-current"}`} aria-hidden />
+            <Icon size={14} weight={key === "dislike" ? "bold" : "fill"} className={tone} aria-hidden />
             <span aria-hidden>{n}</span>
             <span className="sr-only">{label}</span>
           </li>

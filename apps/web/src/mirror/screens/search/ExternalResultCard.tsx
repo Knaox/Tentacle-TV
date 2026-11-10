@@ -16,7 +16,8 @@
  */
 
 import { useMemo, useState } from "react";
-import { Film, Tv } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { useIsFavoritePending, useIsWatchlistPending } from "@tentacle-tv/api-client";
 import {
   externalMarkerFace, titleKey, titleMediaType, topLabelInsetRight, type ExternalSearchItem, type ExternalTone,

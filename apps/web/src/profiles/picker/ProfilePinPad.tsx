@@ -1,6 +1,6 @@
 import { memo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Delete } from "lucide-react";
+import { BackspaceIcon as Delete } from "@phosphor-icons/react/dist/csr/Backspace";
 import { FAMILY_PIN_LENGTH } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 import { pinKeyOf } from "./pinKeys";

@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { useCardMarkers, useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatCommunityRating, formatUserScore, STAR_PATH, STAR_VIEWBOX, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";

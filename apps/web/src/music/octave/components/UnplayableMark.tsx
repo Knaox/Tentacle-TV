@@ -4,7 +4,7 @@
  */
 
 import { memo } from "react";
-import { CloudOff } from "lucide-react";
+import { CloudSlashIcon as CloudOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
 import { useTranslation } from "react-i18next";
 import { unplayableReasonKey, type UnplayableReason } from "@tentacle-tv/shared/octave";
 

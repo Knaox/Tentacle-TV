@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Server } from "lucide-react";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
 import type { SetupPackaging, SetupSelection, SetupStep } from "@tentacle-tv/shared";
 import { SetupHelp } from "./SetupHelp";
 import { WizardFooter, type WizardAction } from "./WizardFooter";

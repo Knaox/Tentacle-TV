@@ -1,6 +1,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Loader2, Play, Trash2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { useJellyfinClient, useToggleWatchlistForItem, watchProgress, watchStage } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useRemainingLabel } from "../../../components/watchlist/WatchProgressLine";
@@ -77,7 +80,7 @@ export const WatchlistListRow = memo(function WatchlistListRow({
                 selected ? "border-transparent bg-[var(--brand)] text-white" : "border-white/70 bg-black/40"
               }`}
             >
-              {selected && <Check size={12} strokeWidth={3} />}
+              {selected && <Check weight="bold" size={12} />}
             </span>
           )}
         </div>
@@ -101,7 +104,7 @@ export const WatchlistListRow = memo(function WatchlistListRow({
             className="flex h-11 w-11 items-center justify-center rounded-full text-white disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
           >
-            {pendingPlay ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Play size={18} fill="currentColor" className="ml-0.5" aria-hidden />}
+            {pendingPlay ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Play size={18} className="ml-0.5" aria-hidden />}
           </button>
           <button
             type="button"

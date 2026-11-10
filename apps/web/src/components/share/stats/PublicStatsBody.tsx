@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
-import { BarChart3, CalendarSearch } from "lucide-react";
+import { ChartBarIcon as BarChart3 } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { CalendarDotsIcon as CalendarSearch } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import {
   BADGES_MIN_SECONDS, habitsInsight, listeningState, viewingStatsFromPublic, type PublicViewingStats,
 } from "@tentacle-tv/shared";

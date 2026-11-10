@@ -1,11 +1,13 @@
 import { memo, type ReactNode } from "react";
-import { Check, ChevronRight, type LucideIcon } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { SettingScope } from "@tentacle-tv/shared";
 import { ScopeBadge } from "./ScopeBadge";
 
 export interface SettingsRowProps {
   /** Icône Lucide à gauche (l'équivalent du nom Feather de l'app). */
-  icon?: LucideIcon;
+  icon?: IconType;
   label: string;
   description?: string;
   /** La portée du réglage : la pastille « Compte » / « Cet appareil » sous le libellé. */
@@ -59,7 +61,7 @@ export const SettingsRow = memo(function SettingsRow({
     <>
       {Icon ? (
         <span aria-hidden className={`flex w-[22px] shrink-0 justify-center ${iconTint}`}>
-          <Icon size={19} strokeWidth={2} />
+          <Icon size={19} />
         </span>
       ) : null}
       <span className="flex min-w-0 flex-1 flex-col justify-center">

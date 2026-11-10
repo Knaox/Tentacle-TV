@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { CircleCheck, Info, OctagonAlert, TriangleAlert } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { WarningOctagonIcon as OctagonAlert } from "@phosphor-icons/react/dist/csr/WarningOctagon";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 
 /**
  * L'encadré d'information d'une page d'administration : « le redémarrage est

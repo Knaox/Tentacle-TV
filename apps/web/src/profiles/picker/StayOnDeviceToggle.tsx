@@ -1,6 +1,6 @@
 import { memo, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { IN_BROWSER } from "../pickerPlatform";
 
 interface StayOnDeviceToggleProps {
@@ -40,7 +40,7 @@ export const StayOnDeviceToggle = memo(function StayOnDeviceToggle({ checked, di
             checked ? "border-transparent bg-[var(--brand)]" : "border-line-strong"
           }`}
         >
-          <Check size={14} strokeWidth={3} className={`text-white transition-opacity duration-150 ${checked ? "opacity-100" : "opacity-0"}`} />
+          <Check weight="bold" size={14} className={`text-white transition-opacity duration-150 ${checked ? "opacity-100" : "opacity-0"}`} />
         </span>
         {t("stayOnDevice")}
       </label>

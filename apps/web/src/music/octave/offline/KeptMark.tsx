@@ -7,7 +7,7 @@
  */
 
 import { memo } from "react";
-import { AlertCircle } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { useTranslation } from "react-i18next";
 import { DownloadGlyph } from "../../../downloads/DownloadGlyph";
 import { trackFraction, trackStage } from "@tentacle-tv/offline-core/music";

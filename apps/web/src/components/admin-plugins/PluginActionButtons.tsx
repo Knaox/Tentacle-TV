@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleArrowUp, PackagePlus, Trash2 } from "lucide-react";
+import { ArrowCircleUpIcon as CircleArrowUp } from "@phosphor-icons/react/dist/csr/ArrowCircleUp";
+import { PackageIcon as PackagePlus } from "@phosphor-icons/react/dist/csr/Package";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ActionPill, type PillStatus } from "../admin/sessions/ActionPill";
 import { ConfirmButton } from "../admin/sessions/ConfirmButton";

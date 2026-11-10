@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, Tv, UserPlus } from "lucide-react";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { SettingsRow } from "@tentacle-tv/ui";
 import { AdminPage, AdminSection } from "../components/admin/kit";
 import { HealthCard } from "../components/admin/home/HealthCard";

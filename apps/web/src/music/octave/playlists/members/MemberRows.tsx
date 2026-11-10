@@ -5,7 +5,8 @@
  */
 
 import { memo } from "react";
-import { Plus, X } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { MUSIC_PLAYLIST_MEMBER_RIGHTS, type MusicPlaylistMember, type MusicPlaylistMemberRight, type MusicPlaylistPerson } from "@tentacle-tv/shared/music";
 import { UserAvatar } from "../../../../components/ui/UserAvatar";

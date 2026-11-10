@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckSquare } from "lucide-react";
+import { CheckSquareIcon as CheckSquare } from "@phosphor-icons/react/dist/csr/CheckSquare";
 import type { DeletableEntry, DeletionRunSummary } from "@tentacle-tv/api-client";
 import { chipCls } from "../library/filterChip";
 import { DeleteTitlesDialog } from "./DeleteTitlesDialog";
@@ -63,7 +63,7 @@ export function useDeletionMode({ allowed, active, setActive, universe, entries,
       title={t("selectHint")}
       className={`${chipCls(selection.active)} inline-flex cursor-pointer items-center gap-1.5`}
     >
-      <CheckSquare aria-hidden className="h-3.5 w-3.5" strokeWidth={2.1} />
+      <CheckSquare aria-hidden className="h-3.5 w-3.5" />
       {selection.active ? t("done") : t("select")}
     </button>
   ) : null;

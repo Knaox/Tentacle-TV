@@ -1,6 +1,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { BookmarkMinus, Check, Loader2, Play } from "lucide-react";
+import { BookmarksSimpleIcon as BookmarkMinus } from "@phosphor-icons/react/dist/csr/BookmarksSimple";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PlayIcon as Play } from "../icons/transport";
 import { useJellyfinClient, useToggleWatchlistForItem, watchStage } from "@tentacle-tv/api-client";
 import { formatDuration, type MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "../MediaContextMenu";
@@ -88,7 +91,7 @@ export const WatchlistRow = memo(function WatchlistRow({
             selected ? "border-transparent bg-[var(--brand)] text-white" : "border-line-strong"
           }`}
         >
-          {selected && <Check size={14} strokeWidth={3} />}
+          {selected && <Check weight="bold" size={14} />}
         </span>
       )}
 
@@ -113,7 +116,7 @@ export const WatchlistRow = memo(function WatchlistRow({
             aria-label={t("playTitle", { title: item.Name })}
             className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-3 text-sm font-bold text-cta-primary-fg transition-transform duration-150 hover:scale-[1.04] active:scale-[0.97] disabled:cursor-wait disabled:opacity-60 sm:px-4 motion-reduce:hover:scale-100"
           >
-            {playPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Play size={16} fill="currentColor" aria-hidden />}
+            {playPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Play size={16} aria-hidden />}
             <span className="hidden sm:inline">{stage === "inProgress" ? t("resume") : t("play")}</span>
           </button>
           <button

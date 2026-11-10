@@ -12,7 +12,9 @@
  */
 
 import { memo, useMemo } from "react";
-import { CloudOff, Library, Play } from "lucide-react";
+import { CloudSlashIcon as CloudOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { openUnavailableAlbum } from "@tentacle-tv/api-client";
@@ -49,7 +51,7 @@ function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) 
       }}
       className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
     >
-      <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
+      <Play className="ml-0.5 h-5 w-5" />
     </button>
   );
 }

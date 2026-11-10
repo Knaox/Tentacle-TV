@@ -1,6 +1,9 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Clapperboard, EyeOff, History, Tv } from "lucide-react";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { ClockCounterClockwiseIcon as History } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { favoriteWatchState, summarizeFavorites, type CollectionTypeTab } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 

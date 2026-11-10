@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Puzzle, Store } from "lucide-react";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { StorefrontIcon as Store } from "@phosphor-icons/react/dist/csr/Storefront";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { EmptyState } from "../ui/EmptyState";
 import { AdminNotice } from "../admin/kit";

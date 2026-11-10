@@ -1,5 +1,8 @@
 import { memo, type ReactNode } from "react";
-import { CalendarCheck, Flame, Popcorn, Trophy } from "lucide-react";
+import { CalendarCheckIcon as CalendarCheck } from "@phosphor-icons/react/dist/csr/CalendarCheck";
+import { FireIcon as Flame } from "@phosphor-icons/react/dist/csr/Fire";
+import { PopcornIcon as Popcorn } from "@phosphor-icons/react/dist/csr/Popcorn";
+import { TrophyIcon as Trophy } from "@phosphor-icons/react/dist/csr/Trophy";
 import type { ViewingStatsRecords } from "@tentacle-tv/shared";
 import { StatsSection } from "./StatsSection";
 import { useStatsFormat } from "./useStatsFormat";

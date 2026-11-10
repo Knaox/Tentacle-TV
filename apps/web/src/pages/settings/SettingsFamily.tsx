@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
-import { Info } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import { Shimmer } from "@tentacle-tv/ui";
 import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
 import { answerableInvitations, familyEntryShown, familyGrowth, sessionManages, type FamilyOverviewDto } from "@tentacle-tv/shared";

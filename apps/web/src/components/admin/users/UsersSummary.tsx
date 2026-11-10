@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Activity, MonitorSmartphone, Users } from "lucide-react";
+import { PulseIcon as Activity } from "@phosphor-icons/react/dist/csr/Pulse";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { PairedDevice } from "@tentacle-tv/api-client";
 import { StatTile } from "../kit";
 import { countActiveSince, normalizeUserId, type AdminUser } from "./userListModel";

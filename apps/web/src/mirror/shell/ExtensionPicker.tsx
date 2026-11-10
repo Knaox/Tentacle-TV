@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { RAIL_WIDTH, SHEET_MAX_WIDTH } from "../responsive";
 import { useViewport } from "../useFormFactor";
 import { TAB_BAR_TOTAL } from "./metrics";

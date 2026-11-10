@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../hooks/useRecoFilter";

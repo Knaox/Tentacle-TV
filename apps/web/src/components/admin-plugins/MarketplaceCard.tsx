@@ -1,6 +1,7 @@
 import { memo, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Info, ShieldCheck } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { StatusPill } from "../admin/kit";
 import { ActionPill } from "../admin/sessions/ActionPill";
 import { ActionError } from "./ActionError";

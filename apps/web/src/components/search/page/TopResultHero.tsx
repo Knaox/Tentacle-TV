@@ -9,7 +9,7 @@
 
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchTopHit } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
@@ -85,7 +85,7 @@ export const TopResultHero = memo(function TopResultHero({ top, terms, onOpen }:
             </button>
             {gap && (
               <button type="button" onClick={gap.open} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2.5 text-sm font-bold text-cta-brand-fg shadow-[0_2px_10px_rgba(var(--brand-rgb),0.45)] transition-transform hover:scale-[1.03] active:scale-95">
-                <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                <Plus weight="bold" className="h-4 w-4" aria-hidden />
                 {t("requests:missingSeasons", { count: gap.count })}
               </button>
             )}

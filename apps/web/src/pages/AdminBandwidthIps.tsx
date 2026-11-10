@@ -7,7 +7,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { cls } from "./adminUtils";
 import { isValidIpOrCidr } from "./adminBandwidthUnits";
 

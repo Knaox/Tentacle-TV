@@ -14,7 +14,8 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ListMusic } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
 import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";

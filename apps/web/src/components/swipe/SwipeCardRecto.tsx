@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { Check, Compass, Sparkles, Star, TrendingUp } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { TrendUpIcon as TrendingUp } from "@phosphor-icons/react/dist/csr/TrendUp";
 import type { SwipeCard } from "@tentacle-tv/api-client";
 
 interface SwipeCardRectoProps {
@@ -32,7 +36,7 @@ export function SwipeCardRecto({ card, title, format, pageSlot = false }: SwipeC
         )}
         {card.voteAverage != null && card.voteAverage > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/65 px-2.5 py-1 text-xs font-semibold tabular-nums text-white">
-            <Star size={12} className="fill-current text-amber-300" aria-hidden />
+            <Star size={12} weight="fill" className="text-amber-300" aria-hidden />
             {card.voteAverage.toFixed(1)}
           </span>
         )}

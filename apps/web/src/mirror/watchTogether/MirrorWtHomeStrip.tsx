@@ -1,6 +1,8 @@
 import { memo, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { HeartHandshake, Inbox, Users } from "lucide-react";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { TrayIcon as Inbox } from "@phosphor-icons/react/dist/csr/Tray";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
 import { KIND_LABEL_KEY, elsewhereLabel, homeStripKind, memberName } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";

@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { EyeOff, Info, Plus } from "lucide-react";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useCardToggles } from "@tentacle-tv/api-client";
 import {
   cardExtraLabelKey,
@@ -110,7 +112,7 @@ export function CardActionTray({
       )}
       {request && (
         <CardTrayPrimaryButton box={box} icon={icon} tone="brand" label={request.label} onPress={request.onRequest}>
-          <Plus className={icon} strokeWidth={2.5} aria-hidden />
+          <Plus weight="bold" className={icon} aria-hidden />
         </CardTrayPrimaryButton>
       )}
       {overlay.toggles.length > 0 &&

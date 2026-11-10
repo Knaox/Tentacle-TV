@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyIcon as LockKeyhole } from "@phosphor-icons/react/dist/csr/LockKey";
 import { OwnPinDialog } from "../page/PinEditors";
 import { useFamilyPinReminder } from "./useFamilyPinReminder";
 

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Shield } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ShieldIcon as Shield } from "@phosphor-icons/react/dist/csr/Shield";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMediaLicense } from "../../../hooks/useMediaLicense";
 

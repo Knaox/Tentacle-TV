@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Check, DoorOpen, Tv, Users } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { DoorOpenIcon as DoorOpen } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { SceneProps } from "../../types";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { FauxCursor, FauxRow, Place, SceneStage, useSceneClock } from "..";

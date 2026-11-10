@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, ChevronRight, Clapperboard, HeartHandshake, Sparkles, Tv, X, type LucideIcon } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { HandHeartIcon as HeartHandshake } from "@phosphor-icons/react/dist/csr/HandHeart";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds, applyAffinityPush, closeAffinity, showAffinityView } from "@tentacle-tv/api-client";
 import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/shared";
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
@@ -14,7 +21,7 @@ import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
  * monde). Les refus se disent ici, pas en toast : il passerait sous le voile.
  */
 
-const ICONS: Record<WtAffinityKind, LucideIcon> = { movie: Clapperboard, series: Tv, anime: Sparkles };
+const ICONS: Record<WtAffinityKind, IconType> = { movie: Clapperboard, series: Tv, anime: Sparkles };
 
 export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDto | null; titleId: string }) {
   const { t } = useTranslation("watchTogether");
@@ -74,7 +81,7 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
             className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
             style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
           >
-            <HeartHandshake className="h-5 w-5" strokeWidth={2.2} />
+            <HeartHandshake className="h-5 w-5" />
           </span>
         )}
         <div className="min-w-0 flex-1">

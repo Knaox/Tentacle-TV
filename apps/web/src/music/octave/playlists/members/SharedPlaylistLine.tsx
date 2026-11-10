@@ -4,7 +4,7 @@
  * bouton (44 px de haut) qui ouvre la feuille des personnes. Rien sans partage ni capacité.
  */
 
-import { Users } from "lucide-react";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { useTranslation } from "react-i18next";
 import { usePlaylistSharingRules } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";

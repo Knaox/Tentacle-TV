@@ -17,7 +17,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronsUpDown, Settings2 } from "lucide-react";
+import { CaretUpDownIcon as ChevronsUpDown } from "@phosphor-icons/react/dist/csr/CaretUpDown";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { ManageProfilesIcon, SwitchProfileIcon } from "../../../components/userMenu/icons";
 import { useMenuKeyboard } from "../../../components/userMenu/useMenuKeyboard";
 import { switchActiveId } from "../../../profiles/switcher/switchPlan";
@@ -129,7 +130,7 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
           {/* Bureau, compte de l'appareil : passer hors ligne, ou en revenir (le même état que le mode films). */}
           <OfflineSwitchMenuItem className={itemClass} onDone={() => close(false)} />
           <button type="button" role="menuitem" className={itemClass} onClick={() => { close(false); navigate(octavePaths.settings); }}>
-            <Settings2 aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            <Settings2 aria-hidden className="h-[18px] w-[18px]" />
             {t("settings.shortcut")}
           </button>
         </div>

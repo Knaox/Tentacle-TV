@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { RotateCw } from "lucide-react";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import type { SceneProps } from "../../types";
 import { PlaybackSpinner } from "../../../components/player/PlaybackSpinner";
 import { FauxCursor, Place, ScenePlayerPanel, SceneStage, useSceneClock } from "..";

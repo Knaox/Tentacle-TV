@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FolderOpen } from "lucide-react";
+import { FolderOpenIcon as FolderOpen } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { AdminNotice } from "../admin/kit";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";

@@ -1,6 +1,10 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Lock, ShieldCheck, UserCog, Library } from "lucide-react";
+import { CameraIcon as Camera } from "@phosphor-icons/react/dist/csr/Camera";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { UserGearIcon as UserCog } from "@phosphor-icons/react/dist/csr/UserGear";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
 import {
   guestCanRequest,
   hasParentalControl,

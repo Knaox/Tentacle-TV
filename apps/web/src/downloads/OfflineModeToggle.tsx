@@ -12,7 +12,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { WifiOff } from "lucide-react";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
 import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
 

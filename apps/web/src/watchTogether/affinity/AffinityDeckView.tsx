@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PartyPopper } from "lucide-react";
+import { ConfettiIcon as PartyPopper } from "@phosphor-icons/react/dist/csr/Confetti";
 import {
   swipeLangOf, useAffinityDeck, useSwipeCardDetails, type SwipeVerdict, applyAffinityPush, showAffinityView,
 } from "@tentacle-tv/api-client";

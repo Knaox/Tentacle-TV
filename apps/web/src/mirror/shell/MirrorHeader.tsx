@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TentacleSvg } from "../../components/ui/TentacleSvg";
 import { countLogoClick } from "../../components/easterEggs/logoEggStore";
 import { useOfflineMode } from "../../offline/useOfflineMode";
@@ -77,7 +77,7 @@ export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapse
                 aria-label={t("search")}
                 className="mirror-press -m-3 flex p-3 text-content-primary"
               >
-                <Search size={21} strokeWidth={2} aria-hidden />
+                <Search size={21} aria-hidden />
               </button>
               <MirrorNotificationBell />
             </div>

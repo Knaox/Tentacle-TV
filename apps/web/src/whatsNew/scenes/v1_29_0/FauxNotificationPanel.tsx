@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Ban, Bell, CheckCheck, CheckCircle2, ChevronRight, Truck, type LucideIcon } from "lucide-react";
+import { ProhibitIcon as Ban } from "@phosphor-icons/react/dist/csr/Prohibit";
+import { BellIcon as Bell } from "@phosphor-icons/react/dist/csr/Bell";
+import { ChecksIcon as CheckCheck } from "@phosphor-icons/react/dist/csr/Checks";
+import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { TruckIcon as Truck } from "@phosphor-icons/react/dist/csr/Truck";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { Place, sceneTween, type Animated } from "..";
 import { CAPSULE } from "../v1_22_0/FauxNavBar";
 
@@ -20,7 +26,7 @@ export function notifRowCenter(index: number): { x: number; y: number } {
 
 type Tone = "success" | "info" | "danger";
 
-const TONE: Record<Tone, { fg: string; bg: string; icon: LucideIcon }> = {
+const TONE: Record<Tone, { fg: string; bg: string; icon: IconType }> = {
   success: { fg: "var(--status-success-fg)", bg: "var(--status-success-bg)", icon: CheckCircle2 },
   info: { fg: "var(--status-info-fg)", bg: "var(--status-info-bg)", icon: Truck },
   danger: { fg: "var(--status-error-fg)", bg: "var(--status-error-bg)", icon: Ban },
@@ -40,7 +46,7 @@ export function FauxBell({ count, open }: { count: number; open: boolean }) {
   return (
     <Place x={BELL_SLOT.x} y={BELL_SLOT.y} w={BELL_SLOT.size} h={BELL_SLOT.size} style={{ zIndex: 12 }}>
       <span className={`flex h-full w-full items-center justify-center rounded-lg text-content-tertiary ${open ? "bg-fill-soft" : "bg-fill-subtle"}`}>
-        <Bell className="h-[15px] w-[15px]" strokeWidth={2} />
+        <Bell className="h-[15px] w-[15px]" />
       </span>
       <motion.span
         className="absolute -right-1.5 -top-1.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full px-1 text-[8px] font-bold text-cta-brand-fg"
@@ -63,7 +69,7 @@ function Row({ notif, hovered }: { notif: SceneNotif; hovered: boolean }) {
       <motion.span className="absolute inset-0 rounded-lg bg-fill-soft" initial={false} animate={{ opacity: hovered ? 1 : 0 }} transition={sceneTween} />
       {notif.unread && <span className="absolute left-0.5 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-[var(--brand)]" />}
       <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ color: tone.fg, background: tone.bg }}>
-        <Icon className="h-[14px] w-[14px]" strokeWidth={2} />
+        <Icon className="h-[14px] w-[14px]" />
       </span>
       <span className="relative min-w-0 flex-1">
         <span className={`block truncate text-[11px] leading-4 ${notif.unread ? "font-semibold text-content-primary" : "text-content-secondary"}`}>{notif.title}</span>

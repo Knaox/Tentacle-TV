@@ -15,7 +15,11 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CheckCircle2, Loader2, PauseCircle, type LucideIcon } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleNotchIcon as Loader2 } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { PauseCircleIcon as PauseCircle } from "@phosphor-icons/react/dist/csr/PauseCircle";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useOfflineOverview } from "@tentacle-tv/offline-core/react";
 import type { DownloadEntry } from "./api";
 import { DownloadsQueueActions } from "./DownloadsQueueActions";
@@ -145,7 +149,7 @@ const TONES = {
   error: "bg-status-error-bg text-status-error-fg",
 } as const;
 
-function Stat({ icon: Icon, tone, label }: { icon: LucideIcon; tone: keyof typeof TONES; label: string }) {
+function Stat({ icon: Icon, tone, label }: { icon: IconType; tone: keyof typeof TONES; label: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${TONES[tone]}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden />

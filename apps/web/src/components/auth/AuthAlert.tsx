@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 
 type Tone = "error" | "success" | "info";
 

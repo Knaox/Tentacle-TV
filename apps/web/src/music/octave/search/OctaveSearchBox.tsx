@@ -18,7 +18,12 @@
  */
 
 import { memo, useCallback, useState, type KeyboardEvent } from "react";
-import { Clock, Disc3, Music, Search, User, X } from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
+import { DiscIcon as Disc3 } from "@phosphor-icons/react/dist/csr/Disc";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useGlassControl } from "../../../components/ui/glass/useGlassControl";

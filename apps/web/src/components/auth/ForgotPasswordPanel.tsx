@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, User } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import { backendUrl } from "../../main";
 import { AuthAlert } from "./AuthAlert";
 import { AuthButton, AuthTextButton } from "./AuthButton";

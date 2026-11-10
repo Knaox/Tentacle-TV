@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
 import { describeProblem, verifyServer } from "@tentacle-tv/shared";
 import { recordFreshInstall } from "../whatsNew/freshInstall";
 import { AuthLayout } from "../components/auth/AuthLayout";

@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Film, Heart, LogOut, UserPlus } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { openAffinity, useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
 import { roomMemberRows } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";

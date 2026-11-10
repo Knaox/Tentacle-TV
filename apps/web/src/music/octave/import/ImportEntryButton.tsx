@@ -4,7 +4,7 @@
  * Sans la capacité `music.playlistImport` : rien, aucune trace.
  */
 
-import { Import } from "lucide-react";
+import { ArrowSquareInIcon as Import } from "@phosphor-icons/react/dist/csr/ArrowSquareIn";
 import { useTranslation } from "react-i18next";
 import { useServerCapability } from "@tentacle-tv/api-client";
 import { openImportDialog } from "./importStore";

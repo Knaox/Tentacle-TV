@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, ServerCog } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { GearFineIcon as ServerCog } from "@phosphor-icons/react/dist/csr/GearFine";
 import { statsShareFailure, useMyStatsShare, useRevokeStatsShare, useSaveStatsShare } from "@tentacle-tv/api-client";
 import type { ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { Modal } from "../../ui/Modal";

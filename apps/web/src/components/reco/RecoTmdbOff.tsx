@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { useActiveProfile } from "../../auth/profileSession";
 import { ADMIN_TMDB_KEY_PATH } from "../../lib/adminTargets";
 import { getUserInfo } from "../userMenu/menuItems";

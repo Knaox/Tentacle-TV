@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowUp } from "lucide-react";
+import { ArrowUpIcon as ArrowUp } from "@phosphor-icons/react/dist/csr/ArrowUp";
 import { noMotion } from "../../theme/motion";
 import { useMirrorChrome } from "../useMirrorLayout";
 import { TAB_BAR_TOTAL } from "../shell/metrics";

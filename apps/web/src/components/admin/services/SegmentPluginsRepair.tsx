@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { RotateCw, Wrench } from "lucide-react";
+import { ArrowClockwiseIcon as RotateCw } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { WrenchIcon as Wrench } from "@phosphor-icons/react/dist/csr/Wrench";
 import { ActionPill } from "../sessions/ActionPill";
 import { SegmentRunView } from "../../segmentPlugins/SegmentRunView";
 import { offersRestartAnyway } from "../../segmentPlugins/segmentRunModel";

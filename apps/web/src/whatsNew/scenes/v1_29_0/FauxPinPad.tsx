@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Delete } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { BackspaceIcon as Delete } from "@phosphor-icons/react/dist/csr/Backspace";
 import { FAMILY_PIN_LENGTH } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";

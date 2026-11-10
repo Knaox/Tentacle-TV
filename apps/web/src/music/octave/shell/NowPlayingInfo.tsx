@@ -10,7 +10,7 @@
  */
 
 import { memo } from "react";
-import { Maximize2 } from "lucide-react";
+import { ArrowsOutSimpleIcon as Maximize2 } from "@phosphor-icons/react/dist/csr/ArrowsOutSimple";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";

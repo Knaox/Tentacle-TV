@@ -1,13 +1,24 @@
 import { memo, useMemo } from "react";
-import {
-  CalendarHeart, Clapperboard, Compass, Drama, Flame, Globe, Headphones, Heart, Hourglass, Moon, Repeat, Sparkles, Sunrise, Tv,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarHeartIcon as CalendarHeart } from "@phosphor-icons/react/dist/csr/CalendarHeart";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { CompassIcon as Compass } from "@phosphor-icons/react/dist/csr/Compass";
+import { MaskHappyIcon as Drama } from "@phosphor-icons/react/dist/csr/MaskHappy";
+import { FireIcon as Flame } from "@phosphor-icons/react/dist/csr/Fire";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { HeadphonesIcon as Headphones } from "@phosphor-icons/react/dist/csr/Headphones";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { MoonIcon as Moon } from "@phosphor-icons/react/dist/csr/Moon";
+import { RepeatIcon as Repeat } from "@phosphor-icons/react/dist/csr/Repeat";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { SunHorizonIcon as Sunrise } from "@phosphor-icons/react/dist/csr/SunHorizon";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { viewerBadges, type RhythmInsight, type ViewerBadgeKey, type ViewingStats } from "@tentacle-tv/shared";
 import { StatsSection } from "./StatsSection";
 import { useStatsFormat } from "./useStatsFormat";
 
-const BADGE_ICONS: Record<ViewerBadgeKey, LucideIcon> = {
+const BADGE_ICONS: Record<ViewerBadgeKey, IconType> = {
   nightOwl: Moon,
   earlyBird: Sunrise,
   weekend: CalendarHeart,
@@ -25,7 +36,7 @@ const BADGE_ICONS: Record<ViewerBadgeKey, LucideIcon> = {
 
 interface Trait {
   key: string;
-  Icon: LucideIcon;
+  Icon: IconType;
   title: string;
   detail: string;
 }

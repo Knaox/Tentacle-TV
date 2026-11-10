@@ -1,5 +1,7 @@
 import { memo, useEffect, useId, useState } from "react";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
 import { useTranslation } from "react-i18next";
 
 export type ProblemTone = "player" | "page";

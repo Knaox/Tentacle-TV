@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Info, Trash2 } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import { DetailPlayPill } from "../../components/detail/DetailPlayButton";
 import { CapsuleButton, DetailCapsule } from "../../components/detail/DetailActionCapsule";
 import { WatchedGlyph } from "../../components/cards/cardGlyphs";
@@ -58,11 +59,11 @@ export function OfflineStageActions({ play, watched, onToggleWatched, onlineItem
         </CapsuleButton>
         {onlineItemId && (
           <CapsuleButton active={false} onClick={() => navigate(`/media/${onlineItemId}`)} label={t("common:fullDetails")}>
-            <Info aria-hidden className="h-5 w-5" strokeWidth={1.8} />
+            <Info aria-hidden className="h-5 w-5" />
           </CapsuleButton>
         )}
         <CapsuleButton active={false} onClick={onRemove} label={removeLabel}>
-          <Trash2 aria-hidden className="h-5 w-5" strokeWidth={1.8} />
+          <Trash2 aria-hidden className="h-5 w-5" />
         </CapsuleButton>
       </DetailCapsule>
     </motion.div>

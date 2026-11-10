@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import type { SegmentPluginKey, SetupPluginState } from "@tentacle-tv/shared";
 import { ServerCapabilityGate } from "@tentacle-tv/api-client";
 import { AdminSection, ShowMore, StatusPill, type StatusTone } from "../kit";

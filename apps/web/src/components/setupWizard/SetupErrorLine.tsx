@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { CircleAlert } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import type { WizardErrorCode } from "./setupApi";
 
 /**

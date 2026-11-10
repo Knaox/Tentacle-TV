@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { AVATAR_GRADIENT_BG, getUserInfo } from "../../components/userMenu/menuItems";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { openSwitchScreen } from "../../profiles/switcher/switchScreenStore";

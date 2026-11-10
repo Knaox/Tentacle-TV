@@ -1,5 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { HardDriveDownload, LifeBuoy, Mail, MonitorPlay, Puzzle, Users } from "lucide-react";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { LifebuoyIcon as LifeBuoy } from "@phosphor-icons/react/dist/csr/Lifebuoy";
+import { EnvelopeIcon as Mail } from "@phosphor-icons/react/dist/csr/Envelope";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { StatTile } from "../kit";
 import {
   useAccountsSummary,

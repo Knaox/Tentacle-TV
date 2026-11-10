@@ -6,7 +6,8 @@
 
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { CloudOff, LogOut } from "lucide-react";
+import { CloudSlashIcon as CloudOff } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
 
 export interface PickerExits {
   /** null : pas de hors ligne ici (navigateur, rien de gardé, droit refusé). */

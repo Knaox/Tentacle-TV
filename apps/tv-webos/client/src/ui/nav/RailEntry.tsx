@@ -1,6 +1,13 @@
 import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Home, Sparkles, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { HouseIcon as Home } from "@phosphor-icons/react/dist/csr/House";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
 import { createLongPress } from "../../focus/longPress";
 import { primeFocus } from "../../focus/entry";
 import { closeSearch, openSearch } from "../search/searchState";
@@ -132,7 +139,7 @@ export function RailEntry({ entry, active, expanded }: RailEntryProps) {
       onBlur={press.onBlur}
     >
       <span className="rail-entree-icone" aria-hidden>
-        <Icon size={26} strokeWidth={2} />
+        <Icon size={26} />
       </span>
       <span className="rail-entree-libelle" data-deploye={expanded}>
         {entry.label}

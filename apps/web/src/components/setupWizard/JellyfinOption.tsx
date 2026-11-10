@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Boxes, Sparkles } from "lucide-react";
+import { CubeIcon as Boxes } from "@phosphor-icons/react/dist/csr/Cube";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { hostAndPort, serverState } from "./jellyfinChoice";
 

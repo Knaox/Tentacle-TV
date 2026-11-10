@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ChevronDown, X } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";
 

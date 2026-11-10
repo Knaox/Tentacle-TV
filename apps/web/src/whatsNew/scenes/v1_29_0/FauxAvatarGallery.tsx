@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Check, ImagePlus, X } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { ImageSquareIcon as ImagePlus } from "@phosphor-icons/react/dist/csr/ImageSquare";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Place, type Animated } from "../Place";
 import { SCENE_CAST, sceneThumbUrl } from "./avatarSceneCast";
 
@@ -42,7 +44,7 @@ export function FauxAvatarGallery({ hovered, chosen, ...animated }: FauxAvatarGa
         <p className="absolute left-5 top-[60px] text-[8px] font-semibold uppercase tracking-[0.12em] text-content-quaternary">{t("avatars:yourPhoto")}</p>
         <div className="absolute flex flex-col items-center" style={{ left: TILE.x, top: 72, width: TILE.w }}>
           <span className="flex items-center justify-center rounded-full border-2 border-dashed border-line-strong bg-fill-soft text-content-secondary" style={{ width: TILE.art, height: TILE.art }}>
-            <ImagePlus size={17} strokeWidth={1.75} aria-hidden />
+            <ImagePlus size={17} aria-hidden />
           </span>
           <span className="mt-1 line-clamp-2 max-w-full text-center text-[9px] font-medium leading-[11px] text-content-tertiary">{t("avatars:upload")}</span>
         </div>
@@ -55,7 +57,7 @@ export function FauxAvatarGallery({ hovered, chosen, ...animated }: FauxAvatarGa
                 <img src={sceneThumbUrl(avatar.id)} alt="" draggable={false} className="h-full w-full object-cover" />
               </span>
               <Place x={TILE.art - 15} y={TILE.art - 15} w={17} h={17} visible={chosen === i} className="flex items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-[var(--brand)] text-cta-brand-fg">
-                <Check size={9} strokeWidth={3} aria-hidden />
+                <Check weight="bold" size={9} aria-hidden />
               </Place>
             </Place>
             <span className={`mt-[52px] max-w-full truncate text-[9px] font-medium ${chosen === i ? "text-content-primary" : "text-content-tertiary"}`}>

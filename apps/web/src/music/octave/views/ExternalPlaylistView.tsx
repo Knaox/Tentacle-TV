@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from "react";
-import { ListMusic } from "lucide-react";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";

@@ -1,5 +1,8 @@
 import { useMemo } from "react";
-import { BellRing, CheckCheck, ListChecks, Trash2 } from "lucide-react";
+import { BellRingingIcon as BellRing } from "@phosphor-icons/react/dist/csr/BellRinging";
+import { ChecksIcon as CheckCheck } from "@phosphor-icons/react/dist/csr/Checks";
+import { ListChecksIcon as ListChecks } from "@phosphor-icons/react/dist/csr/ListChecks";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
 import type { TFunction } from "i18next";
 import { groupNotificationsByDay, type AppNotification } from "@tentacle-tv/api-client";
 import { NotifRow } from "./NotifRow";

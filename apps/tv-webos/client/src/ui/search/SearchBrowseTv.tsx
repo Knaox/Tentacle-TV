@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { useSearchBrowse, type SearchBrowseTarget as BrowseQuery } from "@tentacle-tv/api-client";
 import { personMeta, type MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "@/components/cards/PosterCard";
@@ -86,7 +86,7 @@ export const SearchBrowseTv = memo(function SearchBrowseTv({ target }: { target:
         data-tv-cle="search-back"
         onClick={() => returnToSearchBar()}
       >
-        <ChevronLeft className="tv-search-back-icon" size={30} strokeWidth={2.25} aria-hidden />
+        <ChevronLeft className="tv-search-back-icon" size={30} aria-hidden />
         {t("common:back")}
       </button>
       <header className="tv-search-browse-header">

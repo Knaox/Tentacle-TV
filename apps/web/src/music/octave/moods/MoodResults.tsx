@@ -5,7 +5,7 @@
  */
 
 import { memo, useMemo } from "react";
-import { Play } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { ExternalMusicMood } from "@tentacle-tv/shared/music";
@@ -36,7 +36,7 @@ const MoodResult = memo(function MoodResult({ mood }: { mood: ExternalMusicMood 
         aria-label={t("moods.play", { name: mood.name })}
         className="octave-brand-fill relative z-10 flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full pl-4 pr-5 text-sm font-bold shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
       >
-        <Play className="h-4 w-4" fill="currentColor" aria-hidden />
+        <Play className="h-4 w-4" aria-hidden />
         {t("moods.listen")}
       </button>
     </li>

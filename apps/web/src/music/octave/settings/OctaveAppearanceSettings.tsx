@@ -15,7 +15,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { ScopeBadge } from "../../../components/settings/ScopeBadge";
 import { octavePaths } from "../octavePaths";

@@ -4,7 +4,7 @@
  * et dit quand revenir ; le moteur relance à l'heure dite. Règle commune au mobile (`serverPacingOf`).
  */
 
-import { Clock } from "lucide-react";
+import { ClockIcon as Clock } from "@phosphor-icons/react/dist/csr/Clock";
 import { useTranslation } from "react-i18next";
 import type { KeptMusicTrack } from "@tentacle-tv/offline-core";
 import { readyInWords, serverPacingOf } from "@tentacle-tv/offline-core/music";

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Camera } from "lucide-react";
+import { CameraIcon as Camera } from "@phosphor-icons/react/dist/csr/Camera";
 import { InfoIcon, SettingsIcon, StatsIcon } from "../../../components/userMenu/icons";
 import { Place, type Animated } from "../Place";
 import { sceneTween } from "../sceneMotion";

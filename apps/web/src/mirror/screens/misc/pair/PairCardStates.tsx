@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { CheckCircle, Lock } from "lucide-react";
+import { CheckCircleIcon as CheckCircle } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { Spinner } from "../shared/Spinner";
 
 /**

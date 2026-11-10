@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Pause, X } from "lucide-react";
+import { PauseIcon as Pause } from "../icons/transport";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { onSessionMessage, type SessionMessage } from "@tentacle-tv/api-client";
 import { useMessageCountdown, type MessageCountdown } from "./useMessageCountdown";

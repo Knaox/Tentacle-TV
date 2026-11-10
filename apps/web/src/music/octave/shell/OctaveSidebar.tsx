@@ -15,7 +15,12 @@
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
-import { Heart, Home, Library, ListMusic, Search, Settings2 } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { HouseIcon as Home } from "@phosphor-icons/react/dist/csr/House";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";

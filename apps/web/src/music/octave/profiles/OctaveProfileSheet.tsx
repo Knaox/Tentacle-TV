@@ -9,7 +9,7 @@
 
 import { memo, useCallback, useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import { sameUserId, type PickerProfileDto } from "@tentacle-tv/shared";
 import { Modal } from "../../../components/ui/Modal";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
@@ -102,7 +102,7 @@ function ProfileChoice({ profile, opening, disabled, onPick }: { profile: Picker
         <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={56} />
         {profile.pinLock && (
           <span aria-hidden className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-octave-raised text-content-secondary">
-            <Lock size={11} strokeWidth={2.4} />
+            <Lock weight="bold" size={11} />
           </span>
         )}
       </span>

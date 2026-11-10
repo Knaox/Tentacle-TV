@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { User } from "lucide-react";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import { getBackendBase } from "../../../lib/backendBase";
 import { AuthField } from "../../../components/auth/AuthField";
 import { AuthButton } from "../../../components/auth/AuthButton";

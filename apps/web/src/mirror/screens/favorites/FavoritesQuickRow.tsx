@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { EyeOff, History, Layers } from "lucide-react";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { ClockCounterClockwiseIcon as History } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
 import { FAVORITES_GROUP_MODES, favoriteWatchState, type FavoritesGroupMode } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 

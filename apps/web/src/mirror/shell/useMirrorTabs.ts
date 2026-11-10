@@ -2,7 +2,13 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useVisiblePlugins } from "../../rights/useVisiblePlugins";
-import { Film, House, Puzzle, Smartphone, Sparkles, User, type LucideIcon } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { HouseIcon as House } from "@phosphor-icons/react/dist/csr/House";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { lucideIconFor, resolvePluginLabel } from "../../components/lucideIcon";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { webPluginNavPages } from "../../hooks/pluginNavPages";
@@ -23,15 +29,15 @@ export interface ExtensionPlugin {
   path: string;
   /** Toutes ses pages web, dans l'ordre déclaré. */
   paths: string[];
-  sections: Array<{ path: string; label: string; Icon: LucideIcon }>;
-  Icon: LucideIcon;
+  sections: Array<{ path: string; label: string; Icon: IconType }>;
+  Icon: IconType;
 }
 
 export interface MirrorTab {
   key: "home" | "forYou" | "libraries" | "extensions" | "profile";
   label: string;
   /** L'icône (lucide, l'équivalent des noms Feather de l'app). */
-  Icon: LucideIcon;
+  Icon: IconType;
   /** Destination ; `null` pour l'onglet des extensions à plusieurs plugins (sous-menu). */
   path: string | null;
   active: boolean;

@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Users } from "lucide-react";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useWtDetailAction } from "../../watchTogether/useWtDetailAction";
 

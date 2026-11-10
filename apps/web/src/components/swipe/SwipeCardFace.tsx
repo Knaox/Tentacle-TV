@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Info } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
 import type { SwipeCard, SwipeCardDetails } from "@tentacle-tv/api-client";
 import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardRecto } from "./SwipeCardRecto";

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { MessageSquare, Radio } from "lucide-react";
+import { ChatTextIcon as MessageSquare } from "@phosphor-icons/react/dist/csr/ChatText";
+import { RadioIcon as Radio } from "@phosphor-icons/react/dist/csr/Radio";
 import { buttonStatus, type AdminSessionDto, type Feedback } from "@tentacle-tv/shared";
 import { UserAvatar } from "../../ui/UserAvatar";
 import { FamilyGuestTag } from "./FamilyGuestTag";

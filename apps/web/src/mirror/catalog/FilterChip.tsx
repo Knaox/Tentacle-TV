@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, X } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 
 /**
  * La pastille des feuilles de filtres (`filters/FilterChip` de l'app) : 40 de

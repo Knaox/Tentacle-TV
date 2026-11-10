@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { elsewhereLabel } from "@tentacle-tv/shared";
-import { DoorOpen, Hourglass, LogOut, Plus, UserPlus } from "lucide-react";
+import { DoorOpenIcon as DoorOpen } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { UserPlusIcon as UserPlus } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { InviteRow, MemberRow } from "./WatchTogetherRows";
@@ -153,7 +157,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
             disabled={busy}
             className={`${PRIMARY} mt-4 w-full`}
           >
-            <Plus aria-hidden className="h-4 w-4" strokeWidth={2.4} />
+            <Plus weight="bold" aria-hidden className="h-4 w-4" />
             {busy ? t("creating") : t("createGroup")}
           </button>}
         </div>

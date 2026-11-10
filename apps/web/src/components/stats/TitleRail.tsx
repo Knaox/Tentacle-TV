@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Film } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { CardImage } from "../cards/CardImage";
 import { ReasonChips, type ReasonChip } from "./ReasonChips";
 

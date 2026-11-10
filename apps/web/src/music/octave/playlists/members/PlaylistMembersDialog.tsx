@@ -6,7 +6,8 @@
  */
 
 import { useId, useState } from "react";
-import { LogOut, Users } from "lucide-react";
+import { SignOutIcon as LogOut } from "@phosphor-icons/react/dist/csr/SignOut";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylistMembers, useMusicShareCandidates } from "@tentacle-tv/api-client";
 import type { MusicPlaylist, MusicPlaylistMemberRight } from "@tentacle-tv/shared/music";

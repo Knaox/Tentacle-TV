@@ -1,111 +1,70 @@
 /**
  * Icônes partagées entre UserAvatarMenu (dropdown desktop) et MobileUserSheet
- * (bottom sheet mobile). Stroke 1.8, taille 18px par défaut — alignées sur le
- * style des icônes du nouveau thème.
+ * (bottom sheet mobile). Taille 18 px par défaut.
  */
 
-import type { SVGProps } from "react";
-import { UserRoundCog, UsersRound } from "lucide-react";
+import type { IconProps } from "@phosphor-icons/react";
+import { ChartBarIcon } from "@phosphor-icons/react/dist/csr/ChartBar";
+import { DevicesIcon } from "@phosphor-icons/react/dist/csr/Devices";
+import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { InfoIcon as InfoBase } from "@phosphor-icons/react/dist/csr/Info";
+import { MonitorIcon } from "@phosphor-icons/react/dist/csr/Monitor";
+import { QuestionIcon } from "@phosphor-icons/react/dist/csr/Question";
+import { ShieldCheckIcon } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { UserGearIcon } from "@phosphor-icons/react/dist/csr/UserGear";
+import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
+import { WifiSlashIcon } from "@phosphor-icons/react/dist/csr/WifiSlash";
 
-type IconProps = SVGProps<SVGSVGElement>;
-
-const BASE: IconProps = {
-  className: "h-[18px] w-[18px]",
-  fill: "none",
-  viewBox: "0 0 24 24",
-  stroke: "currentColor",
-  strokeWidth: 1.8,
-};
+// Les pictogrammes du menu du compte — les NOMS d'avant, dessinés par Phosphor (refonte de
+// nov. 2026, docs/REFONTE-UI.md) : au trait, 18 px, `currentColor`.
+const SIZE = "h-[18px] w-[18px]";
 
 export function SettingsIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
+  return <SlidersHorizontalIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function AdminIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-    </svg>
-  );
+  return <ShieldCheckIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function PairIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-6.364-6.364L4.5 8.25" />
-    </svg>
-  );
+  return <DevicesIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function InfoIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-    </svg>
-  );
+  return <InfoBase aria-hidden className={SIZE} {...props} />;
 }
 
 export function HelpIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-    </svg>
-  );
+  return <QuestionIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function LogoutIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-    </svg>
-  );
+  return <SignOutIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function OfflineIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l8.735 8.735m0 0a.374.374 0 11.53.53m-.53-.53l.53.53m0 0L21 21M14.652 9.348a3.75 3.75 0 010 5.304m2.121-7.425a6.75 6.75 0 010 9.546m2.121-11.667c3.808 3.807 3.808 9.98 0 13.788m-9.546-4.242a3.733 3.733 0 01-1.06-2.122m-1.061 4.243a6.75 6.75 0 01-1.625-6.929m-.496 9.05c-3.068-3.067-3.664-7.67-1.79-11.334M12 12h.008v.008H12V12z" />
-    </svg>
-  );
+  return <WifiSlashIcon aria-hidden className={SIZE} {...props} />;
 }
 
-/** « Sur cet appareil » : un écran d'ordinateur — le bureau n'est pas un téléphone. */
 export function OnDeviceIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v5m0 0l-2-2m2 2l2-2" />
-    </svg>
-  );
+  return <DownloadSimpleIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function CreditsIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-    </svg>
-  );
+  return <MonitorIcon aria-hidden className={SIZE} {...props} />;
 }
 
 export function StatsIcon(props: IconProps) {
-  return (
-    <svg {...BASE} {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-    </svg>
-  );
+  return <ChartBarIcon aria-hidden className={SIZE} {...props} />;
 }
 
-/** « Changer de profil » : les profils de la famille — le pictogramme de lucide, au trait et à la taille du menu. */
 export function SwitchProfileIcon() {
-  return <UsersRound aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />;
+  return <UsersThreeIcon aria-hidden className={SIZE} />;
 }
 
-/** « Gérer les profils » (Réglages › Famille). */
 export function ManageProfilesIcon() {
-  return <UserRoundCog aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.8} />;
+  return <UserGearIcon aria-hidden className={SIZE} />;
 }

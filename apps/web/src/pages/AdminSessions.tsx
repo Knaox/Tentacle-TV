@@ -1,7 +1,7 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
-import { MonitorPlay } from "lucide-react";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
 import type {
   AdminPlaystateCommand,
   AdminSessionDto,

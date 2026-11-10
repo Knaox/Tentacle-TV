@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, CircleAlert, LoaderCircle, Share2 } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { useCreateShareLink, useMyShareLink, usePublicSharingAllowed, type ShareListKind } from "@tentacle-tv/api-client";
 import { ShareLinkModal } from "../../../components/share/ShareLinkModal";
 import { useToast } from "../../../contexts/ToastContext";

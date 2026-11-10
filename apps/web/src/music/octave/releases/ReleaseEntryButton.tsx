@@ -3,7 +3,7 @@
  * l'extension (ou sans source déclarée), rien : aucune trace.
  */
 
-import { DiscAlbum } from "lucide-react";
+import { VinylRecordIcon as DiscAlbum } from "@phosphor-icons/react/dist/csr/VinylRecord";
 import { useTranslation } from "react-i18next";
 import { releaseSourcesOf } from "@tentacle-tv/api-client";
 import { useOctaveProvider } from "../mode/useOctaveProvider";

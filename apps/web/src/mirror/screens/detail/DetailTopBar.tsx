@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Images } from "lucide-react";
+import { ImagesIcon as Images } from "@phosphor-icons/react/dist/csr/Images";
 import { BackButton } from "./BackButton";
 import { HEADER_BAR_HEIGHT } from "./detailMetrics";
 

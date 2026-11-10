@@ -7,7 +7,7 @@
  */
 
 import { memo, useRef } from "react";
-import { Play } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { ARTWORK_RADIUS, Artwork } from "../components/Artwork";
@@ -68,7 +68,7 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
         <OceanSwell playing className="h-4 w-4 text-octave-accent-text" />
       ) : (
         <span className="octave-hover-only octave-brand-fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
-          <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
+          <Play className="ml-0.5 h-4 w-4" />
         </span>
       )}
     </button>

@@ -7,7 +7,7 @@
  */
 
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { ListChecks } from "lucide-react";
+import { ListChecksIcon as ListChecks } from "@phosphor-icons/react/dist/csr/ListChecks";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";

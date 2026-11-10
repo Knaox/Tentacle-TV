@@ -2,14 +2,16 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { GalleryHorizontalEnd, Sparkles, type LucideIcon } from "lucide-react";
+import { SlideshowIcon as GalleryHorizontalEnd } from "@phosphor-icons/react/dist/csr/Slideshow";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { RECO_PATH, RECO_REFINE_PATH, type RecoSection } from "../../lib/recoSections";
 
 interface RecoSectionSwitchProps {
   section: RecoSection;
 }
 
-const SECTIONS: ReadonlyArray<{ key: RecoSection; path: string; labelKey: string; Icon: LucideIcon }> = [
+const SECTIONS: ReadonlyArray<{ key: RecoSection; path: string; labelKey: string; Icon: IconType }> = [
   { key: "forYou", path: RECO_PATH, labelKey: "sectionForYou", Icon: Sparkles },
   { key: "refine", path: RECO_REFINE_PATH, labelKey: "sectionRefine", Icon: GalleryHorizontalEnd },
 ];

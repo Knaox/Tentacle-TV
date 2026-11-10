@@ -1,5 +1,13 @@
 import { memo } from "react";
-import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, WifiOff, X, type LucideIcon } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { GaugeIcon as Gauge } from "@phosphor-icons/react/dist/csr/Gauge";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
+import { PauseIcon as Pause } from "../icons/transport";
+import { HardDrivesIcon as Server } from "@phosphor-icons/react/dist/csr/HardDrives";
+import { WifiSlashIcon as WifiOff } from "@phosphor-icons/react/dist/csr/WifiSlash";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
@@ -15,7 +23,7 @@ export interface NoticeCardAction {
   onClick: () => void;
 }
 
-const ICONS: Record<NoticeIcon, LucideIcon> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge, wifiOff: WifiOff };
+const ICONS: Record<NoticeIcon, IconType> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge, wifiOff: WifiOff };
 
 /** La couleur de la gravité : la barre de gauche, la pastille, la barre du temps. */
 const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {

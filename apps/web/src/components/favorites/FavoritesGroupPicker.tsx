@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Layers } from "lucide-react";
+import { StackIcon as Layers } from "@phosphor-icons/react/dist/csr/Stack";
 import { FAVORITES_GROUP_MODES, type FavoritesGroupMode } from "@tentacle-tv/api-client";
 import { SegmentedControl } from "../library/SegmentedControl";
 
@@ -30,7 +30,7 @@ export const FavoritesGroupPicker = memo(function FavoritesGroupPicker({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span aria-hidden className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-content-tertiary">
-        <Layers className="h-3.5 w-3.5" strokeWidth={2.1} />
+        <Layers className="h-3.5 w-3.5" />
         {t("groupBy")}
       </span>
       <div className="scrollbar-hide min-w-0 overflow-x-auto">

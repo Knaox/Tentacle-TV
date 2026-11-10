@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Info, Link2, Share2 } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { LinkIcon as Link2 } from "@phosphor-icons/react/dist/csr/Link";
+import { ShareNetworkIcon as Share2 } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { heroFigure } from "@tentacle-tv/shared";
 import type { SceneProps } from "../../types";
 import { HBarList } from "../../../components/stats/HBarList";

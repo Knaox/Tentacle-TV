@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
 
 /**
  * « Voir plus » : ce qu'on ne lit qu'en cas de besoin, replié derrière un

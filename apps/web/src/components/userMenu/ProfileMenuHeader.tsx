@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera } from "lucide-react";
+import { CameraIcon as Camera } from "@phosphor-icons/react/dist/csr/Camera";
 import type { ActiveProfile } from "../../auth/profileSession";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 

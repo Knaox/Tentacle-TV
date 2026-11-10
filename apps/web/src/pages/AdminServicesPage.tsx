@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { RefreshCw } from "lucide-react";
+import { ArrowsClockwiseIcon as RefreshCw } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { ServerCapabilityGate } from "@tentacle-tv/api-client";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { AdminPage } from "../components/admin/kit";

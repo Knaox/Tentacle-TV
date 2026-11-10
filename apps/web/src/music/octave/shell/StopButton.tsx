@@ -6,7 +6,8 @@
  */
 
 import { memo } from "react";
-import { Square, X } from "lucide-react";
+import { SquareIcon as Square } from "@phosphor-icons/react/dist/csr/Square";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useTranslation } from "react-i18next";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
@@ -28,7 +29,7 @@ export const StopButton = memo(function StopButton({ shape, className }: StopBut
       title={t("player.stop")}
       className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
     >
-      {shape === "stop" ? <Square className="h-3.5 w-3.5" fill="currentColor" aria-hidden /> : <X className="h-5 w-5" aria-hidden />}
+      {shape === "stop" ? <Square weight="fill" className="h-3.5 w-3.5" aria-hidden /> : <X className="h-5 w-5" aria-hidden />}
     </button>
   );
 });

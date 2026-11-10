@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { UserAvatar } from "../kit";
 import { UserBadges } from "./UserBadges";
 import { absoluteTime, relativeTime, type AdminUser } from "./userListModel";

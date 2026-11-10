@@ -1,6 +1,9 @@
 import { motion, useTransform, type MotionValue } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Heart, SkipForward, Star, X } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { SkipForwardIcon as SkipForward } from "../icons/transport";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { stampStrength } from "@tentacle-tv/api-client";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
 
@@ -36,11 +39,11 @@ export function SwipeStamps({ x, y, binary = false }: SwipeStampsProps) {
   return (
     <>
       <motion.div style={{ opacity: like }} className={`${base} left-6 top-8 -rotate-12 border-emerald-400 bg-black/55 text-emerald-300`}>
-        <Heart size={20} className="fill-current" aria-hidden />
+        <Heart size={20} weight="fill" aria-hidden />
         {t("stampLike")}
       </motion.div>
       <motion.div style={{ opacity: nope }} className={`${base} right-6 top-8 rotate-12 border-rose-400 bg-black/55 text-rose-300`}>
-        <X size={20} strokeWidth={3} aria-hidden />
+        <X weight="bold" size={20} aria-hidden />
         {t("stampNope")}
       </motion.div>
       {!binary && (
@@ -49,7 +52,7 @@ export function SwipeStamps({ x, y, binary = false }: SwipeStampsProps) {
             style={{ opacity: love }}
             className={`${base} bottom-40 left-1/2 -translate-x-1/2 border-fuchsia-400 bg-black/55 text-fuchsia-200`}
           >
-            <Star size={20} className="fill-current" aria-hidden />
+            <Star size={20} weight="fill" aria-hidden />
             {t("stampSuper")}
           </motion.div>
           <motion.div

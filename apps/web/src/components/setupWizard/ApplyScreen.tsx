@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import type { SegmentSetupRun, SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { runSegmentSetup } from "./applySegments";

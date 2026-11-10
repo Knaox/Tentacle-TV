@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 
 interface RightToggleProps {

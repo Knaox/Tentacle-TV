@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { Bookmark, Heart, MonitorSmartphone, Pin, type LucideIcon } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
+import { PushPinIcon as Pin } from "@phosphor-icons/react/dist/csr/PushPin";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { Place } from "..";
 
 /**
@@ -13,15 +17,13 @@ export const PANEL = { x: 60, y: 68, w: 232 } as const;
 /** L'épingle de « Ma liste », en px du canevas — la cible du curseur. */
 export const MY_LIST_PIN = { x: PANEL.x + PANEL.w - 27, y: PANEL.y + 46 } as const;
 
-function Row({ icon: Icon, label, pin }: { icon: LucideIcon; label: string; pin?: "on" | "off" }) {
+function Row({ icon: Icon, label, pin }: { icon: IconType; label: string; pin?: "on" | "off" }) {
   return (
     <div className="flex h-7 items-center gap-2 rounded-lg px-2 text-[11.5px] text-content-secondary">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-content-tertiary" strokeWidth={1.9} />
+      <Icon className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {pin && (
-        <Pin
-          strokeWidth={2}
-          fill={pin === "on" ? "currentColor" : "none"}
+        <Pin weight={pin === "on" ? "fill" : "regular"}
           className={`h-3.5 w-3.5 shrink-0 transition-colors duration-200 ${pin === "on" ? "text-[var(--brand-light)]" : "text-content-quaternary"}`}
         />
       )}

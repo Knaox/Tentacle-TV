@@ -1,7 +1,11 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Reorder, useDragControls } from "framer-motion";
-import { ChevronDown, ChevronUp, GripVertical, Pin, PinOff } from "lucide-react";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretUpIcon as ChevronUp } from "@phosphor-icons/react/dist/csr/CaretUp";
+import { DotsSixVerticalIcon as GripVertical } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
+import { PushPinIcon as Pin } from "@phosphor-icons/react/dist/csr/PushPin";
+import { PushPinSlashIcon as PinOff } from "@phosphor-icons/react/dist/csr/PushPinSlash";
 import type { NavEntry } from "./useNavDestinations";
 
 /**
@@ -55,7 +59,7 @@ export const PinnedRow = memo(function PinnedRow({ entry, first, last, onNudge, 
       >
         <GripVertical aria-hidden className="h-4 w-4" />
       </button>
-      <Icon aria-hidden className="h-4 w-4 shrink-0 text-[var(--brand-light)]" strokeWidth={2} />
+      <Icon aria-hidden className="h-4 w-4 shrink-0 text-[var(--brand-light)]" />
       <span className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{entry.label}</span>
       <KindTag entry={entry} />
       <button type="button" className={ICON_BUTTON} disabled={first} aria-label={t("moveUp", { name: entry.label })} title={t("moveUp", { name: entry.label })} onClick={() => onNudge(entry.key, -1)}>
@@ -82,7 +86,7 @@ export const ShelfRow = memo(function ShelfRow({ entry, onPin }: { entry: NavEnt
   const Icon = entry.icon;
   return (
     <li className="flex h-11 items-center gap-2 rounded-xl pl-3 pr-1.5 transition-colors hover:bg-fill-subtle">
-      <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" strokeWidth={1.9} />
+      <Icon aria-hidden className="h-4 w-4 shrink-0 text-content-tertiary" />
       <span className="min-w-0 flex-1 truncate text-sm text-content-secondary">{entry.label}</span>
       <KindTag entry={entry} />
       <button

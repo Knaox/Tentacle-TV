@@ -1,6 +1,9 @@
 import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { EyeSlashIcon as EyeOff } from "@phosphor-icons/react/dist/csr/EyeSlash";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { adminMetadataErrorCode, useTestTmdbKey, useUpdateAdminMetadata } from "@tentacle-tv/api-client";
 import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";

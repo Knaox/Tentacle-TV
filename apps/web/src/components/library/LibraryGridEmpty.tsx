@@ -1,7 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
-import { Clapperboard, FilterX, SearchX, type LucideIcon } from "lucide-react";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { FunnelXIcon as FilterX } from "@phosphor-icons/react/dist/csr/FunnelX";
+import { MagnifyingGlassMinusIcon as SearchX } from "@phosphor-icons/react/dist/csr/MagnifyingGlassMinus";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { SearchSuggestions } from "../search/SearchSuggestions";
 
 /**
@@ -93,7 +96,7 @@ export function LibraryGridEmpty({
  * état vide n'a rien à annoncer en boucle. Ma liste et Mes favoris le
  * reprennent pour leurs propres états (`collection/CollectionStates`).
  */
-export function EmptyFrame({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+export function EmptyFrame({ icon: Icon, children }: { icon: IconType; children: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-5 py-16 text-center md:py-20">
       <span
@@ -102,7 +105,7 @@ export function EmptyFrame({ icon: Icon, children }: { icon: LucideIcon; childre
         style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.7), rgba(var(--brand-accent-rgb),0.55))" }}
       >
         <span className="flex h-full w-full items-center justify-center rounded-full bg-[color:var(--surface-1)]">
-          <Icon className="h-8 w-8 text-[var(--brand-light)]" strokeWidth={1.6} />
+          <Icon className="h-8 w-8 text-[var(--brand-light)]" />
         </span>
       </span>
       {children}

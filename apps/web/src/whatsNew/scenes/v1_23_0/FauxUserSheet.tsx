@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Eye, MonitorSmartphone, Tv } from "lucide-react";
+import { EyeIcon as Eye } from "@phosphor-icons/react/dist/csr/Eye";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
 import { UserAvatar } from "../../../components/admin/kit";
 import { Place, type Animated, type Placed } from "..";
 import { useAgo, type SceneAccount } from "./FauxUserCard";

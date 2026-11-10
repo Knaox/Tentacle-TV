@@ -1,6 +1,10 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleCheck, CircleDashed, CircleMinus, CircleX, TriangleAlert } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CircleDashedIcon as CircleDashed } from "@phosphor-icons/react/dist/csr/CircleDashed";
+import { MinusCircleIcon as CircleMinus } from "@phosphor-icons/react/dist/csr/MinusCircle";
+import { XCircleIcon as CircleX } from "@phosphor-icons/react/dist/csr/XCircle";
+import { WarningIcon as TriangleAlert } from "@phosphor-icons/react/dist/csr/Warning";
 import type { CompatFeatureView, FeatureState, JellyfinCompatReport } from "@tentacle-tv/shared";
 import { localized } from "./compatPresentation";
 import { ShowMore } from "../kit/ShowMore";

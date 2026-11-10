@@ -1,12 +1,13 @@
 import { memo, type ReactNode } from "react";
-import { ListFilter, type LucideIcon } from "lucide-react";
+import { FunnelSimpleIcon as ListFilter } from "@phosphor-icons/react/dist/csr/FunnelSimple";
+import type { Icon as IconType } from "@phosphor-icons/react";
 
 /**
  * L'emblème des états vides du catalogue (`CatalogEmpty`) : pastille de 76
  * cerclée du dégradé de marque, icône 28 `brand.light`. Ma liste et Mes
  * favoris le reprennent : trois pages, un seul dessin du vide.
  */
-function Emblem({ Icon }: { Icon: LucideIcon }) {
+function Emblem({ Icon }: { Icon: IconType }) {
   return (
     <span
       aria-hidden
@@ -22,7 +23,7 @@ function Emblem({ Icon }: { Icon: LucideIcon }) {
 
 interface EmptyAction {
   label: string;
-  Icon?: LucideIcon;
+  Icon?: IconType;
   onPress: () => void;
 }
 
@@ -34,10 +35,10 @@ interface EmptyAction {
  * partage).
  */
 export const CollectionEmptyState = memo(function CollectionEmptyState({ Icon, title, body, steps, primary, secondary, extra }: {
-  Icon: LucideIcon;
+  Icon: IconType;
   title: string;
   body: string;
-  steps?: { Icon: LucideIcon; label: string }[];
+  steps?: { Icon: IconType; label: string }[];
   primary: EmptyAction;
   secondary?: EmptyAction;
   extra?: ReactNode;
@@ -94,7 +95,7 @@ export const CollectionNarrowEmpty = memo(function CollectionNarrowEmpty({ messa
   message: string;
   actionLabel: string;
   onAction: () => void;
-  Icon?: LucideIcon;
+  Icon?: IconType;
 }) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">

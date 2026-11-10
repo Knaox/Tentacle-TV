@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Mic, Search } from "lucide-react";
+import { MicrophoneIcon as Mic } from "@phosphor-icons/react/dist/csr/Microphone";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { isSelectKey } from "../../focus/keys";
 
 /**
@@ -116,7 +117,7 @@ export const SearchBarTv = forwardRef<SearchBarHandle, SearchBarTvProps>(functio
         onClick={openKeyboard}
         aria-label={query || t("search:launcher")}
       >
-        <Search className="tv-search-bar-icon" size={30} strokeWidth={2} aria-hidden />
+        <Search className="tv-search-bar-icon" size={30} aria-hidden />
         <span className="tv-search-bar-text">
           {typed ? (
             <>
@@ -128,7 +129,7 @@ export const SearchBarTv = forwardRef<SearchBarHandle, SearchBarTvProps>(functio
             <span className="tv-search-bar-placeholder">{t("search:launcher")}</span>
           )}
         </span>
-        {onTv() && <Mic className="tv-search-bar-mic" size={26} strokeWidth={2} aria-hidden />}
+        {onTv() && <Mic className="tv-search-bar-mic" size={26} aria-hidden />}
       </button>
       {/* Le champ véritable, posé par-dessus la barre et transparent. Il porte
           la saisie et reçoit la dictée ; `tabIndex={-1}` le retire du

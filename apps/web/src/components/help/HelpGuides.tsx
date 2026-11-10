@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Film } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { TRAILER_GUIDE_PATH } from "@tentacle-tv/shared";
 
 /**

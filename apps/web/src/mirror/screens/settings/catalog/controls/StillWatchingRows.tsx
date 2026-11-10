@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { Hourglass, Play, Timer, TimerReset, X } from "lucide-react";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { PlayIcon as Play } from "../../../../../components/icons/transport";
+import { TimerIcon as Timer } from "@phosphor-icons/react/dist/csr/Timer";
+import { ClockCounterClockwiseIcon as TimerReset } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
 import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "../../../../../components/settings/stillWatchingChoices";
 import { isWebDebugEnabled } from "../../../../../lib/webDebug";

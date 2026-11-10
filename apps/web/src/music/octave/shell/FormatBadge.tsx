@@ -9,7 +9,7 @@
  */
 
 import { memo } from "react";
-import { AudioLines } from "lucide-react";
+import { WaveformIcon as AudioLines } from "@phosphor-icons/react/dist/csr/Waveform";
 import { useTranslation } from "react-i18next";
 import type { MusicAudioFormat } from "@tentacle-tv/shared/music";
 import { formatParts } from "@tentacle-tv/shared/octave";

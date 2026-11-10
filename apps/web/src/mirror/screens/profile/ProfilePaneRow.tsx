@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { SettingsRow } from "../settings/ui/SettingsRow";
 import type { SettingScope } from "@tentacle-tv/shared";
 import type { WebPaneId } from "../settings/catalog/webCatalog";
@@ -11,7 +11,7 @@ import { useProfilePane } from "./ProfilePaneContext";
  */
 export function ProfilePaneRow({ pane, icon, label, description, value, scope, last }: {
   pane: WebPaneId;
-  icon: LucideIcon;
+  icon: IconType;
   label: string;
   description?: string;
   value?: string;

@@ -1,4 +1,8 @@
-import { ChevronLeft, Maximize, Play, Settings, Volume2 } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CornersOutIcon as Maximize } from "@phosphor-icons/react/dist/csr/CornersOut";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { GearSixIcon as Settings } from "@phosphor-icons/react/dist/csr/GearSix";
+import { SpeakerHighIcon as Volume2 } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
 import { easeOut } from "../../../theme/motion";
 import { Place, type Animated } from "../Place";
 
@@ -29,7 +33,7 @@ export function FauxPlayerChrome({ title, time, progress, ...animated }: FauxPla
     <Place x={0} y={0} w={640} h={360} transition={FADE} {...animated}>
       <div className="absolute inset-x-0 top-0 h-[64px] bg-gradient-to-b from-black/70 to-transparent" />
       <div className="absolute left-[14px] top-[14px] flex items-center gap-2 text-white">
-        <ChevronLeft size={18} strokeWidth={2.2} aria-hidden />
+        <ChevronLeft size={18} aria-hidden />
         <span className="max-w-[420px] truncate text-[13px] font-semibold">{title}</span>
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent" style={{ height: PLAYER_BOTTOM_BAR_H + 26 }} />
@@ -40,14 +44,14 @@ export function FauxPlayerChrome({ title, time, progress, ...animated }: FauxPla
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="text-[9px] font-bold text-white/70">-10</span>
-            <Play size={16} fill="currentColor" strokeWidth={0} aria-hidden />
+            <Play size={16} aria-hidden />
             <span className="text-[9px] font-bold text-white/70">+30</span>
-            <Volume2 size={14} strokeWidth={2} aria-hidden />
+            <Volume2 size={14} aria-hidden />
             <span className="text-[10px] tabular-nums text-white/60">{time}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Settings size={14} strokeWidth={2} aria-hidden />
-            <Maximize size={14} strokeWidth={2} aria-hidden />
+            <Settings size={14} aria-hidden />
+            <Maximize size={14} aria-hidden />
           </div>
         </div>
       </div>

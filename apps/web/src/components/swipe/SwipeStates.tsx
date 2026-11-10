@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Library, PartyPopper } from "lucide-react";
+import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/dist/csr/Warning";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
+import { ConfettiIcon as PartyPopper } from "@phosphor-icons/react/dist/csr/Confetti";
 import { Shimmer } from "@tentacle-tv/ui";
 import { CARD_WIDTH } from "./SwipeStack";
 

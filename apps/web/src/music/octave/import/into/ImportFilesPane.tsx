@@ -5,7 +5,8 @@
  */
 
 import { useId, useRef, useState, type DragEvent } from "react";
-import { FileAudio, Upload } from "lucide-react";
+import { FileAudioIcon as FileAudio } from "@phosphor-icons/react/dist/csr/FileAudio";
+import { UploadSimpleIcon as Upload } from "@phosphor-icons/react/dist/csr/UploadSimple";
 import { useTranslation } from "react-i18next";
 import { RELEASE_ACCEPT } from "@tentacle-tv/api-client";
 import { formatBytes, pickAudio, type PickedFiles } from "../../releases/webReleaseFiles";

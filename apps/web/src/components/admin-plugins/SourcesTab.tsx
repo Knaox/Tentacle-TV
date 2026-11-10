@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { useToast } from "../../contexts/ToastContext";
 import { usePluginAdmin } from "./PluginAdminContext";
 import { AdminNotice, AdminSection } from "../admin/kit";

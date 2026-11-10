@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Info, Play, UserRound } from "lucide-react";
+import { InfoIcon as Info } from "@phosphor-icons/react/dist/csr/Info";
+import { PlayIcon as Play } from "@/components/icons/transport";
+import { UserIcon as UserRound } from "@phosphor-icons/react/dist/csr/User";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 /**

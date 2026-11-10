@@ -8,7 +8,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ListMusic, Search } from "lucide-react";
+import { PlaylistIcon as ListMusic } from "@phosphor-icons/react/dist/csr/Playlist";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylist, usePlaylistSharingRules, useReorderMusicPlaylist } from "@tentacle-tv/api-client";

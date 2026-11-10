@@ -1,6 +1,8 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, CircleMinus } from "lucide-react";
+import { WarningCircleIcon as CircleAlert } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { MinusCircleIcon as CircleMinus } from "@phosphor-icons/react/dist/csr/MinusCircle";
 import { remoteVerdict, type RemoteCheckItem, type RemoteCheckReport, type RemoteServiceVerdict } from "@tentacle-tv/shared";
 import { AdminNotice, StatusPill, type StatusTone } from "../admin/kit";
 

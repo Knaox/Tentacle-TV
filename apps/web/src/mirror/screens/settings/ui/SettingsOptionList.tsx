@@ -1,11 +1,11 @@
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { SettingsRow } from "./SettingsRow";
 
 export interface SettingsOption<V extends string = string> {
   value: V;
   label: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: IconType;
 }
 
 /**

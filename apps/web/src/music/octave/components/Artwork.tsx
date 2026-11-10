@@ -25,7 +25,8 @@ import { isArtworkDecoded, isArtworkFailed, isArtworkReady, markArtworkDecoded }
 import { isArtworkKnown, markArtworkKnown } from "./artworkKnown";
 import { THUMB_ARTWORK_SIZE, fallbackTone, initialOf, sizedArtworkUrl } from "./artworkTone";
 import "./octaveViews.css";
-import { Music, User } from "lucide-react";
+import { MusicNotesIcon as Music } from "@phosphor-icons/react/dist/csr/MusicNotes";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
 import { octaveOwner } from "../cache/octaveOwner";
@@ -82,7 +83,7 @@ function ArtworkFallback({ kind, label }: { kind: "album" | "artist"; label: str
   const Icon = kind === "artist" ? User : Music;
   return (
     <div className="octave-art-fallback octave-art-box absolute inset-0 flex items-center justify-center" data-tone={fallbackTone(label)}>
-      {initial ? <span className="octave-art-initial select-none">{initial}</span> : <Icon className="h-[38%] w-[38%]" strokeWidth={1.5} />}
+      {initial ? <span className="octave-art-initial select-none">{initial}</span> : <Icon className="h-[38%] w-[38%]" />}
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Clapperboard, Database, HardDriveDownload, LifeBuoy, Mail, MonitorPlay, Puzzle, Users } from "lucide-react";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
+import { DatabaseIcon as Database } from "@phosphor-icons/react/dist/csr/Database";
+import { DownloadSimpleIcon as HardDriveDownload } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { LifebuoyIcon as LifeBuoy } from "@phosphor-icons/react/dist/csr/Lifebuoy";
+import { EnvelopeIcon as Mail } from "@phosphor-icons/react/dist/csr/Envelope";
+import { MonitorPlayIcon as MonitorPlay } from "@phosphor-icons/react/dist/csr/MonitorPlay";
+import { PuzzlePieceIcon as Puzzle } from "@phosphor-icons/react/dist/csr/PuzzlePiece";
+import { UsersIcon as Users } from "@phosphor-icons/react/dist/csr/Users";
 import type { SceneProps } from "../../types";
 import { StatusPill } from "../../../components/admin/kit";
 import { useAdminSections } from "../../../components/admin/adminSections";

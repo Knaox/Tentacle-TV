@@ -1,6 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Hourglass, LoaderCircle, UserMinus } from "lucide-react";
+import { HourglassIcon as Hourglass } from "@phosphor-icons/react/dist/csr/Hourglass";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { UserMinusIcon as UserMinus } from "@phosphor-icons/react/dist/csr/UserMinus";
 import type { WtMemberDto } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";

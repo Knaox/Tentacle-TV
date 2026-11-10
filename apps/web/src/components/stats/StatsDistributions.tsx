@@ -1,11 +1,16 @@
 import { memo } from "react";
-import { AppWindow, Globe, Monitor, Smartphone, Tv, type LucideIcon } from "lucide-react";
+import { AppWindowIcon as AppWindow } from "@phosphor-icons/react/dist/csr/AppWindow";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { MonitorIcon as Monitor } from "@phosphor-icons/react/dist/csr/Monitor";
+import { DeviceMobileIcon as Smartphone } from "@phosphor-icons/react/dist/csr/DeviceMobile";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import type { ViewingStats, ViewingStatsDevice } from "@tentacle-tv/shared";
 import { HBarList } from "./HBarList";
 import { StatsSection } from "./StatsSection";
 import { useStatsFormat } from "./useStatsFormat";
 
-const DEVICE_ICONS: Record<ViewingStatsDevice, LucideIcon> = {
+const DEVICE_ICONS: Record<ViewingStatsDevice, IconType> = {
   tv: Tv,
   webos: Tv,
   mobile: Smartphone,

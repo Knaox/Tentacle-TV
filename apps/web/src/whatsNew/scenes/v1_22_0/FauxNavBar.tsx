@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Bookmark, ChevronDown, Film, House, LayoutGrid, Sparkles, Tv, type LucideIcon } from "lucide-react";
+import { BookmarkSimpleIcon as Bookmark } from "@phosphor-icons/react/dist/csr/BookmarkSimple";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { HouseIcon as House } from "@phosphor-icons/react/dist/csr/House";
+import { SquaresFourIcon as LayoutGrid } from "@phosphor-icons/react/dist/csr/SquaresFour";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { TelevisionIcon as Tv } from "@phosphor-icons/react/dist/csr/Television";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { TentacleLogo } from "../../../components/ui/TentacleLogo";
 import { CARD_TONES, Place, sceneTween } from "..";
 
@@ -27,7 +34,7 @@ export function tabCenter(slot: number): { x: number; y: number } {
   return { x: CAPSULE.x + TAB_X + slot * TAB_STEP + TAB_W / 2, y: CAPSULE.y + CAPSULE.h / 2 };
 }
 
-const TABS: ReadonlyArray<{ key: FauxTabKey; icon: LucideIcon; slot: number }> = [
+const TABS: ReadonlyArray<{ key: FauxTabKey; icon: IconType; slot: number }> = [
   { key: "home", icon: House, slot: 0 },
   { key: "forYou", icon: Sparkles, slot: 1 },
   { key: "movies", icon: Film, slot: 2 },
@@ -36,7 +43,7 @@ const TABS: ReadonlyArray<{ key: FauxTabKey; icon: LucideIcon; slot: number }> =
 ];
 
 function FauxTab({ icon: Icon, label, active, open = false, more = false }: {
-  icon: LucideIcon;
+  icon: IconType;
   label: string;
   active: boolean;
   open?: boolean;
@@ -53,7 +60,6 @@ function FauxTab({ icon: Icon, label, active, open = false, more = false }: {
       />
       <motion.span className="absolute inset-0 rounded-[10px] bg-fill-soft" initial={false} animate={{ opacity: open ? 1 : 0 }} transition={sceneTween} />
       <Icon
-        strokeWidth={active ? 2.2 : 1.9}
         className={`relative h-[13px] w-[13px] shrink-0 transition-colors duration-200 ${active ? "text-[var(--brand-light)]" : "text-content-quaternary"}`}
       />
       <span className={`relative whitespace-nowrap transition-colors duration-200 ${active ? "font-semibold text-content-primary" : "font-medium text-content-tertiary"}`}>

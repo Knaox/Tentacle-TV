@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { phosphorWeights } from "./build/phosphorWeights";
 import { dirname, resolve } from "path";
 import { readFileSync, existsSync } from "fs";
 import { createRequire } from "module";
@@ -55,7 +56,7 @@ function stripCspMetaForElectron() {
 }
 
 export default defineConfig({
-  plugins: [react(), stripCspMetaForElectron()],
+  plugins: [react(), stripCspMetaForElectron(), phosphorWeights()],
   define: {
     __APP_VERSION_WEB__: JSON.stringify(webVersion),
     __APP_VERSION_DESKTOP__: JSON.stringify(desktopVersion),

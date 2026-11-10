@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { KeyRound, LoaderCircle } from "lucide-react";
+import { KeyIcon as KeyRound } from "@phosphor-icons/react/dist/csr/Key";
+import { CircleNotchIcon as LoaderCircle } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { cls } from "../../../pages/adminUtils";
 
 interface TmdbSavedKeyProps {

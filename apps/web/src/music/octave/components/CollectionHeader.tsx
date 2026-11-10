@@ -18,7 +18,8 @@
  */
 
 import type { ReactNode } from "react";
-import { Play, Shuffle } from "lucide-react";
+import { PlayIcon as Play } from "../../../components/icons/transport";
+import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
 import { useTranslation } from "react-i18next";
 import { totalDurationParts } from "@tentacle-tv/shared/octave";
 import { PressableGlass } from "../../../components/ui/glass/PressableGlass";
@@ -96,7 +97,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <PressableGlass {...PLAY_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onPlay} onPointerDown={onPress}>
-          <Play className="h-5 w-5" fill="currentColor" aria-hidden />
+          <Play className="h-5 w-5" aria-hidden />
           <span className="relative">{t("common.playAll")}</span>
         </PressableGlass>
         <PressableGlass {...SECONDARY_CAPSULE_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onShuffle}>

@@ -6,7 +6,7 @@
  */
 
 import { memo, type MouseEvent, type PointerEvent } from "react";
-import { GripVertical } from "lucide-react";
+import { DotsSixVerticalIcon as GripVertical } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
 import { useTranslation } from "react-i18next";
 
 export interface HandleSlot {

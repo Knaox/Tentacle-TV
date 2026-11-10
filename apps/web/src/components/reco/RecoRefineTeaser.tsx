@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { ArrowRight, GalleryHorizontalEnd } from "lucide-react";
+import { ArrowRightIcon as ArrowRight } from "@phosphor-icons/react/dist/csr/ArrowRight";
+import { SlideshowIcon as GalleryHorizontalEnd } from "@phosphor-icons/react/dist/csr/Slideshow";
 import { RECO_REFINE_PATH } from "../../lib/recoSections";
 
 /**

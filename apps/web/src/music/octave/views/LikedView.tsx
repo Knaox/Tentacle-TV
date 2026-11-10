@@ -9,7 +9,8 @@
  */
 
 import { useMemo } from "react";
-import { Heart, Search } from "lucide-react";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ARTWORK_RADIUS } from "../components/Artwork";
@@ -54,7 +55,7 @@ export function LikedView() {
         title={t("liked.title")}
         art={
           <div className="octave-brand-fill flex h-44 w-44 shrink-0 items-center justify-center shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56" style={{ borderRadius: ARTWORK_RADIUS.lg }} aria-hidden>
-            <Heart className="h-20 w-20" fill="currentColor" strokeWidth={0} />
+            <Heart weight="fill" className="h-20 w-20" />
           </div>
         }
         meta={liked.isPending ? null : <span>{meta}</span>}

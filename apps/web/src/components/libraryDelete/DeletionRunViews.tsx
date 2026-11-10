@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircleIcon as CheckCircle2 } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { WarningCircleIcon as AlertCircle } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import type { DeletionRunState, DeletionRunSummary } from "@tentacle-tv/api-client";
 import { confirmationPreview } from "@tentacle-tv/shared";
 import { DIALOG_CANCEL } from "./dialogButtons";
@@ -90,7 +91,7 @@ export function DeletionSummaryView({ titleId, descId, summary, nameOf, onRetry,
   return (
     <>
       <div className="flex items-center gap-2.5">
-        <Icon className={`h-6 w-6 shrink-0 ${complete ? "text-[var(--status-success-fg)]" : "text-[var(--status-warning-fg)]"}`} strokeWidth={2.2} aria-hidden />
+        <Icon className={`h-6 w-6 shrink-0 ${complete ? "text-[var(--status-success-fg)]" : "text-[var(--status-warning-fg)]"}`} aria-hidden />
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
           {t(complete ? "doneTitle" : "partialTitle")}
         </h2>

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
 import { reachabilityOf, type PublicIpReport, type RemoteAccessState } from "@tentacle-tv/shared";
 
 const TONE = {

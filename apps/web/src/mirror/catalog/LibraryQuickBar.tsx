@@ -1,6 +1,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, ChevronDown, Heart } from "lucide-react";
+import { ArrowDownIcon as ArrowDown } from "@phosphor-icons/react/dist/csr/ArrowDown";
+import { ArrowUpIcon as ArrowUp } from "@phosphor-icons/react/dist/csr/ArrowUp";
+import { CaretDownIcon as ChevronDown } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
 import { CompactSegmented } from "../screens/settings/ui/SettingsChoiceRow";
 import { SORT_OPTIONS } from "./catalogOptions";
 import type { LibraryCatalogState } from "./useLibraryCatalogState";

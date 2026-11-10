@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { GalleryHorizontalEnd, Heart, Sparkles, Star, X } from "lucide-react";
+import { SlideshowIcon as GalleryHorizontalEnd } from "@phosphor-icons/react/dist/csr/Slideshow";
+import { HeartIcon as Heart } from "@phosphor-icons/react/dist/csr/Heart";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { StarIcon as Star } from "@phosphor-icons/react/dist/csr/Star";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import { Place } from "../Place";
 import { sceneSpring, sceneTween } from "../sceneMotion";
 
@@ -48,18 +52,18 @@ export function FauxRecoSwitch({ x, y, refine }: { x: number; y: number; refine:
 export function FauxSwipeHeader({ visible, like, superlike, dislike }: { visible: boolean; like: number; superlike: number; dislike: number }) {
   const { t } = useTranslation("swipe");
   const chips = [
-    { key: "like", Icon: Heart, n: like, tone: "text-emerald-400 fill-current" },
-    { key: "super", Icon: Star, n: superlike, tone: "text-fuchsia-300 fill-current" },
-    { key: "dislike", Icon: X, n: dislike, tone: "text-rose-400" },
-  ];
+    { key: "like", Icon: Heart, n: like, tone: "text-emerald-400", weight: "fill" },
+    { key: "super", Icon: Star, n: superlike, tone: "text-fuchsia-300", weight: "fill" },
+    { key: "dislike", Icon: X, n: dislike, tone: "text-rose-400", weight: "bold" },
+  ] as const;
   return (
     <Place x={40} y={48} w={560} visible={visible} transition={sceneTween}>
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 truncate text-[9px] text-content-secondary">{t("subtitle")}</p>
         <ul className="flex shrink-0 gap-1">
-          {chips.map(({ key, Icon, n, tone }) => (
+          {chips.map(({ key, Icon, n, tone, weight }) => (
             <li key={key} className="inline-flex items-center gap-1 rounded-full border border-line-subtle bg-fill-subtle px-2 py-0.5 text-[10px] font-semibold tabular-nums text-content-primary">
-              <Icon size={10} className={tone} />
+              <Icon size={10} weight={weight} className={tone} />
               {n}
             </li>
           ))}

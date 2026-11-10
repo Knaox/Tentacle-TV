@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Film } from "lucide-react";
+import { FilmStripIcon as Film } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { isLovedTitle, moviesRankMode, titleReasons, type ViewingStats, type ViewingStatsTitle } from "@tentacle-tv/shared";
 import { CardImage } from "../cards/CardImage";

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MonitorSmartphone } from "lucide-react";
+import { DevicesIcon as MonitorSmartphone } from "@phosphor-icons/react/dist/csr/Devices";
 import { useRevokePairedDevice, type PairedDevice } from "@tentacle-tv/api-client";
 import { useToast } from "../../../contexts/ToastContext";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";

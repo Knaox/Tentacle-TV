@@ -4,7 +4,7 @@
  * rappelle. Toujours accompagnée de son nom en texte (jamais la couleur seule).
  */
 
-import { FileText } from "lucide-react";
+import { FileTextIcon as FileText } from "@phosphor-icons/react/dist/csr/FileText";
 import type { MusicImportSource } from "@tentacle-tv/shared/music";
 
 const TINT: Record<MusicImportSource, string> = {

@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, type LucideIcon } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { firstBackdropItem, resolveBackdropId } from "../../../components/hero/resolveBackdrop";
@@ -34,7 +35,7 @@ export const CollectionHero = memo(function CollectionHero({
   items: MediaItem[] | undefined;
   title: string;
   kicker: string;
-  Icon: LucideIcon;
+  Icon: IconType;
   subtitle?: string;
   onBack: () => void;
   actions?: ReactNode;

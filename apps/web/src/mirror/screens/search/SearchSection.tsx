@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
 import type { MediaItem, SearchItemHit, SearchMediaItem } from "@tentacle-tv/shared";
 import { MediaCard } from "../../cards/MediaCard";
 import { useGrid, useIsTablet } from "../../useMirrorLayout";

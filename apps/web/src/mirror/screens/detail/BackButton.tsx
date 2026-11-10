@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 
 /**
  * `backOrHome` de l'app : on dépile quand il y a de quoi (le routeur range son

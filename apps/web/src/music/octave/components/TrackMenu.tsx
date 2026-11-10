@@ -7,7 +7,17 @@
  */
 
 import { useRef, useState, type RefObject } from "react";
-import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListMinus, ListPlus, ListStart, MoreHorizontal, Plus, Trash2, User } from "lucide-react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react/dist/csr/CaretLeft";
+import { CaretRightIcon as ChevronRight } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { DiscIcon as Disc3 } from "@phosphor-icons/react/dist/csr/Disc";
+import { ArrowLineDownIcon as ListEnd } from "@phosphor-icons/react/dist/csr/ArrowLineDown";
+import { ListDashesIcon as ListMinus } from "@phosphor-icons/react/dist/csr/ListDashes";
+import { ListPlusIcon as ListPlus } from "@phosphor-icons/react/dist/csr/ListPlus";
+import { ArrowLineUpIcon as ListStart } from "@phosphor-icons/react/dist/csr/ArrowLineUp";
+import { DotsThreeIcon as MoreHorizontal } from "@phosphor-icons/react/dist/csr/DotsThree";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
+import { TrashIcon as Trash2 } from "@phosphor-icons/react/dist/csr/Trash";
+import { UserIcon as User } from "@phosphor-icons/react/dist/csr/User";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicPlaylist, MusicTrack } from "@tentacle-tv/shared/music";

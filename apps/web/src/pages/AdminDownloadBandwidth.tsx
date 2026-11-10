@@ -10,7 +10,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "@phosphor-icons/react/dist/csr/Plus";
 import { BACKEND, cls, creds, hdrs } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";

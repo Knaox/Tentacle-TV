@@ -10,7 +10,7 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { MusicAlbum, MusicArtist, MusicShelfPlaylist } from "@tentacle-tv/shared/music";
-import { Library } from "lucide-react";
+import { BooksIcon as Library } from "@phosphor-icons/react/dist/csr/Books";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AlbumCard, ArtistCard, PlaylistCard } from "../components/Cards";

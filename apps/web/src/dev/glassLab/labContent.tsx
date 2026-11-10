@@ -12,7 +12,9 @@
  */
 
 import { useState, type CSSProperties } from "react";
-import { Moon, Sparkles, Sun } from "lucide-react";
+import { MoonIcon as Moon } from "@phosphor-icons/react/dist/csr/Moon";
+import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { SunIcon as Sun } from "@phosphor-icons/react/dist/csr/Sun";
 import type { CollectionTypeTab } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";

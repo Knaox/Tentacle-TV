@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { XIcon as X } from "@phosphor-icons/react/dist/csr/X";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SHEET_MAX_WIDTH } from "../../responsive";
 import { PLAYER } from "../playerColors";

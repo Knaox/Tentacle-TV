@@ -7,7 +7,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { PauseIcon as Pause, PlayIcon as Play } from "../../../components/icons/transport";
 import { useTranslation } from "react-i18next";
 import { Artwork } from "../components/Artwork";
 import { useOctavePlayer, usePlayerPosition, usePlayerSelector } from "../player/OctavePlayerProvider";
@@ -55,7 +55,7 @@ export const ResumeCard = memo(function ResumeCard() {
           <Progress />
         </span>
         <span aria-hidden className="octave-brand-fill flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] transition-transform duration-150 group-active:scale-95">
-          <Icon className={`h-5 w-5 ${playing ? "" : "ml-0.5"}`} fill="currentColor" />
+          <Icon weight="fill" className={`h-5 w-5 ${playing ? "" : "ml-0.5"}`} />
         </span>
       </button>
     </section>

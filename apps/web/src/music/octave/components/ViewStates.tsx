@@ -7,7 +7,7 @@
 
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { LucideIcon } from "lucide-react";
+import type { Icon as IconType } from "@phosphor-icons/react";
 import { ARTWORK_RADIUS } from "./Artwork";
 import { CardSkeleton } from "./CardRow";
 import { CARD_GRID_CLASS } from "./cardGrid";
@@ -68,7 +68,7 @@ export function HeaderSkeleton({ round = false }: { round?: boolean }) {
 
 interface EmptyStateProps {
   /** Une icône (lucide) au-dessus du titre. */
-  icon?: LucideIcon;
+  icon?: IconType;
   /** Ce qui manque, en une phrase courte. */
   title?: string;
   /** L'explication, ou un texte libre. */
@@ -82,7 +82,7 @@ export function EmptyState({ icon: Icon, title, children, action }: EmptyStatePr
     <div className="flex flex-col items-center gap-3 px-4 py-12 text-center md:px-8">
       {Icon && (
         <span className="mb-1 flex h-14 w-14 items-center justify-center rounded-full bg-fill-subtle text-content-secondary" aria-hidden>
-          <Icon className="h-6 w-6" strokeWidth={1.75} />
+          <Icon className="h-6 w-6" />
         </span>
       )}
       {title && <h2 className="text-lg font-bold text-content-primary">{title}</h2>}

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon as ExternalLink } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { AdminNotice, AdminSection } from "../kit";
 import { INSTALLED_FAILURE_KEY } from "./compatPresentation";
 import { isOutdatedServer, useJellyfinSetup } from "./jellyfinAdminApi";

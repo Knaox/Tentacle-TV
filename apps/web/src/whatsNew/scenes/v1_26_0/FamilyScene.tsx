@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock } from "lucide-react";
+import { LockIcon as Lock } from "@phosphor-icons/react/dist/csr/Lock";
 import type { FamilyProfileColor } from "@tentacle-tv/shared";
 import type { SceneProps } from "../../types";
 import { useSceneMedia } from "../../sceneMedia";

@@ -5,7 +5,10 @@
  */
 
 import { useEffect, useId, useState } from "react";
-import { Check, Copy, Link2, Link2Off } from "lucide-react";
+import { CheckIcon as Check } from "@phosphor-icons/react/dist/csr/Check";
+import { CopyIcon as Copy } from "@phosphor-icons/react/dist/csr/Copy";
+import { LinkIcon as Link2 } from "@phosphor-icons/react/dist/csr/Link";
+import { LinkBreakIcon as Link2Off } from "@phosphor-icons/react/dist/csr/LinkBreak";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylistShare } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";

@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyIcon as LockKeyhole } from "@phosphor-icons/react/dist/csr/LockKey";
+import { ShieldCheckIcon as ShieldCheck } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { Modal } from "../../components/ui/Modal";
 import { OwnPinDialog } from "../page/PinEditors";
 

@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleCheck } from "lucide-react";
+import { CheckCircleIcon as CircleCheck } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { Field } from "../admin/services/Field";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { WizardErrorCode } from "./setupApi";

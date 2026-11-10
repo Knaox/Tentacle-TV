@@ -10,7 +10,7 @@
  */
 
 import { useRef } from "react";
-import { Clapperboard } from "lucide-react";
+import { FilmSlateIcon as Clapperboard } from "@phosphor-icons/react/dist/csr/FilmSlate";
 import { useTranslation } from "react-i18next";
 import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
 import { OctaveFirstVisitHint } from "./OctaveFirstVisitHint";
@@ -51,7 +51,7 @@ export function OctaveModeSlot({ onExit, compact = false, rail = false }: Octave
         className="flex min-h-[36px] w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-octave-selected hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         data-octave-back-to-films
       >
-        <Clapperboard aria-hidden className="h-[18px] w-[18px] shrink-0" strokeWidth={1.8} />
+        <Clapperboard aria-hidden className="h-[18px] w-[18px] shrink-0" />
         <span className="truncate">{t("backToFilms.label")}</span>
       </button>
       <OctaveFirstVisitHint anchor={anchor} />

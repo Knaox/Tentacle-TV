@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, House } from "lucide-react";
+import { GlobeIcon as Globe } from "@phosphor-icons/react/dist/csr/Globe";
+import { HouseIcon as House } from "@phosphor-icons/react/dist/csr/House";
 import type { JellyfinCorsReport, RemoteAccessState } from "@tentacle-tv/shared";
 import { AdminSection, StatusPill, type StatusTone } from "../admin/kit";
 import { readableOrigins } from "./corsOrigins";
