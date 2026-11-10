@@ -162,7 +162,7 @@ if(APPLE)
               "${CMAKE_SOURCE_DIR}/../desktop-electron/icons/icon.icns"  # systeme : l'icône d'Electron (Dock, « À propos »)
   )
 elseif(WIN32)
-  # Windows (axe windows) : un exécutable unique, ressources CEF et DLL copiées à côté.
+  # Windows (axe windows) : un exécutable unique, ressources CEF copiées à côté.
   add_executable(tentacle_app src/app/main_desktop.cpp)
   target_link_libraries(tentacle_app PRIVATE tentacle_shell)
   tentacle_windows_app(tentacle_app)  # windows : <build>/app/Tentacle.exe, manifeste, DLL à côté

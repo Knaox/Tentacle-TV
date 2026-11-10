@@ -18,6 +18,7 @@
 #include "platform/linux/video_subsurface_linux.h"
 #include "platform/video_surface.h"
 #include "shell/main_thread.h"
+#include "shell/window_scale.h"
 
 namespace tentacle {
 namespace {
@@ -45,10 +46,7 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     hasFrame_ = true;
     redraw();
   }
-  double backingScale() const override {
-    const float d = SDL_GetWindowPixelDensity(window_.sdl);
-    return d > 0 ? d : 1.0;
-  }
+  double backingScale() const override { return windowScale(window_.sdl).deviceScale; }
   void* nativeLayer() override { return static_cast<platform::LinuxVideoLayer*>(this); }
   PixelSize pixelSize() const override { return {texW_, texH_}; }
   int64_t mpvWid() const override { return 0; }
@@ -108,7 +106,7 @@ class RenderApiSurface final : public VideoSurface, public platform::LinuxVideoL
     RectPt f = frame_;
     if (!hasFrame_) {
       int ww = 0, wh = 0;
-      SDL_GetWindowSize(window_.sdl, &ww, &wh);
+      windowSizeDip(window_.sdl, ww, wh);
       f = {0, 0, double(ww), double(wh)};
     }
     const int pw = std::max(1, int(std::lround(f.width * s))), ph = std::max(1, int(std::lround(f.height * s)));

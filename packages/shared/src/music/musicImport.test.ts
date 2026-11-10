@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { absentPositions, recognizeImportUrl } from "./musicImport";
 import { readPluginMusicManifest } from "./pluginMusicContract";
+import { importBatchesOf, MUSIC_IMPORT_BATCH } from "./musicImportExtension";
 
 describe("recognizeImportUrl — la liste fermée des liens", () => {
   it.each([
@@ -71,5 +72,33 @@ describe("manifeste : points d'import optionnels", () => {
     const m = readPluginMusicManifest({ search: "/s", resolve: "/r" });
     expect(m?.importTracks).toBeUndefined();
     expect(m?.importSources).toBeUndefined();
+  });
+
+  it("lots (1.43.0) : `importBatches` seulement avec `importTracks`", () => {
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r", importTracks: "/t", importBatches: true })?.importBatches).toBe(true);
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r", importBatches: true })?.importBatches).toBeUndefined();
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r", importTracks: "/t", importBatches: "oui" })?.importBatches).toBeUndefined();
+  });
+
+  it("lecture d'abord (1.43.0) : `importReadFirst` ⊂ `importSources`, jamais YouTube (toujours l'extension)", () => {
+    const m = readPluginMusicManifest({ search: "/s", resolve: "/r", importRead: "/i", importSources: ["spotify", "youtube"], importReadFirst: ["spotify", "apple", "youtube"] });
+    expect(m?.importReadFirst).toEqual(["spotify"]);
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r", importReadFirst: ["spotify"] })?.importReadFirst).toBeUndefined();
+  });
+});
+
+describe("importBatchesOf — les absents découpés en lots", () => {
+  it("9 001 titres : 19 lots, le dernier d'un titre, `index` gardés", () => {
+    const tracks = Array.from({ length: 9_001 }, (_, index) => ({ index }));
+    const batches = importBatchesOf(tracks);
+    expect(batches).toHaveLength(19);
+    expect(batches[0]).toHaveLength(MUSIC_IMPORT_BATCH.size);
+    expect(batches[18]).toEqual([{ index: 9_000 }]);
+    expect(batches.flat().map((t) => t.index)).toEqual(tracks.map((t) => t.index));
+  });
+
+  it("rien à confier : aucun lot ; une taille absurde vaut 1", () => {
+    expect(importBatchesOf([])).toEqual([]);
+    expect(importBatchesOf([1, 2], 0)).toEqual([[1], [2]]);
   });
 });

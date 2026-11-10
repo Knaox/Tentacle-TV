@@ -163,7 +163,30 @@ std::string WebUrl::origin() const {
   return scheme + "://" + host + (port.empty() ? "" : ":" + port);
 }
 
-std::string WebUrl::href() const { return origin() + path + (query ? "?" + *query : ""); }
+namespace {
+// Requête (schéma spécial) : C0, espace, " # < > ' et hors ASCII ; fragment : C0, espace, " < > `.
+std::string encodeSet(const std::string& s, bool fragment) {
+  static constexpr char kHex[] = "0123456789ABCDEF";
+  std::string out;
+  for (unsigned char c : s) {
+    const bool enc = c < 0x21 || c > 0x7e || c == '"' || c == '<' || c == '>' ||
+                     (fragment ? c == '`' : (c == '#' || c == '\''));
+    if (enc) {
+      out += '%';
+      out += kHex[c >> 4];
+      out += kHex[c & 15];
+    } else {
+      out += char(c);
+    }
+  }
+  return out;
+}
+}  // namespace
+
+std::string WebUrl::href() const {
+  return origin() + path + (query ? "?" + encodeSet(*query, false) : "") +
+         (fragment ? "#" + encodeSet(*fragment, true) : "");
+}
 
 std::optional<WebUrl> parseHttpUrl(std::string_view input) {
   size_t b = 0, e = input.size();
@@ -219,10 +242,11 @@ std::optional<WebUrl> parseHttpUrl(std::string_view input) {
   size_t pathEnd = s.find_first_of("?#", authEnd);
   if (pathEnd == std::string::npos) pathEnd = s.size();
   url.path = parsePath(std::string_view(s).substr(authEnd, pathEnd - authEnd));
+  const size_t hash = s.find('#', pathEnd);
   if (pathEnd < s.size() && s[pathEnd] == '?') {
-    const size_t hash = s.find('#', pathEnd);
     url.query = s.substr(pathEnd + 1, (hash == std::string::npos ? s.size() : hash) - pathEnd - 1);
   }
+  if (hash != std::string::npos) url.fragment = s.substr(hash + 1);
   return url;
 }
 

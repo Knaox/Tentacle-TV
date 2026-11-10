@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sourceOrdered, sourcePlace, sourceRankDate } from "./musicSourceOrder";
+import { sourceOrdered, sourcePlace, sourcePlacer, sourceRankDate } from "./musicSourceOrder";
 
 describe("sourcePlace — la place d'un titre d'après la playlist telle qu'elle est", () => {
   it("juste après le titre qui le précède dans la source, quelles que soient les arrivées d'avant", () => {
@@ -47,5 +47,25 @@ describe("sourceRankDate", () => {
   it("le dernier de la source est le plus récent, toujours avant l'import", () => {
     const dates = [0, 1, 2].map((rank) => sourceRankDate(1_000, 3, rank));
     expect(dates).toEqual([997, 998, 999]);
+  });
+});
+
+describe("sourcePlacer — `sourcePlace` en dichotomie, identique", () => {
+  it("rend exactement `sourcePlace` sur des playlists tirées au hasard (doublons, entrées hors source, vides)", () => {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648) / 2_147_483_648);
+    for (let round = 0; round < 300; round += 1) {
+      const ranks = Array.from({ length: Math.floor(rnd() * 40) }, () => (rnd() < 0.2 ? null : Math.floor(rnd() * 30)));
+      const place = sourcePlacer(ranks);
+      for (let rank = -1; rank < 32; rank += 1) expect(place(rank)).toBe(sourcePlace(ranks, rank));
+    }
+  });
+
+  it("6 000 attentes face à 3 000 entrées : quelques millisecondes", () => {
+    const ranks = Array.from({ length: 3_000 }, (_, k) => k * 3);
+    const t = performance.now();
+    const place = sourcePlacer(ranks);
+    for (let i = 0; i < 6_000; i += 1) place(i * 1.5);
+    expect(performance.now() - t).toBeLessThan(200);
   });
 });

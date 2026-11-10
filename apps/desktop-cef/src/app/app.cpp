@@ -83,6 +83,10 @@ int runApp(int argc, char** argv) {
     std::fprintf(stderr, "SDL_Init : %s\n", SDL_GetError());
     return 1;
   }
+  // --size est en DIP (1280×800 comme Electron) ; SDL compte en unités de fenêtre : des
+  // pixels sous Windows et X11, où l'échelle du contenu (150 %…) les multiplie. 1 sur macOS.
+  float contentScale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+  if (!(contentScale > 0.0f)) contentScale = 1.0f;
   SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN;
 #ifdef __linux__
   // Wayland : la page est transparente au-dessus de la sous-surface vidéo — sans ce drapeau,
@@ -91,12 +95,8 @@ int runApp(int argc, char** argv) {
     flags |= SDL_WINDOW_TRANSPARENT;
   }
 #endif
-  // --size est en DIP (1280×800 comme Electron) ; SDL compte en unités de fenêtre : des
-  // pixels sous Windows et X11, où l'échelle du contenu (150 %…) les multiplie. 1 sur macOS.
-  float contentScale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-  if (!(contentScale > 0.0f)) contentScale = 1.0f;
-  SDL_Window* window =
-      SDL_CreateWindow("Tentacle", int(opts.width * contentScale), int(opts.height * contentScale), flags);
+  SDL_Window* window = SDL_CreateWindow("Tentacle", int(opts.width * contentScale),
+                                        int(opts.height * contentScale), flags);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow : %s\n", SDL_GetError());
     return 1;

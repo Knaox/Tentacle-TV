@@ -260,7 +260,7 @@ bool Player::attachVideoSurface(VideoSurface& surface) {
     }
     // Taille du swapchain : suivie à chaque changement (fenêtre, plein écran, écran).
     std::weak_ptr<Impl> weak = impl_;
-    const std::string sizeOption = surface.mpvSurfaceSizeOption();
+    const std::string sizeOption = surface.mpvSizeOption();
     surface.onPixelSizeChanged([weak, sizeOption](PixelSize px) {
         if (auto i = weak.lock()) i->setAsync(sizeOption, sizeString(px));
     });

@@ -9,6 +9,7 @@
 
 #include "platform/linux/linux_window.h"
 #include "platform/linux/video_layer_linux.h"
+#include "shell/window_scale.h"
 
 #ifdef TENTACLE_MPV_WAYLAND_HOST
 #include <wayland-client.h>
@@ -109,15 +110,13 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
     hasFrame_ = true;
     place();
   }
-  double backingScale() const override {
-    const float d = SDL_GetWindowPixelDensity(window_.sdl);
-    return d > 0 ? d : 1.0;
-  }
+  // Sous Wayland, unités de fenêtre = DIP = coordonnées de surface ; pixels par DIP.
+  double backingScale() const override { return windowScale(window_.sdl).deviceScale; }
   void* nativeLayer() override { return static_cast<LinuxVideoLayer*>(this); }
   PixelSize pixelSize() const override { return px_; }
   int64_t mpvWid() const override { return int64_t(reinterpret_cast<intptr_t>(&target_)); }
   const char* mpvGpuContext() const override { return "wlhostvk"; }
-  const char* mpvSurfaceSizeOption() const override { return "wlhostvk-surface-size"; }
+  const char* mpvSizeOption() const override { return "wlhostvk-surface-size"; }
   SurfaceColorState colorState() const override {
     SurfaceColorState s;
     s.pixelFormat = "swapchain Vulkan de mpv (wlhostvk) — espace choisi par libplacebo";
@@ -142,7 +141,7 @@ class VideoSubsurface final : public VideoSurface, public LinuxVideoLayer {
     RectPt f = frame_;
     if (!hasFrame_) {
       int w = 0, h = 0;
-      SDL_GetWindowSize(window_.sdl, &w, &h);
+      windowSizeDip(window_.sdl, w, h);
       f = {0, 0, double(w), double(h)};
     }
     const double s = backingScale();

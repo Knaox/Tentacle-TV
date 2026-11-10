@@ -42,10 +42,9 @@ Le lanceur trouve Visual Studio (vswhere), télécharge et **vérifie** les dép
 d'Electron** (`%APPDATA%\com.tentacle.media`). L'exécutable :
 `%USERPROFILE%\.cache\tentacle-cef\build\tv\app\Tentacle.exe`.
 
-⚠️ Au premier téléchargement de CEF, le lanceur imprime « SHA-256 pas encore épinglée — … » : la
-SHA-1 du CDN a concordé ; **recopier cette ligne** (l'empreinte SHA-256) pour qu'elle soit épinglée
-dans `scripts/dev/cef.mjs` (le Mac du lot était en partage de connexion, sans droit de télécharger
-175 Mo).
+Toutes les dépendances sont épinglées par SHA-256 : CEF windows64 l'a été le 10/11 sur
+l'archive téléchargée sur réseau fixe (`371efdf0…`, SHA-1 du CDN concordante). Une archive qui
+diffère est refusée, sans rien extraire.
 
 Quitter par **Alt+F4 ou la croix** : Ctrl+C dans le terminal perd ce que la page vient d'écrire.
 
@@ -105,7 +104,7 @@ Envoyer : la sortie du terminal (build ou app), et le journal de CEF
 - Cas limite : une fin de fichier exactement pendant la relecture de `display-swapchain` (adresse
   lue dans mpv, puis gardée) — jamais vu, signalé dans `MpvPlayerPort::onPlayerEvent`.
 
-## 6. Cycle de vie et fenêtre (axe systeme)
+## Cycle de vie et fenêtre (axe systeme)
 
 Écrit ; vérifié en `-fsyntax-only` (mingw-w64 12 en conteneur, et `bench/windows/syntax-check.sh`
 de l'axe windows : 0 erreur dans les fichiers du cycle de vie) ; jamais lancé.
@@ -121,3 +120,14 @@ de l'axe windows : 0 erreur dans les fichiers du cycle de vie) ; jamais lancé.
 - **Mise en veille puis réveil pendant un téléchargement** → il reprend (PowerRegisterSuspendResumeNotification).
 - **Mise à jour MSIX qui redémarre** (`relaunch`) → l'app revient seule.
 - **Glisser par une région `app-region: drag`** à 100 % et 150 % d'échelle → la fenêtre suit ; la fenêtre ne se réduit pas sous 900×600 (en DIP).
+
+## reseau (pochettes, greffons, CSP, relais, requêtes déléguées, préchargement)
+
+- Compilé par mingw-w64 seulement (`tools/net-windows-syntax.sh`) : rien n'a encore tourné sous Windows — tout ce qui suit est à voir une première fois.
+- `pnpm dev:cef`, Octave ouvert → pochettes affichées ; `%APPDATA%\com.tentacle.media\octave-art\` se remplit ; relancé, pochettes servies du disque (`X-Octave-Art: disk`).
+- Un nom d'utilisateur Windows avec accents → le dossier de données est le bon (`%APPDATA%` lu en large) et le cache s'écrit.
+- Les tests de la partie pure, construits par MSVC : `ctest --test-dir <build>\src\net` → tous verts (dates de fichier par `GetFileAttributesExW`/`SetFileTime`).
+- Page d'une extension → chargée sous `tentacle://plugin/<id>`, sans violation de CSP de l'application.
+- Sillon, titre « direct » → joue par `http://127.0.0.1:<port>/d/…` (Winsock) ; pare-feu Windows : aucune invite (écoute sur la boucle locale seulement).
+- Lecture directe Jellyfin → reports de lecture relayés (`reseau.debug.trace`), position gardée.
+- Fiche d'un film → `[reseau] préchargement …` dans la sortie.

@@ -74,10 +74,10 @@ void Client::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType 
   WebFrame f;
 #if defined(__APPLE__)
   f.sharedHandle = info.shared_texture_io_surface;
-#elif defined(_WIN32)
-  f.sharedHandle = info.shared_texture_handle;  // poignée NT d'une texture D3D11 (sans mutex à clé)
 #elif defined(__linux__)
   f.sharedHandle = &info;  // dmabuf : const cef_accelerated_paint_info_t* (platform/linux)
+#elif defined(_WIN32)
+  f.sharedHandle = info.shared_texture_handle;  // poignée NT d'une texture D3D11 (sans mutex à clé)
 #endif
   // La taille réelle de la texture vient de l'IOSurface ; à défaut, de la vue.
   f.width = info.extra.coded_size.width;

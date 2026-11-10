@@ -192,7 +192,7 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - **`prepareWindowForVideo(nsWindow)`** : à appeler AVANT la 1re mise à l'écran de la fenêtre SDL3
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
 - **Deux chemins d'attache** (lot cef-parite, axe linux) — le lecteur choisit (`player.cpp`) :
-  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSurfaceSizeOption()` (défaut
+  - `--wid` (macOS, Linux Wayland, Windows) : `mpvSizeOption()` (défaut
     `moltenvk-surface-size` ; Linux `wlhostvk-surface-size`), puis `gpu-context`, `wid`, `vo=gpu-next` ;
   - **API de rendu** (Linux : X11, ou libmpv de la distribution) : `attachRenderApi(mpv_handle*)`
     vrai → la surface a créé son `mpv_render_context` (OpenGL, contexte du compositeur) et le
@@ -207,9 +207,10 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   par les espaces de couleur de la WSI Vulkan. **Sinon** : API de rendu OpenGL de libmpv dans une
   texture de NOTRE contexte EGL, posée sous la page (SDR). `TENTACLE_VIDEO_RENDER_API=1` force ce
   second chemin sous Wayland.
+
 - Par OS, ce que la sortie de mpv demande en plus (défauts = macOS, inchangé ; lot cef-parite,
-  axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSurfaceSizeOption()`
-  (Windows `d3d11-composition-size`), `wantsMpvSwapchain()` /
+  axe windows) : `mpvAttachOptions()` (posées à l'attache AVANT `vo`), `mpvSizeOption()`
+  (`moltenvk-surface-size` ; Windows `d3d11-composition-size`), `wantsMpvSwapchain()` /
   `setMpvSwapchain(adresse)` : mpv crée lui-même sa chaîne d'échange (Windows, mode composition) ;
   `MpvPlayerPort` relit `display-swapchain` à chaque `file-loaded` / `video-reconfig` et la remet
   (0 : plus de sortie). `mpvWid() == 0` : aucun `wid` posé.
@@ -217,7 +218,7 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   compositeur du socle (même périphérique : `win::DcompContext`), contenu = la chaîne de mpv
   (`gpu-api=d3d11`, `d3d11-output-mode=composition`, `target-colorspace-hint=no` à l'attache —
   levé par la session HDR, comme Electron). `nativeLayer()` = `IDCompositionVisual*`. Cadre en
-  DIP, × `GetDpiForWindow/96` pour les pixels.
+  DIP, × `GetDpiForWindow/96` pour les pixels. Linux : stub (axe linux).
 
 ### Musique (octave) — `src/music/`
 - Canaux page ↔ natif = ceux de Tentacle (`audioBridgeContract.ts`) : commandes `audio_engine_start`,
@@ -322,6 +323,7 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (`locale_linux.h` : LANGUAGE/LC_ALL/LC_MESSAGES/LANG → Accept-Language), EDID HDR (`edid_linux.h`).
 - Clavier (`shell_linux.cpp`) : `native_key_code` = keycode XKB (evdev + 8 sous Wayland, tel quel
   sous X11), `windows_key_code` commun, caractères par SDL ; IME par les évènements texte de SDL.
+
 - Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
   sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
   CEF (`WebFrame::sharedHandle` = poignée NT, `OpenSharedResource1`, copie GPU) ou pixels
@@ -381,6 +383,7 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 - **Bancs** : `--debug-lifecycle` ouvre `lifecycle.debug.{state,transfers,close,focus,note,sheet,awake}`
   (`lifecycle_debug.cpp`) ; sous `--background`, ni activation ni notification (journalisées) ;
   `TENTACLE_LIFECYCLE_TRACE=1` trace GetURL, dépôts et `app_link_take`.
+
 ### Module réseau — `src/net/` (cibles `tentacle_net_core` pure, `tentacle_net` liée au socle)
 - Branchement : `reseau::install(ctx)` (`net/net_shell.h`) dans `initModules`, APRÈS `pont::install`
   et AVANT `pont::installShim` (ses commandes entrent dans `capabilities`) ; `reseau::shutdown()`.
@@ -399,3 +402,37 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
   relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
 - `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
   rendue de n'importe quel fil (`Respond`).
+- `tentacle://plugin/<id>` (`schemes/plugin_scheme.h`) : document d'un greffon déposé par la commande
+  `plugin_document_set {id, html}` → `"tentacle://plugin/<id>"` (`net/plugin_documents.h` : 8 au
+  plus, identifiant `^[a-zA-Z0-9._-]{1,64}$`), servi avec la CSP des greffons.
+- CSP (`net/csp.h`, à l'octet celle de `csp.ts`) : `appscheme::setAppCsp()` / `appCsp()`
+  (`shell/app_scheme.h`) — posée par `reseau::install` d'après l'`index.html` servi, portée par
+  TOUTE réponse de `tentacle://` hors greffons. **horsligne** : `tentacle://local` doit la poser
+  aussi (`Content-Security-Policy: appscheme::appCsp()`), comme Electron.
+- Relais Jellyfin (`net/jellyfin_relay.h`, cible `tentacle_net_commands`, testée sans CEF) :
+  `jellyfin_session_post` (liste FERMÉE `/Sessions/Playing[/Progress|/Stopped]`),
+  `jellyfin_playback_info`, `jellyfin_kill_encodings` — chemins construits côté natif, 20 s, en-têtes
+  `Authorization` (Jellyfin direct) ou `X-Emby-*` (proxy `…/api/jellyfin`). Adieu à Jellyfin :
+  `reseau::connectFarewell` (`net/farewell.h`) appelle `lifecycle::noteSessionPost`,
+  `trackSessionPost` et `setFarewellSender` (axe systeme) dès que la cible `tentacle_lifecycle`
+  existe (expression génératrice CMake, sans ordre d'`add_subdirectory`). `reseau::jellyfinRelay()`.
+- Diagnostic du banc (hors `window.tentacle`) : `__shell.invoke('reseau.debug.trace')` → les 200
+  dernières requêtes natives des relais `{method, url (sans requête), status, error, ms}`.
+- Requêtes déléguées (`plugins.clientFetch`) : `client_fetch_run {serverOrigin, headers, pluginId,
+  request}` → `ClientFetchOutcome`, `client_fetch_log` (`net/client_fetch_commands.h`). Règle à l'octet
+  du contrat partagé (`net/client_fetch_policy.h`), plafond 4/30/300 par extension, manifestes lus par
+  l'app sur `<serverOrigin>/api/plugins/active` (`net/client_fetch_run.h`, 5 min, 4 sessions) ; saut
+  réel `cf::cefHop()` (`net/cef_hop.h`) : résolution par Chromium (`ResolveHost`), une adresse privée
+  → `refused`, puis CefURLRequest sans cookie ni cache, redirections jugées une à une.
+  `reseau::pluginManifests()` (`net/net_shell.h`) : les `mediaHosts` pour les flux directs (axe medias).
+- Flux directs d'Octave (relais local, `net/direct_relay.h`, `net/direct_source.h`) — pour l'axe
+  **medias**, dans `audio_play` / `audio_set_next` comme `checked()` d'`ipc/audio.ts` :
+  `reseau::adoptDirectSource(source, trackKey, session, done(source, adopted))` (`net/net_shell.h`) ;
+  à `audio_engine_start` : `reseau::setDirectCutListener(url → engine.sourceCut(url))` et une lecture
+  d'avance `reseau::pluginManifests()->of(session, "", …)`. mpv lit `http://127.0.0.1:<port>/d/<jeton>`
+  (`reseau::directRelayOrigin()`), direct sans identifiant du compte, repli sur le serveur avec ses
+  en-têtes (`direct=failed` une fois), 502 après une coupure. Banc : `__shell.invoke('reseau.debug.adoptDirect',
+  {source, trackKey, serverOrigin, headers})`, `reseau.debug.directRelay` → `{origin, direct, fallbacks, cuts}`.
+- `media_warm {url, ranges}` (`net/media_warm.h`) : tête et fin du fichier lues par plages (`Range`,
+  206 seulement, 4 Mio au plus, deux en vol, même demande après 10 min, 15 s) pour chauffer le
+  disque du serveur ; rien n'est gardé. Lecture en flux `net::httpStream` (sans cache).

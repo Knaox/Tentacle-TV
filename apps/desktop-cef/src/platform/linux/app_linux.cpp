@@ -70,8 +70,6 @@ void initApplication() {
   SDL_SetHint(SDL_HINT_VIDEO_FORCE_EGL, "1");
   // Le nom d'application que le compositeur associe au fichier .desktop (app_id / WM_CLASS).
   SDL_SetHint(SDL_HINT_APP_ID, "tentacle-tv");
-  // La fenêtre peut être transparente là où la page l'est (vidéo dans une sous-surface).
-  SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR, "1");
   std::fprintf(stderr, "[session] bureau=%s choix=%s montage=%s%s\n",
                displayServerName(s.desktop), sessionChoiceName(s.choice),
                displayServerName(s.montage), wayland ? " (HDR possible)" : " (pas de HDR)");

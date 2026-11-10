@@ -5,6 +5,7 @@
 
 #include "display/display_channels.h"
 #include "platform/display_hdr.h"
+#include "platform/linux/linux_commands.h"
 
 namespace tentacle::platform {
 
@@ -14,8 +15,9 @@ bool enableDisplayHdr() { return false; }
 void restoreDisplayHdr() {}
 bool displayHdrToggled() { return false; }
 
-// Aucune commande propre à l'OS ici (Windows : le Microsoft Store, os_commands_windows.cpp).
-void installOsCommands(AppContext&, bridge::Registry&) {}
+// Les commandes propres à Linux (session graphique : linux_commands.cpp, axe linux) ; Windows
+// y met le Microsoft Store (os_commands_windows.cpp).
+void installOsCommands(AppContext&, bridge::Registry& reg) { installLinuxCommands(reg); }
 void shutdownOsCommands() {}
 
 }  // namespace tentacle::platform

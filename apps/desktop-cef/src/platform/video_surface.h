@@ -5,11 +5,11 @@
 // (setVideoLayer → nativeLayer()) et lui donne son cadre (setFrame). mpv y dessine par le
 // contexte `moltenvk` de notre libmpv (--wid = la couche) ; MoltenVK y pose lui-même
 // colorspace (ITUR_2100_PQ…), EDR et métadonnées HDR quand libplacebo choisit une sortie HDR.
-// Linux : sous-surface Wayland SOUS la page (mpv en Vulkan par le contexte `wlhostvk` de notre
-// libmpv, HDR possible), sinon l'API de rendu OpenGL de libmpv (X11, libmpv de la distribution).
 // Windows : un visuel DirectComposition du compositeur du socle ; mpv y présente SA chaîne
 // d'échange (`--gpu-context=d3d11 --d3d11-output-mode=composition`), que le lecteur lui remet
-// (`display-swapchain`).
+// (`display-swapchain`). Linux : sous-surface Wayland SOUS la page (mpv en Vulkan par le
+// contexte `wlhostvk` de notre libmpv, HDR possible), sinon l'API de rendu OpenGL de libmpv
+// (X11, libmpv de la distribution) — axe linux.
 //
 // Tous les appels : fil principal (UI) uniquement.
 
@@ -66,9 +66,16 @@ public:
     // Rappel (fil principal) quand la taille en pixels change (cadre, écran, Retina).
     virtual void onPixelSizeChanged(std::function<void(PixelSize)> cb) = 0;
 
-    // Option de mpv qui porte la taille du swapchain (--wid sans fenêtre de mpv) : macOS
-    // « moltenvk-surface-size » ; Linux (sous-surface Wayland) « wlhostvk-surface-size ».
-    virtual const char* mpvSurfaceSizeOption() const { return "moltenvk-surface-size"; }
+    // --- Ce que la sortie de mpv demande en plus, par OS (défauts = macOS, inchangé) ---
+    // Options posées à l'attache, AVANT `vo` (Windows : gpu-api=d3d11, mode composition…).
+    virtual std::vector<std::pair<std::string, std::string>> mpvAttachOptions() const { return {}; }
+    // L'option qui porte la taille en pixels de la sortie, suivie à chaque changement.
+    virtual const char* mpvSizeOption() const { return "moltenvk-surface-size"; }
+    // Vrai si mpv crée lui-même la chaîne d'échange que la surface doit afficher (Windows) :
+    // le lecteur lit alors `display-swapchain` à chaque (re)configuration de la sortie et la
+    // remet par setMpvSwapchain (adresse d'un IDXGISwapChain*, 0 : plus de sortie).
+    virtual bool wantsMpvSwapchain() const { return false; }
+    virtual void setMpvSwapchain(int64_t address) {}
     // API de rendu de libmpv (Linux : X11, ou libmpv sans contexte d'intégration Wayland).
     // Vrai = la surface a créé son contexte de rendu sur ce cœur de mpv (`mpv_handle*`) et le
     // compositeur y dessinera : le lecteur pose alors vo=libmpv, jamais gpu-context ni wid.
@@ -76,14 +83,6 @@ public:
     virtual bool attachRenderApi(void* mpvHandle) { return false; }
     // Avant de rendre la surface au lecteur (vo=null posé) : libère le contexte de rendu.
     virtual void detachRenderApi() {}
-    // Options posées à l'attache, AVANT `vo` (défaut : aucune ; Windows : gpu-api=d3d11, mode
-    // composition, target-colorspace-hint=no comme Electron).
-    virtual std::vector<std::pair<std::string, std::string>> mpvAttachOptions() const { return {}; }
-    // Vrai si mpv crée lui-même la chaîne d'échange que la surface doit afficher (Windows) :
-    // MpvPlayerPort relit `display-swapchain` à chaque (re)configuration de la sortie et la
-    // remet par setMpvSwapchain (adresse d'un IDXGISwapChain*, 0 : plus de sortie).
-    virtual bool wantsMpvSwapchain() const { return false; }
-    virtual void setMpvSwapchain(int64_t address) {}
 };
 
 // À appeler sur la fenêtre principale AVANT sa première mise à l'écran (fenêtre SDL3 créée
