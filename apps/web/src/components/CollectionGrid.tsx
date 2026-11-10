@@ -1,8 +1,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CollectionGridBody } from "./collection/CollectionGridBody";
 import { CollectionToolbar } from "./collection/CollectionToolbar";
+import { BackButton } from "./ui/BackButton";
 import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
 import type { CollectionFiltersApi } from "./collection/useCollectionFilters";
 import type { SelectionMode } from "./collection/selectionMode";
@@ -50,7 +50,6 @@ export function CollectionGrid({
   title, items, isLoading, emptyMessage, emptyHint, emptyIcon, actions, selectionMode, onFilteredIdsChange,
   filters, searchName, showFavorite, hideHeader,
 }: CollectionGridProps) {
-  const navigate = useNavigate();
   // Sans filtres fournis (webOS), la liste est rendue telle quelle et les
   // identifiants remontent quand même : « tout sélectionner » continue de voir
   // la collection entière.
@@ -66,15 +65,9 @@ export function CollectionGrid({
     <div className="px-4 pt-6 md:px-8">
       {!hideHeader && (
       <div className="mb-4 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fill-subtle text-content-secondary transition-colors hover:bg-fill-soft"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="truncate text-2xl font-bold text-content-primary">{title}</h1>
+        {/* Le Retour du socle : il revient d'où l'on vient, et mène à l'accueil s'il n'y a rien derrière. */}
+        <BackButton />
+        <h1 className="truncate text-heading-1 text-content-primary">{title}</h1>
       </div>
       )}
 
@@ -92,7 +85,7 @@ export function CollectionGrid({
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
           {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="skeleton-shimmer aspect-[2/3] rounded-[var(--radius-lg)]" />
+            <div key={i} className="skeleton-shimmer aspect-[2/3] rounded-card" />
           ))}
         </div>
       ) : (!filtered || filtered.length === 0) && filters?.isFiltered ? (
@@ -107,9 +100,9 @@ export function CollectionGrid({
         />
       ) : !filtered || filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center">
-          {emptyIcon && <div className="mb-4 text-5xl opacity-40">{emptyIcon}</div>}
-          <p className="text-lg text-content-quaternary">{emptyMessage}</p>
-          {emptyHint && <p className="mt-2 text-sm text-content-disabled">{emptyHint}</p>}
+          {emptyIcon && <div className="mb-4 text-5xl text-content-quaternary">{emptyIcon}</div>}
+          <p className="text-heading-3 text-content-secondary">{emptyMessage}</p>
+          {emptyHint && <p className="mt-2 text-sm text-content-tertiary">{emptyHint}</p>}
         </div>
       ) : (
         <CollectionGridBody

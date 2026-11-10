@@ -108,8 +108,12 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
         concealed={preview.shown}
       >
         <CardImage src={imageUrl} alt="" />
-        {/* Voile constant dans les deux thèmes : le texte est posé sur l'image. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+        {/* Voile constant dans les deux thèmes : le texte est posé sur l'image (jeton `scrim-media`). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "linear-gradient(to top, rgba(var(--scrim-media-rgb), 0.85), rgba(var(--scrim-media-rgb), 0.3) 50%, transparent)" }}
+        />
 
         <CardMarkerLayer
           item={item}
@@ -122,8 +126,8 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
         {/* Titre et reste à voir, au-dessus du voile ; ils se resserrent à
             gauche du groupe du survol (étoiles et plateau, coin bas-droit). */}
         <div className={`pointer-events-none absolute inset-x-0 bottom-3 z-30 pl-3 ${hover.hovered ? "pr-[11.5rem]" : "pr-3"}`}>
-          <span className="block truncate text-sm font-semibold text-white drop-shadow">{item.Name}</span>
-          {remaining && <span className="mt-0.5 block truncate text-xs text-white/75">{remaining}</span>}
+          <span className="block truncate text-sm font-semibold text-on-media-primary drop-shadow">{item.Name}</span>
+          {remaining && <span className="mt-0.5 block truncate text-xs tabular-nums text-on-media-secondary">{remaining}</span>}
         </div>
 
         {overlayMounted && overlay(overlayVisible, "card")}
@@ -134,8 +138,8 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
         </CardPreview>
 
         {pending && (
-          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-black/40">
-            <Loader2 size={22} className="animate-spin text-white" />
+          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-[rgba(var(--scrim-media-rgb),0.4)]">
+            <Loader2 size={22} className="animate-spin text-on-media-primary" />
           </div>
         )}
 

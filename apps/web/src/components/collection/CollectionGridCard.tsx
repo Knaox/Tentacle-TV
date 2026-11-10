@@ -126,7 +126,8 @@ export const CollectionGridCard = memo(function CollectionGridCard({
           /* Le ratio en CLASSE : `aspect-ratio` en style en ligne échappe à la
              passe qui le traduit pour les moteurs d'avant Chrome 88, et l'anneau
              de sélection y aurait une hauteur nulle. */
-          className="pointer-events-none absolute inset-x-0 top-0 aspect-[2/3] rounded-[var(--radius-lg)] ring-2 ring-[var(--brand)]"
+          // À la teinte franche : une carte cochée est un état ACTIF, pas une marque.
+          className="pointer-events-none absolute inset-x-0 top-0 aspect-[2/3] rounded-[var(--radius-lg)] ring-2 ring-accent"
         />
       )}
 

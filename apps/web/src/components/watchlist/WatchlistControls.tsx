@@ -73,7 +73,7 @@ export const TypeSegment = memo(function TypeSegment({
   );
 });
 
-/** Grille ou liste, en icônes. */
+/** Grille ou liste, en icônes — au trait au repos, PLEINE pour la vue retenue. */
 export const ViewToggle = memo(function ViewToggle({
   view, onViewChange,
 }: {
@@ -82,9 +82,9 @@ export const ViewToggle = memo(function ViewToggle({
 }) {
   const { t } = useTranslation("watchlist");
   const options = useMemo(() => [
-    { value: "grid" as const, label: t("viewGrid"), icon: <LayoutGrid size={15} aria-hidden /> },
-    { value: "list" as const, label: t("viewList"), icon: <List size={15} aria-hidden /> },
-  ], [t]);
+    { value: "grid" as const, label: t("viewGrid"), icon: <LayoutGrid size={16} weight={view === "grid" ? "fill" : "regular"} aria-hidden /> },
+    { value: "list" as const, label: t("viewList"), icon: <List size={16} weight={view === "list" ? "bold" : "regular"} aria-hidden /> },
+  ], [t, view]);
   return (
     <SegmentedControl
       label={t("viewLabel")}

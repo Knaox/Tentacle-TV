@@ -1,5 +1,6 @@
 import { LibrarySearchField } from "../library/LibrarySearchField";
 import { LibraryFilterBar } from "../LibraryFilters";
+import { chipCls } from "../library/filterChip";
 import type { CollectionFiltersApi } from "./useCollectionFilters";
 
 interface CollectionToolbarProps {
@@ -27,12 +28,11 @@ export function CollectionToolbar({ filters, name, showFavorite, actions }: Coll
         {filters.tabs.map((tab) => (
           <button
             key={tab.key}
+            type="button"
             onClick={() => filters.setType(tab.key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              filters.type === tab.key
-                ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.3)]"
-                : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-secondary"
-            }`}
+            aria-pressed={filters.type === tab.key}
+            // La pilule des filtres (`chipCls`) : neutre au repos, la teinte franche une fois choisie.
+            className={chipCls(filters.type === tab.key)}
           >
             {tab.label}
           </button>

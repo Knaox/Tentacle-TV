@@ -18,8 +18,10 @@ const LIFETIME_MS = 6000;
  * par l'opacité coûterait sa passe de composition à chaque image (CLAUDE.md,
  * coût GPU, règle 1). `aria-live` sans voler le focus. Verre natif : une
  * SURFACE d'un seul ton (`useGlassControl`, lot lg2), comme les autres avis.
- * « Annuler » prend `--brand` en Clair : `--brand-light` n'y tenait que
- * 4,0:1 sur le toast (audit lg2, n° 28), `--brand` y tient ≈ 5,4:1.
+ *
+ * Hors verre natif : la peau de l'avis du socle (`.ui-toast`, opaque — plus de
+ * flou derrière un fond presque plein) ; « Annuler » est la pilule à la teinte
+ * franche, lisible dans les deux thèmes sans règle à part.
  */
 export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose: () => void }) {
   const { t } = useTranslation("watchlist");
@@ -43,30 +45,19 @@ export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose
         {...glass.props}
         role="status"
         aria-live="polite"
-        className="lg-toast watchlist-toast pointer-events-auto flex max-w-lg items-center gap-3 rounded-2xl border border-line-subtle bg-surface-toolbar py-2 pl-4 pr-2 shadow-2xl backdrop-blur-xl"
+        className="lg-toast watchlist-toast ui-toast pointer-events-auto max-w-lg gap-2 py-2 pl-4 pr-2"
       >
         {glass.layers}
         <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{t("removed", { title: item.Name })}</span>
-        <button
-          type="button"
-          onClick={undo}
-          className="watchlist-toast-undo flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold text-brand-light transition-colors duration-150 hover:bg-fill-soft"
-        >
-          <Undo2 size={15} aria-hidden /> {t("undo")}
+        <button type="button" onClick={undo} className="watchlist-toast-undo btn btn-accent btn-sm">
+          <Undo2 size={15} weight="bold" aria-hidden /> {t("undo")}
         </button>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("close", { ns: "common" })}
-          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-quaternary transition-colors duration-150 hover:text-content-primary"
-        >
+        <button type="button" onClick={onClose} aria-label={t("close", { ns: "common" })} className="icon-btn btn-sm">
           <X size={16} aria-hidden />
         </button>
       </div>
       <style>{`@keyframes watchlistToastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-.watchlist-toast { animation: watchlistToastIn 0.22s cubic-bezier(0.22,1,0.36,1); }
-:root[data-theme="light"] .watchlist-toast-undo { color: var(--brand); }
-@media (prefers-reduced-motion: reduce) { .watchlist-toast { animation: none; } }`}</style>
+.watchlist-toast { animation: watchlistToastIn var(--duration-menu-in) var(--ease-out); }`}</style>
     </div>,
     document.body,
   );
