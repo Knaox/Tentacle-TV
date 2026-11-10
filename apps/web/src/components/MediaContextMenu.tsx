@@ -71,8 +71,7 @@ function MenuToggles({ item, onDone }: { item: MediaItem; onDone: () => void }) 
               toggles.toggle(kind);
               onDone();
             }}
-            aria-checked={active}
-            className="ui-menu-item"
+            className={`ui-menu-item ${active ? "text-content-primary" : ""}`}
           >
             <span className={active ? "text-accent" : "text-content-tertiary"}>
               <ToggleGlyph kind={kind} className="h-4 w-4" filled={active} />
