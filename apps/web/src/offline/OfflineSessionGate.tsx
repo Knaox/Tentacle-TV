@@ -5,13 +5,14 @@
  * nécessaire ». Les données locales sont CONSERVÉES ; l'overlay disparaît de
  * lui-même au retour en ligne (la sonde revalide et le sync repousse le TTL).
  *
- * Animations en CSS pur (keyframe globale `fadeIn`), tokens de thème only.
+ * Fondu en CSS pur (keyframe globale `fadeIn`), jetons de thème seulement ; les boutons du socle.
  */
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth, useUserId } from "@tentacle-tv/api-client";
 import { useNavigate } from "react-router-dom";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
 import { supportsOfflineSession } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { getCachedSession } from "./offlineSession";
@@ -51,29 +52,22 @@ export function OfflineSessionGate() {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-modal backdrop-blur-md"
-      style={{ animation: "fadeIn 0.4s ease-out" }}
-    >
-      <div className="flex max-w-md flex-col items-center px-8 text-center">
-        <h2 className="text-2xl font-bold text-content-primary">
-          {t("downloads:sessionExpiredTitle")}
-        </h2>
-        <p className="mt-4 text-sm leading-relaxed text-content-tertiary">
-          {t("downloads:sessionExpiredMessage")}
-        </p>
-        <button
-          onClick={() => probeNow(true)}
-          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition-colors duration-200 hover:bg-cta-primary-bg-hover"
-        >
-          {t("downloads:offlineRetry")}
-        </button>
-        <button
-          onClick={handleLogout}
-          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg transition-colors duration-200 hover:bg-danger-surface-hover"
-        >
-          {t("common:offlineLogout")}
-        </button>
+    // Plein cadre, OPAQUE : rien ne se floute derrière une surface pleine.
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0" style={{ animation: "fadeIn 0.2s ease-out" }}>
+      <div className="flex max-w-md flex-col items-center gap-4 px-8 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-tile bg-surface-2 text-content-secondary">
+          <ClockCounterClockwiseIcon size={26} aria-hidden />
+        </span>
+        <h2 className="font-display text-heading-2 text-content-primary">{t("downloads:sessionExpiredTitle")}</h2>
+        <p className="max-w-[52ch] text-sm leading-relaxed text-content-secondary">{t("downloads:sessionExpiredMessage")}</p>
+        <div className="mt-3 flex flex-col items-stretch gap-2.5">
+          <button type="button" onClick={() => probeNow(true)} className="btn btn-solid btn-lg min-w-[220px]">
+            {t("downloads:offlineRetry")}
+          </button>
+          <button type="button" onClick={handleLogout} className="btn btn-danger min-w-[220px]">
+            {t("common:offlineLogout")}
+          </button>
+        </div>
       </div>
     </div>
   );
