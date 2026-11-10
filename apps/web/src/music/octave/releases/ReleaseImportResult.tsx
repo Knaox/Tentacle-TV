@@ -27,7 +27,7 @@ function FileCounts({ state }: { state: ReleaseFlowState }) {
   return (
     <div className="flex flex-col gap-1 text-sm">
       {counts.duplicate > 0 && <p className="text-content-tertiary">{t("doneDuplicates", { count: counts.duplicate })}</p>}
-      {counts.refused > 0 && <p className="text-amber-300">{t("doneRefused", { count: counts.refused })}</p>}
+      {counts.refused > 0 && <p className="text-status-warning-fg">{t("doneRefused", { count: counts.refused })}</p>}
     </div>
   );
 }
@@ -37,8 +37,8 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
   if (state.phase === "failed") {
     return (
       <div className="flex flex-col gap-4">
-        <h2 id={titleId} className="flex items-center gap-2 text-lg font-bold tracking-tight text-content-primary">
-          <AlertCircle className="h-5 w-5 text-amber-300" aria-hidden />
+        <h2 id={titleId} className="oc-heading flex items-center gap-2 text-lg text-content-primary">
+          <AlertCircle className="h-5 w-5 text-status-warning-fg" aria-hidden />
           {t("phase.failed")}
         </h2>
         <p className="text-sm text-content-secondary" role="alert">
@@ -48,7 +48,7 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
           <button type="button" onClick={onClose} className={`${BUTTON} text-content-tertiary hover:text-content-primary`}>
             {t("close")}
           </button>
-          <button type="button" autoFocus onClick={onAnother} className={`${BUTTON} octave-brand-fill px-6`}>
+          <button type="button" autoFocus onClick={onAnother} className={`${BUTTON} octave-solid px-6`}>
             {t("retry")}
           </button>
         </div>
@@ -60,7 +60,7 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
   const others = albums.filter((a) => a !== album);
   return (
     <div className="flex flex-col gap-5">
-      <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+      <h2 id={titleId} className="oc-heading text-lg text-content-primary">
         {t("phase.done")}
       </h2>
       {album ? (
@@ -80,7 +80,7 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
         <ul className="flex gap-3 overflow-x-auto pb-1">
           {others.map((other) => (
             <li key={other.key}>
-              <button type="button" onClick={() => onOpen(other)} className="flex w-20 cursor-pointer flex-col gap-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+              <button type="button" onClick={() => onOpen(other)} className="flex w-20 cursor-pointer flex-col gap-1 rounded-tile text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
                 <Artwork url={other.artworkUrl ? releaseArtSized(other.artworkUrl, "300") : null} label={other.title} radius="sm" className="h-20 w-20" />
                 <span className="truncate text-xs text-content-secondary">{other.title}</span>
               </button>
@@ -93,7 +93,7 @@ export function ReleaseImportResult({ titleId, state, onOpen, onAnother, onClose
           {t("another")}
         </button>
         {album && (
-          <button type="button" autoFocus onClick={() => onOpen(album)} className={`${BUTTON} octave-brand-fill px-6`}>
+          <button type="button" autoFocus onClick={() => onOpen(album)} className={`${BUTTON} octave-solid px-6`}>
             {t("openAlbum")}
           </button>
         )}

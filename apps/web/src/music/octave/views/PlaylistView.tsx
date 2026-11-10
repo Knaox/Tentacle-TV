@@ -89,6 +89,7 @@ export function PlaylistView() {
         kicker={t("playlist.kicker")}
         title={data.name}
         art={<PlaylistArtwork urls={playlistCoverUrls(data)} label={data.name} radius="lg" eager className={HEADER_ARTWORK_CLASS} />}
+        tintUrl={playlistCoverUrls(data)[0] ?? null}
         meta={
           <>
             <span>{meta}</span>

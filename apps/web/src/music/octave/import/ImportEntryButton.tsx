@@ -10,7 +10,7 @@ import { useServerCapability } from "@tentacle-tv/api-client";
 import { openImportDialog } from "./importStore";
 
 const PILL =
-  "flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line-subtle px-4 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "flex h-10 cursor-pointer items-center gap-2 rounded-full bg-fill-soft px-4 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const RAIL =
   "flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";

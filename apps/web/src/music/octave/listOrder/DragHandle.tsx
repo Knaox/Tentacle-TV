@@ -51,7 +51,7 @@ export const DragHandle = memo(function DragHandle({ slot }: { slot: HandleSlot 
         {...slot.props}
         // `touch-action: none` : au doigt, la poignée tire le titre au lieu de faire défiler la page.
         style={{ touchAction: "none" }}
-        className={`flex h-10 w-5 cursor-grab items-center justify-center rounded text-content-tertiary transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:cursor-grabbing ${slot.lifted ? "opacity-100 text-content-primary" : REVEAL}`}
+        className={`flex h-10 w-5 cursor-grab items-center justify-center rounded-full text-content-tertiary transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:cursor-grabbing ${slot.lifted ? "opacity-100 text-content-primary" : REVEAL}`}
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>

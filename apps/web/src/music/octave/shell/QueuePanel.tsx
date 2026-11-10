@@ -5,9 +5,11 @@
  * l'album »…), règle partagée `queueFiles.ts`. Chaque entrée se lit, monte,
  * descend ou se retire au clavier comme à la souris, et se GLISSE par sa poignée
  * à sa place DANS sa file (`useRowDrag`, le glisser des playlists) — jamais un
- * glisser seul : les flèches restent.
+ * glisser seul : les flèches restent, dans un PLATEAU qui paraît au survol et au
+ * focus par-dessus la fin de la ligne (il ne réserve plus de place : le titre
+ * se lit en entier au repos).
  * Le panneau n'est MONTÉ qu'ouvert (rien à composer fermé) ; c'est un îlot
- * d'encre prune, le titre en cours en rose.
+ * à l'encre de panneau, le titre en cours à la teinte franche.
  */
 
 import { memo, useCallback, useMemo, useRef, type CSSProperties, type RefObject } from "react";
@@ -37,7 +39,7 @@ import { rowShift } from "@tentacle-tv/shared/octave";
 const ENTRY_HEIGHT = 52;
 
 const small =
-  "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-press flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-tertiary hover:bg-octave-hover hover:text-content-primary disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 interface EntrySelection {
   selected: boolean;
@@ -75,7 +77,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
   const player = useOctavePlayer();
   const track = item.track;
   const tone = handle?.lifted
-    ? "relative z-10 bg-[var(--oc-ink-raised)] shadow-[var(--oc-shadow-panel)]"
+    ? "relative z-10 bg-[var(--oc-ink-menu)] shadow-[var(--oc-shadow-menu)]"
     : current
       ? "bg-octave-accent-soft"
       : selection?.selected
@@ -85,7 +87,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
   const playability = useTrackPlayability(track);
   const locked = playability.greyed;
   return (
-    <li className={`group flex shrink-0 items-center gap-2 rounded-xl px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>
+    <li className={`group relative flex shrink-0 items-center gap-2 rounded-[10px] px-1.5 ${tone}`} style={{ height: ENTRY_HEIGHT, ...style }}>
       {handle && <DragHandle slot={handle} />}
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
@@ -104,7 +106,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
           }}
           onPointerDown={() => player.prefetch([track], "press")}
           aria-label={t("track.play", { title: track.title })}
-          className="absolute inset-0 cursor-pointer rounded-lg disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="absolute inset-0 cursor-pointer rounded-[10px] disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         />
         <Artwork url={track.artworkUrl} className={`pointer-events-none h-10 w-10${locked ? " opacity-45 grayscale" : ""}`} />
         <span className="pointer-events-none min-w-0">
@@ -127,7 +129,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
       {/* Le titre de la file s'ajoute à une playlist, ou s'en retire, comme partout (25/10). */}
       <TrackMenu track={track} actions={actions} visible={current ? "always" : "hover"} />
       {!current && (
-        <div className="flex shrink-0 items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+        <div className="absolute right-10 top-1/2 z-[1] flex -translate-y-1/2 items-center rounded-full bg-[var(--oc-ink-menu)] p-0.5 opacity-0 shadow-[var(--oc-shadow-menu)] transition-opacity duration-150 pointer-events-none focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100">
           <button type="button" className={small} disabled={index === 0} aria-label={t("queue.moveUp")} onClick={() => queueActions.move(player, item.uid, index - 1)}>
             <ChevronUp className="h-4 w-4" aria-hidden />
           </button>
@@ -143,7 +145,7 @@ const QueueEntry = memo(function QueueEntry({ item, index, count, current, actio
   );
 }, sameEntry);
 
-const sectionTitle = "px-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.14em]";
+const sectionTitle = "oc-eyebrow px-2 pb-1.5";
 
 /** Une des deux files : son titre (et son geste), puis ses entrées ; les déplacements restent dans SA file. */
 function QueueSection({ title, items, actions, selection, action, scroller }: {
@@ -165,9 +167,9 @@ function QueueSection({ title, items, actions, selection, action, scroller }: {
   return (
     <section className="pt-5">
       <div className="flex items-center justify-between pr-1">
-        <h3 className={`${sectionTitle} text-content-quaternary`}>{title}</h3>
+        <h3 className={sectionTitle}>{title}</h3>
         {action && (
-          <button type="button" onClick={action.run} aria-label={action.aria} className="-mt-1.5 cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold text-octave-accent-text transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+          <button type="button" onClick={action.run} aria-label={action.aria} className="-mt-1.5 cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
             {action.label}
           </button>
         )}
@@ -186,7 +188,7 @@ function QueueSection({ title, items, actions, selection, action, scroller }: {
               actions={actions}
               selection={{ selected: selection.selected.has(item.uid), selecting: selection.selecting, onSelect: selection.onSelect }}
               handle={{ index: i, title: item.track.title, blocked: null, lifted, props: handleProps(i) }}
-              style={drag ? { transform: `translateY(${shift}px)`, transition: lifted ? "none" : "transform 150ms ease-out" } : undefined}
+              style={drag ? { transform: `translateY(${shift}px)`, transition: lifted ? "none" : "transform 160ms var(--oc-ease-out)" } : undefined}
             />
           );
         })}
@@ -219,7 +221,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
       <div ref={scroller} className="flex-1 overflow-y-auto overscroll-contain px-2 pb-4">
         {current && (
           <>
-            <h3 className={`${sectionTitle} pt-2 text-octave-accent-text`}>{t("queue.nowPlaying")}</h3>
+            <h3 className={`${sectionTitle} pt-2`}>{t("queue.nowPlaying")}</h3>
             <ul>
               <QueueEntry item={current} index={-1} count={0} current actions={actions} />
             </ul>

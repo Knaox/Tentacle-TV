@@ -26,7 +26,7 @@ export function SharedPlaylistLine({ playlist }: { playlist: MusicPlaylist }) {
       onClick={() => requestPlaylistManage({ kind: "members", playlist })}
       className="-my-2 inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 rounded-full px-1 text-left text-content-secondary transition-colors hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
-      <Users className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
+      <Users className="h-4 w-4 shrink-0" aria-hidden />
       <PeopleStack people={rules.people} size={22} max={4} />
       <span className="truncate">{text}</span>
     </button>

@@ -61,11 +61,11 @@ export const RecentSearchHistory = memo(function RecentSearchHistory({ recents, 
           </div>
           <ul className="flex flex-col">
             {recents.map((query) => (
-              <li key={query} className="flex items-center gap-1 rounded-md transition-colors duration-150 hover:bg-octave-hover">
+              <li key={query} className="flex items-center gap-1 rounded-[10px] transition-colors duration-150 hover:bg-octave-hover">
                 <button
                   type="button"
                   onClick={() => onSearch(query)}
-                  className={`flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-3 text-left text-sm text-content-primary ${FOCUS}`}
+                  className={`flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[10px] px-3 text-left text-sm text-content-primary ${FOCUS}`}
                 >
                   <Clock className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
                   <span className="truncate">{query}</span>
@@ -88,12 +88,12 @@ export const RecentSearchHistory = memo(function RecentSearchHistory({ recents, 
           </div>
           <ul className="flex flex-col">
             {tracks.map(({ track }) => (
-              <li key={track.key} className="flex items-center gap-1 rounded-md transition-colors duration-150 hover:bg-octave-hover">
+              <li key={track.key} className="flex items-center gap-1 rounded-[10px] transition-colors duration-150 hover:bg-octave-hover">
                 <button
                   type="button"
                   onClick={() => player.playList([track], 0, null)}
                   aria-label={t("track.play", { title: track.title })}
-                  className={`flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-2 py-1 text-left ${FOCUS}`}
+                  className={`flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[10px] px-2 py-1 text-left ${FOCUS}`}
                 >
                   <Artwork url={track.artworkUrl} alt="" className="h-12 w-12 shrink-0 rounded-[var(--oc-radius-art-sm)] shadow-[var(--oc-shadow-art)]" />
                   <span className="flex min-w-0 flex-1 flex-col">

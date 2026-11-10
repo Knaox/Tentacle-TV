@@ -4,7 +4,7 @@
  * Tentacle), la page défilant dessous. Titre en cours à gauche (sa pochette
  * ouvre le lecteur « en cours »), transport et progression au centre, qualité
  * réelle (et, lu depuis la copie gardée, « Sur cet appareil »), état, transition douce (`CrossfadeButton`),
- * « Arrêter la lecture » (`StopButton`), file et volume ROSE à droite. Au téléphone, un MINI-LECTEUR,
+ * « Arrêter la lecture » (`StopButton`), file et volume (à la teinte franche) à droite. Au téléphone, un MINI-LECTEUR,
  * la même capsule en une ligne.
  *
  * TOUJOURS SOMBRE, dans les deux thèmes (« jamais une barre blanche ») : la
@@ -13,6 +13,11 @@
  * `dark` — matériau et glyphes sombres quel que soit le dessous, une encre plus
  * dense (`shellGlass.css`). Ailleurs : le verre sombre de `shell.css`
  * (`octave-dock-fallback`).
+ *
+ * À l'étroit (file ouverte, fenêtre de 1024 px), le dock se RANGE au lieu de se chevaucher
+ * (requêtes de conteneur sur sa zone, `shell.css`) : l'ajout rapide, puis le cœur, le menu, la
+ * transition douce et l'arrêt cèdent la place — tous restent dans le lecteur « en cours » et le
+ * menu du titre —, puis le texte et le volume ; pochette, transport et file ne partent jamais.
  *
  * La qualité n'est jamais coupée au milieu d'un mot : en mot quand SA colonne
  * a la place (requête de conteneur, `shell.css`), en icône seule (nom
@@ -52,9 +57,9 @@ function QueueButton({ open, onToggle }: { open: boolean; onToggle: () => void }
       aria-label={t("player.queue")}
       title={t("player.queue")}
       onClick={onToggle}
-      className={`octave-dock-chip lg-bead relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
+      className={`octave-dock-chip lg-bead octave-press relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${open ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
     >
-      <ListMusic className="h-[18px] w-[18px]" aria-hidden />
+      <ListMusic weight={open ? "fill" : "regular"} className="h-[18px] w-[18px]" aria-hidden />
       {open && <span aria-hidden className="absolute bottom-0.5 h-1 w-1 rounded-full bg-octave-accent" />}
     </button>
   );
@@ -70,12 +75,12 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
     tone: "dark",
     shape: "rounded",
     className:
-      "octave-night pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-4 px-3",
+      "octave-night pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 px-3",
     fallbackClassName: "octave-dock-fallback",
   });
   return (
     // La zone ne prend pas les clics : la page reste cliquable autour du dock.
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-[var(--oc-dock-inset)] pb-[var(--oc-dock-inset)]">
+    <div className="octave-dock-zone pointer-events-none absolute inset-x-0 bottom-0 z-20 px-[var(--oc-dock-inset)] pb-[var(--oc-dock-inset)]">
       <section aria-label={t("player.region")} data-octave-dock {...glass.props}>
         {glass.layers}
         <NowPlayingInfo artworkClass="h-[52px] w-[52px]" onOpen={onOpenNowPlaying} />
@@ -99,8 +104,11 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
               <FormatBadge format={format} icon />
             </span>
           </div>
-          <CrossfadeButton />
-          <StopButton shape="stop" className="octave-dock-chip lg-bead h-9 w-9 text-content-secondary hover:text-content-primary" />
+          {/* À l'étroit (file ouverte, petite fenêtre), ces deux gestes cèdent la place : ils restent dans le lecteur « en cours ». */}
+          <span className="octave-dock-extra flex shrink-0 items-center gap-1.5">
+            <CrossfadeButton />
+            <StopButton shape="stop" className="octave-dock-chip lg-bead h-9 w-9 text-content-secondary hover:text-content-primary" />
+          </span>
           <QueueButton open={queueOpen} onToggle={onToggleQueue} />
           <VolumeControl className="octave-dock-volume" />
         </div>
@@ -130,7 +138,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
     <div {...glass.props}>
       {glass.layers}
       <div className="flex items-center gap-3 p-2">
-        <button type="button" onClick={onOpen} aria-label={t("player.open")} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="button" onClick={onOpen} aria-label={t("player.open")} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[10px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           <Artwork url={track.artworkUrl} className="h-10 w-10" eager />
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold text-content-primary">{track.title}</span>

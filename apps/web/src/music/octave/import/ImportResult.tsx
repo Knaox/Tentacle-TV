@@ -62,14 +62,14 @@ function ReportBody({ summary }: { summary: Summary }) {
               aria-expanded={open}
               aria-controls="octave-import-skipped"
               onClick={() => setOpen((v) => !v)}
-              className="flex min-h-[44px] cursor-pointer items-center gap-1.5 self-start rounded-lg px-1 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="flex min-h-[44px] cursor-pointer items-center gap-1.5 self-start rounded-full px-1 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
             >
               <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${open ? "rotate-180" : ""}`} aria-hidden />
               {t(open ? "report.hide" : "report.show")}
             </button>
           )}
           {listed && (
-            <ol id="octave-import-skipped" className="min-h-0 overflow-y-auto overscroll-contain rounded-xl bg-fill-subtle px-3 py-2 text-sm">
+            <ol id="octave-import-skipped" className="min-h-0 overflow-y-auto overscroll-contain rounded-tile bg-fill-subtle px-3 py-2 text-sm">
               {report.listed.map((track) => (
                 <li key={track.index} className="flex gap-2 py-1.5">
                   <span className="w-8 shrink-0 text-right tabular-nums text-content-quaternary">{track.index + 1}</span>
@@ -98,8 +98,8 @@ export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Pro
   if (!summary) {
     return (
       <div className="flex flex-col gap-4">
-        <h2 id={titleId} className="flex items-center gap-2 text-lg font-bold tracking-tight text-content-primary">
-          <AlertCircle className="h-5 w-5 text-amber-300" aria-hidden />
+        <h2 id={titleId} className="oc-heading flex items-center gap-2 text-lg text-content-primary">
+          <AlertCircle className="h-5 w-5 text-status-warning-fg" aria-hidden />
           {t("title")}
         </h2>
         <p className="text-sm text-content-secondary" role="alert">
@@ -109,7 +109,7 @@ export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Pro
           <button type="button" onClick={onClose} className={`${BUTTON} text-content-tertiary hover:text-content-primary`}>
             {t("close")}
           </button>
-          <button type="button" autoFocus onClick={onAnother} className={`${BUTTON} octave-brand-fill`}>
+          <button type="button" autoFocus onClick={onAnother} className={`${BUTTON} octave-solid`}>
             {t("retry")}
           </button>
         </div>
@@ -119,7 +119,7 @@ export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Pro
 
   return (
     <div className="flex max-h-[70vh] flex-col gap-4">
-      <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+      <h2 id={titleId} className="oc-heading text-lg text-content-primary">
         {t("doneTitle", { name: summary.name })}
       </h2>
       <ReportBody summary={summary} />
@@ -127,7 +127,7 @@ export function ImportResult({ titleId, state, onOpen, onAnother, onClose }: Pro
         <button type="button" onClick={onAnother} className={`${BUTTON} text-content-tertiary hover:text-content-primary`}>
           {t("another")}
         </button>
-        <button type="button" autoFocus onClick={() => onOpen(summary.playlistId)} className={`${BUTTON} octave-brand-fill`}>
+        <button type="button" autoFocus onClick={() => onOpen(summary.playlistId)} className={`${BUTTON} octave-solid`}>
           {t("open")}
         </button>
       </div>

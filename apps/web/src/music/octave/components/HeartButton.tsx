@@ -36,7 +36,7 @@ export const HeartButton = memo(function HeartButton({ track, actions, size = "s
         e.stopPropagation();
         actions.toggleLike(track);
       }}
-      className={`flex ${box} shrink-0 cursor-pointer items-center justify-center rounded-full transition-[opacity,transform] duration-150 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`flex ${box} shrink-0 cursor-pointer items-center justify-center octave-press rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         liked ? "text-octave-accent-text" : `text-content-tertiary hover:text-content-primary ${quiet ? "octave-hover-reveal opacity-0 group-hover:opacity-100 focus-visible:opacity-100" : ""}`
       }${className ? ` ${className}` : ""}`}
     >

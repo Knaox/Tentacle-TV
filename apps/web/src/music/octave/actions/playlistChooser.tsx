@@ -17,7 +17,7 @@ import { useBulkTrackActions } from "./selection/useBulkTrackActions";
 import { chooserSnapshot, closePlaylistChooser, subscribeChooser, type ChooserRequest } from "./playlistChooserStore";
 
 const rowClass =
-  "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export function PlaylistChooserHost() {
   const request = useSyncExternalStore(subscribeChooser, chooserSnapshot, () => null);
@@ -58,7 +58,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
   return (
     <Modal open onClose={closePlaylistChooser} maxWidth={400} labelledBy={titleId}>
       <div className="flex max-h-[70vh] flex-col gap-3 p-5">
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+        <h2 id={titleId} className="oc-heading text-lg text-content-primary">
           {many ? t("selection.chooseTitle", { count: request.tracks.length }) : t(request.moveFrom ? "playlist.moveTitle" : "playlist.chooseTitle", { title: first?.title ?? "" })}
         </h2>
         <div className="flex items-center gap-2">
@@ -72,13 +72,13 @@ function Chooser({ request }: { request: ChooserRequest }) {
             }}
             placeholder={t("playlist.newPlaceholder")}
             maxLength={200}
-            className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="field min-w-0 flex-1"
           />
           <button
             type="button"
             onClick={() => void create()}
             disabled={!name.trim() || busy}
-            className="octave-brand-fill flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-semibold disabled:cursor-default disabled:opacity-50"
+            className="octave-solid flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-semibold disabled:cursor-default disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t("playlist.create")}
@@ -101,7 +101,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-content-tertiary">{children}</h3>;
+  return <h3 className="oc-eyebrow px-3 pb-1 pt-3">{children}</h3>;
 }
 
 function ChooserRow({ playlist, disabled, onPick }: { playlist: MusicPlaylist; disabled: boolean; onPick: (p: MusicPlaylist) => Promise<void> }) {

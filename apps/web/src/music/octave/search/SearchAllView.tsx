@@ -33,7 +33,7 @@ interface SearchAllViewProps {
 function SeeAll({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation("music");
   return (
-    <button type="button" onClick={onClick} className="cursor-pointer rounded-md px-1 text-sm font-medium text-content-tertiary transition-colors duration-150 hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+    <button type="button" onClick={onClick} className="cursor-pointer rounded-full px-1 text-sm font-medium text-content-tertiary transition-colors duration-150 hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
       {t("search.seeAll")}
     </button>
   );

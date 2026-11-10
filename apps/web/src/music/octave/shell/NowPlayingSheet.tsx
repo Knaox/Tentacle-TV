@@ -1,5 +1,5 @@
 /**
- * Octave — le lecteur « en cours » : grande pochette, surtitre rose, titre,
+ * Octave — le lecteur « en cours » : grande pochette, surtitre, titre,
  * artistes, qualité (et d'où il lit), progression, transport (et volume, fenêtre large). Ouvert
  * par la pochette du dock (bureau) ou le mini-lecteur (téléphone) ; deux
  * colonnes en fenêtre large, une pile au téléphone.
@@ -9,7 +9,7 @@
  * Au doigt (téléphone, tablette) : une poignée, et le glisser vers le bas le
  * referme (`touch/useSwipeDismiss`) ; au téléphone, qui n'a pas de dock, la
  * file d'attente s'ouvre DANS le lecteur, à la place de la pochette.
- * Un fond d'encre opaque et un voile fixe : aucun flou.
+ * Un fond d'encre opaque, la couleur vient de la pochette (`OceanAmbience`) : aucun flou.
  */
 
 import { memo, useEffect, useRef, useState } from "react";
@@ -76,7 +76,6 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
       className={`${touch ? "octave-sheet-rise" : "octave-stage-in"} fixed inset-0 z-50 flex flex-col overflow-y-auto bg-octave-ink px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] md:px-12`}
       style={{ paddingTop: "calc(var(--hote-bandeau, 0px) + 1rem + env(safe-area-inset-top, 0px))" }}
     >
-      <div aria-hidden className="octave-now-veil" />
       {touch && <span aria-hidden className="octave-sheet-grip" />}
       <OceanAmbience artworkUrl={track.artworkUrl} />
       <div className="relative flex items-center justify-between">
@@ -86,7 +85,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
           onClick={onClose}
           aria-label={t("player.close")}
           title={t("player.close")}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="octave-press flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-fill-soft text-content-primary hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           <ChevronDown className="h-6 w-6" aria-hidden />
         </button>
@@ -99,7 +98,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
             onClick={() => setQueue((v) => !v)}
             className={`octave-touch flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${queue ? "bg-octave-hover text-octave-accent-text" : "text-content-secondary"}`}
           >
-            <ListMusic className="h-5 w-5" aria-hidden />
+            <ListMusic weight={queue ? "fill" : "regular"} className="h-5 w-5" aria-hidden />
           </button>
         ) : (
           <span className="h-11 w-11" aria-hidden />
@@ -117,6 +116,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
               url={track.artworkUrl}
               alt={track.album?.title ?? track.title}
               className="aspect-square w-full max-w-sm shadow-[var(--oc-shadow-art-lg)] md:max-w-[520px]"
+              radius="lg"
               eager
             />
           </div>

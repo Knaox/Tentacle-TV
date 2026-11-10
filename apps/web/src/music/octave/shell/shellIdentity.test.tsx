@@ -61,11 +61,15 @@ describe("la glissière commune", () => {
   });
 });
 
-describe("la colonne de droite du dock (O3-2 : jamais « Sans pe »)", () => {
+describe("la colonne de droite du dock (O3-2 : jamais « Sans pe », jamais un chevauchement)", () => {
   const css = readFileSync(join(__dirname, "shell.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  // Mesuré au banc (Inter) : état + mot « Sans perte » (le plus long), icône de qualité, file, bouton du volume, écart.
+  // Mesuré au banc avec Inter (25/10 ; Figtree, plus étroite, n'a pas été remesurée) : état + mot « Sans perte » (le plus long), icône de qualité, transition douce (et sa valeur),
+  // arrêt, file, bouton du volume, écart. Transition, arrêt, file et bouton muet ne s'effacent jamais dans cette colonne.
   const LABEL = 97;
   const ICON = 22;
+  const CROSSFADE = 36;
+  const CROSSFADE_VALUE = 48;
+  const STOP = 36;
   const QUEUE = 36;
   const VOLUME_BUTTON = 40;
   const GAP = 6;
@@ -74,28 +78,47 @@ describe("la colonne de droite du dock (O3-2 : jamais « Sans pe »)", () => {
     body: m[2] as string,
   })).sort((a, b) => a.min - b.min);
 
-  it("est un conteneur ; au plus étroit, ni qualité ni glissière (le bouton muet reste)", () => {
+  it("est un conteneur ; au plus étroit, ni qualité, ni glissière, ni valeur de transition", () => {
     expect(css).toMatch(/\.octave-dock-aside\s*\{\s*container-type:\s*inline-size;/);
     expect(css).toMatch(/\.octave-dock-meta,\s*\.octave-dock-availability,\s*\.octave-dock-quality-label\s*\{\s*display:\s*none;/);
     expect(css).toMatch(/\.octave-range\.octave-dock-volume\s*\{\s*display:\s*none;/);
+    expect(css).toMatch(/\.octave-dock-aside \.octave-dock-crossfade-label\s*\{\s*display:\s*none;/);
   });
 
-  it("chaque palier tient EN ENTIER ce qu'il montre (mot, ou icône seule, ou rien)", () => {
+  it("chaque palier tient EN ENTIER ce qu'il montre, transition douce et arrêt compris", () => {
     let meta = false;
     let label = false;
+    let value = false;
     let slider = 0;
     let sliderWidth = 64;
     for (const rule of rules) {
       if (/\.octave-dock-meta \{ display: inline-flex; \}/.test(rule.body)) meta = true;
       if (/\.octave-dock-quality-label \{ display: inline-flex; \}/.test(rule.body)) label = true;
+      if (/\.octave-dock-crossfade-label \{ display: inline; \}/.test(rule.body)) value = true;
       if (/\.octave-range\.octave-dock-volume \{ display: flex; \}/.test(rule.body)) slider = 1;
       const width = /\.octave-range\.octave-dock-volume \{ width: (\d+)px; \}/.exec(rule.body)?.[1];
       if (width) sliderWidth = Number(width);
-      const volume = VOLUME_BUTTON + (slider ? sliderWidth : 0);
-      const needed = meta ? (label ? LABEL : ICON) + QUEUE + volume + 2 * GAP : QUEUE + volume + GAP;
+      const blocks = [
+        ...(meta ? [label ? LABEL : ICON] : []),
+        CROSSFADE + (value ? CROSSFADE_VALUE : 0),
+        STOP,
+        QUEUE,
+        VOLUME_BUTTON + (slider ? sliderWidth : 0),
+      ];
+      const needed = blocks.reduce((sum, width) => sum + width, 0) + (blocks.length - 1) * GAP;
       expect(rule.min, `palier ${rule.min}px`).toBeGreaterThanOrEqual(needed);
     }
-    // L'icône seule existe bien entre les deux : elle paraît AVANT le mot.
-    expect(meta && label).toBe(true);
+    // L'icône seule existe bien avant le mot, et la valeur de la transition ne paraît qu'en dernier.
+    expect(meta && label && value).toBe(true);
+  });
+
+  it("à l'étroit, la zone du dock range ses contrôles au lieu de les chevaucher", () => {
+    expect(css).toMatch(/\.octave-dock-zone\s*\{[^}]*container-name:\s*octave-dock-zone;/);
+    const narrow = /@container octave-dock-zone \(max-width: (\d+)px\) \{\s*\.octave-dock-zone \[data-octave-dock\] \{ grid-template-columns: auto minmax\(0, 1fr\) (\d+)px; \}/g;
+    const tiers = Array.from(css.matchAll(narrow), (m) => ({ max: Number(m[1]), aside: Number(m[2]) }));
+    expect(tiers.length).toBe(2);
+    // Ce qui reste à droite tient dans la largeur donnée : file + muet, puis la file seule.
+    expect(tiers[0]?.aside).toBeGreaterThanOrEqual(QUEUE + GAP + VOLUME_BUTTON);
+    expect(tiers[1]?.aside).toBeGreaterThanOrEqual(QUEUE);
   });
 });

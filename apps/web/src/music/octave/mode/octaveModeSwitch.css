@@ -5,12 +5,10 @@
  * Aucun verre : posée dans un groupe de verre de la barre, elle n'en ajoute
  * pas un second (jamais de verre sur du verre).
  *
- * L'accent de la musique est le ROSE (docs/octave/IDENTITE.md) : la piste
- * allumée prend la signature d'Octave (`--oc-gradient`, violet → rose, le rose
- * en tête), recopiée en repli parce que la barre de Tentacle ne charge pas les
- * jetons d'Octave (module à la demande). Le pouce reste blanc dans les deux
- * thèmes : il porte la note d'Octave (`octaveSwitchGlyph.tsx`), d'encre
- * éteint, rose allumé.
+ * Allumée, la piste prend la teinte franche du socle (`--accent`), comme tout
+ * interrupteur — plus de dégradé (refonte de nov. 2026). Le pouce reste blanc
+ * dans les deux thèmes : il porte la note d'Octave (`octaveSwitchGlyph.tsx`),
+ * d'encre éteint, au rose profond de la marque allumé (lisible sur le blanc).
  */
 
 .octave-switch {
@@ -45,7 +43,7 @@
   inset: -1px;
   z-index: -1;
   border-radius: inherit;
-  background: var(--oc-gradient, linear-gradient(90deg, var(--brand) 0%, var(--brand-accent) 72%, var(--brand-accent-light) 100%));
+  background: var(--accent);
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-out);
 }
@@ -59,7 +57,7 @@
 }
 
 .octave-switch:active .octave-switch-track {
-  transform: scale(0.95);
+  transform: scale(var(--press-scale, 0.97));
 }
 
 .octave-switch:focus-visible .octave-switch-track {
@@ -86,7 +84,7 @@
 }
 
 .octave-switch[aria-checked="true"] .octave-switch-thumb {
-  color: var(--brand-accent);
+  color: var(--brand-accent-dark);
   transform: translateX(22px);
 }
 

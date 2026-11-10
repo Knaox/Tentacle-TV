@@ -37,18 +37,18 @@ export function OctaveModeSlot({ onExit, compact = false, rail = false }: Octave
     );
   }
   return (
-    <div ref={anchor} className={`${stage ? "lg-bead " : ""}flex flex-col gap-0.5 rounded-xl bg-octave-hover p-1`} data-octave-mode-slot>
+    <div ref={anchor} className={`${stage ? "lg-bead " : ""}flex flex-col gap-0.5 rounded-tile bg-octave-hover p-1`} data-octave-mode-slot>
       <OctaveModeSwitch
         placement="octave"
         onExit={onExit}
         showLabel
-        className="w-full justify-between rounded-lg px-2 py-0.5 transition-colors duration-150 hover:bg-octave-selected"
+        className="w-full justify-between rounded-[10px] px-2 py-0.5 transition-colors duration-150 hover:bg-octave-selected"
       />
       <button
         type="button"
         onClick={onExit}
         title={t("backToFilms.hint")}
-        className="flex min-h-[36px] w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-octave-selected hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="flex min-h-[36px] w-full items-center gap-2.5 rounded-[10px] px-2 text-left text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-octave-selected hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         data-octave-back-to-films
       >
         <Clapperboard aria-hidden className="h-[18px] w-[18px] shrink-0" />

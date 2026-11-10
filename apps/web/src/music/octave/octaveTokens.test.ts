@@ -59,6 +59,9 @@ describe("les jetons d'Octave", () => {
       "--oc-radius-art",
       "--oc-radius-dock",
       "--oc-shadow-art",
+      "--oc-ink-menu",
+      "--oc-radius-menu",
+      "--oc-shadow-menu",
       "--oc-ease-out",
       "--oc-duration",
     ]) {
@@ -66,18 +69,51 @@ describe("les jetons d'Octave", () => {
     }
   });
 
-  it("le clair redit ce qui porte la couleur, et rien que le sombre n'ait pas", () => {
-    for (const name of ["--oc-ink-raised", "--oc-accent-text", "--oc-dock-bg", "--oc-dock-shadow", "--oc-thumb", "--oc-nav-active-bg"]) {
+  it("le clair ne redit que ce que le socle ne règle pas seul, et rien que le sombre n'ait pas", () => {
+    // L'accent, les remplissages, la jauge suivent le thème par les jetons du socle : seuls l'encre de panneau et les ombres se redisent.
+    for (const name of ["--oc-ink-raised", "--oc-ink-raised-rgb", "--oc-shadow-art", "--oc-shadow-art-lg"]) {
       expect(LIGHT, name).toContain(name);
     }
     for (const name of LIGHT) expect(DARK, name).toContain(name);
   });
 
-  it("l'accent est le ROSE de la marque, jamais une valeur en dur", () => {
+  it("l'accent est la teinte franche du socle (un état ACTIF), jamais une valeur en dur", () => {
     const dark = blockFor(TOKENS, ".octave-night");
-    expect(dark).toMatch(/--oc-accent:\s*var\(--brand-accent\);/);
-    expect(dark).toMatch(/--oc-accent-rgb:\s*var\(--brand-accent-rgb\);/);
+    expect(dark).toMatch(/--oc-accent:\s*var\(--accent\);/);
+    expect(dark).toMatch(/--oc-accent-rgb:\s*var\(--accent-rgb\);/);
+    expect(dark).toMatch(/--oc-accent-text:\s*var\(--accent\);/);
+    // Le volume reste d'UNE teinte (Damien, 25/10 : « pas violet ») ; le dégradé de jauge est à la progression.
     expect(dark).toMatch(/--oc-volume-fill:\s*var\(--oc-accent\);/);
+    expect(dark).toMatch(/--oc-progress-fill:\s*var\(--oc-gradient\);/);
+    expect(dark).toMatch(/--oc-gradient:\s*var\(--gauge-gradient\);/);
+  });
+
+  it("refonte de nov. 2026 : le dégradé ne sert qu'à lire et à mesurer, l'encre est neutre", () => {
+    const dark = blockFor(TOKENS, ".octave-night");
+    // Lire : le dégradé du logo sous le bouton Lecture. Mesurer : la jauge. Rien d'autre.
+    expect(dark).toMatch(/--oc-gradient-deep:\s*var\(--cta-brand-gradient\);/);
+    // L'entrée active du rail est une pastille NEUTRE, la tête d'une vue n'a plus de voile de marque.
+    expect(dark).toMatch(/--oc-nav-active-bg:\s*var\(--fill-soft\);/);
+    expect(dark).toMatch(/--oc-hero-veil:\s*none;/);
+    // Aucun dégradé écrit dans les jetons, aucune couleur de marque lue pour décorer.
+    const bare = TOKENS.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(bare).not.toMatch(/gradient\(/);
+    expect(bare).not.toMatch(/var\(--brand/);
+    // L'encre de panneau est celle du socle (#131315), plus la prune.
+    expect(dark).toMatch(/--oc-ink-raised:\s*#131315;/);
+    expect(dark).not.toMatch(/#0e0b13/i);
+  });
+
+  it("aucun dégradé de marque dans les feuilles d'Octave hors de la lecture et de la jauge", () => {
+    for (const file of cssFiles(DIR)) {
+      // La nuit RECOPIE les deux dégradés du socle (lecture, jauge), à l'identique : `octaveNight.test.ts` la tient.
+      if (file.endsWith("octaveNight.css")) continue;
+      const source = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+      // Les seuls dégradés permis : la teinte de la POCHETTE (lavis de tête, océan), les fondus d'encre et de lumière.
+      for (const [gradient] of source.matchAll(/(?:linear|radial)-gradient\([^;]*;/g)) {
+        expect(gradient, file).not.toMatch(/--brand/);
+      }
+    }
   });
 
   it("tout jeton lu dans une feuille d'Octave y est déclaré", () => {

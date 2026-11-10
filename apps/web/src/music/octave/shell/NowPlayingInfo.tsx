@@ -58,7 +58,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
       ) : (
         artwork
       )}
-      <div className="min-w-0">
+      <div className="octave-now-text min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           {albumPath ? (
             <Link to={albumPath} className="truncate text-sm font-semibold text-content-primary hover:underline">
@@ -78,7 +78,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
               <button
                 type="button"
                 onClick={() => queueActions.retry(player)}
-                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-octave-accent-text underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-content-primary underline underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
                 {t("player.retry")}
               </button>
@@ -98,10 +98,15 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
           )}
         </p>
       </div>
-      <HeartButton track={track} actions={actions} className="octave-dock-chip lg-bead" />
-      {/* Le titre EN COURS s'ajoute à une playlist, ou s'en retire, sans quitter le lecteur (25/10). */}
-      <QuickAddButton track={track} actions={actions} visible="always" />
-      <TrackMenu track={track} actions={actions} visible="always" />
+      {/* `contents` : rien ne change à la mise en page ; le dock à l'étroit les range (shell.css). */}
+      <span className="octave-now-actions contents">
+        <HeartButton track={track} actions={actions} className="octave-dock-chip lg-bead" />
+        {/* Le titre EN COURS s'ajoute à une playlist, ou s'en retire, sans quitter le lecteur (25/10). */}
+        <span className="octave-now-quickadd contents">
+          <QuickAddButton track={track} actions={actions} visible="always" />
+        </span>
+        <TrackMenu track={track} actions={actions} visible="always" />
+      </span>
     </div>
   );
 });

@@ -43,7 +43,7 @@ export function LoadMore({ query }: { query: PagedQuery }) {
         type="button"
         disabled={isFetchingNextPage}
         onClick={() => void fetchNextPage()}
-        className="cursor-pointer rounded-full border border-line-subtle px-4 py-2 text-sm font-semibold text-content-secondary hover:text-content-primary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="cursor-pointer rounded-full bg-fill-soft px-4 py-2 text-sm font-semibold text-content-secondary hover:bg-fill-strong hover:text-content-primary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         {t("library.more")}
       </button>

@@ -31,7 +31,7 @@ export function detailsChange(
 }
 
 const fieldClass =
-  "w-full rounded-xl border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary placeholder:text-content-quaternary focus:border-line-focus focus:outline-none";
+  "field w-full";
 
 interface Props {
   playlist: MusicPlaylist;
@@ -71,9 +71,9 @@ export function PlaylistDetailsDialog({ playlist, onSave, onClose }: Props) {
           void submit();
         }}
       >
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("playlistManage.detailsTitle")}</h2>
+        <h2 id={titleId} className="oc-heading text-lg text-content-primary">{t("playlistManage.detailsTitle")}</h2>
         <label htmlFor={nameId} className="mt-5 block text-[13px] font-semibold text-content-secondary">{t("playlistManage.nameLabel")}</label>
-        <input id={nameId} autoFocus value={name} maxLength={NAME_MAX} onChange={(e) => setName(e.target.value)} className={`${fieldClass} mt-1.5 h-11`} aria-invalid={!name.trim()} />
+        <input id={nameId} autoFocus value={name} maxLength={NAME_MAX} onChange={(e) => setName(e.target.value)} className={`${fieldClass} mt-1.5`} aria-invalid={!name.trim()} />
         {!name.trim() && <p role="alert" className="mt-1.5 text-[13px] text-status-error-fg">{t("playlistManage.nameRequired")}</p>}
         {withDescription && (
           <>
@@ -89,7 +89,7 @@ export function PlaylistDetailsDialog({ playlist, onSave, onClose }: Props) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t("playlistManage.descriptionPlaceholder")}
               rows={4}
-              className={`${fieldClass} mt-1.5 resize-none py-2.5 leading-relaxed disabled:opacity-50`}
+              className={`${fieldClass} mt-1.5 resize-none leading-relaxed`}
             />
           </>
         )}
@@ -100,14 +100,14 @@ export function PlaylistDetailsDialog({ playlist, onSave, onClose }: Props) {
             disabled={saving}
             appearance={{ level: "regular", shape: "capsule" }}
             className="inline-flex h-11 items-center justify-center px-5 text-sm font-semibold disabled:opacity-50"
-            fallbackClassName="rounded-lg border border-line-subtle bg-fill-soft text-content-primary transition hover:bg-fill-medium"
+            fallbackClassName="rounded-full bg-fill-soft text-content-primary transition-colors hover:bg-fill-strong"
           >
             {t("playlistManage.cancel")}
           </GlassButton>
           <button
             type="submit"
             disabled={!change || saving}
-            className="octave-brand-fill inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="octave-solid inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             {t("playlistManage.save")}
           </button>

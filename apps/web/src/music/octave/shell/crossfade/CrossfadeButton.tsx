@@ -40,7 +40,8 @@ export const CrossfadeButton = memo(function CrossfadeButton() {
         className={`octave-dock-chip lg-bead relative flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 text-xs font-semibold tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${on ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"}`}
       >
         <Blend className="h-[16px] w-[16px]" aria-hidden />
-        <span>{on ? `${ms / 1000} s` : t("crossfade.off")}</span>
+        {/* Dans le dock, la valeur ne s'écrit que si elle tient (shell.css) ; l'infobulle et le nom accessible la disent toujours. */}
+        <span className="octave-dock-crossfade-label">{on ? `${ms / 1000} s` : t("crossfade.off")}</span>
       </button>
       {open && <CrossfadeBubble anchor={anchor.current} onClose={close} />}
     </>

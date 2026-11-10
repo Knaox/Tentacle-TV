@@ -4,17 +4,17 @@
  * mode normal (Damien, 26/10 : le verre change le matériau, jamais les
  * dimensions) ; seuls le fond et les matériaux changent.
  *
- * - Le fond : l'encre de la maquette (nos prunes) en sombre, la nacre en clair,
+ * - Le fond : l'encre de la page (neutre, refonte de nov. 2026), en sombre comme en clair,
  *   et le fond ambiant du socle (`OctaveAmbient` → `GlassAmbient`), posé SOUS le
  *   contenu (la coquille, `fixed`, est un contexte d'empilement).
  * - Le fondu de la page sous le dock (`.octave-dock-edge`, vers l'encre noire)
  *   peindrait de l'encre opaque sur les taches : retiré, le verre du dock suffit.
- * - La tête d'une collection perd son voile rose : le fond d'Octave porte la couleur.
+ * - La tête d'une collection perd son lavis de pochette : le fond d'Octave porte la couleur.
  * Seulement sous la porte : hors verre, rien ne s'applique.
  */
 
 :root[data-liquid-glass="native"] .octave-stage {
-  background-color: #07050c;
+  background-color: var(--surface-0);
   color: var(--lg-pane-glyph);
 }
 :root[data-liquid-glass="native"][data-theme="light"] .octave-stage {
@@ -26,6 +26,6 @@
 :root[data-liquid-glass="native"] .octave-stage .octave-dock-edge {
   display: none;
 }
-:root[data-liquid-glass="native"] .octave-stage .octave-hero::before {
+:root[data-liquid-glass="native"] .octave-stage .octave-hero[data-tinted="true"]::before {
   content: none;
 }

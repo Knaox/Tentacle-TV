@@ -42,22 +42,22 @@ export function SharePlaylistDialog({ playlist, onClose }: { playlist: MusicPlay
     <Modal open onClose={onClose} maxWidth={500} labelledBy={titleId}>
       <div className="p-6">
         <div className="flex items-center gap-3">
-          <span className="octave-brand-fill flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden>
+          <span className="octave-emblem flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden>
             <Link2 className="h-5 w-5" />
           </span>
-          <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("title", { name: playlist.name })}</h2>
+          <h2 id={titleId} className="oc-heading text-lg text-content-primary">{t("title", { name: playlist.name })}</h2>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-content-secondary">{t("intro")}</p>
 
         {link ? (
           <div className="mt-5">
             <label htmlFor={linkId} className="sr-only">{t("copy")}</label>
-            <div className="flex items-center gap-2 rounded-xl border border-line-subtle bg-fill-subtle p-1.5 pl-3">
+            <div className="flex items-center gap-2 rounded-full bg-fill-subtle p-1.5 pl-4">
               <input id={linkId} readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} className="min-w-0 flex-1 bg-transparent font-mono text-[13px] text-content-primary focus:outline-none" />
               <button
                 type="button"
                 onClick={() => void copy(link.url)}
-                className="octave-brand-fill inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="octave-solid inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
                 {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
                 {copied ? t("copied") : t("copy")}
@@ -78,7 +78,7 @@ export function SharePlaylistDialog({ playlist, onClose }: { playlist: MusicPlay
               disabled={share.busy !== null}
               appearance={{ level: "regular", shape: "capsule" }}
               className="mr-auto inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-semibold text-status-error-fg disabled:opacity-50"
-              fallbackClassName="rounded-lg border border-line-subtle bg-fill-soft transition hover:bg-fill-medium"
+              fallbackClassName="rounded-full bg-fill-soft transition-colors hover:bg-fill-strong"
             >
               <Link2Off className="h-4 w-4" aria-hidden />
               {share.busy === "revoke" ? t("revoking") : t("revoke")}
@@ -89,7 +89,7 @@ export function SharePlaylistDialog({ playlist, onClose }: { playlist: MusicPlay
             onClick={onClose}
             appearance={{ level: "regular", shape: "capsule" }}
             className="inline-flex h-11 items-center justify-center px-5 text-sm font-semibold"
-            fallbackClassName="rounded-lg border border-line-subtle bg-fill-soft text-content-primary transition hover:bg-fill-medium"
+            fallbackClassName="rounded-full bg-fill-soft text-content-primary transition-colors hover:bg-fill-strong"
           >
             {t("close")}
           </GlassButton>
@@ -99,7 +99,7 @@ export function SharePlaylistDialog({ playlist, onClose }: { playlist: MusicPlay
               autoFocus
               disabled={share.loading || share.busy !== null}
               onClick={() => void create()}
-              className="octave-brand-fill inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              className="octave-solid inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
             >
               {share.busy === "create" ? t("creating") : t("create")}
             </button>

@@ -48,7 +48,7 @@ export const SearchHome = memo(function SearchHome({ recents, history, onSearch 
       <div className="flex flex-col gap-10">
       <SearchHomeMoodsSlot onSearch={onSearch} />
       <div className="px-2 py-10">
-        <h1 className="text-2xl font-bold text-content-primary">{t("search.emptyTitle")}</h1>
+        <h1 className="oc-display text-2xl text-content-primary">{t("search.emptyTitle")}</h1>
         <p className="mt-2 text-sm text-content-tertiary">{t("search.emptyHint")}</p>
       </div>
       </div>

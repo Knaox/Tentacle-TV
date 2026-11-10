@@ -29,7 +29,7 @@ import { shellIdentityOf } from "./shellIdentity";
 import { useOctaveProfileMenu } from "./useOctaveProfileMenu";
 
 const itemClass =
-  "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
+  "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 /** Où s'ouvre le menu : sous le rond (en-tête), au-dessus (barre latérale), à droite (rail de la tablette). */
 type MenuPlacement = "below" | "above" | "beside";
@@ -86,7 +86,7 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
         onClick={() => setOpen((value) => !value)}
         className={compact
           ? "flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          : "flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"}
+          : "flex min-h-[48px] w-full items-center gap-3 rounded-[10px] px-2 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"}
       >
         {identity.avatar(compact ? 30 : 32)}
         {!compact && (
@@ -106,6 +106,8 @@ export const OctaveProfileButton = memo(function OctaveProfileButton({ compact =
           aria-label={t("profile.menu")}
           onKeyDown={onKeyDown}
           className={`octave-island octave-enter absolute z-50 w-64 p-1.5 ${MENU_PLACEMENT[placement ?? (compact ? "below" : "above")]}`}
+          // Il FLOTTE : l'encre, le rayon et l'ombre d'un menu (ils l'emportent sur ceux de l'îlot posé).
+          style={{ background: "var(--oc-ink-menu)", borderRadius: "var(--oc-radius-menu)", boxShadow: "var(--oc-shadow-menu)" }}
         >
           <div className="flex items-center gap-3 px-3 pb-2 pt-2.5">
             {identity.avatar(40)}

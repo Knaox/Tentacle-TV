@@ -69,7 +69,7 @@ function CollectionCard({ collection, bytes, kept, offline, onOpen }: { collecti
 
 function DeviceArt() {
   return (
-    <div className="octave-brand-fill flex h-44 w-44 shrink-0 items-center justify-center shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56" style={{ borderRadius: ARTWORK_RADIUS.lg }} aria-hidden>
+    <div className="octave-emblem flex h-44 w-44 shrink-0 items-center justify-center shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56" style={{ borderRadius: ARTWORK_RADIUS.lg }} aria-hidden>
       <DownloadGlyph done className="h-20 w-20" />
     </div>
   );

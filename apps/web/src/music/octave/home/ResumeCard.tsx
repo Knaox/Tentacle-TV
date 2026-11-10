@@ -18,7 +18,7 @@ function Progress() {
   const ratio = durationMs && durationMs > 0 ? Math.min(1, Math.max(0, positionMs / durationMs)) : 0;
   return (
     <span aria-hidden className="block h-1 w-full overflow-hidden rounded-full bg-fill-soft">
-      <span className="block h-full w-full origin-left rounded-full bg-octave-accent transition-transform duration-200" style={{ transform: `scaleX(${ratio})` }} />
+      <span className="block h-full w-full origin-left rounded-full octave-gauge-fill transition-transform duration-200" style={{ transform: `scaleX(${ratio})` }} />
     </span>
   );
 }
@@ -45,7 +45,7 @@ export const ResumeCard = memo(function ResumeCard() {
         type="button"
         onClick={() => player.togglePlay()}
         aria-label={playing ? t("player.pause") : t("octaveHome.resumePlay", { title: track.title })}
-        className="group flex w-full max-w-xl cursor-pointer items-center gap-4 rounded-[var(--oc-radius-art-lg)] p-2 pr-4 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="octave-press group flex w-full max-w-xl cursor-pointer items-center gap-4 rounded-[var(--oc-radius-art-lg)] p-2 pr-4 text-left hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} radius="art" eager className="h-20 w-20 shrink-0 shadow-[var(--oc-shadow-art)]" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -54,7 +54,7 @@ export const ResumeCard = memo(function ResumeCard() {
           <span className="truncate text-sm text-content-tertiary">{track.artists.map((a) => a.name).join(", ")}</span>
           <Progress />
         </span>
-        <span aria-hidden className="octave-brand-fill flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] transition-transform duration-150 group-active:scale-95">
+        <span aria-hidden className="octave-brand-fill flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--oc-shadow-play)]">
           <Icon weight="fill" className={`h-5 w-5 ${playing ? "" : "ml-0.5"}`} />
         </span>
       </button>

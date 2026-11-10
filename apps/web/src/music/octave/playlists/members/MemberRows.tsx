@@ -52,7 +52,7 @@ export function RightSelect({ value, onChange, label, disabled }: RightSelectPro
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value as MusicPlaylistMemberRight)}
-      className="h-11 cursor-pointer rounded-full border border-line-subtle bg-fill-subtle px-3 text-[13px] font-medium text-content-primary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="field field-pill h-11 w-auto cursor-pointer text-[13px] font-medium"
     >
       {MUSIC_PLAYLIST_MEMBER_RIGHTS.map((right) => (
         <option key={right} value={right}>

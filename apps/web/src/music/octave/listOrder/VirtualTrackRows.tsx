@@ -89,7 +89,7 @@ export function VirtualTrackRows({ count, keyAt, titleAt, renderRow, reorder }: 
             key={item.key}
             data-index={item.index}
             className={`absolute inset-x-0 top-0 ${drag && !lifted ? "transition-transform duration-150 ease-out motion-reduce:transition-none" : ""} ${
-              lifted ? "z-10 rounded-md bg-[var(--oc-ink-raised)] shadow-[var(--oc-shadow-panel)]" : ""
+              lifted ? "z-10 rounded-[10px] bg-[var(--oc-ink-menu)] shadow-[var(--oc-shadow-menu)]" : ""
             }`}
             style={{ height: ROW_HEIGHT, transform: `translateY(${item.start - margin + shift}px)` }}
           >

@@ -34,7 +34,7 @@ export const SelectCell = memo(function SelectCell({ title, selected, selecting,
       >
         <span
           aria-hidden
-          className={`flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors duration-150 ${selected ? "octave-brand-fill border-transparent" : "border-content-tertiary bg-transparent"}`}
+          className={`flex h-4 w-4 items-center justify-center rounded-chip border transition-colors duration-150 ${selected ? "border-transparent bg-accent text-accent-on" : "border-content-tertiary bg-transparent"}`}
         >
           {selected && <Check weight="bold" className="h-3 w-3" />}
         </span>

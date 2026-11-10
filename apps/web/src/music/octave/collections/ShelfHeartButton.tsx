@@ -22,7 +22,7 @@ export const ShelfHeartButton = memo(function ShelfHeartButton({ subject, classN
       aria-label={label}
       title={label}
       onClick={() => toggle.mutate({ subject, favorite: !favorite })}
-      className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-[color,transform] duration-150 hover:bg-fill-subtle active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${favorite ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"} ${className}`}
+      className={`flex shrink-0 cursor-pointer items-center justify-center octave-press rounded-full hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${favorite ? "text-octave-accent-text" : "text-content-secondary hover:text-content-primary"} ${className}`}
     >
       <Heart weight={favorite ? "fill" : "regular"} className="h-6 w-6" aria-hidden />
     </button>

@@ -19,6 +19,7 @@ import { octaveEnginePrefs, OctavePlayerProvider } from "./player/OctavePlayerPr
 import type { MusicEngineAuth } from "../engine";
 import { prestartAudioEngine } from "../engine/enginePrestart";
 import { OctaveShell } from "./shell/OctaveShell";
+import { OctaveSubview } from "./shell/OctaveBackButton";
 import { AlbumView } from "./views/AlbumView";
 import { ArtistView } from "./views/ArtistView";
 import { HomeView } from "./views/HomeView";
@@ -68,21 +69,22 @@ export function OctaveApp() {
             {/* Sans réseau : « Sur cet appareil » seulement (`offline/OfflineOctave.tsx`). */}
             <OfflineOctaveRoutes>
               <Routes>
+                {/* Une vue qui n'est pas une racine (album, artiste, playlist, ambiance, mix, profils) porte le bouton Retour. */}
                 <Route index element={<HomeView />} />
                 <Route path="search" element={<SearchView />} />
                 <Route path="library" element={<LibraryView />} />
                 <Route path="liked" element={<LikedView />} />
                 <Route path="playlists" element={<PlaylistsView />} />
                 <Route path="import" element={<ImportShareEntry />} />
-                <Route path="playlist/:id" element={<PlaylistView />} />
-                <Route path="mix/:id" element={<ExternalPlaylistView />} />
-                <Route path="mood/:id" element={<MoodView />} />
-                <Route path="home-mix/:id" element={<MixView />} />
-                <Route path="album/:id" element={<AlbumView />} />
-                <Route path="artist/:id" element={<ArtistView />} />
+                <Route path="playlist/:id" element={<OctaveSubview><PlaylistView /></OctaveSubview>} />
+                <Route path="mix/:id" element={<OctaveSubview><ExternalPlaylistView /></OctaveSubview>} />
+                <Route path="mood/:id" element={<OctaveSubview><MoodView /></OctaveSubview>} />
+                <Route path="home-mix/:id" element={<OctaveSubview><MixView /></OctaveSubview>} />
+                <Route path="album/:id" element={<OctaveSubview><AlbumView /></OctaveSubview>} />
+                <Route path="artist/:id" element={<OctaveSubview><ArtistView /></OctaveSubview>} />
                 <Route path="device" element={<DeviceView />} />
                 <Route path="settings" element={<OctaveSettingsView />} />
-                <Route path="profiles" element={<OctaveProfilesView />} />
+                <Route path="profiles" element={<OctaveSubview><OctaveProfilesView /></OctaveSubview>} />
                 <Route path="*" element={<Navigate to="." replace />} />
               </Routes>
             </OfflineOctaveRoutes>

@@ -3,10 +3,14 @@
  * artiste : grande image, surtitre, titre, une ligne de métadonnées, puis
  * les actions.
  *
+ * La couleur vient de la POCHETTE : sa teinte, lue une fois (`useArtworkTint`), se pose en lavis
+ * derrière la tête et fond vers la page (octave.css, `.octave-hero`) — plus de voile de marque.
+ * Sous une rangée « Retour » (`OctaveSubview`), la tête resserre sa marge et le lavis la couvre.
+ *
  * Les actions sont celles de la FAMILLE Tentacle, pas un rond vert : « Lecture »
- * en capsule au dégradé de marque, étiquetée (la seule en couleur, comme sur la
- * fiche d'un film), puis « Aléatoire » en capsule de verre — deux mots qu'on lit,
- * jamais deux pictogrammes à deviner. Verre natif sous `data-liquid-glass`
+ * en pilule au dégradé du logo, étiquetée (la seule en couleur, comme sur la
+ * fiche d'un film), puis « Aléatoire » en pilule neutre — deux mots qu'on lit,
+ * jamais deux pictogrammes à deviner. La pression répond à 97 % ; rien ne grossit au survol. Verre natif sous `data-liquid-glass`
  * (`PressableGlass`), la peau d'avant ailleurs.
  *
  * Le titre prend une taille selon sa LONGUEUR : un nom court s'affiche en
@@ -17,20 +21,24 @@
  * aux MÊMES tailles ; la pochette et les textes ne changent pas.
  */
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { PlayIcon as Play } from "../../../components/icons/transport";
 import { ShuffleIcon as Shuffle } from "@phosphor-icons/react/dist/csr/Shuffle";
 import { useTranslation } from "react-i18next";
 import { totalDurationParts } from "@tentacle-tv/shared/octave";
 import { PressableGlass } from "../../../components/ui/glass/PressableGlass";
+import { useArtworkTint } from "../motion/useArtworkTint";
+import { useOctaveSubview } from "../shell/OctaveBackButton";
 import { Artwork } from "./Artwork";
 
 interface CollectionHeaderProps {
   kicker: string;
   title: string;
   artworkUrl?: string | null;
-  /** Remplace la pochette (titres likés : un dégradé et un cœur). */
+  /** Remplace la pochette (titres likés : un emblème et un cœur ; playlist : sa mosaïque). */
   art?: ReactNode;
+  /** L'image dont la tête prend la teinte quand `art` remplace la pochette (la première jaquette d'une playlist). */
+  tintUrl?: string | null;
   round?: boolean;
   /** La ligne de détails ; `null` pendant l'attente (sa place reste réservée). */
   meta: ReactNode;
@@ -54,7 +62,7 @@ export function titleSizeClass(title: string): string {
 
 const PLAY_PROPS = {
   appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
-  className: "octave-cta flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-bold disabled:cursor-default disabled:opacity-40",
+  className: "octave-cta flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-semibold disabled:cursor-default disabled:opacity-40",
   fallbackClassName: "hero-cta-primary rounded-full",
   fallbackStyle: { boxShadow: "var(--oc-shadow-play)" },
 } as const;
@@ -64,14 +72,20 @@ export const SECONDARY_CAPSULE_PROPS = {
   appearance: { material: "pane", level: "regular", shape: "capsule" },
   className: "flex h-12 items-center gap-2 px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-40",
   fallbackClassName:
-    "rounded-full border border-octave-line bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
+    "rounded-full bg-fill-soft text-content-primary transition-colors duration-150 hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
 } as const;
 
-export function CollectionHeader({ kicker, title, artworkUrl = null, art, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra, description = null }: CollectionHeaderProps) {
+export function CollectionHeader({ kicker, title, artworkUrl = null, art, tintUrl, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra, description = null }: CollectionHeaderProps) {
   const { t } = useTranslation("music");
+  const tint = useArtworkTint(tintUrl === undefined ? artworkUrl : tintUrl);
+  const sub = useOctaveSubview();
   return (
-    <header className="octave-hero px-4 pb-6 pt-8 md:px-8">
-      <div className="flex flex-col items-start gap-6 md:flex-row md:items-end">
+    <header
+      className={`octave-hero px-4 pb-6 md:px-8 ${sub ? "octave-hero-sub pt-4" : "pt-8"}`}
+      data-tinted={tint ? "true" : undefined}
+      style={tint ? ({ "--oc-hero-tint-rgb": tint } as CSSProperties) : undefined}
+    >
+      <div className="octave-hero-row flex flex-col items-start gap-6 md:flex-row md:items-end">
         {art ?? (
           <Artwork
             url={artworkUrl}
@@ -86,7 +100,7 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
         )}
         <div className="min-w-0 flex-1">
           <p className="oc-eyebrow">{kicker}</p>
-          <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
+          <h1 className={`octave-hero-title oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
           {description && (
             <p title={description} className="mt-2 line-clamp-2 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-content-tertiary">
               {description}
@@ -96,11 +110,11 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
         </div>
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <PressableGlass {...PLAY_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onPlay} onPointerDown={onPress}>
+        <PressableGlass {...PLAY_PROPS} tapScale={0.97} disabled={!canPlay} onClick={onPlay} onPointerDown={onPress}>
           <Play className="h-5 w-5" aria-hidden />
           <span className="relative">{t("common.playAll")}</span>
         </PressableGlass>
-        <PressableGlass {...SECONDARY_CAPSULE_PROPS} hoverScale={1.03} tapScale={0.97} disabled={!canPlay} onClick={onShuffle}>
+        <PressableGlass {...SECONDARY_CAPSULE_PROPS} tapScale={0.97} disabled={!canPlay} onClick={onShuffle}>
           <Shuffle className="h-4 w-4" aria-hidden />
           <span className="relative">{t("common.shuffle")}</span>
         </PressableGlass>

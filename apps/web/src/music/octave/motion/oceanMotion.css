@@ -102,7 +102,9 @@
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.7);
+  /* Sur une pochette : la pastille sombre des images ; la houle à la teinte franche de la NUIT
+   * (la pastille est une surface `.octave-night` : lisible dans les deux thèmes). */
+  background-color: var(--oc-chip-bg);
   color: var(--oc-accent-text);
   box-shadow: var(--oc-shadow-art);
   pointer-events: none;
@@ -200,9 +202,9 @@
   height: 100%;
 }
 
-.oc-ocean-stop-back { stop-color: rgb(var(--brand-rgb)); }
+.oc-ocean-stop-back { stop-color: rgb(var(--ocean-tint-rgb)); }
 .oc-ocean-stop-mid { stop-color: rgb(var(--ocean-tint-rgb)); }
-.oc-ocean-stop-front { stop-color: rgb(var(--oc-accent-rgb)); }
+.oc-ocean-stop-front { stop-color: rgb(var(--ocean-tint-rgb)); }
 .oc-ocean-stop-top { stop-opacity: var(--ocean-band-top); }
 .oc-ocean-stop-bottom { stop-opacity: var(--ocean-band-bottom); }
 .oc-ocean-crest { stroke: var(--ocean-crest); }

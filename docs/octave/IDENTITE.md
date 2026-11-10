@@ -1,8 +1,13 @@
 # Octave — l'identité
 
-Octave est **Tentacle quand on écoute** : même encre, même police (Inter), même verre, même façon de
-flotter — avec SON accent, le **rose**. Ni une copie de Spotify, ni une autre application : on reconnaît
-Tentacle, et on sait qu'on est dans la musique.
+Octave est **Tentacle quand on écoute** : la même encre neutre, les mêmes polices (Bricolage Grotesque pour les
+titres, Figtree pour le texte), les mêmes pilules, le même mouvement — et SA mise en page de lecteur de musique :
+rail à gauche, barre de lecture qui flotte, file à droite. Ni une copie de Spotify, ni une copie de l'accueil vidéo.
+
+**Refonte de nov. 2026** (docs/REFONTE-UI.md, validée sur prototype) : la couleur est aux POCHETTES. L'encre prune,
+le rose en accent, le voile de marque en tête des vues, l'onglet actif au dégradé, le mot « Octave » au dégradé et
+les replis de pochette au dégradé sont retirés. Aucun nom de jeton n'a changé : des valeurs ont changé, des jetons
+se sont ajoutés (`--oc-ink-menu`, `--oc-radius-menu`, `--oc-shadow-menu`, `--oc-hero-tint-*`, `--oc-ease-drawer`).
 
 Jetons : [`apps/web/src/music/octave/octaveTokens.css`](../../apps/web/src/music/octave/octaveTokens.css)
 (`--oc-*`, sombre ET clair) et [`octaveNight.css`](../../apps/web/src/music/octave/octaveNight.css) (la
@@ -10,91 +15,97 @@ nuit de la barre de lecture), en classes Tailwind sous `octave-*` (`apps/web/tai
 
 ## Les principes
 
-1. **Le rose mène.** L'accent fonctionnel de la musique est le rose (`--brand-accent`) : ce qui est
-   actif ou vivant — le titre en cours, la progression, le volume, aléatoire et répétition allumés,
-   l'entrée de navigation active, le cœur d'un titre aimé. Le violet n'arrive qu'en OUVERTURE du dégradé,
-   jamais seul pour dire « actif ».
-2. **Le dégradé en touches, une par zone.** Violet → rose, le rose en tête : le bouton Lecture (dégradé
-   PROFOND, lisible sous le blanc), la barre de progression, le mot « Octave », le voile en tête d'une
-   vue. Jamais en fond de page, jamais sur du texte courant, jamais deux touches côte à côte.
-3. **Rien de blanc qui crie.** Plus de bouton Lecture blanc plein, **jamais une barre de lecture
-   blanche**. Les glyphes restent neutres (texte primaire, secondaire) ; la couleur est réservée à ce qui
-   vit. En thème clair, aucune surface d'Octave n'est blanc pur : une nacre teintée de prune et de rose.
-4. **La barre de lecture est TOUJOURS la nuit.** Dans les deux thèmes, la même capsule de verre sombre —
-   encre prune, glyphes clairs, glissières au dégradé et rose — qui flotte au-dessus des pages, comme la
-   barre de navigation de Tentacle (le mini-lecteur du téléphone aussi). C'est la signature d'Octave.
-   Le reste suit le thème : la barre latérale est un rail posé sur l'encre, sans dalle ni bordure ; un
-   panneau (file, « en cours », menu) est un îlot opaque, encre prune en sombre, nacre rosée en clair.
-5. **Les pochettes font le décor.** Ni motif ni illustration : la couleur vient des pochettes. Rayons
-   doux, ombres qui soulèvent. Une seule exception, qui est la signature d'Octave : **l'océan** (plus bas).
-6. **Intuitif d'abord.** Les conventions d'un lecteur de musique sont gardées : navigation à gauche,
-   titre en cours à gauche de la barre, transport au centre, volume à droite, ‹ › pour revenir.
+1. **L'accent dit un état, rien d'autre.** La teinte franche du socle (`--accent`, par `--oc-accent*`) marque ce
+   qui est ACTIF : le titre en cours, le cœur d'un titre aimé, aléatoire et répétition allumés, l'icône de la page
+   courante, une case cochée, « gardé sur l'appareil ». Jamais pour décorer (surtitre, lien, bouton-texte).
+2. **Le dégradé sert à LIRE et à MESURER.** Le dégradé du logo (`--oc-gradient-deep`, classe `octave-brand-fill`,
+   `.octave-play`) sous un bouton qui LANCE LA LECTURE ; le dégradé de jauge (`--oc-gradient`, `octave-gauge-fill`)
+   sur la progression et les barres d'import. Une action principale qui ne lit pas (Enregistrer, Importer, Créer,
+   Partager) est neutre : `octave-solid` (ivoire en sombre, encre en clair).
+3. **Rien de blanc qui crie.** Le bouton Lecture n'est jamais un rond blanc, **la barre de lecture n'est jamais
+   blanche**. En thème clair, aucun panneau d'Octave n'est blanc pur (`--oc-ink-raised` : un papier chaud).
+4. **La barre de lecture est TOUJOURS la nuit.** Dans les deux thèmes, la même capsule de verre sombre (encre de
+   panneau à 72 %, arête haute, plus de liseré) qui flotte au-dessus des pages (le mini-lecteur du téléphone
+   aussi). Le reste suit le thème : le rail est posé sur l'encre, sans dalle ; la file est un îlot à l'encre de
+   panneau ; un menu ou une bulle prend l'encre de menu.
+5. **Les pochettes font le décor.** La tête d'un album, d'un artiste ou d'une playlist prend la TEINTE de sa
+   pochette (`useArtworkTint`, lue une fois sur une vignette de 64 px), posée en un lavis qui fond vers la page —
+   un dégradé peint une fois, sans flou. Au survol, la pochette d'une carte grandit de 3 % sur place. Sans
+   pochette : une encre neutre (jamais un dégradé de marque). Seule exception de mouvement : **l'océan** (plus bas),
+   qui prend lui aussi la teinte de la pochette.
+6. **Intuitif d'abord.** Les conventions d'un lecteur de musique sont gardées : navigation à gauche, titre en cours
+   à gauche de la barre, transport au centre, volume à droite, ‹ › pour revenir — et un bouton **Retour** en tête
+   de toute vue qui n'est pas une racine (`OctaveSubview`, posé à la route : album, artiste, playlist, ambiance,
+   mix, profils), dans tous ses états.
 
 ## La palette
 
 | Jeton | Sombre | Clair | Usage |
 |---|---|---|---|
-| `--oc-ink` | `#000` (`--surface-0`) | `#F4F4F7` | la page |
-| `--oc-ink-raised` | `#0E0B13`, encre prune | `#F9F3F8`, nacre rosée | file, menus, feuilles |
-| `--oc-accent` | `--brand-accent` (`#EC4899`) | `#DB2777` | remplissages : volume, pastille, point actif |
-| `--oc-accent-text` | `#F472B6` (7,9:1) | `#B42062` (6,3:1) | texte et petits glyphes roses |
-| `--oc-accent-soft` | rose 16 % | rose 10 % | fond d'une puce active |
-| `--oc-gradient` | violet → rose → rose clair | idem | progression, marque |
-| `--oc-gradient-deep` | `--cta-brand-gradient` | idem | bouton Lecture (blanc dessus, 4,6:1) |
-| `--oc-dock-*` | verre de nuit 76 %, flou 20 px | **le même verre de nuit**, 88 % | la barre de lecture (`.octave-night`) |
-| `--oc-nav-active-*` | pastille rose → violet | idem, plus légère | l'entrée de navigation active |
+| `--oc-ink` | `--surface-0` (`#0B0B0C`) | `#F3F2EF` | la page |
+| `--oc-ink-raised` | `#131315` | `#FBFAF8` | la file, un îlot |
+| `--oc-ink-menu` | `--surface-dropdown` (`#1E1E22`) | `#FFFFFF` | menu, bulle |
+| `--oc-accent`, `-text`, `-soft` | `--accent` (`#E58CF0`), 16 % | `#A21CAF`, 10 % | un état ACTIF |
+| `--oc-gradient` | `--gauge-gradient` | idem | progression, barres d'import |
+| `--oc-gradient-deep` | `--cta-brand-gradient` | idem | bouton Lecture (blanc dessus) |
+| `--oc-volume-fill` | `--oc-accent` | idem | le volume, d'UNE teinte (Damien, 25/10 : « pas violet ») |
+| `--oc-dock-*` | verre de nuit 72 %, flou 20 px | **le même verre de nuit**, 88 % | la barre de lecture (`.octave-night`) |
+| `--oc-nav-active-bg` | `--fill-soft` | idem | l'entrée active du rail : une pastille neutre |
+| `--oc-chip-*` | encre 72 %, blanc | idem (constant) | une pastille posée sur une pochette (`octave-on-art`) |
+| `--oc-hero-tint-*` | teinte de la pochette, 30 → 0 % | 22 → 0 % | le lavis en tête d'une vue |
 
 Tout dérive des jetons de Tentacle. **La nuit** (`.octave-night`, sur le dock et le mini-lecteur) : le bloc
 sombre des jetons vaut pour `:root` ET pour elle, et en thème clair elle reprend les couleurs de base du
-thème sombre de Tentacle (texte, remplissages, bordures, marque, statuts), recopiées de `theme/tokens.css` —
-`octaveNight.test.ts` en tient la parité. Une surface nouvelle qui doit rester sombre prend `octave-night`,
-rien d'autre ; une variable qui en DÉRIVE se redéclare sur la nuit (elle se calcule là où elle est déclarée).
+thème sombre de Tentacle, recopiées de `theme/tokens.css` — `octaveNight.test.ts` en tient la parité. Une surface
+nouvelle qui doit rester sombre prend `octave-night`, rien d'autre ; une variable qui en DÉRIVE se redéclare sur la
+nuit (elle se calcule là où elle est déclarée).
 
 ## Les usages
 
-- **Classes** : `text-octave-accent-text` (texte rose), `bg-octave-accent` et `bg-octave-accent/20`
-  (le seul avec opacité), `bg-octave-raised`, `bg-octave-hover`, `border-octave-line`.
-- **Typographie** : Inter, l'échelle de Tentacle. `.oc-eyebrow` (surtitre rose espacé : « ALBUM »,
-  « PLAYLIST », « EN COURS » — le repère d'Octave), `.oc-display` (grand titre serré, 800),
-  `.oc-heading` (section), `.oc-meta` (durées, chiffres fixes), `.oc-gradient-text` (le mot « Octave »).
-- **Formes** : pochette `--oc-radius-art-xs|sm|art|art-lg` (4 · 6 · 10 · 14), panneau 16, barre de
-  lecture 22, capsule pour les boutons et les puces.
-- **Ombres** : `--oc-shadow-art` sous une pochette, `-art-lg` en tête de vue, `-panel` sous un îlot,
-  `-play` (teintée rose) sous le bouton Lecture seul.
-- **Mouvement** : `transform` et `opacity` seulement ; 120 ms (survol, appui), 200 ms (apparition),
-  320 ms (panneau) ; une sortie dure deux tiers de son entrée ; `prefers-reduced-motion` coupe tout.
+- **Classes** : `text-octave-accent-text` (un état), `bg-octave-accent/20` (le seul avec opacité),
+  `bg-octave-raised`, `bg-octave-hover`, `border-octave-line` ; `octave-brand-fill` (lecture), `octave-solid`
+  (action principale neutre), `octave-gauge-fill` (mesure), `octave-emblem` (tuile à la teinte franche à la place
+  d'une pochette), `octave-on-art` (pastille sur une image), `octave-press` (la pression du socle : 97 %, 120 ms,
+  dès l'appui — plus aucun `hover:scale` ni `active:scale-90`), `octave-chip` (onglet ou filtre : choisi, une
+  pastille neutre), `octave-bubble` (une bulle qui flotte).
+- **Typographie** : `.oc-display` (grand titre, police de titre, serré), `.oc-heading` (section), `.oc-eyebrow`
+  (surtitre NEUTRE, celui du socle), `.oc-meta` (durées, chiffres à chasse fixe).
+- **Formes** : les cinq rayons du socle — pochette `--oc-radius-art-xs|sm|art|art-lg` (4 · 6 · 12 · 16), rangée et
+  entrée de menu 10, menu 16, panneau 20, barre de lecture 24, pilule pour TOUS les boutons.
+- **Ombres** : `--oc-shadow-art` sous une pochette, `-art-lg` en tête de vue, `-menu` sous ce qui flotte ; un
+  panneau n'a qu'une arête (`-panel`) ; plus d'ombre teintée sous le bouton Lecture.
+- **Icônes** : Phosphor, au trait au repos, PLEINE quand l'état est actif (page courante du rail, cœur, file
+  ouverte) ; le transport est toujours plein (`components/icons/transport`).
+- **Mouvement** : `transform` et `opacity` seulement ; pression 120 ms, survol 160 ms, panneau et feuille 320 ms
+  (courbe de tiroir) ; jamais d'`ease-in` ; `prefers-reduced-motion` coupe tout.
 - **Liquid Glass** : la porte `data-liquid-glass` ne change pas. **Le verre change le MATÉRIAU, jamais les
-  DIMENSIONS** (Damien, 26/10) : en mode `native`, Octave garde exactement les tailles, espacements et densité du mode
-  normal — rail, dock, tête, rangées, boutons —, ce que tient `glass/glassSkinOnly.test.ts` (aucune taille dans les
-  feuilles du verre) et qu'un banc a prouvé (boîtes identiques à 1 px près, 7 pages × 2 thèmes). Seule la PEAU change
-  (`music/octave/glass/`, matériaux du socle `theme/glass/pane.css`) : sous la coquille de bureau, le fond ambiant
-  (`GlassAmbient`, taches violet → rose discrètes) teinté par la pochette en cours ; le dock en `.lg-pane`, ton FORCÉ
+  DIMENSIONS** (Damien, 26/10) : `glass/glassSkinOnly.test.ts` le tient. Hors `native`, c'est le rendu ci-dessus ;
+  en natif, les mêmes formes passent par la primitive (`fallbackClassName`) : le dock en `.lg-pane`, ton FORCÉ
   sombre, encre 0,7 (lisible au-dessus d'un blanc pur, `shellGlass.test.ts`) ; ‹ ›, la bascule, le champ, les
-  filtres, les onglets, le tri, le cœur et la file du dock en `.lg-bead` ; les entrées du rail en `.lg-pane-nav`, les
-  rangées en `.lg-pane-row`. **Verre transparent, pas violent** : le rail reste posé sur le fond, sans dalle ; le
-  contenu (pochettes, listes) reste net ; la file reste l'îlot prune ; les menus suivent le régime commun. La coquille
-  étroite garde son rendu (`useOctaveGlassStage`). Un texte au dégradé (`.oc-gradient-text`) n'a jamais d'ombre de
-  texte.
+  filtres, les onglets, le tri, le cœur et la file du dock en `.lg-bead` ; les entrées du rail en `.lg-pane-nav`.
+  Le lavis de pochette de la tête s'efface en natif (le fond ambiant porte la couleur).
 - **La place** : une information qui ne tient pas entière s'efface, elle n'est jamais coupée au milieu
-  d'un mot. Dans le dock, la colonne de droite est un conteneur (requêtes de conteneur, `shell.css`) :
-  la glissière du volume cède d'abord, puis la qualité passe en ICÔNE seule — nom accessible et infobulle
-  qui disent tout (« Qualité : Sans perte · FLAC · 16 bits · 44,1 kHz ») —, puis disparaît (le détail reste
-  dans le lecteur « en cours »).
-- **Focus** : l'anneau de Tentacle (`ring-line-focus`), inchangé ; sur une glissière, la tête rose et
-  son halo.
+  d'un mot, et rien ne se chevauche. Dans le dock (trois colonnes égales, 1 320 px au plus), la colonne de droite
+  est un conteneur (`shell.css`) : cèdent, dans l'ordre, la valeur de la transition douce (l'infobulle la dit), le
+  mot de la qualité (icône seule), l'icône, la glissière du volume. Plus étroit encore (file ouverte, fenêtre de
+  1 024 px), c'est la ZONE du dock qui range : l'ajout rapide, puis le cœur, le menu, la transition et l'arrêt,
+  puis le texte et le volume — tous restent dans le lecteur « en cours » ; pochette, transport et file ne partent
+  jamais. La tête d'une vue se règle sur sa colonne ; dans la file, monter / descendre / retirer sont un plateau
+  qui paraît au survol et au focus.
+- **Focus** : l'anneau de Tentacle (`ring-line-focus`, à la teinte franche) ; sur une glissière, la tête et son halo.
 
 ## L'océan — le mouvement d'Octave
 
 Tentacle est un poulpe : quand la musique joue, Octave a la mer (`apps/web/src/music/octave/motion/`).
 
 - **La houle** (`OceanSwell`) dit « en cours » : deux vagues qui roulent en sens contraire, le « ≈ » de
-  l'eau, vivant — jamais les barres d'un égaliseur. À la couleur du texte (le rose), de 12 à 16 px. En
+  l'eau, vivant — jamais les barres d'un égaliseur. À la couleur du texte (la teinte franche), de 12 à 16 px. En
   pause, la mer se CALME (deux rides immobiles). Sur le numéro de la rangée en cours, dans les raccourcis
   de l'accueil, la file, et en pastille sur la pochette de l'album ou de la playlist qui se joue
   (`CollectionSwell`, coin bas gauche).
 - **L'ambiance** (`OceanAmbience`), sous le lecteur « en cours » : une lueur à la teinte de la pochette
-  derrière elle, des reflets de surface en haut, trois bandes de houle au pied (violet au fond, la teinte,
-  le rose devant avec une crête de lumière). Discrète : elle ne passe jamais devant le contenu.
+  derrière elle, des reflets de surface en haut, trois bandes de houle au pied, toutes à la teinte de la
+  pochette (celle de devant avec une crête de lumière). Discrète : elle ne passe jamais devant le contenu.
 - **Le coût** : `transform` et `opacity` seulement, sur des calques dessinés une fois ; PAR PAS, 15 images
   par seconde, toutes les animations calées sur la même cadence (`oceanMotion.test.tsx` la tient) ;
   suspendue hors écran, fenêtre cachée, en pause et sous le lecteur plein écran (`oceanCover.ts`) ;
@@ -115,11 +126,12 @@ Tentacle est un poulpe : quand la musique joue, Octave a la mer (`apps/web/src/m
 ## Ce qu'on ne fait pas
 
 - Ni le vert de Spotify, ni ses îlots gris, ni son bouton Lecture blanc rond.
-- Jamais une barre de lecture blanche, dans aucun thème ; jamais une surface blanc pur en clair.
-- Pas de violet seul pour un état actif (`text-brand` dans Octave : remplacé par le rose).
+- Jamais une barre de lecture blanche, dans aucun thème ; jamais un panneau blanc pur en clair.
+- Pas de dégradé décoratif (onglet, texte, voile, repli de pochette, emblème) ; pas d'accent hors d'un état.
 - Pas de verre sur du verre, pas de flou décoratif, pas de `backdrop-filter` derrière un fond opaque.
 - Rien qui bat en boucle, hors l'océan (ci-dessus) : la progression avance par pas (≈ 4 par seconde), sans
   transition continue.
+- Pas de `hover:scale`, de `transition-all`, d'ombre animée ; pas de bouton rectangulaire.
 - Pas de `/opacité` Tailwind sur une couleur `octave-*` autre que `accent`.
 - Pas de `color-mix()`, `min()`, `max()`, `clamp()` dans une feuille d'Octave (garde du client LG).
 - Pas le mot « téléchargement » dans un texte visible.

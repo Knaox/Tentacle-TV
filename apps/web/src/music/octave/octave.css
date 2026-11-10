@@ -11,45 +11,86 @@
  * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css
  * (docs/octave/IDENTITE.md) ; la coquille : shell/shell.css. Clair ET sombre ;
  * animations en transform/opacity seulement ; rien qui bat en boucle (règles
- * « Coût GPU » de CLAUDE.md).
+ * « Coût GPU » de CLAUDE.md). Refonte de nov. 2026 : docs/REFONTE-UI.md.
  */
 
-/* L'aplat de marque d'un bouton Lecture : le dégradé PROFOND (blanc dessus). */
+/* L'aplat d'un bouton LECTURE (et de lui seul) : le dégradé du logo, blanc dessus. */
 .octave-brand-fill {
   background-image: var(--oc-gradient-deep);
   color: var(--oc-on-gradient);
 }
 
-/* Le logo d'une playlist partagée, sur sa jaquette : l'encre des panneaux à 88 %. */
+/* L'action principale qui ne LIT pas (Enregistrer, Importer, Créer, Partager) :
+ * l'aplat neutre du socle — ivoire en sombre, encre en clair. */
+.octave-solid {
+  background-color: var(--cta-primary-bg);
+  color: var(--cta-primary-fg);
+  transition: transform var(--duration-press) var(--ease-out), background-color var(--duration-hover) ease;
+}
+.octave-solid:active:not(:disabled) { transform: scale(var(--press-scale)); }
+
+/* Ce qui se MESURE (un import, une préparation) : le dégradé de jauge. */
+.octave-gauge-fill { background-image: var(--oc-gradient); }
+
+/* Un emblème à la place d'une pochette (titres aimés, « Sur cet appareil ») ou
+ * l'icône d'une boîte : une tuile à la teinte franche, jamais un dégradé. */
+.octave-emblem {
+  background-color: var(--oc-accent-soft);
+  color: var(--oc-accent-text);
+}
+
+/* Le logo d'une playlist partagée, sur sa jaquette : l'encre des pastilles sur image. */
 .octave-shared-badge {
-  background: rgba(var(--oc-ink-raised-rgb), 0.88);
+  background: var(--oc-chip-bg);
+  color: var(--oc-chip-fg);
 }
 
-/* Le texte de marque (qualité « Hi-Res », mot « Octave ») : le dégradé. */
-.octave-brand-text {
-  background-image: var(--oc-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* Une ombre de texte (celle d'un verre, héritée) se peindrait PAR-DESSUS le
-   * dégradé, qui ne vit que dans les lettres : il deviendrait terne. */
-  text-shadow: none;
+/* Une pastille posée sur une pochette (« Importé », « Pas lisible », « En partie »). */
+.octave-on-art {
+  background-color: var(--oc-chip-bg);
+  color: var(--oc-chip-fg);
 }
 
-/* La tête d'une vue (album, playlist, likés) : un voile de marque, ROSE en tête, qui fond vers la page. */
+/* La tête d'une vue (album, playlist, artiste) : la couleur de SA pochette, lue
+ * une fois (`useArtworkTint`), posée en un lavis qui fond vers la page — un
+ * dégradé peint une fois, sans flou. Sans teinte lue : l'encre, rien d'autre. */
 .octave-hero {
   position: relative;
   isolation: isolate;
+  /* La tête se règle sur SA colonne (la file ouverte la rétrécit), pas sur la fenêtre. */
+  container-type: inline-size;
 }
-.octave-hero::before {
+/* À l'étroit : la pochette au-dessus, le titre dessous à une taille qui tient — jamais un mot coupé en lettres. */
+@container (max-width: 640px) {
+  .octave-hero .octave-hero-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .octave-hero .octave-hero-title {
+    font-size: 2rem;
+    line-height: 1.05;
+  }
+}
+.octave-hero[data-tinted="true"]::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: var(--oc-hero-veil);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(var(--oc-hero-tint-rgb), var(--oc-hero-tint-top)) 0%,
+    rgba(var(--oc-hero-tint-rgb), var(--oc-hero-tint-mid)) 46%,
+    rgba(var(--oc-hero-tint-rgb), var(--oc-hero-tint-low)) 78%,
+    rgba(var(--oc-hero-tint-rgb), 0) 100%
+  );
   pointer-events: none;
+  animation: octaveTintIn 420ms ease both;
+}
+/* Sous la rangée « Retour » (56 px), le lavis monte la couvrir : pas de couture. */
+.octave-hero-sub[data-tinted="true"]::before { top: -56px; }
+@keyframes octaveTintIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Une rangée de titre : le bouton lecture remplace le numéro au survol et au focus. */
@@ -59,17 +100,34 @@
 .octave-row:hover .octave-row-number,
 .octave-row:focus-within .octave-row-number { opacity: 0; }
 
-/* Une carte : le bouton lecture monte au survol (transform + opacité seulement). */
+/* Une carte : au survol, la pochette grandit de 3 % SUR PLACE (le geste des
+ * cartes du socle), et le bouton lecture monte — transform et opacité seulement. */
+.octave-card .octave-card-art {
+  transition: transform var(--duration-card) var(--ease-out);
+}
 .octave-card .octave-card-play {
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 160ms ease-out, transform 160ms ease-out;
+  transition: opacity var(--oc-duration) ease, transform 200ms var(--oc-ease-out);
 }
-.octave-card:hover .octave-card-play,
+.octave-card .octave-card-play:active { transform: scale(var(--press-scale)); }
 .octave-card:focus-within .octave-card-play {
   opacity: 1;
   transform: translateY(0);
 }
+@media (hover: hover) and (pointer: fine) {
+  .octave-card:hover .octave-card-art { transform: scale(var(--card-hover-scale)); }
+  .octave-card:hover .octave-card-play {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .octave-card:hover .octave-card-play:active { transform: scale(var(--press-scale)); }
+  .octave-solid:hover:not(:disabled) { background-color: var(--cta-primary-bg-hover); }
+}
+
+/* Un bouton rond d'icône d'Octave : la pression du socle (97 %, 120 ms, dès l'appui). */
+.octave-press { transition: transform var(--duration-press) var(--ease-out), color var(--duration-hover) ease, background-color var(--duration-hover) ease, opacity var(--duration-hover) ease; }
+.octave-press:active:not(:disabled) { transform: scale(var(--press-scale)); }
 
 /* La file d'attente et le lecteur plein écran : montés à l'ouverture, ils entrent
    en glissant (une animation d'ENTRÉE, finie — rien ne tourne une fois posé). */
@@ -81,20 +139,25 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.octave-drawer { animation: octaveSlideIn var(--oc-duration-slow) var(--oc-ease-out) both; }
-.octave-sheet { animation: octaveSheetIn var(--oc-duration-slow) var(--oc-ease-out) both; }
+.octave-drawer { animation: octaveSlideIn var(--oc-duration-slow) var(--oc-ease-drawer) both; }
+.octave-sheet { animation: octaveSheetIn var(--oc-duration-slow) var(--oc-ease-drawer) both; }
 
 /* Les nouveaux résultats d'une page externe entrent en fondu. */
 @keyframes octaveFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.octave-enter { animation: octaveFadeIn 200ms ease-out both; }
+.octave-enter { animation: octaveFadeIn 200ms var(--oc-ease-out) both; }
 /* La barre d'une sélection multiple paraît d'un fondu court (SelectionBar). */
-.octave-selection-bar { animation: octaveFadeIn 180ms ease-out both; }
+.octave-selection-bar { animation: octaveFadeIn 180ms var(--oc-ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .octave-card .octave-card-play { transition: none; }
+  .octave-card .octave-card-play,
+  .octave-card .octave-card-art,
+  .octave-solid,
+  .octave-press { transition: none; }
+  .octave-card:hover .octave-card-art { transform: none; }
+  .octave-hero[data-tinted="true"]::before,
   .octave-enter,
   .octave-selection-bar,
   .octave-drawer,

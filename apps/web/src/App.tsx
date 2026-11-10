@@ -45,6 +45,7 @@ import { DevFichesLab } from "./dev/fichesLab/devRoute";
 import { DevHorsLigneLab } from "./dev/horsLigneLab/devRoute";
 import { DevLecteurLab } from "./dev/lecteurLab/devRoute";
 import { DevReglagesLab } from "./dev/reglagesLab/devRoute";
+import { DevOctaveLab } from "./dev/octaveLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -166,6 +167,7 @@ export function App() {
           {DevLecteurLab ? <Route path="/dev/lecteur" element={<DevLecteurLab />} /> : null}
           {/* Le labo des réglages et de l'administration : les vrais écrans sur un faux serveur, sans garde. */}
           {DevReglagesLab ? <Route path="/dev/reglages" element={<DevReglagesLab />} /> : null}
+          {DevOctaveLab ? <Route path="/dev/octave" element={<DevOctaveLab />} /> : null}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />

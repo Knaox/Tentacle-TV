@@ -38,14 +38,14 @@ export function ImportProgress({ titleId, state, outsideExpected, onHide, onCanc
       <div className="flex items-center gap-3">
         {state.source && <SourceMark source={state.source} className="h-8 w-8" />}
         <div className="min-w-0">
-          <h2 id={titleId} className="truncate text-lg font-bold tracking-tight text-content-primary">
+          <h2 id={titleId} className="oc-heading truncate text-lg text-content-primary">
             {state.name || t("title")}
           </h2>
           {state.source && <p className="text-sm text-content-tertiary">{t(`source.${state.source}`)}</p>}
         </div>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-fill-subtle" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)} aria-labelledby={titleId}>
-        <div className="octave-brand-fill h-full w-full origin-left transition-transform duration-300 ease-out motion-reduce:transition-none" style={{ transform: `scaleX(${fraction})` }} />
+        <div className="octave-gauge-fill h-full w-full origin-left transition-transform duration-300 ease-out motion-reduce:transition-none" style={{ transform: `scaleX(${fraction})` }} />
       </div>
       <ol className="flex flex-col gap-2.5" aria-live="polite">
         {steps.map((step, i) => {
@@ -67,7 +67,7 @@ export function ImportProgress({ titleId, state, outsideExpected, onHide, onCanc
         <button type="button" onClick={onCancel} className="min-h-[44px] cursor-pointer rounded-full px-4 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("cancel")}
         </button>
-        <button type="button" onClick={onHide} className="min-h-[44px] cursor-pointer rounded-full border border-line-subtle px-5 text-sm font-semibold text-content-primary hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+        <button type="button" onClick={onHide} className="min-h-[44px] cursor-pointer rounded-full bg-fill-soft px-5 text-sm font-semibold text-content-primary hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
           {t("hide")}
         </button>
       </div>
