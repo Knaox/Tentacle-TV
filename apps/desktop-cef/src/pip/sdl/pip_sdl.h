@@ -39,6 +39,12 @@ struct Options {
   /// Le focus rendu à la fenêtre principale (macOS seulement chez Electron : ailleurs, le
   /// premier clic d'une fenêtre inactive arrive). Sans : rien.
   std::function<void()> focusHost;
+  /// Wayland : le glisser confié au compositeur (`Window::beginSystemMove`). Sans : la session
+  /// déplace la fenêtre en suivant le curseur.
+  std::function<bool(SDL_Window* pip)> systemMove;
+  /// Chaque évènement SDL de la fenêtre PiP, avant son traitement (son filtre les avale : un
+  /// observateur SDL ne les voit pas). Sans : rien.
+  std::function<void()> onEvent;
 };
 
 std::unique_ptr<Platform> createPlatform(SDL_Window* host, Options options);

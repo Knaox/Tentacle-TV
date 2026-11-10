@@ -99,6 +99,12 @@ class FakeWindow : public Window {
   ~FakeWindow() override { journal.push_back("window destroyed"); }
   Box bounds() override { return box; }
   void setBounds(const Box& b) override { box = b; }
+  bool systemMove = false;  // Wayland : le compositeur glisse la fenêtre
+  int systemMoves = 0;
+  bool beginSystemMove() override {
+    ++systemMoves;
+    return systemMove;
+  }
   void showInactive() override { shown = true; journal.push_back("show"); }
   void hide() override { shown = false; journal.push_back("hide"); }
   void applyMode(Mode m) override { modes.push_back(m); }

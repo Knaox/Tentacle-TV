@@ -6,11 +6,14 @@
 // contexte EGL partage ses textures avec celui de la fenêtre principale.
 //
 // Wayland : un client ne place pas ses fenêtres (SDL n'y change que la taille) — la place du PiP
-// revient au compositeur (colle KWin d'Electron : le titre, `pip/rules/pip_captions.h`).
+// revient au compositeur (colle KWin d'Electron : le titre, `pip/rules/pip_captions.h`). Le
+// glisser lui est donc CONFIÉ (xdg_toplevel.move, `wayland_move_linux.h`) : détaché, le PiP se
+// déplace sous le pointeur comme par une barre de titre.
 
 #include "compositor/compositor.h"
 #include "pip/pip_platform.h"
 #include "pip/sdl/pip_sdl.h"
+#include "platform/linux/wayland_move_linux.h"
 
 namespace tentacle::pip {
 
@@ -20,6 +23,10 @@ std::unique_ptr<Platform> createPlatform(SDL_Window* host, void*, Compositor* ho
   // À l'axe linux : la pile de la fenêtre PiP, transparente sous la page.
   o.makeStack = [](SDL_Window* pip) { return Compositor::create(pip); };
   o.transparent = true;  // la page dessine liseré et ombre dans la marge (`pipFrame.ts`)
+  // Les appuis se relèvent dès maintenant : celui qui commencera un glisser aura son numéro.
+  platform::watchPointerPresses(host);
+  o.systemMove = [](SDL_Window* pip) { return platform::beginCompositorMove(pip); };
+  o.onEvent = [] { platform::drainPointerPresses(); };
   return sdl::createPlatform(host, std::move(o));
 }
 

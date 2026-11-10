@@ -68,6 +68,9 @@ class Window {
   virtual ~Window() = default;
   virtual Box bounds() = 0;
   virtual void setBounds(const Box& box) = 0;
+  /// Wayland : le glisser confié au compositeur — un client n'y pose pas sa position. true : il
+  /// déplace la fenêtre sous le pointeur, la session ne suit pas le curseur. Ailleurs : false.
+  virtual bool beginSystemMove() { return false; }
   /// Montrée sans prendre le focus : l'utilisateur continue dans l'application.
   virtual void showInactive() = 0;
   virtual void hide() = 0;

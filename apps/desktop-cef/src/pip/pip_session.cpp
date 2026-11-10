@@ -78,6 +78,8 @@ void Session::setGesture(std::optional<Gesture> kind, std::optional<Point> grab)
   stopAnimation();
   // Ancré, le PiP est le coin de l'application : il ne se glisse pas.
   if (!kind || (*kind == Gesture::move && mode_ == Mode::docked)) return;
+  // Wayland : le compositeur glisse la fenêtre lui-même ; rien à suivre ici.
+  if (*kind == Gesture::move && window_.beginSystemMove()) return;
   const Box start = window_.bounds();
   const Point cursor = desktop_.cursor();
   gesture_.kind = *kind;

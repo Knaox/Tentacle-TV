@@ -45,7 +45,7 @@ class SdlPipWindow final : public Window {
  public:
   SdlPipWindow(SDL_Window* host, const Options& o, const Box& box, Mode mode,
                const std::string& caption, PageInput input)
-      : host_(host), input_(std::move(input)) {
+      : host_(host), input_(std::move(input)), systemMove_(o.systemMove), onEvent_(o.onEvent) {
     k_ = dipFactor(host);
     SDL_WindowFlags flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_UTILITY | SDL_WINDOW_RESIZABLE |
                             SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
@@ -87,6 +87,16 @@ class SdlPipWindow final : public Window {
     SDL_SetWindowPosition(window_, int(std::lround(b.x * k_)), int(std::lround(b.y * k_)));
     ours_ = false;
     sync(false);
+  }
+
+  bool beginSystemMove() override {
+    if (!systemMove_ || !systemMove_(window_)) return false;
+    // Le compositeur prend le pointeur et ne rendra pas le relâcher : la page le reçoit tout de
+    // suite, son geste finit (`usePipPointer`), le glisser continue chez le compositeur.
+    if (input_.mouseButton) {
+      input_.mouseButton(last_.x, last_.y, modifiers() & ~EVENTFLAG_LEFT_MOUSE_BUTTON, MBT_LEFT, true, 1);
+    }
+    return true;
   }
 
   void showInactive() override {
@@ -153,6 +163,7 @@ class SdlPipWindow final : public Window {
 
   /// Un évènement de SA fenêtre : à la page (souris), au PiP (taille), ou ignoré (clavier).
   void handle(const SDL_Event& e) {
+    if (onEvent_) onEvent_();
     const double k = k_;
     switch (e.type) {
       case SDL_EVENT_MOUSE_MOTION:
@@ -237,6 +248,8 @@ class SdlPipWindow final : public Window {
   Box previous_;
   Point last_;
   PageInput input_;
+  std::function<bool(SDL_Window*)> systemMove_;
+  std::function<void()> onEvent_;
   WindowEvents events_;
   std::unique_ptr<Compositor> stack_;
   std::map<int, SDL_Cursor*> cursors_;

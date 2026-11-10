@@ -100,6 +100,32 @@ void gestures() {
   CHECK(win.box.x == docked.x + 50);
 }
 
+void systemMove() {
+  FakeDesktop desk;
+  desk.reduced = true;
+  FakeTicker clock;
+  const Size size = windowSize(kFrame, 480, 270);
+  FakeWindow win({0, 0, size.width, size.height});
+  win.systemMove = true;
+  Session s(win, desk, clock, kFrame, Mode::floating, kAspect);
+  // Wayland : le compositeur glisse la fenêtre ; la session ne suit rien, ne pose rien.
+  const Box before = win.box;
+  desk.cursorAt = {900, 600};
+  s.setGesture(Gesture::move, Point{100, 50});
+  desk.cursorAt = {700, 500};
+  clock.advance(16);
+  CHECK(win.systemMoves == 1 && !s.gesturing() && clock.running() == 0 && win.box == before);
+  s.setGesture(std::nullopt, std::nullopt);
+  // Un coin reste à la session (la taille se pose aussi sous Wayland).
+  s.setGesture(Gesture::bottomRight, std::nullopt);
+  CHECK(win.systemMoves == 1 && s.gesturing());
+  s.setGesture(std::nullopt, std::nullopt);
+  // Ancré, rien n'est demandé au compositeur.
+  s.setMode(Mode::docked);
+  s.setGesture(Gesture::move, Point{10, 10});
+  CHECK(win.systemMoves == 1 && !s.gesturing());
+}
+
 void wheelAndRestore() {
   FakeDesktop desk;
   FakeTicker clock;
@@ -143,5 +169,6 @@ void runSessionTests() {
   reducedMotionJumps();
   stepNeverJumps();
   gestures();
+  systemMove();
   wheelAndRestore();
 }

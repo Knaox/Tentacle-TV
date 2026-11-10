@@ -56,7 +56,24 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge)
   elseif(WIN32)
     target_sources(tentacle_pip_glue PRIVATE "${TENTACLE_SRC}/platform/windows/pip_windows.cpp")
   else()
-    target_sources(tentacle_pip_glue PRIVATE "${TENTACLE_SRC}/platform/linux/pip_linux.cpp")
+    target_sources(tentacle_pip_glue PRIVATE "${TENTACLE_SRC}/platform/linux/pip_linux.cpp"
+                                             "${TENTACLE_SRC}/platform/linux/wayland_move_linux.cpp")
+    # Le glisser confié au compositeur (xdg_toplevel.move) : l'en-tête client d'xdg-shell seul
+    # (son code privé vit dans SDL3 ; la requête ne lit aucun symbole d'interface).
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(TENTACLE_PIP_WAYLAND REQUIRED IMPORTED_TARGET wayland-client)
+    pkg_get_variable(_wl_protocols wayland-protocols pkgdatadir)
+    pkg_get_variable(_wl_scanner wayland-scanner wayland_scanner)
+    set(_xdg "${_wl_protocols}/stable/xdg-shell/xdg-shell.xml")
+    set(_gen "${CMAKE_CURRENT_BINARY_DIR}/wayland")
+    file(MAKE_DIRECTORY "${_gen}")
+    add_custom_command(
+      OUTPUT "${_gen}/xdg-shell-client-protocol.h"
+      COMMAND "${_wl_scanner}" client-header "${_xdg}" "${_gen}/xdg-shell-client-protocol.h"
+      DEPENDS "${_xdg}" VERBATIM)
+    target_sources(tentacle_pip_glue PRIVATE "${_gen}/xdg-shell-client-protocol.h")
+    target_include_directories(tentacle_pip_glue PRIVATE "${_gen}")
+    target_link_libraries(tentacle_pip_glue PRIVATE PkgConfig::TENTACLE_PIP_WAYLAND)
   endif()
   target_link_libraries(tentacle_pip_glue PUBLIC tentacle_pip_core tentacle_bridge tentacle_shell)
   target_compile_options(tentacle_pip_glue PRIVATE -Wall -Wextra -Wno-unused-parameter
