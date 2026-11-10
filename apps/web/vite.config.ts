@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { phosphorWeights } from "./build/phosphorWeights";
+import { phosphorWeights } from "./tooling/phosphorWeights";
 import { dirname, resolve } from "path";
 import { readFileSync, existsSync } from "fs";
 import { createRequire } from "module";

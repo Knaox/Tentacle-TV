@@ -12,7 +12,7 @@ import { excludedDirectoriesGuard } from "./excludedDirectoriesGuard";
 import { SUBSTITUTED_PACKAGES, SUBSTITUTED_FILES, EXCLUDED_WEB_DIRECTORIES } from "./substitutionTable";
 import { OPTIONS_LEGACY, BROWSER_BASELINE } from "./legacy";
 import { chrome53Compat } from "./postcss";
-import { phosphorWeights } from "../../web/build/phosphorWeights";
+import { phosphorWeights } from "../../web/tooling/phosphorWeights";
 
 /**
  * Variante de build du client, pour un téléviseur LG.
@@ -74,7 +74,7 @@ export default defineConfig({
     // jamais atteindre un téléviseur d'utilisateur.
     serveHarness(resolve(TARGET, "harness")),
     react(),
-    // Les icônes n'embarquent que les trois graisses employées (apps/web/build/phosphorWeights.ts).
+    // Les icônes n'embarquent que les trois graisses employées (apps/web/tooling/phosphorWeights.ts).
     phosphorWeights(),
     legacy(OPTIONS_LEGACY),
   ],
