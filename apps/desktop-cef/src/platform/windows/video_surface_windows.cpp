@@ -119,7 +119,8 @@ class WindowsVideoSurface final : public VideoSurface {
     const double k = backingScale();
     s.windowFrame = {r.left / k, r.top / k, (r.right - r.left) / k, (r.bottom - r.top) / k};
     // Plein écran au sens de SDL3 (fenêtre sans bordure à la taille de l'écran).
-    MONITORINFO mi{sizeof mi};
+    MONITORINFO mi{};
+    mi.cbSize = sizeof mi;
     if (GetMonitorInfoW(MonitorFromWindow(ctx_.hwnd, MONITOR_DEFAULTTONEAREST), &mi))
       s.windowFullscreen = EqualRect(&mi.rcMonitor, &r) && !(GetWindowLongW(ctx_.hwnd, GWL_STYLE) & WS_CAPTION);
     return s;
