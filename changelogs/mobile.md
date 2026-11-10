@@ -5,6 +5,18 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.34.0]
+<!-- Bloc nu : Google Play (500 caractères) ET iOS. Lot « pg » (playlists géantes). Aucun serveur exigé : avant 1.43, l'import garde ses anciennes limites. Jamais le mot « téléchargement ». -->
+### FR
+- Octave : importez des playlists de plusieurs milliers de titres, sans limite (serveur Tentacle 1.43)
+- Chaque titre importé garde sa pochette et son album
+- Les grandes playlists importées s'affichent bien plus vite
+
+### EN
+- Octave: import playlists of several thousand songs, with no limit (Tentacle server 1.43)
+- Each imported song keeps its cover and album
+- Large imported playlists show up much faster
+
 ## [1.33.0]
 <!-- Bloc nu : Google Play (500 caractères) ET iOS. Lot « bat » (batterie d'Octave). Aucun serveur exigé : le ping espacé du serveur ne fait qu'ajouter au gain. Jamais le mot « téléchargement ». -->
 ### FR

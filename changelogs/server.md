@@ -10,6 +10,18 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.43.0]
+<!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Lot « pg » (playlists géantes). Rien sur les extensions. -->
+### FR
+- **Octave : importez des playlists géantes** — plus de limite à 1 000 titres : une playlist Deezer, une liste ou un fichier CSV de plusieurs milliers de titres arrive en entier
+- Chaque titre importé garde la pochette, l'album et la mention « explicite » de la playlist d'origine
+- Une playlist importée de plusieurs milliers de titres s'ouvre aussitôt, et l'import la compare près de trois fois plus vite à votre bibliothèque
+
+### EN
+- **Octave: import huge playlists** — no more 1,000-song limit: a Deezer playlist, a list or a CSV file of several thousand songs comes in whole
+- Each imported song keeps the cover, album and "explicit" tag of the original playlist
+- An imported playlist of several thousand songs opens right away, and the import matches it against your library almost three times faster
+
 ## [1.42.1]
 <!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Lot « bat » : le serveur et le client web. -->
 ### FR

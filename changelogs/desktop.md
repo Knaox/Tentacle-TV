@@ -13,6 +13,16 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.43.0]
+<!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.43.0] ni [win-1.43.0]). Lot « pg » d'Octave. Rien sur les extensions ni sur leur source de musique. -->
+### FR
+- **Octave : des playlists de plusieurs milliers de titres** — l'import n'est plus limité : la playlist arrive en entier, chaque titre avec sa pochette et son album (serveur Tentacle 1.43)
+- Octave : une grande playlist importée s'affiche et se met à jour sans ralentir l'application
+
+### EN
+- **Octave: playlists of several thousand songs** — import is no longer limited: the playlist comes in whole, each song with its cover and album (Tentacle server 1.43)
+- Octave: a large imported playlist shows and updates without slowing the app down
+
 ## [1.42.0]
 <!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.42.0] ni [win-1.42.0]). Lot « ol » d'Octave. Rien sur les extensions ni sur leur source de musique. -->
 ### FR
