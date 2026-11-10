@@ -74,6 +74,7 @@ class CompositorMac final : public Compositor {
 
   ~CompositorMac() override {
     for (id o in observers_) [NSNotificationCenter.defaultCenter removeObserver:o];
+    setUnderlay(nullptr);
     setVideoLayer(nullptr);
     web_.reset();
     [host_ removeFromSuperview];
@@ -130,6 +131,29 @@ class CompositorMac final : public Compositor {
   void setVideoInset(double inset) override {
     inset_ = inset;
     if (shown_) shown_->setFrame(videoFrame());
+  }
+
+  // Verre natif (axe verre) : sous-vue de l'hôte de couches — sa couche rejoint la pile, entre
+  // la vidéo (z 0) et la page (z 10). Mesuré (maquette, macOS 26.6) : le verre réfracte la vidéo
+  // et la page passe par-dessus ; AppKit place ses verres à leur cadre (origine en bas).
+  bool setUnderlay(void* view) override {
+    NSView* next = (__bridge NSView*)view;
+    if (underlay_ == next) return true;
+    if (underlay_) [underlay_ removeFromSuperview];
+    underlay_ = next;
+    if (!next) return true;
+    next.frame = host_.bounds;
+    next.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    next.wantsLayer = YES;
+    [host_ addSubview:next];
+    next.layer.zPosition = 5;
+    return true;
+  }
+
+  bool shownVideoFrame(RectPt* frame) const override {
+    if (!shown_) return false;
+    if (frame) *frame = videoFrame();
+    return true;
   }
 
   WebLayer* webLayer() override { return web_.get(); }
@@ -198,6 +222,7 @@ class CompositorMac final : public Compositor {
 
   __weak NSWindow* window_ = nil;
   TentacleLayerHostView* host_ = nil;
+  NSView* underlay_ = nil;          // verre natif : la vue posée entre vidéo et page
   NSArray* observers_ = nil;
   CALayer* root_ = nil;
   CALayer* videoContainer_ = nil;
