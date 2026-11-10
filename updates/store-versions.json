@@ -17,12 +17,12 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.32.0",
+    "version": "1.33.0",
     "packageName": "com.tentacletv.mobile",
     "track": "production",
     "notes": {
-      "fr": "• Octave hors ligne : vos playlists dans le dernier ordre choisi en ligne\n• Réordonnées hors ligne, elles sont mises à jour sur le serveur au retour d'Internet\n• Un titre qui ne peut pas être lu est grisé partout, et le toucher dit pourquoi\n• Il reste ajoutable à une playlist ou aux favoris (serveur 1.42)",
-      "en": "• Octave offline: your playlists in the last order chosen online\n• Reordered offline, they are updated on the server once you are back online\n• A song that can't be played is greyed out everywhere, and tapping it says why\n• It can still be added to a playlist or your favorites (server 1.42)"
+      "fr": "• Octave consomme bien moins de batterie pendant l'écoute\n• Écran éteint, moins d'échanges avec le serveur\n• Les animations s'arrêtent dès qu'elles ne sont plus à l'écran\n• En pause, plus rien ne tourne en arrière-plan",
+      "en": "• Octave uses much less battery while you listen\n• With the screen off, fewer exchanges with the server\n• Animations stop as soon as they are off screen\n• When paused, nothing keeps running in the background"
     }
   },
   "playTv": {
