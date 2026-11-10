@@ -38,6 +38,20 @@ Json describeFile(const dialogs::FileRequest& r, const char* origin) {
           {"treatPackageAsDirectory", r.treatPackageAsDirectory}};
 }
 
+// Réponse de banc recevable : un objet ; `paths`, s'il est là, une liste de textes non vides.
+std::string benchAnswerError(const Json& a) {
+  if (!a.is_object()) return "réponse : objet attendu";
+  if (!a.contains("paths")) return {};
+  const Json& p = a["paths"];
+  if (!p.is_array()) return "paths : liste attendue";
+  std::vector<std::string> paths;
+  for (const auto& e : p) {
+    if (!e.is_string()) return "paths : chemin non texte";
+    paths.push_back(e.get<std::string>());
+  }
+  return dialogs::pathsUsable(paths) ? std::string() : "paths : chemin vide (ou liste vide)";
+}
+
 std::string basename(const std::string& path) {
   const size_t cut = path.find_last_of("/\\");
   return cut == std::string::npos ? path : path.substr(cut + 1);
@@ -135,7 +149,7 @@ bool BrowserDialogs::OnFileDialog(CefRefPtr<CefBrowser> browser, FileDialogMode 
   auto finish = [self, id, callback](std::optional<std::vector<std::string>> paths) {
     if (!self->pending_.count(id)) return;
     self->settle(id);
-    if (!paths || paths->empty()) {
+    if (!paths || !dialogs::pathsUsable(*paths)) {
       callback->Cancel();
       return;
     }
@@ -229,7 +243,7 @@ bool BrowserDialogs::OnBeforeDownload(CefRefPtr<CefBrowser> browser,
   auto finish = [self, id, callback](std::optional<std::vector<std::string>> paths) {
     if (!self->pending_.count(id)) return;
     self->settle(id);
-    if (!paths || paths->empty()) return;
+    if (!paths || !dialogs::pathsUsable(*paths)) return;
     self->lastDownloadDirectory_ = dialogs::dirName(paths->front());
     callback->Continue(paths->front(), false);
   };
@@ -255,14 +269,22 @@ void BrowserDialogs::OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
 void BrowserDialogs::debug(const Json& payload, const std::function<void(Json)>& reply) {
   const std::string op = payload.value("op", "state");
   if (op == "answer") {
+    if (auto err = benchAnswerError(payload); !err.empty()) return reply({{"ok", false}, {"error", err}});
     int id = payload.value("id", 0);
     if (id == 0 && !pending_.empty()) id = pending_.rbegin()->first;
     const bool ok = answerPending(id, payload);
     return reply({{"ok", ok}, {"id", id}});
   }
   if (op == "queue") {
-    for (const auto& a : payload.value("answers", Json::array())) queued_.push_back(a);
-    return reply({{"queued", queued_.size()}});
+    const Json answers = payload.value("answers", Json::array());
+    // Tout ou rien : une réponse irrecevable ne laisse rien en file.
+    for (const auto& a : answers) {
+      if (auto err = benchAnswerError(a); !err.empty()) {
+        return reply({{"ok", false}, {"error", err}, {"queued", queued_.size()}});
+      }
+    }
+    for (const auto& a : answers) queued_.push_back(a);
+    return reply({{"ok", true}, {"queued", queued_.size()}});
   }
   Json open = Json::array();
   for (const auto& [_, p] : pending_) open.push_back(p.describe);

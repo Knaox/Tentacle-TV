@@ -125,6 +125,11 @@ static void fileRequests() {
   CHECK(dirName("/Users/x/Downloads/x.zip") == "/Users/x/Downloads");
   CHECK(dirName("/x") == "/" && dirName("x").empty());
   CHECK(joinPath("/a/", "b", '/') == "/a/b" && joinPath("", "b", '/') == "b");
+  // Jamais un chemin vide rendu à Chromium (plantage de NSWorkspace).
+  CHECK(pathsUsable({"/tmp/a.png"}));
+  CHECK(!pathsUsable({}));
+  CHECK(!pathsUsable({""}));
+  CHECK(!pathsUsable({"/tmp/a.png", ""}));
 }
 
 static void javaScriptDialogs() {

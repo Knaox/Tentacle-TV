@@ -48,6 +48,11 @@ FileRequest webFileChooser(FileMode mode, const std::string& title, const std::s
 FileRequest downloadSave(const std::string& url, const std::string& directory,
                          const std::string& suggestedName);
 
+/// Une liste de chemins rendue à la page (panneau, téléchargement) : au moins un, aucun vide.
+/// Un chemin vide arrivait jusqu'à Chromium, qui le passait à `-[NSWorkspace
+/// isFilePackageAtPath:]` sous forme nil : l'app tombait (NSInternalInconsistencyException).
+bool pathsUsable(const std::vector<std::string>& paths);
+
 /// Joint un dossier et un nom (séparateur `sep`), sans doubler le séparateur.
 std::string joinPath(const std::string& dir, const std::string& name, char sep);
 

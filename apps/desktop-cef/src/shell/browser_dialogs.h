@@ -8,7 +8,8 @@
 // `{op:"answer", id, response}` répond à une boîte de message, `{op:"answer", id, paths:[…]}`
 // ou `{op:"answer", id, cancel:true}` à un panneau de fichiers (la boîte native est fermée) ;
 // `{op:"queue", answers:[{response|paths|cancel, afterMs}…]}` répond d'avance aux prochaines
-// boîtes, après `afterMs` (un dialogue JavaScript bloque la page, donc le canal).
+// boîtes, après `afterMs` (un dialogue JavaScript bloque la page, donc le canal). Un chemin vide
+// ou non texte est refusé (`{ok:false, error}`), la file reste telle quelle.
 
 #include <SDL3/SDL.h>
 

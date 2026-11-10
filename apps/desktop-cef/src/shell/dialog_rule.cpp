@@ -48,6 +48,14 @@ std::vector<FileFilter> filtersFromAccept(const std::vector<std::string>& accept
   return {FileFilter{description, std::move(extensions)}, FileFilter{"All Files", {"*"}}};
 }
 
+bool pathsUsable(const std::vector<std::string>& paths) {
+  if (paths.empty()) return false;
+  for (const auto& p : paths) {
+    if (p.empty()) return false;
+  }
+  return true;
+}
+
 std::string joinPath(const std::string& dir, const std::string& name, char sep) {
   if (dir.empty()) return name;
   if (name.empty()) return dir;
