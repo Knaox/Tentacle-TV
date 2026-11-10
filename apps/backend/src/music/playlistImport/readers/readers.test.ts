@@ -136,7 +136,7 @@ describe("Deezer (API publique)", () => {
     const head = JSON.parse(fixture("deezer-playlist.json"));
     head.nb_tracks = 230;
     head.tracks.data = head.tracks.data.slice(0, 100);
-    const page = (at: number) => ({ data: Array.from({ length: Math.min(100, 230 - at) }, (_, i) => ({ ...head.tracks.data[0], id: at + i, title: `T${at + i}` })) });
+    const page = (at: number) => ({ data: Array.from({ length: Math.min(1_000, 230 - at) }, (_, i) => ({ ...head.tracks.data[0], id: at + i, title: `T${at + i}` })) });
     const fetcher: ImportFetcher = async (url) => {
       seen.push(url);
       const m = url.match(/index=(\d+)/);
@@ -144,11 +144,8 @@ describe("Deezer (API publique)", () => {
       return { status: 200, url, body: JSON.stringify(body) };
     };
     const pl = await readDeezer(fetcher, "playlist", "1109890291");
-    expect(seen.slice(1)).toEqual([
-      "https://api.deezer.com/playlist/1109890291/tracks?index=12&limit=100",
-      "https://api.deezer.com/playlist/1109890291/tracks?index=112&limit=100",
-      "https://api.deezer.com/playlist/1109890291/tracks?index=212&limit=100",
-    ]);
+    // Pages de 1 000 (lot « pg ») : la suite tient en une.
+    expect(seen.slice(1)).toEqual(["https://api.deezer.com/playlist/1109890291/tracks?index=12&limit=1000"]);
     expect(pl.tracks.length).toBeGreaterThan(100);
   });
 
