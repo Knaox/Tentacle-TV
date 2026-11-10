@@ -17,6 +17,7 @@ class FakeVideoSurface final : public VideoSurface {
   void setFrame(RectPt frame) override;
   double backingScale() const override;
   void* nativeLayer() override { return visual_.Get(); }  // IDCompositionVisual*
+  void setHostWindow(void* nativeWindow) override;
   PixelSize pixelSize() const override;
   int64_t mpvWid() const override { return 0; }
   const char* mpvGpuContext() const override { return ""; }
@@ -26,7 +27,7 @@ class FakeVideoSurface final : public VideoSurface {
  private:
   void fill();
 
-  DcompContext& ctx_;
+  DcompContext* ctx_;
   ComPtr<IDCompositionVisual> visual_;
   CompositionChain chain_;
   float rgba_[4];

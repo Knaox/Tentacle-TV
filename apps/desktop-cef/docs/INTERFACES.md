@@ -219,11 +219,13 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `setMpvSwapchain(adresse)` : mpv crée lui-même sa chaîne d'échange (Windows, mode composition) ;
   `MpvPlayerPort` relit `display-swapchain` à chaque `file-loaded` / `video-reconfig` et la remet
   (0 : plus de sortie). `mpvWid() == 0` : aucun `wid` posé.
-- **Windows** (`src/platform/windows/video_surface_windows.cpp`) : un visuel DirectComposition du
-  compositeur du socle (même périphérique : `win::DcompContext`), contenu = la chaîne de mpv
-  (`gpu-api=d3d11`, `d3d11-output-mode=composition`, `target-colorspace-hint=no` à l'attache —
-  levé par la session HDR, comme Electron). `nativeLayer()` = `IDCompositionVisual*`. Cadre en
-  DIP, × `GetDpiForWindow/96` pour les pixels. Linux : stub (axe linux).
+- **Windows** (`src/platform/windows/video_surface_windows.cpp`) : un visuel DirectComposition né
+  du périphérique du PROCESSUS (`win::DcompDevice::shared()`, le même pour toutes les fenêtres),
+  contenu = la chaîne de mpv (`gpu-api=d3d11`, `d3d11-output-mode=composition`,
+  `target-colorspace-hint=no` à l'attache — levé par la session HDR, comme Electron).
+  `nativeLayer()` = `IDCompositionVisual*`. Cadre en DIP, × `GetDpiForWindow/96` de la fenêtre
+  PORTEUSE (`setHostWindow`, posée par le compositeur qui l'insère) pour les pixels. Linux : stub
+  (axe linux).
 
 ### Musique (octave → medias, lot cef-parite) — `src/music/`
 - **À l'identique d'Electron** (`apps/desktop-electron/src/main/audio/`, port fichier par fichier) :
@@ -420,8 +422,9 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
 - `postToMain` rend `false` quand la tâche n'a pas pu partir (avant `CefInitialize`, après
   `CefShutdown`) ; `TENTACLE_NO_SHARED_TEXTURE=1` force le repli `OnPaint` (tous OS).
 
-- Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, cible « topmost »
-  sur la fenêtre SDL ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
+- Windows (`src/platform/windows/compositor_windows.cpp`) : DirectComposition, UN périphérique
+  D3D11 + DComp pour le processus et, par fenêtre, une cible « topmost » et son arbre
+  (`dcomp_context_windows.h`) ; visuels conteneur vidéo → page → popup ; page = texture D3D11 PARTAGÉE de
   CEF (`WebFrame::sharedHandle` = poignée NT, `OpenSharedResource1`, copie GPU) ou pixels
   (`OnPaint`) dans une chaîne d'échange pour la composition (FLIP séquentiel, `Present(0)`).
   Pompe CEF : fenêtre de messages cachée (`message_pump_windows.cpp`), distribuée aussi par la
@@ -655,9 +658,18 @@ Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
   - **Linux, Windows** : la fenêtre PORTABLE sur SDL3 (`src/pip/sdl/`, filtre d'évènements SDL
     chaîné : la boucle de l'app ne voit jamais les évènements du PiP), prise par
     `platform/<os>/pip_<os>.cpp` dès que le compositeur de l'OS rend `canLendVideo()` vrai. Reste à
-    l'axe de l'OS : `canLendVideo` / `lendVideo` / `reclaimVideo` / `setVideoInset` dans SON
+    l'axe linux : `canLendVideo` / `lendVideo` / `reclaimVideo` / `setVideoInset` dans SON
     compositeur, une pile TRANSPARENTE pour la fenêtre PiP (`Options::makeStack`) ; Wayland : la
     place des fenêtres (le titre de la colle KWin, `pip/rules/pip_captions.h`).
+  - **Windows** (fait, jamais essayé sur une machine) : `canLendVideo()` vrai ; le visuel de la
+    chaîne de mpv QUITTE l'arbre DirectComposition de la fenêtre principale (commit) et entre dans
+    celui de la fenêtre PiP — possible parce que tous les arbres viennent du MÊME périphérique
+    DComp (`DcompDevice::shared()`). mpv n'en sait rien : ni nouvelle sortie, ni HDR changé ;
+    seule sa taille suit (`setHostWindow` → DPI de la fenêtre PiP → `d3d11-composition-size`). La
+    couche du repos (`home`, aplat de banc) ne quitte jamais sa fenêtre. Pile du PiP =
+    `Compositor::create(pip)`, fenêtre OPAQUE (`Options::transparent = false` : la cible
+    « topmost » compose la page transparente et la vidéo par-dessus le fond noir de la fenêtre,
+    sans fenêtre transparente — `pipFrame.ts` sous Windows).
 - **Branchement** : `pip::install(ctx, pont::registry())` avant `pont::installShim`,
   `pip::shutdown()` dans `shutdownModules` (le navigateur du PiP part avant CefShutdown) ;
   `Client::DoClose` du navigateur principal → `popup::hostClosing()` → le PiP part AVANT la fenêtre

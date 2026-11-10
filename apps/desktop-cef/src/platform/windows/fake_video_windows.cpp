@@ -10,9 +10,9 @@
 namespace tentacle::win {
 
 FakeVideoSurface::FakeVideoSurface(DcompContext& ctx, float r, float g, float b, float edrLevel)
-    : ctx_(ctx), rgba_{r, g, b, 1.0f}, edr_(edrLevel > 0) {
+    : ctx_(&ctx), rgba_{r, g, b, 1.0f}, edr_(edrLevel > 0) {
   if (edr_) rgba_[0] = rgba_[1] = rgba_[2] = edrLevel;
-  ok(ctx_.dcomp->CreateVisual(&visual_), "CreateVisual aplat");
+  ok(ctx_->dcomp->CreateVisual(&visual_), "CreateVisual aplat");
 }
 
 void FakeVideoSurface::show() {
@@ -24,12 +24,12 @@ void FakeVideoSurface::hide() {
   visible_ = false;
   visual_->SetContent(nullptr);
   chain_.reset();
-  ctx_.commit();
+  ctx_->commit();
 }
 
 void FakeVideoSurface::setFrame(RectPt frame) {
   frame_ = frame;
-  const float k = dpiScale(ctx_.hwnd);
+  const float k = dpiScale(ctx_->hwnd);
   visual_->SetOffsetX(std::round(float(frame.x) * k));
   visual_->SetOffsetY(std::round(float(frame.y) * k));
   const PixelSize px = pixelSize();
@@ -38,10 +38,15 @@ void FakeVideoSurface::setFrame(RectPt frame) {
     last_ = px;
     if (onSize_) onSize_(px);
   }
-  ctx_.commit();
+  ctx_->commit();
 }
 
-double FakeVideoSurface::backingScale() const { return dpiScale(ctx_.hwnd); }
+void FakeVideoSurface::setHostWindow(void* nativeWindow) {
+  // La couche du repos ne quitte pas sa fenêtre ; elle suit seulement celle qui la reçoit.
+  if (DcompContext* c = DcompContext::find(static_cast<HWND>(nativeWindow))) ctx_ = c;
+}
+
+double FakeVideoSurface::backingScale() const { return dpiScale(ctx_->hwnd); }
 
 PixelSize FakeVideoSurface::pixelSize() const {
   const double k = backingScale();
@@ -52,7 +57,7 @@ void FakeVideoSurface::fill() {
   const PixelSize px = pixelSize();
   if (px.w <= 0 || px.h <= 0) return;
   const DXGI_FORMAT format = edr_ ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_B8G8R8A8_UNORM;
-  const bool fresh = chain_.ensure(ctx_, visual_.Get(), UINT(px.w), UINT(px.h), format, DXGI_ALPHA_MODE_IGNORE);
+  const bool fresh = chain_.ensure(*ctx_, visual_.Get(), UINT(px.w), UINT(px.h), format, DXGI_ALPHA_MODE_IGNORE);
   if (fresh && edr_) {
     ComPtr<IDXGISwapChain3> c3;
     if (SUCCEEDED(chain_.chain()->QueryInterface(IID_PPV_ARGS(&c3))))
@@ -60,10 +65,10 @@ void FakeVideoSurface::fill() {
   }
   ComPtr<ID3D11Texture2D> back = chain_.backBuffer();
   ComPtr<ID3D11RenderTargetView> rtv;
-  if (!back || !ok(ctx_.device->CreateRenderTargetView(back.Get(), nullptr, &rtv), "CreateRenderTargetView")) return;
-  ctx_.context->ClearRenderTargetView(rtv.Get(), rgba_);
+  if (!back || !ok(ctx_->device->CreateRenderTargetView(back.Get(), nullptr, &rtv), "CreateRenderTargetView")) return;
+  ctx_->context->ClearRenderTargetView(rtv.Get(), rgba_);
   chain_.present();
-  if (fresh) ctx_.commit();
+  if (fresh) ctx_->commit();
 }
 
 SurfaceColorState FakeVideoSurface::colorState() const {

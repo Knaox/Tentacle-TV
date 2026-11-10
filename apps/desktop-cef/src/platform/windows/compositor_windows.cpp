@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <memory>
@@ -32,8 +33,9 @@ class WindowsCompositor final : public Compositor {
       : ctx_(ctx), web_(std::make_unique<win::WindowsWebLayer>(ctx)) {}
 
   ~WindowsCompositor() override {
-    // Les surfaces (vidéo, aplats) sont déjà parties (app.cpp) ; la page, puis le matériel
-    // de la fenêtre, qu'aucune autre couche ne tient plus.
+    // Les surfaces (vidéo, aplats) sont déjà parties (app.cpp), la vidéo prêtée est rendue
+    // (le PiP part avant) ; la page, puis l'arbre de la fenêtre.
+    reclaimVideo();
     setVideoLayer(nullptr);
     const HWND hwnd = ctx_.hwnd;
     web_.reset();
@@ -41,15 +43,53 @@ class WindowsCompositor final : public Compositor {
   }
 
   void setVideoLayer(VideoSurface* surface) override {
-    if (video_) ctx_.videoSlot->RemoveAllVisuals();
-    video_ = surface;
-    if (video_) {
-      auto* visual = static_cast<IDCompositionVisual*>(video_->nativeLayer());
-      if (visual) ctx_.videoSlot->AddVisual(visual, FALSE, nullptr);
-      video_->setFrame({0, 0, width_, height_});
-      video_->show();
+    if (borrower_) {
+      // Prêtée (PiP) : une vraie couche va chez l'emprunteur ; la couche du repos reste ici.
+      const bool lend = surface && surface != home_;
+      if (!lend) borrower_->setVideoLayer(nullptr);
+      if (shown_) detach(shown_);
+      video_ = surface;
+      if (lend) borrower_->setVideoLayer(surface);
+      else if (surface) attach(surface);
+    } else {
+      if (shown_) detach(shown_);
+      video_ = surface;
+      if (video_) attach(video_);
     }
     ctx_.commit();
+  }
+
+  // --- PiP : le visuel de la chaîne de mpv change d'arbre (même périphérique DComp pour
+  // toutes les fenêtres : dcomp_context_windows.h) ; mpv n'en sait rien, ni sortie ni HDR ne
+  // changent. Seule sa taille suit la fenêtre qui la porte (d3d11-composition-size).
+  bool canLendVideo() const override { return true; }
+
+  bool lendVideo(Compositor* borrower, VideoSurface* home) override {
+    if (!borrower || borrower == this) return false;
+    borrower_ = borrower;
+    home_ = home;
+    VideoSurface* current = video_;
+    if (current && current != home_) {
+      detach(current);
+      ctx_.commit();  // hors de cet arbre AVANT d'entrer dans l'autre (un visuel, un parent)
+      borrower_->setVideoLayer(current);
+    }
+    return true;
+  }
+
+  void reclaimVideo() override {
+    if (!borrower_) return;
+    borrower_->setVideoLayer(nullptr);
+    borrower_ = nullptr;
+    home_ = nullptr;
+    if (shown_) detach(shown_);
+    if (video_) attach(video_);
+    ctx_.commit();
+  }
+
+  void setVideoInset(double inset) override {
+    inset_ = inset;
+    if (shown_) shown_->setFrame(videoFrame());
   }
 
   WebLayer* webLayer() override { return web_.get(); }
@@ -58,7 +98,7 @@ class WindowsCompositor final : public Compositor {
     width_ = widthDip;
     height_ = heightDip;
     scale_ = scale;
-    if (video_) video_->setFrame({0, 0, widthDip, heightDip});
+    if (shown_) shown_->setFrame(videoFrame());
   }
 
   CompositorStats stats() const override { return web_->stats(); }
@@ -67,12 +107,12 @@ class WindowsCompositor final : public Compositor {
     std::ostringstream out;
     out << "DirectComposition " << int(std::lround(width_)) << "x" << int(std::lround(height_)) << " DIP ×" << scale_
         << "\n  vidéo : ";
-    if (video_) {
-      const PixelSize px = video_->pixelSize();
-      out << (video_->visible() ? "visible " : "cachée ") << px.w << "x" << px.h << " px ("
-          << video_->colorState().pixelFormat << ")";
+    if (shown_) {
+      const PixelSize px = shown_->pixelSize();
+      out << (shown_->visible() ? "visible " : "cachée ") << px.w << "x" << px.h << " px ("
+          << shown_->colorState().pixelFormat << "), retrait " << inset_;
     } else {
-      out << "-";
+      out << (borrower_ && video_ ? "prêtée au PiP" : "-");
     }
     out << "\n  page : " << web_->viewWidth() << "x" << web_->viewHeight() << " px"
         << "\n  popup : " << (web_->popupVisible() ? "visible" : "-") << "\n";
@@ -80,10 +120,31 @@ class WindowsCompositor final : public Compositor {
   }
 
  private:
+  // Le cadre de la vidéo : plein cadre, ou à `inset_` des bords (pile du PiP).
+  RectPt videoFrame() const {
+    return {inset_, inset_, std::max(1.0, width_ - 2 * inset_), std::max(1.0, height_ - 2 * inset_)};
+  }
+  void attach(VideoSurface* surface) {
+    surface->setHostWindow(ctx_.hwnd);  // échelle (DPI) et écran de CETTE fenêtre
+    if (auto* visual = static_cast<IDCompositionVisual*>(surface->nativeLayer()))
+      ctx_.videoSlot->AddVisual(visual, FALSE, nullptr);
+    surface->setFrame(videoFrame());
+    surface->show();
+    shown_ = surface;
+  }
+  void detach(VideoSurface* surface) {
+    if (auto* visual = static_cast<IDCompositionVisual*>(surface->nativeLayer()))
+      ctx_.videoSlot->RemoveVisual(visual);
+    if (shown_ == surface) shown_ = nullptr;
+  }
+
   DcompContext& ctx_;
   std::unique_ptr<win::WindowsWebLayer> web_;
-  VideoSurface* video_ = nullptr;
-  double width_ = 0, height_ = 0, scale_ = 1;
+  VideoSurface* video_ = nullptr;   // la couche posée ici (peut être prêtée)
+  VideoSurface* shown_ = nullptr;   // celle que CET arbre montre
+  Compositor* borrower_ = nullptr;  // PiP : la pile qui montre notre vidéo
+  VideoSurface* home_ = nullptr;    // la couche du repos, qui ne part jamais
+  double width_ = 0, height_ = 0, scale_ = 1, inset_ = 0;
 };
 
 // Sans DirectComposition (pilote absent, session sans GPU ni WARP) : l'app tourne, rien
