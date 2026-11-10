@@ -8,6 +8,7 @@
 #include "shell/ipc.h"
 #include "shell/ipc_protocol.h"
 #include "shell/navigation_rule.h"
+#include "shell/zoom_guard.h"
 
 namespace tentacle {
 namespace {
@@ -78,6 +79,7 @@ void Shell::handleEvent(const SDL_Event& e) {
   // navigateur : la bulle suit la souris et part au premier geste ; puis une session de
   // glisser interne en cours, ou un dépôt venu de l'OS, prend l'évènement.
   tooltip_->onEvent(e);
+  guardZoom(e, browser_);
   const bool dragging = dragDrop_->internalActive();
   if (dragDrop_->handleEvent(e, browser_)) {
     if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) input_.noteButtonUp(e.button.button);
