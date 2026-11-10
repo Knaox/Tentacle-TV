@@ -92,7 +92,7 @@ export function CardHoverShell({ variant, visible, children, surface = "card" }:
           l'espacement de WCAG 2.5.8 — des centres à 24 px au moins. */}
       <div
         className={`card-hover-rise absolute bottom-0 flex max-w-full flex-col gap-1.5 ${
-          corner ? "right-0 items-end px-2.5 pb-2" : "inset-x-0 items-stretch px-1 pb-2.5"
+          corner ? "right-0 items-end px-2.5 pb-3" : "inset-x-0 items-stretch px-1 pb-3"
         }`}
         data-shown={visible}
         style={reveal}

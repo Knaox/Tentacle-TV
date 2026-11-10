@@ -3,6 +3,7 @@ import type { CardTrayExtra } from "@tentacle-tv/shared";
 
 import { stopCardClick } from "./cardEvents";
 import { GLASS_LENS_PROPS, useLiquidGlassMode, useLiquidGlassSurface } from "../../theme/glass";
+import { ON_MEDIA_ACCENT_TEXT } from "./onMedia";
 
 /** Faux dans la mini-carte d'aperçu (`bare`) : ses ronds ont leur propre peau. */
 const TrayGlass = createContext(true);
@@ -32,10 +33,12 @@ export function CardTrayCapsule({ label, stretch = false, bare = false, children
   const native = useLiquidGlassMode() === "native";
   // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
   // boutons qui se resserrent (`TRAY_SIZE`).
-  const layout = `flex min-w-0 max-w-full items-center p-0.5 ${stretch ? "w-full justify-between" : ""}`;
+  const layout = `flex min-w-0 max-w-full items-center p-[3px] ${stretch ? "w-full justify-between" : ""}`;
+  // Hors verre : une pilule d'ENCRE pleine (0,9), sans liseré ni flou — une arête de lumière en
+  // haut, une ombre portée dessous (refonte de nov. 2026 : plus de verre blanc cerclé).
   const capsule = native
     ? `${layout} gap-1.5`
-    : `${layout} gap-0.5 rounded-full border border-white/15 bg-white/[0.12] shadow-[0_4px_14px_rgba(0,0,0,0.35)]`;
+    : `${layout} gap-0.5 rounded-full bg-[rgba(19,19,21,0.9)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_6px_16px_rgba(0,0,0,0.45)]`;
   return (
     <TrayGlass.Provider value={!bare}>
       <div
@@ -56,7 +59,7 @@ interface TrayButtonProps {
   box: string;
   /** État d'une bascule — absent pour une action simple (fiche, refus). */
   active?: boolean;
-  /** L'état actif prend l'accent de marque (le cœur) plutôt que le blanc. */
+  /** Le cœur : sous le verre natif, son glyphe allumé prend l'accent (`data-lg-toggle`). */
   accent?: boolean;
   /** Faux : une action, pas une bascule — pas d'`aria-pressed`. */
   pressable?: boolean;
@@ -78,13 +81,11 @@ interface TrayButtonProps {
  */
 export function CardTrayButton({ box, active = false, accent = false, pressable, extra, label, onPress, children }: TrayButtonProps) {
   const isToggle = pressable !== false;
-  const tone = active
-    ? accent
-      ? "bg-white/15 text-[var(--brand-accent)]"
-      : "bg-white/15 text-white"
-    : "text-white/80 hover:bg-white/10 hover:text-white";
+  // Au repos, l'ivoire au trait ; allumée, la teinte franche (le glyphe passe en plein, côté
+  // appelant) — les trois bascules pareil. La pression répond à 97 % ; le survol ne grossit rien.
+  const tone = active ? ON_MEDIA_ACCENT_TEXT : "text-on-media-primary";
   const layout = `${box} flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white`;
-  const skin = `rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 ${tone}`;
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out hover:bg-white/10 active:scale-[0.97] ${tone}`;
   const glassAllowed = useContext(TrayGlass);
   const glass = useLiquidGlassSurface({
     material: "bead",

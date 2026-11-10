@@ -25,8 +25,8 @@ interface CardEpisodeCaptionProps {
 export function CardEpisodeCaption({ code, title, inset }: CardEpisodeCaptionProps) {
   if (!code && !title) return null;
   return (
-    <div className={`pointer-events-none absolute inset-x-0 bottom-1.5 z-30 pl-3 text-on-media-primary ${inset}`}>
-      {code && <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-media-secondary">{code}</p>}
+    <div className={`pointer-events-none absolute inset-x-0 bottom-3.5 z-30 pl-3 text-on-media-primary ${inset}`}>
+      {code && <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-on-media-secondary">{code}</p>}
       {title && <p className="line-clamp-1 text-xs font-semibold">{title}</p>}
     </div>
   );

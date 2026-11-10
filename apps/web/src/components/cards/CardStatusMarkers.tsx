@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { cardDeviceLabelKey, type CardDeviceState, type CardStatusKind } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, KeptGlyph, WatchedGlyph } from "./cardGlyphs";
+import { ON_MEDIA_ACCENT_TEXT, ON_MEDIA_PILL } from "./onMedia";
 
 interface CardStatusMarkersProps {
   /** États vrais, déjà ordonnés (`resolveCardMarkers`). Vide : rien n'est rendu. */
@@ -22,12 +23,12 @@ const GLYPH = "h-3 w-3";
  * réunis dans UNE capsule d'angle au lieu de badges épars. L'œil trouve un seul endroit où regarder, et une carte sans
  * état reste parfaitement propre — aucune capsule vide.
  *
- * Trois formes distinctes, pas trois couleurs : le cœur prend l'accent de
- * marque, mais aucun état ne repose sur la couleur seule. Un seul libellé
+ * Trois formes distinctes, pas trois couleurs : le cœur et la coche prennent
+ * la teinte franche, mais aucun état ne repose sur la couleur seule. Un seul libellé
  * accessible pour la capsule entière (« Dans ma liste, Déjà vu »).
  *
- * Aucun `backdrop-filter` : la capsule vit au repos, sur chaque carte. Fond
- * noir à 70 % et liseré blanc, constants dans les deux thèmes — posée sur
+ * Aucun `backdrop-filter` : la capsule vit au repos, sur chaque carte. Un
+ * voile d'encre sans liseré, constant dans les deux thèmes — posée sur
  * média. Seule l'opacité transitionne.
  */
 export const CardStatusMarkers = memo(function CardStatusMarkers({
@@ -50,7 +51,7 @@ export const CardStatusMarkers = memo(function CardStatusMarkers({
       // voler le clic de la carte), une infobulle n'y paraîtrait jamais.
       // Repère stable pour la feuille de la LG (agrandie à trois mètres).
       data-card-status=""
-      className={`pointer-events-none absolute ${className ?? "right-2 top-2"} z-20 flex h-6 items-center gap-1 rounded-full border border-white/15 bg-black/70 px-1.5 text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-opacity duration-150 ${
+      className={`pointer-events-none absolute ${className ?? "right-[7px] top-[7px]"} z-20 flex h-6 items-center gap-1 rounded-full px-1.5 text-on-media-primary transition-opacity duration-hover ${ON_MEDIA_PILL} ${
         shown ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -58,22 +59,19 @@ export const CardStatusMarkers = memo(function CardStatusMarkers({
         kind === "watchlist" ? (
           <BookmarkGlyph key={kind} className={GLYPH} filled />
         ) : kind === "favorite" ? (
-          <span key={kind} className="text-[var(--brand-accent)]">
+          <span key={kind} className={ON_MEDIA_ACCENT_TEXT}>
             <HeartGlyph className={GLYPH} filled />
           </span>
         ) : (
-          <WatchedGlyph key={kind} className={GLYPH} filled />
+          <span key={kind} className={ON_MEDIA_ACCENT_TEXT}>
+            <WatchedGlyph className={GLYPH} filled />
+          </span>
         ),
       )}
       {/* Après les états : l'ordre même du plateau, où l'extra « hors ligne »
-          suit les bascules. Le vert de « prêt », pas une seconde coche — un
-          vert CONSTANT (#34D399) : posé sur média, comme le reste de la
-          pastille ; le jeton de succès du thème clair est un vert sombre. */}
-      {device !== null && (
-        <span className="text-emerald-400">
-          <KeptGlyph className={GLYPH} />
-        </span>
-      )}
+          suit les bascules. La flèche vers son plateau, ivoire comme le signet
+          (le prototype validé) : sa FORME dit « sur cette machine », plus un vert. */}
+      {device !== null && <KeptGlyph className={GLYPH} />}
     </div>
   );
 });

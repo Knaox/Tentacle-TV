@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useCardFace, useCardRatingTarget, type RatingIdentity } from "@tentacle-tv/api-client";
 import {
-  CARD_TOGGLE_ORDER,
   resolveCardOverlay,
   type CardOverlayVariant,
   type CardToggleHandlers,
@@ -130,10 +129,9 @@ export function CardHoverOverlay({
     ? { label: `${t("requests:requestMissing")} — ${title}`, onRequest: gap.open }
     : null;
   const hasTray = trayPlay !== null || trayRequest !== null || overlay.toggles.length > 0 || overlay.extras.length > 0;
-  // Pleine largeur sur une affiche seulement quand le plateau est complet :
-  // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
-  // son contenu, au centre — étirée, un bouton seul flotterait au bord.
-  const stretch = !corner && overlay.toggles.length >= CARD_TOGGLE_ORDER.length;
+  // Sur une affiche, la capsule ÉPOUSE ses boutons, au centre (refonte de nov. 2026 : elle ne
+  // s'étire plus d'un bord à l'autre) ; trop large pour une affiche étroite, ses boutons se
+  // resserrent (`TRAY_SIZE`).
   const preview = surface === "preview";
 
   const stars = overlay.rate
@@ -150,7 +148,6 @@ export function CardHoverOverlay({
         overlay={overlay}
         label={title}
         size={preview ? "preview" : corner ? "md" : "sm"}
-        stretch={stretch}
         onOpenDetails={onOpenDetails}
         onDismiss={onDismiss}
         localToggles={local}
@@ -178,7 +175,7 @@ export function CardHoverOverlay({
         ) : (
           <>
             {stars && <div className={corner ? "flex justify-end" : "flex justify-center"}>{stars}</div>}
-            {tray && <div className={corner ? "flex justify-end" : stretch ? "" : "flex justify-center"}>{tray}</div>}
+            {tray && <div className={corner ? "flex justify-end" : "flex justify-center"}>{tray}</div>}
           </>
         )}
       </CardHoverShell>

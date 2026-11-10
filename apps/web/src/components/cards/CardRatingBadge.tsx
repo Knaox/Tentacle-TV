@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { formatCommunityRating, formatUserScore } from "@tentacle-tv/shared";
 import { StarGlyph } from "./cardGlyphs";
+import { ON_MEDIA_ACCENT_TEXT, ON_MEDIA_PILL } from "./onMedia";
 
 interface CardRatingBadgeProps {
   /** Note globale /10 (CommunityRating Jellyfin ou voteAverage TMDB). */
@@ -22,11 +23,11 @@ interface CardRatingBadgeProps {
 }
 
 /**
- * La note d'une carte : chip posée SUR média (noir/blanc constant dans les
- * deux thèmes), étoile de MARQUE — jamais dorée.
+ * La note d'une carte : puce d'encre posée SUR média (constante dans les
+ * deux thèmes), étoile ivoire — jamais dorée.
  *
- * Deux segments au plus : la note globale, puis celle de l'utilisateur, sur
- * le dégradé violet → rose — la même échelle (/10), côte à côte, pour qu'on
+ * Deux segments au plus : la note globale, puis celle de l'utilisateur, à la
+ * teinte franche — la même échelle (/10), côte à côte, pour qu'on
  * les compare sans calcul. Un titre noté mais sans note globale n'affiche que
  * le segment personnel.
  *
@@ -55,7 +56,7 @@ export function CardRatingBadge({
   return (
     <div
       role="img"
-      className={`lg-badge absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"} flex h-5 items-stretch overflow-hidden rounded-md border border-white/20 bg-black/70 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
+      className={`lg-badge absolute ${className ?? "bottom-[7px] left-[7px]"} ${raised ? "z-30" : "z-10"} flex h-[22px] items-stretch overflow-hidden rounded-chip text-xs font-bold leading-none text-on-media-primary transition-opacity duration-hover ${ON_MEDIA_PILL} ${
         shown ? "opacity-100" : "opacity-0"
       }`}
       aria-label={label}
@@ -65,16 +66,15 @@ export function CardRatingBadge({
       data-card-rating=""
     >
       {community && (
-        <span className="flex items-center gap-1 px-1.5 tabular-nums">
-          <span className="text-[var(--brand-accent)]">
-            <StarGlyph />
-          </span>
+        <span className="flex items-center gap-[3px] px-1.5 tabular-nums">
+          <StarGlyph />
           {community}
         </span>
       )}
       {mine && (
-        <span className="flex items-center gap-0.5 bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-1.5 tabular-nums text-cta-brand-fg">
-          <StarGlyph className="h-2.5 w-2.5" />
+        // SA note : à la teinte franche (un état du compte), séparée d'un filet — plus un aplat au dégradé.
+        <span className={`flex items-center gap-[3px] px-1.5 tabular-nums ${ON_MEDIA_ACCENT_TEXT} ${community ? "shadow-[inset_1px_0_0_rgba(255,255,255,0.18)]" : ""}`}>
+          <StarGlyph />
           {mine}
         </span>
       )}
