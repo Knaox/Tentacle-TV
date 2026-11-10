@@ -42,6 +42,12 @@ add_executable(tentacle_lifecycle_tests
 target_include_directories(tentacle_lifecycle_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(tentacle_lifecycle_tests PRIVATE tentacle_lifecycle_core)
 add_test(NAME tentacle_lifecycle_tests COMMAND tentacle_lifecycle_tests)
+# window.tentacle (web/shim/tentacle-bridge.js) face au preload d'Electron : `node --test`.
+find_program(TENTACLE_NODE node)
+if(TENTACLE_NODE)
+  add_test(NAME tentacle_shim_tests
+           COMMAND "${TENTACLE_NODE}" --test "${CMAKE_CURRENT_SOURCE_DIR}/../../web/shim/tests/tentacle-bridge.test.mjs")
+endif()
 
 # La colle (CEF, SDL3, OS) : seulement dans l'app, quand le socle existe.
 if(TARGET tentacle_shell)
