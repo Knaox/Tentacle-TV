@@ -19,7 +19,8 @@ même commit.
 | `src/player/`, `src/platform/<os>/video_surface*`, `scripts/deps/mpv*` | vidéo-HDR | libmpv (fork), surface vidéo, HDR/EDR |
 | `tools/edr-probe/`, `bench/hdr/` | vidéo-HDR | preuves HDR10 / Dolby Vision |
 | `src/bridge/`, `web/shim/` (hors `octave*`) | pont | `window.tentacle` compatible avec le front de Tentacle, lecteur vidéo |
-| `src/music/`, `web/shim/octave*`, `bench/music/` | octave | mode musique, mini-lecteur, file, bascule musique ↔ vidéo ; musique de test |
+| `src/music/`, `web/shim/octave*`, `bench/music/` | octave (lot cef-parite : medias) | mode musique à l'identique d'Electron (fondu, ReplayGain, sorties…), bascule musique ↔ vidéo ; musique de test |
+| `src/media_session/`, `src/platform/<os>/media_session_*` | medias | « À l'écoute » et touches média (macOS, MPRIS, SMTC), canaux `smtc_*` |
 | `bench/server/` | pont | banc local Tentacle + Jellyfin jetable (copies, jamais le dépôt Tentacle) |
 | `src/update/`, `src/platform/<os>/update_*`, `web/shim/update*`, `bench/update/` | maj | mise à jour automatique : manifeste signé, règle de décision, assistant de remplacement, surcouche |
 
@@ -172,6 +173,9 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   naît au PREMIER `loadfile`, plein cadre sous la page, et suit `addWindowStateListener` ; à l'arrêt,
   `setVideoLayer(ctx.fakeVideo)` puis destruction du lecteur, puis de la surface. Options de
   sortie de la page écartées ; le son suit `player/sound_policy.h` (ci-dessous).
+- Annexes (medias, lot cef-parite) : `video_surface_probe` et `video_edr_probe` (macOS, build de développement
+  seulement — `TENTACLE_VIDEO_PROBES`, comme Electron hors paquet) pour le panneau de dev du lecteur ;
+  `VideoChannels(reg, player, clock, defer)` : la position retenue par l'étranglement part aussi par le temps.
 - Diagnostic hors `window.tentacle` : canal du socle `pont.debug.surface` → `colorState()` de la
   couche vidéo (`colorspace`, `pixelFormat`, `wantsEdr`, `hasEdrMetadata`, `opaque`, `visible`,
   `pixelSize`, `window` = `{fullscreen, w, h}` : la NSWindow elle-même, `NSWindowStyleMaskFullScreen`
@@ -189,25 +193,54 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   (créée `SDL_WINDOW_HIDDEN`) — SDL3 la marque sRGB (constaté) ; FACULTATIF, sans effet mesuré sur l'EDR.
 - Linux / Windows : stubs (`createVideoSurface` → `nullptr`, le lecteur reste sans sortie vidéo).
 
-### Musique (octave) — `src/music/`
-- Canaux page ↔ natif = ceux de Tentacle (`audioBridgeContract.ts`) : commandes `audio_engine_start`,
-  `audio_engine_stop`, `audio_play`, `audio_set_next`, `audio_swap_source`, `audio_control`,
-  `audio_list_outputs`, `audio_set_output`, `audio_level` ; évènement `audio://event` (charge nue).
-- Déclarés dans le registre du pont (`bridge::Registry`) par `music::installInShell(registry)`
-  (`src/music/octave_shell.h`), depuis `src/app/modules.cpp`, avant `injectedScript()`.
-- Une instance mpv À PART, audio seul, jamais attachée à une surface (zéro couche Metal),
-  sur la sortie native, volume et sourdine de la page (`audio_control`) ; sous `--mute`, muette,
-  volume 0 et `ao=null`.
-- `music::videoClaim()` : une lecture vidéo démarre (branché sur `VideoChannels::setOnVideoClaim`)
-  → la musique qui joue passe en pause, et la page reçoit `{type:"remote", command:"pause"}`.
-- `music::shutdownMusic()` : à la fermeture.
-- Diagnostic (banc seulement, par `__shell.invoke`, hors `window.tentacle`) : `octave.debug.log`
-  `{fromCall, fromEvent}` → commandes reçues / évènements émis (valeurs d'en-têtes masquées),
-  `octave.debug.prop {name}` → propriété du mpv musique, `octave.debug.claim` → simule « une vidéo démarre ».
-- Moteur : le `Player` de vidéo-HDR en `audioOnly` (`player_audio_backend`) quand `tentacle_player`
-  existe, sinon libmpv de Homebrew (`mpv_audio_backend`, banc seul).
-- CMake : `add_subdirectory(src/music)` APRÈS `src/player`, `src/bridge` et le socle (cible
-  `tentacle_music`). Banc seul : `tests/music/run-probe.sh` (`OCTAVE_WITH_PLAYER=1` : sur `Player`).
+### Musique (octave → medias, lot cef-parite) — `src/music/`
+- **À l'identique d'Electron** (`apps/desktop-electron/src/main/audio/`, port fichier par fichier) :
+  canaux `audio_engine_start`, `audio_engine_stop`, `audio_play`, `audio_set_next` (`crossfadeMs`),
+  `audio_swap_source`, `audio_control` (pause, resume, stop, seek, volume, muted, replayGain, crossfade),
+  `audio_list_outputs`, `audio_set_output`, `audio_level` ; évènement `audio://event` (state, advanced,
+  needSource, swapped, remote). Arguments lus au schéma zod d'Electron (`audio_types.cpp`) ; capacités
+  `{engine:"mpv", gapless, exclusiveOutput:true, replayGain:true, codecs, hotSwap:true}`.
+- **Cibles** : `tentacle_music_core` (sans libmpv : règles, file `AudioQueue`, moteur `NativeAudioEngine`,
+  transition douce `CrossfadeDecks`/`DeckPair`/`DeckFade`, canaux `OctaveChannels`), testée seule
+  (`tentacle_music_{audio_queue,audio_rules,crossfade_decks,file_ends}_tests`, cas des tests d'Electron) ;
+  `tentacle_music` (+ `MpvAudioBackend`, `PlayerAudioBackend` sur le `Player` audio seul, colle `octave_shell`).
+- **Une instance mpv par « deck »**, audio seul, jamais de surface ; deux pendant la transition douce
+  (réserve née transition allumée hors mode exclusif). Sortie native, volume et sourdine de la page ;
+  sous `--mute`, `ao=null` + `mute=yes` (`player/sound_policy.h`). Préchauffage de la sortie à la naissance
+  (`anullsrc` 50 ms). Saut demandé pendant l'OUVERTURE d'un fichier : différé à `playback-restart`
+  (acquis du proto : mpv figeait la lecture).
+- **Coutures** (`octave_shell.h`, après `installInShell`) : `setKeptLookup(fn(userId, trackKey) → chemin?)`
+  (horsligne, `audioKept.ts`), `setDirectAdopter(fn(source, trackKey, session, done))` et `sourceCut(url)`
+  (reseau, `directSources.ts`), `stopAudio()` (systeme : fenêtre fermée pour de bon), `observeMusic(onCall,
+  onEvent)`, `remoteCommand(cmd)`, `seekFromSystem(ms)` (medias : « À l'écoute »).
+- `music::videoClaim()` : une lecture vidéo démarre → la musique qui joue passe en pause + `remote: pause`.
+- Diagnostic (bancs, `__shell.invoke`) : `octave.debug.log {fromCall, fromEvent}`, `octave.debug.prop {name}`,
+  `octave.debug.deckProp {name, index}` (chaque instance du fondu), `octave.debug.claim`.
+- Bancs : `tests/music/run-probe.sh` (faux natif, 34 vérifications), `web/shim/octave-attach.mjs` (recette
+  sur l'app lancée par `pnpm dev:cef -- --mute --background --devtools-port=<port>`).
+
+### « À l'écoute » et touches média (medias, lot cef-parite) — `src/media_session/`
+- **Canaux d'Electron**, déclarés sur les trois OS : `smtc_init`, `smtc_clear`, `smtc_set_playback {status}`,
+  `smtc_set_metadata {title, artist, cover}`, `set_audio_session_name {name}` ; évènement `smtc-button`
+  (`toggle|play|pause|stop|next|previous`). **Propre à CEF** : `smtc_set_controls {next, previous}` — c'est la
+  CAPACITÉ qui ouvre `useSmtc` hors Windows et fait envoyer au moteur d'Octave la fiche de chaque titre
+  (`track.meta`, `systemMeta`) ; Electron ne la déclare pas, son comportement ne change pas.
+- **Cœur portable** `Hub` (`media_session_hub.h`, testé seul : `tentacle_media_session_tests`) : deux sources
+  (vidéo par le front, musique par le moteur), une session système ; montrée = celle qui joue (la plus récente
+  à s'être mise à jour), sinon la dernière réclamée ; position transmise seulement sur saut (> 1,5 s) ;
+  pochette téléchargée par `net::httpFetch` (8 Mio, 15 s, image reconnue), jamais l'adresse authentifiée
+  confiée à l'OS.
+- **Couture d'OS** `Backend` (`media_session.h`, `createBackend(host)` par OS) : macOS
+  `src/platform/macos/media_session_macos.mm` (MPNowPlayingInfoCenter + MPRemoteCommandCenter, lien
+  MediaPlayer) ; Linux `src/platform/linux/media_session_linux*.cpp` (MPRIS 2.2 par GDBus, fil dédié, pochette
+  en copie disque 0600 ; dépendance gio-2.0) ; Windows `src/platform/windows/media_session_windows*.cpp`
+  (SMTC par `ISystemMediaTransportControlsInterop`, ABI WinRT + WRL, mélangeur par IAudioSessionManager2 ;
+  liens runtimeobject, ole32).
+- Branchement : `media_session::install(ctx, pont::registry())` APRÈS octave, avant le shim ;
+  `media_session::shutdown()` avant `music::shutdownMusic()`. Position de la vidéo : `pont::setVideoPropertyObserver`.
+- Chromium ne publie plus sa propre session (`HardwareMediaKeyHandling` dans `disable-features`, `browser_app.cpp`).
+- Diagnostic : `media_session.debug.state` (ce que le cœur a transmis + `os` : relu CHEZ le système),
+  `media_session.debug.command {command, positionMs}` (le chemin d'une commande du système, sans le système).
 
 ### Mise à jour (maj) — `src/update/` (détail : `docs/MISE-A-JOUR.md`)
 - Branchement : `maj::install(ctx)` à la FIN de `initModules` (après le shim du pont),
