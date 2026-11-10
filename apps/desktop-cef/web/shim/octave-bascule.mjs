@@ -77,7 +77,7 @@ export async function bascule({ cdp, env, cache, origin, appLog }) {
   check((await mpv("video-target-params/gamma", "string")) === "pq" || FILM.indexOf("HDR") < 0,
     `sortie vidéo : gamma ${await mpv("video-target-params/gamma", "string")} (HDR passthrough)`);
   const log = readFileSync(appLog, "utf8");
-  check(/\[music\] lecture video : musique deja au repos/.test(log), "à mpv_init : l'arbitre dit « musique déjà au repos » (Tentacle l'avait arrêtée)");
+  check(/\[music\] lecture vid[ée]o : musique d[ée]j[àa] au repos/.test(log), "à mpv_init : l'arbitre dit « musique déjà au repos » (Tentacle l'avait arrêtée)");
 
   // Retour du lecteur, puis Octave.
   await cdp.eval(`history.back(); true`);

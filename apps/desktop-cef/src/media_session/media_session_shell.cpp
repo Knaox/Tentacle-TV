@@ -235,6 +235,10 @@ void install(AppContext& ctx, bridge::Registry& registry) {
   BackendHost host;
   host.sdlWindow = ctx.window;
   host.onCommand = [](CommandEvent e) {
+    // Chaque commande du SYSTÈME, au journal : une touche qui « ne fait rien » ou une pause
+    // venue d'ailleurs (le système qui reprend la main) se lit ici.
+    static const char* kNames[] = {"play", "pause", "toggle", "stop", "next", "previous", "seek"};
+    std::fprintf(stderr, "[media-session] commande du système : %s\n", kNames[static_cast<int>(e.command)]);
     postToMain([e] {
       if (st) st->hub->dispatch(e);
     });
