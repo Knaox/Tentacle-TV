@@ -111,4 +111,16 @@ export default {
   moreActions: "More actions",
   swipeHintBoth: "Swipe right to mark as read, left to delete",
   filtersA11y: "Filter notifications",
+  // The redesigned update pop-up (Nov. 2026): while running it locks the app and says its
+  // steps in words.
+  updateRunningTitle: "Update in progress",
+  updateLockedHint: "The app is locked and playback is paused while the update runs.",
+  updateStepDownload: "Download",
+  updateStepInstall: "Installation",
+  updateStepRestart: "Restart",
+  updateStepDone: "done",
+  updateStepWaiting: "up next",
+  updatePercent: "{{progress}}%",
+  updateProgressLabel: "Download progress",
+  updateRetry: "Try again",
 } as const;

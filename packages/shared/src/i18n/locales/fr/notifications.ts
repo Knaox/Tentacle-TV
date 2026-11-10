@@ -116,4 +116,16 @@ export default {
   moreActions: "Plus d'actions",
   swipeHintBoth: "Glissez vers la droite pour marquer lue, vers la gauche pour supprimer",
   filtersA11y: "Filtrer les notifications",
+  // La pop-up de mise à jour de la refonte (nov. 2026) : en cours, elle verrouille l'application
+  // et dit ses étapes en mots.
+  updateRunningTitle: "Mise à jour en cours",
+  updateLockedHint: "L'application est verrouillée et la lecture en pause, le temps de la mise à jour.",
+  updateStepDownload: "Téléchargement",
+  updateStepInstall: "Installation",
+  updateStepRestart: "Redémarrage",
+  updateStepDone: "terminé",
+  updateStepWaiting: "à venir",
+  updatePercent: "{{progress}} %",
+  updateProgressLabel: "Avancement du téléchargement",
+  updateRetry: "Réessayer",
 } as const;

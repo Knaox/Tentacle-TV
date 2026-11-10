@@ -38,18 +38,16 @@ export function UpdateNotesList({ notes, id }: UpdateNotesListProps) {
   const titleId = id ? `${id}-title` : undefined;
   return (
     <section id={id} aria-labelledby={titleId}>
-      <p id={titleId} className="mb-2 text-xs font-medium uppercase tracking-wider text-content-quaternary">
+      <p id={titleId} className="ui-eyebrow mb-2.5">
         {t("notifications:updateReleaseNotes")}
       </p>
       <div className="relative">
         <ul ref={scrollerRef} onScroll={measure} className="max-h-56 space-y-2.5 overflow-y-auto pr-2">
           {notes.map((note, i) => (
             <li key={i} className="flex gap-2.5">
-              <span
-                aria-hidden
-                className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)]"
-              />
-              <p className="text-sm leading-relaxed text-content-tertiary">
+              {/* Une puce d'encre : la liste se lit, elle ne décore pas. */}
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-content-quaternary" />
+              <p className="text-sm leading-relaxed text-content-secondary">
                 {note.title && (
                   <>
                     <span className="font-semibold text-content-primary">{note.title}</span>

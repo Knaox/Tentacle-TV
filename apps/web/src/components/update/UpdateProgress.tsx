@@ -4,12 +4,13 @@ interface UpdateProgressProps {
   indeterminate: boolean;
   /** Faux quand l'onglet est caché ou la pop-up hors écran : la bande s'arrête. */
   visible: boolean;
+  /** Le nom accessible de la jauge. */
+  label: string;
 }
 
-const FILL = "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]";
-
 /**
- * Barre de progression, déterminée ou non.
+ * La JAUGE de la mise à jour, déterminée ou non — ce qui se mesure porte le dégradé de jauge
+ * (`.gauge`, `theme/buttons.css`).
  *
  * Le mode INDÉTERMINÉ n'est pas un pis-aller : sous Windows c'est le Microsoft
  * Store qui télécharge et installe, et il n'expose son avancement qu'à un
@@ -21,36 +22,32 @@ const FILL = "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[var(
  * repeindraient la barre à chaque image. Sous mouvement réduit, la bande ne
  * balaie pas ; un remplissage atténué dit « en cours ».
  */
-export function UpdateProgress({ progress, indeterminate, visible }: UpdateProgressProps) {
+export function UpdateProgress({ progress, indeterminate, visible, label }: UpdateProgressProps) {
   const pct = Math.max(0, Math.min(100, Math.round(progress)));
   return (
     <div
       role="progressbar"
+      aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={indeterminate ? undefined : pct}
       aria-busy={indeterminate || undefined}
-      className="relative h-2 w-full overflow-hidden rounded-full bg-fill-soft"
+      className="gauge !h-1.5 !rounded-pill"
+      data-live={indeterminate ? undefined : "true"}
     >
       {indeterminate ? (
         <>
-          <div
-            className={`${FILL} w-1/3 motion-reduce:hidden`}
+          <i
+            className="w-1/3 motion-reduce:!hidden"
             style={{
-              animation: "indeterminateSweep 1.4s ease-in-out infinite",
+              animation: "indeterminateSweep 1.4s cubic-bezier(0.77, 0, 0.175, 1) infinite",
               animationPlayState: visible ? "running" : "paused",
             }}
           />
-          <div className={`${FILL} hidden w-full opacity-50 motion-reduce:block`} />
+          <i className="!hidden opacity-50 motion-reduce:!block" />
         </>
       ) : (
-        <div
-          className={`${FILL} w-full origin-left`}
-          style={{
-            transform: `scaleX(${pct / 100})`,
-            transition: "transform var(--duration-base) var(--ease-out)",
-          }}
-        />
+        <i style={{ transform: `scaleX(${pct / 100})` }} />
       )}
     </div>
   );
