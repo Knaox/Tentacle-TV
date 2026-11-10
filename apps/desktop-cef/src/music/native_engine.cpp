@@ -49,7 +49,13 @@ NativeAudioEngine::NativeAudioEngine(Scheduler& scheduler, std::unique_ptr<Audio
 NativeAudioEngine::~NativeAudioEngine() { *alive_ = false; }
 
 void NativeAudioEngine::command(std::vector<std::string> args, AudioBackend::Done done) {
-  backend_->command(std::move(args), std::move(done));
+  // Une commande refusée par le cœur va au journal (`commandFailed` d'Electron) — jamais ses
+  // arguments : une adresse de `loadfile` porte le jeton.
+  const std::string name = args.empty() ? std::string("?") : args[0];
+  backend_->command(std::move(args), [name, done = std::move(done)](std::optional<std::string> error, const json& result) {
+    if (error) std::fprintf(stderr, "[music] %s refusée : %s\n", name.c_str(), error->c_str());
+    if (done) done(error, result);
+  });
 }
 
 void NativeAudioEngine::play(const Track& track, const Source& source, double startMs, bool paused) {

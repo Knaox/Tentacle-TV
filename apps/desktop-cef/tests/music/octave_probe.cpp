@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "probe_harness.h"
+#include "octave_probe_crossfade.h"
 
 using namespace tentacle::music;
 using namespace tentacle::music::test;
@@ -200,6 +201,7 @@ int main(int argc, char** argv) {
   startAndSilence(h, argv[2]);
   coverAndControls(h);
   gapless(h);
+  crossfade(h, kFil[0], kEclair);
   formats(h);
   videoClaim(h);
   guards(h);
