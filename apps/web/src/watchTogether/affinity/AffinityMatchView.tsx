@@ -22,10 +22,10 @@ import { useAffinityLaunch } from "./useAffinityLaunch";
  * qui reçoit le focus — est « Regarder ensemble ».
  */
 
-const PRIMARY =
-  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 text-[15px] font-bold text-cta-primary-fg outline-none transition-[background-color,transform] duration-150 hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-60";
-const SECONDARY =
-  "inline-flex h-11 w-full items-center justify-center rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-60";
+// « Regarder » lance la LECTURE du groupe : le dégradé du logo, la seule action de lecture de
+// l'écran ; « Continuer » est la pilule douce du socle.
+const PRIMARY = "btn btn-lg btn-play w-full";
+const SECONDARY = "btn btn-soft w-full";
 
 type Answer = "watch" | "continue";
 
@@ -74,11 +74,6 @@ export function AffinityMatchView({
 
   return (
     <div className="relative overflow-y-auto px-6 pb-6 pt-9 text-center">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-64"
-        style={{ background: "radial-gradient(60% 75% at 50% 0%, rgba(var(--brand-rgb),0.32), transparent 72%)" }}
-      />
       <motion.div
         className="relative mx-auto w-36"
         initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.8, rotate: -8 }}
@@ -87,14 +82,15 @@ export function AffinityMatchView({
       >
         <AffinityPoster
           itemId={match.itemId}
-          className="aspect-[2/3] w-36 rounded-2xl shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10"
+          className="aspect-[2/3] w-36 rounded-card shadow-elev-3"
         />
         <motion.span
           aria-hidden
-          className="absolute -bottom-3 -right-3 grid h-11 w-11 place-items-center rounded-full text-white shadow-lg ring-4 ring-[var(--surface-modal)]"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
-          initial={reduced ? false : { scale: 0 }}
-          animate={{ scale: 1 }}
+          // Le cœur du match : la teinte franche, pleine — un état, pas un décor.
+          className="absolute -bottom-3 -right-3 grid h-11 w-11 place-items-center rounded-pill bg-accent text-accent-on ring-4 ring-[var(--surface-modal)]"
+          // Jamais depuis rien : il naît à 60 %, en fondu, et le ressort fait le reste.
+          initial={reduced ? false : { scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: reduced ? 0 : 0.18, type: "spring", stiffness: 420, damping: 16 }}
         >
           <Heart weight="fill" className="h-5 w-5" />
@@ -103,7 +99,7 @@ export function AffinityMatchView({
 
       <h2
         id={titleId}
-        className="relative mt-8 bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-3xl font-extrabold tracking-tight text-transparent"
+        className="relative mt-8 font-display text-3xl font-bold tracking-tight text-content-primary"
       >
         {t("affinityMatchTitle")}
       </h2>

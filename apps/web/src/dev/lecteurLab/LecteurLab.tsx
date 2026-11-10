@@ -19,6 +19,7 @@ import { LabPip } from "./labPip";
 import { LabPlayerDesktop } from "./labPlayerDesktop";
 import { LabScreens } from "./labScreens";
 import { LabUpdate } from "./labUpdate";
+import { LabWt } from "./labWt";
 import { LabPlayerWeb } from "./labPlayerWeb";
 
 const VIEWS: Record<string, ComponentType> = {
@@ -28,6 +29,7 @@ const VIEWS: Record<string, ComponentType> = {
   ecrans: LabScreens,
   pip: LabPip,
   maj: LabUpdate,
+  wt: LabWt,
 };
 
 const IDLE = labWtContext();

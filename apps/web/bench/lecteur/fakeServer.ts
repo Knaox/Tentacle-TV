@@ -33,6 +33,13 @@ const EPISODES = [
   UserData: { Played: !!ep.played, PlayedPercentage: ep.percent ?? 0, PlaybackPositionTicks: 0, IsFavorite: false },
 }));
 
+const INVITABLE = [
+  { id: "lab-noa", name: "Noa", hasAvatar: false, isOnline: true },
+  { id: "lab-sam", name: "Sam", hasAvatar: false, isOnline: true },
+  { id: "lab-jules", name: "Jules", hasAvatar: false, isOnline: false },
+  { id: "lab-maya", name: "Maya", hasAvatar: false, isOnline: false },
+];
+
 const SERIES = { Id: LAB_SERIES_ID, Name: "Caminandes", Type: "Series", ProviderIds: { Tmdb: "1" } };
 
 function json(body: unknown, status = 200): Response {
@@ -47,6 +54,9 @@ function answer(url: URL): Response | null {
     const season = url.searchParams.get("seasonId") ?? url.searchParams.get("SeasonId");
     return json({ Items: season && season !== LAB_SEASON_ID ? [] : EPISODES });
   }
+  // Les personnes invitables de Watch Together (la modale d'invitation).
+  if (path.endsWith("/watch-together/users")) return json(INVITABLE);
+  if (path.endsWith("/Items/lab-movie")) return json({ Id: "lab-movie", Name: "Sintel", Type: "Movie", ProductionYear: 2010 });
   if (path.endsWith(`/Items/${LAB_SERIES_ID}`)) return json(SERIES);
   if (path.endsWith(`/Items/${LAB_EPISODE_ID}`)) return json(LAB_EPISODE);
   return json({ error: "not_found" }, 404);

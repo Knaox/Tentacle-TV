@@ -37,12 +37,11 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
         type="button"
         onClick={open}
         disabled={alone}
-        className="group flex w-full items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint px-3 py-2.5 text-left outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-60"
+        className="group flex w-full items-center gap-3 rounded-tile bg-surface-2 px-3 py-2.5 text-left outline-none transition-colors duration-hover hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span
           aria-hidden
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent"
         >
           <HeartHandshake className="h-4 w-4" />
         </span>
@@ -50,19 +49,18 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
           <span className="block text-[13px] font-semibold text-content-primary">{t("affinityFind")}</span>
           <span className="block truncate text-xs text-content-tertiary">{detail}</span>
         </span>
-        <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-content-quaternary transition-transform group-hover:translate-x-0.5" />
+        <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-content-quaternary" />
       </button>
     );
   }
 
   return (
     <section>
-      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{t("affinityFind")}</h3>
-      <div className="flex items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint p-3">
+      <h3 className="ui-eyebrow mb-2">{t("affinityFind")}</h3>
+      <div className="flex items-center gap-3 rounded-tile bg-surface-2 p-3">
         <span
           aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-accent-soft text-accent"
         >
           <HeartHandshake className="h-5 w-5" />
         </span>
@@ -71,7 +69,7 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
           type="button"
           onClick={open}
           disabled={alone}
-          className="inline-flex h-9 shrink-0 items-center rounded-full bg-[rgba(var(--brand-rgb),0.18)] px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-sm btn-accent shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {state ? t(participant ? "affinityResume" : "affinityJoin") : t("affinityStart")}
         </button>

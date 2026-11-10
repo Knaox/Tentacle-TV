@@ -7,6 +7,7 @@ import { useMirror } from "../../mirror/useFormFactor";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
 import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/shared";
+import { WT_NOTICE } from "../wtSkin";
 
 /**
  * La pilule d'invitation : une séance d'affinité tourne dans la salle et je
@@ -42,17 +43,13 @@ export function AffinityPill() {
             initial={reduced ? { opacity: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full py-1.5 pl-3 pr-1.5 text-white"
-            style={{
-              background: "rgba(15,15,25,0.94)",
-              border: "1px solid rgba(139,92,246,0.35)",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
-            }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+            // Un avis du socle, en pilule — le même que « Lecture de groupe en cours ».
+            className={`pointer-events-auto ${WT_NOTICE}`}
             role="status"
           >
-            <HeartHandshake aria-hidden className="h-4 w-4 shrink-0 text-purple-300" />
-            <span className="min-w-0 truncate text-sm text-white/85">
+            <HeartHandshake aria-hidden weight="fill" className="h-4 w-4 shrink-0 text-accent" />
+            <span className="min-w-0 truncate">
               {/* Sur téléphone, le plus court : même « Affinité en cours · … » y
                   était tronqué, le bouton dit le reste. */}
               {mirror
@@ -64,7 +61,7 @@ export function AffinityPill() {
             <button
               type="button"
               onClick={() => openAffinity("deck")}
-              className="h-9 shrink-0 rounded-full bg-white px-4 text-xs font-bold text-black outline-none transition-colors hover:bg-white/85 focus-visible:ring-2 focus-visible:ring-purple-300"
+              className="btn btn-sm btn-solid"
             >
               {participant ? t("affinityResume") : t("affinityJoin")}
             </button>
@@ -73,7 +70,7 @@ export function AffinityPill() {
               onClick={() => dismissAffinityPill(state.sessionId)}
               aria-label={t("affinityDismiss")}
               title={t("affinityDismiss")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/60 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-purple-300"
+              className="icon-btn btn-sm"
             >
               <X aria-hidden className="h-4 w-4" />
             </button>

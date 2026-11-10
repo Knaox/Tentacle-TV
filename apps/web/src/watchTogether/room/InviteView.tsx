@@ -25,8 +25,8 @@ import { showRoomView } from "../roomModalStore";
  *   réponse sous les yeux.
  */
 
-const PRIMARY =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg outline-none transition-[background-color,transform] duration-150 hover:bg-cta-primary-bg-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
+// La pilule principale du socle (`theme/buttons.css`).
+const PRIMARY = "btn btn-solid";
 
 function UserRow({ user, selected, invited, onToggle }: {
   user: WtInvitableUserDto;
@@ -43,8 +43,9 @@ function UserRow({ user, selected, invited, onToggle }: {
         aria-checked={selected}
         disabled={invited}
         onClick={() => onToggle(user)}
-        className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default ${
-          selected ? "bg-[rgba(var(--brand-rgb),0.14)]" : "hover:bg-fill-subtle"
+        // Choisie : le fond doux de la teinte franche et la case du socle — plus d'aplat de marque.
+        className={`flex min-h-14 w-full items-center gap-3 rounded-field px-2 py-2 text-left outline-none transition-colors duration-hover focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default ${
+          selected ? "bg-accent-soft" : "hover:bg-fill-subtle"
         }`}
       >
         <span className={invited ? "opacity-50" : undefined}>
@@ -57,12 +58,7 @@ function UserRow({ user, selected, invited, onToggle }: {
           </span>
         </span>
         {!invited && (
-          <span
-            aria-hidden
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ${
-              selected ? "border-transparent bg-[var(--brand)] text-white" : "border-line-strong text-transparent"
-            }`}
-          >
+          <span aria-hidden className="ui-check mr-1">
             <Check weight="bold" className="h-3.5 w-3.5" />
           </span>
         )}
@@ -119,7 +115,7 @@ export function InviteView({ room, titleId }: { room: WtRoomStateDto; titleId: s
 
   const section = (label: string, list: WtInvitableUserDto[]) => list.length > 0 && (
     <section>
-      <h3 className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{label}</h3>
+      <h3 className="ui-eyebrow mb-1 px-2">{label}</h3>
       <ul>
         {list.map((user) => (
           <UserRow key={user.id} user={user} selected={selected.has(user.id)} invited={invitedIds.has(user.id)} onToggle={toggle} />
@@ -135,12 +131,13 @@ export function InviteView({ room, titleId }: { room: WtRoomStateDto; titleId: s
           type="button"
           onClick={() => showRoomView("room")}
           aria-label={t("back")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
+          title={t("back")}
+          className="icon-btn h-9 w-9"
         >
           <ArrowLeft aria-hidden className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1 pt-1">
-          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-content-primary">{t("inviteTitle")}</h2>
+          <h2 id={titleId} className="font-display text-heading-3 text-content-primary">{t("inviteTitle")}</h2>
           <p className="mt-0.5 text-[13px] leading-relaxed text-content-tertiary">{t("inviteHint")}</p>
         </div>
       </header>
@@ -155,7 +152,7 @@ export function InviteView({ room, titleId }: { room: WtRoomStateDto; titleId: s
                   type="button"
                   onClick={() => toggle(user)}
                   aria-label={t("removeSelection", { name: user.name })}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[rgba(var(--brand-rgb),0.18)] pl-1 pr-2.5 text-[13px] font-medium text-content-primary transition-colors hover:bg-[rgba(var(--brand-rgb),0.28)]"
+                  className="btn btn-sm btn-accent gap-1.5 pl-1 pr-2.5 font-medium text-content-primary"
                 >
                   <WtAvatar userId={user.id} name={user.name} hasAvatar={user.hasAvatar} size={24} />
                   {user.name}
@@ -170,7 +167,7 @@ export function InviteView({ room, titleId }: { room: WtRoomStateDto; titleId: s
       <div className="min-h-32 flex-1 space-y-3 overflow-y-auto px-4 pb-3">
         {isLoading ? (
           <div className="space-y-2 px-2">
-            {[0, 1, 2].map((i) => <div key={i} className="h-12 animate-pulse rounded-xl bg-fill-subtle" />)}
+            {[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-12 rounded-field" />)}
           </div>
         ) : candidates.length === 0 ? (
           <p className="py-8 text-center text-sm text-content-tertiary">{t("noUsersFound")}</p>

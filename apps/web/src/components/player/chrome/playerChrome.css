@@ -100,10 +100,12 @@
 
 /* ── Le titre ── */
 
+/* Le titre ne prend que sa largeur : la droite de la barre reste libre (les avatars d'une
+ * séance de groupe s'y posent, `GroupPlaybackOverlay`). */
 .pl-heading {
   display: flex;
   min-width: 0;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 2px;
 }

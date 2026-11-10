@@ -41,7 +41,7 @@ const FloatingEmoji = memo(function FloatingEmoji({ reaction }: { reaction: WtFl
           src={reaction.gif.url}
           alt=""
           draggable={false}
-          className="h-24 w-auto max-w-[160px] rounded-xl border border-white/15 object-cover shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+          className="h-24 w-auto max-w-[160px] rounded-card object-cover"
           style={reaction.gif.w && reaction.gif.h ? { aspectRatio: `${reaction.gif.w} / ${reaction.gif.h}` } : undefined}
         />
       ) : (
@@ -49,13 +49,13 @@ const FloatingEmoji = memo(function FloatingEmoji({ reaction }: { reaction: WtFl
           {reaction.emoji}
           {/* Une rafale du même emoji : une seule bulle, comptée. */}
           {reaction.count && reaction.count > 1 ? (
-            <span className="absolute -right-4 -top-1 rounded-full bg-black/60 px-1 text-[11px] font-bold tabular-nums text-white">
+            <span className="absolute -right-4 -top-1 rounded-pill bg-[#18181B] px-1 text-[11px] font-bold tabular-nums text-white">
               ×{reaction.count}
             </span>
           ) : null}
         </span>
       )}
-      <span className="mt-0.5 rounded-full bg-black/50 px-1.5 text-[10px] font-medium text-white/75">
+      <span className="mt-0.5 rounded-pill bg-[#18181B] px-1.5 text-[10px] font-medium text-white/85">
         {reaction.username}
       </span>
     </motion.div>

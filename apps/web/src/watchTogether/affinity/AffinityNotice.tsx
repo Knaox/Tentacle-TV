@@ -42,17 +42,13 @@ export function AffinityNotice() {
               initial={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0, transition: { duration: reduced ? 0.12 : 0.22, ease: "easeOut" } }}
               exit={reduced ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
-              className="flex max-w-full items-center gap-2.5 rounded-2xl py-1.5 pl-1.5 pr-4 text-[13px] font-medium leading-snug text-white"
-              style={{
-                background: "rgb(15,15,25)",
-                border: "1px solid rgba(139,92,246,0.35)",
-                boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
-              }}
+              // Un avis du socle (`.ui-toast`), compact : il suit le thème de la feuille qu'il survole.
+              className="ui-toast max-w-full !gap-2.5 !rounded-pill !py-1.5 !pl-1.5 !pr-4 !text-[13px] leading-snug"
             >
               {member ? (
                 <WtAvatar userId={member.userId} name={member.username} hasAvatar={member.hasAvatar} size={24} />
               ) : (
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/10 text-purple-200">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-fill-soft text-content-secondary">
                   <Info className="h-3.5 w-3.5" />
                 </span>
               )}
