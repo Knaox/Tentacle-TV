@@ -104,6 +104,10 @@ void setOnVideoClaim(std::function<void()> claim) {
   if (state) state->video->setOnVideoClaim(std::move(claim));
 }
 
+void setVideoPropertyObserver(std::function<void(const std::string&, const nlohmann::json&)> observer) {
+  if (state) state->video->setPropertyObserver(std::move(observer));
+}
+
 void installShim(AppContext& ctx) {
   bridge::ShimConfig config;
   const std::string origin = originOf(ctx.options->url);

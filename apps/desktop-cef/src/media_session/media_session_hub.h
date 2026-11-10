@@ -64,6 +64,8 @@ class Hub {
     size_t artworkBytes = 0;
   };
   Snapshot snapshot() const;
+  // Ce que l'OS tient, relu chez lui (`Backend::debugState`).
+  std::string backendState() const { return backend_->debugState(); }
 
  private:
   struct Slot {

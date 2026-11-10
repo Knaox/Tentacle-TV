@@ -132,6 +132,7 @@ void VideoChannels::getProperty(const Json& payload, Reply reply) {
 }
 
 void VideoChannels::onProperty(const std::string& name, const Json& value) {
+  if (propertyObserver_) propertyObserver_(name, value);
   const auto id = observedIds_.find(name);
   if (id == observedIds_.end()) return;  // observée pour un autre (vidéo-HDR, sonde EDR)
   const double at = clock_();

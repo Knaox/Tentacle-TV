@@ -86,6 +86,8 @@ class Backend {
   virtual void setControls(const Controls& controls) = 0;
   // Windows : nom de la session audio du processus dans le mélangeur (`set_audio_session_name`).
   virtual void setAudioSessionName(const std::string& /*name*/) {}
+  // Diagnostic des bancs : ce que l'OS tient RÉELLEMENT (relu chez lui), en JSON ; "null" sinon.
+  virtual std::string debugState() const { return "null"; }
 };
 
 struct BackendHost {
