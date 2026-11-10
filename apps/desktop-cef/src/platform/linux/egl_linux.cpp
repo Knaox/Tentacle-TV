@@ -139,7 +139,15 @@ EglWindow::~EglWindow() {
 }
 
 bool EglWindow::makeCurrent() {
-  return eglMakeCurrent(display_, surface_, surface_, context_) == EGL_TRUE;
+  const bool ok = eglMakeCurrent(display_, surface_, surface_, context_) == EGL_TRUE;
+  // Un refus fige la fenêtre (plus de copie ni de composition) sans rien dire d'autre : on
+  // dit la bascule et son code, une fois, puis le retour.
+  if (ok != current_) {
+    if (ok) std::fprintf(stderr, "[egl] eglMakeCurrent rétabli (contexte %p)\n", context_);
+    else std::fprintf(stderr, "[egl] eglMakeCurrent refusé (0x%x, contexte %p)\n", eglGetError(), context_);
+    current_ = ok;
+  }
+  return ok;
 }
 
 void EglWindow::resize(int widthPx, int heightPx) {

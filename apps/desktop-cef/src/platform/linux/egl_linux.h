@@ -50,6 +50,7 @@ class EglWindow {
   ::wl_egl_window* wlEgl_ = nullptr;
   int width_ = 0, height_ = 0, glesMajor_ = 0;
   bool alpha_ = false, shared_ = false;
+  bool current_ = true;  // dernier eglMakeCurrent réussi : le journal ne dit que les bascules
 };
 
 }  // namespace tentacle::platform
