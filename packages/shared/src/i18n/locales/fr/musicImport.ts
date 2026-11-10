@@ -130,6 +130,8 @@ export default {
     skipped_other: "{{count}} titres non importés",
     show: "Voir lesquels et pourquoi",
     hide: "Masquer la liste",
+    more_one: "… et {{count}} autre titre",
+    more_other: "… et {{count}} autres titres",
     reason: {
       notFound: "Introuvable",
       region: "Indisponible dans votre région",

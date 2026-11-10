@@ -130,6 +130,8 @@ export default {
     skipped_other: "{{count}} tracks not imported",
     show: "See which ones and why",
     hide: "Hide the list",
+    more_one: "…and {{count}} more track",
+    more_other: "…and {{count}} more tracks",
     reason: {
       notFound: "Not found",
       region: "Not available in your region",
