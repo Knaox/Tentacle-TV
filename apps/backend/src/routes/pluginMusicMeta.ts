@@ -36,6 +36,7 @@ export interface PluginMusicManifest {
   importRead?: string;
   importSources?: MusicImportSource[];
   importTracks?: string;
+  importBatches?: boolean;
   releases?: string;
   releaseSources?: ("bandcamp" | "files")[];
   searchKinds?: ("tracks" | "albums" | "artists" | "playlists")[];
@@ -65,6 +66,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     if (path) out[key] = path;
   }
   if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
+  if (m.importBatches === true && out.importTracks) out.importBatches = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;

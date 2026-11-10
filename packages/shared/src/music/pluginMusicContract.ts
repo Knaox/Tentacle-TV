@@ -95,6 +95,11 @@ export interface PluginMusicManifest {
   /** Import — POST `ImportTracksRequest` → 202 `ImportTracksAccepted` ; GET/DELETE `<importTracks>/<operationId>`. */
   importTracks?: string;
   /**
+   * `importTracks` reçoit les absents PAR LOTS (lot « pg », 1.43.0 : `musicImportExtension.ts`, `importId`, `total`,
+   * idempotence par (`importId`, `index`)). Absent (extension d'avant) : un seul appel, au plus `legacyCap` titres.
+   */
+  importBatches?: boolean;
+  /**
    * Sorties importées (lot « sf », musicReleases.ts) — un chemin de BASE : `<releases>/link`, `<releases>/files`,
    * `<releases>/jobs/<id>`, `GET <releases>`. Va avec `releaseSources` ; l'un sans l'autre : aucune entrée « Importer ».
    */
@@ -337,6 +342,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
     if (path) out[key] = path;
   }
   if (m.prefetchAlbums === true && out.prefetch) out.prefetchAlbums = true;
+  if (m.importBatches === true && out.importTracks) out.importBatches = true;
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;

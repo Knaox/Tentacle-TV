@@ -139,6 +139,7 @@ export default {
       quota: "Daily limit reached",
       unavailable: "Service temporarily unavailable",
       noExtension: "No source outside the library on this server",
+      extensionLimit: "Too many tracks at once for this server's extension",
     },
   },
 };
