@@ -4,6 +4,7 @@
 
 #include "compositor/compositor.h"
 #include "include/cef_client.h"
+#include "include/cef_drag_handler.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_resource_request_handler.h"
@@ -42,7 +43,8 @@ class Client final : public CefClient,
                      public CefContextMenuHandler,
                      public CefRequestHandler,
                      public CefResourceRequestHandler,
-                     public CefPermissionHandler {
+                     public CefPermissionHandler,
+                     public CefDragHandler {
  public:
   // CefLifeSpanHandler ET CefRequestHandler déclarent chacun ce nom : GCC (Linux) refuse la
   // référence ambiguë que Clang tolère. Un alias de la classe tranche, pour tous les fichiers.
@@ -54,6 +56,12 @@ class Client final : public CefClient,
   bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t promptId,
                               const CefString& requestingOrigin, uint32_t requestedPermissions,
                               CefRefPtr<CefPermissionPromptCallback> callback) override;
+
+  // CefDragHandler (client_drag_regions.cpp, axe systeme) : les régions `app-region: drag` de
+  // la page deviennent le test de clic de la fenêtre (déplacer la fenêtre, sur les trois OS).
+  CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
+  void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                 const std::vector<CefDraggableRegion>& regions) override;
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
