@@ -12,7 +12,7 @@ import type { IndexRow } from "../index/indexTypes";
 import { matchTracks } from "../view/matchViews";
 import type { UserView } from "../view/viewContext";
 
-const BATCH = 50;
+const BATCH = 500;
 
 export type MatchFn = (view: UserView, queries: readonly MusicMatchTrackQuery[]) => Promise<Map<string, IndexRow>>;
 

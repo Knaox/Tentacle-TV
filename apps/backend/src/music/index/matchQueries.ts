@@ -61,6 +61,53 @@ export async function rowsNamed(kind: "track" | "album", title: string, limit: n
   return rows.map(fromDb);
 }
 
+/** Une recherche de `rowsNamed` : le titre, et le crédit qui la resserre (absent : le nom seul). */
+export interface NamedSearch {
+  title: string;
+  artists?: readonly MatchArtist[];
+}
+
+/** Recherches par requête SQL (≤ 500 sélections composées dans SQLite) et identifiants par `IN` (≤ 32 766 variables). */
+const SEARCHES_PER_QUERY = 200;
+const IDS_PER_QUERY = 900;
+
+/**
+ * PLUSIEURS recherches de `rowsNamed` d'un coup (lot « pg », 10/11 : un import de 9 000 titres en faisait 36 000,
+ * 8,7 s mesurées, l'aller-retour de Prisma bien plus que la FTS). Mêmes candidats, même ordre de rang, même borne,
+ * et les lignes de chaque recherche dans l'ordre que rend `rowsNamed` (identifiant croissant, celui du `IN`).
+ */
+export async function rowsNamedMany(kind: "track" | "album", searches: readonly NamedSearch[], limit: number): Promise<IndexRow[][]> {
+  const out: IndexRow[][] = searches.map(() => []);
+  const live = searches.flatMap((search, at) => {
+    const match = search.artists ? creditedMatchExpression(search.title, search.artists) : nameMatchExpression(search.title);
+    return match ? [{ at, match }] : [];
+  });
+  const prisma = getPrisma();
+  const hits: { q: number; id: string }[] = [];
+  for (let i = 0; i < live.length; i += SEARCHES_PER_QUERY) {
+    const part = live.slice(i, i + SEARCHES_PER_QUERY);
+    const sql = part
+      .map(() => `SELECT * FROM (SELECT ? AS "q", "id" FROM "music_fts" WHERE "music_fts" MATCH ? AND "kind" = ? ORDER BY length("name"), "id" LIMIT ?)`)
+      .join(" UNION ALL ");
+    hits.push(...(await prisma.$queryRawUnsafe<{ q: number | bigint; id: string }[]>(sql, ...part.flatMap((p) => [p.at, p.match, kind, limit]))).map((h) => ({ q: Number(h.q), id: h.id })));
+  }
+  const ids = [...new Set(hits.map((h) => h.id))];
+  const rows = new Map<string, IndexRow>();
+  for (let i = 0; i < ids.length; i += IDS_PER_QUERY) {
+    const part = ids.slice(i, i + IDS_PER_QUERY);
+    for (const row of await prisma.$queryRawUnsafe<DbRow[]>(`SELECT * FROM "music_items" WHERE "id" IN (${part.map(() => "?").join(", ")})`, ...part)) {
+      const decoded = fromDb(row);
+      rows.set(decoded.id, decoded);
+    }
+  }
+  for (const hit of hits) {
+    const row = rows.get(hit.id);
+    if (row) out[hit.q]!.push(row);
+  }
+  for (const list of out) list.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return out;
+}
+
 /** Les albums d'une parution ou d'un groupe de parutions MusicBrainz. */
 export async function albumsByMbids(releases: readonly string[], groups: readonly string[]): Promise<IndexRow[]> {
   if (releases.length === 0 && groups.length === 0) return [];

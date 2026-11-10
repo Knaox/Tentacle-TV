@@ -16,7 +16,7 @@ import { bestMatch, bestTrackMatch, isSameAlbum, isSameAlbumTrack, isVariousCred
 import type { MusicTrack } from "../contract/musicTypes";
 import { albumTracks, tracksByRecording } from "../index/indexQueries";
 import type { IndexRow } from "../index/indexTypes";
-import { albumsByMbids, rowsNamed } from "../index/matchQueries";
+import { albumsByMbids, rowsNamed, rowsNamedMany, type NamedSearch } from "../index/matchQueries";
 import { albumsOf, tracksOf, visibleRows, type UserView } from "./viewContext";
 
 const TRACK_CANDIDATES = 40;
@@ -62,31 +62,43 @@ export async function matchTracks(view: UserView, queries: readonly MusicMatchTr
   for (const row of visibleRows(view, await tracksByRecording(recordings))) {
     if (row.recordingMbid) byRecording.set(row.recordingMbid, [...(byRecording.get(row.recordingMbid) ?? []), row]);
   }
-  const loaded = new Map<string, IndexRow[]>();
-  const candidates = async (key: string, load: () => Promise<IndexRow[]>) => {
-    if (!loaded.has(key)) loaded.set(key, visibleRows(view, await load()));
-    return loaded.get(key) ?? [];
-  };
+  const rest: MusicMatchTrackQuery[] = [];
   for (const q of queries) {
     const exact = q.recording ? byRecording.get(q.recording) : undefined;
     const pick = exact?.length ? bestMatch(q, exact, trackMatchable, () => true) : null;
-    if (pick) {
-      found.set(q.ref, pick);
-      continue;
-    }
-    const title = q.title.toLowerCase();
-    const credited = await candidates(`a:${title}\u0000${q.artists.map((a) => a.name.toLowerCase()).join("\u0000")}`, () =>
-      rowsNamed("track", q.title, TRACK_CANDIDATES, q.artists),
-    );
-    let best = bestTrackMatch(q, credited, trackMatchable);
-    // Le nom seul aussi quand le crédit n'a rien trouvé, ou pas dans l'album de la source (un recueil peut l'avoir).
-    if (!best || (q.albumTitle !== null && !(best.albumName && sameAlbumTitle(best.albumName, q.albumTitle)))) {
-      const named = await candidates(`n:${title}`, () => rowsNamed("track", q.title, TRACK_CANDIDATES));
-      best = bestTrackMatch(q, [...credited, ...named], trackMatchable);
-    }
-    if (best) found.set(q.ref, best);
+    if (pick) found.set(q.ref, pick);
+    else rest.push(q);
+  }
+  // Les candidats de TOUTES les requêtes en quelques allers-retours (`rowsNamedMany`), une recherche par clé.
+  const credited = await candidatesOf(view, rest, (q) => `a:${q.title.toLowerCase()}\u0000${q.artists.map((a) => a.name.toLowerCase()).join("\u0000")}`, (q) => ({ title: q.title, artists: q.artists }));
+  const best = new Map<MusicMatchTrackQuery, IndexRow | null>(rest.map((q) => [q, bestTrackMatch(q, credited(q), trackMatchable)]));
+  // Le nom seul aussi quand le crédit n'a rien trouvé, ou pas dans l'album de la source (un recueil peut l'avoir).
+  const again = rest.filter((q) => {
+    const hit = best.get(q);
+    return !hit || (q.albumTitle !== null && !(hit.albumName && sameAlbumTitle(hit.albumName, q.albumTitle)));
+  });
+  const named = await candidatesOf(view, again, (q) => `n:${q.title.toLowerCase()}`, (q) => ({ title: q.title }));
+  for (const q of again) best.set(q, bestTrackMatch(q, [...credited(q), ...named(q)], trackMatchable));
+  for (const q of rest) {
+    const hit = best.get(q);
+    if (hit) found.set(q.ref, hit);
   }
   return found;
+}
+
+/** Les candidats visibles de chaque requête, une recherche par clé distincte ; rend « requête → candidats ». */
+async function candidatesOf(
+  view: UserView,
+  queries: readonly MusicMatchTrackQuery[],
+  keyOf: (q: MusicMatchTrackQuery) => string,
+  searchOf: (q: MusicMatchTrackQuery) => NamedSearch,
+): Promise<(q: MusicMatchTrackQuery) => IndexRow[]> {
+  const keys = new Map<string, MusicMatchTrackQuery>();
+  for (const q of queries) if (!keys.has(keyOf(q))) keys.set(keyOf(q), q);
+  const order = [...keys.keys()];
+  const lists = await rowsNamedMany("track", order.map((k) => searchOf(keys.get(k)!)), TRACK_CANDIDATES);
+  const byKey = new Map(order.map((k, i) => [k, visibleRows(view, lists[i] ?? [])]));
+  return (q) => byKey.get(keyOf(q)) ?? [];
 }
 
 interface AlbumHit {
