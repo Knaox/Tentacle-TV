@@ -5,11 +5,13 @@
 #include <SDL3/SDL.h>
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "compositor/compositor.h"
 #include "shell/browser_dialogs.h"
 #include "shell/client.h"
+#include "shell/drag_drop.h"
 #include "shell/frame_clock.h"
 #include "shell/input.h"
 
@@ -55,6 +57,14 @@ class Shell final : public ViewHost {
   CefRefPtr<CefDialogHandler> dialogHandler() override { return dialogs_; }
   CefRefPtr<CefJSDialogHandler> jsDialogHandler() override { return dialogs_; }
   CefRefPtr<CefDownloadHandler> downloadHandler() override { return dialogs_; }
+  bool startDragging(CefRefPtr<CefDragData> data, cef_drag_operations_mask_t allowed) override {
+    float x = 0, y = 0;
+    input_.lastMouse(x, y);
+    return dragDrop_->startInternal(browser_, data, allowed, x, y, input_.leftHeld());
+  }
+  void updateDragCursor(cef_drag_operations_mask_t operation) override {
+    dragDrop_->updateOperation(operation);
+  }
   // Image reçue ou saisie : pleine cadence, et le délai de veille repart.
   void wakeFrameClock();
   // La page annonce un changement (canal shell.wake) : UN BeginFrame tout de suite, sans
@@ -71,6 +81,7 @@ class Shell final : public ViewHost {
   ShellOptions options_;
   CefRefPtr<Client> client_;
   CefRefPtr<BrowserDialogs> dialogs_;  // navigateur
+  std::unique_ptr<DragDrop> dragDrop_;  // navigateur
   CefRefPtr<CefBrowser> browser_;
   InputRouter input_;
   int widthPt_ = 0, heightPt_ = 0;

@@ -48,7 +48,7 @@ add_library(tentacle_shell STATIC
   src/shell/shell_shortcuts.cpp
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
-  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp src/shell/browser_dialogs.cpp  # navigateur
+  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp src/shell/browser_dialogs.cpp src/shell/client_drag.cpp src/shell/drag_drop.cpp src/shell/drag_ghost.cpp  # navigateur
   src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.

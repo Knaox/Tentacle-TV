@@ -52,6 +52,7 @@ Shell::Shell(SDL_Window* window, Compositor* compositor, ShellOptions options)
     : window_(window), compositor_(compositor), options_(std::move(options)) {
   client_ = new Client(this);
   dialogs_ = new BrowserDialogs(window_);
+  dragDrop_ = std::make_unique<DragDrop>(window_);
   syncWindowGeometry();
   platform::installAppMenu([this](platform::EditCommand c) {
     if (!browser_) return;
@@ -103,6 +104,12 @@ bool Shell::start() {
 }
 
 void Shell::handleEvent(const SDL_Event& e) {
+  // navigateur : session de glisser interne en cours, ou dépôt venu de l'OS.
+  if (dragDrop_->handleEvent(e, browser_)) {
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) input_.noteButtonUp(e.button.button);
+    wakeFrameClock();
+    return;
+  }
   switch (e.type) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:

@@ -17,6 +17,13 @@ class InputRouter {
   // Défilement natif (macOS) : remplace SDL_EVENT_MOUSE_WHEEL une fois activé.
   void setNativeWheel(bool on) { nativeWheel_ = on; }
   void wheel(const platform::NativeWheel& w, CefRefPtr<CefBrowser> browser);
+  // Un relâchement consommé ailleurs (fin d'un glisser, navigateur) : le bouton n'est plus tenu.
+  void noteButtonUp(uint8_t button) { pressed_ &= ~SDL_BUTTON_MASK(button); }
+  // Dernière position de la souris (points) et bouton gauche tenu (glisser, navigateur).
+  void lastMouse(float& x, float& y) const { x = mouseX_; y = mouseY_; }
+  bool leftHeld() const {
+    return ((SDL_GetMouseState(nullptr, nullptr) | pressed_) & SDL_BUTTON_LMASK) != 0;
+  }
 
  private:
   uint32_t mouseModifiers() const;
@@ -25,6 +32,7 @@ class InputRouter {
   void editing(const SDL_TextEditingEvent& t, CefRefPtr<CefBrowser> browser);
 
   float mouseX_ = 0, mouseY_ = 0;
+  SDL_MouseButtonFlags pressed_ = 0;  // boutons enfoncés d'après les évènements reçus
   int lastNativeKey_ = 0;
   bool composing_ = false;
   std::set<int> imeKeys_;  // touches enfoncées pendant une composition (cf. key())

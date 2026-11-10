@@ -39,6 +39,11 @@ class ViewHost {
   virtual CefRefPtr<CefDialogHandler> dialogHandler() { return nullptr; }
   virtual CefRefPtr<CefJSDialogHandler> jsDialogHandler() { return nullptr; }
   virtual CefRefPtr<CefDownloadHandler> downloadHandler() { return nullptr; }
+  // navigateur : glisser-déposer rendu (src/shell/drag_drop.h).
+  virtual bool startDragging(CefRefPtr<CefDragData> data, cef_drag_operations_mask_t allowed) {
+    return false;
+  }
+  virtual void updateDragCursor(cef_drag_operations_mask_t operation) {}
 };
 
 class Client final : public CefClient,
@@ -105,6 +110,10 @@ class Client final : public CefClient,
                           const RectList& dirty, const CefAcceleratedPaintInfo& info) override;
   void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& range,
                                     const RectList& characterBounds) override;
+  // navigateur (client_drag.cpp) : glisser-déposer HTML5 rejoué par l'hôte.
+  bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> dragData,
+                     DragOperationsMask allowedOps, int x, int y) override;
+  void UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) override;
 
   // CefDisplayHandler
   bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,

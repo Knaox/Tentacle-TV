@@ -2,6 +2,7 @@
 // la politique d'Electron (`security.ts` : `lockNavigation`, `restrictPermissions`), appliquée
 // au navigateur hors écran. Règle pure : `shell/navigation_rule.h`.
 
+#include <chrono>
 #include <cstdio>
 #include <string>
 
@@ -13,6 +14,11 @@
 
 namespace tentacle {
 namespace nav {
+
+uint64_t nowMs() {
+  using namespace std::chrono;
+  return uint64_t(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
 
 void applyVerdict(Verdict verdict, const std::string& url, const char* what) {
   if (verdict == nav::Verdict::denyOpenExternal) {
@@ -30,6 +36,10 @@ bool Client::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> f
                             CefRefPtr<CefRequest> request, bool userGesture, bool isRedirect) {
   if (!frame->IsMain()) return false;
   const std::string url = request->GetURL().ToString();
+  if (!isRedirect && nav::isDropNavigation(url, nav::nowMs())) {
+    std::fprintf(stderr, "[nav] navigation d'un dépôt annulée (comme Electron) : %s\n", url.c_str());
+    return true;
+  }
   const nav::Verdict verdict = nav::mainFrameNavigation(url, isRedirect);
   if (verdict == nav::Verdict::allow) return false;
   nav::applyVerdict(verdict, url, isRedirect ? "redirection" : "navigation");
@@ -42,8 +52,14 @@ bool Client::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> f
 bool Client::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                               const CefString& targetUrl, WindowOpenDisposition disposition,
                               bool userGesture) {
-  if (disposition == CEF_WOD_CURRENT_TAB) return false;
   const std::string url = targetUrl.ToString();
+  // Un fichier déposé hors de toute zone : Chromium l'ouvre comme une page (même onglet ou
+  // nouvel onglet selon le cas) ; Electron ne navigue jamais sur un dépôt.
+  if (nav::isDropNavigation(url, nav::nowMs())) {
+    std::fprintf(stderr, "[nav] ouverture d'un dépôt annulée (comme Electron) : %s\n", url.c_str());
+    return true;
+  }
+  if (disposition == CEF_WOD_CURRENT_TAB) return false;
   nav::applyVerdict(nav::windowOpen(url), url, "fenêtre");
   return true;
 }

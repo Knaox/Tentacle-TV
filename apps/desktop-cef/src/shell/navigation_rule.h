@@ -11,8 +11,10 @@
 //   - « dehors » = liste FERMÉE de schémas (`EXTERNAL_SCHEMES`) : `shell.openExternal` peut
 //     exécuter n'importe quoi si on lui passe n'importe quoi.
 
+#include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace tentacle::nav {
 
@@ -46,5 +48,14 @@ Verdict mainFrameNavigation(std::string_view url, bool isRedirect);
 
 /// Fenêtre ouverte par la page, quand le PiP ne la prend pas (`setWindowOpenHandler`).
 Verdict windowOpen(std::string_view url);
+
+/// `navigateOnDragDrop` d'Electron vaut faux : un dépôt ne fait JAMAIS naviguer la page. CEF,
+/// lui, navigue quand la page ne prend pas le dépôt (fichier → file://, lien ou image → son
+/// URL). Les URL d'un dépôt sont retenues `kDropWindowMs` ; une navigation du cadre principal
+/// vers l'une d'elles (ou vers file:// si le dépôt portait des fichiers) est annulée, sans rien
+/// ouvrir. Horloge en millisecondes, fournie par l'appelant.
+inline constexpr uint64_t kDropWindowMs = 2000;
+void noteDrop(std::vector<std::string> urls, bool hasFiles, uint64_t nowMs);
+bool isDropNavigation(std::string_view url, uint64_t nowMs);
 
 }  // namespace tentacle::nav

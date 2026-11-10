@@ -8,6 +8,10 @@ namespace tentacle::nav {
 namespace {
 
 std::string g_appOrigin;
+std::vector<std::string> g_dropUrls;
+bool g_dropFiles = false;
+uint64_t g_dropAt = 0;
+bool g_dropNoted = false;
 
 char lower(char c) { return char(std::tolower(static_cast<unsigned char>(c))); }
 
@@ -94,5 +98,21 @@ Verdict mainFrameNavigation(std::string_view url, bool isRedirect) {
 }
 
 Verdict windowOpen(std::string_view /*url*/) { return Verdict::denyOpenExternal; }
+
+void noteDrop(std::vector<std::string> urls, bool hasFiles, uint64_t nowMs) {
+  g_dropUrls = std::move(urls);
+  g_dropFiles = hasFiles;
+  g_dropAt = nowMs;
+  g_dropNoted = true;
+}
+
+bool isDropNavigation(std::string_view url, uint64_t nowMs) {
+  if (!g_dropNoted || nowMs < g_dropAt || nowMs - g_dropAt > kDropWindowMs) return false;
+  if (g_dropFiles && schemeOf(url) == "file") return true;
+  for (const auto& u : g_dropUrls) {
+    if (!u.empty() && u == url) return true;
+  }
+  return false;
+}
 
 }  // namespace tentacle::nav

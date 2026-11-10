@@ -51,7 +51,7 @@ std::string downloadsDirectory() {
 }
 
 BrowserDialogs::BrowserDialogs(SDL_Window* window) : window_(window) {
-  const char* env = std::getenv("TENTACLE_DEBUG_DIALOGS");
+  const char* env = std::getenv("TENTACLE_DEBUG_NAVIGATEUR");
   debugChannel_ = env && *env && *env != '0';
   if (!debugChannel_) return;
   CefRefPtr<BrowserDialogs> self(this);

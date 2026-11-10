@@ -3,7 +3,7 @@
 // `beforeunload`, téléchargement — comme les traite le bureau Electron 43 (règle pure :
 // `shell/dialog_rule.h` ; boîtes natives : `shell/native_dialogs.h`).
 //
-// Bancs : `TENTACLE_DEBUG_DIALOGS=1` ouvre le canal `navigateur.debug.dialogs` (hors
+// Bancs : `TENTACLE_DEBUG_NAVIGATEUR=1` ouvre le canal `navigateur.debug.dialogs` (hors
 // `window.tentacle`) — `{op:"state"}` rend les boîtes ouvertes et l'historique des demandes ;
 // `{op:"answer", id, response}` répond à une boîte de message, `{op:"answer", id, paths:[…]}`
 // ou `{op:"answer", id, cancel:true}` à un panneau de fichiers (la boîte native est fermée) ;

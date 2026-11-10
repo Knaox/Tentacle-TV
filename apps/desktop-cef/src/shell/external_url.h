@@ -22,6 +22,8 @@ namespace nav {
 /// Applique un verdict : `denyOpenExternal` → `openExternalSafely(url)` ; `deny` → journalisé.
 /// `what` nomme le geste dans le journal (« navigation », « fenêtre »…).
 void applyVerdict(Verdict verdict, const std::string& url, const char* what);
+/// Horloge monotone en millisecondes (garde des dépôts : `noteDrop`, `isDropNavigation`).
+uint64_t nowMs();
 }  // namespace nav
 
 }  // namespace tentacle

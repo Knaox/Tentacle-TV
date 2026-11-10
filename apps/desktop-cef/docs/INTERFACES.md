@@ -270,8 +270,17 @@ Référence : `apps/desktop-electron/src/main/security.ts` (`lockNavigation`, `r
   `null` sans boîte, `beforeunload` → la page reste sans question, téléchargement → boîte
   d'enregistrement (titre = URL, Téléchargements puis dernier dossier), annulée = téléchargement
   annulé. Linux : panneaux de fichiers = ceux de Chromium (portail XDG), comme Electron.
-  Bancs : `TENTACLE_DEBUG_DIALOGS=1` → canal `navigateur.debug.dialogs` (`state`, `answer`,
+  Bancs : `TENTACLE_DEBUG_NAVIGATEUR=1` → canal `navigateur.debug.dialogs` (`state`, `answer`,
   `queue` : réponses d'avance, un dialogue JavaScript bloquant la page).
+- **Glisser-déposer** (`src/shell/drag_drop.h`, `drag_ghost.h`, `client_drag.cpp`) : `StartDragging`
+  ouvre une session interne (souris SDL → `DragTarget*`, Échap l'abandonne, image fantôme dans
+  une fenêtre bulle SDL qui suit le curseur) ; fichiers et texte venus de l'OS par
+  `SDL_EVENT_DROP_*` (survol avec un fichier fictif, dépôt rejoué avec les vrais fichiers,
+  `DROP_COMPLETE` sans fichier = sortie). Un dépôt ne fait jamais naviguer (`navigateOnDragDrop`
+  d'Electron : `nav::noteDrop`/`isDropNavigation`). `Shell::handleEvent` passe d'abord par
+  `DragDrop::handleEvent`. `InputRouter` suit les boutons d'après ses évènements (`pressed_`) et
+  expose `lastMouse`/`leftHeld`/`noteButtonUp`. Non porté : un glisser qui SORT vers le Finder.
+  Bancs : `navigateur.debug.drop {files, text, x, y, leave}` (avec `TENTACLE_DEBUG_NAVIGATEUR=1`).
 - **Permissions** : toute invite refusée (`CEF_PERMISSION_RESULT_DENY`), média refusé, contrôles
   « denied » (réglages de contenu par défaut : notifications, géolocalisation, micro, caméra,
   MIDI, lecture du presse-papiers…) ; écriture assainie du presse-papiers accordée (défaut de

@@ -42,6 +42,19 @@ static void navigation() {
   CHECK(nav::windowOpen("tentacle://app/x") == Verdict::denyOpenExternal);
 }
 
+static void dropNavigation() {
+  // `navigateOnDragDrop: false` : la navigation qu'un dépôt ferait naître est annulée.
+  CHECK(!nav::isDropNavigation("file:///Users/x/a.mp3", 1000));  // aucun dépôt
+  nav::noteDrop({}, true, 1000);
+  CHECK(nav::isDropNavigation("file:///Users/x/a%20b.mp3", 1500));
+  CHECK(!nav::isDropNavigation("https://example.org/", 1500));
+  CHECK(!nav::isDropNavigation("file:///Users/x/a.mp3", 1000 + nav::kDropWindowMs + 1));
+  nav::noteDrop({"http://127.0.0.1:3471/affiche.jpg"}, false, 5000);
+  CHECK(nav::isDropNavigation("http://127.0.0.1:3471/affiche.jpg", 5100));
+  CHECK(!nav::isDropNavigation("file:///etc/hosts", 5100));
+  CHECK(!nav::isDropNavigation("tentacle://app/settings", 5100));
+}
+
 static void schemes() {
   // La liste fermée de security.ts, et elle seule ; casse et espaces comme `new URL`.
   for (const char* url : {"http://a/", "HTTPS://a/", "  https://a/ ", "mailto:x@y.z",
@@ -132,6 +145,7 @@ static void javaScriptDialogs() {
 
 int main() {
   navigation();
+  dropNavigation();
   schemes();
   origins();
   fileFilters();
