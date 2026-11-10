@@ -49,7 +49,7 @@ add_library(tentacle_shell STATIC
   src/shell/app_scheme.cpp
   src/shell/web_root.cpp
   src/shell/paths.cpp  # reseau : dossier de données d'Electron, --user-data
-  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp src/shell/browser_dialogs.cpp src/shell/client_drag.cpp src/shell/drag_drop.cpp src/shell/drag_ghost.cpp src/shell/tooltip.cpp src/shell/cursors.cpp src/shell/zoom_guard.cpp  # navigateur
+  src/shell/client_navigation.cpp src/shell/navigation_rule.cpp src/shell/external_url.cpp src/shell/dialog_rule.cpp src/shell/browser_dialogs.cpp src/shell/client_drag.cpp src/shell/drag_drop.cpp src/shell/drag_ghost.cpp src/shell/tooltip.cpp src/shell/cursors.cpp src/shell/zoom_guard.cpp src/shell/shell_navigateur.cpp  # navigateur
   src/shell/client_popup.cpp  # pip : aiguillage des popups (window.open) par module
 )
 # Code commun au rendu (renderer) : lié par l'app ET par les helpers.

@@ -55,7 +55,8 @@ class Shell final : public ViewHost {
   void onBrowserClosed() override;
   void onPaint() override { wakeFrameClock(); }
   bool onUnhandledKey(const CefKeyEvent& event) override;
-  void onDocumentFullscreen(bool fullscreen) override { documentFullscreen_ = fullscreen; }
+  // navigateur (shell_navigateur.cpp) : refusé, comme sous Electron.
+  void onDocumentFullscreen(bool fullscreen) override;
   void onResourceLoaded() override { nudgeFrameClock(); }
   // navigateur : boîtes de la page (browser_dialogs.h)
   CefRefPtr<CefDialogHandler> dialogHandler() override { return dialogs_; }

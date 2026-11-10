@@ -174,36 +174,6 @@ void Shell::setImeRect(const CefRect& r) {
   SDL_SetTextInputArea(window_, &area, 0);
 }
 
-void Shell::setCursor(cef_cursor_type_t type) { setCursorFull(type, nullptr, CefCursorInfo()); }
-
-// navigateur : la forme de la page, ou celle du glisser en cours (src/shell/cursors.h).
-void Shell::setCursorFull(cef_cursor_type_t type, CefCursorHandle native,
-                          const CefCursorInfo& custom) {
-  lastCursor_ = int(type);
-  SDL_Cursor* c = cursors_.forPage(type, native, custom);
-  static const bool trace = SDL_getenv("TENTACLE_INPUT_LOG") != nullptr;
-  if (trace) {
-    std::fprintf(stderr, "[curseur] type %d natif %s → %p\n", int(type), native ? "oui" : "non",
-                 static_cast<void*>(c));
-  }
-  if (dragDrop_->internalActive()) return;  // le curseur du glisser l'emporte
-  applyCursor(c);
-}
-
-void Shell::applyCursor(SDL_Cursor* c) {
-  if (!c) {
-    SDL_HideCursor();
-    cursorHidden_ = true;
-    return;
-  }
-  if (cursorHidden_) {
-    SDL_ShowCursor();
-    cursorHidden_ = false;
-  }
-  SDL_SetCursor(c);
-  pageCursor_ = c;
-}
-
 void Shell::setTitle(const std::string& title) {
   SDL_SetWindowTitle(window_, title.empty() ? "Tentacle" : title.c_str());
 }
