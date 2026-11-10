@@ -3,6 +3,7 @@
  * glyphe ivoire — et, pour un état ACTIF (favori, vu, Ma liste, épinglé), la teinte franche du
  * thème SOMBRE. Le jeton `--accent` du thème clair est une encre profonde (#A21CAF), illisible
  * sur un voile sombre : d'où ces constantes, en attendant un jeton `--on-media-accent` au socle.
+ * Source UNIQUE : les cartes, la barre, la fiche et les étoiles lisent ce module.
  */
 
 /** La teinte franche sur une image (la valeur sombre de `--accent`). */

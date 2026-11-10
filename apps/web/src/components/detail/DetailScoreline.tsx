@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useCardMarkers } from "@tentacle-tv/api-client";
 import { formatCommunityRating, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, StarGlyph, WatchedGlyph } from "../cards/cardGlyphs";
-import { ON_MEDIA_ACCENT } from "./onMedia";
+import { ON_MEDIA_ACCENT_TEXT } from "../cards/onMedia";
 import { fadeUp } from "../../theme/motion";
 
 interface DetailScorelineProps {
@@ -68,7 +68,7 @@ export const DetailScoreline = memo(function DetailScoreline({ item, communityRa
             return (
               <li key={kind} className="lg-status-pill chip chip-on-media h-7 px-2.5">
                 {/* Un état ACTIF : la teinte franche, la même pour les trois. */}
-                <Glyph filled className={`h-3.5 w-3.5 ${ON_MEDIA_ACCENT}`} />
+                <Glyph filled className={`h-3.5 w-3.5 ${ON_MEDIA_ACCENT_TEXT}`} />
                 {t(`cards:status.${kind}`)}
               </li>
             );

@@ -1,4 +1,4 @@
-import { ON_MEDIA_ACCENT } from "../detail/onMedia";
+import { ON_MEDIA_ACCENT_TEXT } from "../cards/onMedia";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -55,7 +55,7 @@ export function StarRating({
   const outlineClass =
     tone === "onMedia" ? "text-on-media-secondary" : "text-content-tertiary opacity-40";
   // La note posée : un état ACTIF, à la teinte franche (celle du sombre sur une image).
-  const filledClass = tone === "onMedia" ? ON_MEDIA_ACCENT : "text-accent";
+  const filledClass = tone === "onMedia" ? ON_MEDIA_ACCENT_TEXT : "text-accent";
   // Filtre STATIQUE (jamais animé) sur le conteneur de l'étoile : un seul
   // drop-shadow pour les trois glyphes, pas trois.
   const starShadow = tone === "onMedia" ? "drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]" : "";

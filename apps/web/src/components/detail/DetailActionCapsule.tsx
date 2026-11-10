@@ -7,7 +7,7 @@ import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../cards/cardGlyphs";
 import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
 import { GLASS_LENS_PROPS, useLiquidGlassMode, useLiquidGlassSurface } from "../../theme/glass";
 import { useWtDetailAction } from "../../watchTogether/useWtDetailAction";
-import { ON_MEDIA_ACCENT } from "./onMedia";
+import { ON_MEDIA_ACCENT_TEXT } from "../cards/onMedia";
 
 /**
  * Les bascules de la fiche — Favoris, Ma liste, Vu, Hors ligne, Watch
@@ -118,7 +118,7 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
     interactive: true,
     className: "flex h-10 w-10 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]",
     fallbackClassName: `rounded-pill transition-[color,background-color,transform] duration-hover ease-out hover:bg-white/10 active:scale-[0.97] active:duration-press ${
-      active ? ON_MEDIA_ACCENT : "text-on-media-secondary hover:text-on-media-primary"
+      active ? ON_MEDIA_ACCENT_TEXT : "text-on-media-secondary hover:text-on-media-primary"
     }`,
   });
   return (
