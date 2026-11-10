@@ -144,14 +144,16 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche.
-            Focalisable : ← et → y font défiler les titres (`useBillboardGestures`). */}
+            Focalisable : ← et → y font défiler les titres (`useBillboardGestures`). Son focus
+            clavier se voit par le CONTOUR de la règle commune (`:focus-visible`) — un anneau en
+            `box-shadow` serait écrasé par l'ombre en ligne du cadre. */}
         <div
           data-hero-frame
           role="group"
           aria-roledescription="carousel"
           aria-label={t("common:featuredCarousel")}
           tabIndex={0}
-          className={`group/billboard relative w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 ${CARD_HEIGHT}`}
+          className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
           style={{
             borderRadius: "var(--hero-frame-radius)",
             boxShadow: "var(--hero-frame-ring)",

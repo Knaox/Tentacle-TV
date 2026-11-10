@@ -5,8 +5,16 @@ import { useTranslation } from "react-i18next";
 
 interface RowHeaderProps {
   title: string;
-  /** Cible de « Tout voir », au bout de la ligne — toujours visible. */
+  /** Cible de « Tout voir », au bout de la ligne. */
   href?: string;
+  /**
+   * `always` : « Tout voir » est toujours visible (les rangées du web, refonte de nov. 2026 — on
+   * ne trouve pas un lien qu'on ne voit pas). `hover`, le défaut : il ne paraît qu'au survol de
+   * la rangée, comme avant — le client LG rend cet en-tête (`RowTv`) et son moteur de focus
+   * écarte un lien à l'opacité nulle : visible, il deviendrait un arrêt de la télécommande au-dessus
+   * de chaque rangée.
+   */
+  seeAll?: "always" | "hover";
   /** Posé juste après le titre (la puce du filtre de plateformes). */
   trailing?: ReactNode;
 }
@@ -21,7 +29,7 @@ interface RowHeaderProps {
  * cartes de la rangée descendaient de 2 px au survol (recette du 14/10), et
  * la page se remettait en page à chaque image des 300 ms de la transition.
  */
-export function RowHeader({ title, href, trailing }: RowHeaderProps) {
+export function RowHeader({ title, href, trailing, seeAll = "hover" }: RowHeaderProps) {
   const { t } = useTranslation("common");
 
   return (
@@ -34,9 +42,12 @@ export function RowHeader({ title, href, trailing }: RowHeaderProps) {
       {trailing}
 
       {href && (
-        // TOUJOURS là, au bout de la ligne (refonte de nov. 2026) : il ne paraissait qu'au survol
-        // de la rangée — on ne trouve pas un lien qu'on ne voit pas.
-        <Link to={href} className="lg-pill btn btn-sm btn-ghost ml-auto shrink-0">
+        <Link
+          to={href}
+          className={`lg-pill btn btn-sm btn-ghost ml-auto shrink-0 ${
+            seeAll === "always" ? "" : "opacity-0 transition-[opacity,transform,background-color,color] duration-hover focus-visible:opacity-100 group-hover/row:opacity-100"
+          }`}
+        >
           {t("common:seeAll")}
           <CaretRightIcon weight="bold" className="h-3 w-3" aria-hidden />
         </Link>

@@ -82,7 +82,7 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
           aria-roledescription="carousel"
           aria-label={t("heroRegionAria")}
           tabIndex={0}
-          className={`group/billboard relative w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 ${CARD_HEIGHT}`}
+          className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
           style={{
             borderRadius: "var(--hero-frame-radius)",
             boxShadow: "var(--hero-frame-ring)",

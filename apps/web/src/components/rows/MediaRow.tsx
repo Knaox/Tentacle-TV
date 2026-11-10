@@ -159,7 +159,7 @@ export function MediaRow({ title, items: served, variant = "poster", href, poste
       onMouseLeave={controls.onMouseLeave}
       style={cardHeight != null ? { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` } : undefined}
     >
-      <RowHeader title={title} href={href} />
+      <RowHeader title={title} href={href} seeAll="always" />
 
       <div className="relative">
         <RowScrollControls
