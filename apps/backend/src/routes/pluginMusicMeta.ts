@@ -35,6 +35,7 @@ export interface PluginMusicManifest {
   mood?: string;
   importRead?: string;
   importSources?: MusicImportSource[];
+  importReadFirst?: MusicImportSource[];
   importTracks?: string;
   importBatches?: boolean;
   releases?: string;
@@ -74,6 +75,10 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   if (Array.isArray(m.importSources)) {
     const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
     if (sources.length > 0) out.importSources = sources as MusicImportSource[];
+  }
+  if (Array.isArray(m.importReadFirst) && out.importSources) {
+    const first = out.importSources.filter((k) => k !== "youtube" && (m.importReadFirst as unknown[]).includes(k));
+    if (first.length > 0) out.importReadFirst = first;
   }
   if (Array.isArray(m.releaseSources)) {
     const sources = ["bandcamp", "files"].filter((k) => (m.releaseSources as unknown[]).includes(k));
