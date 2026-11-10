@@ -256,6 +256,8 @@ export interface MusicImportResult {
   /** Les absents, dans l'ordre de la source, avec leur place (à confier à une extension, ou à lister). */
   absent: ImportAbsentTrack[];
   truncated: boolean;
+  /** La pochette de la playlist chez la source (1.43.0), de quoi l'habiller avant toute résolution. */
+  artworkUrl?: string | null;
 }
 
 export interface MusicImportJob {
