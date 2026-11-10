@@ -38,6 +38,10 @@ std::unique_ptr<Window> createWindow(NSWindow* host, const Box& box, Mode mode,
                                      const std::string& caption, PageInput input);
 /// Le curseur de la page au-dessus de cette fenêtre (type `cef_cursor_type_t`).
 void setWindowCursor(Window& window, int type);
+/// Diagnostic des bancs (compositor_pip_debug_mac.mm).
+std::string describeWindow(NSWindow* window);
+std::string injectInto(NSWindow* window, const std::string& kind, double x, double y, int clicks,
+                       double dy);
 
 }  // namespace tentacle::pip::mac
 

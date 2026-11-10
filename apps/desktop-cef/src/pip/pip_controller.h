@@ -81,6 +81,7 @@ class Controller {
   std::optional<Box> windowBounds() const;
   Mode mode() const { return mode_; }
   bool videoLent() const { return lent_; }
+  Window* window() const { return window_.get(); }
 
  private:
   void releaseVideo();

@@ -49,7 +49,8 @@ if(TARGET tentacle_shell AND TARGET tentacle_bridge)
     target_sources(tentacle_pip_glue PRIVATE
       "${TENTACLE_SRC}/platform/macos/compositor_pip_window_mac.mm"
       "${TENTACLE_SRC}/platform/macos/compositor_pip_view_mac.mm"
-      "${TENTACLE_SRC}/platform/macos/compositor_pip_platform_mac.mm")
+      "${TENTACLE_SRC}/platform/macos/compositor_pip_platform_mac.mm"
+      "${TENTACLE_SRC}/platform/macos/compositor_pip_debug_mac.mm")
   elseif(WIN32)
     target_sources(tentacle_pip_glue PRIVATE "${TENTACLE_SRC}/platform/windows/pip_windows.cpp")
   else()

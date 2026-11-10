@@ -83,6 +83,13 @@ class Window {
   virtual double backingScale() = 0;
   virtual Box screenBounds() = 0;
   virtual Box screenWorkArea() = 0;
+  /// Diagnostic (bancs) : niveau, focus, bureaux… en une ligne ; et l'injection d'un évènement
+  /// de souris NATIF dans la fenêtre (`kind` : move, down, up, drag, scroll), sans le vrai
+  /// curseur. Rend "" ou un message d'erreur.
+  virtual std::string describe() { return ""; }
+  virtual std::string inject(const std::string& kind, double x, double y, int clicks, double dy) {
+    return "injection non prise en charge";
+  }
 };
 
 /// Ce que la fenêtre PiP transmet à SA page (le navigateur hors écran du PiP).

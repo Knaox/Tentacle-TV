@@ -114,7 +114,7 @@ void Controller::popupClosed() {
 void Controller::hostClosing() {
   pending_.reset();
   arming_.reset();
-  close();
+  if (close()) std::fprintf(stderr, "[pip] la fenêtre principale se ferme : le PiP part d'abord\n");
 }
 
 void Controller::setCursor(int cefCursorType) {

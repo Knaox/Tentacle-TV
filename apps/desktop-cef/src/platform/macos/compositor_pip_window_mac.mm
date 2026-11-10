@@ -74,6 +74,7 @@ class MacPipWindow final : public Window {
     view_ = [[TentaclePipView alloc] initWithFrame:NSMakeRect(0, 0, box.width, box.height)
                                              input:input];
     window_.contentView = view_;
+    [window_ makeFirstResponder:view_];
     stack_ = tentacle::mac::createCompositor(window_, /*transparent=*/true);
     delegate_ = [TentaclePipDelegate new];
     delegate_.willResize = [this](NSSize size) { return guardSize(size); };
@@ -133,6 +134,11 @@ class MacPipWindow final : public Window {
   double backingScale() override { return window_.backingScaleFactor; }
   Box screenBounds() override { return fromAppKit(screen().frame); }
   Box screenWorkArea() override { return fromAppKit(screen().visibleFrame); }
+
+  std::string describe() override { return describeWindow(window_); }
+  std::string inject(const std::string& kind, double x, double y, int clicks, double dy) override {
+    return injectInto(window_, kind, x, y, clicks, dy);
+  }
 
   TentaclePipView* view() const { return view_; }
 

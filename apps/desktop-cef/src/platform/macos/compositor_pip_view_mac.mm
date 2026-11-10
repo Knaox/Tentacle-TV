@@ -2,6 +2,9 @@
 
 #import "platform/macos/compositor_pip_mac.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 #include "include/internal/cef_types.h"
 
 namespace {
@@ -122,7 +125,10 @@ NSCursor* cursorFor(int type) {
 }
 
 - (NSPoint)pointOf:(NSEvent*)e {
-  return [self convertPoint:e.locationInWindow fromView:nil];
+  // Un évènement venu d'un CGEvent n'a pas de fenêtre : sa position est alors celle de l'écran.
+  const NSPoint inWindow =
+      e.window ? e.locationInWindow : [self.window convertPointFromScreen:e.locationInWindow];
+  return [self convertPoint:inWindow fromView:nil];
 }
 
 - (void)moveFor:(NSEvent*)e leave:(BOOL)leave {
@@ -186,6 +192,10 @@ NSCursor* cursorFor(int type) {
   const NSPoint p = [self pointOf:e];
   const bool precise = e.hasPreciseScrollingDeltas;
   const float k = precise ? 1.0f : kPixelsPerTick;
+  if (getenv("TENTACLE_INPUT_LOG")) {
+    std::fprintf(stderr, "[pip-input] molette %.1f,%.1f d=%.2f,%.2f précis=%d\n", p.x, p.y,
+                 e.scrollingDeltaX, e.scrollingDeltaY, precise);
+  }
   uint32_t m = modifiersOf(e);
   if (precise) m |= EVENTFLAG_PRECISION_SCROLLING_DELTA;
   input_.wheel(p.x, p.y, m, e.scrollingDeltaX * k, e.scrollingDeltaY * k);

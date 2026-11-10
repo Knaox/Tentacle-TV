@@ -72,10 +72,12 @@ export class PipPage {
   wheel(x, y, deltaY) {
     return this.mouse("mouseWheel", x, y, { deltaX: 0, deltaY });
   }
-  /** Clique un bouton du PiP par son libellé (aria-label). */
+  /** Clique un bouton du PiP par son libellé (aria-label) — après la réponse : « Fermer »
+   *  détruit la page, et CDP attendrait sans fin une évaluation qui ne revient plus. */
   click(label) {
-    return this.eval(`(() => { const b = document.querySelector('button[aria-label=${JSON.stringify(label)}]');
-      if (!b) return false; b.click(); return true; })()`);
+    return this.eval(`(() => { const b = [...document.querySelectorAll("button")]
+      .find((e) => e.getAttribute("aria-label") === ${JSON.stringify(label)});
+      if (!b) return false; setTimeout(() => b.click(), 0); return true; })()`);
   }
   close() {
     this.cdp.close();

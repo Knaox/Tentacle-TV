@@ -5,6 +5,8 @@
 #include <memory>
 #include <thread>
 
+#include <SDL3/SDL.h>
+
 #include "app/app.h"
 #include "include/cef_app.h"
 #include "include/cef_request_context.h"
@@ -105,10 +107,14 @@ void installDebug(const AppContext& ctx) {
     Json out = {{"open", c.popupAlive()}, {"view", {c.viewSize().width, c.viewSize().height}},
                 {"scale", c.scale()}, {"screen", boxJson(c.screenBounds())},
                 {"workArea", boxJson(c.screenWorkArea())}};
+    Desktop& desk = state->platform->desktop();
+    out["host"] = boxJson(desk.hostContentBounds());
+    out["hostWorkArea"] = boxJson(desk.workAreaMatching(desk.hostBounds()));
     out["mode"] = modeName(c.mode());
     out["videoLent"] = c.videoLent();
     if (const auto b = c.windowBounds()) out["bounds"] = boxJson(*b);
     if (Compositor* stack = c.compositor()) out["layers"] = stack->describeLayers();
+    if (Window* w = c.window()) out["window"] = w->describe();
     r.reply(out);
   });
   if (!ctx.options || !ctx.options->extra.count("debug-input")) return;
@@ -120,6 +126,23 @@ void installDebug(const AppContext& ctx) {
     } else {
       desk.cursorOverride.reset();
     }
+    r.reply(true);
+  });
+  // Un évènement de souris NATIF dans la fenêtre PiP : { kind, x, y, clicks?, dy? }.
+  ipc::registerHandler("pip.debug.native", [](const Json& p, ipc::Responder r) {
+    Window* w = state ? state->controller->window() : nullptr;
+    if (!w) return r.fail("no_pip", "PiP absent");
+    const std::string error = w->inject(p.value("kind", "move"), p.value("x", 0.0),
+                                        p.value("y", 0.0), p.value("clicks", 1), p.value("dy", 0.0));
+    if (!error.empty()) return r.fail("inject", error);
+    r.reply(true);
+  });
+  // Déplace la fenêtre principale de { dx, dy } points (le PiP ancré la suit).
+  SDL_Window* host = ctx.window;
+  ipc::registerHandler("pip.debug.moveHost", [host](const Json& p, ipc::Responder r) {
+    int x = 0, y = 0;
+    SDL_GetWindowPosition(host, &x, &y);
+    SDL_SetWindowPosition(host, x + p.value("dx", 0), y + p.value("dy", 0));
     r.reply(true);
   });
 }
