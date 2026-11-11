@@ -1,4 +1,5 @@
 import { invoke } from "../../desktop/bridge";
+import { cancelFallbackSwitch, isFallbackActive } from "../../lib/fallbackPlayer";
 import { hardwareDecodingChoice, setHardwareDecoding } from "../../lib/hardwareDecoding";
 import { mpvDisabledByDebug, toggleMpvDebug } from "../../lib/nativePlayer";
 import type { DebugAction, DebugChoice } from "./debugActionTypes";
@@ -48,6 +49,26 @@ function rememberFault(mode: string): void {
   }
 }
 
+/**
+ * « Lever la panne » rend AUSSI sa chance à mpv. Une panne provoquée fait passer la SESSION de la
+ * page au lecteur web (`lib/fallbackPlayer.ts` — elle ne repart qu'au rechargement) : levée dans
+ * la coquille seulement, elle laissait toutes les lectures suivantes au lecteur de secours, et le
+ * menu disait « panne levée » (recette du lot rf2 : la jointure des axes lecture et outils).
+ * Comme l'interrupteur « Lecteur mpv coupé », l'effet est immédiat : une lecture de secours en
+ * cours repart sur mpv.
+ */
+export function liftFault(): string {
+  const onBackup = isFallbackActive();
+  cancelFallbackSwitch();
+  return onBackup ? "panne levée — le lecteur de secours rend la main : mpv rejoue" : "panne levée — effectif à la prochaine lecture";
+}
+
+/** Ce que la ligne dit de la panne : le mode que la coquille tient, sinon le secours encore en place. */
+function faultValue(): string | undefined {
+  if (heldFault() !== "off") return `panne : ${heldFault()}`;
+  return isFallbackActive() ? "secours web actif" : undefined;
+}
+
 /** Le groupe « Lecteur » : ce qui décide QUEL lecteur joue, et avec quel décodeur. */
 export const PLAYER_ACTIONS: readonly DebugAction[] = [
   {
@@ -68,10 +89,10 @@ export const PLAYER_ACTIONS: readonly DebugAction[] = [
     group: "player",
     kind: "button",
     label: "Simuler mpv en panne",
-    hint: "Fait tomber le lecteur natif comme une vraie panne : le lecteur web doit reprendre à la même position. La touche fait tomber la lecture en cours.",
+    hint: "Fait tomber le lecteur natif comme une vraie panne : le lecteur web doit reprendre à la même position. La touche fait tomber la lecture en cours ; « Lever la panne » rend la main à mpv.",
     choices: MPV_FAULT_CHOICES,
     status: () => (shellHasCommand(MPV_FAULT_COMMAND)
-      ? { value: heldFault() === "off" ? undefined : `panne : ${heldFault()}` }
+      ? { value: faultValue() }
       : { unavailable: `la coquille n'annonce pas ${MPV_FAULT_COMMAND} — en attendant : « Lecteur mpv coupé »` }),
     run: async (choice) => {
       if (!shellHasCommand(MPV_FAULT_COMMAND)) return `commande ${MPV_FAULT_COMMAND} absente de cette coquille`;
@@ -85,7 +106,7 @@ export const PLAYER_ACTIONS: readonly DebugAction[] = [
             : "aucune lecture en cours : rien n'est tombé (lancer une lecture, puis recommencer)";
         }
         return mode === "off"
-          ? "panne levée — effectif à la prochaine lecture"
+          ? liftFault()
           : `panne posée : ${MPV_FAULT_CHOICES.find((c) => c.id === mode)?.label ?? mode} — elle reste jusqu'à « Lever la panne »`;
       } catch (error) {
         return `panne refusée : ${error instanceof Error ? error.message : String(error)}`;

@@ -88,4 +88,16 @@ describe("le catalogue des actions", () => {
     expect((await fault?.status?.())?.unavailable).toMatch(/mpv_debug_fail/);
     expect(await fault?.run("fatal")).toMatch(/absente/);
   });
+
+  it("« Lever la panne » rend sa chance à mpv : la session quitte le lecteur de secours", async () => {
+    const { liftFault } = await import("./debugActionsPlayer");
+    const { isFallbackActive, reportFallbackSwitch } = await import("../../lib/fallbackPlayer");
+    // Une panne provoquée a fait basculer la session : sans cela, « levée » ne rendait rien.
+    reportFallbackSwitch({ itemId: "film", positionSeconds: 42 });
+    expect(isFallbackActive()).toBe(true);
+    expect(liftFault()).toMatch(/mpv rejoue/);
+    expect(isFallbackActive()).toBe(false);
+    // Aucun secours en place : rien à rendre, la phrase reste celle de la prochaine lecture.
+    expect(liftFault()).toMatch(/prochaine lecture/);
+  });
 });
