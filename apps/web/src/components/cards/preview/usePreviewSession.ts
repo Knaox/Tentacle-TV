@@ -24,6 +24,7 @@ import { usePreviewPointer } from "./usePreviewPointer";
 import { usePreviewRoom } from "./room/usePreviewRoom";
 import { roomOffset } from "./room/previewRoom";
 import type { CardPreviewSession } from "./useCardPreview";
+import { useRouteHeld } from "../../routeTransition/useRouteHeld";
 
 /** Ce que la mini-carte rend — `null` tant que rien n'est monté. */
 export interface CardPreviewView {
@@ -81,10 +82,13 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   const quiet = usePreviewQuiet();
   // Pendant un défilement, aucune intention ; seule une mini-carte déjà ouverte reste.
   const scrolling = usePreviewScrolling();
+  // Une navigation attend (la page reste à l'écran le temps que la suivante se prépare, lot
+  // « rf2 ») : on vient de cliquer, on s'en va — aucun aperçu ne s'ouvre sous le curseur.
+  const leaving = useRouteHeld();
   const [revealed, setRevealed] = useState(false);
   const [engaged, setEngaged] = useState(false);
   const nextEngaged = engineEngaged({
-    wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard, pointerOnControl, pointerOffImage }),
+    wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled: disabled || leaving, gate, keyboardInCard, pointerOnControl, pointerOffImage }),
     engaged,
     quiet,
     scrolling,
