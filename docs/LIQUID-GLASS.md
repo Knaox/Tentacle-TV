@@ -381,7 +381,11 @@ où elle l'exige, pixel par pixel, sans mesure ni attente ; ce n'est pas une len
 déplacement : `LENS_BUDGET` ne la compte pas). Les encres faibles posées dessus montent à celle que
 le matériau prouve : **4,5:1 pour tout texte sur 216 dessous, blanc et noir purs compris, jusqu'au
 coin du reflet** (`frostedMaterial.test.tsx`). Un nouveau verre posé sur du contenu arbitraire prend
-ces jetons, jamais `--lg-pane-*` nus.
+ces jetons, jamais `--lg-pane-*` nus. **Coût mesuré : neutre** (coquille CEF, builds de production,
+`apps/web/bench/clair-verre/gpu.mjs`, 7 givres à courbe à l'écran) — dessin GPU par image 1,8 → 1,9 ms
+sur l'accueil (bannière qui bouge sous la barre), 1,7 → 1,7 ms sur une bibliothèque défilée ; images
+abandonnées inchangées (1 à 2 sur ~425, 5 à 7 sur ~780) ; courbe retirée puis posée dans le même build,
+en alterné : même temps de dessin, 32-39 % puis 30-37 % de GPU pour l'app en défilement.
 
 **La portée est tenue par test** : toute règle de `apps/web/src` qui lit
 `var(--lg-…)` ou une classe `.lg-…` doit être portée par

@@ -293,6 +293,9 @@ Ce que l'intégration a recousu entre les axes, et qu'un écran nouveau doit res
   sous-libellé du bouton de lecture (« Reste 3 min ») sont en blanc plein — leur taille et leur graisse font la
   hiérarchie. Le raccord d'une fiche vers la page claire (`--detail-page-fade`) vaut 0,78 à 20 % : la première
   rangée y commence, et son compte (encre tertiaire) doit s'y lire sur une image sombre.
+- **L'assise du texte d'une fiche** (`.detail-text-scrim`) est un dégradé PLEINE LARGEUR, du bas de la scène
+  jusqu'au-dessus du surtitre, hors verre comme sous le verre : calée sur la colonne, c'était un rectangle aux bords
+  fondus qui se lisait comme une plaque grise sur un décor clair.
 - **Le bloc titre d'une bannière de catalogue** (`BannerHeading`) a son assise en thème clair
   (`--banner-heading-focus`, `theme/scrims.css`) : les voiles du clair sont à 70 % de ceux du sombre et le texte posé
   sur l'image reste blanc.
