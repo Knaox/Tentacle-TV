@@ -31,7 +31,8 @@
 /* En clair, le fond ambiant est déjà rosé : le fond doux d'une puce ou d'une tuile à la teinte
  * franche (10 % d'accent) s'y additionne, et le libellé à l'accent posé dessus glissait à 4,4:1
  * (« Compte », la pastille de portée d'un réglage, mesuré dans la coquille). À 6 %, il tient 4,7:1. */
-:root[data-liquid-glass="native"][data-theme="light"] :is(.lg-page, .lg-detail) {
+/* Octave pose le même fond ambiant sous sa scène : la même pastille y glissait à 4,4:1 (ses réglages). */
+:root[data-liquid-glass="native"][data-theme="light"] :is(.lg-page, .lg-detail, .octave-stage:not(.octave-night)) {
   --accent-soft: rgba(var(--accent-rgb), 0.06);
 }
 
