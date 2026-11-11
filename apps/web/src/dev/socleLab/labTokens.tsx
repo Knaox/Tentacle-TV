@@ -50,7 +50,8 @@ export function LabTokens() {
         <LabRow>
           {TEXTS.map((name) => (
             <Specimen key={name} name={name}>
-              <span className="text-base font-semibold" style={{ color: `var(${name})` }}>Tentacle TV</span>
+              {/* L'encre des contrôles inactifs se repère sans se lire (≥ 2:1) : son spécimen est dit inactif. */}
+              <span className="text-base font-semibold" aria-disabled={name === "--text-disabled" || undefined} style={{ color: `var(${name})` }}>Tentacle TV</span>
             </Specimen>
           ))}
         </LabRow>
