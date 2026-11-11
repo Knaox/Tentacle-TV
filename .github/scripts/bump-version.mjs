@@ -19,7 +19,7 @@ import fs from 'node:fs';
 
 // Clés de versions.json → package.json à aligner (null = aucun).
 const KEYS = {
-  desktop: 'apps/desktop-electron/package.json',
+  desktop: 'apps/desktop-cef/package.json',
   mobile: 'apps/mobile/package.json',
   tv: 'apps/tv/package.json',
   webos: 'apps/tv-webos/package.json',

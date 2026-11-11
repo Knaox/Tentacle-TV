@@ -1,7 +1,7 @@
 # Auto-fusion des PR de Dependabot peu risquées (décision du 2026-10-22).
 #
 # QUOI : un correctif de n'importe quelle dépendance, une mineure d'outillage
-# (devDependencies) ou d'action ; jamais une majeure, jamais electron, koffi,
+# (devDependencies) ou d'action ; jamais une majeure, jamais koffi,
 # react, react-dom, react-native. Règle : .github/scripts/lib/dependabot-policy.mjs,
 # testée hors ligne. Tout le reste attend un humain, sans erreur.
 #

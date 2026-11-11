@@ -6,7 +6,7 @@
 //
 // Seul `Assets/` est indexé : il est recopié dans un dossier à part, sans quoi
 // MakePri indexerait tout le paquet (les node_modules du serveur, les .pak
-// d'Electron). L'index est relu (`makepri dump`) : chaque visuel nommé par le
+// du moteur du bureau). L'index est relu (`makepri dump`) : chaque visuel nommé par le
 // manifeste doit y avoir ses variantes, sinon rien ne part.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';

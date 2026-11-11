@@ -16,8 +16,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { generate } from "../../../desktop-electron/bench/audio/fixtures.mjs";
-import { startBenchServer } from "../../../desktop-electron/bench/audio/serve.mjs";
+import { generate } from "./lib/fixtures.mjs";
+import { startBenchServer } from "./lib/serve.mjs";
 import { referenceAt, trackLag } from "./lagTrack.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));

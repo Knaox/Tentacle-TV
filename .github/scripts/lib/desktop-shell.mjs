@@ -22,7 +22,9 @@ export function desktopShellFor(version) {
  * Le refus d'un workflow qui construit `shell`, ou null s'il peut tourner.
  *   current : versions.json → desktop au commit visé ;  bump : la version demandée (vide = aucune).
  * Un bump vers l'autre coquille est toujours refusé (il pousserait le numéro sur main et poserait
- * le tag). Sans bump, le cran `build` reste permis : rien ne part, on construit pour voir.
+ * le tag). Sans bump, le cran `build` reste permis à la chaîne CEF : rien ne part, on construit
+ * pour voir. PAS à celle d'Electron : son dossier a quitté le dépôt avec la 1.50.0
+ * (apps/desktop-electron), un build y échouerait au milieu d'un job, sans dire pourquoi.
  */
 export function shellRefusal({ shell, channel, current, bump = '' }) {
   if (!SHELLS.includes(shell)) return `coquille inconnue : ${shell}`;
@@ -30,10 +32,10 @@ export function shellRefusal({ shell, channel, current, bump = '' }) {
   if (!isVersion(target)) return `version du bureau illisible : « ${target} » (versions.json → desktop)`;
   const wanted = desktopShellFor(target);
   if (wanted === shell) return null;
-  if (!bump && channel === 'build') return null;
-  const workflow = shell === 'electron' ? 'desktop.yml construit Electron' : 'cette chaîne construit CEF';
+  if (!bump && channel === 'build' && shell !== 'electron') return null;
+  const workflow = shell === 'electron' ? 'desktop.yml construit Electron, qui a quitté le dépôt' : 'cette chaîne construit CEF';
   const rule = `la ${FIRST_CEF_VERSION} est la première version CEF : < ${FIRST_CEF_VERSION} = Electron, ≥ ${FIRST_CEF_VERSION} = CEF`;
   return bump
     ? `bump du bureau en ${bump} refusé : ${workflow}, et ${rule}. Rien n'a été poussé.`
-    : `bureau ${target} au cran ${channel} refusé : ${workflow}, et ${rule}. Rien ne part (le cran build reste permis).`;
+    : `bureau ${target} au cran ${channel} refusé : ${workflow}, et ${rule}. Rien ne part${shell === 'electron' ? '' : ' (le cran build reste permis)'}.`;
 }

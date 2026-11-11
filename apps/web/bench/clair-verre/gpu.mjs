@@ -9,7 +9,7 @@
  * Deux gestes, ceux où une image change SOUS un verre :
  *   - `accueil`      : la bannière qui bouge sous la barre du haut, 8 s au repos ;
  *   - `bibliotheque` : la page défilée sous la barre et le panneau d'outils, 4 s vers le bas puis 4 s vers le haut.
- * Mesures : la trace de Chromium (`PipelineReporter`, comme `apps/desktop-electron/bench/liquid-glass/perf`) —
+ * Mesures : la trace de Chromium (`PipelineReporter`, `lib/trace/`, repris du banc de fluidité de l'ancien bureau Electron) —
  * images attendues, présentées, ABANDONNÉES, et le temps de DESSIN du processus GPU par image
  * (`StartDrawToSwapStart` : flous, courbes, compositing) ; à côté, l'occupation GPU des processus de l'app
  * (`ioreg`, clients AGX — `bench/glass-gpu/sampling.mjs`).
@@ -18,8 +18,8 @@
  * injectée — un instrument pour isoler son coût dans le MÊME build, jamais une proposition de rendu ;
  * ROUNDS (défaut 3). Mac au calme : une mesure sous charge ne vaut rien.
  */
-import { framesOf, frameStats, markWindow, startTrace, stopTrace } from "../../../desktop-electron/bench/liquid-glass/perf/frames.mjs";
-import { stageStats } from "../../../desktop-electron/bench/liquid-glass/perf/stages.mjs";
+import { framesOf, frameStats, markWindow, startTrace, stopTrace } from "./lib/trace/frames.mjs";
+import { stageStats } from "./lib/trace/stages.mjs";
 import { sample, summarizePass } from "../glass-gpu/sampling.mjs";
 import { connectCef } from "./lib/cef.mjs";
 import { visit } from "./lib/session.mjs";

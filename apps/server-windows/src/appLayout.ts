@@ -75,10 +75,10 @@ export function appLayout(root: string): AppLayout {
     packageVersion: packageVersion(root),
     // Le paquet suit l'image (`/app/shared-deps-seed`) ; le dépôt, `pnpm build:shared-deps`.
     sharedDepsSeed: firstExisting([join(root, "shared-deps-seed"), join(backendDir, "data", "shared-deps")]),
-    // Le paquet porte la sienne (fil D, tirée de `brand/`) ; le dépôt prend celle du bureau.
+    // Le paquet porte la sienne (fil D, tirée de `brand/`) ; le dépôt prend celle du bureau (CEF).
     trayIcon: firstExisting([
       join(root, "apps", "server-windows", "assets", "tray.ico"),
-      join(root, "apps", "desktop-electron", "icons", "icon.ico"),
+      join(root, "apps", "desktop-cef", "resources", "icons", "icon.ico"),
     ]),
     // Les tuiles du paquet sont à sa racine (`Assets\`) ; hors paquet, celles du dépôt (fil des icônes).
     splashLogo: firstExisting([

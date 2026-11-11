@@ -53,11 +53,15 @@ export const SOURCES = {
     C('FFmpeg 6.0 (sous-module du décodeur de Jellyfin 1.8.0+1)', 'LGPL-2.1-or-later', COMMIT('FFmpeg/FFmpeg', 'd388c347')),
   ],
   desktop: [
-    C('mpv 0.40.0 (macOS)', 'LGPL-2.1-or-later', GH('mpv-player/mpv', 'v0.40.0')),
-    C('mpv 0.41.0 (Linux)', 'GPL-2.0-or-later', GH('mpv-player/mpv', 'v0.41.0')),
-    C('FFmpeg 7.1.1 (macOS, Linux)', 'LGPL-2.1-or-later', FFMPEG('7.1.1')),
-    C('libplacebo 7.360.1', 'LGPL-2.1-or-later', PLACEBO('7.360.1')),
-    C('FriBidi 1.0.16', 'LGPL-2.1-or-later', GH('fribidi/fribidi', 'v1.0.16')),
+    // Coquille CEF (1.50.0) — macOS : apps/desktop-cef/scripts/deps/paquet-deps.sh et
+    // paquet-libs.sh (versions et options y figurent). libmpv : le fork de jellium-desktop au
+    // commit épinglé (MPV_BASE), plus NOS correctifs (scripts/deps/mpv-patches*/, dans
+    // l'archive de Tentacle) ; Linux : la même base. Rien de GPL depuis la 1.50.0.
+    C('mpv — fork andrewrabert/mpv ab0467ff24 (macOS, Linux)', 'LGPL-2.1-or-later', COMMIT('andrewrabert/mpv', 'ab0467ff24c2efc995b2b6e6b50a8b0912d373a6')),
+    C('FFmpeg n9.0.2 (macOS)', 'LGPL-2.1-or-later', GH('FFmpeg/FFmpeg', 'n9.0.2')),
+    C('libplacebo 7.360.1 (macOS)', 'LGPL-2.1-or-later', PLACEBO('7.360.1')),
+    C('FriBidi 1.0.17 (macOS)', 'LGPL-2.1-or-later', GH('fribidi/fribidi', 'v1.0.17')),
+    C('uchardet 0.0.8 (macOS)', 'LGPL-2.1-or-later', 'https://www.freedesktop.org/software/uchardet/releases/uchardet-0.0.8.tar.xz'),
     // Windows — libmpv-2.dll (zhongfly/mpv-winbuild, variante LGPL, construite
     // le 2026-02-27) : révisions lues dans la DLL et dans l'historique des
     // recettes à cette date.

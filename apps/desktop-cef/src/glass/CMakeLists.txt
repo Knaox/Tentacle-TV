@@ -1,5 +1,5 @@
-# Module verre (Liquid Glass de macOS 26) : règles pures portées d'Electron
-# (`apps/desktop-electron/src/main/liquidGlass/`), glue avec l'app (canaux, échantillonneur),
+# Module verre (Liquid Glass de macOS 26) : règles pures (portées de l'ancienne coquille
+# Electron), glue avec l'app (canaux, échantillonneur),
 # verre natif par OS (macOS seulement : ailleurs, l'option n'existe pas).
 #
 # Inclus par le CMakeLists racine (`add_subdirectory(src/glass)`), ou construit SEUL pour les

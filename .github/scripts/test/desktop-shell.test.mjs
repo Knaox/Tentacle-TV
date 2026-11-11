@@ -21,8 +21,9 @@ test('le workflow Electron livre une 1.4x, jamais une 1.50.0', () => {
   assert.match(shellRefusal({ shell: 'electron', channel: 'test', current: '1.50.0' }), /desktop\.yml construit Electron/);
   // Le bump vers l'ère CEF est refusé à tous les crans : il pousserait le numéro et le tag.
   assert.match(shellRefusal({ shell: 'electron', channel: 'build', current: '1.42.0', bump: '1.50.0' }), /bump .*1\.50\.0 refusé/);
-  // Construire pour voir, sans bump : permis, rien ne part.
-  assert.equal(shellRefusal({ shell: 'electron', channel: 'build', current: '1.50.0' }), null);
+  // Electron a quitté le dépôt avec la 1.50.0 : même le cran build est refusé, avant le premier job.
+  assert.match(shellRefusal({ shell: 'electron', channel: 'build', current: '1.50.0' }), /cran build refusé .*quitté le dépôt/);
+  assert.equal(shellRefusal({ shell: 'cef', channel: 'build', current: '1.42.0' }), null);
 });
 
 test('la chaîne CEF ne livre jamais un numéro de l’ère Electron', () => {

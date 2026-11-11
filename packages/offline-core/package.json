@@ -18,9 +18,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.core.json",
     "lint": "eslint src/",
-    "test": "vitest run",
-    "mirror": "node mirror.mjs",
-    "mirror:check": "node mirror.mjs --check"
+    "test": "vitest run"
   },
   "dependencies": {
     "@tentacle-tv/shared": "workspace:*"

@@ -105,7 +105,11 @@ export function desktopVersion() {
   return JSON.parse(fs.readFileSync(path.join(repo, "versions.json"), "utf8")).desktop;
 }
 
-/** Le build web d'Electron en développement (desktop-electron : build:web:debug). */
+/**
+ * Le build web de la coquille de bureau, en développement. `TENTACLE_SHELL=electron` est le nom
+ * HISTORIQUE de la cible « coquille de bureau » lu par apps/web/vite.config.ts : ne pas le
+ * changer d'un seul côté.
+ */
 export function buildWeb() {
   if (!fs.existsSync(path.join(repo, "pnpm-workspace.yaml"))) die(`monorepo introuvable au-dessus de ${root}`);
   // Windows : `pnpm` par l'interpréteur (cmd), qui résout lui-même `pnpm.cmd` (npm, corepack) OU

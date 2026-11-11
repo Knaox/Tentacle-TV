@@ -15,8 +15,8 @@ interface Logger {
 }
 
 /**
- * Les origines des coquilles de bureau (`tentacle://app` : Electron, schéma
- * déclaré par `apps/desktop-electron/src/main/appProtocol.ts` ; les trois
+ * Les origines des coquilles de bureau (`tentacle://app` : la coquille CEF,
+ * `apps/desktop-cef/src/shell/app_scheme.h`, et avant elle Electron ; les trois
  * autres : l'ancienne coquille Tauri). Émises par l'application native
  * seulement, jamais par un navigateur tiers.
  */

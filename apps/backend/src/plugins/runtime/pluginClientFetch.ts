@@ -11,8 +11,8 @@
  * interdits, corps bornés, délai borné ; l'hôte ET l'appareil valident.
  *
  * MIROIR, octet pour octet (aucun import : il compile seul) — source canonique
- * ici, recopié dans `apps/backend/src/plugins/runtime/`,
- * `apps/desktop-electron/src/main/clientFetch/` et Sillon `types/tentacle/`.
+ * ici, recopié dans `apps/backend/src/plugins/runtime/` et Sillon `types/tentacle/` ;
+ * le bureau CEF en porte la règle en C++ (`apps/desktop-cef/src/net/client_fetch_policy.h`).
  * Les noms traversent le réseau : ils ne se renomment jamais.
  */
 

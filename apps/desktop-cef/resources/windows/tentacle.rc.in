@@ -1,5 +1,5 @@
 // Ressources de Tentacle.exe (configuré par cmake/TentacleWindows.cmake). Encodage : UTF-8.
-// Icône 1 : celle d'Electron (apps/desktop-electron/icons/icon.ico), reprise par SDL pour la
+// Icône 1 : celle de l'app (apps/desktop-cef/resources/icons/icon.ico), reprise par SDL pour la
 // fenêtre et la barre des tâches (SDL_HINT_WINDOWS_INTRESOURCE_ICON, app_windows.cpp).
 #pragma code_page(65001)
 #include <winver.h>

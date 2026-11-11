@@ -35,7 +35,6 @@ export default tseslint.config(
       "**/src-tauri/**",
       "**/coverage/**",
       "apps/backend/data/**",
-      "apps/desktop-electron/out/**",
     ],
   },
 

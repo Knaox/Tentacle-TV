@@ -37,15 +37,15 @@ export const JSON_PIN = {
 };
 
 /**
- * libmpv : la DLL QU'ELECTRON LIVRE au Microsoft Store, déjà dans le dépôt
- * (apps/desktop-electron/lib/mpv/libmpv-2.dll — zhongfly/mpv-winbuild, variante LGPL, mpv
- * v0.41.0-233-gf28cea85c ; THIRD-PARTY-LICENSES.md). Rien à télécharger, la même lecture
- * qu'Electron, et elle a le mode composition de mpv (d3d11-output-mode, display-swapchain).
+ * libmpv : la DLL livrée au Microsoft Store depuis la 1.20.0, dans le dépôt
+ * (apps/desktop-cef/resources/windows/mpv/libmpv-2.dll — zhongfly/mpv-winbuild, variante LGPL,
+ * mpv v0.41.0-233-gf28cea85c ; THIRD-PARTY-LICENSES.md). Rien à télécharger, et elle a le mode
+ * composition de mpv (d3d11-output-mode, display-swapchain).
  * Ses en-têtes : ceux de CE commit de mpv (API cliente 2.5), épinglés fichier par fichier.
  */
 export const MPV_PIN = {
   commit: "f28cea85c1",
-  dll: "apps/desktop-electron/lib/mpv/libmpv-2.dll",
+  dll: "apps/desktop-cef/resources/windows/mpv/libmpv-2.dll",
   dllSha256: "b85a8366b572fab2ed2b3c8af26f9c834e6526b16d3e07d94726f88562aed67f",
   headers: {
     "client.h": "3c073236a09cb456c6e80587d5523c8771c32fb22ca014e0f99cc3d43905b75c",
@@ -201,7 +201,7 @@ export async function ensureMpvPrefix(env) {
   const dll = path.join(repo, MPV_PIN.dll);
   if (!fs.existsSync(dll)) die(`libmpv : ${MPV_PIN.dll} absente du dépôt`);
   const bad = verify(dll, { sha256: MPV_PIN.dllSha256 });
-  if (bad) die(`libmpv : ${MPV_PIN.dll} — ${bad} (la DLL d'Electron a changé : mettre MPV_PIN à jour)`);
+  if (bad) die(`libmpv : ${MPV_PIN.dll} — ${bad} (la DLL a changé : mettre MPV_PIN à jour)`);
   const prefix = path.join(cache, "deps", "mpv-win", MPV_PIN.dllSha256.slice(0, 8));
   const lib = path.join(prefix, "lib", "mpv.lib");
   if (fs.existsSync(lib)) return prefix;

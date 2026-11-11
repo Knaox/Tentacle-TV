@@ -3,7 +3,7 @@ Rasterise tous les dérivés binaires depuis `brand/*.svg`.
 
     python3 brand/generate-icons.py                        # aperçu, n'écrit rien
     python3 brand/generate-icons.py --write                # écrit
-    python3 brand/generate-icons.py --write desktop-electron   # une part seulement
+    python3 brand/generate-icons.py --write desktop-cef   # une part seulement
 
 Le filtre — toute mot qui n'est pas `--write` — retient les cibles dont le
 chemin le contient. Il ne sert pas qu'au confort : deux moteurs de rendu ne
@@ -47,11 +47,11 @@ sys.stdout.reconfigure(encoding="utf-8")
 # règles les plus précises viennent d'abord. Les paquets MSIX n'y sont pas :
 # voir `windows.py`.
 RULES = [
-    # ── Desktop (Electron) ───────────────────────────────────────────────────
+    # ── Desktop (coquille CEF) ───────────────────────────────────────────────
     # Windows et Linux posent l'image TELLE QUELLE : sans coins, l'application
     # est un carré dans la barre des tâches. macOS ne masque de lui-même que
     # depuis Tahoe — sur les versions d'avant, le carré restait carré.
-    ("apps/desktop-electron/icons/*.png", "app-icon-rounded.svg"),
+    ("apps/desktop-cef/resources/icons/*.png", "app-icon-rounded.svg"),
     # ── Mobile ───────────────────────────────────────────────────────────────
     ("apps/mobile/assets/adaptive-icon.png", "app-icon-foreground.svg"),
     ("apps/mobile/assets/splash-icon.png", "logo-plain.svg"),
@@ -257,12 +257,12 @@ def main():
     # ── macOS et Windows attendent des conteneurs multi-résolutions ─────────
     # Eux aussi suivent le filtre : sans lui, régénérer les seules images de
     # l'Apple TV réécrivait l'icône du bureau (un bruit binaire de plus).
-    icns = ROOT / "apps/desktop-electron/icons/icon.icns"
+    icns = ROOT / "apps/desktop-cef/resources/icons/icon.icns"
     if WRITE and icns.exists() and selected(icns):
         build_icns(read_svg("app-icon-macos.svg"), icns)
         print(f"  icns reconstruit : {icns.relative_to(ROOT)}")
     # L'icône de l'exécutable du bureau : le carré à coins continus.
-    ico = ROOT / "apps/desktop-electron/icons/icon.ico"
+    ico = ROOT / "apps/desktop-cef/resources/icons/icon.ico"
     if WRITE and ico.exists() and selected(ico):
         rounded = read_svg("app-icon-rounded.svg")
         build_ico([(s, rounded) for s in (16, 24, 32, 48, 64, 128, 256)], ico)

@@ -7,7 +7,6 @@
   "scripts": {
     "dev:web": "pnpm --filter @tentacle-tv/web dev",
     "dev:backend": "pnpm --filter @tentacle-tv/backend dev",
-    "dev:electron": "pnpm --filter @tentacle-tv/desktop-electron dev",
     "dev:cef": "pnpm --filter @tentacle-tv/desktop-cef dev",
     "cef": "pnpm --filter @tentacle-tv/desktop-cef dev",
     "dev:mobile": "pnpm --filter @tentacle-tv/mobile start",
@@ -19,7 +18,6 @@
     "dev:webos": "pnpm --filter @tentacle-tv/tv-webos dev",
     "build:web": "pnpm --filter @tentacle-tv/web build",
     "build:backend": "pnpm --filter @tentacle-tv/backend build",
-    "build:electron": "pnpm --filter @tentacle-tv/desktop-electron build",
     "build:tv:android": "pnpm --filter @tentacle-tv/tv android",
     "build:tv:ios": "pnpm --filter @tentacle-tv/tv ios",
     "build:mobile:android": "pnpm --filter @tentacle-tv/mobile android",
@@ -50,12 +48,11 @@
       "esbuild",
       "prisma"
     ],
-    "//ignoredBuiltDependencies": "Scripts relus le 2026-10-22, et DÉJÀ jamais exécutés (pnpm 10 bloque ce qui n'est pas en liste blanche) sans que la livraison en souffre : koffi (binaires précompilés @koromix/koffi-*), ssh2 et cpu-features (liaison native facultative, repli JS), core-js (message publicitaire), electron-winstaller (copie d'un 7z.exe Squirrel), @webos-tools/cli (chmod de ses fichiers de conf). Les nommer fait taire l'avertissement et rend visible tout NOUVEAU paquet à script.",
+    "//ignoredBuiltDependencies": "Scripts relus le 2026-10-22, et DÉJÀ jamais exécutés (pnpm 10 bloque ce qui n'est pas en liste blanche) sans que la livraison en souffre : koffi (binaires précompilés @koromix/koffi-*), ssh2 et cpu-features (liaison native facultative, repli JS), core-js (message publicitaire), @webos-tools/cli (chmod de ses fichiers de conf). Les nommer fait taire l'avertissement et rend visible tout NOUVEAU paquet à script.",
     "ignoredBuiltDependencies": [
       "@webos-tools/cli",
       "core-js",
       "cpu-features",
-      "electron-winstaller",
       "koffi",
       "ssh2"
     ],

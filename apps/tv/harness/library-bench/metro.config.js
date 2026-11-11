@@ -21,7 +21,7 @@ const PROBE = process.env.LIB_PROBE === "0" ? null : path.join(__dirname, "probe
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const blockList = [
   "apps/tv/ios/Pods", "apps/tv/ios/build", "apps/tv/android", "apps/mobile/ios", "apps/mobile/android",
-  "apps/desktop-electron", "apps/tv/harness/ui-bench/out", "apps/tv/harness/ui-bench/snapshot",
+  "apps/tv/harness/ui-bench/out", "apps/tv/harness/ui-bench/snapshot",
   "apps/tv/harness/library-bench/img", "apps/tv/harness/library-bench/bundles", "apps/tv/harness/library-bench/out",
 ].map((dir) => new RegExp(`^${escape(path.join(REPO, dir))}/.*`));
 const resolveBase = base.resolver.resolveRequest;

@@ -44,7 +44,7 @@ const NEUTRAL = new Map([
   ['versions.json', ['mobile', 'tv', 'webos', 'server', 'minServer']],
   // Les package.json qu'aligne bump-version.mjs (sa table KEYS), champ
   // `version` seul : un bump qui toucherait une dépendance n'est plus neutre.
-  ['apps/desktop-electron/package.json', ['version']],
+  ['apps/desktop-cef/package.json', ['version']],
   ['apps/mobile/package.json', ['version']],
   ['apps/tv/package.json', ['version']],
   ['apps/tv-webos/package.json', ['version']],

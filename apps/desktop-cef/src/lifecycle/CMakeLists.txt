@@ -76,9 +76,9 @@ if(TARGET tentacle_shell)
   target_link_libraries(tentacle_lifecycle PUBLIC tentacle_lifecycle_core tentacle_shell tentacle_bridge)
   target_compile_options(tentacle_lifecycle PRIVATE -Wall -Wextra -Wno-unused-parameter
                          -Wno-missing-field-initializers $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
-  # L'icône partagée des bureaux (`appIcon.ts`), pour la fenêtre en développement (Linux, Windows).
+  # L'icône de l'app (resources/icons, générée par brand/), pour la fenêtre en développement (Linux, Windows).
   target_compile_definitions(tentacle_lifecycle PRIVATE
-    TENTACLE_DEV_ICON="${CMAKE_CURRENT_SOURCE_DIR}/../../../desktop-electron/icons/icon.png")
+    TENTACLE_DEV_ICON="${CMAKE_CURRENT_SOURCE_DIR}/../../resources/icons/icon.png")
   if(APPLE)
     target_link_libraries(tentacle_lifecycle PUBLIC "-framework IOKit" "-framework UserNotifications")
   elseif(WIN32)

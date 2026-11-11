@@ -1,6 +1,6 @@
 // Windows : prérequis (Visual Studio Build Tools avec le C++, CMake et Ninja — ceux de Visual
 // Studio conviennent), CEF de l'architecture, SDL3 (paquet VC officiel), libmpv (la DLL
-// d'Electron), libsodium et nlohmann/json épinglés, puis le build natif dans l'environnement de
+// LGPL de resources/windows/mpv), libsodium et nlohmann/json épinglés, puis le build natif dans l'environnement de
 // Visual Studio (vcvarsall x64). Aucun bash. Écrit par l'axe windows sur la charpente de l'axe
 // linux ; jamais lancé depuis le Mac du lot : la recette est docs/A-TESTER-WINDOWS.md.
 import fs from "node:fs";
@@ -16,7 +16,7 @@ const state = {};
 
 function checkPrereqs() {
   if (process.arch !== "x64") {
-    die(`Windows ${process.arch} : seul x64 est pris en charge (la libmpv-2.dll d'Electron est x64)`);
+    die(`Windows ${process.arch} : seul x64 est pris en charge (la libmpv-2.dll du dépôt est x64)`);
   }
   const bat = vcvarsall();
   if (!bat) {
@@ -38,7 +38,7 @@ function checkPrereqs() {
 }
 
 /**
- * Jamais Electron (ou un autre Tentacle CEF) sur le même stockage. Sous Windows, ni lien
+ * Jamais une autre instance (un autre Tentacle, ou l'ancien bureau) sur le même stockage. Sous Windows, ni lien
  * SingletonLock ni lsof : Chromium tient `lockfile` à la racine de son profil, ouvert en
  * écriture SANS partage tant que le processus vit (ProcessSingleton, supprimé à la fermeture),
  * et LevelDB verrouille ses LOCK (LockFileEx). Un fichier qu'on ne peut ouvrir est tenu.

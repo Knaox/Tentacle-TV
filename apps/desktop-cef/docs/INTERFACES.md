@@ -550,7 +550,7 @@ Coutures d'OS : `src/lifecycle/lifecycle_platform.h` → `src/platform/<os>/life
 ### Schémas — `src/schemes/`
 - `tentacle://art` (`schemes/art_scheme.h`) : pochettes d'Octave à l'identique d'Electron
   (`octaveArt/`) — `GET /?o=&u=`, `POST /clear`, cache `<userData>/octave-art` (mêmes noms de fichiers,
-  relus par Electron : `tools/art-key-xcheck.mjs`, `tools/art-cache-electron-read.mjs`).
+  vérifiés croisés avec Electron avant son retrait, 1.50.0 : le cache d'une installation d'avant est repris).
 - `schemes::BufferedHandler` (`schemes/buffered_handler.h`) : réponse de schéma tenue en mémoire,
   rendue de n'importe quel fil (`Respond`).
 - `tentacle://plugin/<id>` (`schemes/plugin_scheme.h`) : document d'un greffon déposé par la commande

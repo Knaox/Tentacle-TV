@@ -201,7 +201,7 @@ if(APPLE)
     MAIN_SOURCES src/app/main_mac.mm
     HELPER_SOURCES src/app/helper_main_mac.mm
     RESOURCES "${CMAKE_SOURCE_DIR}/tests/socle/page.html"
-              "${CMAKE_SOURCE_DIR}/../desktop-electron/icons/icon.icns"  # systeme : l'icône d'Electron (Dock, « À propos »)
+              "${CMAKE_SOURCE_DIR}/resources/icons/icon.icns"  # systeme : l'icône de l'app (Dock, « À propos » ; brand/)
   )
 elseif(WIN32)
   # Windows (axe windows) : un exécutable unique, ressources CEF copiées à côté.

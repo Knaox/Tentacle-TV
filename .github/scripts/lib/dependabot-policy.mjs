@@ -11,8 +11,10 @@
 // - une PR de groupe ne passe que si CHACUNE de ses dépendances passe.
 // Une métadonnée absente ou illisible = refus.
 
-// Jamais sans humain : moteur de rendu, pont natif, coquille du bureau.
-export const NEVER = new Set(['electron', 'koffi', 'react-native', 'react', 'react-dom']);
+// Jamais sans humain : moteur de rendu, pont natif (koffi : Tentacle Server pour Windows).
+// Le bureau (coquille CEF, 1.50.0) n'a plus de dépendance npm : CEF, SDL3 et la chaîne mpv
+// sont épinglés par ses scripts, hors Dependabot.
+export const NEVER = new Set(['koffi', 'react-native', 'react', 'react-dom']);
 
 // Fichiers qu'une PR de Dependabot a le droit de toucher pour être fusionnée seule.
 const ALLOWED_FILES = [

@@ -66,7 +66,7 @@ test('un groupe passe seulement si chaque dépendance passe', () => {
 });
 
 test('les paquets réservés ne fusionnent jamais seuls', () => {
-  for (const name of ['electron', 'koffi', 'react']) {
+  for (const name of ['koffi', 'react', 'react-native']) {
     assert.equal(judge(pr([[name, 'direct:production', 'patch']])).merge, false, name);
   }
 });

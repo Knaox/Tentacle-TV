@@ -89,7 +89,7 @@ résout vers leurs variantes.
   Windows, Linux, et macOS d'avant Tahoe posent l'image TELLE QUELLE — un carré
   plein y reste un carré dans la barre des tâches. D'où `app-icon-rounded.svg`
   et son gabarit macOS, et la règle de `generate-icons.py` : les icônes de
-  l'exécutable (`apps/desktop-electron/icons/`) en dérivent, les boutiques
+  l'exécutable (`apps/desktop-cef/resources/icons/`) en dérivent, les boutiques
   mobiles gardent le carré, et les paquets MSIX n'en prennent aucun (règle
   suivante).
 

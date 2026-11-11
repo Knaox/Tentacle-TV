@@ -42,8 +42,8 @@ add_compile_definitions(
 function(tentacle_windows_app target)
   set(out "${CMAKE_BINARY_DIR}/app")
   set(res "${CMAKE_SOURCE_DIR}/resources/windows")
-  # L'icône d'Electron (même visuel sur les trois OS, brand/ : jamais redessinée ici).
-  set(TENTACLE_WINDOWS_ICON "${CMAKE_SOURCE_DIR}/../desktop-electron/icons/icon.ico")
+  # L'icône de l'app (même visuel sur les trois OS, générée par brand/ : jamais redessinée ici).
+  set(TENTACLE_WINDOWS_ICON "${CMAKE_SOURCE_DIR}/resources/icons/icon.ico")
   if(NOT DEFINED TENTACLE_APP_VERSION)
     set(TENTACLE_APP_VERSION "0.1.0")
   endif()

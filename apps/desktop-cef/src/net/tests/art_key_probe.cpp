@@ -1,5 +1,6 @@
-// Sonde de parité (tools/art-key-xcheck.mjs) : une adresse par ligne sur l'entrée, rend
-// « clé<TAB>fichier » (ou « -<TAB>- » pour une adresse refusée) — à comparer à Electron.
+// Sonde des clés du cache des pochettes : une adresse par ligne sur l'entrée, rend
+// « clé<TAB>fichier » (ou « -<TAB>- » pour une adresse refusée). Elle a servi à prouver la
+// parité avec l'ancien bureau Electron (outil retiré avec lui, 1.50.0).
 #include <iostream>
 #include <string>
 

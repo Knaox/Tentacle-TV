@@ -11,7 +11,7 @@ import {
   priConfig,
 } from '../lib/msix-resources.mjs';
 
-const PACKAGES = ['apps/desktop-electron/msix', 'apps/server-windows/msix'];
+const PACKAGES = ['apps/desktop-cef/resources/msix', 'apps/server-windows/msix'];
 const TARGET_SIZES = [16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256];
 
 test("la configuration n'a pas de section packaging, et indexe les dossiers", () => {

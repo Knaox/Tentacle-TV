@@ -1,22 +1,26 @@
-// Profil : celui d'Electron (stockage du front partagé), et le profil Chromium de CEF à côté.
+// Profil : le dossier de données du bureau (stockage du front repris), et le profil Chromium de CEF à côté.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { cache, capture, die, platform, repo, say } from "./common.mjs";
+import { cache, capture, die, platform, say } from "./common.mjs";
 
 /**
- * Le profil d'Electron est le dossier que `pnpm dev:electron` donne à userData
- * (apps/desktop-electron/src/main/dataPaths.ts) : Application Support/<identifiant> sous macOS,
- * %APPDATA%\<identifiant> sous Windows, $XDG_DATA_HOME ou ~/.local/share sous Linux.
- * L'identifiant est RELU dans ce fichier : s'il change là-bas, il change ici. L'app du Mac
- * App Store vit dans son conteneur (bac à sable) : à viser par TENTACLE_ELECTRON_PROFILE.
+ * L'identifiant du dossier de données du bureau, hérité des coquilles d'avant (Tauri puis
+ * Electron) et GARDÉ : le renommer ferait perdre session, réglages et cache d'Octave à chaque
+ * installation existante. Chaîne traversée : ne se renomme jamais.
+ */
+export const DATA_IDENTIFIER = "com.tentacle.media";
+
+/**
+ * Le dossier de données du bureau (le « profil d'Electron » du temps de cette coquille) :
+ * Application Support/<identifiant> sous macOS, %APPDATA%\<identifiant> sous Windows,
+ * $XDG_DATA_HOME ou ~/.local/share sous Linux. Une app du Mac App Store vit dans son
+ * conteneur (bac à sable) : à viser par TENTACLE_ELECTRON_PROFILE (nom historique).
  */
 export function electronProfile() {
   const forced = process.env.TENTACLE_ELECTRON_PROFILE;
   if (forced) return forced.replace(/[\\/]+$/, "");
-  const src = fs.readFileSync(path.join(repo, "apps/desktop-electron/src/main/dataPaths.ts"), "utf8");
-  const id = /^export const TAURI_IDENTIFIER = "(.*)";$/m.exec(src)?.[1];
-  if (!id) die("identifiant du profil introuvable dans apps/desktop-electron/src/main/dataPaths.ts");
+  const id = DATA_IDENTIFIER;
   switch (platform) {
     case "darwin":
       return path.join(os.homedir(), "Library/Application Support", id);

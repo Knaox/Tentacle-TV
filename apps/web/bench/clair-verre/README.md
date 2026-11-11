@@ -93,7 +93,7 @@ CEF_PID=$! BANC_ORIGIN=http://127.0.0.1:5433 node bench/clair-verre/gpu.mjs <ét
 ```
 
 `gpu.mjs` trace les images de la coquille (`PipelineReporter`, la méthode du banc de fluidité
-`apps/desktop-electron/bench/liquid-glass/perf`) sur deux gestes où une image change SOUS un verre —
+de l'ancien bureau Electron, reprise dans `lib/trace/`) sur deux gestes où une image change SOUS un verre —
 la bannière de l'accueil sous la barre, une bibliothèque défilée sous la barre et le panneau
 d'outils : images présentées et abandonnées, temps de DESSIN du processus GPU par image, et
 l'occupation GPU des processus de l'app (`ioreg`, sans `sudo`). `SANS_COURBE=1` retire la courbe de

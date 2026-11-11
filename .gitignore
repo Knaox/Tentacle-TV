@@ -20,7 +20,6 @@ scripts/
 !apps/mobile/scripts/
 # L'Apple TV : le rendu du son de l'ouverture (scripts/render-intro-sound.mjs).
 !apps/tv/scripts/
-!apps/desktop-electron/scripts/
 # Le bureau CEF (CEF + libmpv + SDL3) : build, dépendances natives, lancement.
 !apps/desktop-cef/scripts/
 # L'assemblage et l'empaquetage du paquet MSIX de Tentacle Server.

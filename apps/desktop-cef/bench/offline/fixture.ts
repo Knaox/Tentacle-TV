@@ -1,6 +1,7 @@
-// Le scénario de compatibilité, côté ELECTRON : le vrai cœur hors ligne (`packages/
-// offline-core`, celui que le bureau Electron embarque à l'octet près) écrit une base, ou relit
-// celle que Tentacle CEF a écrite, et rend ce que la page en verrait.
+// Le scénario de compatibilité, côté de l'ANCIEN bureau (Electron, ≤ 1.4x) : le vrai cœur hors
+// ligne (`packages/offline-core`, que ce bureau embarquait à l'octet près) écrit une base, ou
+// relit celle que Tentacle CEF a écrite, et rend ce que la page en verrait — les installations
+// d'avant gardent leurs titres gardés. `avatar.ts` : copie du cache d'avatars de ce bureau.
 // Le pendant C++ est `src/offline/tests/compat_main.cpp` ; `compat.sh` les croise.
 //   node --experimental-transform-types --import ./ts-resolve.mjs fixture.ts write <dossier>
 //   node --experimental-transform-types --import ./ts-resolve.mjs fixture.ts read <dossier> <sortie.json>
@@ -20,7 +21,7 @@ import * as session from "../../../../packages/offline-core/src/core/session.ts"
 import { diskUsage } from "../../../../packages/offline-core/src/core/usage.ts";
 import { dbPath, openNodeDatabase } from "../../../../packages/offline-core/src/node/nodeDatabase.ts";
 import { nodeFiles } from "../../../../packages/offline-core/src/node/nodeFiles.ts";
-import * as avatar from "../../../desktop-electron/src/main/downloads/avatar.ts";
+import * as avatar from "./avatar.ts";
 import { S } from "./scenario.ts";
 
 const [mode, userData, out] = process.argv.slice(2);

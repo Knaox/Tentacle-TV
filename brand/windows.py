@@ -25,7 +25,7 @@ design/iconography/app-icon-construction et …/uwp/launch-resume/live-tile-icon
 # Tentacle Server garde son chapeau même sous 24 px (choix de Damien,
 # 2026-10-12 : c'est lui qui le fait reconnaître dans la barre des tâches).
 PACKAGES = {
-    "apps/desktop-electron/msix/Assets": ("logo-color.svg", "logo-color-nohat.svg"),
+    "apps/desktop-cef/resources/msix/Assets": ("logo-color.svg", "logo-color-nohat.svg"),
     "apps/server-windows/msix/Assets": ("logo-server.svg", "logo-server.svg"),
 }
 

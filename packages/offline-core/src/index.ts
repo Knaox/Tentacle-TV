@@ -5,9 +5,9 @@
  * Chaque plateforme fournit ses adaptateurs (`adapters.ts`) — les Nôtres pour
  * Node vivent sous `./node`, jamais ré-exportés d'ici.
  *
- * Le main Electron ne consomme pas ce paquet : il en garde une copie de
- * `src/core` et `src/node`, recopiée par `mirror.mjs` et verrouillée par un
- * test d'égalité.
+ * Le bureau CEF (1.50.0) porte ce cœur en C++ (`apps/desktop-cef/src/offline/`) ;
+ * son banc de compatibilité (`apps/desktop-cef/bench/offline/`) croise les deux
+ * bases. L'ancien main Electron en gardait une copie (`mirror.mjs`, retiré avec lui).
  */
 
 export * from "./core/adapters";

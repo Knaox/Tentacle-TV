@@ -13,7 +13,7 @@ import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { startBenchServer } from "../../../desktop-electron/bench/audio/serve.mjs";
+import { startBenchServer } from "./lib/serve.mjs";
 import { analyseCrossfade, analyseCut } from "./crossfadeAnalysis.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));

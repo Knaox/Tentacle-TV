@@ -25,8 +25,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const { Cdp, waitForTarget } = await import(path.join(ROOT, "apps/desktop-electron/bench/liquid-glass/lib/cdp.mjs"));
-const { connectAndLogin } = await import(path.join(ROOT, "apps/desktop-electron/bench/liquid-glass/lib/app.mjs"));
+const { Cdp, waitForTarget } = await import(path.join(ROOT, "apps/web/bench/glass-boxes/lib/cdp.mjs"));
+const { connectAndLogin } = await import(path.join(ROOT, "apps/web/bench/glass-boxes/lib/app.mjs"));
 
 const [OUT, ...ROUTES] = process.argv.slice(2);
 if (!OUT || ROUTES.length === 0) throw new Error("usage : boxes.mjs <sortie.json> /route…");

@@ -5,7 +5,7 @@
 // typés aussi strictement que le reste — sinon un test qui compile mal
 // passerait pour un test qui échoue.
 //
-// Même partage que `apps/desktop-electron`. `test/` y est ajouté : ce dossier
+// Même partage que l'ancien bureau Electron. `test/` y est ajouté : ce dossier
 // vit hors de `src` et n'était donc typé par personne jusqu'ici.
 {
   "extends": "./tsconfig.json",

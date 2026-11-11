@@ -41,9 +41,8 @@ describe("miroir du runtime isolé", () => {
   it("pluginClientFetch.ts (requêtes déléguées) est identique à celui de shared", () => {
     const root = repoRoot();
     const shared = readFileSync(join(root, "packages/shared/src/plugins/pluginClientFetch.ts"), "utf8");
-    for (const copy of ["apps/backend/src/plugins/runtime/pluginClientFetch.ts", "apps/desktop-electron/src/main/clientFetch/pluginClientFetch.ts"]) {
-      expect(readFileSync(join(root, copy), "utf8"), copy).toBe(shared);
-    }
+    const copy = "apps/backend/src/plugins/runtime/pluginClientFetch.ts";
+    expect(readFileSync(join(root, copy), "utf8"), copy).toBe(shared);
   });
 
   it("la lecture du contrat `music` est celle de shared (readPluginMusicManifest)", () => {

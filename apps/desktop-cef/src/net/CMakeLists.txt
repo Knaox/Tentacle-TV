@@ -54,7 +54,7 @@ foreach(t art_policy art_cache plugin_csp)
   target_link_libraries(tentacle_${t}_tests PRIVATE tentacle_net_core)
   add_test(NAME tentacle_${t}_tests COMMAND tentacle_${t}_tests)
 endforeach()
-add_executable(tentacle_art_key_probe tests/art_key_probe.cpp)  # tools/art-key-xcheck.mjs
+add_executable(tentacle_art_key_probe tests/art_key_probe.cpp)  # sonde des clés du cache des pochettes
 target_link_libraries(tentacle_art_key_probe PRIVATE tentacle_net_core)
 
 # --- La colle avec l'app (CEF, IPC du socle, registre du pont) ----------------------------
