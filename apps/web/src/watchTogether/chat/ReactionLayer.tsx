@@ -1,72 +1,101 @@
-import { memo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { memo, useMemo, useRef } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { reactionBursts, type ReactionBurst } from "@tentacle-tv/shared";
 import type { WtFloatingReaction } from "@tentacle-tv/api-client";
+import { duration, easeOut } from "../../theme/motion";
+import "./chat.css";
 
 /**
- * Watch Together — couche des réactions éphémères (emoji ou GIF) : chaque
- * réaction s'élève depuis le bas-droite de l'écran (côté bulle de chat) en
- * s'estompant, avec une dérive horizontale pseudo-aléatoire seedée par sa clé
- * (stable au re-render). Couche entièrement transparente aux interactions.
+ * Watch Together — la couche des réactions éphémères (emoji ou GIF), en bas à droite de l'écran
+ * (côté bulle de chat). Entièrement transparente aux interactions.
  *
- * Couleurs volontairement en dur : flotte au-dessus de la vidéo comme de
- * n'importe quelle page (famille overlay de chat) — le tag de pseudo doit
- * rester lisible sur n'importe quel fond, pas seulement selon le thème.
+ * # Une bulle STABLE par membre et par contenu (règle partagée `reactionBursts`)
+ *
+ * Le chat partagé fusionne une rafale en UNE entrée comptée, mais lui donne une nouvelle clé à
+ * chaque réaction. Rendue par cette clé, la bulle RENAISSAIT à chaque clic : dix « 🔥 » de
+ * suite faisaient dix bulles qui repartaient du bas l'une après l'autre (vu à deux comptes,
+ * lot rf2). Ici la bulle garde sa place et son COMPTE pulse ; elle s'envole en s'effaçant quand
+ * la rafale est finie.
+ *
+ * # Une voie LIBRE, tenue
+ *
+ * La règle partagée donne une voie par hachage (trois voies) : deux rafales peuvent tomber sur
+ * la même et se dessiner l'une sur l'autre (vu : « 🔥 ×10 » sous un « ❤️ »). Le web a la place :
+ * chaque bulle prend la première voie libre et la garde jusqu'à sa fin (`useLanes`).
+ *
+ * Couleurs en dur : elle flotte sur la vidéo comme sur n'importe quelle page — le nom doit
+ * rester lisible sur n'importe quel fond.
  */
 
-/** Hash déterministe [0..1) — dérive/offset propres à chaque réaction. */
-function seeded(key: string): number {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return (Math.abs(hash) % 1000) / 1000;
+/** Écart entre deux voies : un emoji et son nom ; un GIF, plus large. */
+const LANE_PX = 76;
+const GIF_LANE_PX = 172;
+
+/**
+ * La voie de chaque bulle : la première libre à sa naissance, gardée tant qu'elle vit. Les
+ * voies se comptent en pas d'emoji ; un GIF en occupe assez pour sa largeur.
+ */
+function useLanes(bursts: readonly ReactionBurst[]): Map<string, number> {
+  const held = useRef(new Map<string, { at: number; span: number }>());
+  return useMemo(() => {
+    const alive = new Set(bursts.map((b) => b.id));
+    for (const id of [...held.current.keys()]) if (!alive.has(id)) held.current.delete(id);
+    for (const burst of bursts) {
+      if (held.current.has(burst.id)) continue;
+      const span = burst.gif ? Math.ceil(GIF_LANE_PX / LANE_PX) : 1;
+      let at = 0;
+      const taken = [...held.current.values()];
+      while (taken.some((t) => at < t.at + t.span && t.at < at + span)) at += 1;
+      held.current.set(burst.id, { at, span });
+    }
+    return new Map([...held.current].map(([id, lane]) => [id, lane.at]));
+  }, [bursts]);
 }
 
-const FloatingEmoji = memo(function FloatingEmoji({ reaction }: { reaction: WtFloatingReaction }) {
-  const seed = seeded(reaction.key);
-  const drift = (seed - 0.5) * 120; // dérive horizontale −60..+60 px
-  const startOffset = seed * 90;    // décale le point de départ des rafales
-  // Un GIF est un contenu à regarder : il monte un peu plus lentement (TTL
-  // aligné côté useWtChat : WT_GIF_TTL_MS > WT_REACTION_TTL_MS).
-  const duration = reaction.gif ? 3.9 : 2.4;
-
+const Burst = memo(function Burst({ burst, lane, reduced }: { burst: ReactionBurst; lane: number; reduced: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 0, x: -startOffset, scale: 0.6 }}
-      animate={{ opacity: [0, 1, 1, 0], y: -260, x: -startOffset + drift, scale: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration, ease: "easeOut", opacity: { times: [0, 0.1, 0.75, 1], duration } }}
-      className="absolute bottom-24 right-16 flex flex-col items-center"
+      // Elle naît en montant un peu ; elle part en s'envolant, plus vite qu'elle n'est venue.
+      initial={{ opacity: 0, transform: reduced ? "none" : "translateY(14px) scale(0.9)" }}
+      animate={{ opacity: 1, transform: reduced ? "none" : "translateY(0px) scale(1)", transition: { duration: duration.base, ease: easeOut } }}
+      exit={{ opacity: 0, transform: reduced ? "none" : "translateY(-28px) scale(1)", transition: { duration: duration.menuIn, ease: easeOut } }}
+      className="absolute bottom-24 flex flex-col items-center"
+      style={{ right: 64 + lane * LANE_PX }}
     >
-      {reaction.gif ? (
+      {burst.gif ? (
         <img
-          src={reaction.gif.url}
+          src={burst.gif.url}
           alt=""
           draggable={false}
           className="h-24 w-auto max-w-[160px] rounded-card object-cover"
-          style={reaction.gif.w && reaction.gif.h ? { aspectRatio: `${reaction.gif.w} / ${reaction.gif.h}` } : undefined}
+          style={burst.gif.w && burst.gif.h ? { aspectRatio: `${burst.gif.w} / ${burst.gif.h}` } : undefined}
         />
       ) : (
-        <span className="relative text-3xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-          {reaction.emoji}
-          {/* Une rafale du même emoji : une seule bulle, comptée. */}
-          {reaction.count && reaction.count > 1 ? (
-            <span className="absolute -right-4 -top-1 rounded-pill bg-[#18181B] px-1 text-[11px] font-bold tabular-nums text-white">
-              ×{reaction.count}
+        // La clé change à chaque réaction de la rafale : le compte rejoue sa pulsation, la bulle reste.
+        <span key={burst.lastKey} className={`relative text-3xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] ${burst.count > 1 ? "wtc-burst" : ""}`}>
+          {burst.emoji}
+          {burst.count > 1 && (
+            <span className="absolute -right-5 -top-1 rounded-pill bg-[#18181B] px-1.5 text-[11px] font-bold tabular-nums leading-[18px] text-white">
+              ×{burst.count}
             </span>
-          ) : null}
+          )}
         </span>
       )}
-      <span className="mt-0.5 rounded-pill bg-[#18181B] px-1.5 text-[10px] font-medium text-white/85">
-        {reaction.username}
+      <span className="mt-0.5 max-w-[120px] truncate rounded-pill bg-[#18181B] px-1.5 text-[10px] font-medium leading-[16px] text-white/85">
+        {burst.username}
       </span>
     </motion.div>
   );
 });
 
 export function ReactionLayer({ reactions }: { reactions: WtFloatingReaction[] }) {
+  const reduced = useReducedMotion() === true;
+  const bursts = useMemo(() => reactionBursts(reactions), [reactions]);
+  const lanes = useLanes(bursts);
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden>
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden data-wt-reactions>
       <AnimatePresence>
-        {reactions.map((r) => <FloatingEmoji key={r.key} reaction={r} />)}
+        {bursts.map((burst) => <Burst key={burst.id} burst={burst} lane={lanes.get(burst.id) ?? 0} reduced={reduced} />)}
       </AnimatePresence>
     </div>
   );

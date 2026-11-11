@@ -214,3 +214,20 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* ── Une réaction en rafale ── la bulle reste, son compte PULSE à chaque réaction de plus
+ * (`ReactionLayer` : la clé de l'élément change, l'animation rejoue — c'est le but). */
+.wtc-burst {
+  animation: wtc-burst 220ms var(--ease-out) both;
+}
+
+@keyframes wtc-burst {
+  from { transform: scale(1.22); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wtc-burst {
+    animation: none;
+  }
+}

@@ -23,6 +23,9 @@ import {
  * rafales d'emojis identiques se regroupent à l'affichage (`count`).
  */
 
+/** Attente du fil du groupe après l'entrée en salle, avant de le redemander (`wt:syncRequest`). */
+export const WT_CHAT_HISTORY_WAIT_MS = 600;
+
 /** Durée d'affichage d'une réaction flottante (animation ReactionLayer). */
 export const WT_REACTION_TTL_MS = 2_600;
 /** Durée d'affichage d'un GIF flottant (contenu à regarder → plus long). */
@@ -54,6 +57,8 @@ export function useWtChat(): WtChatApi {
   const groupId = room?.groupId ?? null;
 
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
+  // Le groupe dont le fil est arrivé (`wt:chatHistory`) depuis que ce crochet écoute.
+  const historyGroupRef = useRef<string | null>(null);
   const typingSupported = useServerCapability("watchTogether.typing");
   const { notifyTyping, sent } = useWtTyping(send, typingSupported && !!groupId, groupId);
 
@@ -88,6 +93,7 @@ export function useWtChat(): WtChatApi {
     const unsubscribe = subscribeSocket((msg) => {
       switch (msg.type) {
         case "wt:chatHistory":
+          historyGroupRef.current = msg.groupId;
           dispatch({ type: "history", groupId: msg.groupId, messages: msg.messages });
           break;
         case "wt:chat": {
@@ -137,9 +143,22 @@ export function useWtChat(): WtChatApi {
 
   // Changement / sortie de groupe : fil purgé (le wt:chatHistory du join
   // suivant repeuplera).
+  //
+  // Le serveur envoie ce fil AVEC l'adhésion (invitation acceptée, « Rejoindre
+  // ici »), sur la socket — parfois AVANT que ce crochet n'écoute : la racine du
+  // chat n'est montée qu'une fois la salle connue, par la réponse HTTP qui suit.
+  // Vu à deux appareils du même compte (lot rf2) : le second rejoignait un groupe
+  // de vingt-cinq messages avec un fil vide. Si le fil du groupe n'est pas arrivé
+  // peu après, on le redemande par le geste du rechargement (`wt:syncRequest` :
+  // l'état de la salle et son fil) — une fois par groupe, aucun message nouveau.
   useEffect(() => {
     dispatch({ type: "clear" });
-  }, [groupId]);
+    if (groupId === null) return undefined;
+    const timer = setTimeout(() => {
+      if (historyGroupRef.current !== groupId) send({ type: "wt:syncRequest" });
+    }, WT_CHAT_HISTORY_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [groupId, send]);
 
   const sendChat = useCallback((text: string) => {
     const trimmed = text.trim().slice(0, WT_CHAT_MAX_LENGTH);
