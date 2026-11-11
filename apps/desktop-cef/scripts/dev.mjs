@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Lanceur de développement : `pnpm dev:cef` à la racine du monorepo, et les scripts du
+// Lanceur de développement : `pnpm cef` (ou `pnpm dev:cef`) à la racine du monorepo, et les scripts du
 // package.json (pnpm --filter @tentacle-tv/desktop-cef dev | dev:server | build | banc).
 // Node seul, aucune dépendance : macOS, Linux et Windows.
 //
@@ -23,7 +23,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  DevError, bancUrl, buildWeb, cache, capture, checkServer, desktopVersion, die, launch, platform, repo, root, run, say, soundEnv,
+  DevError, bancUrl, buildWeb, cache, capture, checkServer, desktopVersion, die, dry, launch, platform, repo, root, run, say, soundEnv,
 } from "./dev/common.mjs";
 import { reenterInBox } from "./dev/linux-box.mjs";
 import { cefProfileFor, electronProfile, guardProfileFree, prepareProfile } from "./dev/profile.mjs";
@@ -63,7 +63,8 @@ async function runApp(rawArgs) {
   guardProfileFree(electron, os.extraHolders); // avant les builds : inutile d'attendre pour rien
   await os.prepare?.(); // prérequis et dépendances AVANT le long build web
   if (!skipWeb) buildWeb();
-  if (!fs.existsSync(path.join(repo, "apps/web/dist/index.html"))) die("apps/web/dist absent : relancer sans --skip-web");
+  // À blanc, le build web n'a pas tourné : son absence n'est pas une erreur à dire.
+  if (!dry && !fs.existsSync(path.join(repo, "apps/web/dist/index.html"))) die("apps/web/dist absent : relancer sans --skip-web");
   const binary = await os.build();
   guardProfileFree(electron, os.extraHolders); // et juste avant de l'ouvrir
   prepareProfile(electron, cef);

@@ -90,6 +90,25 @@ export function tarBinary() {
 }
 
 /**
+ * Renomme un dossier fraîchement extrait. Sous Windows, l'antivirus tient encore des fichiers
+ * d'une grosse archive (CEF : des milliers) quelques instants après l'extraction : le renommage
+ * répond EPERM ou EBUSY, puis passe. Cinq essais, une seconde entre deux (lot rf2 : lu dans le
+ * code, non exécuté). Ailleurs, le premier essai passe.
+ */
+function renamePatiently(from, to) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (e) {
+      if (attempt >= 5 || !["EPERM", "EBUSY", "EACCES"].includes(e.code)) throw e;
+      warn(`renommage retenu (${e.code}), nouvel essai ${attempt}/4…`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+    }
+  }
+}
+
+/**
  * Télécharge (si besoin), vérifie, extrait dans un dossier temporaire et renomme le dossier
  * `inner` de l'archive en `dest`. Idempotent : `marker` présent sous `dest` = déjà prêt.
  */
@@ -109,7 +128,7 @@ export async function fetchArchive({ url, pin, dest, inner, marker, sizeHint, wh
   say(`extraction de ${path.basename(archive)}`);
   run(tarBinary(), ["-xf", archive, "-C", tmp]);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.renameSync(path.join(tmp, inner), dest);
+  renamePatiently(path.join(tmp, inner), dest);
   fs.rmSync(tmp, { recursive: true, force: true });
   fs.rmSync(archive, { force: true });
   say(`${what} prêt : ${dest}`);

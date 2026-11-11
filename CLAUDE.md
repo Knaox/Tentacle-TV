@@ -13,6 +13,7 @@ Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It 
 pnpm dev:web          # Web client on port 5173 (proxies /api to :3001)
 pnpm dev:backend      # Backend API on port 3001
 pnpm dev:electron     # Electron desktop app (Windows, macOS, Linux)
+pnpm cef              # Bureau CEF (macOS, Linux, Windows) : build web + natif, puis l'app — alias de dev:cef
 pnpm dev:mobile       # Expo mobile app
 pnpm dev:tv           # Android TV app
 
@@ -1342,6 +1343,13 @@ secondes FILM, atterrissage du transcodage compris). Carnet :
   décompte serveur.
 - **Le mobile** n'a Watch Together qu'avec `watchTogether.deviceMembership` ;
   sans elle, sa séance reste éteinte (`WtPlatformPort.enabled: false`).
+- **Le chat a DEUX habits** (`apps/web/src/watchTogether/chat/chat.css`, variables `--wtc-*`) :
+  sur une page de lecture, l'encre sombre en dur des capsules du lecteur ; partout ailleurs,
+  les jetons du thème (clair en thème clair). Le fil se range en SUITES par des règles pures
+  (`chatThread.ts` : suites, emojis seuls, marque des non-lus) ; il reste en bas tant qu'on y
+  est, sinon une pilule compte ce qui arrive ; une réaction en rafale est UNE bulle qui pulse
+  (règle partagée `reactionBursts`), jamais une bulle par clic. Labo vivant :
+  `/dev/lecteur?vue=wt&etat=chat-vif` (`?donnees=pire`).
 - **Le chat est interactif** : débit par seau à jetons PARTAGÉ client/serveur
   (`watchTogetherChat.ts` — jamais un intervalle minimal entre deux envois),
   rafales d'emojis regroupées à l'affichage, « est en train d'écrire »

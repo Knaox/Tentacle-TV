@@ -35,10 +35,12 @@ cas, le geste, puis l'attendu.
 À la racine du monorepo, dans un PowerShell ordinaire (pas besoin de l'invite de Visual Studio) :
 
 ```powershell
-pnpm dev:cef
+pnpm cef
 ```
 
-Options : `pnpm dev:cef -- --mute` (son coupé), `pnpm dev:cef -- --skip-web` (garde `apps/web/dist`).
+`pnpm cef` est l'alias de `pnpm dev:cef` (lot rf2). Options : `pnpm cef -- --mute` (son coupé),
+`pnpm cef -- --skip-web` (garde `apps/web/dist`). `$env:TENTACLE_DEV_DRY="1"; pnpm cef` imprime
+les builds et la commande de l'app sans rien lancer.
 
 Le lanceur trouve Visual Studio (vswhere), télécharge et **vérifie par SHA-256** les dépendances
 épinglées — CEF windows64, SDL3 3.4.16, libsodium 1.0.22, nlohmann/json 3.12.0, en-têtes de mpv,
@@ -174,6 +176,50 @@ fenêtre principale pour celui de la fenêtre PiP, sans que mpv change de sortie
 - Lancé hors paquet, puis en MSIX → nom et icône justes sur la carte.
 - Octave : réglage « Sortie audio » → liste WASAPI sans doublon, « exclusif » proposé ; mode exclusif allumé → le son passe, la houle s'arrête (pas de mesure en exclusif).
 - Octave : transition douce à 6 s entre deux albums différents → fondu audible sans blanc ni saut de volume ; même album dans l'ordre → enchaînement sans blanc, sans fondu.
+
+## Outils : `pnpm cef` et le menu de débogage (lot rf2, 11/11/2026)
+
+Rien de ce qui suit n'a tourné sous Windows : le lanceur a été RELU ligne à ligne
+(`scripts/dev.mjs`, `scripts/dev/{common,windows,windows-deps,fetch,cef,profile}.mjs`) et le
+menu essayé sous macOS. Trois fragilités lues dans le lanceur ont été corrigées sans pouvoir
+être exécutées — c'est la première chose à regarder :
+
+- **`pnpm cef` avec un pnpm installé en `.exe`** (installateur autonome, winget — pas de
+  `pnpm.cmd`) → le build web démarre (avant : « pnpm.cmd n'est pas reconnu »). Avec un pnpm de
+  npm ou de corepack (`pnpm.cmd`) → pareil.
+- **Premier `pnpm cef`** (cache vide) → CMake configure sans erreur d'échappement (`Invalid
+  character escape`, `\U`) : tous les chemins passés par `-D` sont en barres obliques.
+- **Extraction de CEF** (175 Mo, des milliers de fichiers) avec l'antivirus actif → au pire
+  « renommage retenu (EPERM), nouvel essai… » puis « CEF windows64 prêt » ; jamais un arrêt.
+- `pnpm cef -- --mute` → l'app s'ouvre, son coupé ; `pnpm cef -- --skip-web` → pas de build web.
+- Un nom d'utilisateur Windows AVEC ESPACE (`C:\Users\Jean Dupont`) → le build et le lancement
+  passent (chemins du cache et du profil entre guillemets).
+
+Le menu de débogage (bouton **DEBUG** en bas à droite, ou **F9** ; en-tête « CEF · Windows ») —
+le tableau des trois coquilles est dans `PARITE-ELECTRON.md`, § 7. À essayer, une ligne par cas :
+
+- Onglet **Actions** → chaque ligne a un état (interrupteur, valeur) ou une raison en jaune ;
+  aucune ligne ne reste muette. « Copier » → « diagnostic copié » ; le coller dans un message.
+- **U · Pop-up de mise à jour** → « Notification » : la notification de la coquille en bas à
+  droite (hors lecteur) ; « Prête » puis son bouton « Redémarrer pour mettre à jour » : le voile
+  « Installation de Tentacle 9.9.9 » trois secondes, RIEN ne redémarre ; « Sécurité » : le voile
+  bloquant, refermé seul après six secondes ; « Annulée » ; « Fermer ».
+- **U · « Store · Disponible »** (Windows seulement) → la pop-up du front, canal Microsoft
+  Store ; « Store · Téléchargement » → barre indéterminée ; « Store · Erreur » → message et
+  « Réessayer ». Rien n'est installé.
+- **H · Transmission HDR autorisée**, écran HDR branché mais bureau en SDR → allumer, lancer un
+  film HDR10 : l'écran passe en HDR à l'entrée du lecteur (une à deux secondes de noir) et
+  revient en SDR à la sortie ; éteindre → il reste en SDR, l'image est convertie par mpv.
+  L'état de la ligne dit « écran HDR » / « écran SDR ».
+- **D · Décodage matériel** → éteindre, relancer une lecture : onglet Diagnostic, « Decodage :
+  LOGICIEL » ; rallumer → matériel à la lecture suivante.
+- **M · Lecteur mpv coupé**, en pleine lecture → le lecteur web prend le relais (bandeau
+  « Lecteur de secours ») ; rallumer, relancer → mpv.
+- **P, T, G** → grisées, « tenu par la coquille CEF » ; **C** et **L** → grisées (sonde et verre
+  macOS seulement) ; **X** → grisée tant que la coquille n'annonce pas `mpv_debug_fail`.
+- **N** → l'écran des nouveautés ; **R** → « journal vidé — n requêtes effacées ».
+- Le panneau se déplace par son en-tête, se redimensionne par son coin bas-droit, garde sa place
+  au relancement ; F9 le ferme et le rouvre sans animation.
 
 ## Limites connues (écrites, pas encore faites)
 
