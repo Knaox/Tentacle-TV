@@ -34,7 +34,11 @@ const cef = process.env.CEF === "1";
 const { browser, page, errors = [] } = cef
   ? await connectCef({ theme, glass })
   : await openSession({ theme, glass, shell: glass || process.env.SHELL === "1" });
-const scenes = (await buildScenes(page)).filter((s) => filters.length === 0 || filters.some((f) => s.name.includes(f)));
+// Le labo du verre ne se juge que SOUS le verre : sans lui, ses légendes (blanches, faites pour des affiches)
+// et ses spécimens n'ont pas de matériau — ce n'est pas un écran de l'app.
+const scenes = (await buildScenes(page))
+  .filter((s) => glass || cef || !s.name.startsWith("labo-verre-"))
+  .filter((s) => filters.length === 0 || filters.some((f) => s.name.includes(f)));
 
 /** Fait défiler la page (ou son conteneur de défilement) d'un écran ; faux s'il n'y a plus rien dessous. */
 const scrollDown = () => page.evaluate(() => {

@@ -78,9 +78,7 @@ const COLLECT = () => {
     // Une BANDE posée au-dessus du contenu (z-index positif) — pas un fond plein écran peint dessous (le fond ambiant).
   }).map((el) => ({ el, r: el.getBoundingClientRect(), z: Number(getComputedStyle(el).zIndex) || 0 }))
     .filter(({ r, z }) => z > 0 && r.width > 40 && r.height > 12 && r.height < innerHeight * 0.6);
-  const coverOf = (node, [x, y, w, h]) => {
-    const cx = x + w / 2;
-    const cy = y + h / 2;
+  const coverAt = (node, cx, cy) => {
     for (const { el, r, z } of veils) {
       if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom || el.contains(node) || node.contains(el)) continue;
       // Ce qui flotte lui-même AU-DESSUS du voile (la barre du haut sur son effet de bord) n'est pas dessous.
@@ -91,7 +89,7 @@ const COLLECT = () => {
       }
       if (!above) return "layer";
     }
-    const top = document.elementFromPoint(x + w / 2, y + h / 2);
+    const top = document.elementFromPoint(cx, cy);
     if (!top || top === node || node.contains(top) || top.contains(node)) return null;
     // Des initiales de repli SOUS un portrait, un titre sous son affiche : l'image les remplace.
     if (top.matches("img, video, canvas, picture")) return "layer";
@@ -102,6 +100,14 @@ const COLLECT = () => {
       }
     }
     return "other";
+  };
+  // Le centre, puis les quatre bords : un texte À MOITIÉ glissé sous une barre fixe (le lecteur d'Octave) n'est
+  // pas lisible en entier — ses points du bas se mesureraient sur la barre.
+  const coverOf = (node, [x, y, w, h]) => {
+    const center = coverAt(node, x + w / 2, y + h / 2);
+    if (center === "layer") return center;
+    const edges = [[x + w / 2, y + 1], [x + w / 2, y + h - 1], [x + 1, y + h / 2], [x + w - 1, y + h / 2]];
+    return edges.some(([px, py]) => coverAt(node, px, py) === "layer") ? "layer" : center;
   };
   const vw = innerWidth;
   const vh = innerHeight;
@@ -166,6 +172,9 @@ const COLLECT = () => {
     if (svg.closest("[data-banc-ignore], :disabled, [aria-disabled='true'], [inert]")) continue;
     const r = svg.getBoundingClientRect();
     if (!inView(r) || r.width > 64 || r.height > 64 || r.width < 8) continue;
+    // Un pictogramme rogné par un ancêtre qui défile (la rangée suivante d'une liste) ne se voit pas en entier.
+    const shown = intersect(r, clipOf(svg));
+    if (!shown || shown.width < r.width - 1 || shown.height < r.height - 1) continue;
     const style = getComputedStyle(svg);
     if (style.visibility === "hidden" || !svg.checkVisibility?.({ checkOpacity: false, checkVisibilityCSS: true })) continue;
     const shape = svg.querySelector("path, circle, rect, polygon, polyline, line, ellipse, use");

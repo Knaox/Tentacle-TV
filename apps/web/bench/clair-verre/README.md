@@ -15,6 +15,7 @@ THEME=dark node bench/clair-verre/audit.mjs <dossier>      # le sombre
 node bench/clair-verre/resume.mjs <dossier>/rapport.json   # les défauts par ENCRE : quel jeton corriger
 node bench/clair-verre/pire-image.mjs /library/<id>        # le texte posé sur une image blanche, puis noire
 node bench/clair-verre/capture.mjs <fichier.png> <route>   # regarder un écran
+node bench/clair-verre/labos.mjs <dossier>                 # l'administration, les profils, l'assistant, le hors ligne
 node bench/clair-verre/pire-donnees.mjs                    # les filtres face aux pires données réalistes
 node bench/clair-verre/inventaire.mjs <avant.json>         # « on ne perd rien » : les contrôles de chaque écran…
 node bench/clair-verre/inventaire.mjs --compare <avant.json> <après.json>   # …comparés entre deux relevés
@@ -40,8 +41,16 @@ d'écran intrus : le lire avant de croire un « 0 en défaut ».
 
 Les écrans : `scenes.mjs`. Les identifiants (bibliothèques, fiches, personne) sont lus sur
 l'instance et gardés dans `~/.cache/tentacle-test/rf2/clair-verre/scenes.json` (`BANC_SCENES`).
-Ce qu'un compte sans droits n'atteint pas — l'administration, « Qui regarde ? », l'assistant, les
-avis — passe par les labos `/dev/*` du paquet de développement.
+Les labos du socle et de l'accueil (`/dev/socle`, `/dev/accueil`) se rendent dans le client de dev :
+ils sont dans `scenes.mjs`.
+
+Ce qu'un compte sans droits n'atteint pas — l'administration, « Qui regarde ? », la connexion,
+l'assistant — et les écrans du hors ligne (bureau seulement) : **`labos.mjs`**. Ces deux labos
+(`/dev/reglages`, `/dev/hors-ligne`) ne se rendent pour de bon que dans la page de LEUR banc
+(`bench/reglages/`, `bench/hors-ligne/` : `vite build`, faux serveur, pont factice). Dans le client
+de dev, l'administration retombe sur « Lecture » et le hors ligne n'affiche qu'un avis — un « 0 en
+défaut » qui ne mesure rien. `labos.mjs` construit ces pages, les sert, et les mesure par la même
+règle, écran par écran, en clair et en sombre (`WEB=` : un autre code, pour la mesure « avant »).
 
 ## Le Liquid Glass
 

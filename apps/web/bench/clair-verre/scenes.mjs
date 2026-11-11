@@ -31,13 +31,6 @@ const slug = (label) => label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").t
 /** Les menus de la barre de filtres d'une bibliothèque (le tri est le premier déclencheur de la barre). */
 const FILTER_MENUS = ["Genres", "Année", "Note minimum", "Plateformes", "Langue audio", "Sous-titres"];
 
-/** Les écrans du labo des réglages qu'aucune session de banc n'atteint (administration, profils, installation). */
-const LAB_SETTINGS = [
-  "admin", "admin-a-regler", "admin-recommandations", "admin-sessions", "admin-tickets", "admin-utilisateurs",
-  "admin-invitations", "admin-famille", "admin-telechargements", "admin-services", "admin-metadonnees",
-  "admin-acces-distant", "admin-extensions", "admin-systeme", "qui-regarde", "connexion", "inscription", "assistant",
-];
-
 /** Pose un statut, les favoris et le premier genre : les pastilles allumées et la rangée « ce qui est posé ». */
 async function applyFilters(page) {
   const bar = page.locator("section[aria-label]").first();
@@ -130,10 +123,10 @@ export async function buildScenes(page) {
     { name: "survol-carte", route: library, steps: async (p) => { await p.locator("[data-card-rating]").nth(2).hover({ timeout: 5000 }); await p.waitForTimeout(1200); }, after: async (p) => { await p.mouse.move(2, 2); } },
     { name: "bibliotheque-vide", route: library, steps: async (p) => { await p.locator('section[aria-label] input').first().fill("zzzzqqqq"); await p.waitForTimeout(2500); } },
     // Ce qu'un compte sans droits ne voit pas, ou ce qui ne se provoque pas : les labos du paquet de développement.
-    ...LAB_SETTINGS.map((id) => ({ name: `labo-${id}`, route: `/dev/reglages?vue=${id}`, screens: 3 })),
+    // Les labos des réglages (administration, profils, assistant) et du hors ligne ne se rendent pour de bon que
+    // dans la page de leur banc : `labos.mjs` les construit et les mesure.
     ...["jetons", "boutons", "controles", "calques"].map((id) => ({ name: `labo-socle-${id}`, route: `/dev/socle?vue=${id}`, screens: 3 })),
     ...["avis", "etats", "cartes"].map((id) => ({ name: `labo-accueil-${id}`, route: `/dev/accueil?vue=${id}`, screens: 2 })),
-    ...["feuille-film", "feuille-saison", "feuille-serie", "file", "catalogue", "serie", "film", "boutons", "avis"].map((id) => ({ name: `labo-hors-ligne-${id}`, route: `/dev/hors-ligne?vue=${id}`, screens: 2 })),
     // Octave en mode bureau : son propre thème (« Apparence d'Octave », par défaut celle de Tentacle).
     ...[["", "accueil"], ["/search", "recherche"], ["/library", "bibliotheque"], ["/liked", "aimes"], ["/playlists", "playlists"], ["/settings", "reglages"]]
       .map(([path, id]) => ({ name: `octave-${id}`, route: `/octave${path}`, screens: 2, settle: 3000 })),
