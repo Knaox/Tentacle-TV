@@ -366,6 +366,23 @@ fenêtre `--lg-chrome-*` (`desktop/windowGlass.css`, § 8), contrôles `--lgc-*`
 (`components/ui/glass/lgPageControls.css`, § 8), lecteur `--lg-player-*`
 (`components/player/glass/`, § 7).
 
+**Le givre « sur image » (lot rf2, 11/11)** — `--lg-frost-{blur,saturate,curve,ink,glyph-secondary}`,
+dans `paneTokens.css`, recopiés de `theme/glass/frostedMaterial.ts`. Le verre de la maquette
+(`--lg-pane-*`) n'est prouvé que sur le FOND AMBIANT ; posé sur une image quelconque — le panneau
+d'outils d'une bibliothèque au bas de sa bannière, l'encadré de la fiche (`.lg-content-frosted`), la
+capsule de la barre du haut (`.nav-capsule-glass`) —, il laissait « 485 titres » à 3,0:1 et « ⌘K »
+à 2,3:1 sur une image claire (mesuré sur une instance réelle : le « texte illisible sur les filtres
+de bibliothèque »). Ces trois surfaces prennent une COURBE DE TONS dans leur givre
+(`backdrop-filter: blur() saturate() url(#lg-frost-curve-…)`, un `feComponentTransfer` monté une
+fois par `GlassToneCurves`) : en sombre elle PLAFONNE les hautes lumières du dessous (une ombre
+passe telle quelle, un ciel blanc devient un brun fumé), en clair elle RELÈVE ses ombres (une image
+noire devient une nacre). Le verre reste transparent là où l'image le permet et ne se teinte que là
+où elle l'exige, pixel par pixel, sans mesure ni attente ; ce n'est pas une lentille (aucune carte de
+déplacement : `LENS_BUDGET` ne la compte pas). Les encres faibles posées dessus montent à celle que
+le matériau prouve : **4,5:1 pour tout texte sur 216 dessous, blanc et noir purs compris, jusqu'au
+coin du reflet** (`frostedMaterial.test.tsx`). Un nouveau verre posé sur du contenu arbitraire prend
+ces jetons, jamais `--lg-pane-*` nus.
+
 **La portée est tenue par test** : toute règle de `apps/web/src` qui lit
 `var(--lg-…)` ou une classe `.lg-…` doit être portée par
 `:root[data-liquid-glass="native"]` (`theme/liquidGlassTokens.test.ts`). Les
@@ -959,6 +976,17 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   d'Electron en `linear` contre 20 en `steps()`. Mouvement réduit : aucun
   travelling.
 
+- **Barres de défilement** (lot rf2) : la piste d'un conteneur INTERNE qui défile (liste d'un
+  menu, feuille, panneau) est TRANSPARENTE, son pouce une pilule en retrait (`index.css`). Opaque à
+  la couleur de la page — la précaution de la fenêtre transparente, qui ne vaut que pour la barre
+  de la PAGE —, elle dessinait une bande rectangulaire jusque dans le coin arrondi du calque : le
+  « coin non arrondi dans le Liquid Glass » de Damien, vu sur le menu « Genres » dans la coquille
+  CEF (pas de barres en surimpression). Un menu qui défile se juge donc dans la vraie coquille
+  (`apps/web/bench/clair-verre/cef-tour.mjs`), pas dans un Chrome sans tête, qui masque ses barres.
+- **Pastilles de compte** (cloche, Watch Together) : la teinte franche d'hors verre (`--accent`,
+  encre `--on-accent`). Le violet de marque (#8B5CF6 en sombre) est une zone morte : ni l'encre
+  sombre (4,3:1) ni le blanc (4,2:1) n'y tiennent un chiffre.
+
 ## 9. Ce qui ne doit jamais casser
 
 - **Le HDR / EDR du lecteur** : Apple Silicon, fenêtre Metal de mpv SOUS la
@@ -1081,6 +1109,14 @@ a changé, rejoue la matrice et compare au rendu d'avant (`compare.mjs`,
 son héros, il ne se juge pas au pixel). Les preuves vont dans
 `~/Pictures/tentacle-banc-liquid-glass/<date>-recette-<commit>/` (`resume.md`,
 `rapport.json`, captures).
+
+**Le contraste et les angles, sur une instance réelle** (lot rf2) — `apps/web/bench/clair-verre/`
+(README) : `audit.mjs` mesure chaque texte AU PIXEL sur le fond qu'il recouvre (verre compris),
+écran par écran, en clair et en sombre, dans un Chrome (`GLASS=1` : pont simulé) ou dans la vraie
+coquille CEF (`CEF=1`) ; `pire-image.mjs` rend les images blanches puis noires ; `coins.mjs` regarde
+les angles des formes de verre ; `cef-tour.mjs` capture la fenêtre de la coquille. ⚠️ Pour juger un
+verre dans un Chrome : `BANC_NAVIGATEUR=complet` — le « headless shell » ne givre pas toute une
+grande surface en densité 2 (une bande nette qui n'existe pas dans l'app).
 
 **Recette du matin** — `morning.mjs` : clone NEUF de `dev`, `pnpm install`,
 `pnpm dev:electron` (drapeaux CDP passés SANS `--` : Chromium ignore tout ce qui

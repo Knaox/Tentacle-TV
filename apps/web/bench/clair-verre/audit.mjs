@@ -5,7 +5,8 @@
  *   node bench/clair-verre/audit.mjs <dossier de sortie> [filtre de scène…]      (depuis apps/web)
  *
  * Variables : THEME=light|dark (défaut light) ; GLASS=1 (pont de la coquille simulé, Liquid Glass
- * allumé : la part du verre peinte par la page) ; SHELL=1 (bureau sans verre) ; BANC_ORIGIN (défaut
+ * allumé : la part du verre peinte par la page) ; SHELL=1 (bureau sans verre) ; CEF=1 (la vraie coquille CEF,
+ * déjà lancée avec `--devtools-port` : son verre, son pont, sa densité) ; BANC_ORIGIN (défaut
  * http://127.0.0.1:5413) ; BANC_TOKENS (jetons d'appareil du compte de banc) ; SHOTS=0 (pas de capture).
  *
  * Sortie : `<dossier>/<scène>-<n>.png` (ce que l'œil voit), `<dossier>/rapport.json` (chaque défaut),
@@ -16,6 +17,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { failures, measureViewport, summarize } from "./lib/contrast.mjs";
+import { connectCef } from "./lib/cef.mjs";
 import { openSession, visit } from "./lib/session.mjs";
 import { buildScenes } from "./scenes.mjs";
 
@@ -27,7 +29,11 @@ const theme = process.env.THEME === "dark" ? "dark" : "light";
 const glass = process.env.GLASS === "1";
 const shots = process.env.SHOTS !== "0";
 
-const { browser, page, errors } = await openSession({ theme, glass, shell: glass || process.env.SHELL === "1" });
+// CEF=1 : la VRAIE coquille, déjà lancée (`lib/cef.mjs`) — son verre, son pont, sa densité d'écran.
+const cef = process.env.CEF === "1";
+const { browser, page, errors = [] } = cef
+  ? await connectCef({ theme, glass })
+  : await openSession({ theme, glass, shell: glass || process.env.SHELL === "1" });
 const scenes = (await buildScenes(page)).filter((s) => filters.length === 0 || filters.some((f) => s.name.includes(f)));
 
 /** Fait défiler la page (ou son conteneur de défilement) d'un écran ; faux s'il n'y a plus rien dessous. */
@@ -74,7 +80,7 @@ for (const scene of scenes) {
   }
 }
 
-writeFileSync(join(OUT, "rapport.json"), JSON.stringify({ theme, glass, date: new Date().toISOString(), report }, null, 1));
+writeFileSync(join(OUT, "rapport.json"), JSON.stringify({ theme, glass, cef, date: new Date().toISOString(), report }, null, 1));
 if (errors.length) console.log(`Erreurs de page : ${[...new Set(errors)].slice(0, 8).join(" ; ")}`);
 console.log(`${total} couples en défaut sur ${scenes.length} scènes — ${join(OUT, "rapport.json")}`);
 await browser.close();

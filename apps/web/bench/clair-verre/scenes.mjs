@@ -132,6 +132,9 @@ export async function buildScenes(page) {
     ...["jetons", "boutons", "controles", "calques"].map((id) => ({ name: `labo-socle-${id}`, route: `/dev/socle?vue=${id}`, screens: 3 })),
     ...["avis", "etats", "cartes"].map((id) => ({ name: `labo-accueil-${id}`, route: `/dev/accueil?vue=${id}`, screens: 2 })),
     ...["feuille-film", "feuille-saison", "feuille-serie", "file", "catalogue", "serie", "film", "boutons", "avis"].map((id) => ({ name: `labo-hors-ligne-${id}`, route: `/dev/hors-ligne?vue=${id}`, screens: 2 })),
+    // Octave en mode bureau : son propre thème (« Apparence d'Octave », par défaut celle de Tentacle).
+    ...[["", "accueil"], ["/search", "recherche"], ["/library", "bibliotheque"], ["/liked", "aimes"], ["/playlists", "playlists"], ["/settings", "reglages"]]
+      .map(([path, id]) => ({ name: `octave-${id}`, route: `/octave${path}`, screens: 2, settle: 3000 })),
     // Le labo du verre : chaque surface de Liquid Glass sur de vrais dessous (mode natif seulement).
     ...["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles", "feuilles"].flatMap((vue) =>
       ["affiches", "blanc"].map((fond) => ({ name: `labo-verre-${vue}-${fond}`, route: `/dev/verre?vue=${vue}&fond=${fond}`, screens: 2 }))),

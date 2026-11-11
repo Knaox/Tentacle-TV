@@ -45,7 +45,8 @@ export function CheckRow({ label, checked, onClick, mark = "box" }: {
   mark?: "box" | "check";
 }) {
   return (
-    <button type="button" onClick={onClick} role="menuitemcheckbox" aria-checked={checked} className="ui-menu-item">
+    // `title` : un libellé long (un genre importé, une plateforme) est coupé d'une ellipse — il se lit en entier au survol.
+    <button type="button" onClick={onClick} role="menuitemcheckbox" aria-checked={checked} title={label} className="ui-menu-item">
       {mark === "box" ? (
         <span className="lg-check ui-check">
           <CheckIcon size={13} weight="bold" aria-hidden />

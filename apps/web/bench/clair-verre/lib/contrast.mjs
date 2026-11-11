@@ -221,7 +221,7 @@ export async function measureViewport(page, dump = null) {
   for (let attempt = 0; attempt < 4; attempt++) {
     await settleImages(page);
     const before = await page.evaluate(COLLECT);
-    seen = decodePng(await page.screenshot({ type: "png" }));
+    seen = decodePng(await page.screenshot({ type: "png", scale: "css" }));
     await page.evaluate(({ id, css }) => {
       for (const svg of document.querySelectorAll("svg")) {
         const r = svg.getBoundingClientRect();
@@ -233,7 +233,7 @@ export async function measureViewport(page, dump = null) {
       document.head.appendChild(style);
     }, { id: HIDE_ID, css: HIDE_CSS });
     await page.waitForTimeout(60);
-    png = await page.screenshot({ type: "png" });
+    png = await page.screenshot({ type: "png", scale: "css" });
     await page.evaluate((id) => {
       document.getElementById(id)?.remove();
       for (const svg of document.querySelectorAll("svg[data-banc-icon]")) svg.removeAttribute("data-banc-icon");
