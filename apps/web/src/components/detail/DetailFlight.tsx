@@ -25,8 +25,6 @@ interface DetailFlightProps {
 const SETTLE = [0.16, 1, 0.3, 1] as const;
 /** Au-delà de cet écart de proportions, une échelle uniforme déformerait l'image : repli en mise en page. */
 const ASPECT_TOLERANCE = 0.06;
-/** Sortie légèrement retardée : le visuel réel de la fiche est déjà dessous, l'œil s'y pose. */
-const EXIT = { opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } } as const;
 
 /** Pur : la transformation qui ramène la boîte posée sur `to` exactement sur `from` (origine en haut à gauche). */
 export function flightFromTransform(from: FlightRect, to: FlightRect): string {
@@ -51,6 +49,9 @@ export function sameAspect(from: FlightRect, to: FlightRect): boolean {
  * montait dessous sur ce même fil : toutes les images longues de l'ouverture
  * tombaient pendant le vol (mesuré : jusqu'à 78 ms).
  *
+ * Il ne sort pas de lui-même : il s'efface AVEC le calque (`DetailOpenOverlay`), d'un bloc —
+ * l'affiche de la fiche est dessous, à sa place exacte.
+ *
  * La cible est figée à la première mesure : la base de la boîte ne bouge plus
  * en plein vol. Proportions différentes (une vignette 16:9 vers une affiche
  * 2:3) : l'ancien vol en mise en page, seul à recadrer sans déformer.
@@ -70,7 +71,6 @@ export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: 
         style={{ ...target, borderRadius: 12, transformOrigin: "0 0", boxShadow: "var(--elev-3)" }}
         initial={{ transform: flightFromTransform(from, target) }}
         animate={{ transform: "translate3d(0px, 0px, 0) scale(1)" }}
-        exit={EXIT}
         transition={{ duration: travelS, ease: SETTLE }}
         onAnimationComplete={onLanded}
       >
@@ -89,7 +89,6 @@ export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: 
       className="absolute overflow-hidden"
       initial={{ ...from, borderRadius: radius }}
       animate={{ ...end, borderRadius: 12 }}
-      exit={EXIT}
       transition={{ duration: travelS, ease: SETTLE }}
       onAnimationComplete={() => { if (target) onLanded(); }}
       style={{ boxShadow: "var(--elev-3)" }}

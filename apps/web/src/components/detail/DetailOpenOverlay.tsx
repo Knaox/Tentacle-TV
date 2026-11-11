@@ -56,6 +56,13 @@ const TRAVEL_WAIT_RATIO = 0.4;
 const DECOR_S = 0.3;
 /** Décélération franche puis arrivée qui se pose, sans le moindre rebond — la courbe de sortie du socle. */
 const SETTLE = [0.23, 1, 0.32, 1] as const;
+/**
+ * La sortie du calque : UN fondu, celui du calque entier. Chaque couche s'effaçait avant pour
+ * son compte (base, décor, voiles, visuel) : quatre calques à mi-opacité l'un sur l'autre ne
+ * font pas un fondu enchaîné — l'écran passait par plus sombre que le calque ET que la fiche
+ * (banc `bench:page-flicker` : clarté 112 → 92 → 102). Un seul groupe : `α·calque + (1 − α)·fiche`.
+ */
+const LIFT = { opacity: 0, transition: { duration: 0.18, ease: SETTLE } } as const;
 /*
  * Sécurité : le calque ne garde JAMAIS l'écran (`openingGuardDelay`). Le
  * compte à rebours part de la première MESURE reçue — ou, sans mesure, de
@@ -168,7 +175,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
   return createPortal(
     <AnimatePresence onExitComplete={onDone}>
       {playing && (
-        <div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
+        <motion.div className="pointer-events-none fixed inset-0 z-[60]" aria-hidden exit={LIFT}>
           {/* ── Décor : s'installe pendant que le visuel vole ──────────────
               Le fondu de la base suppose une page visible dessous, à laquelle
               s'enchaîner. Depuis un takeover plein écran (`origin.covered`) il
@@ -179,7 +186,6 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
             className="absolute inset-0 bg-surface-0"
             initial={{ opacity: origin.covered ? 1 : 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
             transition={{ duration: DECOR_S * 0.45, ease: "easeOut" }}
           />
           {/* Décor monté à l'avance, dans la MÊME boîte que `DetailStage` : à
@@ -189,7 +195,15 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
               débord de 260 px sans que ce calque le suive : le décor sautait à
               l'atterrissage de chaque ouverture de fiche. Les dimensions
               viennent désormais des mêmes constantes. */}
-          <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
+          {/* Le décor ET ses voiles montent d'UN bloc. Les voiles arrivaient 75 ms après
+              l'image : elle paraissait d'abord à nu, plus claire que la scène ne le sera, puis
+              s'assombrissait sous eux — un éclair à chaque ouverture (clarté 55 → 134 → 112). */}
+          <motion.div
+            className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: DECOR_S * 0.7, ease: "easeOut" }}
+          >
             {backdropUrl && (
               // Le zoom et l'opacité d'ensemble vivent sur le CONTENEUR, la
               // mise au point sur deux calques superposés.
@@ -210,7 +224,6 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
                 // compositeur que celui-là, et la fiche se monte sur le fil principal.
                 initial={{ opacity: 0, transform: "scale(1.08)" }}
                 animate={{ opacity: 1, transform: "scale(1)" }}
-                exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
                 transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
               >
                 <img
@@ -238,17 +251,9 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
             {/* Mêmes voiles, même ordre que la scène (`DETAIL_STAGE_LAYERS`) :
                 une liste unique, sinon le décor saute à l'effacement. */}
             {DETAIL_STAGE_LAYERS.map((layer) => (
-              <motion.div
-                key={layer.background}
-                className={layer.className}
-                style={{ background: layer.background }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
-                transition={{ duration: DECOR_S * 0.7, delay: DECOR_S * 0.25, ease: "easeOut" }}
-              />
+              <div key={layer.background} className={layer.className} style={{ background: layer.background }} />
             ))}
-          </div>
+          </motion.div>
 
           {/* ── Le visuel en vol (`DetailFlight`, en transform seul) ─────── */}
           <DetailFlight
@@ -259,7 +264,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
             travelS={travelS}
             onLanded={() => setLanded(true)}
           />
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>,
     document.body,
