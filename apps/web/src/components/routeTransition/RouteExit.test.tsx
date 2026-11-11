@@ -125,6 +125,15 @@ describe("RouteExit — la page qui en remplace une autre", () => {
     expect(seen.initial).toBeUndefined();
   });
 
+  it("sans présence au-dessus (le client LG démonte sans attendre), aucune tenue : jamais un écran vide", async () => {
+    const { TransitionLevelContext, createTransitionLevel } = await import("./transitionLevel");
+    const html = renderToStaticMarkup(
+      createElement(TransitionLevelContext.Provider, { value: createTransitionLevel() },
+        createElement(RouteExit, { replaces: true, children: createElement("p", null, "page") })),
+    );
+    expect(html).not.toContain("visibility:hidden");
+  });
+
   it("hors de tout niveau (test, banc), aucune tenue", () => {
     const html = renderToStaticMarkup(createElement(RouteExit, { replaces: true, children: createElement("p", null, "page") }));
     expect(html).not.toContain("visibility:hidden");

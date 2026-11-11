@@ -86,8 +86,11 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
   const level = useContext(TransitionLevelContext);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Sans présence au-dessus (le client LG démonte ses pages sans différer), personne ne garde la
+  // page quittée : se préparer cachée laisserait l'écran vide.
+  const kept = useContext(PresenceContext) !== null;
   // Décidé au montage : la page se prépare-t-elle cachée pendant qu'une autre reste à l'écran ?
-  const [holds] = useState(() => replaces && !instant && level !== null);
+  const [holds] = useState(() => replaces && !instant && level !== null && kept);
   const [claim, setClaim] = useState<PageArrival | null>(null);
   const gate = useMemo<PageArrivalGate>(() => ({
     claim: () => ({ report: setClaim, release: () => setClaim(null) }),
