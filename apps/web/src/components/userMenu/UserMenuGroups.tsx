@@ -66,7 +66,7 @@ export function MenuRow({ item }: { item: UserMenuItem }) {
       type="button"
       role="menuitem"
       onClick={item.action}
-      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-content-secondary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:text-content-primary focus-visible:outline-none"
+      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-content-secondary transition-colors duration-hover focus-visible:transition-none hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:text-content-primary focus-visible:outline-none"
     >
       <span className="flex-shrink-0">{item.icon}</span>
       {item.label}
@@ -81,7 +81,7 @@ function FooterLink({ item }: { item: UserMenuItem }) {
       type="button"
       role="menuitem"
       onClick={item.action}
-      className="whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] text-content-tertiary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:text-content-primary focus-visible:outline-none"
+      className="whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] text-content-tertiary transition-colors duration-hover focus-visible:transition-none hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:text-content-primary focus-visible:outline-none"
     >
       {item.label}
     </button>
@@ -95,7 +95,7 @@ function FooterDanger({ item }: { item: UserMenuItem }) {
       type="button"
       role="menuitem"
       onClick={item.action}
-      className="lg-row-danger ml-auto flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] font-medium text-[color:var(--status-error-fg)] transition-colors duration-150 hover:bg-[color:var(--status-error-bg)] focus-visible:bg-[color:var(--status-error-bg)] focus-visible:outline-none"
+      className="lg-row-danger ml-auto flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] font-medium text-[color:var(--status-error-fg)] transition-colors duration-hover focus-visible:transition-none hover:bg-[color:var(--status-error-bg)] focus-visible:bg-[color:var(--status-error-bg)] focus-visible:outline-none"
     >
       <span className="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-4">{item.icon}</span>
       {item.label}

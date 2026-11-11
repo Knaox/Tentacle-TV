@@ -22,8 +22,6 @@ export const easeDrawer = [0.32, 0.72, 0, 1] as const;
 
 /** La pression d'un contrôle : 120 ms, dès l'appui (`whileTap` de framer part au pointeur enfoncé). */
 export const pressTransition: Transition = { type: "tween", duration: 0.12, ease: easeOut };
-/** Ressort « press » — gardé pour les gestes interruptibles (glisser, lâcher) ; un bouton prend `pressTransition`. */
-export const springPress: Transition = { type: "spring", stiffness: 420, damping: 28, mass: 0.6 };
 /** Ressort doux — éléments partagés (pastille de nav), sans rebond marqué. */
 export const springSoft: Transition = { type: "spring", stiffness: 320, damping: 32 };
 
@@ -181,15 +179,6 @@ export const fadeIn: Variants = {
   show: { opacity: 1, transition: { duration: duration.base, ease: easeOut } },
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: { duration: duration.base, ease: easeOut } },
-};
-
-export const stagger = (delayChildren = 0.1, staggerChildren = 0.06): Variants => ({
-  show: { transition: { delayChildren, staggerChildren } },
-});
-
 /**
  * Le changement de page : un FONDU seul — ni glissement, ni échelle.
  *
@@ -203,9 +192,5 @@ export const pageTransition = {
   animate: { opacity: 1, transition: { duration: duration.page, ease: "easeOut" } },
   exit: { opacity: 0, transition: { duration: duration.pageOut, ease: "easeOut" } },
 } as const;
-
-export const respectReducedMotion = <T extends Transition>(t: T): T | { duration: 0 } => {
-  return prefersReducedMotion() ? { duration: 0 } : t;
-};
 
 export const noMotion = prefersReducedMotion;

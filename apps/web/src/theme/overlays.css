@@ -49,7 +49,6 @@ button.ui-tile:active,
   font-family: var(--font-text);
   font-size: 14px;
   outline: none;
-  transition: box-shadow var(--duration-hover) ease;
 }
 
 .field::placeholder {

@@ -49,7 +49,7 @@ function RowShell({ index, active, onHover, onActivate, children }: RowProps & {
       data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
-      className={`relative flex min-h-[52px] cursor-pointer items-center gap-3 rounded-card px-3 py-1.5 transition-colors duration-100 ${
+      className={`relative flex min-h-[52px] cursor-pointer items-center gap-3 rounded-card px-3 py-1.5 ${
         active ? "bg-fill-soft" : ""
       }`}
     >

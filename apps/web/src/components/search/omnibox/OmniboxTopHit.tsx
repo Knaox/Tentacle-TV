@@ -31,7 +31,7 @@ function Shell({ index, active, onHover, onActivate, children }: RowProps & { ch
       data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
-      className={`relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-tile p-3 transition-colors duration-100 ${
+      className={`relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-tile p-3 ${
         active ? "bg-fill-soft" : "bg-fill-faint"
       }`}
     >

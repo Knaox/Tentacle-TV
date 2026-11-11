@@ -30,7 +30,7 @@ export function AccountHeader({ avatar, ringStyle, name, caption, uploading, onC
         {avatar}
         {/* Scrim posé sur la photo de profil (image ou fallback) : reste noir/blanc
             dans les deux thèmes, cf. règle "posé sur une image". */}
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-hover group-hover:opacity-100">
           {uploading ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
           ) : (
