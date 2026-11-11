@@ -1685,9 +1685,12 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
 - **Une seule porte : `<html data-liquid-glass="native">`** (`theme/liquidGlassMode.ts`, posée
   avant le premier rendu) — le pont de la coquille dit le système capable
   (`window.tentacle.liquidGlass.supported`) ET le réglage DE LA SURFACE AFFICHÉE est allumé — deux
-  réglages de l'appareil, Réglages › Apparence : Tentacle (`tentacle_liquid_glass`) COUPÉ d'office,
-  Octave (`tentacle_octave_liquid_glass`) ALLUMÉ d'office (lot « fl », 30/10) ; rien n'est écrit tant que
-  l'utilisateur ne choisit pas, une valeur gardée reste la sienne. Toute règle qui lit `var(--lg-…)` ou `.lg-…` est portée par
+  réglages de l'appareil, Réglages › Apparence, ALLUMÉS d'office tous les deux : Octave
+  (`tentacle_octave_liquid_glass`, lot « fl », 30/10) et, depuis la 1.50.0, Tentacle
+  (`tentacle_liquid_glass`, décision de Damien du 11/11 — coupé d'office avant ; un « coupé » d'avant
+  est oublié UNE fois, marque `tentacle_liquid_glass_default_on`, `theme/liquidGlass.ts`) ; rien
+  n'est écrit tant que l'utilisateur ne choisit pas, et un verre coupé ensuite le reste d'un
+  lancement à l'autre. Toute règle qui lit `var(--lg-…)` ou `.lg-…` est portée par
   `:root[data-liquid-glass="native"]` (`liquidGlassTokens.test.ts`) : web, Windows, Linux, macOS < 26,
   réglage coupé gardent le RENDU D'AVANT au pixel près. L'option n'existe pas sur un macOS < 26.
   Fonction purement client : aucune capacité serveur.
@@ -1702,7 +1705,9 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   — `GlassSurface material="ink"`, ni région native ni mesure du ton, un aplat à 0,74
   (`playerGlassDim.css`, « L'encre ») —, avec le geste d'apparition des formes de verre (lot lg8 :
   montée de 6 px, formes décalées, sortie plus rapide ; `playerGlassMaterialize.ts` → coquille ET
-  CSS). ⚠️ Fenêtre ACTIVE, le verre natif est bien plus clair qu'inactive (87 contre 33 sur du
+  CSS). Lecture/pause : le symbole blanc sur un voile clair, JAMAIS un disque blanc ; le curseur du
+  volume paraît à GAUCHE de son bouton (le bouton reste sous le pointeur) ; une ligne de menu se
+  survole d'un voile neutre, jamais de l'aplat violet. ⚠️ Fenêtre ACTIVE, le verre natif est bien plus clair qu'inactive (87 contre 33 sur du
   noir) : un banc sans focus ne juge que l'inactif (`bench/liquid-glass/lg3/`). Sur la PAGE, la
   LENTILLE de Chromium : le verre natif vit SOUS la vue web et ne voit pas la page — jamais une
   région native qui défile avec elle.
