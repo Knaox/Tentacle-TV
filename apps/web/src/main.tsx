@@ -49,6 +49,7 @@ import { cleanupObsoleteStorage } from "./lib/storageCleanup";
 import { scheduleDetailPagePreload } from "./lib/detailPagePreload";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installStaleBuildReload } from "./lib/staleBuildReload";
+import { installWaapiFinishGuard } from "./lib/waapiFinishGuard";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { isWebDebugEnabled } from "./lib/webDebug";
 import { HostTitleBar } from "./desktop/HostTitleBar";
@@ -90,6 +91,9 @@ cleanupObsoleteStorage(localStorage);
 // Réduire la transparence, Contraste accru, Réduire les animations : posés sur
 // <html> AVANT le premier rendu — pas d'éclair de verre transparent.
 installGlassAccessibility();
+// Avant la première animation : la fin d'un fondu de framer-motion ne retombe plus une image à sa
+// valeur de départ (`lib/waapiFinishGuard.ts`).
+installWaapiFinishGuard();
 // Une page d'avant la mise à jour du client recharge au lieu de rester noire.
 installStaleBuildReload();
 
