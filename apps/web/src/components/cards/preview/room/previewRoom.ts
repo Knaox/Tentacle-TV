@@ -29,12 +29,16 @@ export { roomOffset } from "./roomDom";
 /** Le retour fini (plus une marge d'une image ou deux), la pièce est rendue. */
 const CLEAR_AFTER_MS = PREVIEW_EXIT_MS + 60;
 /** Le temps laissé à la voisine survolée pour réclamer la pièce qui attend. */
-export const ROOM_CLAIM_MS = 200;
+export const ROOM_CLAIM_MS = 120;
 /**
- * Ce que la pièce attend au plus l'aperçu de la voisine : un aperçu « chaud »
- * se montre à 600 ms ; au-delà (demande froide), retour normal.
+ * Ce que la pièce attend au plus l'aperçu de la voisine. 250 ms, plus 1 200 (11/11, Damien :
+ * « l'ancienne carte retire l'aperçu, mais il y a un délai avant qu'elle revienne normale »).
+ * L'attente datait d'un aperçu « chaud » révélé à 600 ms ; le délai est devenu un réglage
+ * (0,5 à 2 s, 800 ms par défaut — `previewDelay.ts`) : la voisine ne s'ouvre JAMAIS avant, et la
+ * carte quittée restait donc écartée, figée, tout ce temps. Elle revient maintenant aussitôt ;
+ * il ne reste que de quoi ne pas faire l'aller-retour à un pointeur qui ne fait que traverser.
  */
-export const ROOM_LINGER_MAX_MS = 1200;
+export const ROOM_LINGER_MAX_MS = 250;
 
 type Timer = ReturnType<typeof setTimeout>;
 
