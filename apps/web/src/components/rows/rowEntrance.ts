@@ -13,7 +13,7 @@
  *   • une courbe « expo » : le geste est presque fini au premier tiers, la fin
  *     ne fait que se poser — rien ne traîne, rien ne rebondit ;
  *   • la cascade ne vise que les cartes de la PREMIÈRE vue, étalée sur une
- *     fenêtre fixe quel que soit leur nombre : 450 ms au plus pour la rangée ;
+ *     fenêtre fixe quel que soit leur nombre : 370 ms au plus pour la rangée ;
  *   • le décalage entre rangées naît du moment, pas d'un rang figé : des
  *     rangées qui entrent ENSEMBLE (ouverture de page, défilement rapide) se
  *     suivent de près ; une rangée qui entre seule part tout de suite.
@@ -22,19 +22,23 @@
  * rien ne tourne une fois la rangée posée.
  */
 
-/** Courbe de sortie exponentielle : vive au départ, posée à l'arrivée. */
-export const ENTRANCE_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+/** La courbe de sortie du socle (`--ease-out`) : vive au départ, posée à l'arrivée. */
+export const ENTRANCE_EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-/** Durée de la montée d'une carte. */
-export const CARD_ENTER_MS = 340;
+/**
+ * Durée de la montée d'une carte. 260 ms (340 avant le lot « rf2 ») : on fait défiler l'accueil
+ * à chaque séance, et chaque rangée atteinte joue cette entrée — la dernière carte est posée à
+ * 110 + 260 = 370 ms, plus à 450.
+ */
+export const CARD_ENTER_MS = 260;
 /** Le titre se pose un peu plus vite que les cartes qu'il annonce. */
-export const HEADER_ENTER_MS = 300;
+export const HEADER_ENTER_MS = 220;
 /** Écart idéal entre deux cartes (fourchette 30–50 ms d'une cascade lisible). */
 export const CARD_STEP_MS = 30;
 /**
  * Fenêtre où toute la cascade tient : au-delà, l'écart se resserre. Sept
  * affiches à l'écran donnent 18 ms d'écart — l'ordre se perçoit encore, et la
- * dernière carte est posée à 110 + 340 = 450 ms.
+ * dernière carte est posée à 110 + 260 = 370 ms.
  */
 export const CARD_SPREAD_MS = 110;
 
@@ -62,8 +66,12 @@ export const ENTRANCE_HOLD_MAX_MS = 450;
  */
 export const ENTRANCE_GIVE_UP_MS = 2_000;
 
-/** Retenue du départ : un mouvement court, qui se lit sans se remarquer. */
-export const CARD_FROM = { opacity: 0, transform: "translate3d(0, 18px, 0) scale(0.98)" } as const;
+/**
+ * Retenue du départ : un mouvement court, qui se lit sans se remarquer — dix pixels, la course
+ * des lignes de texte (`fadeUp`), sans échelle : une rangée de sept affiches qui grossissent en
+ * montant, c'était deux mouvements sur le contenu qu'on parcourt le plus.
+ */
+export const CARD_FROM = { opacity: 0, transform: "translate3d(0, 10px, 0)" } as const;
 export const HEADER_FROM = { opacity: 0, transform: "translate3d(0, 8px, 0)" } as const;
 
 /**
