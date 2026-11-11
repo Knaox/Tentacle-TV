@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { PushPinSlashIcon as PinOff } from "@phosphor-icons/react/dist/csr/PushPinSlash";
 import { SlidersHorizontalIcon as Settings2 } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { useGlassControl } from "../ui/glass/useGlassControl";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 
 const ITEM =
   "ui-menu-item";
@@ -37,6 +38,8 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
 }) {
   const { t } = useTranslation("nav");
   const ref = useRef<HTMLDivElement>(null);
+  // Le geste qui l'a ouvert, lu une fois au montage : clic droit, ou touche Menu.
+  const [byKeyboard] = useState(lastInputWasKeyboard);
   // Verre natif : la lentille et le ton du dessous, comme les menus du calque commun.
   const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
   const { ref: glassRef } = glass;
@@ -95,7 +98,8 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       style={{ ...position, ...glass.props.style }}
-      className="lg-menu lg-menu-list ui-menu fixed z-[60] min-w-56 animate-scale-in"
+      // Il sort du pointeur (son coin haut-gauche) ; ouvert à la touche Menu, il est là d'emblée.
+      className={`lg-menu lg-menu-list ui-menu fixed z-[60] min-w-56 ${byKeyboard ? "" : "origin-top-left animate-scale-in"}`}
     >
       {glass.layers}
       {target.key !== null && (

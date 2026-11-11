@@ -33,7 +33,7 @@ export const ProfileMenuHeader = memo(function ProfileMenuHeader({ profile, onCh
         >
           {avatar}
           {/* Pastille posée sur la photo : reste à la couleur de la marque dans les deux thèmes. */}
-          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-[var(--brand)] text-cta-brand-fg transition-transform group-hover:scale-110">
+          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[var(--surface-modal)] bg-[var(--brand)] text-cta-brand-fg">
             <Camera size={10} aria-hidden="true" />
           </span>
         </button>

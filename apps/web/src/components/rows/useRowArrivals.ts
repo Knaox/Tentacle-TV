@@ -29,9 +29,10 @@ import { rowShift } from "@tentacle-tv/shared";
  * l'élément, qu'une mise en page a pu déjà déplacer.
  */
 
-const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
-const SLIDE_MS = 380;
-const ENTER_MS = 400;
+/** La courbe de sortie du socle (`--ease-out`), et ses 320 ms : rien d'interface ne dure plus. */
+const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const SLIDE_MS = 320;
+const ENTER_MS = 320;
 const ENTER_DELAY_MS = 90;
 const GLOW_MS = 1_600;
 /** L'accroche revient une fois les cartes posées. */

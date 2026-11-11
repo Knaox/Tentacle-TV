@@ -107,6 +107,15 @@ export function useIsPresent(): boolean {
   return true;
 }
 
+/**
+ * Toujours présent, et rien à retenir : `RouteExit` (apps/web) tient par lui la page quittée
+ * le temps que la suivante soit prête — ici elle est démontée sans attendre, il n'y a donc
+ * jamais de sortie à déclarer finie.
+ */
+export function usePresence(): [true, null] {
+  return [true, null];
+}
+
 /** Ce que `pagePresence` (apps/web) pose dans le contexte : la forme de framer-motion, réduite à ce qu'il lit. */
 interface PresenceContextValue {
   id: string;

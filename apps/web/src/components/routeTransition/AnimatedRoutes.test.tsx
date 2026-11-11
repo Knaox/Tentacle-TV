@@ -24,12 +24,8 @@ vi.mock("framer-motion", async () => {
     PresenceContext: React.createContext<unknown>(null),
     AnimatePresence: ({ children }: { children?: ReactNode }) =>
       React.createElement("section", { "data-presence": "" }, children),
-    useIsPresent: () => true,
+    usePresence: () => [true, null],
     useReducedMotion: () => false,
-    motion: {
-      div: ({ children, className }: { children?: ReactNode; className?: string }) =>
-        React.createElement("div", { className }, children),
-    },
   };
 });
 

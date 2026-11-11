@@ -32,8 +32,12 @@ export const PREVIEW_EXIT_MS = Math.min(220, PREVIEW_ENGINE_EXIT_MS - 20);
 export const PREVIEW_REDUCED_FADE_MS = 180;
 /** La courbe de l'ENTRÉE : décélération (`--ease-out` du thème) — elle arrive et se pose. */
 export const PREVIEW_ENTER_EASE = "var(--ease-out)";
-/** La courbe de la SORTIE : accélération (`easeIn` de `theme/motion.ts`) — elle part sans s'attarder. */
-export const PREVIEW_EXIT_EASE = "cubic-bezier(0.4, 0, 1, 1)";
+/**
+ * La courbe de la SORTIE : la même décélération, sur une durée plus courte. Une courbe
+ * d'accélération partait lentement — au moment exact où le curseur quitte la carte —, et le
+ * thème n'en a plus (`theme/motion.ts`).
+ */
+export const PREVIEW_EXIT_EASE = "var(--ease-out)";
 
 /** Les variables que lit `cardPreview.css`. */
 export const PREVIEW_MOTION_VARS = {

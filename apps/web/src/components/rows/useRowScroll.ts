@@ -1,3 +1,4 @@
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface RowScrollState {
@@ -38,7 +39,9 @@ export function useRowScroll(): RowScrollState {
       const el = scrollRef.current;
       if (!el) return;
       const amount = Math.min(SCROLL_AMOUNT_PX, Math.floor(el.clientWidth * 0.85));
-      el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+      // Aux flèches du clavier, la rangée saute d'un cran : une touche ne s'anime pas. Les
+      // flèches à l'écran (la souris) gardent le défilement doux.
+      el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: lastInputWasKeyboard() ? "auto" : "smooth" });
       setTimeout(update, 360);
     },
     [update],

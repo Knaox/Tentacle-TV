@@ -113,8 +113,8 @@ function SwitchScreen({ phase }: { phase: Exclude<SwitchScreenPhase, "closed"> }
       style={{
         top: "var(--hote-bandeau, 0px)",
         opacity: phase === "closing" ? 0 : 1,
-        animation: phase === "opening" ? `fadeIn ${ENTER_MS}ms ease-out both` : undefined,
-        transition: phase === "closing" ? `opacity ${EXIT_MS}ms cubic-bezier(0.4, 0, 1, 1)` : undefined,
+        animation: phase === "opening" ? `fadeIn ${ENTER_MS}ms var(--ease-out) both` : undefined,
+        transition: phase === "closing" ? `opacity ${EXIT_MS}ms var(--ease-out)` : undefined,
       }}
     >
       <ProfileLaunchScreen initialListing={null} onDone={onDone} onAccountLost={onAccountLost} switching={switching} />

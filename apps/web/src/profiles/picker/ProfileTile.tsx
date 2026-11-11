@@ -10,6 +10,12 @@ export const TILE_AVATAR = 132;
 /** Le rôle d'une tuile pendant l'entrée dans un profil. */
 export type TileRole = "idle" | "chosen" | "receding";
 
+/**
+ * Le voyage du profil choisi vers le centre. Il tient dans l'attente de `commitPick` (260 ms)
+ * avant le rideau : plus long (420 ms auparavant), le rideau le coupait en route.
+ */
+const CHOSEN_TRAVEL_MS = 260;
+
 interface ProfileTileProps {
   profile: PickerProfile;
   role: TileRole;
@@ -57,9 +63,9 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
 
   const motionStyle: CSSProperties =
     role === "chosen"
-      ? { transform: `translateX(${shiftX}px) scale(1.1)`, transition: "transform 420ms cubic-bezier(0.23, 1, 0.32, 1)" }
+      ? { transform: `translateX(${shiftX}px) scale(1.1)`, transition: `transform ${CHOSEN_TRAVEL_MS}ms var(--ease-out)` }
       : role === "receding"
-        ? { transform: "scale(0.96)", opacity: 0, transition: "transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 260ms linear" }
+        ? { transform: "scale(0.96)", opacity: 0, transition: "transform 200ms var(--ease-out), opacity 200ms var(--ease-out)" }
         : {};
 
   return (
@@ -77,7 +83,7 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
       >
         {/* Le survol grandit la tuile de 3 % SUR PLACE (le geste des cartes), la pression la
             rend à 97 % : plus de levée ni de halo coloré (refonte de nov. 2026). */}
-        <span className="relative block transition-transform duration-card ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[0.97] group-disabled:scale-100">
+        <span className="relative block transition-transform duration-card ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[var(--press-scale)] group-disabled:scale-100">
           {/* L'anneau du focus clavier : un calque peint une fois, seule son
               opacité varie — jamais une ombre (`box-shadow`) animée (règle
               « Coût GPU » 3, comme `theme/cards.css`). */}

@@ -97,7 +97,7 @@ describe("openPreviewRoom — une rangée", () => {
     expect(room.props.get("--room-left")).toBe("66px");
     expect(room.props.get("--room-right")).toBe("66px");
     expect(room.props.get("--room-enter-ms")).toBe("340ms");
-    expect(room.props.get("--room-exit-ease")).toBe("cubic-bezier(0.4, 0, 1, 1)");
+    expect(room.props.get("--room-exit-ease")).toBe("var(--ease-out)");
     expect(cards[3].hasAttribute("data-room-anchor")).toBe(true);
     // Visibles dans [0, 1440] : les cartes 0 à 6 ; plus une → 7. Jamais la carte elle-même.
     const gliding = cards.map((card) => card.hasAttribute("data-room-glide"));

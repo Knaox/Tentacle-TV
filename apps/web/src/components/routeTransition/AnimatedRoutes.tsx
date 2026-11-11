@@ -1,16 +1,18 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Routes } from "react-router-dom";
 import { useMirror } from "../../mirror/useFormFactor";
 import { usePageLocation } from "../../pictureInPicture/usePageLocation";
 import { PageEntranceContext } from "./PageEntranceContext";
-import { pageEntranceId } from "./pageEntranceMemory";
-import { RouteExit, type RouteExitCustom } from "./RouteExit";
+import { ROUTE_EXIT_LAYER, RouteExit } from "./RouteExit";
 import { PLAYER_GROUP, routeGroupKey } from "./routeKeys";
+import { RouteProgress } from "./RouteProgress";
+import { TransitionLevelContext, createTransitionLevel } from "./transitionLevel";
 
 /**
- * `<Routes>` avec une sortie : la coquille quittée pour une fiche, une fiche
- * quittée pour l'accueil s'effacent au lieu de disparaître d'un coup.
+ * `<Routes>` avec une sortie : la coquille quittée pour une fiche, une fiche quittée pour
+ * l'accueil restent à l'écran le temps que la suivante soit prête, puis s'effacent par-dessus
+ * elle (`RouteExit`, `transitionLevel.ts`).
  *
  * `location` est passée à `<Routes>` : la page sortante garde l'adresse sous
  * laquelle elle a été rendue (ses `useLocation`, ses `useParams`), au lieu de se
@@ -34,23 +36,33 @@ export function AnimatedRoutes({ children }: { children: ReactNode }) {
   const mirror = useMirror();
   const group = routeGroupKey(location.pathname);
   const onPlayer = group === PLAYER_GROUP;
-  const instant = mirror || onPlayer;
-  const custom: RouteExitCustom = { instant };
+  const [level] = useState(createTransitionLevel);
+  // Le groupe affiché dans la présence au rendu d'avant : une page qui arrive alors qu'un AUTRE
+  // groupe y était le remplace. Au sortir du lecteur, rien n'y était : rien n'est à tenir.
+  const shown = useRef<string | null>(null);
+  const replaces = shown.current !== null && shown.current !== group;
+
+  useLayoutEffect(() => {
+    shown.current = onPlayer ? null : group;
+    // Vers le lecteur, aucune page n'arrive dans la présence : c'est ici qu'on dit de partir.
+    if (onPlayer) level.setArrival({ ready: true, instant: true });
+  }, [group, onPlayer, level]);
 
   return (
-    <>
-      <AnimatePresence initial={false} custom={custom}>
+    <TransitionLevelContext.Provider value={level}>
+      <AnimatePresence initial={false}>
         {!onPlayer && (
-          <RouteExit key={group} instant={instant}>
-            {/* L'identité d'entrée des pages hors coquille (la fiche) ; celles de la coquille
-                reçoivent la leur, plus près, d'`AnimatedOutlet`. */}
-            <PageEntranceContext.Provider value={pageEntranceId(location)}>
+          <RouteExit key={group} instant={mirror} replaces={replaces} layer={ROUTE_EXIT_LAYER}>
+            {/* Sous une route : `PageTransition` ne joue aucune entrée (celle de la route suffit). */}
+            <PageEntranceContext.Provider value>
               <Routes location={location}>{children}</Routes>
             </PageEntranceContext.Provider>
           </RouteExit>
         )}
       </AnimatePresence>
       {onPlayer && <Routes location={location}>{children}</Routes>}
-    </>
+      {/* Une navigation qui attend plus qu'un instant (serveur lent) : la barre fine du haut. */}
+      <RouteProgress />
+    </TransitionLevelContext.Provider>
   );
 }

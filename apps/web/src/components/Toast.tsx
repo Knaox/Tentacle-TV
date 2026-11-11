@@ -57,9 +57,13 @@ export const Toast = memo(function Toast({ id, type, title, message, action, sec
       data-lg-scale={glass.props["data-lg-scale"]}
       data-lg-tone={glass.props["data-lg-tone"]}
       // Il monte du bas de l'écran et y redescend, plus vite : même chemin à l'aller et au retour.
-      initial={{ opacity: 0, y: reduced ? 0 : 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: reduced ? 0 : 16, transition: { duration: exitDuration(duration.base) } }}
+      // `transform` entier (le seul que framer confie au compositeur) ; un fondu seul sous
+      // « réduire les animations ».
+      initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(16px)" }}
+      animate={reduced ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px)" }}
+      exit={reduced
+        ? { opacity: 0, transition: { duration: exitDuration(duration.base) } }
+        : { opacity: 0, transform: "translateY(16px)", transition: { duration: exitDuration(duration.base), ease: easeOut } }}
       transition={{ duration: duration.base, ease: easeOut }}
       role={type === "error" ? "alert" : "status"}
       data-tone={type}

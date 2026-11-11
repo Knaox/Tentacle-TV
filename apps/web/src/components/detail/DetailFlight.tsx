@@ -1,5 +1,5 @@
-import { useRef } from "react";
 import { motion } from "framer-motion";
+import { duration, easeOut } from "../../theme/motion";
 
 export interface FlightRect {
   top: number;
@@ -11,8 +11,8 @@ export interface FlightRect {
 interface DetailFlightProps {
   /** Rectangle du visuel cliqué. */
   from: FlightRect;
-  /** Place finale de l'affiche sur la fiche ; `null` tant qu'elle n'est pas mesurée. */
-  to: FlightRect | null;
+  /** Place de l'affiche sur la fiche. */
+  to: FlightRect;
   /** Rayon du visuel de départ. */
   radius: number;
   imageUrl: string;
@@ -21,17 +21,18 @@ interface DetailFlightProps {
   onLanded: () => void;
 }
 
-/** Décélération franche puis arrivée qui se pose, sans le moindre rebond (celle du calque). */
-const SETTLE = [0.16, 1, 0.3, 1] as const;
+/** Le rayon de l'affiche de la fiche (`rounded-tile`) : celui où le vol se pose. */
+const LANDED_RADIUS = 16;
 /** Au-delà de cet écart de proportions, une échelle uniforme déformerait l'image : repli en mise en page. */
 const ASPECT_TOLERANCE = 0.06;
-/** Sortie légèrement retardée : le visuel réel de la fiche est déjà dessous, l'œil s'y pose. */
-const EXIT = { opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } } as const;
+const REST = "translate3d(0px, 0px, 0) scale(1)";
+/** Posé, le visuel s'efface sur l'affiche de la fiche, à sa place exacte : seule la netteté change. */
+const LIFT = { opacity: 0, transition: { duration: duration.pageOut, ease: easeOut } } as const;
 
-/** Pur : la transformation qui ramène la boîte posée sur `to` exactement sur `from` (origine en haut à gauche). */
-export function flightFromTransform(from: FlightRect, to: FlightRect): string {
-  const scale = from.width / to.width;
-  return `translate3d(${from.left - to.left}px, ${from.top - to.top}px, 0) scale(${scale})`;
+/** Pur : la transformation qui amène la boîte posée sur `from` exactement sur `to` (origine en haut à gauche). */
+export function flightToTransform(from: FlightRect, to: FlightRect): string {
+  const scale = to.width / from.width;
+  return `translate3d(${to.left - from.left}px, ${to.top - from.top}px, 0) scale(${scale})`;
 }
 
 /** Pur : les deux visuels ont-ils les mêmes proportions (affiche → affiche, vignette → vignette) ? */
@@ -42,59 +43,63 @@ export function sameAspect(from: FlightRect, to: FlightRect): boolean {
 }
 
 /**
- * Le visuel en vol de l'ouverture de la fiche (`DetailOpenOverlay`).
+ * Le visuel en vol de l'ouverture de la fiche (`DetailOpenOverlay`) : monté À L'INSTANT du
+ * départ, sur la carte, il vole jusqu'à la place de l'affiche.
  *
- * En `transform` SEUL (1.31.0) : la boîte est posée sur sa place finale et
- * part de la carte par une translation et une échelle uniforme — `transform`
- * entier, que framer confie au compositeur. Le vol animait avant `top`,
- * `left`, `width` et `height`, sur le fil principal, pendant que la fiche se
- * montait dessous sur ce même fil : toutes les images longues de l'ouverture
- * tombaient pendant le vol (mesuré : jusqu'à 78 ms).
+ * En `transform` SEUL : une translation et une échelle uniforme — `transform` entier, que framer
+ * confie au compositeur. La fiche se montre sur le fil principal pendant ce vol : animé en
+ * `top` / `left` / `width` / `height`, il perdait ses images à ce moment-là (mesuré : jusqu'à
+ * 78 ms). L'ombre monte avec lui, en opacité sur son propre calque — une ombre ne s'anime pas.
  *
- * La cible est figée à la première mesure : la base de la boîte ne bouge plus
- * en plein vol. Proportions différentes (une vignette 16:9 vers une affiche
- * 2:3) : l'ancien vol en mise en page, seul à recadrer sans déformer.
+ * Proportions différentes (la bannière 16:9 vers une affiche 2:3) : le vol en mise en page,
+ * seul à recadrer sans déformer.
  */
 export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: DetailFlightProps) {
-  const lockedTo = useRef<FlightRect | null>(null);
-  if (to && !lockedTo.current) lockedTo.current = to;
-  const target = lockedTo.current;
-  const image = <img src={imageUrl} alt="" draggable={false} className="h-full w-full object-cover" />;
+  // `decoding="sync"` : l'image (celle de la carte, déjà en mémoire) est décodée AVANT la peinture
+  // qui monte le visuel — la page quittée s'efface par-dessus lui dès l'image suivante, et un
+  // visuel décodé en retard y laisserait sa boîte vide (banc `bench:page-flicker`, CEF à 120 Hz).
+  const image = <img src={imageUrl} alt="" draggable={false} decoding="sync" className="h-full w-full object-cover" />;
+  const transition = { duration: travelS, ease: easeOut };
 
-  if (target && sameAspect(from, target)) {
+  if (!sameAspect(from, to)) {
     return (
       <motion.div
-        key="fly"
         data-detail-flight
         className="absolute overflow-hidden"
-        style={{ ...target, borderRadius: 12, transformOrigin: "0 0", boxShadow: "var(--elev-3)" }}
-        initial={{ transform: flightFromTransform(from, target) }}
-        animate={{ transform: "translate3d(0px, 0px, 0) scale(1)" }}
-        exit={EXIT}
-        transition={{ duration: travelS, ease: SETTLE }}
+        initial={{ ...from, borderRadius: radius }}
+        animate={{ ...to, borderRadius: LANDED_RADIUS }}
+        exit={LIFT}
+        transition={transition}
         onAnimationComplete={onLanded}
+        style={{ boxShadow: "var(--elev-3)" }}
       >
         {image}
       </motion.div>
     );
   }
 
-  // Tant que la fiche n'a pas rendu son visuel, l'image reste à sa place de
-  // départ : mieux vaut attendre que partir vers une cible devinée.
-  const end = target ?? from;
   return (
     <motion.div
-      key="layout"
       data-detail-flight
-      className="absolute overflow-hidden"
-      initial={{ ...from, borderRadius: radius }}
-      animate={{ ...end, borderRadius: 12 }}
-      exit={EXIT}
-      transition={{ duration: travelS, ease: SETTLE }}
-      onAnimationComplete={() => { if (target) onLanded(); }}
-      style={{ boxShadow: "var(--elev-3)" }}
+      className="absolute"
+      style={{ ...from, transformOrigin: "0 0" }}
+      initial={{ transform: REST }}
+      animate={{ transform: flightToTransform(from, to) }}
+      exit={LIFT}
+      transition={transition}
+      onAnimationComplete={onLanded}
     >
-      {image}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0"
+        style={{ borderRadius: radius, boxShadow: "var(--elev-3)" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={transition}
+      />
+      <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: radius }}>
+        {image}
+      </div>
     </motion.div>
   );
 }

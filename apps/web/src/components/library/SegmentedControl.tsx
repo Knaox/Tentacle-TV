@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
+import { SlidingMarker } from "../ui/SlidingMarker";
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -37,8 +38,9 @@ interface SegmentedControlProps<T extends string> {
  * segment à l'autre. Sous le verre de macOS 26, celui de macOS : piste en
  * remplissage, repère en bouton neutre (`lg-seg`, `theme/liquidGlassContent.css`).
  *
- * Le repère se déplace par `layoutId`, donc en `transform` ; immédiat quand
- * l'utilisateur réduit les animations. Aucune couleur de fond animée : le
+ * Le repère glisse en `transform`, sur le compositeur (`SlidingMarker`) — le filtre qu'il
+ * choisit refait la grille au même instant sur le fil principal ; immédiat aux flèches du
+ * clavier et quand l'utilisateur réduit les animations. Aucune couleur de fond animée : le
  * segment choisi ne change que la couleur de son texte.
  *
  * ⚠️ Pas de `gap` sur les segments : la cible webOS l'émule par des marges
@@ -86,15 +88,14 @@ export function SegmentedControl<T extends string>({
             title={opt.icon ? opt.label : undefined}
             tabIndex={radio ? (i === tabbable ? 0 : -1) : undefined}
             onClick={() => onChange(opt.value)}
-            className={`relative isolate inline-flex min-h-[32px] cursor-pointer items-center whitespace-nowrap rounded-full text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`relative isolate inline-flex min-h-[32px] cursor-pointer items-center whitespace-nowrap rounded-full text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               opt.icon ? "w-9 justify-center" : "px-3.5"
             } ${selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"}`}
           >
             {selected && (
-              <motion.span
-                aria-hidden
-                layoutId={markerId}
-                transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
+              <SlidingMarker
+                group={markerId}
+                still={reduced === true}
                 className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                 // La pastille retenue : NEUTRE (`--surface-4`), son arête et une ombre courte —
                 // plus de dégradé de marque (refonte de nov. 2026).

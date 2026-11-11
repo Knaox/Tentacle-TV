@@ -90,7 +90,7 @@ function QuickButton({ glass, box, active, accent = false, label, state, onClick
   const layout = `${box} flex items-center justify-center`;
   // Un rond de voile, sans liseré ni flou : la pression répond (97 %), le survol éclaircit le voile.
   const veil = glass ? "bg-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.24)]" : "bg-[rgba(11,11,12,0.72)] hover:bg-[rgba(11,11,12,0.86)]";
-  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out active:scale-[0.97] ${veil} ${state}`;
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out active:scale-[var(--press-scale)] ${veil} ${state}`;
   const surface = useLiquidGlassSurface({
     material: "bead",
     // Posée sur une image (affiche, bannière, fiche) : le verre SOMBRE, quel que

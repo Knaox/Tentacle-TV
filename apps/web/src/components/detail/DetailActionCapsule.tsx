@@ -117,7 +117,7 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
     shape: "circle",
     interactive: true,
     className: "flex h-10 w-10 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]",
-    fallbackClassName: `rounded-pill transition-[color,background-color,transform] duration-hover ease-out hover:bg-white/10 active:scale-[0.97] active:duration-press ${
+    fallbackClassName: `rounded-pill transition-[color,background-color,transform] duration-hover ease-out hover:bg-white/10 active:scale-[var(--press-scale)] active:duration-press ${
       active ? ON_MEDIA_ACCENT_TEXT : "text-on-media-secondary hover:text-on-media-primary"
     }`,
   });

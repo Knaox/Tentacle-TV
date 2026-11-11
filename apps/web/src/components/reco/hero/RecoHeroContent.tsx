@@ -16,7 +16,8 @@ import { HeroEyebrow } from "../../hero/HeroEyebrow";
 import { StarIcon } from "../../icons/HeroIcons";
 import { StarRating } from "../../rating/StarRating";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
-import { fadeUp, textCascade } from "../../../theme/motion";
+import { fadeIn, slideText } from "../../../theme/motion";
+import { lastInputWasKeyboard } from "../../../lib/inputModality";
 import { reasonToText } from "@tentacle-tv/api-client";
 import { recoHeroBackdropUrl } from "./RecoHeroBackdrop";
 
@@ -79,8 +80,8 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
   }, [item.reasons, t]);
 
   // Constantes de module (theme/motion) : un objet neuf rejouerait la cascade.
-  const groupVariants = reduced ? undefined : textCascade;
-  const itemVariants = reduced ? undefined : fadeUp;
+  const groupVariants = reduced ? undefined : slideText;
+  const itemVariants = reduced ? undefined : fadeIn;
   const openable = canOpen(item);
 
   return (
@@ -90,7 +91,8 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
         key={animationKey}
         className="max-w-xl"
         variants={groupVariants}
-        initial="hidden"
+        // Passée au clavier (← →), la diapositive est là d'emblée : une touche ne s'anime pas.
+        initial={lastInputWasKeyboard() ? false : "hidden"}
         animate="show"
       >
         <motion.div variants={itemVariants} className="mb-3.5">

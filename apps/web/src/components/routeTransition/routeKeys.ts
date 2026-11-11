@@ -4,8 +4,7 @@
  *
  * La clé change → la page quittée sort en fondu, la suivante joue son entrée.
  * La clé reste → le contenu se met à jour en place, sans sortie : changer un
- * filtre, une section des réglages ou passer d'une fiche à la suivante ne doit
- * pas faire clignoter tout l'écran.
+ * filtre ou une section des réglages ne doit pas faire clignoter tout l'écran.
  */
 
 /**
@@ -27,9 +26,15 @@ const segments = (pathname: string): string[] => pathname.split("/").filter(Bool
  * Niveau 1, autour de `<Routes>` : la coquille entière est UNE page. Passer de
  * l'accueil à une fiche fait sortir la coquille ; passer de l'accueil aux
  * favoris ne la touche pas (le niveau 2 s'en charge, sous la barre).
+ *
+ * **Chaque fiche est une page** (`media/<id>`). D'une fiche à un titre similaire, la fiche
+ * quittée reste à l'écran le temps que la suivante soit prête, comme partout (`RouteExit`) ;
+ * sous une clé commune, le composant était réutilisé et son contenu remplacé en place — par
+ * l'écran d'attente d'abord.
  */
 export function routeGroupKey(pathname: string): string {
-  const first = segments(pathname)[0] ?? "";
+  const [first = "", second] = segments(pathname);
+  if (first === "media" && second) return `media/${second}`;
   return OUTSIDE_SHELL.has(first) ? first : "shell";
 }
 

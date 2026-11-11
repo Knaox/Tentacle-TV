@@ -15,8 +15,6 @@ interface CardTrickplayImageProps {
    * compteur à zéro.
    */
   fallback: React.ReactNode;
-  /** Zoom interne au survol de la carte parente (cf. `CardImage`). */
-  zoom?: boolean;
 }
 
 /**
@@ -34,7 +32,7 @@ interface CardTrickplayImageProps {
  * deux fois ne redemande rien, et la même planche resservira à l'aperçu de la
  * barre de progression du lecteur.
  */
-export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTrickplayImageProps) {
+export function CardTrickplayImage({ frame, alt, fallback }: CardTrickplayImageProps) {
   // L'état est attaché à l'ADRESSE : les cartes sont recyclées au défilement,
   // et la position de reprise change l'URL (cf. `CardImage` pour le pourquoi).
   // Une planche DÉJÀ montrée dans la session (`lib/seenImages`) est d'emblée
@@ -76,12 +74,12 @@ export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTr
         <div
           role="img"
           aria-label={alt}
-          className={`absolute inset-0 flex items-center justify-center overflow-hidden motion-reduce:!transform-none ${
-            zoom ? "group-hover/card:scale-[1.06]" : ""
-          }`}
+          // Plus de zoom de la vignette au survol : la carte grandit de 3 % sur place
+          // (`CardFrame`), et c'est tout — comme `CardImage`.
+          className="absolute inset-0 flex items-center justify-center overflow-hidden"
           style={{
             opacity: loaded ? 1 : 0,
-            transition: "opacity 240ms ease-out, transform 300ms var(--ease-out)",
+            transition: "opacity var(--duration-base) var(--ease-out)",
           }}
         >
           <div className="relative flex-none overflow-hidden" style={boxSize}>

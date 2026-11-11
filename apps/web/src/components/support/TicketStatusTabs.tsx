@@ -26,7 +26,7 @@ export function TicketStatusTabs({ active, counts, onChange }: TicketStatusTabsP
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(status)}
-            className={`flex h-9 flex-shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`flex h-9 flex-shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
                 ? "bg-surface-4 font-semibold text-content-primary"
                 : "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"

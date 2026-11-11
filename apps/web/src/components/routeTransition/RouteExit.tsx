@@ -1,58 +1,140 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { motion, PresenceContext, useIsPresent, useReducedMotion, type Variants } from "framer-motion";
-import { pageTransition } from "../../theme/motion";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { PresenceContext, usePresence, useReducedMotion } from "framer-motion";
+import { duration } from "../../theme/motion";
+import { PageArrivalGateContext, PageRevealedContext, type PageArrivalGate } from "./pageArrival";
 import { usePagePresence } from "./pagePresence";
-
-/** Transmis par `AnimatePresence custom` : la sortie en cours doit-elle être sèche ? */
-export interface RouteExitCustom {
-  instant: boolean;
-}
-
-const INSTANT_EXIT = { opacity: 0, transition: { duration: 0 } };
-
-// Constantes de module : une identité de `variants` neuve à chaque rendu fait
-// ré-résoudre tout l'arbre (cf. `textCascade` dans theme/motion.ts).
-const FADE_VARIANTS: Variants = {
-  visible: { opacity: 1 },
-  exit: (custom?: RouteExitCustom) => (custom?.instant ? INSTANT_EXIT : pageTransition.exit),
-};
-const INSTANT_VARIANTS: Variants = { visible: { opacity: 1 }, exit: INSTANT_EXIT };
+import { beginRouteHold } from "./routeHold";
+import { TransitionLevelContext, type PageArrival } from "./transitionLevel";
+import { usePageSettled } from "./usePageSettled";
+import { PAGE_HOLD_DATA_MS, PAGE_HOLD_IMAGES_MS } from "./pageSettled";
 
 /** Propriétés posées le temps de la sortie, retirées si la page revient. */
-const PINNED = ["position", "top", "left", "width", "pointer-events"] as const;
+const PINNED = ["position", "top", "left", "width", "pointer-events", "z-index", "opacity", "transition"] as const;
+
+/** Au-dessus du contenu d'une page (ses `z-10` à `z-30`), sous la barre (`z-40`). */
+export const SECTION_EXIT_LAYER = 35;
+/**
+ * Au-dessus de la coquille entière, barre et onglets compris ; sous les calques de `body`. Le
+ * vol de l'affiche vers la fiche se tient juste dessous (`DetailOpenOverlay`).
+ */
+export const ROUTE_EXIT_LAYER = 55;
+
+/** Le fondu de sortie, sur le compositeur ; la minuterie le double (un onglet caché n'envoie pas `transitionend`). */
+const EXIT_MS = duration.pageOut * 1000;
+/** Rien ne retient une page quittée au-delà : ni une porte jamais ouverte, ni une requête sans fin. */
+const HOLD_GUARD_MS = PAGE_HOLD_DATA_MS + PAGE_HOLD_IMAGES_MS + 200;
+/** Une apparition (fondu d'image, entrée de texte) ne dure pas plus ; au-delà c'est une boucle ou un voyage. */
+const ENTRANCE_MAX_MS = 700;
+
+const HELD: CSSProperties = { visibility: "hidden" };
+const PLATE: CSSProperties = { position: "fixed", inset: 0, zIndex: -1, backgroundColor: "var(--surface-0)" };
+
+/** Sous le verre natif, la page est transparente sur la fenêtre : aucune plaque ne doit la boucher. */
+const nativeGlass = (): boolean => typeof document !== "undefined" && document.documentElement.getAttribute("data-liquid-glass") === "native";
+
+/**
+ * Amène à leur terme les apparitions en cours sous `root` — les fondus d'image déclenchés par un
+ * chargement survenu pendant que la page se préparait cachée. Elle se montre POSÉE.
+ */
+function finishEntrances(root: HTMLElement): void {
+  if (typeof root.getAnimations !== "function") return;
+  for (const animation of root.getAnimations({ subtree: true })) {
+    const end = Number(animation.effect?.getComputedTiming().endTime);
+    if (!Number.isFinite(end) || end > ENTRANCE_MAX_MS) continue;
+    try {
+      animation.finish();
+    } catch {
+      /* une animation sans fin n'est pas une apparition */
+    }
+  }
+}
 
 interface RouteExitProps {
   children: ReactNode;
-  /** Sortie sèche, quelle que soit la destination (le lecteur, le miroir). */
+  /** Sortie sèche et aucune tenue, quelle que soit la destination (le miroir). */
   instant?: boolean;
+  /** Cette page REMPLACE une page affichée (lu au montage) : elle se prépare cachée, l'autre reste. */
+  replaces?: boolean;
+  /** Le calque où la page se tient pendant sa sortie (`SECTION_EXIT_LAYER`, `ROUTE_EXIT_LAYER`). */
+  layer?: number;
 }
 
 /**
- * Enveloppe d'une page sous `AnimatePresence` : à sa sortie, la page reste où
- * on la voyait et s'efface pendant que la suivante joue son entrée
- * (`PageTransition`). Seule l'opacité s'anime (règles GPU du CLAUDE.md).
+ * Enveloppe d'une page sous `AnimatePresence`.
  *
- * **La page sortante est épinglée.** Dès qu'elle n'est plus présente, elle
- * passe en `position: fixed` à l'endroit exact où elle s'affichait : la page
- * suivante prend sa place dans le flux, et la remise en haut du défilement
- * (`useScrollMemory`, un effet passif, donc APRÈS cet effet de mise en page)
- * ne la fait pas sauter. Sans cela, on verrait le haut de la page quittée
- * remonter sous le fondu.
+ * **La page quittée reste à l'écran jusqu'à ce que l'arrivée soit prête** (`transitionLevel.ts`).
+ * Elle est épinglée où on la voyait, AU-DESSUS de la suivante, sur une plaque de la couleur de
+ * la page ; la suivante se monte dessous, cachée, charge ses données et ses images, puis se
+ * montre d'un bloc : la page quittée s'efface alors par-dessus elle. Un seul calque s'anime, en
+ * opacité, sur le compositeur — et ce qu'on voit n'est jamais plus sombre ni plus clair que les
+ * deux pages : `α·quittée + (1 − α)·arrivée`. Deux fondus croisés sur le fond de page, eux,
+ * passaient par le noir.
  *
- * `flow-root` : la marge négative des bannières (`-mt-[68px]`, qui glissent
- * sous la barre) reste DANS l'enveloppe. Laissée fuir à travers, elle cesserait
- * de le faire une fois l'enveloppe épinglée — un bloc fixe ne fusionne pas ses
- * marges — et la page sauterait de 68 px.
+ * **Épinglée** : en `position: fixed` à l'endroit exact où elle s'affichait. La page suivante
+ * prend sa place dans le flux, et la remise en haut du défilement (`useScrollMemory`) ne fait
+ * pas sauter la page quittée.
  *
- * **La sortie n'attend que l'enveloppe.** Le contenu voit une présence à lui
- * (`pagePresence`) : rien de ce qu'il anime ne peut retenir la page quittée —
- * ni, par elle, le lecteur qu'on vient de quitter.
+ * `flow-root` : la marge négative des bannières (`-mt-[68px]`, qui glissent sous la barre) reste
+ * DANS l'enveloppe. Laissée fuir à travers, elle cesserait de le faire une fois l'enveloppe
+ * épinglée — un bloc fixe ne fusionne pas ses marges — et la page sauterait de 68 px.
+ *
+ * **Le contenu arrive posé.** Une page qui en remplace une autre ne joue pas ses entrées (la
+ * présence que voit son contenu dit `initial: false`) : la transition de page EST son entrée.
+ *
+ * **La sortie n'attend que l'enveloppe.** Le contenu voit une présence à lui (`pagePresence`) :
+ * rien de ce qu'il anime ne peut retenir la page quittée — ni, par elle, le lecteur.
  */
-export function RouteExit({ children, instant = false }: RouteExitProps) {
-  const isPresent = useIsPresent();
-  const reduced = useReducedMotion();
+export function RouteExit({ children, instant = false, replaces = false, layer = SECTION_EXIT_LAYER }: RouteExitProps) {
+  const [isPresent, safeToRemove] = usePresence();
+  const reduced = useReducedMotion() === true;
+  const level = useContext(TransitionLevelContext);
   const ref = useRef<HTMLDivElement>(null);
-  const inside = usePagePresence();
+
+  // Sans présence au-dessus (le client LG démonte ses pages sans différer), personne ne garde la
+  // page quittée : se préparer cachée laisserait l'écran vide.
+  const kept = useContext(PresenceContext) !== null;
+  // Décidé au montage : la page se prépare-t-elle cachée pendant qu'une autre reste à l'écran ?
+  const [holds] = useState(() => replaces && !instant && level !== null && kept);
+  const [claim, setClaim] = useState<PageArrival | null>(null);
+  const gate = useMemo<PageArrivalGate>(() => ({
+    claim: () => ({ report: setClaim, release: () => setClaim(null) }),
+  }), []);
+  const settled = usePageSettled(ref, holds && claim === null);
+  const ready = !holds || (claim ? claim.ready : settled);
+  const cut = instant || reduced || claim?.instant === true;
+  const [revealed, setRevealed] = useState(!holds);
+  // Lu à l'instant où la page se met à sortir, pas suivi par l'effet de sortie.
+  const shown = useRef(revealed);
+  shown.current = revealed;
+  // Les entrées du contenu restent coupées jusqu'à la fin du fondu de la page quittée.
+  const [entrancesBlocked, setEntrancesBlocked] = useState(holds);
+  const inside = usePagePresence(entrancesBlocked);
+
+  // La page en place dit où elle en est ; prête, elle se montre — dans la même image.
+  useLayoutEffect(() => {
+    if (!isPresent) return;
+    level?.setArrival({ ready, instant: cut });
+    if (ready && !revealed) {
+      if (ref.current) finishEntrances(ref.current);
+      setRevealed(true);
+    }
+  }, [isPresent, level, ready, cut, revealed]);
+
+  // Plus aucune page ne sort (le garde-fou l'a emportée) : jamais une page cachée sur un écran vide.
+  useEffect(() => {
+    if (!isPresent || revealed || !level) return;
+    let seen = level.leaving() > 0;
+    return level.subscribe(() => {
+      if (level.leaving() > 0) seen = true;
+      else if (seen) setRevealed(true);
+    });
+  }, [isPresent, revealed, level]);
+
+  useEffect(() => {
+    if (!revealed || !entrancesBlocked) return;
+    const timer = setTimeout(() => setEntrancesBlocked(false), EXIT_MS + 80);
+    return () => clearTimeout(timer);
+  }, [revealed, entrancesBlocked]);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -67,19 +149,62 @@ export function RouteExit({ children, instant = false }: RouteExitProps) {
     el.style.setProperty("top", `${top}px`);
     el.style.setProperty("left", `${left}px`);
     el.style.setProperty("width", `${width}px`);
-    el.style.setProperty("pointer-events", "none");
-  }, [isPresent]);
+    el.style.setProperty("z-index", String(layer));
+  }, [isPresent, layer]);
+
+  // La sortie : elle attend l'arrivée, puis s'efface (ou part d'un coup).
+  useEffect(() => {
+    if (isPresent) return;
+    const el = ref.current;
+    // Remplacée avant de s'être montrée : il n'y a rien à faire sortir.
+    if (!shown.current || !el) {
+      safeToRemove?.();
+      return;
+    }
+    const release = level?.enterLeaving();
+    // Tant qu'elle attend, la navigation le dit (`RouteProgress`, si l'attente dure).
+    const endHold = beginRouteHold();
+    let started = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (): void => {
+      release?.();
+      safeToRemove?.();
+    };
+    const leave = (force = false): void => {
+      if (started) return;
+      const arrival = level?.arrival() ?? { ready: true, instant: false };
+      if (!arrival.ready && !force) return;
+      started = true;
+      endHold();
+      // Les gestes ne se coupent qu'ici : tenue, la page garde ses survols — la carte qu'on
+      // vient de cliquer ne se dégonfle pas sous le curseur en attendant la suivante.
+      el.style.setProperty("pointer-events", "none");
+      if (arrival.instant || reduced) return finish();
+      el.style.setProperty("transition", `opacity ${EXIT_MS}ms var(--ease-out)`);
+      el.style.setProperty("opacity", "0");
+      timer = setTimeout(finish, EXIT_MS + 40);
+    };
+    const unsubscribe = level?.subscribe(() => leave());
+    const guard = setTimeout(() => leave(true), HOLD_GUARD_MS);
+    leave();
+    return () => {
+      unsubscribe?.();
+      clearTimeout(guard);
+      clearTimeout(timer);
+      endHold();
+      release?.();
+    };
+  }, [isPresent, level, reduced, safeToRemove]);
 
   return (
-    <motion.div
-      ref={ref}
-      className="flow-root"
-      variants={instant || reduced ? INSTANT_VARIANTS : FADE_VARIANTS}
-      initial={false}
-      animate="visible"
-      exit="exit"
-    >
-      <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
-    </motion.div>
+    <div ref={ref} className="flow-root" style={revealed ? undefined : HELD} data-page-held={!revealed || undefined}>
+      {/* La plaque : la page quittée couvre tout l'écran, barre comprise, d'un fond uni. */}
+      {!isPresent && revealed && !nativeGlass() && <div aria-hidden style={PLATE} />}
+      <PageArrivalGateContext.Provider value={gate}>
+        <PageRevealedContext.Provider value={revealed}>
+          <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
+        </PageRevealedContext.Provider>
+      </PageArrivalGateContext.Provider>
+    </div>
   );
 }

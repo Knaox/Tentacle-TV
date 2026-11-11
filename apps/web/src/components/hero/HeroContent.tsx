@@ -13,7 +13,8 @@ import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 import { soberMetaText } from "../media/MetaChips";
-import { fadeUp, textCascade } from "../../theme/motion";
+import { fadeIn, slideText } from "../../theme/motion";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 
 interface HeroContentProps {
   item: MediaItem;
@@ -90,8 +91,8 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
   // propres valeurs, ce qui se remarquait en passant d'une page à l'autre.
   // CONSTANTE de module, jamais un appel de fabrique ici : un objet neuf à
   // chaque rendu fait rejouer toute la cascade par framer.
-  const groupVariants = reduced ? undefined : textCascade;
-  const itemVariants = reduced ? undefined : fadeUp;
+  const groupVariants = reduced ? undefined : slideText;
+  const itemVariants = reduced ? undefined : fadeIn;
 
   return (
     // Ancré en BAS de la carte, sur la ligne des pastilles (le prototype validé) — plus au
@@ -102,7 +103,8 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
         key={animationKey}
         className="max-w-xl"
         variants={groupVariants}
-        initial="hidden"
+        // Passée au clavier (← →), la diapositive est là d'emblée : une touche ne s'anime pas.
+        initial={lastInputWasKeyboard() ? false : "hidden"}
         animate="show"
       >
         <motion.div variants={itemVariants} className="mb-3.5">

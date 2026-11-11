@@ -55,7 +55,7 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
   // Verre natif : une pastille ronde comme ses voisines — « Lire » en verre
   // clair, « Demander » avec la marque DANS le verre (`prominent`).
   const layout = `${box} flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${busy ? "cursor-wait" : ""}`;
-  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out ${busy ? "" : "active:scale-[0.97]"} ${TONES[tone]}`;
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out ${busy ? "" : "active:scale-[var(--press-scale)]"} ${TONES[tone]}`;
   const glassAllowed = useTrayGlassAllowed();
   const glass = useLiquidGlassSurface({
     level: tone === "brand" ? "prominent" : "clear",

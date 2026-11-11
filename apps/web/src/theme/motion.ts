@@ -22,8 +22,6 @@ export const easeDrawer = [0.32, 0.72, 0, 1] as const;
 
 /** La pression d'un contrôle : 120 ms, dès l'appui (`whileTap` de framer part au pointeur enfoncé). */
 export const pressTransition: Transition = { type: "tween", duration: 0.12, ease: easeOut };
-/** Ressort « press » — gardé pour les gestes interruptibles (glisser, lâcher) ; un bouton prend `pressTransition`. */
-export const springPress: Transition = { type: "spring", stiffness: 420, damping: 28, mass: 0.6 };
 /** Ressort doux — éléments partagés (pastille de nav), sans rebond marqué. */
 export const springSoft: Transition = { type: "spring", stiffness: 320, damping: 32 };
 
@@ -42,6 +40,7 @@ export const duration = {
   base: 0.22,
   slow: 0.32,
   page: 0.14,
+  pageOut: 0.12,
   press: 0.12,
   hover: 0.16,
   menuIn: 0.18,
@@ -123,8 +122,10 @@ export const AMBIENT_HZ = 30;
  * avaient chacune leur amplitude.
  */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: duration.base, ease: easeOut } },
+  // `transform` ENTIER, jamais `y` seul : framer 11 ne confie au compositeur que celui-là, et
+  // ces lignes paraissent à l'arrivée d'une page, pendant qu'elle se monte sur le fil principal.
+  hidden: { opacity: 0, transform: "translateY(10px)" },
+  show: { opacity: 1, transform: "translateY(0px)", transition: { duration: duration.base, ease: easeOut } },
 };
 
 /**
@@ -162,29 +163,34 @@ export const textCascadeArrival: Variants = {
   show: { transition: { delayChildren: 0.02, staggerChildren: 0.03 } },
 };
 
+/**
+ * Le texte d'une DIAPOSITIVE de bannière (accueil, « Pour vous », hors ligne) : toutes ses
+ * lignes fondent ENSEMBLE, sans monter. La cascade (`textCascade` + `fadeUp`) s'y rejouait à
+ * chaque diapositive — toutes les huit secondes, et à chaque flèche : le bouton de lecture
+ * n'était plein qu'à ~460 ms, et une rafale de clics faisait clignoter le texte. Les lignes
+ * prennent `fadeIn`.
+ */
+export const slideText: Variants = {
+  show: { transition: { staggerChildren: 0 } },
+};
+
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: duration.base, ease: easeOut } },
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: { duration: duration.base, ease: easeOut } },
-};
-
-export const stagger = (delayChildren = 0.1, staggerChildren = 0.06): Variants => ({
-  show: { transition: { delayChildren, staggerChildren } },
-});
-
-/** Le changement de page : un FONDU seul (140 ms à l'entrée, 120 à la sortie) — ni glissement, ni échelle. */
+/**
+ * Le changement de page : un FONDU seul — ni glissement, ni échelle.
+ *
+ * Entre deux routes, c'est la page QUITTÉE qui s'efface (`duration.pageOut`, 120 ms) par-dessus
+ * la suivante, déjà complète (`routeTransition/RouteExit`) : la page d'arrivée n'a pas de fondu
+ * à elle. `initial` / `animate` ne valent plus que pour une page rendue HORS des routes (une vue
+ * d'Octave, un écran posé seul), qui entre en 140 ms.
+ */
 export const pageTransition = {
   initial: { opacity: 0 },
   animate: { opacity: 1, transition: { duration: duration.page, ease: "easeOut" } },
-  exit: { opacity: 0, transition: { duration: 0.12, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: duration.pageOut, ease: "easeOut" } },
 } as const;
-
-export const respectReducedMotion = <T extends Transition>(t: T): T | { duration: 0 } => {
-  return prefersReducedMotion() ? { duration: 0 } : t;
-};
 
 export const noMotion = prefersReducedMotion;

@@ -260,14 +260,23 @@
   transition: transform var(--duration-hover) var(--ease-out);
 }
 
-.ctl-range:hover::-webkit-slider-thumb,
 .ctl-range:focus-visible::-webkit-slider-thumb {
   transform: scale(1.15);
 }
 
-.ctl-range:hover::-moz-range-thumb,
 .ctl-range:focus-visible::-moz-range-thumb {
   transform: scale(1.15);
+}
+
+/* Le doigt laisse un survol collé après l'appui : seul un pointeur fin grossit le pouce. */
+@media (hover: hover) and (pointer: fine) {
+  .ctl-range:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+
+  .ctl-range:hover::-moz-range-thumb {
+    transform: scale(1.15);
+  }
 }
 
 /* L'anneau de focus se pose sur le POUCE, pas sur la boîte du champ : celle-ci

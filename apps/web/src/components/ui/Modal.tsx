@@ -2,8 +2,10 @@ import { useEffect, useRef, useCallback } from "react";
 import { useGlassControl } from "./glass/useGlassControl";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { duration, easeDrawer, easeOut } from "../../theme/motion";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
+import { exitOr } from "../floating/floatingMotion";
 import { useLiquidGlassMode } from "../../theme/glass";
 
 interface ModalProps {
@@ -36,26 +38,39 @@ interface ModalProps {
 // Une feuille (refonte de nov. 2026) : elle entre en 320 ms sur la courbe de tiroir, depuis 97 %
 // — jamais depuis rien —, et sort en 200 ms. L'opacité court plus vite que la forme : le contenu
 // se lit avant que la feuille ait fini de se poser. Centrée : son origine reste son centre.
-const PANEL_VARIANTS = {
-  hidden: { opacity: 0, scale: 0.97, y: 10 },
+// `transform` ENTIER, jamais `scale` / `y` seuls : framer 11 ne confie au compositeur que
+// celui-là, et une feuille s'ouvre pendant que son contenu se monte sur le fil principal.
+// Fermée au clavier (Échap), elle part d'un coup ; ouverte au clavier, elle est là d'emblée.
+const PANEL_VARIANTS: Variants = {
+  hidden: { opacity: 0, transform: "translateY(10px) scale(0.97)" },
   show: {
     opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: duration.sheetIn, ease: easeDrawer, opacity: { duration: 0.22, ease: "easeOut" } },
+    transform: "translateY(0px) scale(1)",
+    transition: { duration: duration.sheetIn, ease: easeDrawer, opacity: { duration: duration.base, ease: easeOut } },
   },
-  exit: {
+  exit: exitOr({
     opacity: 0,
-    scale: 0.97,
-    y: 10,
-    transition: { duration: duration.sheetOut, ease: easeOut, opacity: { duration: 0.16, ease: "easeOut" } },
-  },
+    transform: "translateY(10px) scale(0.97)",
+    transition: { duration: duration.sheetOut, ease: easeOut, opacity: { duration: duration.fast, ease: easeOut } },
+  }),
 };
 
-const PANEL_VARIANTS_REDUCED = {
+const PANEL_VARIANTS_REDUCED: Variants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: duration.fast } },
-  exit: { opacity: 0, transition: { duration: duration.menuOut } },
+  show: { opacity: 1, transition: { duration: duration.fast, ease: easeOut } },
+  exit: exitOr({ opacity: 0, transition: { duration: duration.menuOut, ease: easeOut } }),
+};
+
+/** Le voile : un fondu, plus court à la sortie ; d'un coup au clavier. */
+const SCRIM_VARIANTS: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.sheetOut, ease: easeOut } },
+  exit: exitOr({ opacity: 0, transition: { duration: duration.fast, ease: easeOut } }),
+};
+const SCRIM_VARIANTS_REDUCED: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.menuOut, ease: easeOut } },
+  exit: exitOr({ opacity: 0, transition: { duration: 0.08, ease: easeOut } }),
 };
 
 const PLAIN_SCRIM = { background: "var(--glass-backdrop)" } as const;
@@ -83,8 +98,8 @@ export function focusableIn(panel: HTMLElement): HTMLElement[] {
  *   the panel, restore focus on close
  * - Esc to close (always), click-backdrop to close (configurable)
  * - aria-modal + role="dialog" for screen readers
- * - 240ms scale-in, 150ms scale-out (exit-faster-than-enter rule); a short
- *   opacity-only fade under prefers-reduced-motion
+ * - entrée 320 ms sur la courbe de tiroir, sortie 200 ms (`PANEL_VARIANTS`) ; un fondu seul sous
+ *   prefers-reduced-motion ; rien quand le geste vient du clavier
  */
 export function Modal({
   open,
@@ -186,14 +201,18 @@ export function Modal({
     if (dismissOnBackdrop) onClose();
   }, [dismissOnBackdrop, onClose]);
 
+  // Le geste qui ouvre ou ferme, lu au rendu qu'il déclenche : au clavier, rien ne s'anime.
+  const keyboard = lastInputWasKeyboard();
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence custom={keyboard}>
       {open && (
         <motion.div
           className="lg-scrim fixed inset-0 z-[100] flex items-center justify-center px-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: reduced ? 0.12 : 0.2 } }}
-          exit={{ opacity: 0, transition: { duration: reduced ? 0.08 : 0.16 } }}
+          variants={reduced ? SCRIM_VARIANTS_REDUCED : SCRIM_VARIANTS}
+          custom={keyboard}
+          initial={keyboard ? false : "hidden"}
+          animate="show"
+          exit="exit"
           onClick={handleBackdrop}
           role="presentation"
           // Le voile seul : hors du verre natif, plus de flou plein écran derrière une feuille
@@ -225,9 +244,7 @@ export function Modal({
               // Le tableau des scores saccadait pour la même raison.
             }}
             variants={reduced ? PANEL_VARIANTS_REDUCED : PANEL_VARIANTS}
-            initial="hidden"
-            animate="show"
-            exit="exit"
+            custom={keyboard}
             onClick={(e) => e.stopPropagation()}
           >
             {children}

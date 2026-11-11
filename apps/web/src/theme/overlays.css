@@ -49,7 +49,6 @@ button.ui-tile:active,
   font-family: var(--font-text);
   font-size: 14px;
   outline: none;
-  transition: box-shadow var(--duration-hover) ease;
 }
 
 .field::placeholder {
@@ -149,6 +148,13 @@ textarea.field {
   outline: none;
   background-color: var(--fill-soft);
   color: var(--text-primary);
+}
+
+/* Parcouru aux flèches, le menu ne fond rien : ni la ligne qu'on atteint, ni celle qu'on quitte
+ * (une touche ne s'anime pas). Le survol de la souris garde son fondu. `data-input` est posé par
+ * `lib/inputModality.ts` — pas de `:has()` : le client LG vise Chrome 53. */
+:root[data-input="keyboard"] .ui-menu-item {
+  transition: none;
 }
 
 .ui-menu-item:disabled,

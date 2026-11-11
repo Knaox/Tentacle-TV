@@ -10,7 +10,11 @@ import { preloadable } from "./lib/preloadable";
  * ce module garde la liste — chacun sa responsabilite.
  */
 
-export const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
+// Préchargeables, et préchargées en temps mort après le démarrage (`detailPagePreload`) : les
+// pages qu'un onglet de la barre ouvre. Sur un serveur lent, le premier clic attendait le module
+// de la page avant que QUOI QUE CE SOIT ne bouge — pas même l'onglet courant (React retient la
+// navigation tant que le module charge).
+export const Home = preloadable(() => import("./pages/Home").then((m) => m.Home));
 export const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
 export const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
 export const SharePage = lazy(() => import("./pages/SharePage").then((m) => ({ default: m.SharePage })));
@@ -20,15 +24,15 @@ export const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: 
 // la fiche est la page qu'on ouvre le plus, et sur un réseau lent son chunk
 // retenait le clic (rien ne bougeait pendant ~2,5 s, l'ouverture partait périmée).
 export const MediaDetail = preloadable(() => import("./pages/MediaDetail").then((m) => m.MediaDetail));
-export const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
-export const Search = lazy(() => import("./pages/Search").then((m) => ({ default: m.Search })));
+export const Library = preloadable(() => import("./pages/Library").then((m) => m.Library));
+export const Search = preloadable(() => import("./pages/Search").then((m) => m.Search));
 export const Person = lazy(() => import("./pages/Person").then((m) => ({ default: m.Person })));
 
 export const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 export const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 export const AdminInvites = lazy(() => import("./pages/AdminInvites").then((m) => ({ default: m.AdminInvites })));
-export const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
-export const SettingsLayout = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
+export const Preferences = preloadable(() => import("./pages/Preferences").then((m) => m.Preferences));
+export const SettingsLayout = preloadable(() => import("./components/settings/SettingsLayout").then((m) => m.SettingsLayout));
 export const SettingsIndex = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsIndex })));
 export const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
 export const SettingsPersonalization = lazy(() => import("./pages/settings/SettingsPersonalization").then((m) => ({ default: m.SettingsPersonalization })));
@@ -44,13 +48,13 @@ export const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").
 export const AdminMetadata = lazy(() => import("./pages/AdminMetadata").then((m) => ({ default: m.AdminMetadata })));
 export const AdminSessions = lazy(() => import("./pages/AdminSessions").then((m) => ({ default: m.AdminSessions })));
 export const AdminHome = lazy(() => import("./pages/AdminHome").then((m) => ({ default: m.AdminHome })));
-export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
+export const Watchlist = preloadable(() => import("./pages/Watchlist").then((m) => m.Watchlist));
 // Préchargeable : le chunk se charge au boot et au survol du lien, et la page
 // se rend alors sans suspendre — jamais de spinner à l'arrivée.
 export const Recommendations = preloadable(() => import("./pages/Recommendations").then((m) => m.Recommendations));
 // Section « Affiner » (pile de swipe) de la page Recommandations — bureau et miroir.
 export const SwipeSection = lazy(() => import("./components/swipe/SwipeSection").then((m) => ({ default: m.SwipeSection })));
-export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
+export const Favorites = preloadable(() => import("./pages/Favorites").then((m) => m.Favorites));
 export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
 export const OfflineSeriesView = lazy(() => import("./downloads/OfflineSeriesView").then((m) => ({ default: m.OfflineSeriesView })));

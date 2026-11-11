@@ -20,6 +20,7 @@ import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../compon
 import { DetailTitle } from "../components/detail/DetailTitle";
 import { detailLogoUrl, detailPosterUrl } from "../components/detail/detailArtUrls";
 import { useDetailArrival } from "../components/detail/detailArrival";
+import { usePageArrivalGate, usePageRevealed } from "../components/routeTransition/pageArrival";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
@@ -87,19 +88,26 @@ export function MediaDetail() {
    * et l'entrée ne doit surtout pas se déclencher à ce moment-là.
    */
   const skipEntrance = useRef(skipsEntrance(origin));
-  /**
-   * Le calque d'ouverture est OPAQUE (son fond a fini de monter). Avant, la
-   * fiche, rendue d'emblée dans son état final, se voyait à travers ce fond
-   * encore transparent — un éclair de la page d'arrivée avant le vol, d'autant
-   * plus long que la page quittée s'efface vite. Cachée jusque-là (sans rien
-   * changer à sa mise en page : le vol vise ses mesures), elle est ensuite
-   * dessous, invisible, jusqu'à l'effacement du calque.
-   */
-  const [overlayCovered, setOverlayCovered] = useState(false);
-  const handleOverlayCovered = useCallback(() => setOverlayCovered(true), []);
   // Animations réduites : aucun calque ne se joue, la fiche se montre tout de suite.
   const reducedMotion = useReducedMotion() === true;
-  const pageStyle = origin !== null && !overlayCovered && !reducedMotion ? HIDDEN_UNDER_OVERLAY : undefined;
+  /**
+   * Départ depuis la MINI-CARTE d'aperçu : son calque (`PreviewLaunchOverlay`) couvre l'écran
+   * d'une base opaque. La fiche, rendue d'emblée dans son état final, se verrait à travers ce
+   * fond tant qu'il monte : cachée jusque-là (sans rien changer à sa mise en page), elle est
+   * ensuite dessous, invisible, jusqu'à l'effacement du calque.
+   */
+  const launching = origin?.launch != null && !reducedMotion;
+  const [overlayCovered, setOverlayCovered] = useState(false);
+  const handleOverlayCovered = useCallback(() => setOverlayCovered(true), []);
+  const pageStyle = launching && !overlayCovered ? HIDDEN_UNDER_OVERLAY : undefined;
+  /**
+   * Départ depuis une CARTE : son visuel vole jusqu'à l'affiche (`DetailOpenOverlay`) pendant
+   * que la page quittée s'efface sur la fiche. L'affiche de la fiche attend qu'il se pose.
+   */
+  const flying = origin !== null && !origin.launch && !reducedMotion;
+  const [posterLanded, setPosterLanded] = useState(false);
+  const handlePosterLanded = useCallback(() => setPosterLanded(true), []);
+  const pageShown = usePageRevealed();
 
   // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
   // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
@@ -112,6 +120,7 @@ export function MediaDetail() {
     setTarget(null);
     setViewerIndex(null);
     setOverlayCovered(false);
+    setPosterLanded(false);
     // Le composant étant réutilisé d'une fiche à l'autre, le régime d'entrée
     // doit suivre l'item courant : la fiche suivante peut très bien s'ouvrir
     // sans transition (lien direct) après une qui en avait une.
@@ -158,9 +167,12 @@ export function MediaDetail() {
   ]);
   // Une fiche déjà montrée ne se recache jamais (un calque qui s'efface avant la porte, par son garde-fou).
   const shownFor = useRef<string | null>(null);
-  const overlayInCharge = origin !== null && !reducedMotion;
-  const holding = !!item && !arrivalReady && !overlayInCharge && shownFor.current !== item.Id;
+  const holding = !!item && !arrivalReady && !launching && shownFor.current !== item.Id;
   if (item && !holding) shownFor.current = item.Id;
+  // La page d'où l'on vient reste à l'écran jusqu'ici (`RouteExit`) : tant que la fiche n'a rien
+  // à montrer (ni titre et images, ni échec à dire) — puis elle s'efface sur la fiche complète.
+  // Sous le calque d'un aperçu, tant que sa base n'est pas opaque — puis elle part d'un coup.
+  usePageArrivalGate(launching ? overlayCovered : (!!item && !holding) || (isError && !item), launching);
   // Depuis une mini-carte d'aperçu, c'est sa vidéo qui grandit jusqu'à la
   // scène (`PreviewLaunchOverlay`) ; depuis une carte, son visuel qui vole
   // jusqu'à l'affiche. Une clé par ouverture : la suivante repart de zéro.
@@ -175,15 +187,7 @@ export function MediaDetail() {
       onDone={handleOverlayDone}
     />
   ) : (
-    <DetailOpenOverlay
-      origin={origin}
-      backdropUrl={backdropUrl}
-      target={target}
-      settled={!!item}
-      ready={arrivalReady}
-      onCovered={handleOverlayCovered}
-      onDone={handleOverlayDone}
-    />
+    <DetailOpenOverlay origin={origin} target={target} revealed={pageShown} onLanded={handlePosterLanded} onDone={handleOverlayDone} />
   );
 
   if (isLoading || !item || holding) {
@@ -251,6 +255,7 @@ export function MediaDetail() {
               instant={skipEntrance.current}
               onOpen={openPoster}
               placeholderUrl={posterPlaceholder}
+              concealed={flying && !posterLanded}
             />
 
             <DetailTextColumn>

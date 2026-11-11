@@ -15,10 +15,10 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { springSoft } from "../../../theme/motion";
+import { SlidingMarker } from "../../ui/SlidingMarker";
 import { SEARCH_TABS, type SearchTab } from "./searchParams";
 
 const WRITE_DELAY_MS = 150;
@@ -100,18 +100,17 @@ export const SearchPageHeader = memo(function SearchPageHeader({ query, tab, cou
                   role="tab"
                   aria-selected={selected}
                   onClick={() => onTab(key)}
-                  className={`relative isolate inline-flex min-h-[32px] shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+                  className={`relative isolate inline-flex min-h-[32px] shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
                     selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"
                   }`}
                 >
                   {selected && (
-                    <motion.span
-                      layoutId="search-tab-pill"
-                      aria-hidden
+                    <SlidingMarker
+                      group="search-tab-pill"
+                      still={reduced === true}
                       className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                       // L'onglet retenu : une pastille NEUTRE, comme le contrôle segmenté des bibliothèques.
                       style={{ background: "var(--surface-4)", boxShadow: "var(--ctl-glow-segment)" }}
-                      transition={reduced ? { duration: 0 } : springSoft}
                     />
                   )}
                   {t(TAB_KEYS[key])}

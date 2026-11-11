@@ -146,7 +146,7 @@ export function UserAvatarMenu() {
         // Le compte est son propre groupe de la barre : un rond de 46 px, à la hauteur des autres.
         data-account-trigger
         data-hote-voile="topbar"
-        className="lgc-avatar pointer-events-auto flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[15px] font-bold text-cta-brand-fg shadow-edge transition-transform duration-press ease-out active:scale-[0.97]"
+        className="lgc-avatar pointer-events-auto flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[15px] font-bold text-cta-brand-fg shadow-edge transition-transform duration-press ease-out active:scale-[var(--press-scale)]"
         style={ringStyle}
       >
         {avatarContent}

@@ -40,9 +40,11 @@ export default {
       // en boucle — exactement l'anti-pattern qu'on vient de corriger sur les
       // cartes. Les laisser en config, c'était inviter à les réutiliser.
       animation: {
-        "fade-slide-up": "fadeSlideUp 0.5s ease both",
-        "fade-slide-down": "fadeSlideDown 0.3s ease both",
-        "scale-in": "scaleIn 0.2s ease both",
+        // Les entrées prennent les durées et la courbe du socle (docs/REFONTE-UI.md) : rien
+        // d'interface au-delà de 320 ms, jamais la courbe `ease` native sur ce qui entre.
+        "fade-slide-up": "fadeSlideUp var(--duration-slow) var(--ease-out) both",
+        "fade-slide-down": "fadeSlideDown var(--duration-base) var(--ease-out) both",
+        "scale-in": "scaleIn var(--duration-menu-in) var(--ease-out) both",
         "slide-in-right": "slideInRight 0.25s ease both",
         // BORNÉE, comme tout ce qui bat dans cette application. Ces pastilles
         // signalent un état qui DURE — un téléchargement en cours, une
@@ -69,7 +71,7 @@ export default {
         // exactement 30 par seconde, quelle que soit la fréquence de l'écran.
         // Aucune détection de plateforme, ici comme ailleurs.
         "ken-burns": "kenBurns 32s steps(48) infinite alternate",
-        "fade-out": "fadeOut 0.3s ease forwards",
+        "fade-out": "fadeOut var(--duration-sheet-out) var(--ease-out) forwards",
         "loading-bar": "loadingBar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite",
         // Un refus qui SE VOIT : le bouton dont la commande a échoué tremble
         // une fois, de trois pixels — en `transform` seul, rien n'est repeint.
@@ -80,7 +82,7 @@ export default {
       },
       keyframes: {
         fadeSlideUp: {
-          from: { opacity: "0", transform: "translateY(20px)" },
+          from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         fadeSlideDown: {
@@ -88,7 +90,7 @@ export default {
           to: { opacity: "1", transform: "translateY(0)" },
         },
         scaleIn: {
-          from: { opacity: "0", transform: "scale(0.95)" },
+          from: { opacity: "0", transform: "scale(0.96)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
         slideInRight: {

@@ -48,8 +48,8 @@ export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase }: P
       style={{
         top: "var(--hote-bandeau, 0px)",
         opacity: visible ? 1 : 0,
-        transition: phase === "leaving" ? "opacity 260ms cubic-bezier(0.23, 1, 0.32, 1)" : undefined,
-        animation: phase === "entering" ? "fadeIn 200ms ease-out both" : undefined,
+        transition: phase === "leaving" ? "opacity 260ms var(--ease-out)" : undefined,
+        animation: phase === "entering" ? "fadeIn 200ms var(--ease-out) both" : undefined,
       }}
     >
       <div className={`relative flex flex-col items-center ${phase === "entering" ? "animate-scale-in" : ""}`}>

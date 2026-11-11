@@ -9,6 +9,7 @@ import { useJellyfinClient, type JellyfinClient } from "@tentacle-tv/api-client"
 import type { DetailImageRef } from "@tentacle-tv/shared";
 import { easeOut, duration, exitDuration } from "../../theme/motion";
 import { swipeDelta, useImageViewerControls } from "./useImageViewerControls";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { GlassButton } from "../ui/glass/GlassButton";
 
 interface DetailImageViewerProps {
@@ -64,6 +65,8 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
   const current = open ? gallery[Math.min(index, count - 1)] : null;
   const src = current ? fullUrl(client, current) : null;
 
+  // Le geste qui change d'image, lu au rendu qu'il déclenche.
+  const keyboard = lastInputWasKeyboard();
   return createPortal(
     <AnimatePresence>
       {current && src && (
@@ -119,10 +122,13 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                 draggable={false}
                 onClick={(e) => e.stopPropagation()}
                 onLoad={() => setLoaded(src)}
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: loaded === src ? 1 : 0.35, scale: 1 }}
-                exit={{ opacity: 0, transition: { duration: exitDuration(duration.base) } }}
-                transition={{ duration: duration.base, ease: easeOut }}
+                // Parcourue au clavier (← →, touche maintenue comprise), l'image suivante est là
+                // d'emblée : une touche ne s'anime pas. À la souris : un fondu et une échelle
+                // légère, en `transform` entier (le seul que framer confie au compositeur).
+                initial={keyboard ? false : { opacity: 0, transform: "scale(0.97)" }}
+                animate={{ opacity: loaded === src ? 1 : 0.35, transform: "scale(1)" }}
+                exit={{ opacity: 0, transition: { duration: keyboard ? 0 : exitDuration(duration.base) } }}
+                transition={{ duration: keyboard ? 0 : duration.base, ease: easeOut }}
                 className="max-h-full max-w-full rounded-[var(--radius-lg)] object-contain shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
                 /* tv-compat-ok: une <img> chargée garde son ratio naturel ; seule la réservation avant chargement se perd */
                 style={{ aspectRatio: String(current.aspect) }}

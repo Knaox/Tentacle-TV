@@ -50,7 +50,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
-        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold transition-transform duration-press ease-out active:scale-[0.97] text-cta-brand-fg"
+        className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold transition-transform duration-press ease-out active:scale-[var(--press-scale)] text-cta-brand-fg"
         style={ringStyle}
       >
         {/* `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis
@@ -108,7 +108,7 @@ function ProfileSessionHero({ profile }: { profile: ActiveProfile }) {
           onClick={() => openGallery(guestTarget)}
           aria-label={t("profile:changePhoto")}
           title={t("profile:changePhoto")}
-          className="group relative flex-shrink-0 rounded-full transition-transform duration-press ease-out active:scale-[0.97]"
+          className="group relative flex-shrink-0 rounded-full transition-transform duration-press ease-out active:scale-[var(--press-scale)]"
         >
           {avatar}
           {/* Voile superposé à la photo : reste noir/blanc dans les deux thèmes. */}

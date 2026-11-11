@@ -11,7 +11,8 @@ import { InfoIcon, PlayIcon } from "../../components/icons/HeroIcons";
 import { soberMetaText } from "../../components/media/MetaChips";
 import { PressableGlass } from "../../components/ui/glass/PressableGlass";
 import { RichOverview } from "../../lib/overviewHtml";
-import { fadeUp, textCascade } from "../../theme/motion";
+import { fadeIn, slideText } from "../../theme/motion";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { useDownloadsRootReady } from "../localFiles";
 import { useLocalSnapshot } from "../useLocalSnapshot";
 import { useFirstLocalImage } from "../detail/useFirstLocalImage";
@@ -28,7 +29,7 @@ const LOGO = ["logo.png"] as const;
  * qui ouvre la fiche locale.
  *
  * Posé sur les voiles noirs constants de la bannière : jetons `on-media` dans
- * les deux thèmes. `key={animationKey}` rejoue la cascade à chaque diapositive.
+ * les deux thèmes. `key={animationKey}` refait fondre le texte, d'un bloc, à chaque diapositive.
  */
 export function OfflineBillboardContent({ entry, animationKey }: { entry: DownloadListEntry; animationKey: number }) {
   const { t } = useTranslation(["common", "downloads"]);
@@ -51,12 +52,13 @@ export function OfflineBillboardContent({ entry, animationKey }: { entry: Downlo
   const eyebrowLabel = hasProgress ? t("common:continueLabel") : isEpisode ? (code ?? displayName) : t("downloads:heroLabel");
   const eyebrowHint = [isEpisode ? soberMetaText(quality) : null, version].filter(Boolean).join(" · ") || undefined;
 
-  const groupVariants = reduced ? undefined : textCascade;
-  const itemVariants = reduced ? undefined : fadeUp;
+  const groupVariants = reduced ? undefined : slideText;
+  const itemVariants = reduced ? undefined : fadeIn;
 
   return (
     <div className="absolute inset-x-0 bottom-6 z-10 pl-16 pr-4 sm:pr-8 md:bottom-10 md:pl-20 md:pr-12">
-      <motion.div key={animationKey} className="max-w-xl" variants={groupVariants} initial="hidden" animate="show">
+      {/* Passée au clavier (← →), la diapositive est là d'emblée : une touche ne s'anime pas. */}
+      <motion.div key={animationKey} className="max-w-xl" variants={groupVariants} initial={lastInputWasKeyboard() ? false : "hidden"} animate="show">
         <motion.div variants={itemVariants} className="mb-3.5">
           <HeroEyebrow label={eyebrowLabel} hint={eyebrowHint} />
         </motion.div>

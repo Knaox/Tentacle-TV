@@ -89,7 +89,7 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   // La peau hors verre : dans le plateau, un glyphe sans fond (ses voisins n'en
   // ont pas) ; seul, une pastille d'encre posée sur l'image — sans liseré. La
   // pression répond à 97 %, le survol ne change que la couleur.
-  const skin = `rounded-full transition-[color,background-color,transform] duration-hover ease-out active:scale-[0.97] ${
+  const skin = `rounded-full transition-[color,background-color,transform] duration-hover ease-out active:scale-[var(--press-scale)] ${
     tone === "tray"
       ? `hover:bg-white/10 ${kept ? "" : "text-white/80 hover:text-white"}`
       : `bg-[rgba(11,11,12,0.72)] hover:bg-[rgba(11,11,12,0.88)] ${kept ? "" : "text-white"}`
