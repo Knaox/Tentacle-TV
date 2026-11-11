@@ -3,6 +3,15 @@
 // invoke/reply/event par CefProcessMessage.
 //
 // Pourquoi seulement le cadre principal : une iframe tierce n'a pas à piloter le lecteur.
+//
+// Et seulement le MONDE DE LA PAGE. Un cadre a plusieurs contextes JS : celui de la page, et
+// un par « monde isolé » qu'un outil y ouvre (les outils de développement, Playwright — qui en
+// laisse un par session, recréé à chaque document). OnContextCreated est appelé pour chacun.
+// L'amorce s'y rejouait, et son `register` remplaçait le point d'entrée de la page par celui
+// du monde isolé : plus AUCUNE réponse ni évènement n'arrivait à la page — lecture bloquée sur
+// son écran d'attente, `liquidGlass.sample` muet — jusqu'au relancement (lot rf2, recette :
+// six mondes isolés relevés après les bancs, le pont mort). Et la sortie d'un monde isolé
+// effaçait l'inscription du cadre entier. Banc : bench/pont/monde-isole.mjs.
 
 #include "shell/renderer_ipc.h"
 
@@ -88,9 +97,15 @@ void rememberScripts(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue
 
 void forgetBrowser(CefRefPtr<CefBrowser> browser) { g_scripts.erase(browser->GetIdentifier()); }
 
+/** Ce contexte est-il celui de la page (le monde principal du cadre), pas un monde isolé ? */
+static bool isPageWorld(CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) {
+  CefRefPtr<CefV8Context> page = frame->GetV8Context();
+  return page && page->IsValid() && page->IsSame(context);
+}
+
 void installShell(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                   CefRefPtr<CefV8Context> context) {
-  if (!frame->IsMain()) return;
+  if (!frame->IsMain() || !isPageWorld(frame, context)) return;
   CefRefPtr<CefV8Handler> handler = new NativeHandler(frame);
   auto native = CefV8Value::CreateObject(nullptr, nullptr);
   native->SetValue("send", CefV8Value::CreateFunction("send", handler),
@@ -108,7 +123,13 @@ void installShell(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
   }
 }
 
-void releaseShell(CefRefPtr<CefFrame> frame) { g_frames.erase(frame->GetIdentifier().ToString()); }
+void releaseShell(CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) {
+  // Seul le contexte INSCRIT emporte l'inscription : la sortie d'un monde isolé n'y touche pas.
+  auto it = g_frames.find(frame->GetIdentifier().ToString());
+  if (it == g_frames.end()) return;
+  if (it->second.context && !it->second.context->IsSame(context)) return;
+  g_frames.erase(it);
+}
 
 bool onProcessMessage(CefRefPtr<CefFrame> frame, CefRefPtr<CefProcessMessage> message) {
   const std::string name = message->GetName().ToString();
