@@ -6,16 +6,35 @@
 
 const centre = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
 
-/** Clic réel (pointeur de confiance) sur le premier élément visible qui porte ce texte. */
-const clickText = (selector, text) => async (page) => {
-  const box = await page.locator(selector, { hasText: text }).first().boundingBox({ timeout: 5000 });
-  if (!box) throw new Error(`cible absente : ${selector} « ${text} »`);
-  const at = centre(box);
-  await page.mouse.click(at.x, at.y);
+/**
+ * Un geste au pointeur, en deux temps : `aim` pose le pointeur sur la cible AVANT la capture (le
+ * survol qu'il déclenche — une carte qui grossit, son plateau — fait partie de l'état de départ,
+ * pas de la transition), `gesture` clique là où il est.
+ */
+const pointer = (locate) => {
+  let at = null;
+  return {
+    aim: async (page) => {
+      at = await locate(page);
+      await page.mouse.move(at.x, at.y);
+    },
+    gesture: async (page) => {
+      if (!at) at = await locate(page);
+      await page.mouse.click(at.x, at.y);
+      at = null;
+    },
+  };
 };
 
-/** Clic réel sur le premier lien de la barre dont l'adresse convient (un onglet de bibliothèque). */
-const clickHref = (pattern) => async (page) => {
+/** Le premier élément visible qui porte ce texte. */
+const byText = (selector, text) => pointer(async (page) => {
+  const box = await page.locator(selector, { hasText: text }).first().boundingBox({ timeout: 5000 });
+  if (!box) throw new Error(`cible absente : ${selector} « ${text} »`);
+  return centre(box);
+});
+
+/** Le premier lien de la barre dont l'adresse convient (un onglet de bibliothèque). */
+const byHref = (pattern) => pointer(async (page) => {
   const at = await page.evaluate((source) => {
     const link = [...document.querySelectorAll("header a[href]")].find((a) => new RegExp(source).test(a.getAttribute("href") ?? ""));
     if (!link) return null;
@@ -23,14 +42,14 @@ const clickHref = (pattern) => async (page) => {
     return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
   }, pattern.source);
   if (!at) throw new Error(`aucun lien de la barre vers ${pattern}`);
-  await page.mouse.click(at.x, at.y);
-};
+  return at;
+});
 
 /**
- * Clic sur une AFFICHE entièrement à l'écran, image peinte. Une affiche (plus haute que large)
- * ouvre la fiche ; une vignette 16:9 lance la lecture — ce n'est pas le geste mesuré ici.
+ * Une AFFICHE entièrement à l'écran, image peinte. Une affiche (plus haute que large) ouvre la
+ * fiche ; une vignette 16:9 lance la lecture — ce n'est pas le geste mesuré ici.
  */
-const clickCard = async (page) => {
+const aCard = () => pointer(async (page) => {
   const at = await page.evaluate(() => {
     const cards = [...document.querySelectorAll("[data-card-visual]")].filter((card) => {
       const box = card.getBoundingClientRect();
@@ -43,11 +62,11 @@ const clickCard = async (page) => {
     return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
   });
   if (!at) throw new Error("aucune affiche peinte à l'écran");
-  await page.mouse.click(at.x, at.y);
-};
+  return at;
+});
 
 /** Le bouton Retour de la fiche. */
-const clickBack = async (page) => {
+const backButton = () => pointer(async (page) => {
   const at = await page.evaluate(() => {
     const button = [...document.querySelectorAll("button")].find((b) => /^(Retour|Back)$/.test((b.textContent ?? "").trim()));
     if (!button) return null;
@@ -55,16 +74,18 @@ const clickBack = async (page) => {
     return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
   });
   if (!at) throw new Error("bouton Retour absent");
-  await page.mouse.click(at.x, at.y);
-};
+  return at;
+});
 
 /** Navigation par l'historique (le routeur écoute `popstate`) — là où aucun lien n'est à l'écran. */
-const go = (path) => async (page) => {
-  await page.evaluate((to) => window.__flickerProbe.go(to), path);
-};
+const go = (path) => ({
+  gesture: async (page) => {
+    await page.evaluate((to) => window.__flickerProbe.go(to), path);
+  },
+});
 
 /**
- * @returns {Array<{ id: string, gesture: (page: import("playwright-core").Page) => Promise<void>, arrives: RegExp, cards?: boolean, before?: (page: import("playwright-core").Page) => Promise<void> }>}
+ * @returns {Array<{ id: string, aim?: (page: import("playwright-core").Page) => Promise<void>, gesture: (page: import("playwright-core").Page) => Promise<void>, arrives: RegExp, cards?: boolean, before?: (page: import("playwright-core").Page) => Promise<void> }>}
  */
 export function journey() {
   // Fait défiler l'accueil, pas à pas (les rangées se montent à l'approche), jusqu'à une rangée
@@ -88,16 +109,16 @@ export function journey() {
     }
   };
   return [
-    { id: "accueil→bibliothèque", gesture: clickHref(/^\/library\//), arrives: /^\/library\// },
-    { id: "bibliothèque→fiche", gesture: clickCard, arrives: /^\/media\//, cards: false },
-    { id: "fiche→bibliothèque (Retour)", gesture: clickBack, arrives: /^\/library\// },
-    { id: "bibliothèque→accueil", gesture: clickText("header a", "Accueil"), arrives: /^\/$/ },
-    { id: "accueil→fiche", before: scrollToRows, gesture: clickCard, arrives: /^\/media\//, cards: false },
-    { id: "fiche→accueil (Retour)", gesture: clickBack, arrives: /^\/$/ },
-    { id: "accueil→pour vous", gesture: clickText("header a", "Pour vous"), arrives: /^\/recommendations/, cards: false },
-    { id: "pour vous→ma liste", gesture: go("/watchlist"), arrives: /^\/watchlist/, cards: false },
-    { id: "ma liste→réglages", gesture: go("/settings"), arrives: /^\/settings/, cards: false },
-    { id: "réglages→recherche", gesture: go("/search?q=the"), arrives: /^\/search/, cards: false },
-    { id: "recherche→accueil", gesture: clickText("header a", "Accueil"), arrives: /^\/$/ },
+    { id: "accueil→bibliothèque", ...byHref(/^\/library\//), arrives: /^\/library\// },
+    { id: "bibliothèque→fiche", ...aCard(), arrives: /^\/media\//, cards: false },
+    { id: "fiche→bibliothèque (Retour)", ...backButton(), arrives: /^\/library\// },
+    { id: "bibliothèque→accueil", ...byText("header a", "Accueil"), arrives: /^\/$/ },
+    { id: "accueil→fiche", before: scrollToRows, ...aCard(), arrives: /^\/media\//, cards: false },
+    { id: "fiche→accueil (Retour)", ...backButton(), arrives: /^\/$/ },
+    { id: "accueil→pour vous", ...byText("header a", "Pour vous"), arrives: /^\/recommendations/, cards: false },
+    { id: "pour vous→ma liste", ...go("/watchlist"), arrives: /^\/watchlist/, cards: false },
+    { id: "ma liste→réglages", ...go("/settings"), arrives: /^\/settings/, cards: false },
+    { id: "réglages→recherche", ...go("/search?q=the"), arrives: /^\/search/, cards: false },
+    { id: "recherche→accueil", ...byText("header a", "Accueil"), arrives: /^\/$/ },
   ];
 }
