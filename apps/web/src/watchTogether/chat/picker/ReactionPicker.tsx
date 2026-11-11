@@ -1,5 +1,5 @@
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import type { WtChatApi } from "@tentacle-tv/api-client";
 import { duration, easeOut } from "../../../theme/motion";
@@ -32,6 +32,9 @@ interface ReactionPickerProps {
 
 export function ReactionPicker({ tab, onTabChange, onClose, chat, onRefused }: ReactionPickerProps) {
   const { t } = useTranslation("watchTogether");
+  // Mouvement réduit : un fondu, sans montée ni échelle.
+  const reduced = useReducedMotion() === true;
+  const away = (shift: number): string => (reduced ? "none" : `translateY(${String(shift)}px) scale(0.98)`);
 
   const tabButton = (target: PickerTab, label: string) => (
     <button type="button" role="tab" aria-selected={tab === target} onClick={() => onTabChange(target)} className="wtc-tab">
@@ -43,9 +46,9 @@ export function ReactionPicker({ tab, onTabChange, onClose, chat, onRefused }: R
     <AnimatePresence initial={false}>
       {tab && (
         <motion.div
-          initial={{ opacity: 0, transform: "translateY(12px) scale(0.98)" }}
-          animate={{ opacity: 1, transform: "translateY(0px) scale(1)", transition: { duration: duration.menuIn, ease: easeOut } }}
-          exit={{ opacity: 0, transform: "translateY(8px) scale(0.98)", transition: { duration: duration.menuOut, ease: easeOut } }}
+          initial={{ opacity: 0, transform: away(12) }}
+          animate={{ opacity: 1, transform: reduced ? "none" : "translateY(0px) scale(1)", transition: { duration: duration.menuIn, ease: easeOut } }}
+          exit={{ opacity: 0, transform: away(8), transition: { duration: duration.menuOut, ease: easeOut } }}
           className="wtc-picker"
           // Ne surtout pas laisser remonter la frappe aux raccourcis du lecteur
           // (même garde que le champ du chat) ; Échap ferme le sélecteur.

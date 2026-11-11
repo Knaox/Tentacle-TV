@@ -70,9 +70,11 @@
   user-select: none;
 }
 
-/* Ouvert au POINTEUR : il sort de son bouton (180 ms). Ouvert par F9 : il est là, sans mouvement. */
+/* Ouvert au POINTEUR : il se pose (180 ms, depuis 97 %) — autour de son centre, comme une
+ * feuille : sa place est mémorisée, sans lien avec celle de son bouton. Ouvert par F9 : il est
+ * là, sans mouvement (un geste au clavier ne s'anime pas). */
 .dbg-panel--pointer {
-  transform-origin: top left;
+  transform-origin: center;
   transition:
     opacity var(--duration-menu-in) var(--ease-out),
     transform var(--duration-menu-in) var(--ease-out);

@@ -16,7 +16,8 @@
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background-color: var(--wtc-surface);
   box-shadow: 0 -1px 0 var(--wtc-line), 0 -12px 24px -16px rgba(0, 0, 0, 0.5);
-  transform-origin: bottom center;
+  /* Elle sort de SES boutons (emojis, GIF), à droite de la rangée des réactions. */
+  transform-origin: 82% 100%;
 }
 
 .wtc-picker__head {
@@ -82,7 +83,7 @@
 }
 
 .wtc-emoji:active {
-  transform: scale(0.88);
+  transform: scale(0.95);
 }
 
 .wtc-emoji:focus-visible {

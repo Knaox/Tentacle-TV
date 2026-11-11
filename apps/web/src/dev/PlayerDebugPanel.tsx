@@ -38,7 +38,7 @@ const REFRESH_MS = 500;
 const TAB_KEY = "tentacle_debug_onglet";
 
 type Tab = "actions" | "diagnostic";
-/** Comment le panneau s'est ouvert : au pointeur il sort de son bouton, au clavier il est là. */
+/** Comment le panneau s'est ouvert : au pointeur il se pose (180 ms), au clavier il est là. */
 type OpenedBy = "pointer" | "key" | null;
 
 /**

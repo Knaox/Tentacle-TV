@@ -29,9 +29,9 @@
     transform var(--duration-press) var(--ease-out);
 }
 
-/* Une réaction s'envoie en rafale : l'appui se voit franchement. */
+/* Une réaction s'envoie en rafale : l'appui se voit, sans écraser l'emoji. */
 .wtc-react:active {
-  transform: scale(0.88);
+  transform: scale(0.95);
 }
 
 .wtc-react:focus-visible,
