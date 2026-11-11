@@ -1,21 +1,17 @@
-import { AnimatePresence, cubicBezier, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
 import { HeroScrims } from "../../hero/HeroScrims";
 import { HERO_BACKDROP_WIDTH } from "../../hero/resolveBackdrop";
-import { AMBIENT_HZ, cadence } from "../../../theme/motion";
 import { useBrokenImage } from "../../../hooks/useBrokenImage";
 import { markImageSeen } from "../../../lib/seenImages";
-import { ENTRY_FADE, useBillboardEntry } from "../../hero/useBillboardEntry";
+import { CROSSFADE, CROSSFADE_EXIT, ENTRY_FADE, useBillboardEntry } from "../../hero/useBillboardEntry";
 import { recoBackdropUrl } from "@tentacle-tv/api-client";
 
 // Miroir de HeroBackdrop pour un RecoRowItem (qui n'est pas un MediaItem) :
 // mêmes durées, mêmes bridages de cadence — les commentaires de mesure vivent
 // là-bas, ne pas faire dériver ces valeurs. Le zoom est la même classe
 // (`hero-zoom`, theme/heroMotion.css), jouée par le compositeur.
-const FADE_DURATION_S = 1.2;
-const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
-const CROSSFADE = { duration: FADE_DURATION_S, ease: FADE_EASE };
 
 /**
  * Fond d'une diapositive du carrousel de recommandations : backdrop TMDB
@@ -51,7 +47,7 @@ export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
             draggable={false}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { opacity: CROSSFADE } }}
+            exit={CROSSFADE_EXIT}
             transition={{ opacity: entry.isEntry ? ENTRY_FADE : CROSSFADE }}
             className="hero-zoom absolute inset-0 h-full w-full object-cover will-change-transform"
             style={{ display: broken ? "none" : undefined }}

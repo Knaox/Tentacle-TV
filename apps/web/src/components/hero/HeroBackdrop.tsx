@@ -1,10 +1,9 @@
-import { AnimatePresence, cubicBezier, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { markImageSeen } from "../../lib/seenImages";
 import { itemImageColor } from "../../lib/itemImageColor";
-import { ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
+import { CROSSFADE, CROSSFADE_EXIT, ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
 import { useLoadedSlide } from "./useLoadedSlide";
 import { HeroScrims } from "./HeroScrims";
 
@@ -30,7 +29,6 @@ interface HeroBackdropProps {
  * via AnimatePresence — plus de stack de N <img> avec opacity à zéro.
  */
 export const HERO_ZOOM_DURATION_S = 8;
-const FADE_DURATION_S = 1.2;
 /**
  * Le zoom — 1 → 1,06, linéaire, en huit secondes, bridé à trente paliers par
  * seconde — est la classe `hero-zoom` (`theme/heroMotion.css`), jouée par le
@@ -43,23 +41,11 @@ const FADE_DURATION_S = 1.2;
  */
 const ZOOM_CLASS = "hero-zoom";
 /**
- * Le fondu enchaîné d'une diapositive à l'autre est bridé lui aussi.
- *
- * Il l'avait d'abord été épargné — c'est un mouvement qu'on REGARDE, et deux
- * images plein cadre s'y superposent. Mais trente-six paliers d'opacité sur
- * 1,2 s restent au-dessus de la cadence du cinéma, et c'est précisément le
- * moment le plus cher de toute l'application : pendant ces 1,2 s, DEUX images
- * plein écran coexistent, chacune avec son propre halo flouté, toutes composées
- * à chaque image d'affichage. Diviser cette cadence par deux à quatre selon
- * l'écran porte donc sur le pic, pas sur le régime de croisière.
- *
- * La courbe est passée EXPLICITEMENT : `cadence` quantifie le temps puis
- * applique l'easing reçu, donc sans elle le fondu deviendrait linéaire — ce qui
- * se verrait. `cubicBezier(0, 0, 0.58, 1)` est la définition exacte du mot-clé
- * `easeOut` qu'utilisait cette transition.
+ * Le fondu enchaîné d'une diapositive à l'autre : UNE rampe continue, sur le compositeur — la
+ * nouvelle image fond par-dessus l'ancienne, qui reste pleine dessous puis s'en va
+ * (`CROSSFADE`, `CROSSFADE_EXIT` : `useBillboardEntry.ts`, où la règle est dite). Il a été
+ * bridé à trente paliers par seconde : cela scintillait.
  */
-const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
-const CROSSFADE = { duration: FADE_DURATION_S, ease: FADE_EASE };
 
 /** Le décor d'une bannière sans image : deux lueurs de marque sur le fond de page. */
 /** Le fond de repli : une encre de carte (refonte de nov. 2026 — plus de lavis au dégradé de marque). */
@@ -145,14 +131,10 @@ export function HeroBackdropLayer({ imageKey: wantedKey, url: wantedUrl, onFailu
             draggable={false}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { opacity: CROSSFADE } }}
-            transition={{
-              // `easeOut` est PRÉSERVÉE : `cadence` quantifie le temps avant
-              // d'appliquer la courbe, jamais la valeur après. Le fondu garde
-              // donc exactement sa trajectoire et sa durée. La première image
-              // de la bannière, elle, paraît en un temps d'affiche.
-              opacity: entry.isEntry ? ENTRY_FADE : CROSSFADE,
-            }}
+            exit={CROSSFADE_EXIT}
+            // La première image de la bannière paraît en un temps d'affiche ; les suivantes fondent
+            // sur l'image quittée, restée pleine dessous.
+            transition={{ opacity: entry.isEntry ? ENTRY_FADE : CROSSFADE }}
             className={`absolute inset-0 h-full w-full object-cover will-change-transform ${ZOOM_CLASS}`}
             style={{ display: broken ? "none" : undefined }}
             onLoad={() => markImageSeen(url)}

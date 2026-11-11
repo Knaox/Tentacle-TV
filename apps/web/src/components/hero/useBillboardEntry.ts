@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { cubicBezier } from "framer-motion";
-import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { isImageReady } from "../../lib/seenImages";
 
 /**
@@ -22,7 +20,28 @@ import { isImageReady } from "../../lib/seenImages";
  */
 export const ENTRY_FADE_S = 0.24;
 /** `easeOut` explicite, quantifié comme le fondu enchaîné (cf. `cadence`). */
-export const ENTRY_FADE = { duration: ENTRY_FADE_S, ease: cadence(AMBIENT_HZ, ENTRY_FADE_S, cubicBezier(0, 0, 0.58, 1)) };
+export const ENTRY_FADE = { duration: ENTRY_FADE_S, ease: "easeOut" as const };
+
+/**
+ * Le FONDU ENCHAÎNÉ d'une diapositive à la suivante — bannière de l'accueil, celle de « Pour
+ * vous », et leur halo.
+ *
+ * UNE seule rampe, continue (11/11, Damien : « un scintillement léger, pendant et à la fin de
+ * l'animation ») :
+ *  - la NOUVELLE image fond par-dessus l'ancienne, sur la courbe native du navigateur — donc sur
+ *    le compositeur, à la fréquence de l'écran. Elle passait par `cadence` : trente-six marches
+ *    d'opacité, calculées en JavaScript ;
+ *  - l'ANCIENNE reste pleine dessous le temps du fondu, puis s'en va d'un coup, cachée par la
+ *    nouvelle devenue opaque. Elle fondait en même temps (1 → 0) : deux rampes à marches, qui ne
+ *    tombaient pas ensemble — la somme des deux images oscillait d'une image d'écran à l'autre —
+ *    et, au milieu, un creux où le fond transparaissait.
+ * Le zoom, lui, reste à trente paliers par seconde (`theme/heroMotion.css`) : il dure huit
+ * secondes, c'est là que le bridage compte.
+ */
+export const CROSSFADE_S = 1.2;
+export const CROSSFADE = { duration: CROSSFADE_S, ease: "easeOut" as const };
+/** La sortie de l'image quittée : pleine pendant le fondu de la suivante, retirée juste après. */
+export const CROSSFADE_EXIT = { opacity: 0, transition: { opacity: { delay: CROSSFADE_S + 0.05, duration: 0.01 } } };
 
 export interface BillboardEntry {
   /** À passer à `AnimatePresence initial` : faux, l'image du montage est posée d'emblée. */
