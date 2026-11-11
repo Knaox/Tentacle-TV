@@ -43,9 +43,11 @@
   /* La barre de navigation garde la capsule et les tailles d'avant ; sa peau :
    * `windowGlassNav.css`. */
 
-  /* Les pastilles de compte (cloche, Watch Together) : l'accent UNI, sans
-   * halo — la marque en touche, jamais un dégradé. */
-  --lg-chrome-badge-bg: var(--brand);
+  /* Les pastilles de compte (cloche, Watch Together) : la teinte franche UNIE, sans halo — celle
+   * d'hors verre (`--accent`, encre `--on-accent` : 8,4:1 en sombre, 6,3:1 en clair). Le violet de
+   * marque (`--brand`, #8B5CF6 en sombre) est une zone morte : ni l'encre sombre (4,3:1) ni le
+   * blanc (4,2:1) n'y tiennent un chiffre de 10 px. */
+  --lg-chrome-badge-bg: var(--accent);
   --lg-chrome-badge-shadow: none;
 
   /* La barre latérale garde sa boîte d'avant ; sa PLAQUE de verre est peinte
