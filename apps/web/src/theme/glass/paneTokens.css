@@ -20,6 +20,9 @@
  *  - action       --lg-pane-prominent-{fill|shadow} (la marque dans le verre)
  *  - épais        --lg-pane-thick-{blur|saturate|brightness|ink} (menus, feuilles,
  *                 modales, avis : tout le régime `surface`, `pane.css`)
+ *  - sur image    --lg-frost-{blur|saturate|curve|ink|glyph-secondary} : le panneau givré posé
+ *                 sur une IMAGE (`.lg-content-frosted`) — une courbe de tons dans le givre,
+ *                 recopiée de `frostedMaterial.ts`, qui prouve l'AA sur n'importe quel dessous
  *  - pastille     --lg-bead-{blur|saturate|ink|fill|border|shadow}
  *  - rangées      --lg-pane-row-hover, --lg-pane-nav-hover, --lg-pane-selected,
  *                 --lg-pane-selected-shadow
@@ -56,6 +59,13 @@
   --lg-pane-thick-brightness: 1;
   --lg-pane-thick-ink: rgba(14, 10, 20, 0.76);
 
+  /* Posé sur une image : la courbe PLAFONNE les hautes lumières du dessous (`GlassToneCurves`). */
+  --lg-frost-blur: 24px;
+  --lg-frost-saturate: 1.2;
+  --lg-frost-curve: url(#lg-frost-curve-dark);
+  --lg-frost-ink: rgba(7, 5, 12, 0.12);
+  --lg-frost-glyph-secondary: rgba(255, 255, 255, 0.82);
+
   --lg-bead-blur: 10px;
   --lg-bead-saturate: 1.5;
   --lg-bead-ink: rgba(7, 5, 12, 0.08);
@@ -89,6 +99,11 @@
     0 10px 26px -14px rgba(var(--brand-accent-rgb), 0.35);
 
   --lg-pane-thick-ink: rgba(249, 246, 250, 0.62);
+
+  /* En clair, la courbe RELÈVE les ombres du dessous : une image noire devient une nacre. */
+  --lg-frost-curve: url(#lg-frost-curve-light);
+  --lg-frost-ink: rgba(255, 255, 255, 0);
+  --lg-frost-glyph-secondary: rgba(12, 12, 18, 0.72);
 
   --lg-bead-saturate: 1.4;
   --lg-bead-ink: rgba(255, 255, 255, 0);

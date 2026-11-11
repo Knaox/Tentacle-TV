@@ -71,14 +71,25 @@
 
 /* ── 2. Posé sur une image : le panneau givré de la maquette ────────────── */
 
-/* La peau du socle (`.lg-pane`) : dégradé blanc léger sur l'encre, givre qui
- * floute et AVIVE ce qui passe dessous, bord, ombres, reflets. */
+/* La peau du socle (`.lg-pane`) : dégradé blanc léger, bord, ombres, reflets — sur un givre qui
+ * ne suppose RIEN du dessous. Le verre de la maquette est prouvé sur le fond ambiant ; sur une
+ * image quelconque, ses libellés tombaient à 3:1 (un ciel clair en thème sombre, une image noire
+ * en thème clair : le « texte illisible sur les filtres de bibliothèque »). Une COURBE DE TONS
+ * (`--lg-frost-curve`, `theme/glass/GlassToneCurves.tsx`) plafonne les hautes lumières du dessous
+ * en sombre et relève ses ombres en clair : le verre reste transparent là où l'image le permet,
+ * et tout texte tient 4,5:1 partout (`theme/glass/frostedMaterial.ts`). Les fonctions AVANT
+ * `url()`, comme pour la lentille. */
 :root[data-liquid-glass="native"] .lg-content.lg-content-frosted {
   border-color: var(--lg-pane-border);
-  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink)) !important;
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-frost-ink), var(--lg-frost-ink)) !important;
   box-shadow: var(--lg-pane-shadow);
-  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
-  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+  -webkit-backdrop-filter: blur(var(--lg-frost-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+  backdrop-filter: blur(var(--lg-frost-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+  /* Les encres faibles du thème (et la secondaire des pastilles) montent à celle que le matériau prouve. */
+  --text-secondary: var(--lg-frost-glyph-secondary);
+  --text-tertiary: var(--lg-frost-glyph-secondary);
+  --text-quaternary: var(--lg-frost-glyph-secondary);
+  --lgp-glyph-secondary: var(--lg-frost-glyph-secondary);
 }
 
 /* Son liseré en dégradé (un anneau de 1 px masqué) ; `relative` SANS
@@ -98,4 +109,16 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+}
+
+/* « Réduire la transparence », « Contraste accru » : l'aplat de la page, aucun givre ni courbe —
+ * les encres relevées plus haut y tiennent (clair sur `--surface-3`, sombre sur `--surface-2`). */
+:root[data-liquid-glass="native"][data-lg-material] .lg-content.lg-content-frosted {
+  background: var(--lg-a11y-solid) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"][data-lg-material] .lg-content.lg-content-frosted::after {
+  content: none;
 }
