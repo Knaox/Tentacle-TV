@@ -27,11 +27,6 @@ export interface DetailOrigin {
    * vol de l'affiche, cachée sous la mini-carte.
    */
   launch?: PreviewLaunch | null;
-  /**
-   * Le visuel cliqué lui-même : il se cache à l'instant où sa copie décolle de lui
-   * (`DetailOpenOverlay`), et revient si l'ouverture est abandonnée.
-   */
-  source?: HTMLElement | null;
   stamp: number;
 }
 
@@ -89,7 +84,6 @@ export function captureDetailOrigin(
     imageUrl,
     radius,
     covered,
-    source: element,
     stamp: Date.now(),
   };
 }

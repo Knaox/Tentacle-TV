@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { OPENING_LANDED_GUARD_MS, openingStep, type DetailOrigin } from "./detailTransition";
 import { DetailFlight } from "./DetailFlight";
+import { ROUTE_EXIT_LAYER } from "../routeTransition/RouteExit";
 
 export interface TargetRect {
   top: number;
@@ -39,6 +40,18 @@ const TRAVEL_WAIT_RATIO = 0.4;
 type Phase = "waiting" | "flying" | "landed";
 
 /**
+ * Le vol se tient JUSTE SOUS la page quittée, au-dessus de la fiche. À la première image, la
+ * page quittée est encore pleine : on voit exactement ce qu'on voyait — la carte, son survol,
+ * ses marqueurs. Elle s'efface ensuite d'un bloc (120 ms) et découvre l'affiche déjà en route.
+ *
+ * Posé AU-DESSUS d'elle, le visuel nu recouvrait d'un coup l'habillage de survol de la carte
+ * qu'on vient de cliquer, et il fallait cacher la carte dessous (un trou dans la page qui sort) ;
+ * parti sur l'horloge de framer, il avait en plus une image d'avance sur le fondu quand le rendu
+ * de la fiche était long (banc `bench:page-flicker` : une image « en recul » par ouverture).
+ */
+const FLIGHT_LAYER = ROUTE_EXIT_LAYER - 1;
+
+/**
  * Ouverture de la fiche média — transition d'élément partagé.
  *
  * **La fiche fond, l'affiche vole** (lot « rf2 », nov. 2026). La page d'où l'on vient reste à
@@ -53,8 +66,9 @@ type Phase = "waiting" | "flying" | "landed";
  * scintillement relevé par Damien (banc `bench:page-flicker` : 20 à 30 images parasites par
  * ouverture). Et tant que la requête n'était pas revenue, il n'avait que du noir à montrer.
  *
- * Rien n'est monté avant le départ : la carte cliquée garde ses marqueurs et son survol le temps
- * de l'attente. Sans cible (un titre sans affiche), rien ne vole. Animations réduites : rien.
+ * Rien n'est monté avant le départ, et la carte cliquée n'est jamais touchée : elle garde ses
+ * marqueurs et son survol le temps de l'attente, puis part avec sa page. Sans cible (un titre
+ * sans affiche), rien ne vole. Animations réduites : rien.
  */
 export function DetailOpenOverlay({ origin, target, revealed, onLanded, onDone }: DetailOpenOverlayProps) {
   const reduced = useReducedMotion() === true;
@@ -80,12 +94,6 @@ export function DetailOpenOverlay({ origin, target, revealed, onLanded, onDone }
     setPhase("flying");
   }, [step, target, startedAt]);
 
-  // La carte cède sa place au visuel qui décolle d'elle — dans le rendu qui le monte, jamais
-  // avant : cachée une image trop tôt, elle laissait un trou à sa place (mesuré au banc).
-  useLayoutEffect(() => {
-    if (phase === "flying") origin?.source?.style.setProperty("visibility", "hidden");
-  }, [phase, origin]);
-
   // Le calque ne garde JAMAIS le visuel en l'air : posé ou non, il se retire.
   useEffect(() => {
     if (phase !== "flying") return;
@@ -96,21 +104,13 @@ export function DetailOpenOverlay({ origin, target, revealed, onLanded, onDone }
     return () => clearTimeout(guard);
   }, [phase]);
 
-  // Une ouverture abandonnée (retour immédiat) rend sa carte à la page.
-  useEffect(() => {
-    const source = origin?.source;
-    return () => {
-      source?.style.removeProperty("visibility");
-    };
-  }, [origin]);
-
   if (!origin || reduced) return null;
   const going = flight.current;
 
   return createPortal(
     <AnimatePresence onExitComplete={() => done.current()}>
       {phase === "flying" && going && (
-        <div key={origin.stamp} className="pointer-events-none fixed inset-0 z-[60]" aria-hidden>
+        <div key={origin.stamp} className="pointer-events-none fixed inset-0" style={{ zIndex: FLIGHT_LAYER }} aria-hidden>
           <DetailFlight
             from={origin.rect}
             to={going.to}

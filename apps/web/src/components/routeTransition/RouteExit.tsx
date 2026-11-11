@@ -13,7 +13,10 @@ const PINNED = ["position", "top", "left", "width", "pointer-events", "z-index",
 
 /** Au-dessus du contenu d'une page (ses `z-10` à `z-30`), sous la barre (`z-40`). */
 export const SECTION_EXIT_LAYER = 35;
-/** Au-dessus de la coquille entière, barre et onglets compris ; sous les calques de `body`. */
+/**
+ * Au-dessus de la coquille entière, barre et onglets compris ; sous les calques de `body`. Le
+ * vol de l'affiche vers la fiche se tient juste dessous (`DetailOpenOverlay`).
+ */
 export const ROUTE_EXIT_LAYER = 55;
 
 /** Le fondu de sortie, sur le compositeur ; la minuterie le double (un onglet caché n'envoie pas `transitionend`). */
