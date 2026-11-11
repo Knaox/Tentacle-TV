@@ -20,7 +20,8 @@ export function RecoReasonText({ item, row }: RecoReasonTextProps) {
   if (!text && match === null) return null;
   return (
     <span className="line-clamp-2 text-xs text-content-tertiary">
-      {match !== null && <span className="font-semibold text-[var(--brand-accent)]">{t("spotlightMatch", { match })}</span>}
+      {/* Sur le papier, le rose de marque tombait à 4,1:1 en 12 px : sa nuance profonde en thème clair. */}
+      {match !== null && <span className="font-semibold text-[var(--brand-accent)] [[data-theme=light]_&]:text-[var(--brand-accent-dark)]">{t("spotlightMatch", { match })}</span>}
       {match !== null && text && " · "}
       {text}
     </span>

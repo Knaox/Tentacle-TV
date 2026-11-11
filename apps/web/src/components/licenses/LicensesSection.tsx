@@ -79,7 +79,7 @@ function ComponentRow({ component: c }: { component: ThirdPartyComponent }) {
       </div>
       {c.notice ? <p className="text-xs text-content-quaternary">{c.notice}</p> : null}
       {c.note ? <p className="text-xs text-content-quaternary">{c.note}</p> : null}
-      <p className="break-all text-xs text-content-disabled">{c.source}</p>
+      <p className="break-all text-xs text-content-tertiary">{c.source}</p>
     </li>
   );
 }

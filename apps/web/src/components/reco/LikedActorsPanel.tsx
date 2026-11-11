@@ -57,7 +57,7 @@ function PersonBubble({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl text-content-disabled">
+          <div className="flex h-full w-full items-center justify-center text-2xl text-content-quaternary">
             {person.name.charAt(0)}
           </div>
         )}

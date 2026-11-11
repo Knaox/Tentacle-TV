@@ -327,7 +327,7 @@ function PinnableRow({
         className={`mr-2 flex-shrink-0 rounded-lg p-2 transition ${
           isPinned
             ? "text-[var(--brand)] hover:bg-[rgba(var(--brand-rgb),0.1)]"
-            : "text-content-disabled hover:bg-fill-subtle hover:text-content-tertiary"
+            : "text-content-quaternary hover:bg-fill-subtle hover:text-content-secondary"
         }`}
         title={isPinned ? t("nav:unpin") : t("nav:pin")}
       >

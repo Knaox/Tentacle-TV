@@ -52,8 +52,10 @@ export function StarRating({
 
   const displayed = hovered ?? value ?? 0;
   const starClass = SIZE_CLASS[size];
+  // L'étoile VIDE est l'affordance du contrôle : elle tient 3:1 sur la page dans les deux thèmes.
+  // (`text-content-tertiary opacity-40` la laissait à 1,8:1 sur le papier, 1,7:1 sur l'encre.)
   const outlineClass =
-    tone === "onMedia" ? "text-on-media-secondary" : "text-content-tertiary opacity-40";
+    tone === "onMedia" ? "text-on-media-secondary" : "text-content-quaternary";
   // La note posée : un état ACTIF, à la teinte franche (celle du sombre sur une image).
   const filledClass = tone === "onMedia" ? ON_MEDIA_ACCENT_TEXT : "text-accent";
   // Filtre STATIQUE (jamais animé) sur le conteneur de l'étoile : un seul

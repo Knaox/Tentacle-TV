@@ -176,7 +176,7 @@ function ExtraTile({
             onError={() => (youtubeId ? setUnavailable(true) : setBroken(true))}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-content-disabled">
+          <div className="flex h-full w-full items-center justify-center text-content-quaternary">
             <PlayIcon />
           </div>
         )}

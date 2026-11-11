@@ -34,7 +34,7 @@ export const PeopleRail = memo(function PeopleRail({ people, ariaLabel }: { peop
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-content-disabled">
+                <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-content-quaternary">
                   {p.name.charAt(0)}
                 </span>
               )}
