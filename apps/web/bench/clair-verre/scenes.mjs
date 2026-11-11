@@ -126,6 +126,8 @@ export async function buildScenes(page) {
     ...FILTER_MENUS.map((label) => ({ name: `filtre-${slug(label)}`, route: library, steps: click(`section[aria-label] button[aria-haspopup="true"]:has-text("${label}")`), after: escape })),
     { name: "filtre-tri", route: library, steps: click('section[aria-label] button[aria-haspopup="true"] >> nth=0'), after: escape },
     { name: "filtres-poses", route: library, steps: applyFilters, screens: 2 },
+    // Le survol d'une carte : le plateau d'actions et ses marqueurs, posés sur l'affiche.
+    { name: "survol-carte", route: library, steps: async (p) => { await p.locator("[data-card-rating]").nth(2).hover({ timeout: 5000 }); await p.waitForTimeout(1200); }, after: async (p) => { await p.mouse.move(2, 2); } },
     { name: "bibliotheque-vide", route: library, steps: async (p) => { await p.locator('section[aria-label] input').first().fill("zzzzqqqq"); await p.waitForTimeout(2500); } },
     // Ce qu'un compte sans droits ne voit pas, ou ce qui ne se provoque pas : les labos du paquet de développement.
     ...LAB_SETTINGS.map((id) => ({ name: `labo-${id}`, route: `/dev/reglages?vue=${id}`, screens: 3 })),

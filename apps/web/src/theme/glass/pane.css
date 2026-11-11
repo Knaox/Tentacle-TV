@@ -123,6 +123,25 @@
   backdrop-filter: none;
 }
 
+/* ── Un verre au TON posé flotte sur du contenu quelconque ─────────────────
+ * `data-lg-tone` (forcé ou mesuré) : le bouton « Retour » et les ronds d'une fiche, les flèches
+ * d'une rangée, le plateau d'une carte, les actions d'une bannière — tous posés sur une IMAGE. Le
+ * verre de la maquette n'y garantit rien (« Retour » à 2,6:1 sur le haut clair d'une image de
+ * fiche, mesuré dans la coquille) : il prend le givre « sur image » — la courbe de tons de SON ton
+ * (`--lg-frost-*`, `paneTokens.css` ; preuve : `frostedMaterial.ts`). Sans ton posé, un verre
+ * repose sur le fond ambiant et garde la recette d'au-dessus. Octave fixe le matériau de ses
+ * verres (`shellGlass.css`) : il n'est pas concerné. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .lg-pane[data-lg-tone]:not(.lg-pane-flat, .lg-pane-thick, .lg-pane-prominent, .octave-night, [data-lg-level="prominent"], [data-lg-scale="surface"]) {
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-frost-ink), var(--lg-frost-ink));
+  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+}
+:root[data-liquid-glass="native"]:not([data-lg-material]) .lg-bead[data-lg-tone]:not(.octave-night, .lg-pane *, [data-lg-scale="surface"]) {
+  background: linear-gradient(var(--lg-bead-fill), var(--lg-bead-fill)), linear-gradient(var(--lg-frost-ink), var(--lg-frost-ink));
+  -webkit-backdrop-filter: blur(var(--lg-bead-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+  backdrop-filter: blur(var(--lg-bead-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+}
+
 /* ── Survol d'un verre interactif : un voile clair, rien d'animé ─────────── */
 :root[data-liquid-glass="native"] :is(.lg-pane:not(.lg-pane-prominent):not([data-lg-level="prominent"]), .lg-bead):is([data-lg-interactive], button, a[href]):hover {
   background-image: linear-gradient(var(--lg-pane-row-hover), var(--lg-pane-row-hover)), var(--lg-pane-sheen), var(--lg-pane-fill),
