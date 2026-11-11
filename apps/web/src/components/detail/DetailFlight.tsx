@@ -55,7 +55,10 @@ export function sameAspect(from: FlightRect, to: FlightRect): boolean {
  * seul à recadrer sans déformer.
  */
 export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: DetailFlightProps) {
-  const image = <img src={imageUrl} alt="" draggable={false} className="h-full w-full object-cover" />;
+  // `decoding="sync"` : l'image (celle de la carte, déjà en mémoire) est décodée AVANT la peinture
+  // qui monte le visuel. Décodée après, elle laissait une image de trou à la place de la carte,
+  // que la même image vient de cacher (banc `bench:page-flicker`, CEF à 120 Hz : une image).
+  const image = <img src={imageUrl} alt="" draggable={false} decoding="sync" className="h-full w-full object-cover" />;
   const transition = { duration: travelS, ease: easeOut };
 
   if (!sameAspect(from, to)) {
