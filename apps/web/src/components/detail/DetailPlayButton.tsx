@@ -102,7 +102,9 @@ export function DetailPlayPill({ label, remaining, progress, ariaLabel, onClick 
       <ProgressRing progress={progress} />
       <span className="relative flex flex-col leading-tight">
         <span className="whitespace-nowrap text-base font-semibold">{label}</span>
-        {remaining && <span className="mt-0.5 whitespace-nowrap text-xs font-medium tabular-nums opacity-80">{remaining}</span>}
+        {/* Blanc plein : à 80 %, « Reste 3 min » tombait à 3,95:1 sur le dégradé du thème sombre — sa taille et sa
+            graisse le tiennent déjà sous le libellé. */}
+        {remaining && <span className="mt-0.5 whitespace-nowrap text-xs font-medium tabular-nums">{remaining}</span>}
       </span>
     </PressableGlass>
   );
