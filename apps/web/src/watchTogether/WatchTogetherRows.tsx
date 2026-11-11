@@ -2,16 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { wtMemberStatus, wtMemberStatusLabelKey, type WtInviteDto, type WtMemberDto, type WtMemberStatus } from "@tentacle-tv/shared";
 import { getBackendBase } from "../lib/backendBase";
+import { wtAvatarColor } from "./wtAvatarColors";
 
 /** Watch Together — briques partagées : avatar, ligne membre, ligne invitation. */
-
-const RING_COLORS = ["#8b5cf6", "#ec4899", "#6366f1", "#a855f7", "#f472b6", "#7c3aed"];
-
-function colorFor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  return RING_COLORS[Math.abs(hash) % RING_COLORS.length];
-}
 
 /**
  * L'initiale d'un nom : sa première LETTRE ou son premier chiffre, en majuscule ; à défaut (un
@@ -63,7 +56,7 @@ export function WtAvatar({
         width: size,
         height: size,
         fontSize: size * 0.42,
-        background: showImage ? "rgba(255,255,255,0.08)" : colorFor(name),
+        background: showImage ? "rgba(255,255,255,0.08)" : wtAvatarColor(name),
         boxShadow: `0 0 0 2px ${ring}`,
         opacity: dimmed ? 0.45 : 1,
       }}
