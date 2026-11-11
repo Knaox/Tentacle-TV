@@ -11,6 +11,7 @@ import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { PlaybackProblemScreen } from "../components/problems/PlaybackProblemScreen";
 import { useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
 import { useWatchSession } from "../hooks/useWatchSession";
+import { useFallbackHandover } from "../lib/fallbackPlayer";
 import { useSupersededSessionKill } from "../hooks/useSupersededSessionKill";
 import { useWatchStopCleanup } from "../hooks/useWatchStopCleanup";
 import { nextEpisodeCard } from "../hooks/watchSessionMedia";
@@ -43,10 +44,12 @@ export function WatchWeb() {
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
     pgsSubtitleUrl, pgsClientOk, reportPgsFailure, restartPlayback, releaseEncoding,
     audioTracks, subtitleTracks,
-    jellyfinDuration, startPositionSeconds, posterUrl,
+    jellyfinDuration, startPositionSeconds: resumeSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, getPositionTicks, itemError, negotiationError,
   } = useWatchSession({ isDesktop: false });
+  // Bureau : mpv vient de lâcher en pleine lecture — on reprend à SA position, pas à celle de la fiche.
+  const startPositionSeconds = useFallbackHandover(itemId) ?? resumeSeconds;
 
   // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
   // par le matériel répondent oui, sans que ce fichier ait à les connaître.

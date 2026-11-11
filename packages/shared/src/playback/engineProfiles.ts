@@ -35,7 +35,17 @@ function profileContainer(engine: EngineCapabilities, sourceAudioCodec?: string 
  */
 export function engineTranscodingProfiles(
   engine: EngineCapabilities,
-  options: { minSegments?: number; breakOnNonKeyFrames?: boolean; sourceAudioCodec?: string | null } = {},
+  options: {
+    minSegments?: number;
+    breakOnNonKeyFrames?: boolean;
+    sourceAudioCodec?: string | null;
+    /**
+     * Faux : ni le repli H.264 + AAC en TS, ni l'AAC du profil audio — pour un
+     * moteur qui ne les décode pas (`openWebEngine` : le lecteur web du bureau
+     * CEF). Le profil audio sort alors dans le codec de conversion du moteur.
+     */
+    universalFallback?: boolean;
+  } = {},
 ): TranscodingProfile[] {
   const container = profileContainer(engine, options.sourceAudioCodec);
   const segments: EngineCapabilities = { ...engine, segmentContainer: container };
@@ -55,10 +65,12 @@ export function engineTranscodingProfiles(
     MaxAudioChannels: String(engine.maxAudioChannels),
   };
   const profiles: TranscodingProfile[] = [primary];
+  const universal = options.universalFallback !== false;
   // Le repli universel, si le profil du moteur n'en est pas déjà un.
-  if (primary.Container !== "ts" || primary.VideoCodec !== "h264" || primary.AudioCodec !== "aac") {
+  if (universal && (primary.Container !== "ts" || primary.VideoCodec !== "h264" || primary.AudioCodec !== "aac")) {
     profiles.push({ ...common, Container: "ts", VideoCodec: "h264", AudioCodec: "aac", MaxAudioChannels: "6" });
   }
-  profiles.push({ Container: "mp4", Type: "Audio", AudioCodec: "aac", Protocol: "hls", Context: "Streaming", MaxAudioChannels: "6" });
+  const audioOnly = universal ? "aac" : segmentAudioCodecs(segments)[0];
+  profiles.push({ Container: "mp4", Type: "Audio", AudioCodec: audioOnly, Protocol: "hls", Context: "Streaming", MaxAudioChannels: "6" });
   return profiles;
 }

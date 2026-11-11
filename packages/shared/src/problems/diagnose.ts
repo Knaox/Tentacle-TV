@@ -37,6 +37,8 @@ async function refusalOf(response: Response): Promise<StreamProbe["refusal"]> {
 /** Faut-il interroger le flux ? Seulement quand le moteur n'a rien dit de décisif. */
 export function shouldProbeStream(raw: RawProblem): boolean {
   if (raw.local) return false;
+  // Le moteur lui-même est en panne : le flux n'a rien à en dire, et l'attendre retarderait le lecteur de secours.
+  if (raw.marker === "engineFailed") return false;
   // Un 403 du flux : la sonde lit son corps, qui dit si ce sont les droits de lecture du compte.
   if (raw.status === 403 && !raw.refusal) return true;
   if (raw.status !== undefined && raw.status > 0) return false;

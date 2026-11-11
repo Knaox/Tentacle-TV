@@ -75,6 +75,16 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
   const char* muteEnv = std::getenv("TENTACLE_MUTE");  // ≠ vide et ≠ "0", comme sound_policy.h
   const bool muted = cl->HasSwitch("mute") || (muteEnv && *muteEnv && std::string(muteEnv) != "0");
   if (processType.empty() && muted) cl->AppendSwitch("mute-audio");
+  // Un <video> de la page joue sans geste préalable, comme dans Electron (son défaut :
+  // « no-user-gesture-required ») : l'aperçu d'une bande-annonce part au survol, avec son son,
+  // même si rien n'a encore été cliqué depuis le lancement. Le défaut de Chromium
+  // (« document-user-activation-required ») ne permettait que la lecture muette, puis mettait
+  // la vidéo en PAUSE au premier pas du fondu sonore — aperçu figé sur sa première image
+  // (mesuré le 11/11/2026, CEF 156, macOS). La page sait aussi repartir en muet
+  // (apps/web/src/trailerPreview/previewPlayback.ts) : ceci lui rend le son.
+  if (processType.empty() && !cl->HasSwitch("autoplay-policy")) {
+    cl->AppendSwitchWithValue("autoplay-policy", "no-user-gesture-required");
+  }
 }
 
 void BrowserApp::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) {

@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { declareTrailerDecodes } from "@tentacle-tv/api-client";
+import { declareTrailerDecodes, useServerCapability } from "@tentacle-tv/api-client";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useFormFactor } from "../mirror/useFormFactor";
 import { probePreviewDecodes } from "./previewDecode";
-import { setTrailerPreviewDecodes, setTrailerPreviewHostState } from "./previewEnvironment";
+import { setTrailerPreviewDecodes, setTrailerPreviewHostState, setTrailerPreviewServerOpenCodecs } from "./previewEnvironment";
 import { usePreviewWarm } from "./usePreviewWarm";
 
 // Ce que le lecteur de ce navigateur décode, déclaré UNE fois, au chargement — avant le premier
@@ -33,6 +33,12 @@ export function TrailerPreviewBinding(): null {
   useEffect(() => {
     setTrailerPreviewHostState({ offline, mirror });
   }, [offline, mirror]);
+  // Un lecteur sans H.264 (bureau CEF) n'a d'aperçu que face à un serveur qui sert le VP9 et l'Opus :
+  // le blocage `codec` le dit à TOUT ce qui montre un aperçu, extensions comprises.
+  const openCodecs = useServerCapability("trailers.openCodecs");
+  useEffect(() => {
+    setTrailerPreviewServerOpenCodecs(openCodecs);
+  }, [openCodecs]);
   usePreviewWarm();
   return null;
 }

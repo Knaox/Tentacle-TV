@@ -11,6 +11,7 @@
 //   mpv_destroy     {}                            → null
 //   mpv://property-change { name, data, id, at }  (time-pos / audio-pts à 8 Hz au plus)
 //   mpv://event     { event, reason?, error? }
+//   mpv_debug_fail { mode }                      → { mode, fired }   (pannes provoquées : mpv_fault.h)
 #pragma once
 
 #include <chrono>
@@ -19,6 +20,9 @@
 #include <memory>
 #include <string>
 
+#include <vector>
+
+#include "mpv_fault.h"
 #include "ports.h"
 #include "registry.h"
 
@@ -31,7 +35,8 @@ class VideoChannels : public PlayerListener {
   // l'étranglement part aussi PAR LE TEMPS, comme la pompe d'Electron (`mpvDrain.ts`).
   using Defer = std::function<void(int ms, std::function<void()> task)>;
 
-  VideoChannels(Registry& registry, PlayerPort& player, Clock clock = {}, Defer defer = {});
+  /// `fault` : la panne provoquée au lancement (`mpvFaultFromEnv()`), rien par défaut.
+  VideoChannels(Registry& registry, PlayerPort& player, Clock clock = {}, Defer defer = {}, MpvFault fault = MpvFault::Off);
   ~VideoChannels() override;
 
   /// Appelé quand une lecture vidéo démarre (`mpv_init`) — octave y met la musique en pause.
@@ -52,6 +57,9 @@ class VideoChannels : public PlayerListener {
   void command(const Json& payload, Reply reply);
   void setProperty(const Json& payload, Reply reply);
   void getProperty(const Json& payload, Reply reply);
+  void debugFault(const Json& payload, Reply reply);
+  bool failPlayback();
+  void releaseStalled();
   void flushHeld();
   void flushDue();
   void scheduleFlush(double delayMs);
@@ -66,6 +74,9 @@ class VideoChannels : public PlayerListener {
   std::map<std::string, double> lastEmitted_;   // étranglement par propriété
   std::map<std::string, Json> held_;            // dernière valeur retenue, pas encore partie
   Defer defer_;
+  MpvFault fault_ = MpvFault::Off;      // panne provoquée en cours (mpv_fault.h)
+  bool fatalArmed_ = false;             // `fatal` au lancement : tire après le départ de la lecture
+  std::vector<Reply> stalled_;          // `stall` : les `mpv_init` laissés sans réponse
   bool flushScheduled_ = false;
   std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
 };

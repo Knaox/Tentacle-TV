@@ -17,6 +17,8 @@ describe("diagnostic d'un échec de lecture", () => {
     expect(shouldProbeStream({ kind: "decode" })).toBe(false);
     expect(shouldProbeStream({ status: 404 })).toBe(false);
     expect(shouldProbeStream({ local: true })).toBe(false);
+    // Le moteur en panne : le flux n'a rien à en dire (et l'attendre retarde le lecteur de secours).
+    expect(shouldProbeStream({ marker: "engineFailed" })).toBe(false);
   });
 
   it("demande un seul octet, et rend le statut, la réponse ou la panne de transport", async () => {

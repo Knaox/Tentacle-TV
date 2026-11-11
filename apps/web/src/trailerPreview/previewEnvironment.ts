@@ -16,10 +16,12 @@ import { trailerPreviewsFlag } from "./previewSettings";
  *   - `reducedData` : le système demande d'économiser les données ;
  *   - `dataSaver` : l'économie de données de Tentacle est active ;
  *   - `codec` : le lecteur de ce navigateur ne décode AUCUN flux que le relais
- *     sait servir (ni H.264 + AAC, ni VP9 + Opus — `previewDecode.ts`), ou
- *     vient de refuser les codecs d'un flux en pleine lecture : la cause est
- *     l'appareil, jamais le titre — plus aucun aperçu de la session, et aucun
- *     titre retenu « en échec ».
+ *     sait servir (ni H.264 + AAC, ni VP9 + Opus — `previewDecode.ts`), ou ne
+ *     décode que le VP9 et l'Opus face à un serveur qui ne les sert pas
+ *     (`trailers.openCodecs`), ou vient de refuser les codecs d'un flux en
+ *     pleine lecture : la cause est l'appareil, jamais le titre — plus aucun
+ *     aperçu, et aucun titre retenu « en échec ». Les extensions le lisent
+ *     aussi (`pluginTrailerPreview.ts`) : elles ne demandent rien non plus.
  *
  * Ni « Réduire les animations » (l'aperçu reste, sa mini-carte s'anime moins),
  * ni la capacité du serveur et le PiP (lus par le crochet de chaque carte).
@@ -39,6 +41,8 @@ let host: TrailerPreviewHostState = { offline: false, mirror: false };
 /** Ce que le lecteur décode (`null` : rien à dire) et un refus de codecs constaté en lecture. */
 let decodes: readonly TrailerCodec[] | null = null;
 let codecRefused = false;
+/** Le serveur sert-il le flux libre (`trailers.openCodecs`) ? Vrai tant que la liaison n'a rien dit. */
+let serverOpenCodecs = true;
 let block: TrailerPreviewBlock | null = null;
 const listeners = new Set<() => void>();
 let detach: (() => void) | null = null;
@@ -56,8 +60,8 @@ function compute(): TrailerPreviewBlock | null {
   if (!matches(FINE_POINTER_QUERY, true)) return "pointer";
   if (matches(REDUCED_DATA_QUERY, false)) return "reducedData";
   if (isDataSaverActive()) return "dataSaver";
-  // Même le serveur le plus à jour (flux libre compris) n'aurait rien que ce lecteur décode.
-  if (codecRefused || trailerDeliveryFor(decodes, { openCodecs: true }) === null) return "codec";
+  // Rien que ce lecteur décode ET que ce serveur sache servir (le flux libre : `trailers.openCodecs`).
+  if (codecRefused || trailerDeliveryFor(decodes, { openCodecs: serverOpenCodecs }) === null) return "codec";
   return null;
 }
 
@@ -118,6 +122,13 @@ export function setTrailerPreviewHostState(next: TrailerPreviewHostState): void 
 export function setTrailerPreviewDecodes(next: readonly TrailerCodec[] | null): void {
   decodes = next;
   codecRefused = false;
+  refresh();
+}
+
+/** Ce que le serveur déclare (`trailers.openCodecs`), poussé par la liaison dès que sa configuration répond. */
+export function setTrailerPreviewServerOpenCodecs(next: boolean): void {
+  if (next === serverOpenCodecs) return;
+  serverOpenCodecs = next;
   refresh();
 }
 

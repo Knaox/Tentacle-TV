@@ -53,9 +53,10 @@ describe("aperçu › la reprise au retour sur la carte", () => {
     const hls = instances[0];
     hls.fire(EVENTS.MANIFEST_PARSED, LEVELS);
     expect(hls.calls).toContain("startLoad:37");
-    // Vidéo courte ou pas : une reprise ne retombe jamais au début.
-    hls.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 20, fragments: [{ duration: 5.48 }] } });
+    // Vidéo courte ou pas : une reprise ne retombe jamais au début, et ne se recale pas au départ décalé.
+    hls.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 138, fragments: [{ duration: 5.48 }] } });
     expect(hls.calls).not.toContain("stopLoad");
+    expect(hls.calls.filter((call) => call.startsWith("startLoad"))).toEqual(["startLoad:37"]);
   });
 
   it("un autre jeton, la même vidéo : reprise ; une autre vidéo : départ décalé ordinaire", async () => {

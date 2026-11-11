@@ -227,7 +227,8 @@ export function attachPreviewSource(
         if (cap >= 0) instance.autoLevelCapping = cap;
         const start = cap >= 0 ? cap : topLevel(data.levels);
         if (start >= 0) instance.startLevel = start;
-        instance.startLoad(resumeAt ?? TRAILER_PREVIEW_TIMING.startOffsetS);
+        // Le chargement part du premier segment — celui que le serveur a lu d'avance —, ou de la reprise.
+        instance.startLoad(resumeAt ?? 0);
         // La boîte change (fenêtre redimensionnée) : le plafond la suit.
         if (cap >= 0 && typeof ResizeObserver === "function") {
           resizeWatch = new ResizeObserver(() => {
@@ -236,17 +237,20 @@ export function attachPreviewSource(
           resizeWatch.observe(video);
         }
       });
-      // La liste de départ dit la durée et le premier segment : départ à 0 si le
-      // décalage ne tient pas (cf. `keepsStartOffset`), avant le moindre ajout.
-      // Une reprise garde sa position.
+      // La liste de départ dit la durée et le premier segment : si le départ décalé y tient
+      // (cf. `keepsStartOffset`), la LECTURE commence là — dans ce même segment, rien n'est
+      // rechargé ; sinon elle part de 0. Une reprise garde sa position.
+      //
+      // ⚠️ Jamais `stopLoad()` puis `startLoad()` ici. On chargeait depuis le décalage, pour
+      // repartir de 0 quand il ne tenait pas : avec une piste audio SÉPARÉE (le flux VP9 + Opus
+      // du bureau CEF), hls.js 1.7 n'en revenait pas — trois chargements abandonnés, plus un
+      // seul fragment vidéo, l'aperçu jamais montré. Mesuré le 11/11/2026 : toute
+      // bande-annonce dont le premier segment dure moins de 4,5 s (3,04 s sur l'instance réelle).
       let startChecked = resumeAt !== null;
       instance.on(HlsCtor.Events.LEVEL_LOADED, (_event, data) => {
         if (startChecked) return;
         startChecked = true;
-        if (!keepsStartOffset(data.details)) {
-          instance.stopLoad();
-          instance.startLoad(0);
-        }
+        if (keepsStartOffset(data.details)) video.currentTime = TRAILER_PREVIEW_TIMING.startOffsetS;
       });
       // Le niveau PRINCIPAL (la vidéo) : un fragment audio seul ne dit pas qu'une image viendra.
       instance.on(HlsCtor.Events.FRAG_LOADED, (_event, data) => {

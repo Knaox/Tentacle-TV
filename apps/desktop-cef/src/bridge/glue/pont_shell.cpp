@@ -94,7 +94,8 @@ void install(AppContext& ctx) {
   state->player = std::make_unique<bridge::MpvPlayerPort>(ctx.window, ctx.nativeWindow, ctx.compositor, ctx.fakeVideo);
   state->video = std::make_unique<bridge::VideoChannels>(
       state->registry, *state->player, bridge::VideoChannels::Clock{},
-      [](int ms, std::function<void()> task) { postToMainDelayed(std::move(task), ms); });
+      [](int ms, std::function<void()> task) { postToMainDelayed(std::move(task), ms); },
+      bridge::mpvFaultFromEnv());  // panne provoquée au lancement (TENTACLE_MPV_FAIL, mpv_fault.h)
   // Le préchauffage du lecteur (Electron : `videoPrewarm.ts`) — la commande n'existe que là où
   // le lecteur sait préchauffer ; jamais sur batterie, jamais à travers une veille.
   state->prewarm = std::make_unique<bridge::VideoPrewarm>(

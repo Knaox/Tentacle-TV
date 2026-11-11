@@ -13,7 +13,16 @@ function fakeVideo(play: (video: { muted: boolean }) => Promise<void>) {
   const video = {
     muted: false,
     volume: 1,
-    play: vi.fn(() => play(video)),
+    paused: true,
+    ended: false,
+    // Comme l'élément réel : `paused` tombe à l'appel, et revient si la lecture est refusée.
+    play: vi.fn(() => {
+      video.paused = false;
+      return play(video).catch((error: unknown) => {
+        video.paused = true;
+        throw error;
+      });
+    }),
     pause: vi.fn(),
     addEventListener: (type: string, listener: Listener) => {
       if (!listeners.has(type)) listeners.set(type, new Set());
@@ -97,6 +106,81 @@ describe("startPreviewPlayback", () => {
     reject(named("NotSupportedError"));
     await flush();
     expect(lateCallbacks.onError).not.toHaveBeenCalled();
+  });
+});
+
+describe("startPreviewPlayback — le son refusé APRÈS le départ (Chromium, volume monté sans geste)", () => {
+  /** Le navigateur arrête la lecture qu'il avait permise : `paused` revient, l'évènement suit. */
+  const browserPauses = (video: ReturnType<typeof fakeVideo>) => {
+    video.paused = true;
+    video.emit("pause");
+  };
+
+  it("lecture permise au volume nul, puis mise en pause par le navigateur : elle repart en muet, sans erreur", async () => {
+    const video = fakeVideo(async () => undefined);
+    const callbacks = { onSoundBlocked: vi.fn(), onError: vi.fn() };
+    startPreviewPlayback(video as never, true, callbacks);
+    await flush();
+    expect(video.muted).toBe(false);
+    browserPauses(video);
+    await flush();
+    expect(video.muted).toBe(true);
+    expect(video.paused).toBe(false);
+    expect(video.play).toHaveBeenCalledTimes(2);
+    expect(callbacks.onSoundBlocked).toHaveBeenCalledTimes(1);
+    expect(callbacks.onError).not.toHaveBeenCalled();
+  });
+
+  it("une seule fois : en muet, une pause de plus ne relance rien", async () => {
+    const video = fakeVideo(async () => undefined);
+    const callbacks = { onSoundBlocked: vi.fn(), onError: vi.fn() };
+    startPreviewPlayback(video as never, true, callbacks);
+    await flush();
+    browserPauses(video);
+    await flush();
+    browserPauses(video);
+    await flush();
+    expect(video.play).toHaveBeenCalledTimes(2);
+    expect(callbacks.onSoundBlocked).toHaveBeenCalledTimes(1);
+  });
+
+  it("lancée en muet : une pause n'est pas un refus du son", async () => {
+    const video = fakeVideo(async () => undefined);
+    const callbacks = { onSoundBlocked: vi.fn(), onError: vi.fn() };
+    startPreviewPlayback(video as never, false, callbacks);
+    await flush();
+    browserPauses(video);
+    await flush();
+    expect(video.play).toHaveBeenCalledTimes(1);
+    expect(callbacks.onSoundBlocked).not.toHaveBeenCalled();
+  });
+
+  it("l'écho d'une pause d'avant (la lecture a repris depuis) et la fin de la vidéo ne coupent pas le son", async () => {
+    const video = fakeVideo(async () => undefined);
+    const callbacks = { onSoundBlocked: vi.fn(), onError: vi.fn() };
+    startPreviewPlayback(video as never, true, callbacks);
+    await flush();
+    video.emit("pause"); // `paused` est faux : la vidéo joue
+    video.paused = true;
+    video.ended = true;
+    video.emit("pause");
+    await flush();
+    expect(video.muted).toBe(false);
+    expect(video.play).toHaveBeenCalledTimes(1);
+    expect(callbacks.onSoundBlocked).not.toHaveBeenCalled();
+  });
+
+  it("annulée : la pause que demande la mini-carte n'est plus écoutée", async () => {
+    const video = fakeVideo(async () => undefined);
+    const callbacks = { onSoundBlocked: vi.fn(), onError: vi.fn() };
+    const cancel = startPreviewPlayback(video as never, true, callbacks);
+    await flush();
+    cancel();
+    expect(video.listenerCount()).toBe(0);
+    browserPauses(video);
+    await flush();
+    expect(video.play).toHaveBeenCalledTimes(1);
+    expect(callbacks.onSoundBlocked).not.toHaveBeenCalled();
   });
 });
 

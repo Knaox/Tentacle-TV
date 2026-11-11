@@ -63,6 +63,8 @@ export const canPlayH264 = () => supportsVideoCodec("avc1.640029");
 export const canPlayHevc = () => supportsVideoCodec("hev1.1.6.L150.B0") || supportsVideoCodec("hvc1.1.6.L150.B0");
 export const canPlayVp9  = () => supportsVideoCodec("vp09.00.51.08", "webm") || supportsVideoCodec("vp09.00.51.08");
 export const canPlayAv1  = () => supportsVideoCodec("av01.0.15M.10");
+/** AV1 Main en 8 bits — `canPlayAv1` sonde le 10 bits, la condition du HDR. */
+export const canPlayAv1Sdr = () => supportsVideoCodec("av01.0.08M.08");
 export const canPlayAac  = () => supportsAudioCodec("mp4a.40.2");
 export const canPlayMp3  = () => supportsAudioCodec("mp4a.69") || supportsAudioCodec("mp4a.6B");
 export const canPlayAc3  = () => supportsAudioCodec("ac-3");

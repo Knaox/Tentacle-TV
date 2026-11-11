@@ -1,16 +1,17 @@
-import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
+import { openWebEngine, type DeviceProfile, type DirectPlayProfile, type TranscodingProfile, type CodecProfile } from "@tentacle-tv/shared";
 import {
   hevcConditions, h264Conditions, MUSIC_BITRATE,
   AUDIO_PROFILE_6_CHANNELS, AUDIO_ONLY_PROFILE,
   hlsFmp4Profile, hlsTsProfile, bitmapSubtitles, TEXT_SUBTITLES, type WebProfileOptions,
 } from "./blocks";
 import {
-  canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
+  canPlayAac, canPlayAc3, canPlayAv1, canPlayAv1Sdr, canPlayContainer, canPlayEac3, canPlayFlac,
   canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, decodesWithAvFoundation, isChromium,
   nativeAac, nativeAc3, nativeAv1, nativeEac3, nativeFlac, nativeH264, nativeHevc,
   nativeMp3, nativeOpus, nativeVp9,
   supportedDynamicRanges,
 } from "./codecs";
+import { openWebProfiles } from "./openProfile";
 
 export function buildBrowserDeviceProfile(
   maxBitrate?: number,
@@ -113,17 +114,29 @@ export function buildBrowserDeviceProfile(
   // visuel. Il vaut pour les deux chemins de lecture : hls.js lit le fMP4
   // directement par MSE, et AVFoundation l'exige.
   const transcodingProfiles: TranscodingProfile[] = [];
-  if (canPlayHevc()) {
-    transcodingProfiles.push(hlsFmp4Profile("hevc,h264", audioFmp4));
+  // Un Chromium SANS codecs propriétaires (le bureau CEF, quand mpv ne lit pas) : ni H.264 ni
+  // AAC — ce lecteur déclare ce qu'il décode, la règle partagée en tire son profil (`openProfile.ts`).
+  // `null` partout ailleurs : le profil d'avant, inchangé.
+  const openEngine = openWebEngine({
+    h264: canPlayH264(), aac: canPlayAac(), av1: canPlayAv1Sdr() || canPlayAv1(), av1TenBit: canPlayAv1(),
+    opus: canPlayOpus(), flac: canPlayFlac(), mp3: canPlayMp3(),
+  });
+  const open = openEngine ? openWebProfiles(openEngine) : null;
+  if (open) {
+    transcodingProfiles.push(...open.transcoding);
+  } else {
+    if (canPlayHevc()) {
+      transcodingProfiles.push(hlsFmp4Profile("hevc,h264", audioFmp4));
+    }
+    // Repli universel : segments TS en H.264, que tout navigateur sait lire.
+    transcodingProfiles.push(hlsTsProfile("h264", audioTs));
+    transcodingProfiles.push(AUDIO_ONLY_PROFILE);
   }
-  // Repli universel : segments TS en H.264, que tout navigateur sait lire.
-  transcodingProfiles.push(hlsTsProfile("h264", audioTs));
-  transcodingProfiles.push(AUDIO_ONLY_PROFILE);
 
   // ── Codec profiles (constraints) ──
-  const codecProfiles: CodecProfile[] = [
-    { Type: "Video", Codec: "h264", Conditions: h264Conditions("51") },
-  ];
+  const codecProfiles: CodecProfile[] = open
+    ? [...open.codecs]
+    : [{ Type: "Video", Codec: "h264", Conditions: h264Conditions("51") }];
   // Dès que le HEVC est lisible par L'UN des deux chemins : ces conditions
   // gouvernent aussi bien la copie en transcodage que la lecture directe du
   // MKV (Jellyfin les évalue dans les deux cas, cf. `GetCompatibilityVideoCodec`).

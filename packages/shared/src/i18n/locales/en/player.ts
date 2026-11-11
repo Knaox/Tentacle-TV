@@ -36,7 +36,7 @@ export default {
   mpvError: "mpv error: {{error}}",
   fallbackPlayerTitle: "Backup player",
   fallbackPlayerHint:
-    "The built-in player could not start; playback continues with the web player. HDR and HEVC may be limited.",
+    "The built-in player is not responding; playback continues in the web player, right where it was. HDR and original quality may be unavailable.",
   secondsShort: "sec",
   nextEpisodeLabel: "Next episode",
   scrubConfirmHint: "OK · Play here",
