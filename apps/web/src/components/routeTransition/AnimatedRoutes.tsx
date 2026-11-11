@@ -6,6 +6,7 @@ import { usePageLocation } from "../../pictureInPicture/usePageLocation";
 import { PageEntranceContext } from "./PageEntranceContext";
 import { ROUTE_EXIT_LAYER, RouteExit } from "./RouteExit";
 import { PLAYER_GROUP, routeGroupKey } from "./routeKeys";
+import { RouteProgress } from "./RouteProgress";
 import { TransitionLevelContext, createTransitionLevel } from "./transitionLevel";
 
 /**
@@ -60,6 +61,8 @@ export function AnimatedRoutes({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
       {onPlayer && <Routes location={location}>{children}</Routes>}
+      {/* Une navigation qui attend plus qu'un instant (serveur lent) : la barre fine du haut. */}
+      <RouteProgress />
     </TransitionLevelContext.Provider>
   );
 }

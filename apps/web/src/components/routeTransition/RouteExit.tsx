@@ -3,6 +3,7 @@ import { PresenceContext, usePresence, useReducedMotion } from "framer-motion";
 import { duration } from "../../theme/motion";
 import { PageArrivalGateContext, PageRevealedContext, type PageArrivalGate } from "./pageArrival";
 import { usePagePresence } from "./pagePresence";
+import { beginRouteHold } from "./routeHold";
 import { TransitionLevelContext, type PageArrival } from "./transitionLevel";
 import { usePageSettled } from "./usePageSettled";
 import { PAGE_HOLD_DATA_MS, PAGE_HOLD_IMAGES_MS } from "./pageSettled";
@@ -158,6 +159,8 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
       return;
     }
     const release = level?.enterLeaving();
+    // Tant qu'elle attend, la navigation le dit (`RouteProgress`, si l'attente dure).
+    const endHold = beginRouteHold();
     let started = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const finish = (): void => {
@@ -169,6 +172,7 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
       const arrival = level?.arrival() ?? { ready: true, instant: false };
       if (!arrival.ready && !force) return;
       started = true;
+      endHold();
       // Les gestes ne se coupent qu'ici : tenue, la page garde ses survols — la carte qu'on
       // vient de cliquer ne se dégonfle pas sous le curseur en attendant la suivante.
       el.style.setProperty("pointer-events", "none");
@@ -184,6 +188,7 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
       unsubscribe?.();
       clearTimeout(guard);
       clearTimeout(timer);
+      endHold();
       release?.();
     };
   }, [isPresent, level, reduced, safeToRemove]);

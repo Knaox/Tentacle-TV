@@ -328,4 +328,6 @@ export default {
   featuredCarousel: "À la une",
   featuredTitles: "Titres à la une",
   slideNumber: "Titre {{index}}",
+  // La barre fine du haut, quand une page tarde à arriver (navigation qui attend).
+  pageLoading: "Chargement de la page",
 } as const;

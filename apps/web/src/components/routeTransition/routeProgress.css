@@ -1,0 +1,40 @@
+/*
+ * La barre fine du haut, quand une navigation attend (`RouteProgress`).
+ *
+ * Elle MESURE une attente : le dégradé de jauge, rien d'autre. `transform` et `opacity` seuls,
+ * sur le compositeur — elle se montre pendant que la page suivante se rend sur le fil principal.
+ * Sa course n'a pas de fin connue : elle part vite et ralentit sans jamais arriver (4 s pour
+ * neuf dixièmes de l'écran), et disparaît d'un coup quand la page se montre — l'œil est déjà
+ * sur elle. Mouvement réduit (`motion-reduce.css`) : la barre est posée d'emblée, sans course.
+ */
+.route-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 70;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  animation: route-progress-in var(--duration-hover) var(--ease-out) forwards;
+}
+
+.route-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--gauge-gradient);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  animation: route-progress-run 4s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes route-progress-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes route-progress-run {
+  to {
+    transform: scaleX(0.9);
+  }
+}
