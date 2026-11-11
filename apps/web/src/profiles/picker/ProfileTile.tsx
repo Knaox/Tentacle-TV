@@ -90,7 +90,9 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
           {profile.current && (
             <span aria-hidden className="pointer-events-none absolute -inset-1 rounded-full ring-2 ring-content-primary" />
           )}
-          <span className={`relative block rounded-full ${locked ? "opacity-55" : ""}`}>
+          {/* Verrouillé : GRISÉ plutôt que délavé — à 55 % d'opacité, l'initiale blanche tombait à 1,7:1 sur le
+              papier du thème clair. */}
+          <span className={`relative block rounded-full ${locked ? "opacity-80 grayscale" : ""}`}>
             <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={TILE_AVATAR} />
           </span>
           {profile.pinLock && (

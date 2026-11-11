@@ -27,7 +27,8 @@ export const PendingInvitations = memo(function PendingInvitations({ invitations
             className={`flex items-center gap-3 px-4 py-3 ${index === invitations.length - 1 ? "" : "border-b border-line-subtle"}`}
           >
             <div className="relative">
-              <UserAvatar userId={invitation.inviteeUserId} name={invitation.inviteeName} hasAvatar size={36} className="opacity-70" />
+              {/* En attente : GRISÉ, plus atténué — à 70 % d'opacité, l'initiale de repli tombait à 3,2:1. */}
+              <UserAvatar userId={invitation.inviteeUserId} name={invitation.inviteeName} hasAvatar size={36} className="grayscale" />
               <Clock size={14} aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 rounded-full bg-surface-1 text-content-tertiary" />
             </div>
             <div className="min-w-0 flex-1">

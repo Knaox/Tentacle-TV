@@ -98,7 +98,7 @@ function FilterGroup({ value, counts, onChange }: {
         >
           {option === value && <SegmentLens group={lensGroup} />}
           {labels[option]}
-          {counts && <span className="num opacity-70">{counts[option]}</span>}
+          {counts && <span className="num opacity-80">{counts[option]}</span>}
         </button>
       ))}
     </div>
