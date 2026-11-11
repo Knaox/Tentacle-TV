@@ -15,6 +15,9 @@ THEME=dark node bench/clair-verre/audit.mjs <dossier>      # le sombre
 node bench/clair-verre/resume.mjs <dossier>/rapport.json   # les défauts par ENCRE : quel jeton corriger
 node bench/clair-verre/pire-image.mjs /library/<id>        # le texte posé sur une image blanche, puis noire
 node bench/clair-verre/capture.mjs <fichier.png> <route>   # regarder un écran
+node bench/clair-verre/pire-donnees.mjs                    # les filtres face aux pires données réalistes
+node bench/clair-verre/inventaire.mjs <avant.json>         # « on ne perd rien » : les contrôles de chaque écran…
+node bench/clair-verre/inventaire.mjs --compare <avant.json> <après.json>   # …comparés entre deux relevés
 ```
 
 ## Ce que la mesure fait
@@ -27,7 +30,13 @@ grand texte (24 px, ou 18,66 px en gras) et un pictogramme.
 Écartés, parce qu'ils ne se lisent pas ou ne sont pas l'interface : un texte rogné par un ancêtre,
 recouvert par un calque flottant (barre fixe, menu, modale), posé sous une image (des initiales de
 repli sous un portrait), un contrôle inactif, un séparateur « · », le compteur d'images et le bouton
-DEBUG du paquet de développement. Une page qui bouge encore est remesurée.
+DEBUG du paquet de développement ; ce qui passe sous un voile fixe qui ne prend pas le pointeur
+(l'effet de bord du défilement, sous la barre du haut). Une page qui bouge encore est remesurée.
+
+Chaque scène repart du MÊME stockage (`audit.mjs`) : un labo écrit dans celui de l'app — celui des
+réglages y laisse les profils de son faux serveur, et « Qui regarde ? » s'ouvrait sur tout ce qui
+suivait. ⚠️ Un nombre de relevés identique d'une scène à l'autre (17, 17, 17…) trahit ce genre
+d'écran intrus : le lire avant de croire un « 0 en défaut ».
 
 Les écrans : `scenes.mjs`. Les identifiants (bibliothèques, fiches, personne) sont lus sur
 l'instance et gardés dans `~/.cache/tentacle-test/rf2/clair-verre/scenes.json` (`BANC_SCENES`).

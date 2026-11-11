@@ -65,7 +65,32 @@ const COLLECT = () => {
    * Ce qui RECOUVRE un point : `layer` — un calque flottant étranger à l'élément (barre fixe, menu, modale, voile :
    * le texte dessous est caché ou hors jeu) ; `other` — un autre élément de la page ; `null` — rien.
    */
+  // Les calques FIXES qui peignent sans capter le pointeur (l'effet de bord de défilement sous la barre, un voile) :
+  // `elementFromPoint` ne les voit pas, mais ce qui défile dessous est vu À TRAVERS eux.
+  const painted = (s) => (s.backgroundImage && s.backgroundImage !== "none") || (s.backdropFilter && s.backdropFilter !== "none")
+    || (s.backgroundColor && !/rgba?\(0, 0, 0, 0\)|transparent/.test(s.backgroundColor));
+  const veils = [...document.querySelectorAll("body *")].filter((el) => {
+    const s = getComputedStyle(el);
+    if (s.position !== "fixed" || s.pointerEvents !== "none" || s.visibility === "hidden" || s.display === "none" || Number(s.opacity) < 0.05) return false;
+    const before = getComputedStyle(el, "::before");
+    const after = getComputedStyle(el, "::after");
+    return painted(s) || (before.content !== "none" && painted(before)) || (after.content !== "none" && painted(after));
+    // Une BANDE posée au-dessus du contenu (z-index positif) — pas un fond plein écran peint dessous (le fond ambiant).
+  }).map((el) => ({ el, r: el.getBoundingClientRect(), z: Number(getComputedStyle(el).zIndex) || 0 }))
+    .filter(({ r, z }) => z > 0 && r.width > 40 && r.height > 12 && r.height < innerHeight * 0.6);
   const coverOf = (node, [x, y, w, h]) => {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    for (const { el, r, z } of veils) {
+      if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom || el.contains(node) || node.contains(el)) continue;
+      // Ce qui flotte lui-même AU-DESSUS du voile (la barre du haut sur son effet de bord) n'est pas dessous.
+      let above = false;
+      for (let up = node; up && up !== document.body; up = up.parentElement) {
+        const us = getComputedStyle(up);
+        if ((us.position === "fixed" || us.position === "sticky") && (Number(us.zIndex) || 0) >= z) { above = true; break; }
+      }
+      if (!above) return "layer";
+    }
     const top = document.elementFromPoint(x + w / 2, y + h / 2);
     if (!top || top === node || node.contains(top) || top.contains(node)) return null;
     // Des initiales de repli SOUS un portrait, un titre sous son affiche : l'image les remplace.

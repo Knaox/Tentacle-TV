@@ -48,11 +48,22 @@ const scrollDown = () => page.evaluate(() => {
   return false;
 });
 
+// Chaque scène repart du MÊME stockage. Un labo écrit dans celui de l'app (le labo des réglages y laisse les
+// profils de son faux serveur) : sans cela, « Qui regarde ? » s'ouvre sur tout ce qui suit, et c'est lui qu'on mesure.
+await visit(page, "/about", 600);
+const baseline = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+const resetStorage = () => page.evaluate((json) => {
+  const base = JSON.parse(json);
+  for (const key of Object.keys(localStorage)) if (!(key in base)) localStorage.removeItem(key);
+  for (const [key, value] of Object.entries(base)) localStorage.setItem(key, value);
+  sessionStorage.clear();
+}, baseline).catch(() => {});
+
 const report = [];
 let total = 0;
 for (const scene of scenes) {
   try {
-    if (scene.route) await visit(page, scene.route, scene.settle);
+    if (scene.route) { await resetStorage(); await visit(page, scene.route, scene.settle); }
     if (scene.steps) await scene.steps(page);
     const sceneFails = [];
     let measured = 0;

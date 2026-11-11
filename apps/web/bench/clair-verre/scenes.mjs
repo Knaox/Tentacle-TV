@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { ORIGIN, visit } from "./lib/session.mjs";
+import { visit } from "./lib/session.mjs";
 
 const hrefs = (page, pattern) => page.evaluate((source) => {
   const re = new RegExp(source);

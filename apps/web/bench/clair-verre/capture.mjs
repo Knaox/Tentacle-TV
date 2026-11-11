@@ -9,7 +9,7 @@
  * JS=<expression> (évaluée dans la page, imprimée). Pour juger un verre : BANC_NAVIGATEUR=complet.
  */
 import { openSession, visit } from "./lib/session.mjs";
-const [out, route, ...rest] = process.argv.slice(2);
+const [out, route] = process.argv.slice(2);
 const { browser, page, errors } = await openSession({ theme: process.env.THEME ?? "light", glass: process.env.GLASS === "1", scale: Number(process.env.DPR ?? 1) });
 await visit(page, route ?? "/", Number(process.env.SETTLE ?? 3000));
 if (process.env.JS) console.log(JSON.stringify(await page.evaluate(process.env.JS), null, 1));
