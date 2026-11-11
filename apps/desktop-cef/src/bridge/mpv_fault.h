@@ -8,7 +8,10 @@
 //   off     rien (le défaut) ;
 //   init    `mpv_init` est refusé, comme un mpv qui ne s'initialise pas ;
 //   stall   `mpv_init` ne répond jamais (la page abandonne après 8 s) ;
-//   load    tout `loadfile` finit en `end-file` en erreur : rien ne s'ouvre ;
+//   load    tout `loadfile` finit en `end-file` en erreur de chargement (−13) : rien ne s'ouvre.
+//           C'est le cas AMBIGU (le même code sort d'un réseau coupé) : la page le départage par
+//           ses sondes — le lecteur web prend le relais si le flux LUI répond, sinon elle dit la
+//           connexion ;
 //   fatal   la lecture EN COURS tombe (`end-file` en erreur), UNE fois. Au lancement :
 //           dix secondes après le départ de la première lecture ;
 //   absent  la coquille ne déclare aucun canal `mpv_*` : pas de lecteur natif du tout.

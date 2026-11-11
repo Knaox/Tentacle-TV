@@ -70,3 +70,14 @@ Lancer `pnpm dev:cef`, ouvrir un film, « Lecture en incrustation » (bouton du 
 - « Lecture en incrustation » (PiP) → aucun verre dans la fenêtre PiP ; retour au lecteur → le verre revient.
 - Réglage coupé → plus aucun verre natif, le lecteur d'avant ; macOS < 26 ou Intel : l'option n'existe pas / pas de verre du lecteur.
 - Coût, FENÊTRE VISIBLE (le banc refuse une fenêtre cachée) : `PONT_CDP_PORT=<port> node bench/glass/gpu.mjs 12 3` → WindowServer avec/sans verre (Electron : +3 à +5 points), 0 image perdue.
+
+## lecture — ce qui reste à voir de ses yeux (lot rf2)
+
+Prouvé le 11/11 par l'état des `<video>` et des captures CDP, fenêtre en arrière-plan et son coupé :
+
+- Le SON d'un aperçu au survol, sans avoir rien cliqué depuis le lancement (la politique
+  d'autoplay le permet ; le banc tournait en `--mute`) : il doit monter en fondu, pas d'un coup.
+- Le lecteur de secours sur un film AV1 HDR (image COPIÉE, Chromium ramène le HDR à l'écran) :
+  couleurs et hautes lumières à juger — le banc n'a vu qu'un carton de générique.
+- `TENTACLE_MPV_FAULT=fatal pnpm dev:cef -- --mute`, fenêtre ACTIVE : la bascule doit se faire
+  sans éclair (la surface de mpv part, la page reprend) — non jugé image par image.

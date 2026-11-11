@@ -99,10 +99,42 @@ Les binaires publics de CEF n'ont pas les codecs propriétaires (`MediaSource.is
 `avc1` et `mp4a` faux ; VP9, AV1, Opus vrais). La page le DÉCLARE au serveur (`dec=vp9,opus`),
 qui lui relaie du VP9 + Opus s'il déclare `trailers.openCodecs` (serveur 1.41.0) : aperçus au
 survol et lecteur de la fiche jouent sans rien ajouter à l'installation. Face à un serveur plus
-ancien : aucun aperçu, aucune requête ; la fiche garde le lecteur officiel de YouTube. Restent
+ancien : aucun aperçu, aucune requête ; la fiche garde le lecteur officiel de YouTube. Un
+`<video>` de la page joue sans geste préalable, comme dans Electron
+(`--autoplay-policy=no-user-gesture-required`, `src/shell/browser_app.cpp`) : sans elle,
+l'aperçu survolé avant le premier clic restait figé sur sa première image. Restent
 hors d'atteinte sans les codecs : les bandes-annonces AlloCiné (Dailymotion, H.264 seul), les
 vidéos « pour enfants » (MP4 seul) et ce qu'une extension jouerait en H.264. Détail et mesures :
 `docs/BANDES-ANNONCES.md`, « Sans H.264 ni AAC — le bureau CEF ».
+
+## Le lecteur web de secours, et comment provoquer la panne
+
+Quand mpv ne s'initialise pas ou tombe en pleine lecture, la page passe au lecteur web
+(`<video>` + hls.js) toute seule, à la même position, avec le bandeau « Lecteur de secours ».
+Ce lecteur-là ne décode ni H.264 ni AAC : il le DÉCLARE (`openWebEngine`, packages/shared) et
+Jellyfin lui sert de l'AV1 + Opus en fMP4 — copie d'une source AV1, encodage sinon (il faut que
+l'administrateur de Jellyfin ait permis l'encodage AV1). Détail et mesures :
+`docs/TRANSCODAGE-MOTEURS.md`, « Le lecteur web du bureau CEF ».
+
+Pour l'éprouver sans casser mpv (`src/bridge/mpv_fault.h`) :
+
+```bash
+TENTACLE_MPV_FAULT=fatal pnpm dev:cef -- --mute   # la première lecture tombe 10 s après son départ
+```
+
+| Mode | Effet |
+|---|---|
+| `init` | `mpv_init` est refusé |
+| `stall` | `mpv_init` ne répond jamais (la page abandonne après 8 s) |
+| `load` | tout `loadfile` finit en `end-file` en erreur de chargement (−13) — le cas ambigu : la page bascule si le flux répond à sa sonde, sinon elle dit « connexion perdue » |
+| `fatal` | la lecture en cours tombe, une fois |
+| `absent` | aucun canal `mpv_*` : pas de lecteur natif (au lancement seulement) |
+| `off` | rien |
+
+En route, depuis la page (menu de débogage, outils de développement) :
+`tentacle.invoke("mpv_debug_fault", { mode: "fatal" })` → `{ mode, fired }`. Un mode reste
+jusqu'au suivant, sauf `fatal`. La bascule est mémorisée pour la session de la page : recharger
+la page (ou `cancelFallbackSwitch()`, `apps/web/src/lib/fallbackPlayer.ts`) rend sa chance à mpv.
 
 ## Autres commandes
 

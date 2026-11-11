@@ -175,6 +175,26 @@ fenêtre principale pour celui de la fenêtre PiP, sans que mpv change de sortie
 - Octave : réglage « Sortie audio » → liste WASAPI sans doublon, « exclusif » proposé ; mode exclusif allumé → le son passe, la houle s'arrête (pas de mesure en exclusif).
 - Octave : transition douce à 6 s entre deux albums différents → fondu audible sans blanc ni saut de volume ; même album dans l'ordre → enchaînement sans blanc, sans fondu.
 
+## Lecture : aperçus, bande-annonce de la fiche, lecteur de secours (lot rf2, axe lecture)
+
+Prouvé sur macOS seulement (11/11) ; rien de ce qui suit n'a tourné sous Windows. Il faut un
+serveur qui déclare `trailers.openCodecs` (version ≥ 1.41.0) : sans lui, AUCUN aperçu et le
+lecteur officiel de YouTube sur la fiche — c'est voulu.
+
+- Juste après le lancement, SANS rien cliquer : survoler une carte de l'accueil → la mini-carte
+  s'ouvre, la bande-annonce AVANCE (pas une image figée) et le son part (la coquille pose
+  `--autoplay-policy=no-user-gesture-required`).
+- Fiche d'un film → « Bande-annonce » → le lecteur joue (VP9 + Opus), Échap le ferme.
+- `set TENTACLE_MPV_FAULT=init` puis `pnpm dev:cef` → lancer un film : bandeau « Lecteur de
+  secours », l'image vient du lecteur web (`document.querySelector("video")` existe dans les
+  outils de développement), à la position de reprise de la fiche.
+- `set TENTACLE_MPV_FAULT=fatal` → la lecture part dans mpv, tombe dix secondes plus tard, le
+  lecteur web reprend AU MÊME ENDROIT (à une seconde près), bandeau affiché.
+- Autres modes : `stall` (bascule après 8 s), `load`, `absent` ; en route, dans les outils de
+  développement : `tentacle.invoke("mpv_debug_fault", { mode: "fatal" })`.
+- À noter : le décodage de l'AV1 par le lecteur web (logiciel si la carte n'a pas de décodeur AV1)
+  — images perdues sur un film 4K, charge du processeur.
+
 ## Limites connues (écrites, pas encore faites)
 
 - Alt+lettre n'est pas un « system key » pour Chromium (`accesskey` HTML) ; le reste d'Alt marche.

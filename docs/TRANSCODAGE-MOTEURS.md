@@ -92,3 +92,51 @@ déclarations ne sont plus des listes fixes : elles viennent du profil de l'appa
   de mesure (`*.perf`) et une construction de développement seulement.
 - La matrice de la fiche (11 images × 5 sons × 3 sous-titres) est un test de la règle :
   `devicePlaybackVerdict.test.ts`.
+
+## Le lecteur web du bureau CEF — sans H.264 ni AAC (11/11)
+
+Quand mpv ne lit pas (absent, initialisation ratée, chute en pleine lecture),
+le bureau passe au lecteur web (`<video>` + hls.js). Sous CEF (binaires publics
+de Chromium), ce lecteur ne décode ni H.264, ni HEVC, ni AAC, ni AC-3 : le
+profil d'un navigateur ordinaire lui valait un flux H.264 + AAC en TS,
+`manifestIncompatibleCodecsError`, et « La lecture n'a pas pu démarrer ».
+
+- **Le moteur se déclare** : `openWebEngine(probe)` (`engineCapabilities.ts`),
+  d'après `MediaSource.isTypeSupported` (`lib/deviceProfile/codecs.ts`). AV1
+  seul à la sortie, Opus pour le son converti (puis FLAC, MP3), fMP4, HDR10 et
+  HLG si l'AV1 10 bits se décode, pas de Dolby Vision. `null` pour qui lit le
+  H.264 et l'AAC : son profil d'avant, à l'octet.
+- **Le profil** (`lib/deviceProfile/openProfile.ts`) : UN profil HLS fMP4
+  `av1` / `opus,flac,mp3` (`engineTranscodingProfiles`, `universalFallback:
+  false` — ni le repli H.264 + AAC en TS, ni l'AAC du profil audio), et la
+  condition de plage de l'AV1.
+
+Mesuré sur le Jellyfin réel (12.4.0, encodeur matériel), par `PlaybackInfo` :
+
+| Source | Demande | Ce que Jellyfin rend |
+|---|---|---|
+| AV1 4K Dolby Vision (base HDR10) + E-AC3 | `av1` + `opus` | image COPIÉE (`av01.0.12M.10`, PQ), son en Opus ; init en 0,5 s, 1er segment en 0,08 s |
+| H.264 1080p + DTS | `av1` + `opus` | ENCODÉ en AV1 (`av01.0.15M.08`) + Opus ; init 0,5 s, 1er segment 0,07 s |
+| HEVC 1080p + AC3 | `av1` + `opus` | ENCODÉ en AV1 + Opus ; init 0,9 s, 1er segment 0,23 s |
+| H.264 1080p + DTS | `av1,vp9` + `opus` | **rien** : maître sans codec vidéo, init en 502 après 30 s |
+
+D'où deux règles : **jamais le VP9 dans la liste HLS** (Jellyfin le choisit
+alors, et ne sert rien — une source VP9 passe par la lecture directe, sinon
+elle est convertie en AV1), et **l'encodage AV1 doit être permis** dans Jellyfin
+(« Autoriser l'encodage AV1 ») : sans lui, Jellyfin rend autre chose que ce
+lecteur ne lit pas — non mesuré ici (le serveur réel le permet), le lecteur web
+le dirait par son écran de problème. Sur la bibliothèque réelle (120 premiers
+films) : 101 HEVC, 17 H.264, 2 AV1 — le lecteur de secours CONVERTIT presque
+toujours, et un réencodage perd le HDR (fait 4) ; seule une source AV1 garde le
+sien, que Chromium ramène à l'écran.
+
+**Le repli lui-même** (`Watch.tsx`, `lib/fallbackPlayer.ts`,
+`hooks/playbackFailure.ts`). Un échec d'initialisation de mpv et une fin de
+fichier dont le code accuse le moteur (−2, −3, −14, −15, −20) sont des défauts
+du LECTEUR, dits tels quels (`engineFailed`) : ni le texte de l'erreur
+(« mpv-init-timeout » devenait « le serveur met trop de temps à répondre »), ni
+une sonde du flux qui n'aboutit pas (« connexion perdue ») ne les reclassent
+plus. La bascule emporte le titre et la position de l'arrêt : le lecteur web
+reprend là. Vu sur l'instance réelle : chute provoquée à 1 313,36 s, reprise à
+1 313,4 s, première image 5 s après la chute. Provoquer la panne :
+`TENTACLE_MPV_FAULT`, `mpv_debug_fault` (`apps/desktop-cef/README.md`).

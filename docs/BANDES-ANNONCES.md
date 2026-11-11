@@ -994,10 +994,67 @@ virtuel :
 | Coût, VP9 décodé en logiciel, boîte de 640 × 360 | — | 4,7 % d'un cœur en 360p, 6,2 % en 720p, 9,7 % en 1080p (tous processus, 9800X3D) |
 
 NON mesuré : le GPU (le décodage est logiciel : rien au matériel, la
-composition est celle de toute `<video>`), une machine lente, macOS et
-Windows, et l'aperçu réel d'une carte dans l'app connectée sous CEF (pas de
-session ouvrable sur le banc : la chaîne est prouvée par morceaux — relais +
-lecteur dans CEF d'un côté, requêtes et portes par les tests de l'autre).
+composition est celle de toute `<video>`), une machine lente, Windows. macOS et
+l'aperçu réel d'une carte dans l'app connectée sous CEF l'ont été le 11/11
+(ci-dessous).
+
+### Sur l'instance réelle, sous CEF macOS (11/11)
+
+La chaîne ENTIÈRE, sur un vrai serveur relié à un vrai Jellyfin, compte de
+test, CEF 156 (`MediaSource.isTypeSupported` : `avc1` et `mp4a` faux ; VP9, AV1,
+Opus vrais — comme sous Linux) : capacité déclarée → la page écrit
+`dec=vp9,opus` → `/preview` rend l'entrée `o:<id>` (3,4 à 3,6 s à froid,
+extraction 2,2 à 2,7 s) → maître `vp09…,opus` + liste `p/opus.m3u8` →
+`<video>`. Trois défauts s'y sont montrés, qu'aucun morceau du banc ne voyait :
+
+- **Le serveur doit DÉCLARER `trailers.openCodecs`.** Sa clé date de 1.41.0 :
+  un serveur dont la version est en dessous (`versions.json` → `server` dit
+  1.40.0 ; ou une image construite sans `TENTACLE_SERVER_VERSION`) porte le
+  code mais ne le déclare pas — sous CEF, aucun aperçu, aucune requête, et la
+  fiche garde le lecteur officiel de YouTube. Pour le voir : une image de ce
+  code, construite avec `--build-arg TENTACLE_SERVER_VERSION=1.41.0+preview.<sha>`
+  (ou plus), ou livrer le serveur en 1.41.0.
+- **L'aperçu restait figé sur sa première image tant que rien n'avait été
+  cliqué.** `play()` part avec `volume = 0` (le fondu monte le son) : Chromium
+  l'accepte comme une lecture muette, puis le premier pas du fondu, qui la rend
+  audible sans geste de l'utilisateur, la fait mettre en PAUSE par la politique
+  d'autoplay — ni erreur, ni `waiting`. Electron ne le voyait pas (sa politique
+  est `no-user-gesture-required`). Deux réponses : la coquille CEF pose la même
+  politique (`src/shell/browser_app.cpp`), et la page écoute cette pause que
+  personne n'a demandée — la lecture repart en muet et le dit
+  (`startPreviewPlayback`, `onSoundBlocked`), ce qui vaut aussi pour Chrome
+  ouvert sans un clic.
+- **Une bande-annonce dont le premier segment fait moins de 4,5 s n'avait
+  jamais d'aperçu.** On chargeait depuis le départ décalé (4 s), pour
+  `stopLoad()` puis `startLoad(0)` quand il ne tenait pas. Avec une piste audio
+  SÉPARÉE (le flux libre : `p/opus.m3u8`), hls.js 1.7.3 n'en revenait pas :
+  trois chargements abandonnés (`aborted`), le fragment audio seul, plus un
+  fragment vidéo — la mini-carte ne paraissait jamais (premier segment de
+  3,04 s sur le titre relevé). Le chargement part désormais toujours du premier
+  segment — celui que le serveur lit d'avance — et c'est la LECTURE qui se cale
+  à 4 s, dans ce même segment, quand il y tient (`previewSource.ts`).
+
+| Sous CEF macOS, instance réelle | Avant | Après |
+|---|---|---|
+| Aperçu sans aucun clic (1er segment ≥ 4,5 s) | image figée, `paused`, 4 images | 194 images en 8 s, 0 perdue, son permis |
+| Aperçu, 1er segment de 3,04 s | jamais montré | première image à 435 ms (réponse en mémoire), 480p |
+| Lecteur de la fiche (`/resolve?…&dec=vp9,opus`) | — | 1080p VP9, 336 images en 14 s, 3 perdues |
+| Chrome 157 sans tête (H.264, non-régression) | image figée sans clic | joue en muet sans clic, avec son après un clic ; fiche en 1080p |
+
+**Les extensions** (`pluginTrailerDecodes.ts`). L'iframe d'une extension tourne
+dans le même navigateur : c'est l'HÔTE qui ajoute `dec=vp9,opus` (ou `decodes`
+au corps de `/preview/warm`) aux requêtes de bandes-annonces qu'elle fait par
+le relais d'API, là où elle ne déclare rien — Vigie n'a pas à connaître la
+règle. Et le blocage `codec` de l'appareil (`previewEnvironment.ts`) compte
+désormais le serveur : sous CEF face à un serveur sans `trailers.openCodecs`,
+l'extension lit `enabled: false` et ne demande rien. NON vu à l'image : la page
+de Vigie sous CEF servi par Vite (la CSP du serveur de dev y refuse l'iframe
+`tentacle://plugin`).
+
+Géographie : une bande-annonce que YouTube ne propose pas au pays de sortie du
+serveur est une candidate morte comme une autre (« not available in your
+country ») ; trois de suite, et la décision dépasse les 12 s de la réponse —
+`429` « réessayez dans 1 s », que le survol rejoint.
 
 ## Ce qui reste fragile, et comment le surveiller
 
