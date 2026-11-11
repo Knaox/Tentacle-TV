@@ -1,9 +1,10 @@
 /* Scrims des heros (accueil + fiche média) — recette « image vive » alignée
  * sur le mobile : l'affiche n'est JAMAIS voilée de clair ni floutée ; le texte
  * posé dessus est en tokens `--on-media-*` (blanc constant) et repose sur des
- * dégradés NOIRS (`--scrim-media-rgb`, constant entre schémas). Le seul
- * overlay qui suit le thème est le scrim HAUT (`--scrim-page-rgb`), assise de
- * la barre de navigation — jamais sous le texte.
+ * dégradés NOIRS (`--scrim-media-rgb`, constant entre schémas). Depuis nov. 2026
+ * PLUS AUCUN voile clair ne se pose sur une image, vignette haute comprise (la
+ * barre de navigation porte son fond) : `--scrim-page-rgb` ne sert plus qu'au
+ * raccord BAS d'une bannière à fond perdu vers la page (`--hero-page-fade`).
  *
  * Déclarées ICI et non dans tokens.css : le test de parité du thème exige que
  * toute variable de tokens.css soit surchargeable par l'admin (types,
@@ -66,7 +67,7 @@
 }
 
 :root[data-theme="light"] {
-  /* Réservé au scrim TOP (assise nav) — seul voile clair autorisé. */
+  /* La couleur de la page : le raccord BAS d'une bannière à fond perdu (`--hero-page-fade`). */
   --scrim-page-rgb: 243, 242, 239;
 
   /* CLAIR — les scrims qui adossent le texte restent NOIRS (recette mobile,
@@ -78,7 +79,10 @@
    * ressaut. En clair c'est `--*-page-fade` qui finit le raccord vers la page,
    * ce scrim s'arrête donc à 0,70, il ne va pas jusqu'à `--surface-0`. */
   --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
-  --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.85) 0%, rgba(var(--scrim-page-rgb), 0.40) 45%, rgba(var(--scrim-page-rgb), 0.10) 80%, transparent 100%);
+  /* Vignette HAUTE d'une bannière à fond perdu (bibliothèque, collection) : d'ENCRE elle aussi, comme
+   * celle de la fiche. Nacrée à 0,85, elle posait un nuage laiteux sur le haut de l'image — l'assise
+   * d'une barre de navigation qui porte désormais son propre fond. */
+  --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.38) 0%, rgba(var(--scrim-media-rgb), 0.14) 50%, rgba(var(--scrim-media-rgb), 0) 100%);
   --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
   /* Vignette HAUTE de la fiche : d'ENCRE, comme en sombre (×0,7), plus jamais nacrée. Le voile clair
    * datait d'une barre de navigation au texte thémé posée à même l'image ; la barre est désormais
@@ -129,7 +133,7 @@
 /* CLAIR — une bannière ENCADRÉE (accueil, « Pour vous », vedette) n'a pas de vignette haute. Le
  * voile nacré était l'assise d'une barre de navigation posée sur une bannière à fond perdu ; la
  * bannière est une carte, la barre flotte au-dessus d'elle, et ce voile n'était plus qu'un nuage
- * blanc granuleux sur le haut de l'image. Les bannières à fond perdu (bibliothèque) le gardent. */
+ * blanc granuleux sur le haut de l'image. Une carte n'a rien à asseoir en haut : aucune vignette. */
 :root[data-theme="light"] [data-hero-frame] {
   --hero-scrim-top: none;
 }
