@@ -3,7 +3,9 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { markImageSeen } from "../../lib/seenImages";
+import { itemImageColor } from "../../lib/itemImageColor";
 import { ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
+import { useLoadedSlide } from "./useLoadedSlide";
 import { HeroScrims } from "./HeroScrims";
 
 interface HeroBackdropProps {
@@ -69,7 +71,7 @@ export function HeroBackdrop({ item, url, onFailure }: HeroBackdropProps) {
   // décodé, sans un octet de plus. Une URL recalculée d'un côté ou de l'autre
   // (largeur ou qualité différente) suffirait à provoquer un second
   // chargement, donc un blanc.
-  return <HeroBackdropLayer imageKey={item?.Id ?? null} url={url} onFailure={onFailure} />;
+  return <HeroBackdropLayer imageKey={item?.Id ?? null} url={url} onFailure={onFailure} tone={itemImageColor(item, "Backdrop")} />;
 }
 
 /**
@@ -77,19 +79,27 @@ export function HeroBackdrop({ item, url, onFailure }: HeroBackdropProps) {
  * hors ligne la nourrit du décor posé sur le disque — mêmes fondus, même zoom,
  * mêmes voiles que l'accueil en ligne.
  */
-export function HeroBackdropLayer({ imageKey, url, onFailure }: {
+export function HeroBackdropLayer({ imageKey: wantedKey, url: wantedUrl, onFailure, tone }: {
   /** Clé de la diapositive (`null` = aucune) : pilote le fondu enchaîné. */
   imageKey: string | null;
   url: string | null;
   /** Appelé quand l'image échoue, en plus de la masquer. */
   onFailure?: () => void;
+  /** La couleur moyenne de l'image demandée (son blurhash) : ce que la bannière montre en l'attendant. */
+  tone?: string | null;
 }) {
+  // La diapositive montrée est la dernière dont l'image est chargée : le fondu enchaîné ne part
+  // jamais vers une image absente (cf. `useLoadedSlide`).
+  const { key: imageKey, url } = useLoadedSlide(wantedKey, wantedUrl);
   // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
   // peut pas vivre après une sortie conditionnelle.
   const { broken, reportFailure } = useBrokenImage(url ?? undefined);
   // L'arrivée sur la page ne repart jamais du noir (cf. `useBillboardEntry`) ;
   // le fondu enchaîné d'une diapositive à l'autre reste tel quel.
   const entry = useBillboardEntry(imageKey, url);
+  // Sous l'image : sa COULEUR d'abord (docs/REFONTE-UI.md, « Une image qui ne clignote pas »),
+  // l'encre de carte sans elle. Une bannière dont l'image tarde garde la clarté de son image.
+  const fallback = <div className={FALLBACK_CLASS} style={tone ? { backgroundColor: tone } : undefined} />;
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
   //
@@ -113,7 +123,7 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
   if (imageKey === null) {
     return (
       <>
-        <div className={FALLBACK_CLASS} />
+        {fallback}
         {overlays}
       </>
     );
@@ -124,7 +134,7 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
       {/* Le fond de REPLI, sous l'image : un titre sans image (ou dont l'image
           a échoué) garde un fond d'encre, jamais un cadre noir. Statique —
           rien n'y est animé, il ne coûte qu'une peinture. */}
-      <div className={FALLBACK_CLASS} />
+      {fallback}
 
       <AnimatePresence initial={entry.presenceInitial}>
         {url && (
