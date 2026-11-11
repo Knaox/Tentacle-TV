@@ -125,8 +125,12 @@ export function SettingsShell({
         /* Collant sur desktop : sur une longue page (la liste des comptes, un
            formulaire de services), le rail reste à portée au lieu de défiler
            hors de l'écran. `self-start` : dans une rangée flex, un élément
-           étiré sur toute la hauteur ne colle jamais. */
-        className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start${sidebarSurface?.className ? ` ${sidebarSurface.className}` : ""}`}
+           étiré sur toute la hauteur ne colle jamais. Le point de collage compte
+           le BANDEAU de la fenêtre du bureau (`--hote-bandeau`, 0 ailleurs) : la
+           barre de navigation y descend d'autant, et sans lui le rail montait
+           de 38 px en défilant, jusque DANS la barre (nov. 2026). C'est aussi sa
+           place au repos : il ne bouge plus d'un pixel. */
+        className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--hote-bandeau,0px)+var(--topnav-height)+1.5rem)] md:w-60 md:self-start${sidebarSurface?.className ? ` ${sidebarSurface.className}` : ""}`}
       >
         {sidebarSurface?.layers}
         {railHeader ? <div className="relative mb-4">{railHeader}</div> : null}
