@@ -1,10 +1,10 @@
 {
   "name": "@tentacle-tv/desktop-cef",
-  "version": "0.1.0",
+  "version": "1.50.0",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "description": "Tentacle TV desktop (CEF + libmpv + SDL3) — macOS, Linux, Windows. Aucune dépendance npm : le lanceur (scripts/dev.mjs, Node seul) appelle CMake/Ninja.",
-  "//scripts": "dev (= pnpm dev:cef à la racine) : build web pour la coquille de bureau + build natif, puis l'app sous tentacle://app sur le profil d'Electron. dev:server : page servie par le serveur, profil à part (bancs). Pas de script typecheck/test : la CI les joue avec --if-present et n'a ni CEF ni libmpv.",
+  "//scripts": "dev (= pnpm dev:cef à la racine) : build web pour la coquille de bureau + build natif, puis l'app sous tentacle://app, sur le dossier de données du bureau (com.tentacle.media). dev:server : page servie par le serveur, profil à part (bancs). Pas de script typecheck/test : la CI les joue avec --if-present et n'a ni CEF ni libmpv.",
   "scripts": {
     "dev": "node scripts/dev.mjs run",
     "dev:server": "node scripts/dev.mjs run-server",

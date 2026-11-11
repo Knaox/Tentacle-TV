@@ -10,6 +10,26 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.50.0]
+<!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). Le serveur qui accompagne le bureau 1.50.0 (coquille CEF) et qui porte la refonte de l'interface web de nov. 2026. Rien sur les extensions. -->
+### FR
+- **Une interface web refaite de bout en bout** — barre du haut, accueil, fiches, bibliothèques, recherche, réglages, administration et assistant d'installation : plus sobre, plus lisible, en clair comme en sombre
+- **Prêt pour la nouvelle application de bureau** — les bandes-annonces et leurs aperçus sont relayés dans un format que son lecteur sait lire
+- **Un lecteur web repensé** — commandes regroupées en capsules, menus des pistes et de la qualité plus clairs, et un choix de piste gardé pour toute la série
+- **Hors ligne** — l'écran des transferts montre l'avancement du lot en cours (pourcentage, débit, temps restant)
+- **Watch Together** — un chat refait : messages regroupés, non-lus comptés, fil qui reste en bas
+- Thème clair : les fiches et la bannière ne se voilent plus de gris sous une image sombre
+- Une page qui tarde à s'ouvrir le dit, par une barre fine en haut de l'écran
+
+### EN
+- **A web interface redone from end to end** — top bar, home, title pages, libraries, search, settings, administration and the setup wizard: calmer, easier to read, in light and dark themes alike
+- **Ready for the new desktop app** — trailers and their previews are relayed in a format its player can read
+- **A rethought web player** — controls grouped in capsules, clearer track and quality menus, and a track choice kept for the whole series
+- **Offline** — the transfers screen shows the progress of the batch in flight (percentage, speed, time left)
+- **Watch Together** — a redone chat: grouped messages, unread count, a thread that stays at the bottom
+- Light theme: title pages and the banner no longer turn grey under a dark image
+- A page that is slow to open says so, with a thin bar at the top of the screen
+
 ## [1.42.0]
 <!-- Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR

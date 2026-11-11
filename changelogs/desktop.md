@@ -13,6 +13,26 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.50.0]
+<!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.50.0] ni [win-1.50.0]). Première version sur la coquille CEF (apps/desktop-cef) à la place d'Electron, et la refonte de l'interface de nov. 2026. Rien sur les extensions. Sous 1 500 caractères par langue (Microsoft Store). -->
+### FR
+- **Une application de bureau entièrement nouvelle** — Tentacle TV pour Mac, Windows et Linux change de moteur : l'interface et le lecteur vidéo sont réunis dans une application native, bâtie pour la vidéo. Votre session, vos réglages et vos titres gardés hors ligne sont repris tels quels
+- **Une interface refaite de bout en bout** — barre du haut, accueil, fiches, bibliothèques, recherche, réglages et administration : plus sobre, plus lisible, en clair comme en sombre
+- **Un lecteur repensé** — commandes regroupées en capsules, menus des pistes et de la qualité plus clairs, et un choix de piste gardé pour toute la série
+- **Hors ligne** — « Sur cet appareil » refait : l'avancement du lot en cours (pourcentage, débit, temps restant) et l'épisode qu'une série va lancer
+- **Watch Together** — un chat refait : messages regroupés, non-lus comptés, fil qui reste en bas
+- Thème clair : les fiches et la bannière ne se voilent plus de gris sous une image sombre
+- Une page qui tarde à s'ouvrir le dit, par une barre fine en haut de la fenêtre
+
+### EN
+- **An all-new desktop app** — Tentacle TV for Mac, Windows and Linux moves to a new engine: the interface and the video player now live in one native app, built for video. Your session, your settings and the titles you kept offline carry over as they are
+- **An interface redone from end to end** — top bar, home, title pages, libraries, search, settings and administration: calmer, easier to read, in light and dark themes alike
+- **A rethought player** — controls grouped in capsules, clearer track and quality menus, and a track choice kept for the whole series
+- **Offline** — "On this device" redone: the progress of the batch in flight (percentage, speed, time left) and the episode a series will start
+- **Watch Together** — a redone chat: grouped messages, unread count, a thread that stays at the bottom
+- Light theme: title pages and the banner no longer turn grey under a dark image
+- A page that is slow to open says so, with a thin bar at the top of the window
+
 ## [1.42.0]
 <!-- Bloc nu : macOS, Linux et Microsoft Store (pas de bloc [mac-1.42.0] ni [win-1.42.0]). Lot « ol » d'Octave. Rien sur les extensions ni sur leur source de musique. -->
 ### FR
