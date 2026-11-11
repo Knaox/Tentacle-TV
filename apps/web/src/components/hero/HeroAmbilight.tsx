@@ -18,6 +18,8 @@ interface HeroAmbilightProps {
    * lumière peut sortir.
    */
   className?: string;
+  /** Cf. `AmbilightLayer` : `false` pour une lueur posée sur une image. */
+  crossfade?: boolean;
 }
 
 /**
@@ -37,11 +39,11 @@ const SOURCE_WIDTH = 128;
  * (sous-échelle, flou, fondu, reduced-motion) vit dans AmbilightLayer,
  * partagée avec le carrousel des recommandations.
  */
-export function HeroAmbilight({ item, opacity, className }: HeroAmbilightProps) {
+export function HeroAmbilight({ item, opacity, className, crossfade }: HeroAmbilightProps) {
   const client = useJellyfinClient();
   const backdropId = item ? resolveBackdropId(item) : null;
   const url = backdropId
     ? client.getImageUrl(backdropId, "Backdrop", { width: SOURCE_WIDTH, quality: 70 })
     : null;
-  return <AmbilightLayer url={url} layerKey={item?.Id ?? ""} opacity={opacity} className={className} />;
+  return <AmbilightLayer url={url} layerKey={item?.Id ?? ""} opacity={opacity} className={className} crossfade={crossfade} />;
 }

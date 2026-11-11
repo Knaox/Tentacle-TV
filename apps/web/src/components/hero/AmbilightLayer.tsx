@@ -3,7 +3,14 @@ import { markImageSeen } from "../../lib/seenImages";
 import { ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
 
 /** Le halo suit la rotation de la bannière — mêmes durées, donc mêmes gestes. */
-const FADE_DURATION_S = 1.4;
+/**
+ * La durée du fondu enchaîné de l'IMAGE de la bannière (`HeroBackdrop`), à l'identique. À 1,4 s le
+ * halo de l'image quittée lui survivait de 0,2 s : l'ancienne image, floutée, restait en fantôme
+ * une fois la nouvelle en place, puis s'éteignait — le « clignotement » de fin de fondu (nov. 2026).
+ */
+const FADE_DURATION_S = 1.2;
+/** Sortie d'une lueur posée SUR une image (`crossfade` faux) : brève, jamais un fondu enchaîné. */
+const CUT_DURATION_S = 0.18;
 /**
  * Le zoom du halo — 1 → 1,12, un cran plus ample que celui du fond (1,06) — est
  * la classe `hero-halo-zoom` (`theme/heroMotion.css`), jouée par le compositeur
@@ -39,6 +46,12 @@ interface AmbilightLayerProps {
   opacity?: string;
   /** Boîte du halo. Par défaut celle du cadre (`absolute inset-0`). */
   className?: string;
+  /**
+   * Fondu ENCHAÎNÉ d'une image à la suivante (défaut : le halo autour d'une bannière). `false` pour
+   * une lueur en fusion PAR-DESSUS une image (la fiche) : celle du titre quitté s'efface tout de
+   * suite — enchaînée, elle restait en surimpression sur le décor du titre suivant.
+   */
+  crossfade?: boolean;
 }
 
 /**
@@ -57,6 +70,7 @@ export function AmbilightLayer({
   layerKey,
   opacity = "var(--hero-ambilight-opacity)",
   className = "absolute inset-0",
+  crossfade = true,
 }: AmbilightLayerProps) {
   const reduced = useReducedMotion();
   // Le halo arrive avec sa bannière, jamais une seconde après elle (`useBillboardEntry`).
@@ -99,7 +113,7 @@ export function AmbilightLayer({
             key={layerKey}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { opacity: { duration: FADE_DURATION_S, ease: "easeOut" } } }}
+            exit={{ opacity: 0, transition: { opacity: { duration: crossfade ? FADE_DURATION_S : CUT_DURATION_S, ease: "easeOut" } } }}
             transition={{ opacity: entry.isEntry ? ENTRY_FADE : { duration: FADE_DURATION_S, ease: "easeOut" } }}
             className={`absolute inset-0 will-change-transform ${ZOOM_CLASS}`}
           >
