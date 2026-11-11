@@ -1,7 +1,4 @@
 import type { FlashKind, PlaybackFlash } from "../hooks/usePlaybackFlash";
-import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
-import { isGlassLayout } from "./player/glass/playerGlassMode";
-import { GlassSurface } from "./player/glass/GlassSurface";
 import { SpeakerHighIcon } from "@phosphor-icons/react/dist/csr/SpeakerHigh";
 import { SpeakerXIcon } from "@phosphor-icons/react/dist/csr/SpeakerX";
 import { PauseIcon, PlayIcon } from "./icons/transport";
@@ -32,26 +29,18 @@ import { PauseIcon, PlayIcon } from "./icons/transport";
  *    déclenche une peinture par image, et sur un élément centré plein écran
  *    c'est le viewport entier qui serait repeint.
  *
+ * # Jamais en verre
+ *
+ * Sous le Liquid Glass aussi, c'est la pastille d'ENCRE des commandes (nov. 2026 : sur la vidéo,
+ * seuls les menus et les avis sont en verre). La bulle de verre d'avant portait la classe
+ * `lgp-badge`, qui est AUSSI celle de la pastille de vitesse d'un bouton (`playerGlassButtons.css` :
+ * `position: absolute; top; right`, fond clair) : le badge partait en haut à droite, en disque blanc.
+ *
  * Le composant n'est monté que le temps du flash (`usePlaybackFlash` le remet à
  * `null`) : rien ne subsiste dans la composition entre deux bascules.
  */
 export function PlaybackBadge({ flash }: { flash: PlaybackFlash | null }) {
-  const glass = isGlassLayout(usePlayerGlassMode());
   if (!flash) return null;
-
-  // Lecteur en verre : une bulle de verre FIXE (sa région native ne bouge pas,
-  // elle paraît et part avec le badge), le symbole seul fait son battement.
-  if (glass) {
-    return (
-      <div key={flash.id} className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" aria-hidden="true">
-        <GlassSurface className="lgp-badge lgp-badge--round" group="player-flash" variant="regular">
-          <div className="flex h-full w-full animate-[playbackFlash_0.7s_ease-out_forwards] items-center justify-center">
-            <Trace kind={flash.kind} />
-          </div>
-        </GlassSurface>
-      </div>
-    );
-  }
 
   return (
     <div

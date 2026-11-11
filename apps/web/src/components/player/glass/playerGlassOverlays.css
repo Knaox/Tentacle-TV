@@ -1,14 +1,15 @@
 /* Les encarts du lecteur en verre : pilule de saut, « Vous regardez encore ? »,
- * badges du centre et des côtés. Jetons : `playerGlass.css` ; mêmes familles
+ * avis Watch Together. Les badges du centre et des côtés et l'attente sont à l'ENCRE
+ * (`PlaybackBadge`, `SkipBadge`, `PlaybackSpinner`), jamais ici. Jetons : `playerGlass.css` ; mêmes familles
  * de couleurs (opaque, ou noir à alpha). */
 
 /* ── Les surfaces de TEXTE posées sur la vidéo (lot lg8) ─────────────────
-   Pilule de saut, badges, attente, avis Watch Together : du verre NORMAL, comme
+   Pilule de saut, avis Watch Together : du verre NORMAL, comme
    les panneaux et les fiches — celui du lecteur de tvOS 26. Il s'assombrit seul
    sur un dessous clair (91/255 sur la neige, fenêtre active) : texte blanc
    ≥ 6,9:1 sans l'atténuation des contrôles en verre clair, ni gris posé par la
    page. Même teinte native que les panneaux (aucune en thème sombre). */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface:is(.lgp-pill, .lgp-badge, .lgp-wt-capsule)[data-lgp-variant="regular"] {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface:is(.lgp-pill, .lgp-wt-capsule)[data-lgp-variant="regular"] {
   --lg-native-tint-regular: var(--lg-player-panel-tint);
 }
 
@@ -146,17 +147,6 @@
   }
 }
 
-/* ── Les badges éphémères (lecture/pause au centre, ±10/30 s sur les côtés) ── */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge {
-  border-radius: var(--lg-player-radius-capsule);
-  color: var(--lg-player-fg);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--round {
-  width: 92px;
-  height: 92px;
-}
-
 /* ── Watch Together dans le lecteur ──────────────────────────────────── */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-members {
   position: absolute;
@@ -218,21 +208,6 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__track {
   background: var(--lg-player-track);
-}
-
-/* ── L'attente en lecture (`PlaybackSpinner`) ────────────────────────── */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--spinner {
-  display: grid;
-  width: 72px;
-  height: 72px;
-  place-items: center;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--lg-player-track);
-  border-top-color: var(--lg-player-fg);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__veil {

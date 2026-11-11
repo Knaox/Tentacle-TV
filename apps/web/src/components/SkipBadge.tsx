@@ -1,6 +1,3 @@
-import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
-import { isGlassLayout } from "./player/glass/playerGlassMode";
-import { GlassSurface } from "./player/glass/GlassSurface";
 import { FastForwardIcon, RewindIcon } from "./icons/transport";
 
 export interface SkipFlash {
@@ -21,10 +18,11 @@ export interface SkipFlash {
  * ne voit jamais l'image du film, il ne peut donc pas l'échantillonner. Un flou
  * posé ici ne floutait rien et coûtait quand même une couche composée par
  * image. Ne pas le remettre.
+ *
+ * La même pilule d'encre sous le Liquid Glass : comme les commandes, un badge n'est pas en verre
+ * (cf. `PlaybackBadge`).
  */
 export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
-  // Lecteur en verre : la même pilule, en verre (symbole et nombre blancs).
-  const glass = isGlassLayout(usePlayerGlassMode());
   if (!flash) return null;
   const forward = flash.delta > 0;
   const label = forward ? `+${flash.delta}s` : `−${Math.abs(flash.delta)}s`;
@@ -34,24 +32,11 @@ export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
       key={flash.id}
       className={`pointer-events-none absolute top-[45%] z-30 ${forward ? "right-10 md:right-24" : "left-10 md:left-24"}`}
     >
-      <Pill glass={glass}>
+      <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 rounded-pill bg-[rgba(24,24,27,0.74)] px-5 py-2.5">
         {!forward && <RewindIcon className="h-5 w-5 text-white" aria-hidden />}
         <span className="text-lg font-extrabold tabular-nums text-white">{label}</span>
         {forward && <FastForwardIcon className="h-5 w-5 text-white" aria-hidden />}
-      </Pill>
+      </div>
     </div>
-  );
-}
-
-function Pill({ glass, children }: { glass: boolean; children: React.ReactNode }) {
-  if (glass) {
-    return (
-      <GlassSurface className="lgp-badge" group="player-flash" variant="regular">
-        <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 px-5 py-2.5">{children}</div>
-      </GlassSurface>
-    );
-  }
-  return (
-    <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 rounded-pill bg-[rgba(24,24,27,0.74)] px-5 py-2.5">{children}</div>
   );
 }
