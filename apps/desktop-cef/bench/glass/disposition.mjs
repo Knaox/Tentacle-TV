@@ -51,19 +51,37 @@ const MEASURE = `(() => {
   return out;
 })()`;
 
-/** Ouvre un menu par son bouton, le mesure, le referme. */
-const menu = (label) => `(async () => {
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const root = document.querySelector(".pl-chrome, .lgp-chrome");
-  const button = root?.querySelector('button[aria-label="${label}"]');
-  if (!button) return "absent";
-  button.click(); await wait(1100);
-  const panel = document.querySelector(".pl-panel, .lgp-panel");
-  const r = (el) => { if (!el) return "—"; const b = el.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map((v) => Math.round(v * 2) / 2).join(" "); };
-  const res = panel ? { boîte: r(panel), "première ligne": r(panel.querySelector(".pl-option, .lgp-option")), croix: r(panel.querySelector("button[aria-label]")), titre: panel.querySelector(".pl-panel__title")?.textContent ?? "—", boutons: panel.querySelectorAll("button").length } : "aucun panneau";
-  button.click(); await wait(600);
+const RECT = `(el) => { if (!el) return "—"; const b = el.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map((v) => Math.round(v * 2) / 2).join(" "); }`;
+
+/**
+ * Ouvre un menu par son bouton, le mesure une fois POSÉ, le referme. Le menu se matérialise
+ * (échelle, montée) et les commandes s'effacent seules après trois secondes sans geste — menu
+ * ouvert compris, qui se replie alors à 88 % : le pointeur bouge donc entre deux relevés, et la
+ * mesure n'est prise qu'après trois relevés égaux de suite.
+ */
+async function menu(label) {
+  const clicked = await cdp.eval(`(() => { const b = document.querySelector('.pl-chrome button[aria-label="${label}"], .lgp-chrome button[aria-label="${label}"]'); if (!b) return false; b.click(); return true; })()`);
+  if (!clicked) return "absent";
+  const probe = `(() => { const r = ${RECT}; const p = document.querySelector(".pl-panel, .lgp-panel"); return p ? r(p) + "|" + r(p.querySelector(".pl-option, .lgp-option, button")) : null; })()`;
+  const { w, h } = await cdp.eval("({ w: innerWidth, h: innerHeight })");
+  let last = null;
+  for (let same = 0, i = 0; same < 3 && i < 30; i++) {
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: w / 2 + (i % 2) * 9, y: h / 2 });
+    await sleep(120);
+    const now = await cdp.eval(probe);
+    same = now !== null && now === last ? same + 1 : 0;
+    last = now;
+  }
+  const res = await cdp.eval(`(() => {
+    const r = ${RECT};
+    const panel = document.querySelector(".pl-panel, .lgp-panel");
+    if (!panel) return "aucun panneau";
+    return { boîte: r(panel), "première ligne": r(panel.querySelector(".pl-option, .lgp-option")), croix: r(panel.querySelector("button[aria-label]")), titre: panel.querySelector(".pl-panel__title")?.textContent ?? "—", boutons: panel.querySelectorAll("button").length };
+  })()`);
+  await cdp.eval(`document.querySelector('.pl-chrome button[aria-label="${label}"], .lgp-chrome button[aria-label="${label}"]')?.click()`);
+  await sleep(600);
   return res;
-})()`;
+}
 
 /** Le curseur du volume, pointeur posé sur le bouton du son : sa place, et la capsule élargie. */
 async function volumeReveal() {
@@ -99,7 +117,7 @@ for (const on of [false, true]) {
   const layout = await cdp.eval(MEASURE);
   if (layout === null) { console.error("le lecteur n'est pas ouvert"); process.exit(2); }
   const menus = {};
-  for (const label of MENUS) { await wake(); menus[label] = await cdp.eval(menu(label)); }
+  for (const label of MENUS) { await wake(); menus[label] = await menu(label); }
   const volume = await volumeReveal();
   shots[on ? "verre" : "sans"] = { layout, menus, volume };
 }
