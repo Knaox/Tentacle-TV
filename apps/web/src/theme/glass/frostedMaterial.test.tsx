@@ -79,7 +79,8 @@ describe("une bascule allumée (cœur rose, signet violet) se voit sur le verre 
   });
 
   it("un pictogramme : 3:1 au corps du verre, sur les 216 dessous", () => {
-    for (const color of colors.slice(0, 2)) expect(worstFrostedContrast(color, FROSTED_DARK, FROSTED_DARK.whiteBody)).toBeGreaterThanOrEqual(3);
+    // Sombre : une marge — une pastille mesurée est un peu plus claire que le corps du modèle (2,95:1 à 3,2 calculé).
+    for (const color of colors.slice(0, 2)) expect(worstFrostedContrast(color, FROSTED_DARK, FROSTED_DARK.whiteBody)).toBeGreaterThanOrEqual(3.5);
     for (const color of colors.slice(2)) expect(worstFrostedContrast(color, FROSTED_LIGHT, FROSTED_LIGHT.whiteBody)).toBeGreaterThanOrEqual(3);
   });
 

@@ -195,14 +195,15 @@
   border-color: transparent;
 }
 
-/* L'épingle d'une tuile du menu « Plus » est posée sur l'IMAGE de la tuile :
- * un voile de média léger, jamais une pastille noire dans le verre. */
+/* L'épingle d'une tuile du menu « Plus » est posée sur l'IMAGE de la tuile : un voile de
+ * média. Il valait 0,32 : épinglée, son glyphe à la teinte franche tombait à 2,4:1 sur une
+ * image claire. À 0,7, il tient 3:1 sur une image blanche (hors verre : 0,72). */
 :root[data-liquid-glass="native"] .lg-menu .lg-tile-pin {
-  background: rgba(var(--scrim-media-rgb), 0.32);
+  background: rgba(var(--scrim-media-rgb), 0.7);
 }
 
 :root[data-liquid-glass="native"] .lg-menu .lg-tile-pin:hover {
-  background: rgba(var(--scrim-media-rgb), 0.5);
+  background: rgba(var(--scrim-media-rgb), 0.8);
 }
 
 /* Un segmenté du contenu (`.lg-seg`, D) posé DANS une plaque — feuille de

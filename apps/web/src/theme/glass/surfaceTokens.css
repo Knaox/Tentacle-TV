@@ -124,6 +124,7 @@
   --lg-separator: rgba(255, 255, 255, 0.12);
   --lg-section-label: var(--lg-surface-glyph-on-dark-secondary);
   --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
+  --lg-sidebar-selection-glyph: #b8a2fb;
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
@@ -131,4 +132,6 @@
   --lg-separator: rgba(0, 0, 0, 0.1);
   --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
+  /* Au TON, pas au thème : le violet clair du thème sombre tombait à 1,5:1 sur une surface au ton clair. */
+  --lg-sidebar-selection-glyph: #6d28d9;
 }
