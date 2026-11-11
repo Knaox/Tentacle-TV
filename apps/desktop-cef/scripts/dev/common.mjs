@@ -56,6 +56,15 @@ export function run(cmd, args, options = {}) {
   if (r.status !== 0) die(`${[cmd, ...args].join(" ")} a échoué (code ${r.status ?? r.signal})`);
 }
 
+/**
+ * Un chemin pour CMake : des barres obliques, sur les trois OS. Un `-DVAR=C:\Users\…` garde ses
+ * antislashs dans le cache de CMake ; recopié dans un fichier généré ou une définition de
+ * compilation, `\U` et `\t` y deviennent des séquences d'échappement (lot rf2 : lu, non exécuté).
+ */
+export function cmakePath(p) {
+  return String(p).replaceAll("\\", "/");
+}
+
 /** Sortie standard d'une commande (texte rogné), ou null si elle échoue. */
 export function capture(cmd, args, options = {}) {
   const r = spawnSync(cmd, args, { encoding: "utf8", ...options });
@@ -99,7 +108,10 @@ export function desktopVersion() {
 /** Le build web d'Electron en développement (desktop-electron : build:web:debug). */
 export function buildWeb() {
   if (!fs.existsSync(path.join(repo, "pnpm-workspace.yaml"))) die(`monorepo introuvable au-dessus de ${root}`);
-  run(platform === "win32" ? "pnpm.cmd" : "pnpm", ["--filter", "@tentacle-tv/web", "build"], {
+  // Windows : `pnpm` par l'interpréteur (cmd), qui résout lui-même `pnpm.cmd` (npm, corepack) OU
+  // `pnpm.exe` (l'installateur autonome, winget) par PATHEXT. Nommer `pnpm.cmd` échouait avec un
+  // pnpm installé en `.exe` (« n'est pas reconnu… ») — lu dans le code, lot rf2, non exécuté.
+  run("pnpm", ["--filter", "@tentacle-tv/web", "build"], {
     cwd: repo,
     env: { ...process.env, TENTACLE_SHELL: "electron", TENTACLE_DEBUG: "1" },
     shell: platform === "win32",

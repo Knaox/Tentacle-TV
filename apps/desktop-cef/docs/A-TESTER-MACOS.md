@@ -81,3 +81,23 @@ Prouvé le 11/11 par l'état des `<video>` et des captures CDP, fenêtre en arri
   couleurs et hautes lumières à juger — le banc n'a vu qu'un carton de générique.
 - `TENTACLE_MPV_FAIL=fatal pnpm dev:cef -- --mute`, fenêtre ACTIVE : la bascule doit se faire
   sans éclair (la surface de mpv part, la page reprend) — non jugé image par image.
+
+## outils — lecteur en verre, chat, menu de débogage (lot rf2, 11/11/2026)
+
+Lancer : `pnpm cef`. Ce que le banc du lot (capot fermé, fenêtre en arrière-plan, captures par
+CDP — le verre NATIF ne s'y voit pas) n'a pas pu voir :
+
+- Lecteur, « Liquid Glass dans Tentacle » allumé → les commandes sont AUX MÊMES PLACES que
+  réglage coupé : la sortie en haut à gauche, la barre d'une marge à l'autre, la capsule du
+  transport à gauche, le temps, la capsule du son et des réglages à droite. Seule la matière
+  change (mesuré : `PONT_CDP_PORT=… node bench/glass/disposition.mjs` : commandes, groupes, volume survolé et menus au demi-pixel).
+- Les deux capsules de verre : la vidéo se voit À TRAVERS au bord, les symboles restent blancs
+  et lisibles sur une scène de neige comme sur une scène de nuit ; le disque de lecture est
+  ivoire ; le survol d'un bouton l'éclaire (un disque clair), sans gris sale.
+- Survoler le bouton du son → le curseur paraît DANS la capsule, qui s'élargit vers la gauche :
+  le verre suit sans traîner derrière (aucun ressort visible).
+- Ouvrir « Paramètres » puis « Vitesse » → le menu de verre s'ouvre au-dessus de la capsule de
+  droite, au même endroit que le menu sans verre ; ses lignes se lisent sur une image claire.
+- Chat de groupe, thème clair, hors lecteur → panneau clair ; dans le lecteur → encre sombre.
+- Menu de débogage (DEBUG, F9) → lisible sur une vidéo claire ; il sort de son bouton au clic,
+  paraît sans mouvement à F9.

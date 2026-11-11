@@ -26,24 +26,32 @@
   --lg-player-fg-3: #ececf0;
   --lg-player-focus: var(--brand-light);
 
-  /* Géométrie, façon tvOS 26 (lot lg8) : du TEXTE sur un voile (titre, temps, barre
-     nue) et des BOUTONS RONDS en verre, chacun sa forme. Les écarts entre deux ronds
-     (12) dépassent la distance de fusion du groupe natif (8) : au repos, AppKit les
-     garde distinctes ; chacune a son conteneur natif et se matérialise seule
-     (`playerGlassMaterialize.css`). */
-  /* Les marges de l'habillage d'avant, à l'identique : 20 px en haut et en bas
-     (`pt-5` / `pb-5`), 24 px sur les côtés (`px-6`, le `right-6` des encarts).
-     L'overlay suit la fenêtre et l'écran comme lui (retour de Damien, lg3) :
-     aucune largeur plafonnée — la barre court d'une marge à l'autre. */
+  /* Géométrie : CELLE DE L'HABILLAGE SANS VERRE (`chrome/playerChrome.css`, lot rf2 —
+     « la même disposition, avec des composants Liquid Glass »). Allumer ou couper le
+     réglage ne déplace aucune commande : la sortie seule en haut (44 px), la barre d'une
+     marge à l'autre, puis deux CAPSULES de 50 px (boutons de 40, 2 px entre eux, 5 px au
+     bord) — `playerGlassGeometry.test.ts` lie chaque jeton à sa règle d'en face, et le
+     banc `apps/desktop-cef/bench/glass/disposition.mjs` le mesure sur l'app. */
+  /* Les marges : 20 px en haut et en bas, 24 px sur les côtés. L'overlay suit la
+     fenêtre et l'écran (retour de Damien, lg3) : aucune largeur plafonnée. */
   --lg-player-edge: 20px;
   --lg-player-inline: 24px;
+  /* Entre la sortie et le titre ; entre un encart du coin et la barre. */
   --lg-player-gap: 12px;
-  /* Un rond de verre, et celui de lecture, plus grand : des cibles de 44 px au moins. */
+  /* Entre la barre et la rangée, entre une capsule et le temps (`.pl-bar--bottom`, `.pl-row`). */
+  --lg-player-row-gap: 10px;
+  /* Le rond de la sortie (`.pl-btn--solo`). */
   --lg-player-orb: 44px;
-  --lg-player-orb-primary: 56px;
-  --lg-player-timeline-height: 28px;
-  /* Hauteur FIXE du bas (barre + écart + ronds) : le coin bas-droit monte d'autant (`.lgp-corner`). */
-  --lg-player-bar-height: calc(var(--lg-player-timeline-height) + var(--lg-player-gap) + var(--lg-player-orb-primary));
+  /* Une capsule (`.pl-caps`) et ses boutons (`.pl-btn`). */
+  --lg-player-caps-height: 50px;
+  --lg-player-caps-pad: 5px;
+  --lg-player-caps-gap: 2px;
+  --lg-player-caps-button: 40px;
+  /* La zone de saisie de la barre (`.pl-seek`). */
+  --lg-player-timeline-height: 18px;
+  /* Le coin bas-droit (`.lgp-corner`) : son repos, et de combien il monte avec les commandes. */
+  --lg-player-corner-rest: 40px;
+  --lg-player-corner-lift: 64px;
   /* Le VOILE (`GlassScrim`) : hauteur depuis le bord, puis densité du bord vers l'image
      (arrêts à 0, 42 et 72 % de la hauteur, transparent au bout). Dosé pour la barre et le
      texte sur le blanc pur : ≥ 0,72 sous la barre, le temps et le titre → fond ≤ 72/255 :
@@ -65,7 +73,6 @@
   --lg-player-trickplay-edge: rgb(0 0 0 / 0.4);
   --lg-player-trickplay-time-dim: rgb(0 0 0 / 0.6);
   --lg-player-button: 34px;
-  --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;
 
   /* Barre de progression et volume : BLANCS, comme QuickTime et l'app TV (HIG « Color » :
@@ -90,7 +97,7 @@
   --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);
   /* La barre NUE (tvOS 26) : un trait fin, qui s'épaissit au survol (`scaleY`, jamais une hauteur animée). */
   --lg-player-track-height: 4px;
-  --lg-player-track-hover-scale: 1.75;
+  --lg-player-track-hover-scale: 1.7;
 
   /* Lignes des panneaux : la surbrillance façon menu macOS — l'ACCENT uni, jamais le dégradé
      (lg7) ; blanc dessus 5,7:1. Même accent pour la saison affichée du panneau des épisodes. */
@@ -223,18 +230,27 @@
 /* ── Texte ───────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-title {
+  overflow: hidden;
   text-shadow: var(--lg-player-label-shadow);
   color: var(--lg-player-fg);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.25;
+  /* Les tailles de `.pl-title` et `.pl-subtitle` : le titre ne bouge pas d'un pixel. */
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-subtitle {
+  overflow: hidden;
   text-shadow: var(--lg-player-label-shadow);
   color: var(--lg-player-fg-2);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-time {
@@ -244,6 +260,14 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
+}
+
+/* Le temps de la rangée (« 0:24 / 22:46 ») : la taille de `.pl-time`, à sa place. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-time--row {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -146,3 +146,39 @@ Tous les autres appels non servis par CEF sont soit gardés par une capacité, s
 - Front : `NETTOYAGE-DEPS.md` § 3 mesure ≈ 1,4 Mo de JS minifié chargé au démarrage sans servir
   sous CEF (hls.js 598 Ko, une langue 423 Ko, plus l'écran des nouveautés) — gain possible sur le
   processus de rendu, à mesurer par l'axe `ram`.
+
+## 7. Le menu de débogage — entrée × coquille (lot rf2, 11/11/2026)
+
+Le menu (`apps/web/src/dev/`, bouton DEBUG ou F9, builds instrumentés seulement) a deux onglets :
+« Actions » — chaque entrée dit ce qu'elle fait, où elle en est, et si elle PEUT agir sur cette
+coquille — et « Diagnostic » (avec « Copier », pour l'envoyer en texte). L'en-tête dit quelle
+coquille répond (« CEF · macOS », « Electron · Windows »…). Avant ce lot, sous CEF, quatre
+bascules annonçaient un succès que la coquille refusait, et « mise à jour » ouvrait la pop-up
+d'Electron (« Ouvrir l'App Store ») que CEF ne montre jamais.
+
+**Electron** : la référence, LUE dans le code (`mpvAllowlist.ts`, `ipc/videoHdr.ts`,
+`ipc/videoProbe.ts`, `useAutoUpdate.ts`). **CEF macOS** : ESSAYÉ sur l'app (CEF 156, macOS 26,
+Apple Silicon, compte de test, lecture réelle). **CEF Windows** : LU dans le code seulement —
+rien n'y a tourné ; les cas sont dans `A-TESTER-WINDOWS.md`.
+
+| Entrée (touche) | Electron — référence | CEF macOS — essayé | CEF Windows — lu |
+|---|---|---|---|
+| Lecteur mpv coupé (M) | bascule la page sur le lecteur web, même en lecture ; persiste | ✅ état relu ; en lecture, la page démonte mpv ; rallumé ensuite | même code de page ; attendu identique |
+| Simuler mpv en panne (X) | indisponible, et le dit : Electron n'a pas `mpv_debug_fail` | ✅ avec la commande de l'axe lecture (`mpv_debug_fail`, `bridge/mpv_fault.h`) appliquée le temps de l'essai : « Chute en lecture » fait tomber la lecture (`[pont] lecture mise en echec`, bandeau « Lecteur de secours ») ; « Init refusée », « Init muette », « Ouverture en échec » restent posées (état « panne : load », gardé au rechargement) ; « Lever la panne » → mpv rejoue. Sans cette commande dans la coquille : grisée | même commande, même code de pont (portable) : attendu identique |
+| Décodage matériel (D) | en direct (`hwdec`, accepté par `mpvAllowlist.ts`) | ✅ réglage de l'appareil, pris à la lecture suivante ; l'état lit `hwdec-current` (« videotoolbox ») | réglage de l'appareil : `hwdec` est une option d'INIT acceptée (`mpv_policy.cpp`) ; l'écriture en direct est refusée, comme sur macOS |
+| Transmission HDR autorisée (H) | `display_hdr_auto` ; Windows bascule l'écran | ✅ préférence notée et relue ; « sans interrupteur » (macOS n'en a pas) | `display_hdr_windows.cpp` (`DisplayConfigSetDeviceInfo`) : l'écran bascule à la lecture HDR suivante si autorisée — à essayer |
+| Passthrough HDR (P), Tone-mapping (T), Gamut cible (G) | en direct | indisponibles, raison affichée : la coquille tient la chaîne couleur (`mpv_policy.cpp` refuse ces écritures) | indisponibles, même politique (code portable) |
+| Image affichée (I) | lit `target-prim`, `target-trc`, `target-peak` | ✅ « auto / auto / pic auto · passthrough yes » en lecture ; « aucune lecture en cours » sinon | lecture seule (`mpv_get_property`) : attendu identique |
+| Capturer la surface (C) | macOS, développement | ✅ « IMAGE VISIBLE — 74,1 % non noirs » en lecture | indisponible, et le dit : la sonde n'est construite que sur macOS (`bridge/CMakeLists.txt`) |
+| Liquid Glass (L) | macOS 26 | ✅ `data-liquid-glass` : native ↔ off | indisponible : aucun pont de verre (`glass_windows.cpp`) |
+| Pop-up de mise à jour (U) | la pop-up du front (App Store, Microsoft Store, Linux) | ✅ la SURCOUCHE de la coquille : notification, prête, sécurité (voile), installation (voile), annulée, fermer — en français, front verrouillé sous le voile | la surcouche (le même script embarqué) ET, parce que `check_msix_update` y est déclaré, la pop-up du front en « Store · … » |
+| Écran des nouveautés (N) | ✅ | ✅ | même code de page |
+| Vider le journal réseau (R) | ✅ | ✅ « 60 requêtes effacées » | même code de page |
+| Copier le diagnostic | ✅ | ✅ « copié dans le presse-papiers » | presse-papiers de Chromium, repli `execCommand` |
+
+La démonstration de la surcouche passe par l'évènement de fenêtre `tentacle:update-demo`
+(`web/shim/update-overlay-demo.js`, un fragment que CMake glisse dans la fermeture de
+`update-overlay.js` au jeton `/*__UPDATE_DEMO__*/`) : un instantané FACTICE, rien n'est demandé au
+natif, le vrai instantané revient à la fin. Trouvé en chemin : `<html lang>` restait « en », la
+surcouche parlait anglais sur une interface en français — le front le tient maintenant à jour.
+

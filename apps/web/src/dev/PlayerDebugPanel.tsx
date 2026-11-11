@@ -1,101 +1,133 @@
 /**
- * Panneau de diagnostic du lecteur — DÉVELOPPEMENT UNIQUEMENT.
+ * Le menu de débogage — DÉVELOPPEMENT UNIQUEMENT.
  *
- * Un clic, ou F9, et tout ce qui décide de la lecture est à l'écran : quelle
- * coquille répond, quelles capacités elle annonce, ce que le navigateur sait
- * de l'écran, ce que le natif en dit, et l'état de la chaîne couleur de mpv.
- * Les raccourcis basculent les réglages EN DIRECT, seule façon honnête de
- * juger — une capture d'un écran HDR est ramenée en SDR et ne prouve rien.
+ * Un clic sur DEBUG, ou F9, et deux onglets :
+ *  - « Actions » : les bascules, rangées par groupe (lecteur, image et HDR, application,
+ *    réseau), chacune avec son ÉTAT — allumée ou non, sa valeur, ou la raison pour laquelle
+ *    elle ne peut pas agir sur cette coquille. Les bascules agissent EN DIRECT : c'est la seule
+ *    façon honnête de juger (une capture d'un écran HDR est ramenée en SDR et ne prouve rien) ;
+ *  - « Diagnostic » : tout ce qui décide de la lecture — quelle coquille répond, ce qu'elle
+ *    annonce, ce que le natif dit de l'écran, la chaîne couleur de mpv — et « Copier », pour
+ *    l'envoyer depuis une machine que personne d'autre n'a sous la main.
  *
- * `__PLAYER_DEBUG__` est faux dans tout build livré : ce module et ses voisins
- * disparaissent alors du bundle. Les libellés restent donc en clair, sans
- * passer par i18n — ils ne seront jamais vus par un utilisateur.
+ * `__PLAYER_DEBUG__` est faux dans tout build livré : ce module et ses voisins disparaissent
+ * alors du bundle. Les libellés restent donc en clair, sans passer par i18n.
  *
- * Fond OPAQUE, et pas seulement sombre : posé sur une vidéo claire, un panneau
- * translucide devient illisible au pire moment — celui où l'on cherche à lire
- * une valeur. Et pas de `backdrop-filter` non plus : il ne peut PAS
- * échantillonner l'image de mpv, qui n'est pas composée par Chromium mais
- * dessinée dans une fenêtre native placée dessous. Un panneau en verre dépoli
- * serait resté vide.
+ * Sa peau (`debugMenu/debugMenu.css` et ses suites) : opaque, sombre dans les deux thèmes, sans flou.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { videoShadow } from "../lib/videoShadow";
 import { DebugButton } from "./DebugButton";
+import { DebugActionsView } from "./debugMenu/DebugActionsView";
+import { DebugDiagnosticView } from "./debugMenu/DebugDiagnosticView";
+import type { DebugAction } from "./debugMenu/debugActionTypes";
+import { copyText, debugReport } from "./debugMenu/debugReport";
+import { debugShell } from "./debugMenu/debugShell";
+import { useDebugStatuses } from "./debugMenu/useDebugStatuses";
 import { collectDebug } from "./playerDebugData";
 import type { DebugSection } from "./playerDebugTypes";
 import { DEBUG_ACTIONS } from "./playerDebugActions";
 import { usePanelDrag } from "./usePanelDrag";
 import { usePanelResize } from "./usePanelResize";
+import "./debugMenu/debugMenu.css";
+import "./debugMenu/debugActions.css";
+import "./debugMenu/debugDiagnostic.css";
 
 const REFRESH_MS = 500;
+const TAB_KEY = "tentacle_debug_onglet";
 
-function colorClass(state: boolean | null): string {
-  if (state === null) return "text-white";
-  return state ? "text-emerald-400" : "text-rose-400";
-}
+type Tab = "actions" | "diagnostic";
+/** Comment le panneau s'est ouvert : au pointeur il se pose (180 ms), au clavier il est là. */
+type OpenedBy = "pointer" | "key" | null;
 
 /**
- * Le panneau s'ouvre-t-il d'office ?
- *
- * `?debugpanel` dans l'adresse de départ — que la coquille Electron pose depuis
- * `TENTACLE_DEBUG_PANEL`. Une session de mise au point du rendu demande de
- * relancer l'application des dizaines de fois, et rouvrir le panneau à la main
- * à chaque fois finit par décider de ce qu'on observe.
+ * Le panneau s'ouvre-t-il d'office ? `?debugpanel` dans l'adresse de départ — que la coquille
+ * pose depuis `TENTACLE_DEBUG_PANEL`. Une session de mise au point demande de relancer
+ * l'application des dizaines de fois.
  */
-function openOnStartup(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).has("debugpanel");
+function openOnStartup(): OpenedBy {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).has("debugpanel") ? "key" : null;
+}
+
+function loadTab(): Tab {
+  try {
+    return localStorage.getItem(TAB_KEY) === "diagnostic" ? "diagnostic" : "actions";
+  } catch {
+    return "actions";
+  }
 }
 
 export function PlayerDebugPanel() {
-  const [open, setOpen] = useState(openOnStartup);
+  const [openedBy, setOpenedBy] = useState<OpenedBy>(openOnStartup);
+  const open = openedBy !== null;
+  const [tab, setTab] = useState<Tab>(loadTab);
   const [sections, setSections] = useState<DebugSection[]>([]);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const { position, element, onPointerDown, reclamp } = usePanelDrag(
-    { x: 16, y: 16 },
-    { key: "tentacle_debug_panel_pos" },
-  );
+  const [feedback, setFeedback] = useState<{ text: string; at: number } | null>(null);
+  const shell = useMemo(debugShell, []);
+  const { position, element, onPointerDown, reclamp } = usePanelDrag({ x: 16, y: 16 }, { key: "tentacle_debug_panel_pos" });
   const { size, startResize } = usePanelResize(
     "tentacle_debug_panel_size",
-    { w: 480, h: Math.round(window.innerHeight * 0.88) },
+    { w: 460, h: Math.round(Math.min(760, window.innerHeight * 0.88)) },
     // Un panneau agrandi vers le bas/la droite peut déborder : le ramener.
     reclamp,
   );
+  const { statuses, refresh: refreshStatuses } = useDebugStatuses(DEBUG_ACTIONS, open && tab === "actions");
 
-  // ⚠️ Le `catch` n'est pas une politesse. Sans lui, une seule collecte qui
-  // lève laissait `sections` vide et le panneau n'affichait plus que ses
-  // bascules — l'outil censé dire ce qui ne va pas ne disait rien, et il
-  // fallait la console pour l'apprendre (mesuré : un champ renommé d'un côté
-  // du pont de la sonde, `edr.courant` devenu `edr.current`, et tout le
-  // diagnostic muet). L'échec s'affiche donc DANS le panneau.
+  // ⚠️ Le `catch` n'est pas une politesse. Sans lui, une seule collecte qui lève laissait
+  // `sections` vide — l'outil censé dire ce qui ne va pas ne disait rien (mesuré : un champ
+  // renommé d'un côté du pont de la sonde, et tout le diagnostic muet). L'échec s'affiche DANS
+  // le panneau.
   const refresh = useCallback(() => {
     void collectDebug()
       .then(setSections)
       .catch((e: unknown) => {
-        setSections([
-          {
-            title: "Diagnostic en échec",
-            lines: [["erreur", e instanceof Error ? e.message : String(e), false]],
-            emphasis: true,
-          },
-        ]);
+        setSections([{ title: "Diagnostic en échec", lines: [["erreur", e instanceof Error ? e.message : String(e), false]], emphasis: true }]);
       });
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || tab !== "diagnostic") return undefined;
     refresh();
-    const t = setInterval(refresh, REFRESH_MS);
-    return () => clearInterval(t);
-  }, [open, refresh]);
+    const timer = setInterval(refresh, REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [open, tab, refresh]);
 
-  // F9 ouvre et ferme ; les autres raccourcis n'agissent que panneau ouvert,
-  // pour ne jamais entrer en conflit avec ceux du lecteur.
+  const say = useCallback((text: string | null) => {
+    if (text !== null) setFeedback({ text, at: Date.now() });
+  }, []);
+
+  const run = useCallback((action: DebugAction, choice?: string) => {
+    void action.run(choice)
+      .then(say, (error: unknown) => say(`${action.label} : ${error instanceof Error ? error.message : String(error)}`))
+      // L'état d'une bascule se relit tout de suite : l'interrupteur ne ment pas 700 ms.
+      .then(refreshStatuses);
+  }, [say, refreshStatuses]);
+
+  const selectTab = useCallback((next: Tab) => {
+    setTab(next);
+    try {
+      localStorage.setItem(TAB_KEY, next);
+    } catch {
+      /* stockage indisponible : l'onglet vaut pour cette ouverture */
+    }
+  }, []);
+
+  const copy = useCallback(() => {
+    void collectDebug()
+      .catch(() => sections)
+      .then((fresh) => copyText(debugReport(shell.label, fresh, DEBUG_ACTIONS, statuses)))
+      .then((ok) => say(ok ? "diagnostic copié dans le presse-papiers" : "copie refusée par cette coquille"));
+  }, [sections, shell.label, statuses, say]);
+
+  // F9 ouvre et ferme ; les autres raccourcis n'agissent que panneau ouvert, pour ne jamais
+  // entrer en conflit avec ceux du lecteur.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "F9") {
-        setOpen((v) => !v);
+        setOpenedBy((v) => (v === null ? "key" : null));
         return;
       }
       if (!open || e.ctrlKey || e.altKey || e.metaKey) return;
@@ -104,104 +136,71 @@ export function PlayerDebugPanel() {
       const action = DEBUG_ACTIONS.find((a) => a.key === e.key.toLowerCase());
       if (!action) return;
       e.preventDefault();
-      void action.run().then(setFeedback);
+      if (statuses.get(action.id)?.unavailable !== undefined) {
+        say(`${action.label} : ${statuses.get(action.id)?.unavailable ?? ""}`);
+        return;
+      }
+      run(action);
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, run, say, statuses]);
 
-  if (!open) {
-    return <DebugButton onOpen={() => setOpen(true)} />;
-  }
+  if (!open) return <DebugButton onOpen={() => setOpenedBy("pointer")} />;
 
   return (
     <div
       ref={(el) => {
         element.current = el;
       }}
-      onPointerDown={onPointerDown}
+      role="dialog"
+      aria-label="Menu de débogage"
       style={{
         left: position.x,
         top: position.y,
-        // Taille pilotée par la poignée du coin — plus de largeur figée.
         width: size.w,
         height: size.h,
-        // Opaque, franchement : voir l'en-tête du fichier.
-        background: "#0a0a10",
-        // Et pas d'ombre floue là où la surface a un canal alpha : elle y sort
-        // en aplat noir bien plus grand que le panneau. Voir `videoShadow`.
-        boxShadow: videoShadow("0 24px 64px -12px rgba(0,0,0,0.9)", "none"),
+        // Pas d'ombre floue là où la surface a un canal alpha : elle y sort en aplat noir bien
+        // plus grand que le panneau (`videoShadow`).
+        boxShadow: videoShadow("0 0 0 1px rgba(255,255,255,0.14), 0 24px 64px -12px rgba(0,0,0,0.9)", "0 0 0 1px rgba(255,255,255,0.2)"),
       }}
-      className="fixed z-[9999] cursor-move select-none rounded-lg font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
+      className={`dbg dbg-panel ${openedBy === "pointer" ? "dbg-panel--pointer" : ""}`}
     >
-      {/* Le contenu défile DANS ce conteneur ; la poignée, elle, reste collée
-          au coin du panneau — absolue dans le parent fixe, hors du défilement. */}
-      <div className="h-full overflow-y-auto p-3.5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-bold tracking-wider text-emerald-400">
-          DIAGNOSTIC LECTEUR
-        </span>
-        <button
-          onClick={() => setOpen(false)}
-          className="cursor-pointer rounded px-1.5 text-white/50 transition hover:text-white"
-          title="Fermer (F9)"
-        >
-          ×
+      {/* On le déplace par son EN-TÊTE : ailleurs, une valeur se sélectionne et se copie. */}
+      <div className="dbg-head" onPointerDown={onPointerDown}>
+        <span className="dbg-title">Débogage</span>
+        <span className="dbg-shell" title="La coquille qui répond : c'est elle qui décide de ce qui marche.">{shell.label}</span>
+        <span className="dbg-grow" />
+        <button type="button" className="dbg-iconbtn" onClick={copy} title="Copier le diagnostic (texte)">Copier</button>
+        <button type="button" className="dbg-iconbtn" onClick={() => setOpenedBy(null)} title="Fermer (F9)" aria-label="Fermer">
+          <XIcon size={14} weight="bold" aria-hidden />
         </button>
       </div>
 
-      {sections.map((section) => (
-        <div
-          key={section.title}
-          className={section.emphasis ? "mb-3 rounded-md bg-white/[0.06] p-2.5" : "mb-2.5"}
-        >
-          <div className="mb-1 border-b border-white/10 pb-0.5 text-[10px] uppercase tracking-wider text-fuchsia-400">
-            {section.title}
-          </div>
-          {section.lines.map(([key, value, state]) =>
-            // Les verdicts se lisent en ligne, valeur à GAUCHE et sur toute la
-            // largeur : ce sont des phrases, pas des valeurs à aligner.
-            section.emphasis ? (
-              <div key={key} className="mt-1 flex gap-2 text-[12px] leading-snug">
-                <span className="w-[68px] shrink-0 text-white/45">{key}</span>
-                <span className={`flex-1 font-semibold ${colorClass(state)}`}>{value}</span>
-              </div>
-            ) : (
-              <div key={key} className="flex justify-between gap-3">
-                <span className="shrink-0 text-white/45">{key}</span>
-                <span className={`truncate text-right ${colorClass(state)}`} title={value}>
-                  {value}
-                </span>
-              </div>
-            ),
-          )}
-        </div>
-      ))}
+      <div className="dbg-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={tab === "actions"} className="dbg-tab" onClick={() => selectTab("actions")}>Actions</button>
+        <button type="button" role="tab" aria-selected={tab === "diagnostic"} className="dbg-tab" onClick={() => selectTab("diagnostic")}>Diagnostic</button>
+      </div>
 
-      <div className="mb-1 border-b border-white/10 pb-0.5 text-[10px] uppercase tracking-wider text-fuchsia-400">
-        Bascules en direct
+      {/* Le contenu défile DANS ce conteneur ; le retour et la poignée restent collés au bas. */}
+      <div className="dbg-body" role="tabpanel">
+        {tab === "actions"
+          ? <DebugActionsView actions={DEBUG_ACTIONS} statuses={statuses} onRun={run} />
+          : <DebugDiagnosticView sections={sections} />}
       </div>
-      <div className="flex flex-wrap gap-1.5 pt-1">
-        {DEBUG_ACTIONS.map((action) => (
-          <button
-            key={action.key}
-            onClick={() => void action.run().then(setFeedback)}
-            className="cursor-pointer rounded bg-white/10 px-2 py-1 text-[10px] transition hover:bg-white/20"
-          >
-            {action.label}
-          </button>
-        ))}
+
+      <div className="dbg-foot" role="status">
+        {feedback ? (
+          <>
+            <span className="dbg-foot__dot" aria-hidden />
+            <span key={feedback.at} className="dbg-foot__text">{feedback.text}</span>
+          </>
+        ) : (
+          <span>F9 ouvre et ferme · une lettre lance son action</span>
+        )}
       </div>
-      {feedback && <div className="mt-2 text-[10px] text-amber-300">{feedback}</div>}
-      </div>
-      <div
-        onPointerDown={startResize}
-        className="absolute bottom-0 right-0 flex h-4 w-4 cursor-nwse-resize items-end justify-end p-0.5 text-white/30 hover:text-white/80"
-        title="Redimensionner"
-      >
-        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5">
-          <path d="M9 1v8H1" fill="none" stroke="currentColor" />
-        </svg>
+      <div onPointerDown={startResize} className="dbg-resize" title="Redimensionner" aria-hidden>
+        <svg viewBox="0 0 10 10" width="10" height="10"><path d="M9 1v8H1" fill="none" stroke="currentColor" /></svg>
       </div>
     </div>
   );

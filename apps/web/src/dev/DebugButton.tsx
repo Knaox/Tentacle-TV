@@ -1,20 +1,20 @@
 /**
  * Le bouton DEBUG — déplaçable, et sa position s'en souvient.
  *
- * Extrait de `PlayerDebugPanel` : le bouton a désormais son propre glisser
- * (`grabButtons` — la garde anti-boutons de `usePanelDrag` l'aurait rendu
- * inamovible), et le clic qui SUIT un déplacement est avalé (`hasDragged`, modèle
- * `ChatOverlay`) : lâcher le bouton ne doit pas ouvrir le panneau.
+ * Le bouton a son propre glisser (`grabButtons` — la garde anti-boutons de `usePanelDrag`
+ * l'aurait rendu inamovible), et le clic qui SUIT un déplacement est avalé (`hasDragged`,
+ * modèle `ChatOverlay`) : lâcher le bouton ne doit pas ouvrir le panneau.
  *
- * Ancré en bas-droite par défaut via une position CALCULÉE (l'ancrage
- * bottom/right de l'ancien bouton est incompatible avec `clampToWindow()`, qui
- * raisonne en left/top) ; une fois déplacé, la position mémorisée gagne.
+ * Ancré en bas-droite par défaut via une position CALCULÉE (un ancrage bottom/right est
+ * incompatible avec `clampToWindow()`, qui raisonne en left/top) ; une fois déplacé, la
+ * position mémorisée gagne.
  */
 
 import { usePanelDrag } from "./usePanelDrag";
+import "./debugMenu/debugMenu.css";
 
 /** Taille approximative du bouton, pour le poser en bas-droite au départ. */
-const WIDTH = 62;
+const WIDTH = 72;
 const HEIGHT = 26;
 
 function defaultPosition() {
@@ -29,6 +29,7 @@ export function DebugButton({ onOpen }: { onOpen: () => void }) {
   });
   return (
     <button
+      type="button"
       ref={(el) => {
         element.current = el;
       }}
@@ -38,9 +39,10 @@ export function DebugButton({ onOpen }: { onOpen: () => void }) {
         onOpen();
       }}
       style={{ left: position.x, top: position.y }}
-      className="fixed z-[9999] cursor-move rounded-md bg-black/80 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-emerald-400 ring-1 ring-emerald-400/40 transition hover:bg-black"
-      title="Diagnostic (F9). Glisser pour déplacer."
+      className="dbg dbg-launch"
+      title="Menu de débogage (F9). Glisser pour déplacer."
     >
+      <span className="dbg-launch__dot" aria-hidden />
       DEBUG
     </button>
   );

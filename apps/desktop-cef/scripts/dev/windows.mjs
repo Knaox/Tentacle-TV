@@ -5,7 +5,7 @@
 // linux ; jamais lancé depuis le Mac du lot : la recette est docs/A-TESTER-WINDOWS.md.
 import fs from "node:fs";
 import path from "node:path";
-import { buildName, cache, desktopVersion, die, dry, root, run, say } from "./common.mjs";
+import { buildName, cache, cmakePath, desktopVersion, die, dry, root, run, say } from "./common.mjs";
 import { ensureCef } from "./cef.mjs";
 import { cefProfileFor } from "./profile.mjs";
 import { ensureJson, ensureMpvPrefix, ensureSdl3, ensureSodium, ensureSqlite, msvcEnv, vcvarsall, whichIn } from "./windows-deps.mjs";
@@ -94,15 +94,17 @@ export const windows = {
     }
     const opts = { env: state.env };
     if (!fs.existsSync(path.join(build, "build.ninja"))) {
-      run("cmake", ["-G", "Ninja", "-S", root, "-B", build,
+      // Les chemins en barres obliques (`cmakePath`) : CMake les accepte sous Windows, et un
+      // antislash dans une valeur de cache finit en séquence d'échappement ailleurs.
+      run("cmake", ["-G", "Ninja", "-S", cmakePath(root), "-B", cmakePath(build),
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",  // le CRT statique de CEF, wrapper compris
-        `-DCEF_ROOT=${state.cef}`,
-        `-DSDL3_DIR=${state.sdl3Dir}`,
-        `-Dnlohmann_json_DIR=${state.jsonDir}`,
-        `-DMPV_PREFIX=${state.mpv}`,
-        `-DSODIUM_INCLUDE_DIR=${state.sodium.include}`,
-        `-DSODIUM_LIBRARY=${state.sodium.lib}`,
+        `-DCEF_ROOT=${cmakePath(state.cef)}`,
+        `-DSDL3_DIR=${cmakePath(state.sdl3Dir)}`,
+        `-Dnlohmann_json_DIR=${cmakePath(state.jsonDir)}`,
+        `-DMPV_PREFIX=${cmakePath(state.mpv)}`,
+        `-DSODIUM_INCLUDE_DIR=${cmakePath(state.sodium.include)}`,
+        `-DSODIUM_LIBRARY=${cmakePath(state.sodium.lib)}`,
         `-DTENTACLE_APP_VERSION=${desktopVersion()}`,
       ], opts);
     }

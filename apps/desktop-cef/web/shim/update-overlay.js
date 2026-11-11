@@ -146,7 +146,7 @@
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   };
   const ctx = { path: "", video: false, audio: false, rolledBackSeen: false };
-  let snapshot = null, host = null, layer = null, shownKey = "", poll = 0, lockAnnounced = false;
+  let snapshot = null, host = null, layer = null, shownKey = "", poll = 0, lockAnnounced = false, demo = null;
 
   function announceLock(locked) {  // dit au front que le voile est là (ou parti), une fois par changement
     if (locked === lockAnnounced) return;
@@ -180,7 +180,7 @@
 
   function button(b, cls) {
     return b && h("button", { class: cls, type: "button", disabled: b.disabled ? "" : false, "data-action": b.action,
-      text: b.label, onclick: () => act(b.action) });
+      text: b.label, onclick: () => (demo ? demo.act : act)(b.action) });
   }
 
   function progressBar(p) {
@@ -201,7 +201,7 @@
     return h("section", { class: "glass toast", role: "status", "aria-live": "polite", "data-kind": m.kind, "data-entering": "" }, [
       h("div", { class: m.warn ? "icon warn" : "icon", "aria-hidden": "true", html: m.warn ? ICON.shield : ICON.up }),
       h("div", { class: "text" }, [h("p", { class: "title", text: m.title }), h("p", { class: "body", text: m.body })]),
-      m.closable ? h("button", { class: "close", type: "button", "aria-label": t.close, html: ICON.x, onclick: () => act("later") }) : h("span"),
+      m.closable ? h("button", { class: "close", type: "button", "aria-label": t.close, html: ICON.x, onclick: () => (demo ? demo.act : act)("later") }) : h("span"),
       progressBar(m.progress),
       m.lines.length ? h("ul", { class: "notes wide" }, m.lines.map((l) => h("li", { text: l }))) : null,
       m.primary || m.secondary ? h("div", { class: "actions wide" }, [button(m.secondary, "btn ghost"), button(m.primary, "btn primary")]) : null,
@@ -284,8 +284,8 @@
     if (target) target.focus();
   }
   ["keydown", "keyup", "keypress"].forEach((type) => window.addEventListener(type, swallowKey, true));
-
-  shell.on("update.state", (s) => { snapshot = s; render(); });
+  /*__UPDATE_DEMO__*/  // update-overlay-demo.js (démonstration du menu de débogage) : pose `demo`, nul sans elle
+  shell.on("update.state", (s) => { if (demo) demo.held = s; else snapshot = s; render(); });
   shell.on("tentacle:mpv://event", (e) => {
     const name = e && e.event;
     if (name === "start-file" || name === "file-loaded" || name === "playback-restart") ctx.video = true;
@@ -296,5 +296,5 @@
     if (e && e.type === "state") { ctx.audio = e.state === "playing" || e.state === "buffering"; render(); }
   });
   document.addEventListener("DOMContentLoaded", render);
-  shell.invoke("update.state", {}).then((s) => { snapshot = s; render(); }).catch(() => {});
+  shell.invoke("update.state", {}).then((s) => { if (demo) demo.held = s; else snapshot = s; render(); }).catch(() => {});
 })(this);

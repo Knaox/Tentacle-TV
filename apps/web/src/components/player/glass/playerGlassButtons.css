@@ -16,9 +16,16 @@
   cursor: pointer;
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--primary {
-  width: var(--lg-player-button-primary);
-  height: var(--lg-player-button-primary);
+/* Lire / pause : le disque d'ivoire de l'habillage sans verre (`.pl-btn--main`), le seul
+   plein de la capsule — opaque, il se compose juste sur la surface à alpha. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--main {
+  background-color: #f4f2ee;
+  color: #131315;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--main > svg {
+  color: #131315;
+  filter: none;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--small {
@@ -55,4 +62,63 @@
   background: var(--lg-player-fg);
   box-shadow: var(--lg-player-thumb-edge);
   pointer-events: none;
+}
+
+/* ── Dans une capsule : les états de l'habillage sans verre ───────────────
+   Le survol et l'état ouvert sont le disque clair de `.pl-btn` : un blanc à alpha posé
+   DANS la page sur l'atténuation noire de la capsule (`playerGlassDim.css`), où il se
+   compose juste — pas le blanc translucide seul sur la vidéo, qui rendrait gris. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn {
+  transition: background-color var(--lg-duration-hover) ease;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn[aria-expanded="true"] {
+  background-color: rgb(255 255 255 / 0.16);
+}
+
+/* Le point sous le symbole (façon tvOS) ne vaut que pour un rond seul. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn[aria-expanded="true"]::after {
+  content: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn:hover {
+    background-color: rgb(255 255 255 / 0.14);
+  }
+
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn--main:hover {
+    background-color: #ffffff;
+  }
+}
+
+/* La pastille d'un état porté par un bouton — `.pl-badge` (vitesse hors 1×) et `.pl-dot`
+   (sous-titres allumés), aux mêmes places. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-badge {
+  position: absolute;
+  top: 1px;
+  right: -1px;
+  padding: 0 4px;
+  border-radius: var(--lg-player-radius-capsule);
+  background-color: #f4f2ee;
+  color: #131315;
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #f4f2ee;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn {
+    transition-duration: 1ms;
+  }
 }

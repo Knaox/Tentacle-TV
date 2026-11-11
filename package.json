@@ -9,6 +9,7 @@
     "dev:backend": "pnpm --filter @tentacle-tv/backend dev",
     "dev:electron": "pnpm --filter @tentacle-tv/desktop-electron dev",
     "dev:cef": "pnpm --filter @tentacle-tv/desktop-cef dev",
+    "cef": "pnpm --filter @tentacle-tv/desktop-cef dev",
     "dev:mobile": "pnpm --filter @tentacle-tv/mobile start",
     "dev:tv": "pnpm --filter @tentacle-tv/tv start",
     "tv:refonte": ": provisoire, le temps de la refonte TV; node apps/tv/harness/launcher/cli.mjs refonte",

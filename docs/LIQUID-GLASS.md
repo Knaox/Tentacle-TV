@@ -651,9 +651,33 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   l'image de mpv, un flou CSS n'y floute rien. Le verre natif, ou rien.
 - **Une couture** vers les socles : `nativeGlassPort.ts` (mode, `refractsVideo`,
   `useLiquidGlassRegion` avec `group`, `spacing`, `transition`).
+- **La DISPOSITION est celle du lecteur sans verre** (lot rf2, 11/11 — Damien : « il ne doit
+  pas changer la disposition des commandes du lecteur : la même disposition, avec des
+  composants Liquid Glass »). Le décor de tvOS 26 décrit plus bas (lot lg8) posait SA
+  disposition — des ronds séparés, le transport au centre, le son à gauche, le temps de part
+  et d'autre de la barre : allumer le réglage déplaçait toutes les commandes. Depuis rf2 :
+  le rond de la sortie (44 px), la barre d'une marge à l'autre (zone de 18 px), puis la
+  rangée de `.pl-row` — la CAPSULE du transport à gauche, le temps « position / durée » en
+  texte, la CAPSULE du son et des réglages à droite (50 px, boutons de 40, 2 px entre eux,
+  5 au bord ; le curseur du volume au survol, dans la capsule). **Trois formes de verre**
+  (`GlassOrb`, `GlassCapsule`) au lieu d'une douzaine. Lire / pause reste le disque
+  d'ivoire ; le survol d'un bouton est le disque clair de `.pl-btn`, posé sur l'atténuation
+  de la capsule ; l'atténuation est le même cœur, étiré en stade (`playerGlassDim.css`).
+  Le curseur du volume est un ÉTAT (`useVolumeReveal`), pas un `:hover` : la capsule
+  s'élargit, et sa région saute avec elle (`GlassSurface instant`) au lieu de la rejoindre
+  au ressort. Les menus (pistes, vitesse, épisodes) s'ouvrent à la place de `.pl-panel`
+  (80 px du bas, bord droit), avec la boîte de `.ui-menu` (220 px au moins, 6 px de marge,
+  lignes de 36 px) ; les encarts du coin reposent et montent comme sans verre (40 + 64,
+  24 + 80 pour la fiche « à suivre »). **Mesuré** sur CEF, macOS 26, 1440 × 900 :
+  `PONT_CDP_PORT=… node apps/desktop-cef/bench/glass/disposition.mjs` — 18 commandes,
+  3 groupes, le volume survolé et 3 menus au demi-pixel près, verre coupé contre verre
+  allumé, et les 3 vues d'AppKit aux rectangles de leurs formes. Avant : 12 commandes sur
+  13 ailleurs (le transport 551 px plus à droite, le son 1137 px plus à gauche), et le
+  titre, la barre et le temps avec elles.
+  `playerGlassGeometry.test.ts` lie chaque jeton `--lg-player-*` à sa règle d'en face.
 - **Le décor : celui du lecteur de tvOS 26** (lot lg8, 27/10 ; avant, des capsules
   grises et plates — « vraiment dégueulasse », Damien). Du TEXTE sur un VOILE, et du
-  verre pour les seuls BOUTONS :
+  verre pour les seuls BOUTONS (leur disposition : le point ci-dessus) :
   - **le voile** (`GlassScrim`, `playerGlassScrim.css`) : un dégradé NOIR peint par la
     page, en bas (260 px) et en haut (160 px), qui naît et part avec les contrôles
     (opacité ; `visibility: hidden` une fois parti). Densité 0,78 au bord, 0,72 sous la
@@ -721,7 +745,8 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   Relevé, verre allumé contre coupé : de 900 × 600 à 1900 × 1040, bouton retour au pixel
   près, bords du bas identiques ; pendant un redimensionnement, page et vue native égales à
   chaque pas de 16 ms (`bench/liquid-glass/lg3/geometry.mjs`). Seul écart voulu : le bloc
-  du bas monte de 32 px de plus (lg8 : la barre de 28 px, puis les ronds de 56 px).
+  du bas monte de 32 px de plus (lg8 : la barre de 28 px, puis les ronds de 56 px) —
+  **plus aucun écart depuis rf2** (la disposition sans verre, au demi-pixel).
   `playerGlassGeometry.test.ts` lie les jetons aux classes d'avant.
 - **Une MATÉRIALISATION, plus de goutte** (lot lg8, 27/10 ; la métamorphose en goutte du
   lot lg2 — formes repliées vers un pivot, fondues puis séparées — était « vraiment moche »

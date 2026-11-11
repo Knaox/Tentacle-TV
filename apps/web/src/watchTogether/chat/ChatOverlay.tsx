@@ -1,7 +1,7 @@
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { ChatCircleTextIcon } from "@phosphor-icons/react/dist/csr/ChatCircleText";
 import { duration, easeOut } from "../../theme/motion";
-import { CHAT_ACCENT, CHAT_CAPSULE, CHAT_ICON_BUTTON, CHAT_INK } from "./chatSkin";
+import { surfaceHasAlpha } from "../../lib/videoShadow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
@@ -10,6 +10,12 @@ import { ChatPanel } from "./ChatPanel";
 import { setChatResizeLock, useWatchOverlayState } from "./chatUiStore";
 import { useChatPanelSize } from "./useChatPanelSize";
 import { useChatActivity } from "./useChatActivity";
+import { useWatchTogether } from "../WatchTogetherProvider";
+import { firstUnreadId } from "./chatThread";
+import "./chat.css";
+
+/** La surface de la page a-t-elle un alpha par pixel (macOS, Linux : la fenêtre posée sur mpv) ? */
+const ALPHA_SURFACE = surfaceHasAlpha();
 
 /**
  * Watch Together — overlay flottant du chat : bulle réduite (badge non-lus)
@@ -22,10 +28,10 @@ import { useChatActivity } from "./useChatActivity";
  * Sur une page player, bulle et panneau suivent le fondu des contrôles
  * (chatUiStore) — les messages restent lisibles via MessageToastLayer.
  *
- * Couleurs volontairement en dur (ici et dans ChatPanel/ReactionPicker/
- * EmojiTab/GifTab) : c'est l'« overlay de chat en lecture » — une encre sombre
- * flottant au-dessus de la vidéo ou de n'importe quelle page, donc
- * indépendante du thème choisi. Sa peau : `chatSkin.ts` (opaque, sans flou).
+ * Deux habits (`chat.css`, lot rf2) : sur une page de LECTURE, une encre sombre
+ * en dur, identique dans les deux thèmes (elle flotte sur la vidéo) ; partout
+ * ailleurs, les jetons du thème — en thème clair le chat est clair. Opaque,
+ * sans flou, dans les deux cas.
  */
 
 function useIsMobile(): boolean {
@@ -55,6 +61,16 @@ export function ChatOverlay({
   const dragControls = useDragControls();
   const { open, unread } = chat.state;
   const watchOverlay = useWatchOverlayState();
+  const { selfId, room } = useWatchTogether();
+  // Le premier message non lu, relevé AVANT d'ouvrir (l'ouverture remet le compteur à zéro) :
+  // le fil pose sa marque « Nouveaux messages » au-dessus de lui.
+  const [unreadFromId, setUnreadFromId] = useState<string | null>(null);
+  const openPanel = useCallback(() => {
+    setUnreadFromId(firstUnreadId(chat.state.messages, chat.state.unread, selfId));
+    chat.setOpen(true);
+  }, [chat, selfId]);
+  const skin = { "data-on-video": watchOverlay.onWatchPage, "data-alpha": ALPHA_SURFACE || undefined };
+  const members = room?.members.length ?? 0;
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Un clic sur la bulle ne doit pas ouvrir le panneau après un VRAI drag :
   // le drag framer démarre dès le pointerdown (dragControls.start), donc le
@@ -131,12 +147,13 @@ export function ChatOverlay({
         animate={{ opacity: hidden ? 0 : 1, y: 0 }}
         exit={{ opacity: 0, y: 32 }}
         transition={{ duration: 0.2, ease: easeOut }}
-        className="fixed inset-x-2 bottom-2 z-50 flex max-h-[60vh] flex-col overflow-hidden rounded-panel"
-        style={{ ...CHAT_INK, pointerEvents: hidden ? "none" : "auto" }}
+        className="wtc wtc-panel !fixed inset-x-2 bottom-2 z-50 h-[60vh] max-h-[60vh]"
+        style={{ pointerEvents: hidden ? "none" : "auto" }}
+        {...skin}
         {...activity.handlers}
       >
-        <ChatHeader title={t("chatTitle")} onClose={() => chat.setOpen(false)} />
-        <ChatPanel chat={chat} />
+        <ChatHeader title={t("chatTitle")} members={members} onClose={() => chat.setOpen(false)} />
+        <ChatPanel chat={chat} unreadFromId={unreadFromId} />
       </motion.div>
     );
   }
@@ -161,7 +178,8 @@ export function ChatOverlay({
       style={{ x: dragX, y: dragY, pointerEvents: hidden ? "none" : "auto" }}
       // Au-dessus de la pilule de saut du lecteur (104 à 148 px du bas quand les contrôles sont
       // là) : à 96 px, la bulle se posait dessus dès qu'un passage se proposait en séance.
-      className="fixed bottom-40 right-6 z-50 flex flex-col items-end"
+      className="wtc fixed bottom-40 right-6 z-50 flex flex-col items-end"
+      {...skin}
       {...activity.handlers}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -172,26 +190,23 @@ export function ChatOverlay({
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1, transition: { duration: duration.menuIn, ease: easeOut } }}
             exit={{ opacity: 0, scale: 0.96, transition: { duration: duration.menuOut, ease: easeOut } }}
-            className={`relative flex flex-col overflow-hidden rounded-panel ${resizing ? "select-none" : ""}`}
-            style={{ ...CHAT_INK, width: size.w, height: size.h, transformOrigin: "bottom right" }}
+            className={`wtc-panel ${resizing ? "select-none" : ""}`}
+            style={{ width: size.w, height: size.h, transformOrigin: "bottom right" }}
           >
             {/* Poignée de redimensionnement — coin haut-gauche (le panneau est
                 ancré bas-droite : tirer vers la gauche/le haut agrandit). */}
-            <div
-              onPointerDown={startResize}
-              className="absolute left-0 top-0 z-10 h-6 w-6 cursor-nwse-resize p-1.5 text-white/35 transition-colors hover:text-white/80"
-              aria-hidden
-            >
+            <div onPointerDown={startResize} className="wtc-grip" aria-hidden>
               <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.3} className="h-full w-full">
                 <path strokeLinecap="round" d="M1 5 5 1M1 9 9 1" />
               </svg>
             </div>
             <ChatHeader
               title={t("chatTitle")}
+              members={members}
               onClose={() => chat.setOpen(false)}
               onDragStart={(e) => dragControls.start(e)}
             />
-            <ChatPanel chat={chat} />
+            <ChatPanel chat={chat} unreadFromId={unreadFromId} />
           </motion.div>
         ) : (
           <motion.button
@@ -203,16 +218,15 @@ export function ChatOverlay({
             // La pression répond ; rien ne grossit au survol.
             whileTap={{ scale: 0.97 }}
             onPointerDown={(e) => dragControls.start(e)}
-            onClick={() => { if (!wasDraggedRef.current) chat.setOpen(true); }}
+            onClick={() => { if (!wasDraggedRef.current) openPanel(); }}
             aria-label={unread > 0 ? t("chatUnreadAria", { count: unread }) : t("chatOpenAria")}
-            className="relative flex h-12 w-12 cursor-pointer touch-none items-center justify-center rounded-pill text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            style={CHAT_CAPSULE}
+            className="wtc-capsule relative flex h-12 w-12 cursor-pointer touch-none items-center justify-center rounded-pill outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <ChatIcon filled={unread > 0} />
             {unread > 0 && (
               // Indicateur discret (pas de compteur) : un point à la teinte franche, IMMOBILE —
               // une onde qui bat sans fin sur une vidéo coûte une composition par image.
-              <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full" style={{ background: CHAT_ACCENT, boxShadow: "0 0 0 2px #18181B" }} />
+              <span className="wtc-unread" aria-hidden />
             )}
           </motion.button>
         )}
@@ -221,30 +235,31 @@ export function ChatOverlay({
   );
 }
 
-/** Barre de titre du panneau — poignée de drag sur desktop. */
+/** Barre de titre du panneau — poignée de glissement sur le bureau. */
 function ChatHeader({
-  title, onClose, onDragStart,
+  title, members, onClose, onDragStart,
 }: {
   title: string;
+  /** Combien de membres dans le groupe (0 : inconnu, rien d'affiché). */
+  members: number;
   onClose: () => void;
   onDragStart?: (e: React.PointerEvent) => void;
 }) {
+  const { t } = useTranslation("watchTogether");
   return (
-    <div
-      onPointerDown={onDragStart}
-      className={`flex shrink-0 items-center justify-between border-b border-white/10 py-2 pl-4 pr-2 ${onDragStart ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
-    >
-      <span className="flex items-center gap-2 font-display text-[15px] font-semibold tracking-tight text-white">
-        <span className="text-white/70"><ChatIcon /></span>
-        {title}
+    <div onPointerDown={onDragStart} className={`wtc-head ${onDragStart ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}>
+      <span className="wtc-head__title">
+        <ChatIcon />
+        <span className="truncate">{title}</span>
+        {members > 0 && <span className="wtc-head__count">{t("membersCount", { count: members })}</span>}
       </span>
       <button
         type="button"
         onClick={onClose}
         onPointerDown={(e) => e.stopPropagation()}
-        className={CHAT_ICON_BUTTON}
-        aria-label={title}
-        title={title}
+        className="wtc-icon"
+        aria-label={t("chatCollapse")}
+        title={t("chatCollapse")}
       >
         <CaretDownIcon size={16} weight="bold" aria-hidden />
       </button>

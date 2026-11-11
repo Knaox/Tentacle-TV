@@ -13,6 +13,17 @@ function colorFor(name: string): string {
   return RING_COLORS[Math.abs(hash) % RING_COLORS.length];
 }
 
+/**
+ * L'initiale d'un nom : sa première LETTRE ou son premier chiffre, en majuscule ; à défaut (un
+ * nom fait d'emojis), son premier caractère entier. `charAt(0)` coupait un emoji en deux — un
+ * « ? » dans un losange pour « 🦑Poulpy🦑 ».
+ */
+export function avatarInitial(name: string): string {
+  const chars = Array.from(name.trim());
+  const letter = chars.find((c) => c.toLowerCase() !== c.toUpperCase() || /[0-9]/.test(c));
+  return (letter ?? chars[0] ?? "?").toUpperCase();
+}
+
 export function avatarUrl(userId: string): string {
   const base = getBackendBase().replace(/\/$/, "");
   return `${base}/api/jellyfin/Users/${userId}/Images/Primary?maxWidth=64&quality=90`;
@@ -66,7 +77,7 @@ export function WtAvatar({
           onError={() => setFailed(true)}
         />
       ) : (
-        name.charAt(0).toUpperCase()
+        avatarInitial(name)
       )}
     </div>
   );

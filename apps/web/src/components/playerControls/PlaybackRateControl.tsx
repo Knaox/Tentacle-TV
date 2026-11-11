@@ -123,16 +123,14 @@ export function PlaybackRateControl({
   const glassMenu = (
     <AnimatePresence>
       {open && (
-        <GlassPanel key="speed" morphId={PLAYER_MORPH.speed} surfaceRef={panelRef} className="w-52" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
-          <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
-            <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
-            <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">
-              <CloseGlyph />
-            </button>
+        <GlassPanel key="speed" morphId={PLAYER_MORPH.speed} surfaceRef={panelRef} className="lgp-menu w-52" bodyClassName="lgp-menu__body" role="menu" aria-label={t("player:speed")}>
+          {/* Le même en-tête et les mêmes lignes que le menu sans verre. */}
+          <PanelHeader title={t("player:speed")} onClose={() => setOpen(false)} />
+          <div className="pl-panel__scroll">
+            {PLAYBACK_RATES.map((value) => (
+              <GlassOption key={value} active={value === rate} onClick={() => choose(value)}><span className="num">{formatRate(value)}</span></GlassOption>
+            ))}
           </div>
-          {PLAYBACK_RATES.map((value) => (
-            <GlassOption key={value} active={value === rate} onClick={() => choose(value)}>{formatRate(value)}</GlassOption>
-          ))}
         </GlassPanel>
       )}
     </AnimatePresence>
@@ -144,7 +142,7 @@ export function PlaybackRateControl({
         type="button"
         {...(glass ? { ...GLASS_LENS_PROPS, ...popoverAnchorProps(PLAYER_MORPH.speed) } : {})}
         onClick={toggle}
-        className={glass ? "lgp-btn relative" : `pl-btn ${buttonClass}`}
+        className={glass ? "lgp-btn" : `pl-btn ${buttonClass}`}
         title={t("player:speed")}
         aria-label={t("player:speed")}
         aria-haspopup="menu"
@@ -154,7 +152,7 @@ export function PlaybackRateControl({
         {/* Pastille du taux courant : seulement hors vitesse normale, sinon
             elle serait un « 1x » permanent qui n'apprend rien. */}
         {!isNormalRate(rate) && (
-          <span className={glass ? "absolute -right-0.5 -top-0.5 rounded-full bg-tentacle-accent px-1 text-[9px] font-bold leading-[14px] text-cta-brand-fg" : "pl-badge"}>
+          <span className={glass ? "lgp-badge" : "pl-badge"}>
             {formatRate(rate)}
           </span>
         )}
@@ -194,13 +192,5 @@ export function PlaybackRateControl({
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function CloseGlyph() {
-  return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
   );
 }

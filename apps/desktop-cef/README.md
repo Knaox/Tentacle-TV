@@ -10,7 +10,8 @@ Importé dans le monorepo (`apps/desktop-cef`) depuis le dépôt local `Tentacle
 `proto/cef-mpv-sdl3` au commit `0dbcfe7` ; son historique est resté dans ce dépôt-là.
 
 - Contrat entre les modules : [docs/INTERFACES.md](docs/INTERFACES.md)
-- Windows (prérequis, `pnpm dev:cef`, recette) : [docs/A-TESTER-WINDOWS.md](docs/A-TESTER-WINDOWS.md)
+- Windows (prérequis, `pnpm cef`, recette) : [docs/A-TESTER-WINDOWS.md](docs/A-TESTER-WINDOWS.md)
+- Le menu de débogage, entrée par entrée sur Electron, CEF macOS et CEF Windows : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md), § 7
 - Ce que le bureau Electron offre et que CEF n'a pas encore : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md)
 - Étude de la référence : `docs/etude/` (écrite par les sessions du lot)
 - Dépendances, builds, profils, médias de test : `~/.cache/tentacle-cef/` (hors dépôt)
@@ -20,9 +21,9 @@ Importé dans le monorepo (`apps/desktop-cef`) depuis le dépôt local `Tentacle
 Depuis la racine du monorepo :
 
 ```bash
-pnpm dev:cef                 # build web + build natif, puis l'app (son ouvert)
-pnpm dev:cef -- --skip-web   # sans reconstruire apps/web/dist
-pnpm dev:cef -- --mute       # son coupé
+pnpm cef                 # build web + build natif, puis l'app (son ouvert) — alias de pnpm dev:cef
+pnpm cef -- --skip-web   # sans reconstruire apps/web/dist
+pnpm cef -- --mute       # son coupé
 ```
 
 Le lanceur est `scripts/dev.mjs` (Node seul, aucune dépendance), le même sur les trois OS :

@@ -15,32 +15,36 @@ import "./playerGlassTrickplay.css";
 import "./playerGlassCapsules.css";
 
 /**
- * L'habillage du lecteur en VERRE — même contrat que l'habillage d'avant
- * (`DesktopPlayerControls`), autre dessin : celui du lecteur de tvOS 26 (lot lg8).
+ * L'habillage du lecteur en VERRE — même contrat ET même disposition que
+ * l'habillage sans verre (`DesktopPlayerControls`, lot rf2 : « la même
+ * disposition, avec des composants Liquid Glass ») :
  *
  *  - un VOILE dégradé en haut et en bas (`GlassScrim`), peint par la page, qui
  *    naît et part avec les contrôles — percé autour de chaque forme de verre ;
  *  - en haut à gauche, le rond de la sortie et le titre en TEXTE sur le voile ;
- *  - en bas, la barre de progression NUE (un trait blanc, le temps en texte),
- *    puis des RONDS de verre clair : le son à gauche, le transport au centre,
- *    les réglages à droite (`GlassControlsRow`).
+ *  - en bas, la barre de lecture d'une marge à l'autre, puis la rangée : la
+ *    CAPSULE du transport à gauche, le temps en texte, la CAPSULE du son et des
+ *    réglages à droite (`GlassControlsRow`). Trois formes de verre en tout.
  *
- * Les ronds paraissent en se MATÉRIALISANT (lot lg8) : chaque forme monte de quelques
+ * `apps/desktop-cef/bench/glass/disposition.mjs` (banc CDP) compare, rectangle par rectangle, cet
+ * habillage à celui d'avant : mêmes emplacements, mêmes groupes, même ordre.
+ *
+ * Les formes paraissent en se MATÉRIALISANT (lot lg8) : chacune monte de quelques
  * points pendant que son verre s'allume, le transport d'abord, le haut en dernier ;
  * elles partent ensemble, plus vite (`materialize`, `playerGlassMaterialize.ts`).
- * Ce qui est nu (titre, barre, voile) suit le même rythme, en fondu.
+ * Ce qui est nu (titre, barre, temps, voile) suit le même rythme, en fondu.
  *
- * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS des ronds,
- * calés sur le bord droit — des popovers de verre, pas des cartes opaques.
- * Tous sont rendus DANS le dock : celui de la vitesse y est porté depuis son
- * rond (`glassDock.ts`).
+ * Les panneaux (pistes, épisodes, vitesse) s'ouvrent AU-DESSUS de la capsule de
+ * droite, calés sur le bord droit — des popovers de verre, à la place des menus
+ * opaques. Tous sont rendus DANS le dock : celui de la vitesse y est porté
+ * depuis son bouton (`glassDock.ts`).
  *
  * # Toujours monté
  *
  * L'habillage n'est jamais démonté quand les contrôles s'effacent : la vitesse
  * de lecture vit dans `PlaybackRateControl`, qui se remet à 1× à son montage.
  * Ce qui part, c'est la MATIÈRE : chaque région native est retirée
- * (`GlassChromeVisibleContext`) à la fin du repli de son rond, le contenu
+ * (`GlassChromeVisibleContext`) à la fin du repli de sa forme, le contenu
  * s'efface d'abord, et la page n'a plus rien qui se compose au-dessus de la
  * vidéo.
  */
@@ -65,11 +69,9 @@ export function GlassPlayerChrome({
           <GlassTopBar visible={visible} title={title} subtitle={subtitle} isDirectPlay={isDirectPlay} goBack={goBack} />
 
           <div ref={setDock} className="lgp-dock" onClick={(e) => e.stopPropagation()}>
-            {/* La barre NUE sur le voile, puis les ronds de verre : même groupe natif,
-                SÉPARÉS au repos (12 px, au-delà de la fusion), fondus en se repliant
-                vers le rond de lecture. */}
+            {/* La barre NUE sur le voile, puis la rangée des deux capsules de verre. */}
             <div className="lgp-timeline lgp-nude" data-lgp-present={visible} style={{ "--lgp-order": 1 } as CSSProperties}>
-              <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
+              <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} />
             </div>
             <GlassControlsRow
               state={state} itemId={itemId} isEpisode={isEpisode} hasSettings={hasSettings}
@@ -79,7 +81,8 @@ export function GlassPlayerChrome({
               onReduce={onReduce} togglePause={togglePause} skipBy={skipBy} toggleMute={toggleMute}
               setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
               onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode} speed={speed}
-              visible={visible}
+              visible={visible} curSub={curSub}
+              position={seekbar.dragProgress != null ? seekbar.dragProgress * dur : actualPos} duration={dur}
             />
 
             {/* Les panneaux se calent sur le DOCK (bord droit, au-dessus des capsules). */}

@@ -39,6 +39,7 @@ import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { nativeKillEncodings, nativePlaybackInfo, supportsNativePlayerRelay } from "./desktop/playerRelay";
 import { getBackendBase } from "./lib/backendBase";
+import { followDocumentLanguage } from "./lib/documentLanguage";
 import { createAppHistory } from "./lib/detailChain";
 import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
@@ -183,6 +184,7 @@ const jellyfinClient = new JellyfinClient(
 
 // Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
 jellyfinClient.followLanguage(i18n);
+followDocumentLanguage(i18n); // `<html lang>` : lecteur d'écran, surcouche de mise à jour de la coquille CEF
 
 // Web: use httpOnly cookies for auth (XSS-proof token storage)
 if (!isDesktop) {

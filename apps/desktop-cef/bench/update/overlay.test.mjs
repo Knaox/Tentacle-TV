@@ -108,3 +108,18 @@ test("le voile verrouille l'application : annoncé au front, jamais pour une not
   assert.equal(o.locksApp("blocking"), true);
   for (const view of ["none", "toast", "waiting", "rolledBack"]) assert.equal(o.locksApp(view), false);
 });
+
+test("la démonstration est un fragment glissé dans la fermeture, au jeton, comme le fait CMake", () => {
+  // src/update/CMakeLists.txt remplace /*__UPDATE_DEMO__*/ par update-overlay-demo.js : un seul
+  // jeton, et le script composé reste du JavaScript valide, avec les mêmes fonctions pures.
+  const TOKEN = "/*__UPDATE_DEMO__*/";
+  assert.equal(src.split(TOKEN).length - 1, 1);
+  const demo = readFileSync(new URL("../../web/shim/update-overlay-demo.js", import.meta.url), "utf8");
+  const composed = src.replace(TOKEN, () => `\n${demo}`);
+  const box = { module: { exports: {} } };
+  new vm.Script(composed).runInNewContext(box);
+  assert.deepEqual(Object.keys(box.module.exports), Object.keys(o));
+  // Le fragment ne parle à la surcouche que par `demo` : nul sans lui, elle ne change en rien.
+  assert.match(demo, /demo = \{ held: snapshot, act: demoAct \}/);
+  assert.match(src, /let snapshot = null[^\n]*, demo = null;/);
+});

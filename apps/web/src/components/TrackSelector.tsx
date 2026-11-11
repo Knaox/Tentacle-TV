@@ -128,12 +128,13 @@ export function TrackSelector({
       )}
     </>
   );
-  // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
+  // Verre : le popover au-dessus de la capsule (`GlassPanel`) — même titre, mêmes marges,
+  // mêmes lignes que le menu sans verre (lot rf2 : seul le matériau change).
   if (glass) {
     return (
-      <GlassPanel morphId={PLAYER_MORPH.tracks} className="w-80 max-w-[calc(100vw-3rem)]" bodyClassName="p-3" role="dialog" aria-label={t("player:settings")}>
-        <div className="mb-1"><PanelHeader title={t("player:settings")} onClose={onClose} /></div>
-        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">{sections}</div>
+      <GlassPanel morphId={PLAYER_MORPH.tracks} className="lgp-menu w-80" bodyClassName="lgp-menu__body" role="dialog" aria-label={t("player:chrome.tracksTitle")}>
+        <PanelHeader title={t("player:chrome.tracksTitle")} onClose={onClose} />
+        <div className="pl-panel__scroll">{sections}</div>
       </GlassPanel>
     );
   }
@@ -153,7 +154,7 @@ export function TrackSelector({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const glass = isGlassLayout(usePlayerGlassMode());
   return (
-    <div className={glass ? "mb-3 last:mb-0" : ""} role="group" aria-label={title}>
+    <div role="group" aria-label={title}>
       <p className={glass ? "lgp-section-title" : "ui-menu-label"}>{title}</p>
       <div className="space-y-0.5">{children}</div>
     </div>
@@ -195,26 +196,18 @@ function QualityOption({
 function TrackOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   const { lang, codec, title } = parseTrackLabel(label);
   const glass = isGlassLayout(usePlayerGlassMode());
-  if (glass) {
-    return (
-      <GlassOption active={active} onClick={onClick}>
-        <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
-          <span className="truncate">{title}</span>
-          {lang && <Badge color="purple">{lang}</Badge>}
-          {codec && <Badge color="zinc">{codec}</Badge>}
-        </span>
-      </GlassOption>
-    );
-  }
   // Le nom d'abord ; la langue et le codec à droite, en encre discrète — ils précisent, ils ne
   // concurrencent pas le nom (la coche dit seule le choix).
   const meta = [lang, codec].filter(Boolean).join(" · ");
-  return (
-    <MenuOption active={active} onClick={onClick}>
+  const inner = (
+    <>
       <span className="min-w-0 flex-1 truncate">{title}</span>
       {meta && <span className="pl-option__meta">{meta}</span>}
-    </MenuOption>
+    </>
   );
+  // Verre : la même ligne, sur la matière native (`.lgp-option`).
+  if (glass) return <GlassOption active={active} onClick={onClick}>{inner}</GlassOption>;
+  return <MenuOption active={active} onClick={onClick}>{inner}</MenuOption>;
 }
 
 /**

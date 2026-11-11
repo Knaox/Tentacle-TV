@@ -13,17 +13,25 @@
 }
 
 /* ── Le coin bas-droit, partagé ───────────────────────────────────────
-   Quand la capsule de lecture paraît, le coin monte AU-DESSUS d'elle : sa
-   hauteur, plus l'écart — d'une transformée, jamais d'un `bottom` animé. */
+   Les places de l'habillage sans verre (lot rf2) : la pilule de saut et « Vous regardez
+   encore ? » reposent à 40 px du bas et montent de 64 quand les commandes paraissent
+   (`bottom-10`, `-translate-y-16`) ; la fiche « à suivre » repose à 24 et monte de 80
+   (`UpNextCard`). Tous finissent à 104 px du bas, au-dessus de la barre de lecture —
+   d'une transformée, jamais d'un `bottom` animé. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner {
   position: absolute;
   right: var(--lg-player-inline);
-  bottom: var(--lg-player-edge);
+  bottom: var(--lg-player-corner-rest);
   transition: transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner[data-lifted="true"] {
-  transform: translateY(calc(-1 * (var(--lg-player-bar-height) + var(--lg-player-gap))));
+  transform: translateY(calc(-1 * var(--lg-player-corner-lift)));
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner--card {
+  --lg-player-corner-rest: 24px;
+  --lg-player-corner-lift: 80px;
 }
 
 /* L'arrivée : le contenu se pose sur un ressort (la matière est native). */

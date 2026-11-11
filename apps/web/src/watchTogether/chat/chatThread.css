@@ -1,0 +1,285 @@
+/* ── Le chat de Watch Together — le fil, la frappe, les aperçus ──
+ * La suite de `chat.css` (300 lignes par fichier) : mêmes variables `--wtc-*`, mêmes interdits. */
+
+/* ── Le fil ── */
+
+.wtc-thread {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.wtc-list {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 12px 8px;
+  scrollbar-width: thin;
+}
+
+/* Le sélecteur d'emojis couvre le bas du fil : la liste lui réserve sa hauteur (sans animation :
+ * une mise en page, une fois), le dernier message reste lisible au-dessus. */
+.wtc-thread[data-picker="true"] .wtc-list {
+  padding-bottom: 232px;
+}
+
+.wtc-thread[data-picker="true"] .wtc-jump {
+  bottom: 256px;
+}
+
+.wtc-empty {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 24px;
+  color: var(--wtc-fg-3);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.wtc-empty > svg {
+  color: var(--wtc-fg-3);
+  opacity: 0.7;
+}
+
+/* Une ligne : l'avatar (premier message d'une suite), puis la colonne des bulles. */
+.wtc-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.wtc-row[data-first="true"] {
+  margin-top: 12px;
+}
+
+.wtc-row[data-self="true"] {
+  flex-direction: row-reverse;
+}
+
+.wtc-row__avatar {
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.wtc-row__body {
+  display: flex;
+  min-width: 0;
+  max-width: 82%;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wtc-row[data-self="true"] .wtc-row__body {
+  align-items: flex-end;
+}
+
+/* L'auteur et l'heure : au-dessus du premier message d'une suite. L'heure se LIT. */
+.wtc-meta {
+  display: flex;
+  max-width: 100%;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 4px 3px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.wtc-meta__name {
+  overflow: hidden;
+  color: var(--wtc-accent);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wtc-meta__time {
+  flex-shrink: 0;
+  color: var(--wtc-fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La bulle. Les coins du côté de l'auteur se resserrent entre deux messages d'une même suite :
+ * la suite se lit comme un seul bloc. Un mot sans espace (une adresse) se coupe n'importe où. */
+.wtc-bubble {
+  max-width: 100%;
+  padding: 7px 12px;
+  border-radius: 18px;
+  background-color: var(--wtc-bubble);
+  color: var(--wtc-fg);
+  font-size: 14px;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.wtc-row[data-first="false"] .wtc-bubble { border-top-left-radius: 6px; }
+.wtc-row[data-last="false"] .wtc-bubble { border-bottom-left-radius: 6px; }
+
+.wtc-row[data-self="true"] .wtc-bubble {
+  border-radius: 18px;
+  background-color: var(--wtc-bubble-self);
+}
+
+.wtc-row[data-self="true"][data-first="false"] .wtc-bubble { border-top-right-radius: 6px; }
+.wtc-row[data-self="true"][data-last="false"] .wtc-bubble { border-bottom-right-radius: 6px; }
+
+/* Un message fait d'emojis seuls (un à trois) : grand, sans bulle. */
+.wtc-bubble[data-emoji="true"] {
+  padding: 2px 4px;
+  background-color: transparent;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+/* ── L'arrivée d'un message ── il monte de quelques points en paraissant (180 ms) ; les siens
+ * sortent du champ de saisie (bas-droite). Seuls les messages reçus panneau ouvert portent la
+ * classe : un fil rouvert ou rechargé ne rejoue rien. */
+.wtc-row--in {
+  transform-origin: bottom left;
+  transition:
+    opacity var(--duration-menu-in) var(--ease-out),
+    transform var(--duration-menu-in) var(--ease-out);
+}
+
+.wtc-row--in[data-self="true"] {
+  transform-origin: bottom right;
+}
+
+@starting-style {
+  .wtc-row--in {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* La marque des messages arrivés panneau fermé. */
+.wtc-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 4px 0;
+  color: var(--wtc-accent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wtc-divider::before,
+.wtc-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1 1 0%;
+  background-color: currentColor;
+  opacity: 0.35;
+}
+
+/* « N nouveaux messages » : paraît quand on a remonté le fil et qu'il s'allonge dessous. */
+.wtc-jump {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  border-radius: var(--radius-pill);
+  background-color: var(--wtc-solid);
+  color: var(--wtc-solid-fg);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  translate: -50% 0;
+  transition:
+    opacity var(--duration-menu-in) var(--ease-out),
+    transform var(--duration-menu-in) var(--ease-out);
+}
+
+.wtc-jump:active {
+  transform: scale(var(--press-scale));
+}
+
+@starting-style {
+  .wtc-jump {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ── « est en train d'écrire » ── la place est RÉSERVÉE : la ligne qui paraît ne pousse rien. */
+.wtc-typing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 16px;
+  color: var(--wtc-fg-3);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.wtc-typing__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wtc-typing[data-tone="hint"] {
+  color: var(--wtc-fg-2);
+}
+
+/* Trois points qui montent tour à tour — montés seulement tant que quelqu'un écrit. */
+.wtc-dots {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.wtc-dots > i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: wtc-dot 1.1s var(--ease-in-out, ease-in-out) infinite;
+}
+
+.wtc-dots > i:nth-child(2) { animation-delay: 0.14s; }
+.wtc-dots > i:nth-child(3) { animation-delay: 0.28s; }
+
+@keyframes wtc-dot {
+  0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wtc-row--in,
+  .wtc-jump {
+    transition-property: opacity;
+  }
+
+  @starting-style {
+    .wtc-row--in,
+    .wtc-jump {
+      transform: none;
+    }
+  }
+
+  /* Les points disent encore « quelqu'un écrit », sans bouger. */
+  .wtc-dots > i {
+    animation: none;
+    opacity: 0.7;
+  }
+}

@@ -24,21 +24,21 @@ export function GlassTopBar({ visible, title, subtitle, isDirectPlay, goBack }: 
     <div className="lgp-top" onClick={(e) => e.stopPropagation()}>
       <div className="lgp-top__lead">
         <GlassOrb visible={visible} order={2}>
-          <button type="button" onClick={() => goBack()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
+          <button type="button" onClick={() => goBack()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")} data-player-back>
             <BackIcon />
           </button>
         </GlassOrb>
         <div className="lgp-heading lgp-nude" data-lgp-present={visible} style={{ "--lgp-order": 2 } as CSSProperties}>
-          <h2 className="lgp-title truncate">{title}</h2>
-          {subtitle && <p className="lgp-subtitle truncate">{subtitle}</p>}
+          <h2 className="lgp-title">{title}</h2>
+          {subtitle && <p className="lgp-subtitle">{subtitle}</p>}
         </div>
+        {/* Le témoin de développement, à la place qu'il a sans verre : après le titre. */}
+        {import.meta.env.DEV && (
+          <div className={`lgp-devbadge ${visible ? "" : "opacity-0"}`}>
+            mpv{isDirectPlay ? "" : " (transcode)"}
+          </div>
+        )}
       </div>
-      {/* Le témoin de développement, comme dans l'habillage d'avant. */}
-      {import.meta.env.DEV && (
-        <div className={`lgp-devbadge ${visible ? "" : "opacity-0"}`}>
-          mpv{isDirectPlay ? "" : " (transcode)"}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,41 +1,43 @@
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { CHAT_ICON_BUTTON } from "../chatSkin";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import type { WtChatApi } from "@tentacle-tv/api-client";
+import { duration, easeOut } from "../../../theme/motion";
 import { EmojiTab } from "./EmojiTab";
 import { GifTab } from "./GifTab";
+import "../chatComposer.css";
+import "../chatPicker.css";
 
 /**
- * Watch Together — sélecteur de réactions (onglets Emojis / GIF), section
- * INLINE du panneau de chat (entre la liste de messages et la barre rapide) :
- * il hérite ainsi du portail fullscreen, du drag et du layout mobile sans
- * aucun calcul d'ancrage. L'envoi (emoji ou GIF) ne le ferme JAMAIS — il se
- * ferme via X, Échap, le re-clic du déclencheur ou la fermeture du panneau.
+ * Watch Together — le sélecteur de réactions (onglets Emojis / GIF) : une FEUILLE posée sur le
+ * bas du fil, dans le panneau — elle hérite donc du portail plein écran, du glissement et de la
+ * disposition mobile sans aucun calcul d'ancrage. L'envoi (emoji ou GIF) ne la ferme JAMAIS —
+ * elle se ferme par la croix, Échap, un second clic sur son bouton ou la fermeture du panneau.
  *
- * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
- * qui garde son verre sombre quel que soit le thème.
+ * Elle SORT de la rangée des réactions (origine en bas : opacité et transformée, 180 ms, plus
+ * court au retour). Avant le lot rf2, c'était une hauteur animée de 0 à 240 px, qui remettait
+ * le fil en page à chaque image de l'ouverture.
  */
 
 export type PickerTab = "emoji" | "gif";
 
-export function ReactionPicker({
-  tab, onTabChange, onClose, chat,
-}: {
+interface ReactionPickerProps {
   tab: PickerTab | null;
   onTabChange: (tab: PickerTab) => void;
   onClose: () => void;
   chat: WtChatApi;
-}) {
-  const { t } = useTranslation("watchTogether");
+  /** Le débit a refusé une réaction ou un GIF. */
+  onRefused: () => void;
+}
 
-  const tabChip = (target: PickerTab, label: string) => (
-    <button
-      onClick={() => onTabChange(target)}
-      className={`rounded-pill px-3 py-1 text-xs font-semibold transition-colors duration-hover ${
-        tab === target ? "bg-white/[0.16] text-white" : "text-white/65 hover:bg-white/10 hover:text-white"
-      }`}
-    >
+export function ReactionPicker({ tab, onTabChange, onClose, chat, onRefused }: ReactionPickerProps) {
+  const { t } = useTranslation("watchTogether");
+  // Mouvement réduit : un fondu, sans montée ni échelle.
+  const reduced = useReducedMotion() === true;
+  const away = (shift: number): string => (reduced ? "none" : `translateY(${String(shift)}px) scale(0.98)`);
+
+  const tabButton = (target: PickerTab, label: string) => (
+    <button type="button" role="tab" aria-selected={tab === target} onClick={() => onTabChange(target)} className="wtc-tab">
       {label}
     </button>
   );
@@ -44,38 +46,31 @@ export function ReactionPicker({
     <AnimatePresence initial={false}>
       {tab && (
         <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 240, opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="shrink-0 overflow-hidden border-t border-white/10"
-          // Ne surtout pas laisser remonter la frappe aux hotkeys du player
-          // (même garde que l'input du chat) ; Échap ferme le sélecteur.
+          initial={{ opacity: 0, transform: away(12) }}
+          animate={{ opacity: 1, transform: reduced ? "none" : "translateY(0px) scale(1)", transition: { duration: duration.menuIn, ease: easeOut } }}
+          exit={{ opacity: 0, transform: away(8), transition: { duration: duration.menuOut, ease: easeOut } }}
+          className="wtc-picker"
+          // Ne surtout pas laisser remonter la frappe aux raccourcis du lecteur
+          // (même garde que le champ du chat) ; Échap ferme le sélecteur.
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Escape") onClose();
           }}
           onKeyUp={(e) => e.stopPropagation()}
         >
-          <div className="flex h-[240px] flex-col">
-            <div className="flex shrink-0 items-center gap-1 px-2 py-1.5">
-              {tabChip("emoji", t("pickerTabEmojis"))}
-              {tabChip("gif", t("pickerTabGifs"))}
-              <button
-                onClick={onClose}
-                aria-label={t("pickerClose")}
-                className={`ml-auto ${CHAT_ICON_BUTTON} !h-7 !w-7`}
-              >
-                <XIcon size={14} weight="bold" aria-hidden />
-              </button>
-            </div>
-
-            {tab === "emoji" ? (
-              <EmojiTab onPick={(emoji) => chat.sendReaction(emoji)} />
-            ) : (
-              <GifTab chat={chat} />
-            )}
+          <div className="wtc-picker__head" role="tablist">
+            {tabButton("emoji", t("pickerTabEmojis"))}
+            {tabButton("gif", t("pickerTabGifs"))}
+            <button type="button" onClick={onClose} aria-label={t("pickerClose")} title={t("pickerClose")} className="wtc-icon ml-auto">
+              <XIcon size={14} weight="bold" aria-hidden />
+            </button>
           </div>
+
+          {tab === "emoji" ? (
+            <EmojiTab onPick={(emoji) => { if (!chat.sendReaction(emoji)) onRefused(); }} />
+          ) : (
+            <GifTab chat={chat} onRefused={onRefused} />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

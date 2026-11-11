@@ -10,6 +10,7 @@
  */
 
 import { desktopKind, desktopPlatform, montageLinux } from "../desktop/bridge";
+import { debugShell } from "./debugMenu/debugShell";
 import {
   supportsAppUpdates,
   supportsDownloads,
@@ -141,7 +142,8 @@ function shellSection(): DebugSection {
   return {
     title: "Coquille",
     lines: [
-      ["shell", desktopKind() ?? "web", desktopKind() !== null],
+      // CEF pose le pont d'Electron : la page les confond exprès (`desktopKind`) ; ici on dit laquelle répond.
+      ["shell", debugShell().kind === "cef" ? "cef (pont d'Electron)" : desktopKind() ?? "web", desktopKind() !== null],
       ["plateforme", desktopPlatform(), null],
       // Sous Linux, `plateforme` ne dit pas l'essentiel : c'est le montage qui
       // décide du HDR et de la lecture plein écran. Absent ailleurs.
@@ -161,7 +163,10 @@ function shellSection(): DebugSection {
         : (["lecteur mpv", supportsMpv() ? "disponible" : "absent", supportsMpv()] as const),
       ["téléchargements", supportsDownloads() ? "disponible" : "absent", supportsDownloads()],
       ["contrôles média", supportsSmtc() ? "disponible" : "absent", supportsSmtc()],
-      ["mises à jour", supportsAppUpdates() ? "disponible" : "absent", supportsAppUpdates()],
+      // Sous CEF, la mise à jour est l'affaire de la COQUILLE (sa surcouche) : « absent » du
+      // front n'y est pas un défaut. Sous Windows, le Store passe en plus par le front.
+      ["mises à jour", supportsAppUpdates() ? "disponible (front)" : debugShell().kind === "cef" ? "surcouche de la coquille" : "absent",
+        supportsAppUpdates() ? true : debugShell().kind === "cef" ? null : false],
       ["session hors ligne", supportsOfflineSession() ? "disponible" : "absent", supportsOfflineSession()],
       ["adaptateur mpv", getMpvApi() ? "chargé" : "non chargé", getMpvApi() !== null],
     ],
