@@ -67,13 +67,17 @@ async function boot(options: {
   platform?: "darwin" | "win32" | "linux";
   bridge?: FakeBridge;
   stored?: string | null;
+  /** La bascule de la 1.50.0 a déjà eu lieu sur cet appareil (la valeur gardée est un choix d'après). */
+  switched?: boolean;
 }) {
   const attributes = new Map<string, string>();
   const storage = new Map<string, string>();
   if (options.stored != null) storage.set("tentacle_liquid_glass", options.stored);
+  if (options.switched) storage.set("tentacle_liquid_glass_default_on", "1");
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => storage.get(key) ?? null,
     setItem: (key: string, value: string) => void storage.set(key, value),
+    removeItem: (key: string) => void storage.delete(key),
   });
   vi.stubGlobal("document", {
     documentElement: { setAttribute: (name: string, value: string) => void attributes.set(name, value) },
@@ -95,9 +99,16 @@ describe("le mode posé au chargement", () => {
     vi.unstubAllGlobals();
   });
 
-  it("macOS 26, Tentacle : coupé d'office (lot « fl »), la coquille l'apprend", async () => {
+  it("macOS 26, Tentacle : allumé d'office (1.50.0), la coquille l'apprend", async () => {
     const bridge = fakeBridge(true);
     const { attribute } = await boot({ platform: "darwin", bridge });
+    expect(attribute()).toBe("native");
+    expect(bridge.setEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it("macOS 26, coupé par l'utilisateur après la bascule : off au lancement suivant", async () => {
+    const bridge = fakeBridge(true);
+    const { attribute } = await boot({ platform: "darwin", bridge, stored: "false", switched: true });
     expect(attribute()).toBe("off");
     expect(bridge.setEnabled).toHaveBeenCalledWith(false);
   });
@@ -124,11 +135,11 @@ describe("le mode posé au chargement", () => {
     expect(attribute()).toBe("native");
   });
 
-  it("un réglage coupé AVANT le lancement : off dès le départ", async () => {
+  it("un réglage coupé AVANT la 1.50.0 : oublié une fois, le verre s'allume", async () => {
     const bridge = fakeBridge(true);
     const { attribute } = await boot({ platform: "darwin", bridge, stored: "false" });
-    expect(attribute()).toBe("off");
-    expect(bridge.setEnabled).toHaveBeenCalledWith(false);
+    expect(attribute()).toBe("native");
+    expect(bridge.setEnabled).toHaveBeenCalledWith(true);
   });
 
   it("le verre voit la vidéo seulement si le pont le dit (montage fenetre)", async () => {
