@@ -39,20 +39,6 @@
   --text-quaternary: var(--lg-frost-glyph-secondary);
 }
 
-/* Le liseré en dégradé de la maquette : un anneau de 1 px masqué, sur la couche. */
-:root[data-liquid-glass="native"] .lgc-capsule > .nav-capsule-glass::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: var(--lg-pane-rim);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
 /* Le champ de recherche, DANS la capsule : la pastille du socle (`.lg-bead`),
  * sans son givre — jamais de verre sur du verre. */
 :root[data-liquid-glass="native"] .lgc-capsule .lgc-field.lg-bead {

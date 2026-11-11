@@ -16,7 +16,7 @@
  *
  * ── CATALOGUE ─────────────────────────────────────────────────────────────
  *  - panneau      --lg-pane-{blur|saturate|brightness|ink|fill|sheen|border|
- *                 shadow|rim|glyph|glyph-secondary|separator}
+ *                 shadow|glyph|glyph-secondary|separator} — le bord : un seul filet, dans `shadow`
  *  - action       --lg-pane-prominent-{fill|shadow} (la marque dans le verre)
  *  - épais        --lg-pane-thick-{blur|saturate|brightness|ink} (menus, feuilles,
  *                 modales, avis : tout le régime `surface`, `pane.css`)
@@ -39,11 +39,17 @@
   --lg-pane-fill: linear-gradient(140deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.04) 100%);
   --lg-pane-sheen: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 55%),
     radial-gradient(80% 50% at 100% 100%, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 60%);
-  /* Une lumière, pas un contour : le bord presque nul, le liseré en dégradé fait la forme. */
-  --lg-pane-border: rgba(255, 255, 255, 0.05);
-  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.03),
-    inset 1px 0 0 rgba(255, 255, 255, 0.04), 0 18px 44px -18px rgba(0, 0, 0, 0.45);
-  --lg-pane-rim: linear-gradient(160deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.14));
+  /* LE BORD — un seul filet, celui d'Apple (nov. 2026, Damien : « des bordures épaisses, des contours
+   * blancs, un double coin : pas très Liquid Glass »). Avant : TROIS traits empilés — la bordure,
+   * un anneau en dégradé (`::after` masqué) et un reflet intérieur d'un pixel —, soit deux pixels de
+   * clair en haut ; et l'anneau, posé DANS la boîte avec le rayon du bord extérieur, n'était pas
+   * concentrique : deux arcs à chaque coin d'un menu. Maintenant : la bordure ne peint plus rien
+   * (elle garde sa place : mêmes boîtes), et la forme se lit par UN reflet d'un demi-pixel — un
+   * pixel physique sur un écran Retina — vif en haut, à peine en bas, rien sur les flancs. Une
+   * ombre `inset` suit le rayon de la boîte : toujours concentrique, aucun calque de plus. */
+  --lg-pane-border: rgba(255, 255, 255, 0);
+  --lg-pane-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.26), inset 0 -0.5px 0 rgba(255, 255, 255, 0.07),
+    0 18px 44px -18px rgba(0, 0, 0, 0.45);
   --lg-pane-glyph: rgba(255, 255, 255, 1);
   --lg-pane-glyph-secondary: rgba(255, 255, 255, 0.72);
   --lg-pane-separator: rgba(255, 255, 255, 0.1);
@@ -51,7 +57,7 @@
   /* L'action principale : la marque DANS le verre (le « Lecture » de la maquette),
    * le rose et le violet un cran profonds — blanc ≥ 4,5:1 (test). */
   --lg-pane-prominent-fill: linear-gradient(140deg, rgba(190, 24, 93, 0.96) 0%, rgba(109, 40, 217, 0.9) 100%);
-  --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
+  --lg-pane-prominent-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.34), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
     0 12px 30px -14px rgba(var(--brand-accent-rgb), 0.45);
 
   --lg-pane-thick-blur: 24px;
@@ -70,13 +76,13 @@
   --lg-bead-saturate: 1.5;
   --lg-bead-ink: rgba(7, 5, 12, 0.08);
   --lg-bead-fill: rgba(255, 255, 255, 0.05);
-  --lg-bead-border: rgba(255, 255, 255, 0.07);
-  --lg-bead-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --lg-bead-border: rgba(255, 255, 255, 0.04);
+  --lg-bead-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.2);
 
   --lg-pane-row-hover: rgba(255, 255, 255, 0.05);
   --lg-pane-nav-hover: rgba(255, 255, 255, 0.06);
   --lg-pane-selected: linear-gradient(140deg, rgba(236, 72, 153, 0.18), rgba(124, 58, 237, 0.1));
-  --lg-pane-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --lg-pane-selected-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.16);
 }
 
 :root[data-liquid-glass="native"][data-theme="light"],
@@ -87,15 +93,17 @@
   --lg-pane-fill: linear-gradient(140deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 45%, rgba(255, 255, 255, 0.28) 100%);
   --lg-pane-sheen: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%),
     radial-gradient(80% 50% at 100% 100%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%);
-  --lg-pane-border: rgba(255, 255, 255, 0.4);
-  --lg-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.2),
-    0 0 0 0.5px rgba(40, 20, 60, 0.06), 0 16px 40px -18px rgba(60, 20, 80, 0.16);
-  --lg-pane-rim: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.32));
+  /* En clair le défaut était le plus fort : bordure blanche à 0,4, reflet à 0,75 et anneau à 0,7 —
+   * un contour blanc de deux pixels dès que le dessous n'est pas blanc. Le même filet qu'en sombre,
+   * et le fil d'encre d'un demi-pixel qui détache le verre d'un dessous clair. */
+  --lg-pane-border: rgba(255, 255, 255, 0);
+  --lg-pane-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.55), inset 0 -0.5px 0 rgba(255, 255, 255, 0.16),
+    0 0 0 0.5px rgba(40, 20, 60, 0.07), 0 16px 40px -18px rgba(60, 20, 80, 0.16);
   --lg-pane-glyph: rgba(12, 12, 18, 0.9);
   --lg-pane-glyph-secondary: rgba(12, 12, 18, 0.68);
   --lg-pane-separator: rgba(0, 0, 0, 0.08);
 
-  --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.12),
+  --lg-pane-prominent-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.34), inset 0 -2px 6px rgba(0, 0, 0, 0.12),
     0 10px 26px -14px rgba(var(--brand-accent-rgb), 0.35);
 
   --lg-pane-thick-ink: rgba(249, 246, 250, 0.62);
@@ -108,13 +116,13 @@
   --lg-bead-saturate: 1.4;
   --lg-bead-ink: rgba(255, 255, 255, 0);
   --lg-bead-fill: rgba(255, 255, 255, 0.4);
-  --lg-bead-border: rgba(255, 255, 255, 0.5);
-  --lg-bead-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --lg-bead-border: rgba(255, 255, 255, 0.16);
+  --lg-bead-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.55), 0 1px 2px rgba(0, 0, 0, 0.05);
 
   --lg-pane-row-hover: rgba(0, 0, 0, 0.04);
   --lg-pane-nav-hover: rgba(0, 0, 0, 0.05);
   --lg-pane-selected: linear-gradient(140deg, rgba(219, 39, 119, 0.12), rgba(124, 58, 237, 0.07));
-  --lg-pane-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --lg-pane-selected-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* ── Le fond ambiant : nos couleurs, par thème (jamais par ton : le fond est la page) ── */

@@ -46,15 +46,6 @@
   box-shadow: var(--lg-pane-shadow);
 }
 
-/* Son liseré en dégradé : un anneau de 1 px masqué. */
-:root[data-liquid-glass="native"] .lgc-sidebar.lgc-sidebar-plate::after {
-  padding: 1px;
-  background: var(--lg-pane-rim);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
 :root[data-liquid-glass="native"][data-window-inactive] .lgc-sidebar.lgc-sidebar-plate {
   --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
 }

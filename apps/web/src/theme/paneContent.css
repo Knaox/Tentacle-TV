@@ -106,19 +106,6 @@
   position: relative;
 }
 
-:root[data-liquid-glass="native"] .lg-content.lg-content-frosted::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: var(--lg-pane-rim);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
 /* « Réduire la transparence », « Contraste accru » : l'aplat de la page, aucun givre ni courbe —
  * les encres relevées plus haut y tiennent (clair sur `--surface-3`, sombre sur `--surface-2`). */
 :root[data-liquid-glass="native"][data-lg-material] .lg-content.lg-content-frosted {

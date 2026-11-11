@@ -156,9 +156,12 @@
   --lg-specular-opposite: 0.25; /* le reflet en vis-à-vis */
   --lg-specular-base: 0;        /* tout autour : rien, aucun contour */
   --lg-specular-glow: 0.22;     /* lueur dans le biseau, sous l'arc */
-  --lg-edge-width: 1.2;         /* épaisseur de l'arête, en px (nombre nu) */
-  --lg-edge-gain: 1.4;          /* éclaircissement du fond à intensité 1 */
-  --lg-edge-white: 0.2;         /* blanc ajouté à intensité 1 (l'éclat de l'arc) */
+  /* Nov. 2026 (Damien : « l'éclaircissement du contour est tellement contrasté… pas très Apple ») :
+   * à 1,4 un dessous moyen (0,4) sortait à 0,96 — un arc blanc cramé dès que le fond n'est pas
+   * noir. À 0,7 il reste une lumière (0,68), plus un trait ; l'arête s'affine d'autant. */
+  --lg-edge-width: 1;           /* épaisseur de l'arête, en px (nombre nu) */
+  --lg-edge-gain: 0.7;          /* éclaircissement du fond à intensité 1 */
+  --lg-edge-white: 0.08;        /* blanc ajouté à intensité 1 (l'éclat de l'arc) */
   /* D'avant : les recettes CSS en couches `inset`, sans lentille propre. Elles
    * ne savent pas colorer un bord par le dessous : plus de contour CLAIR — un
    * fil sombre tout autour, un reflet du haut à peine, rien en bas.
@@ -232,7 +235,7 @@
   --lg-tinted-brightness: 1.05;
 
   /* Un dessous clair : la lumière du bord s'éteint, aucun trait blanc. */
-  --lg-edge-gain: 0.5;
+  --lg-edge-gain: 0.35;
   --lg-edge-white: 0;
   --lg-rim: rgba(var(--lg-shade-rgb), 0.06);
   --lg-specular-strong: transparent;
@@ -261,11 +264,11 @@
  * sombre, et inversement. Seuls le gain et l'éclat : les recettes composées
  * sur `:root` (`--lgc-edge`…) résolvent leurs jetons à la racine. */
 :root[data-liquid-glass="native"] [data-lg-tone="dark"] {
-  --lg-edge-gain: 1.4;
-  --lg-edge-white: 0.2;
+  --lg-edge-gain: 0.7;
+  --lg-edge-white: 0.08;
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
-  --lg-edge-gain: 0.5;
+  --lg-edge-gain: 0.35;
   --lg-edge-white: 0;
 }
