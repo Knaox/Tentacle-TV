@@ -118,15 +118,25 @@
 }
 
 /* La coche des menus du Mac : rien devant une option non choisie, la coche
- * seule devant la choisie (la case d'avant disparaît, sa colonne reste). */
+ * seule devant la choisie (la case d'avant disparaît, sa colonne reste).
+ * La case du socle (`.ui-check`) est un ANNEAU en `box-shadow` et sa coche est
+ * toujours montée, transparente tant que rien n'est choisi : sans ces deux
+ * lignes, chaque option d'un menu de filtres paraissait cochée sous le verre
+ * (vu dans la coquille, menu « Genres » — lot rf2). */
 :root[data-liquid-glass="native"] .lg-menu .lg-check {
   background: transparent;
   border-color: transparent;
+  box-shadow: none;
+  color: transparent;
+}
+
+:root[data-liquid-glass="native"] .lg-menu [aria-checked="true"] > .lg-check,
+:root[data-liquid-glass="native"] .lg-menu .lg-check:is([aria-checked="true"], [data-checked="true"]) {
   color: var(--text-primary);
 }
 
 :root[data-liquid-glass="native"] .lg-menu .lg-check svg {
-  color: var(--text-primary);
+  color: inherit;
 }
 
 /* La page où l'on est (menu « Plus ») : remplissage neutre, jamais l'accent. */
