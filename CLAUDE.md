@@ -1596,7 +1596,11 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   koffi du lecteur (`apps/desktop-electron/src/main/liquidGlass/`) — jamais `electron-liquid-glass`,
   jamais une API privée (refus du Mac App Store ; `privateApi.test.ts`). Lecteur seulement, et sur
   Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant) :
-  de PETITES capsules `clear` séparées (10 px, au-delà de la fusion), qui se MATÉRIALISENT
+  la MÊME disposition que le lecteur sans verre (lot rf2, 11/11 : « la même disposition, avec des
+  composants Liquid Glass » — le rond de la sortie, la capsule du transport, la capsule du son et
+  des réglages, la barre d'une marge à l'autre ; trois formes `clear`, aux rectangles de
+  `.pl-btn--solo` et `.pl-caps`, mesurés par `apps/desktop-cef/bench/glass/disposition.mjs` ;
+  les menus aux places de `.pl-panel`), qui se MATÉRIALISENT
   (lot lg8 : montée de 6 px, verre qui s'allume, formes décalées, sortie plus rapide ; chaque
   forme son conteneur natif ; `playerGlassMaterialize.ts` → coquille ET CSS), ATTÉNUÉES comme chez QuickTime — un noir à alpha de la page DANS
   la forme, dosé par le ton mesuré (`playerGlassDim.css` : 0,65 clair, 0,5 sombre), glyphes

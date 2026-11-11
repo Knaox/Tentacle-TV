@@ -82,31 +82,41 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(renderToStaticMarkup(controls(false))).toBe("");
   });
 
-  it("verre natif disponible : façon tvOS 26 — voile, texte nu, ronds de verre, plus aucun dégradé d'avant", () => {
+  it("verre natif disponible : la MÊME disposition que sans verre — sortie, barre, deux capsules —, en verre", () => {
     const html = renderToStaticMarkup(
       <PlayerGlassModeContext.Provider value="native">{controls()}</PlayerGlassModeContext.Provider>,
     );
     // Un voile en haut, un en bas, peints par la page.
     expect(html).toContain("lgp-scrim--top");
     expect(html).toContain("lgp-scrim--bottom");
-    // Le titre et la barre sont du TEXTE sur le voile : plus de capsule autour.
-    expect(html).not.toMatch(/lgp-titlecap|lgp-timecap|lgp-pastille/);
+    // Le titre et la barre sont du TEXTE sur le voile.
     expect(html).toMatch(/class="lgp-heading lgp-nude"/);
     expect(html).toMatch(/class="lgp-timeline lgp-nude"/);
-    // Les boutons : un rond de verre chacun — sortie ; son ; −10, lecture, +30 ; vitesse, plein écran.
-    expect(html.match(/lgp-surface lgp-orb/g)?.length).toBe(7);
-    expect(html.match(/lgp-orb--primary/g)?.length).toBe(1);
-    // Ils se MATÉRIALISENT (lot lg8) : chacun à son rang — le transport, puis le son et
-    // les réglages, puis la sortie —, plus aucune goutte.
-    expect(html.match(/data-lgp-materialize=""/g)?.length).toBe(7);
-    expect(html).not.toContain("data-lgp-collapse");
-    expect(html).not.toContain("data-lgp-pivot");
-    expect(html.match(/--lgp-mat-delay:(\d+)ms/g)?.sort()).toEqual(
-      ["--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:50ms", "--lgp-mat-delay:80ms"],
+    // Trois formes de verre, celles de l'habillage sans verre : le rond de la sortie, la capsule
+    // du transport, la capsule du son et des réglages — plus de ronds séparés (lot rf2).
+    expect(html.match(/lgp-surface lgp-orb/g)?.length).toBe(1);
+    expect(html.match(/lgp-surface lgp-caps/g)?.length).toBe(2);
+    expect(html.match(/data-lgp-materialize=""/g)?.length).toBe(3);
+    // Elles se MATÉRIALISENT à leur rang : le transport, les réglages, puis la sortie.
+    expect(html.match(/--lgp-mat-delay:(\d+)ms/g)).toEqual(
+      ["--lgp-mat-delay:80ms", "--lgp-mat-delay:20ms", "--lgp-mat-delay:50ms"],
     );
     expect(html).not.toContain("pl-chrome");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");
+  });
+
+  it("verre : mêmes commandes, dans le même ORDRE, que l'habillage sans verre", () => {
+    const labels = (html: string): string[] => [...html.matchAll(/<(?:button|input)[^>]*aria-label="([^"]+)"/g)].map((m) => m[1]!);
+    const glass = renderToStaticMarkup(
+      <PlayerGlassModeContext.Provider value="native">{controls()}</PlayerGlassModeContext.Provider>,
+    );
+    expect(labels(glass)).toEqual(labels(LEGACY));
+    // Le temps se lit au même endroit, dans la même écriture : « position / durée ».
+    expect(LEGACY).toMatch(/class="pl-time">0:10 \/ 1:40</);
+    expect(glass).toMatch(/class="lgp-time lgp-time--row lgp-nude"[^>]*>0:10 \/ 1:40</);
+    // Lire / pause reste le disque plein de la capsule.
+    expect(glass.match(/lgp-btn--main/g)?.length).toBe(1);
   });
 
   it("réglage allumé mais aucun verre natif (avant la fusion du socle, Intel, macOS < 26) : au pixel près l'habillage de la page", () => {

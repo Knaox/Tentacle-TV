@@ -1,133 +1,122 @@
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { PlaybackRateControl } from "../../playerControls/PlaybackRateControl";
+import { formatDuration } from "../../playerControls/utils";
 import {
-  PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
+  VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
 } from "../../PlayerIcons";
+import { PauseIcon, PlayIcon } from "../../icons/transport";
 import { ReduceIcon } from "../../../pictureInPicture/pipIcons";
 import { rangeFill } from "../../../lib/rangeFill";
 import { SkipBackGlyph, SkipForwardGlyph } from "./glassIcons";
 import { GLASS_LENS_PROPS } from "../../../theme/glass";
 import { PLAYER_MORPH } from "./playerGlassFusion";
-import { GlassOrb } from "./GlassOrb";
+import { GlassCapsule } from "./GlassCapsule";
 import { popoverAnchorProps } from "./popoverOrigin";
-import type { CSSProperties } from "react";
-import { useWatchTogether } from "../../../watchTogether/WatchTogetherProvider";
+import { useVolumeReveal } from "./useVolumeReveal";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 
 type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
   "state" | "itemId" | "isEpisode" | "hasSettings" | "hasNextEpisode" | "hasPreviousEpisode"
   | "showSettings" | "showEpisodes" | "setShowSettings" | "setShowEpisodes"
   | "onReduce" | "togglePause" | "skipBy" | "toggleMute" | "setVolume" | "setSpeed" | "toggleFullscreen"
-  | "onNextEpisode" | "onPreviousEpisode" | "speed" | "visible">;
+  | "onNextEpisode" | "onPreviousEpisode" | "speed" | "visible" | "curSub">
+  & {
+    /** Position affichée (secondes FILM, glissement compris) et durée. */
+    position: number;
+    duration: number;
+  };
 
 /**
- * La rangée de boutons, façon tvOS 26 (lot lg8) : des RONDS de verre, chacun sa
- * forme native — le son à gauche (son rond, puis le curseur NU sur le voile), le
- * transport au centre (le rond de lecture, plus grand, se matérialise le
- * premier, les autres à sa suite), les réglages à droite. L'ordre de droite est celui de
- * l'habillage d'avant : vitesse, épisodes, pistes, PiP, plein écran.
+ * La rangée de commandes du lecteur en verre — la MÊME que celle de l'habillage sans verre
+ * (`DesktopPlayerControls`, lot rf2) : la capsule du transport à gauche, le temps en texte,
+ * puis la capsule du son et des réglages à droite. Mêmes boutons, même ordre, mêmes tailles
+ * (40 px dans une capsule de 50) ; les capsules sont du verre natif au lieu d'une encre.
  *
- * Aucun fond au survol : c'est le verre qui répond (son cœur atténué se resserre,
- * `playerGlassDim.css`) et le symbole (ressort de la lentille) — un voile blanc
- * translucide y rendrait gris.
+ * Le survol d'un bouton est le disque clair de l'habillage sans verre : posé sur l'atténuation
+ * noire de la capsule, il se compose juste (un blanc translucide seul sur la vidéo rendrait
+ * gris — `playerGlass.css`). Lire / pause reste le disque d'ivoire, le seul plein.
  */
 export function GlassControlsRow({
   state, itemId, isEpisode, hasSettings, hasNextEpisode, hasPreviousEpisode,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes,
   onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
-  onNextEpisode, onPreviousEpisode, speed, visible,
+  onNextEpisode, onPreviousEpisode, speed, visible, curSub, position, duration,
 }: GlassControlsRowProps) {
   const { t } = useTranslation("player");
-  // En séance de groupe, la vitesse se retire (`PlaybackRateControl`) : pas de rond vide.
-  const { isInGroup } = useWatchTogether();
   const muted = state.muted || state.volume === 0;
+  // Le curseur du volume ne paraît qu'au survol ou au focus de son groupe, comme sans verre ;
+  // ici la page le SAIT (pas un `:hover` de feuille) : la capsule s'élargit, et sa région
+  // native doit sauter avec elle au lieu de la rejoindre au ressort.
+  const volume = useVolumeReveal();
 
   return (
-    <div className="lgp-groups">
-      <div className="lgp-volume">
-        <GlassOrb visible={visible} order={1}>
+    <div className="lgp-row">
+      <GlassCapsule visible={visible} order={0}>
+        {hasPreviousEpisode && (
+          <button type="button" onClick={onPreviousEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" title={`${t("player:previousEpisodeLabel")} (P)`} aria-label={t("player:previousEpisodeLabel")}><PrevEpIcon /></button>
+        )}
+        <button type="button" onClick={() => skipBy(-10)} {...GLASS_LENS_PROPS} className="lgp-btn" title={t("player:seekBackBy", { seconds: 10 })} aria-label={t("player:seekBackBy", { seconds: 10 })}>
+          <SkipBackGlyph seconds={10} />
+        </button>
+        <button type="button" onClick={() => togglePause()} {...GLASS_LENS_PROPS} className="lgp-btn lgp-btn--main" aria-label={state.paused ? t("player:play") : t("player:pause")}>
+          {state.paused ? <PlayIcon size={20} aria-hidden /> : <PauseIcon size={20} aria-hidden />}
+        </button>
+        <button type="button" onClick={() => skipBy(30)} {...GLASS_LENS_PROPS} className="lgp-btn" title={t("player:seekForwardBy", { seconds: 30 })} aria-label={t("player:seekForwardBy", { seconds: 30 })}>
+          <SkipForwardGlyph seconds={30} />
+        </button>
+        {hasNextEpisode && (
+          <button type="button" onClick={onNextEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" title={`${t("player:nextEpisodeLabel")} (N)`} aria-label={t("player:nextEpisodeLabel")}><NextEpIcon /></button>
+        )}
+      </GlassCapsule>
+
+      {/* Le temps : du TEXTE sur le voile, à la place qu'il a sans verre. */}
+      <span className="lgp-time lgp-time--row lgp-nude" data-lgp-present={visible} style={{ "--lgp-order": 0 } as CSSProperties}>
+        {formatDuration(position)} / {formatDuration(duration)}
+      </span>
+      <span className="lgp-grow" />
+
+      <GlassCapsule visible={visible} order={1} instant={volume.reshaping}>
+        <div className="lgp-volume" data-open={volume.open ? "true" : undefined} {...volume.handlers}>
           <button type="button" onClick={() => toggleMute()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
-            {/* Quatre états, comme l'habillage d'avant : coupé, bas, moyen, fort. */}
+            {/* Quatre états, comme sans verre : coupé, bas (≤33), moyen (≤66), fort. */}
             {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
           </button>
-        </GlassOrb>
-        <input type="range" min={0} max={100} step={1} value={state.volume}
-          aria-label={t("player:volume")}
-          onChange={(e) => setVolume(Number(e.target.value))}
-          data-lgp-present={visible}
-          style={{ ...rangeFill(state.volume, 0, 100), "--lgp-order": 1 } as CSSProperties}
-          className="lgp-range lgp-nude" />
-      </div>
-
-      <div className="lgp-cluster">
-        {hasPreviousEpisode && (
-          <GlassOrb visible={visible}>
-            <button type="button" onClick={onPreviousEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:previousEpisodeLabel")} title={t("player:previousEpisode")}><PrevEpIcon /></button>
-          </GlassOrb>
-        )}
-        <GlassOrb visible={visible}>
-          <button type="button" onClick={() => skipBy(-10)} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:seekBackBy", { seconds: 10 })} title={t("player:seekBackBy", { seconds: 10 })}>
-            <SkipBackGlyph seconds={10} />
-          </button>
-        </GlassOrb>
-        <GlassOrb visible={visible} primary>
-          <button type="button" onClick={() => togglePause()} {...GLASS_LENS_PROPS} className="lgp-btn lgp-btn--primary" aria-label={state.paused ? t("player:play") : t("player:pause")}>
-            {state.paused ? <PlayIcon /> : <PauseIcon />}
-          </button>
-        </GlassOrb>
-        <GlassOrb visible={visible}>
-          <button type="button" onClick={() => skipBy(30)} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:seekForwardBy", { seconds: 30 })} title={t("player:seekForwardBy", { seconds: 30 })}>
-            <SkipForwardGlyph seconds={30} />
-          </button>
-        </GlassOrb>
-        {hasNextEpisode && (
-          <GlassOrb visible={visible}>
-            <button type="button" onClick={onNextEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:nextEpisodeLabel")} title={t("player:nextEpisode")}><NextEpIcon /></button>
-          </GlassOrb>
-        )}
-      </div>
-
-      <div className="lgp-cluster lgp-cluster--end">
-        {!isInGroup && (
-          <GlassOrb visible={visible} order={1}>
-            <PlaybackRateControl
-              apply={setSpeed} resetKey={itemId} state={speed}
-              otherPanelOpen={showSettings || showEpisodes}
-              onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
-            />
-          </GlassOrb>
-        )}
+          <input type="range" min={0} max={100} step={1} value={state.volume}
+            aria-label={t("player:volume")}
+            onChange={(e) => setVolume(Number(e.target.value))}
+            style={rangeFill(state.volume, 0, 100)}
+            className="lgp-range" />
+        </div>
+        <PlaybackRateControl
+          apply={setSpeed} resetKey={itemId} state={speed}
+          otherPanelOpen={showSettings || showEpisodes}
+          onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
+        />
         {isEpisode && (
-          <GlassOrb visible={visible} order={1}>
-            <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
-              {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.episodes)} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
-              <EpisodesIcon />
-            </button>
-          </GlassOrb>
+          <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
+            {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.episodes)} className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
+            <EpisodesIcon />
+          </button>
         )}
         {hasSettings && (
-          <GlassOrb visible={visible} order={1}>
-            <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
-              {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.tracks)} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
-              <GearIcon />
-            </button>
-          </GlassOrb>
+          <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
+            {...GLASS_LENS_PROPS} {...popoverAnchorProps(PLAYER_MORPH.tracks)} className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
+            <GearIcon />
+            {curSub !== null && <span className="lgp-dot" aria-hidden />}
+          </button>
         )}
         {onReduce && (
-          <GlassOrb visible={visible} order={1}>
-            <button type="button" onClick={() => onReduce()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:pip.reduce")} title={`${t("player:pip.reduce")} (I)`}>
-              <ReduceIcon />
-            </button>
-          </GlassOrb>
-        )}
-        <GlassOrb visible={visible} order={1}>
-          <button type="button" onClick={() => toggleFullscreen()} {...GLASS_LENS_PROPS} className="lgp-btn"
-            aria-label={state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} title={`${state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} (F)`}>
-            {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+          <button type="button" onClick={() => onReduce()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:pip.reduce")} title={`${t("player:pip.reduce")} (I)`}>
+            <ReduceIcon />
           </button>
-        </GlassOrb>
-      </div>
+        )}
+        <button type="button" onClick={() => toggleFullscreen()} {...GLASS_LENS_PROPS} className="lgp-btn"
+          aria-label={state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} title={`${state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} (F)`}>
+          {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+        </button>
+      </GlassCapsule>
     </div>
   );
 }

@@ -237,7 +237,7 @@ export function UpNextCard({
 
   if (glass) {
     return (
-      <div className="lgp-corner z-30" data-lifted={controlsVisible}>
+      <div className="lgp-corner lgp-corner--card z-30" data-lifted={controlsVisible}>
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

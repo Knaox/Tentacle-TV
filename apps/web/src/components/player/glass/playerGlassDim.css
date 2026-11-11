@@ -124,6 +124,28 @@
   scale: var(--lg-player-orb-press-scale);
 }
 
+/* Une CAPSULE (lot rf2) : le même cœur, étiré en STADE — deux demi-disques aux bouts, une
+   bande entre eux, aux mêmes arrêts (plein jusqu'à 42 % du demi-côté, `--lg-player-dim-rim`
+   au bord). Les trois images se touchent sans se recouvrir : un recouvrement doublerait
+   l'atténuation. Les boutons des bouts (épisode précédent, plein écran) reposent sur le même
+   cœur que ceux du milieu. */
+:root[data-liquid-glass="native"] .lgp-surface.lgp-caps[data-lgp-variant="clear"]::before {
+  --lgp-half: calc(var(--lg-player-caps-height) / 2);
+  --lgp-core: rgb(0 0 0) 0%, rgb(0 0 0) 42%, rgb(0 0 0 / var(--lg-player-dim-rim)) 100%;
+  background:
+    radial-gradient(circle var(--lgp-half) at 100% 50%, var(--lgp-core)) left center / var(--lgp-half) 100% no-repeat,
+    radial-gradient(circle var(--lgp-half) at 0% 50%, var(--lgp-core)) right center / var(--lgp-half) 100% no-repeat,
+    linear-gradient(180deg, rgb(0 0 0 / var(--lg-player-dim-rim)) 0%, rgb(0 0 0) 29%, rgb(0 0 0) 71%, rgb(0 0 0 / var(--lg-player-dim-rim)) 100%)
+      center / calc(100% - var(--lg-player-caps-height)) 100% no-repeat;
+}
+
+/* Une capsule porte plusieurs boutons : son cœur ne se resserre pas au survol de l'un d'eux
+   — c'est le BOUTON survolé qui répond (`playerGlassButtons.css`). */
+:root[data-liquid-glass="native"] .lgp-surface.lgp-caps[data-lgp-variant="clear"]:is(:hover, :active)::before {
+  opacity: var(--lgp-dim);
+  scale: none;
+}
+
 /* Mouvement réduit, matière pleine : ni resserrement ni éclaircie. */
 :root[data-liquid-glass="native"][data-lg-motion="reduce"] .lgp-surface::before,
 :root[data-liquid-glass="native"][data-lg-material] .lgp-surface[data-lgp-variant="clear"]:is(:hover, :active)::before {

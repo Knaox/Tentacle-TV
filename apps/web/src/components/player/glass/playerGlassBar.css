@@ -1,4 +1,4 @@
-/* Le haut et le bas du lecteur en verre : du texte sur le voile, des ronds de verre.
+/* Le haut et le bas du lecteur en verre : du texte sur le voile, des formes de verre.
  * Jetons : `playerGlass.css`. Rien d'autre que `transform` et `opacity` ne
  * s'anime ici : ces capsules flottent sur une vidéo EN LECTURE. */
 
@@ -18,7 +18,6 @@
   right: var(--lg-player-inline);
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   pointer-events: none;
 }
 
@@ -29,26 +28,29 @@
   gap: var(--lg-player-gap);
 }
 
-/* Le titre : du TEXTE sur le voile du haut, sans forme autour (tvOS 26). */
+/* Le titre : du TEXTE sur le voile du haut, sans forme autour. Il ne prend que sa
+   largeur (`.pl-heading`) : la droite reste libre pour les avatars d'une séance. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-heading {
   display: flex;
   min-width: 0;
-  max-width: min(640px, 60vw);
+  flex: 0 1 auto;
   flex-direction: column;
-  justify-content: center;
+  gap: 2px;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-devbadge {
+  flex-shrink: 0;
   pointer-events: none;
   border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-devbadge);
   padding: 4px 10px;
   color: var(--brand-light);
   font-size: 11px;
+  font-weight: 600;
   transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
 }
 
-/* ── En bas : la barre nue, les ronds ─────────────────────────────────── */
+/* ── En bas : la barre nue, les capsules ─────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-dock {
   position: absolute;
@@ -65,11 +67,11 @@
    pause), et une capsule masquée gardait les siens (un clic sur l'image, là où
    dormait la piste, faisait un saut). Un panneau qui rentre dans son bouton
    (`data-lgp-exiting`) les laisse au bouton. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-orb, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-orb, .lgp-caps, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
   pointer-events: auto;
 }
 
-/* Ce qui est nu (barre, curseur du volume) : les clics à l'écran seulement. */
+/* Ce qui est nu (barre, temps) : les clics à l'écran seulement. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-nude:not([data-lgp-present="false"]) {
   pointer-events: auto;
 }
@@ -77,34 +79,20 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-popover {
   position: absolute;
   right: 0;
-  bottom: calc(100% + var(--lg-player-gap));
+  /* Là où se pose le menu de l'habillage sans verre (`.pl-panel` : 80 px du bas de la
+     fenêtre) : au-dessus de la capsule, à un écart de rangée. */
+  bottom: calc(var(--lg-player-caps-height) + var(--lg-player-row-gap));
   z-index: 50;
 }
 
-/* Ligne de temps : écoulé · piste · restant */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  column-gap: 12px;
-  height: 24px;
-  padding-inline: 6px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__time {
-  min-width: 44px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__time--end {
-  text-align: right;
-}
-
+/* La barre : la zone de saisie de `.pl-seek` (18 px), le trait au milieu. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__zone {
   position: relative;
   display: flex;
-  height: 24px;
+  height: var(--lg-player-timeline-height);
   align-items: center;
   cursor: pointer;
+  touch-action: none;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__rail {
@@ -167,15 +155,22 @@
   transform: scale(1);
 }
 
-/* Curseur de volume : la piste et le dégradé de marque de la ligne de temps */
+/* Curseur de volume : la piste et le dégradé de marque de la barre ; la place et la
+   largeur de `.pl-volume__range` (84 px, 2 px après le bouton, 8 px avant le suivant). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range {
+  display: none;
   width: 84px;
-  height: 20px;
-  margin-left: 2px;
+  /* La hauteur de `.ctl-range` : la même cible que sans verre. */
+  height: 24px;
+  margin: 0 8px 0 2px;
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
   cursor: pointer;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-volume[data-open="true"] .lgp-range {
+  display: block;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range:focus-visible {
@@ -210,9 +205,9 @@
   transform: scale(1.2);
 }
 
-/* Fenêtre étroite : le curseur cède sa place, le bouton du son reste. */
-@media (max-width: 640px) {
-  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range {
+/* Fenêtre étroite : le curseur cède sa place, le bouton du son reste (comme `.pl-volume__range`). */
+@media (max-width: 520px) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-volume .lgp-range {
     display: none;
   }
 }
@@ -225,7 +220,7 @@
   }
 }
 
-/* ── Ce qui est NU (titre, barre, curseur du volume) ──────────────────────
+/* ── Ce qui est NU (titre, barre, temps) ──────────────────────────────────
    Du texte et des traits sur le voile, sans matière native : ils naissent avec
    les contrôles en montant de quelques points, et partent plus vite. Opacité et
    transformée seulement. */

@@ -4,8 +4,6 @@ import { GlassSurface } from "./GlassSurface";
 interface GlassOrbProps {
   /** Les contrôles sont à l'écran. */
   visible: boolean;
-  /** Le rond de lecture : plus grand. */
-  primary?: boolean;
   /**
    * L'ORDRE d'apparition (0 d'abord) : le transport, puis le son, les réglages et la
    * barre, puis le haut — le rang de la matérialisation (`materialize`), et
@@ -16,18 +14,19 @@ interface GlassOrbProps {
 }
 
 /**
- * Un ROND de verre clair du lecteur (lot lg8, façon tvOS 26) : sa PROPRE forme
- * native, du groupe `player` — séparée de ses voisines au repos (l'écart dépasse
- * la distance de fusion), qui se matérialise à son rang (`materialize` :
- * elle monte pendant que son verre s'allume). Le bouton qu'il porte le remplit.
+ * Un ROND de verre clair du lecteur : la SORTIE, seule sur l'image en haut à gauche
+ * (la pastille `.pl-btn--solo` de l'habillage sans verre) — sa propre forme native,
+ * qui se matérialise à son rang (`materialize` : elle monte pendant que son verre
+ * s'allume). Le bouton qu'il porte le remplit. Les commandes du bas vivent dans deux
+ * capsules (`GlassCapsule`).
  *
  * Au niveau du module : défini dans un rendu, il changerait d'identité à chaque
  * battement de position et remonterait toute la rangée.
  */
-export function GlassOrb({ visible, primary = false, order = 0, children }: GlassOrbProps) {
+export function GlassOrb({ visible, order = 0, children }: GlassOrbProps) {
   return (
     <GlassSurface
-      className={primary ? "lgp-orb lgp-orb--primary" : "lgp-orb"}
+      className="lgp-orb"
       present={visible} materialize={order} adaptiveTone
       style={{ "--lgp-order": order } as CSSProperties}
     >

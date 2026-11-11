@@ -75,9 +75,11 @@
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 8px;
+  /* Les mesures de `.ui-menu-item` : la ligne du menu sans verre, au pixel. */
+  gap: 10px;
+  min-height: 36px;
   border-radius: var(--lg-player-radius-row);
-  padding: 7px 10px;
+  padding: 6px 10px;
   text-align: left;
   color: var(--lg-player-fg);
   font-size: 14px;
@@ -96,7 +98,7 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option__check {
   display: inline-flex;
-  width: 14px;
+  width: 16px;
   flex-shrink: 0;
   justify-content: center;
 }
@@ -121,18 +123,33 @@
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title {
-  margin: 0 0 4px;
-  padding: 0 10px;
+  /* Les mesures de `.ui-menu-label`. */
+  margin: 0;
+  padding: 10px 10px 4px;
   color: var(--lg-player-fg-3);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title--inline {
-  margin: 0;
-  padding: 0;
+/* ── Un MENU de verre (pistes, vitesse) : la boîte de `.pl-panel.ui-menu` ──
+   Même largeur minimale, même marge intérieure, même hauteur maximale ; le contenu
+   défile DEDANS (`.pl-panel__scroll`). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-menu {
+  display: flex;
+  min-width: 220px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 170px);
+  flex-direction: column;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-menu__body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  padding: 6px;
 }
 
 /* ── La fiche « à suivre » en verre : l'île sombre des panneaux, et sa

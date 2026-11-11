@@ -107,13 +107,19 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
    * seul et ne prend aucune atténuation (mesuré, lg3).
    */
   adaptiveTone?: boolean;
+  /**
+   * La forme CHANGE DE TAILLE à l'instant (une capsule dont le curseur du volume paraît) :
+   * sa région se pose sans transition native, comme pendant un redimensionnement de la
+   * fenêtre — sinon le verre court au ressort derrière un contenu déjà en place.
+   */
+  instant?: boolean;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
   present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing,
-  materialize, motion = MATERIALIZE, origin = CENTER_ORIGIN, originCss, adaptiveTone, surfaceRef, className = "",
+  materialize, motion = MATERIALIZE, origin = CENTER_ORIGIN, originCss, adaptiveTone, instant = false, surfaceRef, className = "",
   style, children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
@@ -143,7 +149,7 @@ export function GlassSurface({
     active: mode === "native" && shown && regionsAllowed,
     group: native === undefined ? group : undefined,
     variant,
-    transition: resizing ? 0 : gesture?.enterMs ?? transition,
+    transition: resizing || instant ? 0 : gesture?.enterMs ?? transition,
     spacing: native !== undefined ? undefined : spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
     materialize: native,
   });

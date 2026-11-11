@@ -50,8 +50,60 @@ describe("la géométrie du lecteur en verre suit celle de l'habillage de la pag
     expect(read("playerGlass.css")).not.toContain("--lg-player-bar-max");
   });
 
-  it("le transport reste au centre de la fenêtre, quelle que soit la largeur des côtés", () => {
-    expect(rule("playerGlassCapsules.css", ".lgp-groups {")).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto minmax\(0, 1fr\)/);
+  it("la rangée est celle de l'habillage sans verre : mêmes écarts, la barre d'une marge à l'autre", () => {
+    expect(rule("../chrome/playerChrome.css", ".pl-bar--bottom {")).toContain("gap: 10px");
+    expect(rule("../chrome/playerChrome.css", ".pl-row {")).toContain("gap: 10px");
+    expect(token("--lg-player-row-gap")).toBe(10);
+    expect(rule("playerGlassCapsules.css", ".lgp-row {")).toMatch(/gap: var\(--lg-player-row-gap\)[\s\S]*margin-top: var\(--lg-player-row-gap\)/);
+    // La zone de saisie de la barre : 18 px, comme `.pl-seek`.
+    expect(rule("../chrome/playerSeek.css", ".pl-seek {")).toContain("height: 18px");
+    expect(token("--lg-player-timeline-height")).toBe(18);
+    // Plus de transport centré ni de grille à trois colonnes : la disposition du verre d'avant.
+    expect(read("playerGlassCapsules.css")).not.toMatch(/grid-template-columns|lgp-groups|lgp-cluster/);
+  });
+
+  it("une capsule de verre a la boîte de la capsule d'encre : 50 px, boutons de 40, 2 px entre eux, 5 au bord", () => {
+    const caps = rule("../chrome/playerChrome.css", ".pl-caps {");
+    expect(caps).toContain("height: 50px");
+    expect(caps).toContain("padding: 0 5px");
+    expect(caps).toContain("gap: 2px");
+    const button = rule("../chrome/playerChrome.css", ".pl-btn {");
+    expect(button).toContain("width: 40px");
+    expect(button).toContain("height: 40px");
+    expect(rule("../chrome/playerChrome.css", "\n.pl-btn--solo {")).toContain("width: 44px");
+    expect(token("--lg-player-caps-height")).toBe(50);
+    expect(token("--lg-player-caps-pad")).toBe(5);
+    expect(token("--lg-player-caps-gap")).toBe(2);
+    expect(token("--lg-player-caps-button")).toBe(40);
+    expect(token("--lg-player-orb")).toBe(44);
+  });
+
+  it("le curseur du volume a la place de celui d'avant : 84 px, dans la capsule de droite", () => {
+    const legacy = rule("../chrome/playerSeek.css", ".pl-volume__range {");
+    expect(legacy).toContain("width: 84px");
+    expect(legacy).toContain("margin: 0 8px 0 2px");
+    const glass = rule("playerGlassBar.css", ".lgp-range {");
+    expect(glass).toContain("width: 84px");
+    expect(glass).toContain("margin: 0 8px 0 2px");
+    expect(glass).toContain("height: 24px");
+    expect(glass).toContain("display: none");
+  });
+
+  it("les menus s'ouvrent là où s'ouvrent ceux d'avant : au-dessus de la capsule, à 80 px du bas de la fenêtre", () => {
+    expect(rule("../chrome/playerPanels.css", ".pl-panel {")).toContain("bottom: calc(80px");
+    expect(rule("playerGlassBar.css", ".lgp-popover {")).toContain("bottom: calc(var(--lg-player-caps-height) + var(--lg-player-row-gap))");
+    // 20 (marge du dock) + 50 (capsule) + 10 (écart) = 80.
+    expect(token("--lg-player-edge") + token("--lg-player-caps-height") + token("--lg-player-row-gap")).toBe(80);
+    const menu = rule("playerGlassPanels.css", ".lgp-surface.lgp-menu {");
+    expect(menu).toContain("min-width: 220px");
+    expect(menu).toContain("max-height: calc(100vh - 170px)");
+  });
+
+  it("le coin bas-droit repose et monte comme les encarts sans verre", () => {
+    // Pilule de saut : `bottom-10` (40 px), `-translate-y-16` (64 px).
+    expect(token("--lg-player-corner-rest")).toBe(40);
+    expect(token("--lg-player-corner-lift")).toBe(64);
+    expect(rule("playerGlassOverlays.css", ".lgp-corner--card {")).toMatch(/--lg-player-corner-rest: 24px;[\s\S]*--lg-player-corner-lift: 80px/);
   });
 
   it("les encarts du coin et les panneaux gardent la même marge latérale", () => {
