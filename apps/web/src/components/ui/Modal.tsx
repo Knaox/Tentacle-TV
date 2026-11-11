@@ -7,6 +7,7 @@ import { duration, easeDrawer, easeOut } from "../../theme/motion";
 import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { exitOr } from "../floating/floatingMotion";
 import { useLiquidGlassMode } from "../../theme/glass";
+import { useStableScrollLock } from "../../lib/stableScrollLock";
 
 interface ModalProps {
   open: boolean;
@@ -168,13 +169,8 @@ export function Modal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!open || !lockScroll) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [open, lockScroll]);
+  // La page dessous ne défile plus — sans bouger d'un pixel (`lib/stableScrollLock.ts`).
+  useStableScrollLock(open && lockScroll);
 
   // Le choix du premier focus, relu au moment de le poser (le contenu peut
   // n'être monté qu'après l'ouverture).

@@ -8,6 +8,7 @@ import { duration, easeDrawer, easeOut } from "../../theme/motion";
 import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { exitOr } from "../floating/floatingMotion";
 import { useLiquidGlassMode } from "../../theme/glass";
+import { useStableScrollLock } from "../../lib/stableScrollLock";
 
 /**
  * Le tiroir glisse de sa propre taille (`translate` en pourcentage), en `transform` ENTIER — le
@@ -148,13 +149,8 @@ export function Sheet({
     };
   }, [open, trapFocus]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!open || !lockScroll) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [open, lockScroll]);
+  // La page dessous ne défile plus — sans bouger d'un pixel (`lib/stableScrollLock.ts`).
+  useStableScrollLock(open && lockScroll);
 
   const isRight = placement === "right";
   const reduced = useReducedMotion() === true;

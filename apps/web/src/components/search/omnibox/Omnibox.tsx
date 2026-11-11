@@ -34,6 +34,7 @@ import { OmniboxList } from "./OmniboxList";
 import { OmniboxNotice } from "./OmniboxNotice";
 import { optionId } from "./OmniboxRows";
 import { useOmniboxData } from "./useOmniboxData";
+import { useStableScrollLock } from "../../../lib/stableScrollLock";
 
 export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }) {
   const { t } = useTranslation("search");
@@ -61,13 +62,8 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
     return () => previous?.focus();
   }, []);
 
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  // La page dessous ne défile plus — sans bouger d'un pixel (`lib/stableScrollLock.ts`).
+  useStableScrollLock(true);
 
   useEffect(() => {
     if (active >= 0) document.getElementById(optionId(active))?.scrollIntoView({ block: "nearest" });
