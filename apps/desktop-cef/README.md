@@ -112,8 +112,9 @@ vidéos « pour enfants » (MP4 seul) et ce qu'une extension jouerait en H.264. 
 Quand mpv ne s'initialise pas ou tombe en pleine lecture, la page passe au lecteur web
 (`<video>` + hls.js) toute seule, à la même position, avec le bandeau « Lecteur de secours ».
 Ce lecteur-là ne décode ni H.264 ni AAC : il le DÉCLARE (`openWebEngine`, packages/shared) et
-Jellyfin lui sert de l'AV1 + Opus en fMP4 — copie d'une source AV1, encodage sinon (il faut que
-l'administrateur de Jellyfin ait permis l'encodage AV1). Détail et mesures :
+Jellyfin lui sert de l'AV1 + Opus en fMP4 — copie d'une source AV1, encodage sinon (mesuré sur
+Jellyfin 12.4 avec un encodeur matériel, et sur un 10.11.11 aux réglages par défaut, en logiciel).
+Détail et mesures :
 `docs/TRANSCODAGE-MOTEURS.md`, « Le lecteur web du bureau CEF ».
 
 Pour l'éprouver sans casser mpv (`src/bridge/mpv_fault.h`) :

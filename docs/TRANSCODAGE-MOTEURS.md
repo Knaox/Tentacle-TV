@@ -120,15 +120,46 @@ Mesuré sur le Jellyfin réel (12.4.0, encodeur matériel), par `PlaybackInfo` :
 | HEVC 1080p + AC3 | `av1` + `opus` | ENCODÉ en AV1 + Opus ; init 0,9 s, 1er segment 0,23 s |
 | H.264 1080p + DTS | `av1,vp9` + `opus` | **rien** : maître sans codec vidéo, init en 502 après 30 s |
 
-D'où deux règles : **jamais le VP9 dans la liste HLS** (Jellyfin le choisit
+D'où une règle : **jamais le VP9 dans la liste HLS** (Jellyfin le choisit
 alors, et ne sert rien — une source VP9 passe par la lecture directe, sinon
-elle est convertie en AV1), et **l'encodage AV1 doit être permis** dans Jellyfin
-(« Autoriser l'encodage AV1 ») : sans lui, Jellyfin rend autre chose que ce
-lecteur ne lit pas — non mesuré ici (le serveur réel le permet), le lecteur web
-le dirait par son écran de problème. Sur la bibliothèque réelle (120 premiers
+elle est convertie en AV1).
+
+Et sur un Jellyfin **10.11.11 aux réglages par défaut** (conteneur local,
+`AllowAv1Encoding` et `AllowHevcEncoding` à `false`, aucune accélération
+matérielle, 4 cœurs) — la même demande `av1` + `opus` :
+
+| Source | Ce que Jellyfin rend |
+|---|---|
+| HEVC Main 10 720p + AAC | ENCODÉ en AV1 (`av01.0.15M.08`) + Opus, en logiciel ; init en 0,9 s ; 87 s en tampon après 9 s de lecture |
+| H.264 360p + AC3 | ENCODÉ en AV1 + Opus ; init en 0,5 s |
+
+« Autoriser l'encodage AV1 » éteint n'empêche donc PAS l'AV1 quand la liste ne
+contient que lui : le lecteur de secours marche sur un Jellyfin sorti de sa
+boîte. Sur la bibliothèque réelle (120 premiers
 films) : 101 HEVC, 17 H.264, 2 AV1 — le lecteur de secours CONVERTIT presque
 toujours, et un réencodage perd le HDR (fait 4) ; seule une source AV1 garde le
 sien, que Chromium ramène à l'écran.
+
+**L'init avant le segment** (`hooks/hlsInitFirstLoader.ts`). hls.js demande
+l'init d'un flux fMP4 et son premier segment ENSEMBLE. Dans Jellyfin 10.11, la
+requête de l'init (re)lance TOUJOURS l'encodage depuis 0 tant que son fichier
+n'existe pas, et celle d'un segment loin du début le relance à sa position :
+parties ensemble, elles se tuent l'une l'autre. Mesuré (reprise à 40-100 s,
+sept chutes de mpv) : trois fois, l'init a répondu 500 (« A task was
+canceled »), puis à la relance de hls.js **200 au corps vide** ; hls.js gardait
+cet init, tout segment échouait à l'analyse (`fragParsingError`) et, une fois
+sur trois, la session d'encodage restait cassée (tout revenait vide). Deux
+réponses, pour tout flux fMP4 du lecteur web (CEF ou non) :
+
+- un segment de média attend la réponse de l'init en vol, et un init vide est
+  un échec de chargement — huit chutes sur huit relayées ensuite, sans erreur
+  (le premier segment part ~1 s après l'init) ;
+- un `fragParsingError` recharge la source entière, deux fois au plus, et seul
+  un fragment de MÉDIA remet les compteurs de relance à zéro
+  (`hooks/hlsErrorRecovery.ts`) : l'init « tamponné » les remettait à zéro à
+  chaque tour, et la relance tournait sans fin, sans jamais rien dire.
+
+Jellyfin 12.4 n'a pas montré cette course (trois départs loin du début).
 
 **Le repli lui-même** (`Watch.tsx`, `lib/fallbackPlayer.ts`,
 `hooks/playbackFailure.ts`). Un échec d'initialisation de mpv et une fin de
@@ -138,5 +169,6 @@ du LECTEUR, dits tels quels (`engineFailed`) : ni le texte de l'erreur
 une sonde du flux qui n'aboutit pas (« connexion perdue ») ne les reclassent
 plus. La bascule emporte le titre et la position de l'arrêt : le lecteur web
 reprend là. Vu sur l'instance réelle : chute provoquée à 1 313,36 s, reprise à
-1 313,4 s, première image 5 s après la chute. Provoquer la panne :
+1 313,4 s, première image 5 s après la chute ; sur l'instance locale (fichiers
+HEVC Main 10 et H.264 + AC3) : huit chutes sur huit. Provoquer la panne :
 `TENTACLE_MPV_FAIL`, `mpv_debug_fail` (`apps/desktop-cef/README.md`).

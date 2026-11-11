@@ -146,9 +146,11 @@ export interface WebDecodeProbe {
  * ordinaire (H.264 + AAC en TS) : il DÉCLARE ce qu'il décode, et la règle en
  * tire un flux qu'il lit.
  *
- * - L'AV1, et lui seul : c'est la SORTIE d'un transcodage — Jellyfin l'encode
- *   si l'administrateur l'a permis (« Autoriser l'encodage AV1 ») ; une source
- *   AV1 se copie. Le VP9, que ce lecteur décode pourtant, n'est PAS déclaré :
+ * - L'AV1, et lui seul : c'est la SORTIE d'un transcodage, et une source AV1
+ *   se copie. Mesuré : Jellyfin 12.4 (encodeur matériel) et Jellyfin 10.11.11
+ *   aux réglages par défaut (« Autoriser l'encodage AV1 » ÉTEINT, encodage
+ *   logiciel) le rendent tous deux quand la liste ne contient que lui.
+ *   Le VP9, que ce lecteur décode pourtant, n'est PAS déclaré :
  *   mesuré sur Jellyfin 12.4, `VideoCodec=av1,vp9` lui fait choisir le VP9 —
  *   maître sans codec vidéo, init jamais servi (502 après 30 s). Une source
  *   VP9 passe par la lecture directe (WebM, MKV, MP4), sinon elle est
