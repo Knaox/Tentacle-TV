@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
+import { SlidingMarker } from "../ui/SlidingMarker";
 import { SlideshowIcon as GalleryHorizontalEnd } from "@phosphor-icons/react/dist/csr/Slideshow";
 import { SparkleIcon as Sparkles } from "@phosphor-icons/react/dist/csr/Sparkle";
 import type { Icon as IconType } from "@phosphor-icons/react";
@@ -27,7 +28,7 @@ const SECTIONS: ReadonlyArray<{ key: RecoSection; path: string; labelKey: string
  * Des LIENS, pas des boutons d'état : chaque section a son URL (lien profond,
  * retour du navigateur), et `replace` évite qu'un aller-retour entre les deux
  * n'empile l'historique. Même dessin que le segment de la bibliothèque : le
- * repère au dégradé de marque glisse (`layoutId`, donc `transform`), immédiat
+ * repère glisse (`SlidingMarker` : en `transform`, sur le compositeur), immédiat
  * quand l'utilisateur réduit les animations.
  */
 export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: RecoSectionSwitchProps) {
@@ -52,10 +53,9 @@ export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: Re
             }`}
           >
             {selected && (
-              <motion.span
-                aria-hidden
-                layoutId="reco-section-marker"
-                transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
+              <SlidingMarker
+                group="reco-section-marker"
+                still={reduced === true}
                 className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                 // L'option retenue : une pastille NEUTRE (carnet, § 3) — plus de dégradé de marque.
                 style={{ background: "var(--surface-4)", boxShadow: "var(--shadow-edge)" }}

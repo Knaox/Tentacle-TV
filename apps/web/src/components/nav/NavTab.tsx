@@ -2,8 +2,9 @@
  * Un onglet de la barre : une pilule au LIBELLÉ seul (refonte de nov. 2026 — le
  * prototype validé ; l'icône de la destination reste dans « Plus » et dans
  * « Personnaliser la barre », où une liste se parcourt), et, pour l'onglet
- * courant, une pastille NEUTRE qui GLISSE d'un onglet à l'autre (`layoutId`
- * partagé — le segmented control d'iOS).
+ * courant, une pastille NEUTRE qui GLISSE d'un onglet à l'autre (le segmented
+ * control d'iOS) — sur le compositeur (`SlidingMarker`), par `layoutId` sous le
+ * verre natif.
  *
  * `NavTabBody` est le même dessin sans lien ni indicateur : c'est lui que la
  * rangée fantôme mesure (`usePriorityOverflow`). Il est rendu en gras, la
@@ -24,8 +25,8 @@ export function menuAnchor(event: MouseEvent<HTMLElement>): { x: number; y: numb
 import { memo, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { springSoft } from "../../theme/motion";
 import { GLASS_LENS_PROPS, glassMorphProps } from "../../theme/glass";
+import { SlidingMarker } from "../ui/SlidingMarker";
 import { useWindowGlass } from "../../desktop/windowGlass";
 import type { NavIcon } from "./useNavDestinations";
 
@@ -42,20 +43,24 @@ export function ActiveIndicator({ reduced }: { reduced: boolean }) {
   // l'étirement (framer ne le corrige que passé en `style`). Ailleurs, le
   // dessin d'avant.
   const glass = useWindowGlass();
-  const morph = glass ? glassMorphProps("nav-active", reduced) : null;
+  // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode
+  // natif — ailleurs, le repli est le dessin d'avant.
+  const paint = {
+    background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
+    boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
+  };
+  // Hors du verre natif : le glissement se joue sur le compositeur (`SlidingMarker`). Il part au
+  // clic sur un onglet, à l'instant où la page suivante se rend sur le fil principal — là où la
+  // métamorphose de framer (`layoutId`, mesurée et projetée image par image) perdait ses images.
+  if (!glass) return <SlidingMarker group="nav-active" still={reduced} className="lgc-lens absolute inset-0 rounded-pill" style={paint} />;
+  const morph = glassMorphProps("nav-active", reduced);
   return (
     <motion.span
-      layoutId={morph?.layoutId ?? "nav-active"}
+      layoutId={morph.layoutId}
       aria-hidden
       className="lgc-lens absolute inset-0 rounded-pill"
-      // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode
-      // natif — ailleurs, le repli est le dessin d'avant.
-      style={{
-        background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
-        boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
-        ...(glass ? { borderRadius: LENS_RADIUS } : null),
-      }}
-      transition={morph?.transition ?? (reduced ? { duration: 0 } : springSoft)}
+      style={{ ...paint, borderRadius: LENS_RADIUS }}
+      transition={morph.transition}
     />
   );
 }

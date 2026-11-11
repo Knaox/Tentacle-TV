@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
+import { SlidingMarker } from "../ui/SlidingMarker";
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -37,8 +38,9 @@ interface SegmentedControlProps<T extends string> {
  * segment à l'autre. Sous le verre de macOS 26, celui de macOS : piste en
  * remplissage, repère en bouton neutre (`lg-seg`, `theme/liquidGlassContent.css`).
  *
- * Le repère se déplace par `layoutId`, donc en `transform` ; immédiat quand
- * l'utilisateur réduit les animations. Aucune couleur de fond animée : le
+ * Le repère glisse en `transform`, sur le compositeur (`SlidingMarker`) — le filtre qu'il
+ * choisit refait la grille au même instant sur le fil principal ; immédiat aux flèches du
+ * clavier et quand l'utilisateur réduit les animations. Aucune couleur de fond animée : le
  * segment choisi ne change que la couleur de son texte.
  *
  * ⚠️ Pas de `gap` sur les segments : la cible webOS l'émule par des marges
@@ -91,10 +93,9 @@ export function SegmentedControl<T extends string>({
             } ${selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"}`}
           >
             {selected && (
-              <motion.span
-                aria-hidden
-                layoutId={markerId}
-                transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
+              <SlidingMarker
+                group={markerId}
+                still={reduced === true}
                 className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                 // La pastille retenue : NEUTRE (`--surface-4`), son arête et une ombre courte —
                 // plus de dégradé de marque (refonte de nov. 2026).

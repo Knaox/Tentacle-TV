@@ -15,10 +15,10 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { springSoft } from "../../../theme/motion";
+import { SlidingMarker } from "../../ui/SlidingMarker";
 import { SEARCH_TABS, type SearchTab } from "./searchParams";
 
 const WRITE_DELAY_MS = 150;
@@ -105,13 +105,12 @@ export const SearchPageHeader = memo(function SearchPageHeader({ query, tab, cou
                   }`}
                 >
                   {selected && (
-                    <motion.span
-                      layoutId="search-tab-pill"
-                      aria-hidden
+                    <SlidingMarker
+                      group="search-tab-pill"
+                      still={reduced === true}
                       className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                       // L'onglet retenu : une pastille NEUTRE, comme le contrôle segmenté des bibliothèques.
                       style={{ background: "var(--surface-4)", boxShadow: "var(--ctl-glow-segment)" }}
-                      transition={reduced ? { duration: 0 } : springSoft}
                     />
                   )}
                   {t(TAB_KEYS[key])}
