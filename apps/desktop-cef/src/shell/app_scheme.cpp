@@ -4,12 +4,15 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <mutex>
 #include <system_error>
 
 #include "include/cef_parser.h"
 #include "include/cef_stream.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
+#include "net/csp.h"
 #include "shell/web_root.h"
 
 namespace tentacle::appscheme {
@@ -50,6 +53,24 @@ CefRefPtr<CefResourceHandler> refusal(int status, const std::string& path) {
                                       "text/plain", appHeaders(), stream);
 }
 
+// Une page HTML, servie SANS sa balise CSP quand l'en-tête porte la politique de l'application
+// (`net/csp.h` → `stripCspMeta`) : ce que le build Electron retire à `index.html`, retiré ici
+// quel que soit le build posé dans `apps/web/dist` — l'ordinaire la garde, et son `frame-src`
+// (Tauri) refusait l'iframe de toute page d'extension. Sans en-tête (CSP pas encore posée),
+// rien n'est retiré : la page ne reste jamais sans politique. Nul : servir le fichier tel quel.
+CefRefPtr<CefResourceHandler> htmlWithoutMetaCsp(const fs::path& file) {
+  if (file.extension() != ".html") return nullptr;
+  CefResponse::HeaderMap headers = appHeaders();
+  if (headers.find("Content-Security-Policy") == headers.end()) return nullptr;
+  std::ifstream in(file, std::ios::binary);
+  if (!in) return nullptr;
+  const std::string page =
+      net::csp::stripCspMeta(std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()));
+  // CreateForData recopie les octets (CefBytesReader) : `page` peut mourir ici.
+  auto stream = CefStreamReader::CreateForData(const_cast<char*>(page.data()), page.size());
+  return new CefStreamResourceHandler(200, "OK", mimeTypeOf(file), headers, stream);
+}
+
 class WebRootFactory final : public CefSchemeHandlerFactory {
  public:
   explicit WebRootFactory(fs::path root) : root_(std::move(root)) {}
@@ -63,6 +84,7 @@ class WebRootFactory final : public CefSchemeHandlerFactory {
     const std::string path = CefString(&parts.path).ToString();
     const webroot::Resolution r = webroot::resolve(root_, path);
     if (r.status != 200) return refusal(r.status, path);
+    if (CefRefPtr<CefResourceHandler> page = htmlWithoutMetaCsp(r.file)) return page;
     CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForFile(r.file.string());
     if (!stream) return refusal(404, path);
     return new CefStreamResourceHandler(200, "OK", mimeTypeOf(r.file), appHeaders(), stream);

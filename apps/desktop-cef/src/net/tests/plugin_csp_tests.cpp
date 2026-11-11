@@ -34,6 +34,23 @@ int main() {
                        "base-uri 'none'; form-action 'none'; frame-ancestors tentacle://app"));
   CHECK(csp::inlineScriptHashes("<p>rien</p>").empty());
 
+  // La balise CSP d'`index.html` (Tauri) retirée au service, comme le build Electron la retire :
+  // son frame-src, intersecté avec l'en-tête, refusait tentacle://plugin.
+  const std::string page =
+      "<head>\n    <meta charset=\"UTF-8\" />\n    <meta http-equiv=\"Content-Security-Policy\" "
+      "content=\"default-src 'self'; frame-src 'self' blob: https://www.youtube.com;\">\n    <title>T</title>";
+  CHECK_EQ(csp::stripCspMeta(page), std::string("<head>\n    <meta charset=\"UTF-8\" />\n    <title>T</title>"));
+  CHECK_EQ(csp::stripCspMeta("<META content=\"x\" HTTP-EQUIV = 'content-security-policy'><p>a</p>"
+                             "<meta http-equiv=Content-Security-Policy content=y>"),
+           std::string("<p>a</p>"));
+  // Rien d'autre : ni une autre balise meta, ni « …-Report-Only », ni un HTML sans balise.
+  const std::string keep =
+      "<meta http-equiv=\"refresh\" content=\"5\"><meta http-equiv=\"Content-Security-Policy-Report-Only\" "
+      "content=\"x\"><metadata http-equiv=\"Content-Security-Policy\"><p>Content-Security-Policy</p>";
+  CHECK_EQ(csp::stripCspMeta(keep), keep);
+  CHECK_EQ(csp::stripCspMeta(""), std::string());
+  CHECK_EQ(csp::stripCspMeta("<meta http-equiv=\"Content-Security-Policy\""), std::string("<meta http-equiv=\"Content-Security-Policy\""));
+
   // Identifiants de greffon : /^[a-zA-Z0-9._-]{1,64}$/
   CHECK(plugins::isValidPluginId("vigie"));
   CHECK(plugins::isValidPluginId("tentacle.sillon-2_b"));

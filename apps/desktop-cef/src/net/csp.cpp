@@ -62,6 +62,46 @@ std::vector<std::string> inlineScriptHashes(std::string_view html) {
   return hashes;
 }
 
+std::string stripCspMeta(std::string_view html) {
+  // /\s*<meta\s+http-equiv="Content-Security-Policy"[^>]*>/i, en un peu plus large : toutes
+  // les balises, l'attribut à n'importe quelle place, guillemets simples, doubles ou aucun.
+  std::string out;
+  out.reserve(html.size());
+  size_t copied = 0;
+  for (size_t at = findNoCase(html, "<meta", 0); at != std::string_view::npos;
+       at = findNoCase(html, "<meta", at + 5)) {
+    if (at + 5 < html.size() && !isJsWhitespace(static_cast<unsigned char>(html[at + 5]))) continue;
+    const size_t tagEnd = html.find('>', at);
+    if (tagEnd == std::string_view::npos) break;
+    const std::string_view tag = html.substr(at, tagEnd - at);
+    bool isCsp = false;
+    for (size_t e = findNoCase(tag, "http-equiv", 0); e != std::string_view::npos && !isCsp;
+         e = findNoCase(tag, "http-equiv", e + 10)) {
+      size_t v = e + 10;
+      while (v < tag.size() && isJsWhitespace(static_cast<unsigned char>(tag[v]))) ++v;
+      if (v >= tag.size() || tag[v] != '=') continue;
+      ++v;
+      while (v < tag.size() && isJsWhitespace(static_cast<unsigned char>(tag[v]))) ++v;
+      const char quote = v < tag.size() && (tag[v] == '"' || tag[v] == '\'') ? tag[v] : '\0';
+      if (quote) ++v;
+      constexpr std::string_view kName = "content-security-policy";
+      if (findNoCase(tag.substr(v), kName, 0) != 0) continue;
+      const size_t after = v + kName.size();
+      // Le nom ENTIER : « …-Report-Only » n'est pas la politique (et la balise l'ignore).
+      isCsp = after >= tag.size() || (quote ? tag[after] == quote
+                                            : isJsWhitespace(static_cast<unsigned char>(tag[after])) || tag[after] == '/');
+    }
+    if (!isCsp) continue;
+    size_t start = at;
+    while (start > copied && isJsWhitespace(static_cast<unsigned char>(html[start - 1]))) --start;
+    out.append(html.substr(copied, start - copied));
+    copied = tagEnd + 1;
+    at = tagEnd + 1 - 5;  // la boucle reprend après la balise retirée
+  }
+  out.append(html.substr(copied));
+  return out;
+}
+
 std::string buildAppCsp(const std::string& appOrigin, const std::string& pluginOrigin,
                         const std::string& localOrigins, const std::vector<std::string>& scriptHashes) {
   std::vector<std::string> scriptSrc = {"'self'", appOrigin};
