@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { hostTitleBarHeight } from "../desktop/hostChrome";
 
 export interface Position {
   x: number;
@@ -34,15 +35,24 @@ const MARGIN = 8;
 /** En deçà, un pointerdown+up est un CLIC, pas un déplacement. */
 const DRAG_THRESHOLD_PX = 3;
 
-/** Garde le panneau dans la fenêtre, même après un redimensionnement. */
-function clampToWindow(p: Position, width: number, height: number): Position {
+/**
+ * Garde le panneau dans la fenêtre, même après un redimensionnement — et SOUS le bandeau de
+ * fenêtre que la page dessine elle-même (bureau macOS, `desktop/hostChrome.ts`). Ce bandeau
+ * passe au-dessus de tout et déplace la fenêtre : posé dessous, le menu de débogage y perdait
+ * la moitié de son en-tête — sa poignée, « Copier », sa croix (recette du lot rf2).
+ */
+export function clampToWindow(p: Position, width: number, height: number): Position {
+  const top = hostTitleBarHeight() + MARGIN;
   return {
     x: Math.min(Math.max(p.x, MARGIN), Math.max(MARGIN, innerWidth - width - MARGIN)),
-    y: Math.min(Math.max(p.y, MARGIN), Math.max(MARGIN, innerHeight - height - MARGIN)),
+    y: Math.min(Math.max(p.y, top), Math.max(top, innerHeight - height - MARGIN)),
   };
 }
 
-function loadPosition(key: string | undefined, fallback: Position): Position {
+function loadPosition(key: string | undefined, initial: Position): Position {
+  // La position de départ passe par la même garde : un panneau posé « en haut à gauche » naît
+  // sous le bandeau de fenêtre, pas dessous.
+  const fallback = typeof window === "undefined" ? initial : clampToWindow(initial, 0, 0);
   if (!key) return fallback;
   try {
     const raw = localStorage.getItem(key);
