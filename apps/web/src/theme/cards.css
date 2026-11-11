@@ -141,49 +141,38 @@
  * restent posées dans le JSX : elles servent d'ancres de test et de point de
  * reprise si l'effet revient un jour sans panneau flottant. */
 
-/* ── Survol d'une carte : le plateau qui monte ─────────────────────────────
+/* ── Survol d'une carte : le plateau qui paraît ────────────────────────────
  *
- * Le mouvement du survol des cartes (`CardHoverShell`). Il ne touche que
- * `opacity` et `transform`, déclarés dans UNE transition (cf. l'en-tête de
- * cette feuille), et le calque n'existe que pendant le survol : l'entrée part
- * de `@starting-style`, la sortie est une transition ordinaire que
- * `useMountWhile` laisse se jouer avant de démonter.
+ * Le mouvement du survol des cartes (`CardHoverShell`) : un FONDU, rien d'autre. Le calque
+ * n'existe que pendant le survol : l'entrée part de `@starting-style`, la sortie est une
+ * transition ordinaire que `useMountWhile` laisse se jouer avant de démonter.
  *
- * Le groupe du bas — étoiles et plateau — monte de 10 px depuis le bord qu'il
- * occupe. Un bouton de lecture « éclosait » au centre (`.card-hover-pop`) :
- * retiré avec lui, rien ne se pose plus sur le milieu de l'image. */
+ * Le groupe du bas — étoiles et plateau — montait de 10 px à chaque survol (lot « rf2 » : retiré).
+ * On survole des dizaines de cartes par séance : la carte grandit déjà de 3 % sur place, un
+ * second mouvement dessous faisait du bruit. Il part plus vite qu'il n'est venu (65 %) : le
+ * curseur est déjà sur la carte suivante. Un bouton de lecture « éclosait » au centre
+ * (`.card-hover-pop`) : retiré avec lui, rien ne se pose plus sur le milieu de l'image. */
 .card-hover-rise {
   opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity var(--reveal-ms, 200ms) var(--ease-out),
-    transform var(--reveal-ms, 200ms) var(--ease-out);
+  transition: opacity calc(var(--reveal-ms, 200ms) * 0.65) var(--ease-out);
 }
 
 .card-hover-rise[data-shown="true"] {
   opacity: 1;
-  transform: none;
+  transition-duration: var(--reveal-ms, 200ms);
 }
 
 @starting-style {
   .card-hover-rise[data-shown="true"] {
     opacity: 0;
-    transform: translateY(10px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card-hover-rise,
-  .card-hover-rise[data-shown="true"] {
-    transform: none;
   }
 }
 
 /* ── Recommandation jugée, lâchée ──────────────────────────────────────────
  * Ajoutée à Ma liste, aimée, vue ou notée, puis sa rangée quittée : la carte
  * s'efface avant que le titre ne libère sa place (reco/recoRetirement,
- * RECO_LEAVE_MS — même durée). Opacité et échelle seulement ; sortie en
- * accélération, plus courte qu'une entrée. Sous `prefers-reduced-motion`, la
+ * RECO_LEAVE_MS — même durée). Opacité et échelle seulement ; une sortie,
+ * plus courte qu'une entrée, sur la courbe du socle. Sous `prefers-reduced-motion`, la
  * politique globale (motion-reduce.css) la rend instantanée. */
 .reco-card-leaving {
   opacity: 0;

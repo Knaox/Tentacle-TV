@@ -195,11 +195,19 @@
     transform 180ms var(--ease-out);
 }
 
-.card-preview-sound:hover .card-preview-volume,
 .card-preview-sound:focus-within .card-preview-volume {
   opacity: 1;
   transform: scaleX(1);
   pointer-events: auto;
+}
+
+/* Le survol ne vaut qu'à la souris : au doigt, un toucher laisse un faux survol. */
+@media (hover: hover) and (pointer: fine) {
+  .card-preview-sound:hover .card-preview-volume {
+    opacity: 1;
+    transform: scaleX(1);
+    pointer-events: auto;
+  }
 }
 
 /* L'anneau de focus : une des rares touches de marque de la mini-carte. */
