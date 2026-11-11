@@ -19,7 +19,9 @@ import {
   supportsSmtc,
 } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
+import { isFallbackActive } from "../lib/fallbackPlayer";
 import { mpvDisabledByDebug } from "../lib/nativePlayer";
+import { hasMpvPlayback, idleVerdict } from "./playerDebugIdle";
 import { startupSection } from "./playerDebugStartup";
 import { networkSection } from "./playerDebugNetwork";
 import type { DebugSection } from "./playerDebugTypes";
@@ -188,9 +190,11 @@ export async function collectDebug(): Promise<DebugSection[]> {
     // plusieurs secondes. Voir `refreshEdr`.
     lastProbe() === null ? probeSurface() : refreshEdr(),
   ]);
-  const verdictLines = verdicts(forVerdict, native?.enabled ?? false, native?.coucheHdr).map(
-    (v) => [v.key, v.value, v.good] as const,
-  );
+  // Sans lecture mpv, rien à juger : une ligne qui dit qui a la main (`playerDebugIdle.ts`).
+  const judged = hasMpvPlayback(forVerdict)
+    ? verdicts(forVerdict, native?.enabled ?? false, native?.coucheHdr)
+    : [idleVerdict(isFallbackActive() || mpvDisabledByDebug())];
+  const verdictLines = judged.map((v) => [v.key, v.value, v.good] as const);
   const sections: Array<DebugSection | null> = [
     { title: "Ce que tu regardes vraiment", lines: verdictLines, emphasis: true },
     // Juste après les verdicts : une coupure au démarrage se juge sur sa
