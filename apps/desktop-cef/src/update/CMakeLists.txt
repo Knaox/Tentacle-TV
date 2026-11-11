@@ -107,6 +107,29 @@ endif()
 if(TARGET tentacle_shell)
   set(TENTACLE_UPDATE_FEED_URL "" CACHE STRING "Flux de mise à jour (enveloppe signée)")
   set(TENTACLE_UPDATE_PUBLIC_KEYS "" CACHE STRING "Clés publiques ed25519 de confiance : id:base64;…")
+  # Un build de LIVRAISON (la CI : -DTENTACLE_RELEASE=ON) sans flux, sans clé ou sans version
+  # serait une app qui n'apprendrait JAMAIS qu'une version existe (moteur éteint, en silence) :
+  # refusé à la configuration. Un paquet qu'une BOUTIQUE met à jour (Mac App Store, MSIX du
+  # Microsoft Store) le dit par -DTENTACLE_UPDATE_MANAGED_BY=store : le moteur y reste éteint,
+  # la page annonce la boutique (`check_msix_update`, `isAppStoreBuild`).
+  option(TENTACLE_RELEASE "Build de livraison : flux, clé et version de mise à jour exigés" OFF)
+  set(TENTACLE_UPDATE_MANAGED_BY "" CACHE STRING "store : la boutique met l'app à jour, aucun flux compilé")
+  if(TENTACLE_RELEASE)
+    if(NOT DEFINED TENTACLE_APP_VERSION OR NOT TENTACLE_APP_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+       OR TENTACLE_APP_VERSION STREQUAL "0.1.0")
+      message(FATAL_ERROR "build de livraison sans version : -DTENTACLE_APP_VERSION=<versions.json → desktop>")
+    endif()
+    if(TENTACLE_UPDATE_MANAGED_BY STREQUAL "store")
+      if(NOT TENTACLE_UPDATE_FEED_URL STREQUAL "")
+        message(FATAL_ERROR "paquet de boutique (TENTACLE_UPDATE_MANAGED_BY=store) : aucun flux ne s'y compile")
+      endif()
+    elseif(NOT TENTACLE_UPDATE_MANAGED_BY STREQUAL "")
+      message(FATAL_ERROR "TENTACLE_UPDATE_MANAGED_BY : « store » ou rien (${TENTACLE_UPDATE_MANAGED_BY})")
+    elseif(NOT TENTACLE_UPDATE_FEED_URL MATCHES "^https://" OR NOT TENTACLE_UPDATE_PUBLIC_KEYS MATCHES "^[A-Za-z0-9._-]+:[A-Za-z0-9+/=]+")
+      message(FATAL_ERROR "build de livraison sans mise à jour automatique : -DTENTACLE_UPDATE_FEED_URL=https://… "
+                          "et -DTENTACLE_UPDATE_PUBLIC_KEYS=<id>:<clé publique base64> (docs/MISE-A-JOUR.md)")
+    endif()
+  endif()
 
   # La surcouche JS est embarquée, comme le shim du pont, sa feuille de style glissée dans
   # le jeton __UPDATE_CSS__. Absente : script vide. Son fragment de démonstration (menu de
@@ -165,7 +188,16 @@ if(TARGET tentacle_shell)
     endif()
     set(app_dir "$<TARGET_BUNDLE_DIR:tentacle_app>")
     set(stamp "${CMAKE_CURRENT_BINARY_DIR}/helper-embedded.stamp")
+    # macOS lit sa version dans Info.plist (cmake/Info.plist.in en porte une de développement) :
+    # en livraison, celle de versions.json, comme Linux et Windows — AVANT la signature.
+    set(version_cmds "")
+    if(TENTACLE_RELEASE)
+      set(version_cmds
+        COMMAND /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${TENTACLE_APP_VERSION}"
+                "${app_dir}/Contents/Info.plist")
+    endif()
     add_custom_command(OUTPUT "${stamp}"
+      ${version_cmds}
       COMMAND cp -f "$<TARGET_FILE:tentacle_update_helper>" "${app_dir}/Contents/MacOS/tentacle-update"
       COMMAND codesign --force --sign - --timestamp=none "${app_dir}/Contents/MacOS/tentacle-update"
       COMMAND codesign --force --sign - --timestamp=none "${app_dir}"

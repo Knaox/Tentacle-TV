@@ -10,9 +10,15 @@ met à jour seule sur les trois systèmes, et ne parle que quand ça compte.
 | `critical`, ou version courante `< minVersion` | idem, sans attendre | **mise à jour de sécurité** : un voile bloque l'app tout de suite (lecture comprise), explique pourquoi (texte du manifeste), sans bouton pour le masquer ; « Redémarrer et installer » dès qu'elle est prête |
 | obligatoire **sans réseau** / archive refusée / installation impossible ici | réessaie : 5 min, puis attente doublée à chaque échec, plafonnée à 6 h (4 s au banc) | un avertissement **qui ne bloque pas** (« en attente du réseau », « nouvel essai… » avec sa progression, ou « installez-la depuis tentacle.tv ») ; après un premier échec, le voile ne revient qu'une fois la mise à jour **prête** — jamais d'app bloquée qu'on ne sait pas mettre à jour |
 | la nouvelle version ne démarre pas | retour à l'ancienne copie, version retenue comme mauvaise | « Mise à jour annulée », plus jamais reproposée |
+| l'app ne sait pas se remplacer ICI (`.deb`/`.rpm`, dossier non inscriptible, app transloquée, installation Windows hors de son dossier) — mineure comme majeure | rien n'est téléchargé | **une** notification « Tentacle X est disponible » qui dit comment l'installer (gestionnaire de paquets, ou tentacletv.app) ; « Plus tard » la remet au lendemain, une majeure garde « Ne plus m'avertir… ». Sans elle, ces installations n'apprenaient JAMAIS qu'une version existait (`Engine::manualNotice`, 11/11). Le paquet MSIX se tait : le Microsoft Store le met à jour et la page le dit |
 
 Hors ligne au lancement : aucun contrôle, aucun blocage. Sans flux ni clé publique compilés
-(builds de développement des autres axes), le moteur est **éteint** : aucun accès réseau.
+(builds de développement des autres axes), le moteur est **éteint** : aucun accès réseau. Un
+build de LIVRAISON se configure avec `-DTENTACLE_RELEASE=ON` : sans flux `https://`, sans clé
+ou sans `-DTENTACLE_APP_VERSION`, CMake REFUSE (le pire cas — une app livrée qui ne saurait
+jamais qu'une version existe — ne peut plus sortir en silence) ; un paquet qu'une boutique met
+à jour le dit par `-DTENTACLE_UPDATE_MANAGED_BY=store` (aucun flux). En livraison, macOS prend
+aussi sa version (`CFBundleShortVersionString`) de `-DTENTACLE_APP_VERSION`.
 
 ## Sparkle 2 ou moteur maison : moteur maison
 
@@ -124,7 +130,7 @@ La relance passe par un guetteur `sh` qui, comme l'assistant macOS, surveille la
 remise, retour arrière noté, ancienne version relancée ; fermée proprement → gardée. Après une
 pose à la fermeture, le compteur de lancements de l'app fait le retour arrière. Un paquet
 `.deb/.rpm/pacman` relève du gestionnaire de paquets (dépôt signé) : `canSelfUpdate` répond
-`package-manager`, le moteur se tait. Delta par zsync (AppImageUpdate) : suite possible.
+`package-manager`, le moteur n'installe rien mais ANNONCE chaque version (voir le tableau). Delta par zsync (AppImageUpdate) : suite possible.
 
 **Éprouvé** par `pnpm test:update:cross` (`bench/update/cross-test.sh`) : conteneur Debian 12
 dans la VM colima (vrai noyau Linux 6.8, aarch64), sans fenêtre, 2 cœurs / 2 Go. Règle et
@@ -216,6 +222,28 @@ Depuis le serveur, sans rebâtir : relever `minVersion` (ou passer `severity: cr
 re-signer le flux. Dans la CI proposée : `versions.json` → `desktopCefMinVersion`, puis le cran
 `manifest-only` du flux de travail. Les appareils en dessous ne peuvent plus continuer sans
 installer — sauf hors ligne.
+
+## Livrer la 1.50.0 (première version CEF) — état au 11/11
+
+`desktop.yml` construit ENCORE Electron ; sa garde « Coquille de la version »
+(`.github/scripts/lib/desktop-shell.mjs`) refuse d'en faire partir une version ≥ 1.50.0. Le correctif
+ci-dessous est PÉRIMÉ (il visait un dépôt `tentacle-cef` à part, actions non épinglées, `contents:
+write` global) : il ne s'applique pas tel quel. Avant d'écrire la chaîne CEF, il faut :
+
+1. **Un paquet livrable** (hors `src/update`) : le front embarqué et ouvert d'office (`--web-root`
+   et `--url=tentacle://app/` ne viennent aujourd'hui que du lanceur de dev), le profil par défaut
+   (aujourd'hui `~/.cache/tentacle-cef/profiles/socle`), l'identité (`tv.tentacle.proto.cef`),
+   l'icône (lue dans `apps/desktop-electron/icons`), les droits du runtime durci des helpers
+   (aucun fichier `entitlements` encore) ; Windows : un premier build MSVC réel et un assemblage
+   MSIX (le manifeste et les visuels sont dans `apps/desktop-electron/msix`) ; Linux : une vraie
+   AppImage, et des `.deb`/`.rpm`/`.pkg.tar.zst` si les installations Electron de ces formats
+   doivent être reprises.
+2. **Des décisions** : macOS par le Mac App Store (paquet en bac à sable, moteur éteint) ou par
+   Developer ID (moteur actif — les utilisateurs actuels sont TOUS sur le Mac App Store) ; Intel ;
+   l'adresse du flux (compilée à vie) ; l'identifiant de clé.
+3. **Des secrets** : la clé ed25519 de signature du flux (`--print-public-key` de
+   `bench/update/make-manifest.mjs` donne la publique à compiler), et, pour Developer ID, le
+   certificat et l'identifiant de notarisation.
 
 ## La CI (correctif prêt, jamais appliqué : `docs/patches/maj-desktop-cef-ci.patch`)
 
