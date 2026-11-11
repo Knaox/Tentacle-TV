@@ -12,7 +12,7 @@ void rememberScripts(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue
 void forgetBrowser(CefRefPtr<CefBrowser> browser);
 void installShell(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                   CefRefPtr<CefV8Context> context);
-void releaseShell(CefRefPtr<CefFrame> frame);
+void releaseShell(CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context);
 bool onProcessMessage(CefRefPtr<CefFrame> frame, CefRefPtr<CefProcessMessage> message);
 
 }  // namespace tentacle::renderer

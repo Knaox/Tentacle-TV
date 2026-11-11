@@ -30,7 +30,7 @@ class HelperApp final : public CefApp, public CefRenderProcessHandler {
   }
   void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                          CefRefPtr<CefV8Context> context) override {
-    renderer::releaseShell(frame);
+    renderer::releaseShell(frame, context);
   }
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                 CefProcessId source,

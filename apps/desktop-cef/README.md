@@ -92,7 +92,11 @@ connecter dans l'un, c'est être connecté dans l'autre.
 
 Bancs rejouables : `bench/gel` (bulle + clic, KWin virtuel, souris factice), `bench/noir` (rendu
 tué, import refusé, lancement sans image), `bench/lecteur/depart.mjs` (départ du lecteur),
-`bench/survol/hoverlag.mjs` (bouton remplacé sous une souris immobile).
+`bench/survol/hoverlag.mjs` (bouton remplacé sous une souris immobile),
+`bench/pont/monde-isole.mjs` (le pont reste à la page quand un outil — DevTools, Playwright — y
+ouvre un monde isolé ; avant le correctif du lot rf2, un banc Playwright lancé contre la
+coquille la laissait SANS réponse du pont jusqu'au relancement : lecture bloquée sur son écran
+d'attente, `liquidGlass.sample` muet — à ne pas prendre pour « la fenêtre est en arrière-plan »).
 
 ## Bandes-annonces : ni H.264 ni AAC
 

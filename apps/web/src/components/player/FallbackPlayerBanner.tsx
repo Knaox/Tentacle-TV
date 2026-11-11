@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { hostTitleBarHeight } from "../../desktop/hostChrome";
+import { fallbackBannerTop } from "./fallbackBannerPlacement";
 
 /**
  * Le bandeau qui DIT la bascule vers le lecteur de secours.
@@ -17,13 +18,16 @@ import { hostTitleBarHeight } from "../../desktop/hostChrome";
  * Sous le bandeau de fenêtre que la page dessine elle-même (bureau macOS,
  * `hostChrome.ts`) : collé au haut de la page, il passait à moitié dessous —
  * vu le 11/11/2026 dans le bureau CEF, la phrase coupée en deux.
+ *
+ * Et sous la rangée du haut du LECTEUR (la sortie, le titre), qu'il recouvrait :
+ * `fallbackBannerPlacement.ts`.
  */
 export function FallbackPlayerBanner() {
   const { t } = useTranslation("player");
   const [ferme, setFerme] = useState(false);
   if (ferme) return null;
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] flex justify-center p-3 pointer-events-none" style={{ top: hostTitleBarHeight() }}>
+    <div className="fixed inset-x-0 top-0 z-[60] flex justify-center p-3 pointer-events-none" style={{ top: fallbackBannerTop(hostTitleBarHeight()) }}>
       {/* Un avis posé sur la vidéo : l'encre des capsules, en dur dans les deux thèmes. */}
       <div role="status" className="pointer-events-auto flex items-center gap-3 rounded-tile bg-[#18181B] py-2 pl-4 pr-2 text-sm text-white">
         <span className="font-semibold text-[#FCD34D]">{t("player:fallbackPlayerTitle")}</span>

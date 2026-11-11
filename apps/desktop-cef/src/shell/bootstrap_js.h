@@ -1,5 +1,6 @@
 #pragma once
-// Script d'amorçage exécuté le premier dans chaque contexte JS du cadre principal.
+// Script d'amorçage exécuté le premier dans le contexte JS de la PAGE du cadre principal
+// (jamais dans un monde isolé ouvert par un outil : voir renderer_ipc.cpp).
 // Il reçoit `window.__shellNative` (fonctions natives send/register posées juste avant),
 // le retire de window, et expose window.__shell (gelé, non énumérable).
 
