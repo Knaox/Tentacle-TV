@@ -6,10 +6,14 @@
  * Sa course n'a pas de fin connue : elle part vite et ralentit sans jamais arriver (4 s pour
  * neuf dixièmes de l'écran), et disparaît d'un coup quand la page se montre — l'œil est déjà
  * sur elle. Mouvement réduit (`motion-reduce.css`) : la barre est posée d'emblée, sans course.
+ *
+ * Elle se pose SOUS le bandeau de fenêtre du bureau (`--hote-bandeau`, 0 px ailleurs — le web
+ * ne voit aucune différence) : collée au haut de la fenêtre, elle restait derrière ce bandeau,
+ * opaque et au-dessus de tout — une barre que personne ne voyait (mesuré, lot « rf2 »).
  */
 .route-progress {
   position: fixed;
-  inset: 0 0 auto;
+  inset: var(--hote-bandeau, 0px) 0 auto;
   z-index: 70;
   height: 2px;
   overflow: hidden;

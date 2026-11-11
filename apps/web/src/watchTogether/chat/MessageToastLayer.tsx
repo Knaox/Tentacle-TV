@@ -1,7 +1,8 @@
 import { memo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { WtChatMessageDto } from "@tentacle-tv/shared";
 import { WtAvatar } from "../WatchTogetherRows";
+import { chatEntrance } from "./chatMotion";
 import { useWatchOverlayState } from "./chatUiStore";
 import { duration, easeOut } from "../../theme/motion";
 import "./chat.css";
@@ -19,11 +20,13 @@ import "./chatThread.css";
  */
 
 const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto }) {
+  // Mouvement réduit : l'aperçu fond sur place, et la pile ne glisse pas quand l'un d'eux s'en va.
+  const reduced = useReducedMotion() === true;
   return (
     <motion.div
-      layout
+      layout={!reduced}
       // Il entre du bord droit (là où vit la bulle) et s'efface plus vite qu'il n'est venu.
-      initial={{ opacity: 0, x: 24 }}
+      initial={{ opacity: 0, x: chatEntrance(reduced).toastX }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, transition: { duration: duration.menuOut, ease: easeOut } }}
       transition={{ duration: duration.menuIn, ease: easeOut }}

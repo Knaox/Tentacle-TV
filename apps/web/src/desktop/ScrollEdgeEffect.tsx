@@ -1,4 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { isRouteHeld, subscribeRouteHold } from "../components/routeTransition/routeHold";
+import { useWindowGlass } from "./windowGlass";
 
 /**
  * L'effet de bord de défilement de macOS 26 (« scroll edge effect ») : sous la
@@ -21,13 +23,31 @@ import { useLayoutEffect, useRef, useState } from "react";
  *
  * Au repos, défilée ou non, rien ne bouge derrière : le flou n'est pas
  * recalculé, le GPU dort.
+ *
+ * # Pendant qu'une navigation attend
+ *
+ * La page quittée reste à l'écran, épinglée (`RouteExit`), pendant que la fenêtre
+ * est déjà remise au défilement de la page suivante. L'effet ne suit donc plus la
+ * page qu'on voit : il se retire, et c'est elle qui EMPORTE le sien, figé où il
+ * était (`CarriedScrollEdge`). Sans cela, le haut d'une page quittée défilée
+ * redevenait net sous la barre le temps de l'attente (vu au banc, lot « rf2 »),
+ * et celui d'une page quittée en haut se floutait dès que la suivante retrouvait
+ * son défilement. L'attente finie, il reprend le défilement de la fenêtre.
  */
 
 const RAMP = 48;
 
+/** L'opacité de l'effet pour un défilement donné : pleine après `RAMP` pixels. */
+export function scrollEdgeOpacity(scrollY: number): number {
+  return Math.max(0, Math.min(1, scrollY / RAMP));
+}
+
+const notHeld = (): boolean => false;
+
 export function ScrollEdgeEffect() {
   const ref = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(() => typeof window !== "undefined" && window.scrollY > 0);
+  const held = useSyncExternalStore(subscribeRouteHold, isRouteHeld, notHeld);
   const frame = useRef(0);
 
   useLayoutEffect(() => {
@@ -38,7 +58,7 @@ export function ScrollEdgeEffect() {
       // qu'en franchissant le haut de page.
       setMounted((prev) => (y > 0 === prev ? prev : y > 0));
       const el = ref.current;
-      if (el) el.style.opacity = String(Math.min(1, y / RAMP));
+      if (el) el.style.opacity = String(scrollEdgeOpacity(y));
     };
     const onScroll = () => {
       if (frame.current) return;
@@ -52,12 +72,32 @@ export function ScrollEdgeEffect() {
     };
   }, []);
 
-  // La couche fraîchement montée prend son opacité AVANT la première peinture.
+  // La couche fraîchement montée (premier pixel de défilement, fin d'une attente)
+  // prend son opacité AVANT la première peinture.
   useLayoutEffect(() => {
     const el = ref.current;
-    if (el) el.style.opacity = String(Math.min(1, window.scrollY / RAMP));
-  }, [mounted]);
+    if (el) el.style.opacity = String(scrollEdgeOpacity(window.scrollY));
+  }, [mounted, held]);
 
-  if (!mounted) return null;
+  if (!mounted || held) return null;
   return <div ref={ref} aria-hidden className="lgc-edge" />;
+}
+
+/**
+ * L'effet de bord qu'une page ÉPINGLÉE emporte (`RouteExit`) : celui qu'on lui voyait à
+ * l'instant où on l'a quittée, posé DANS son enveloppe — au-dessus de son contenu, sous sa
+ * barre —, et qui s'efface avec elle. Hors du verre de fenêtre, ou pour une page quittée en
+ * haut : rien.
+ *
+ * Il paraît à l'instant où l'effet de la fenêtre se retire (le début de l'attente, lu au même
+ * magasin : les deux changent dans la même image — jamais deux voiles l'un sur l'autre, jamais
+ * aucun), puis reste jusqu'au bout de la sortie de sa page.
+ */
+export function CarriedScrollEdge({ scrollY }: { scrollY: number }) {
+  const glass = useWindowGlass();
+  const held = useSyncExternalStore(subscribeRouteHold, isRouteHeld, isRouteHeld);
+  const [taken, setTaken] = useState(false);
+  if (held && !taken) setTaken(true);
+  if (!glass || !taken || scrollY <= 0) return null;
+  return <div aria-hidden className="lgc-edge" style={{ opacity: scrollEdgeOpacity(scrollY) }} />;
 }
