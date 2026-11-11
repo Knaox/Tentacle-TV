@@ -41,6 +41,13 @@ export function BannerHeading({ kicker, title, stats, subtitle }: BannerHeadingP
       initial="hidden"
       animate="show"
     >
+      {/* L'assise du bloc, en thème CLAIR seulement (`--banner-heading-focus`, theme/scrims.css) : derrière le
+          texte, devant l'image. Absente ailleurs (`hidden`) : aucune couche de plus en sombre ni sur le téléviseur. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -inset-y-20 left-0 -z-10 hidden w-[min(52rem,78%)] [[data-theme=light]_&]:block"
+        style={{ background: "var(--banner-heading-focus)" }}
+      />
       <motion.span variants={line} className="mb-2.5 block text-xs font-semibold uppercase tracking-[0.06em] text-on-media-secondary">
         {kicker}
       </motion.span>

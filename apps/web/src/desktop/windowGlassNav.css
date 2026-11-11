@@ -20,10 +20,23 @@
 
 :root[data-liquid-glass="native"] .lgc-capsule > .nav-capsule-glass {
   border-color: var(--lg-pane-border);
-  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+  /* La barre passe sur N'IMPORTE quoi (bannière, affiches) : le givre « sur image » du socle
+   * (`--lg-frost-*`, `theme/glass/frostedMaterial.ts`) — une courbe de tons plafonne les hautes
+   * lumières du dessous en sombre et relève ses ombres en clair. Le verre de la maquette seul
+   * (`--lg-pane-*`, prouvé sur le fond ambiant) laissait l'invite de recherche à 3,9:1 et « ⌘K »
+   * à 2,3:1 sur une bannière claire (mesuré, nov. 2026). */
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-frost-ink), var(--lg-frost-ink));
   box-shadow: var(--lg-pane-shadow);
-  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
-  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+  -webkit-backdrop-filter: blur(var(--lg-frost-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+  backdrop-filter: blur(var(--lg-frost-blur)) saturate(var(--lg-frost-saturate)) var(--lg-frost-curve);
+}
+
+/* Les encres faibles de la barre (invite du champ, « ⌘K », « TV », icônes au repos) montent à
+ * celle que le matériau prouve à 4,5:1 sur tout dessous. */
+:root[data-liquid-glass="native"] .lgc-capsule {
+  --text-secondary: var(--lg-frost-glyph-secondary);
+  --text-tertiary: var(--lg-frost-glyph-secondary);
+  --text-quaternary: var(--lg-frost-glyph-secondary);
 }
 
 /* Le liseré en dégradé de la maquette : un anneau de 1 px masqué, sur la couche. */
@@ -49,7 +62,7 @@
 
 /* Fenêtre inactive (`windowFocus.ts`) : le verre perd sa saturation. */
 :root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule > .nav-capsule-glass {
-  --lg-pane-saturate: 1;
+  --lg-frost-saturate: 1;
 }
 
 /* « Réduire la transparence », « Contraste accru » : l'aplat du socle, sans givre ni liseré. */

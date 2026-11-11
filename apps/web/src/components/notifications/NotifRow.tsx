@@ -93,7 +93,7 @@ export const NotifRow = memo(function NotifRow({
           >
             <X className="h-3.5 w-3.5" />
           </button>
-          {hasRoute && <ChevronRight aria-hidden className="h-4 w-4 text-content-disabled" />}
+          {hasRoute && <ChevronRight aria-hidden className="h-4 w-4 text-content-quaternary" />}
         </div>
       )}
     </div>

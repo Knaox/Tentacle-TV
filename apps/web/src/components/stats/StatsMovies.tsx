@@ -35,7 +35,7 @@ const FavoriteMovie = memo(function FavoriteMovie({ movie }: { movie: ViewingSta
           src={posterOf(client, movie, 300)}
           alt=""
           className="h-full w-full object-cover"
-          fallback={<span className="flex h-full w-full items-center justify-center text-content-disabled"><Film size={24} aria-hidden /></span>}
+          fallback={<span className="flex h-full w-full items-center justify-center text-content-quaternary"><Film size={24} aria-hidden /></span>}
         />
       </span>
       <span className="flex min-w-0 flex-col justify-center">

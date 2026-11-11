@@ -54,7 +54,11 @@
    * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
   --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
   --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
-  --lgc-fill-badge: var(--lgc-sheen), linear-gradient(var(--lgc-badge-dim), var(--lgc-badge-dim));
+  /* Sans le reflet diffus : la note est posée sur une AFFICHE et son libellé est blanc dans les deux
+   * thèmes. Le reflet du thème clair (0,35 de blanc) la blanchissait — « 7.7 » à 2,5:1 sur une
+   * affiche claire (mesuré dans la coquille) ; celui du sombre (0,12) la faisait passer sous 4,5:1
+   * sur un blanc pur. */
+  --lgc-fill-badge: linear-gradient(var(--lgc-badge-dim), var(--lgc-badge-dim));
 
   /* Les épaisseurs viennent du socle (`--lg-thick-fill`, `--lg-scrim`) ; les
    * alias `--lgc-*` restent, parce que lg-physique les remplace par un aplat

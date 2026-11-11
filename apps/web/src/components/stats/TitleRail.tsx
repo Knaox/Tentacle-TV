@@ -55,7 +55,7 @@ const RailCard = memo(function RailCard({ item, rank }: { item: RailTitle; rank?
           src={item.imageUrl}
           alt=""
           className="h-full w-full object-cover"
-          fallback={<span className="flex h-full w-full items-center justify-center text-content-disabled"><Film size={28} aria-hidden /></span>}
+          fallback={<span className="flex h-full w-full items-center justify-center text-content-quaternary"><Film size={28} aria-hidden /></span>}
         />
         {rank !== undefined && (
           <span

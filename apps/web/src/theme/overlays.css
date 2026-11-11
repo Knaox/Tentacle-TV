@@ -51,8 +51,9 @@ button.ui-tile:active,
   outline: none;
 }
 
+/* L'invite se LIT : la tertiaire (≥ 4,5:1) ; à la quaternaire du sombre, elle restait à 3,1:1. */
 .field::placeholder {
-  color: var(--text-quaternary);
+  color: var(--text-tertiary);
 }
 
 textarea.field {
@@ -253,7 +254,7 @@ textarea.field {
   padding: 4px 6px;
   border-radius: 5px;
   background-color: var(--fill-soft);
-  color: var(--text-tertiary);
+  color: var(--text-secondary); /* sur une bannière claire, « ⌘K » à la tertiaire descendait à 4,3:1 */
   font-size: 11px;
   font-weight: 600;
   line-height: 1;

@@ -34,8 +34,19 @@ jetons se sont ajoutés. Un jeton de couleur nouveau se déclare dans les DEUX b
 | `--border-subtle` / `-strong` | blanc 8 / 16 % | encre 9 / 18 % | un séparateur — pas un contour | `border-line-*` |
 | `--shadow-edge` | arête haute 7 % | trait 5 % | le liseré d'avant, en ombre intérieure | `shadow-edge` |
 
-Texte : `--text-primary` (`#F4F2EE` / `#131315`), `-secondary` 74 %, `-tertiary` 55 %, `-quaternary`, `-disabled` —
-classes `text-content-*`. Sur une image : `--on-media-*` (constant entre les thèmes).
+Texte : `--text-primary` (`#F4F2EE` / `#131315`), `-secondary`, `-tertiary`, `-quaternary`, `-disabled` — classes
+`text-content-*` ; en sombre 74 / 55 / 36 %, **en clair 80 / 70 / 64 %** (lot rf2). Sur une image : `--on-media-*`
+(constant entre les thèmes).
+
+**Le thème clair se lit, et c'est mesuré** (`theme/lightContrast.test.ts`, qui lit `tokens.css`) : toute encre qui
+porte du TEXTE tient 4,5:1 sur la page, un panneau, une carte et un survol — une encre translucide s'éclaircit vite sur
+du papier : à 56 % la tertiaire tombait à 4,0:1 sur une carte, à 40 % la quaternaire à 2,5:1. La hiérarchie y est donc
+plus serrée qu'en sombre : elle se lit à la graisse et à la taille autant qu'au gris. Les quatre états
+(`--status-*`, nus et `-fg` sur leur `-bg`) tiennent le même seuil. Seule `--text-disabled` reste dessous : elle ne
+sert qu'à un contrôle INACTIF — un chevron, des initiales de repli, une épingle au repos prennent la quaternaire
+(≥ 3:1 dans les deux thèmes). Un texte à la couleur de MARQUE sur le papier (`--brand-accent`, `--brand-light` : 4,1:1
+et 2,8:1) prend sa nuance profonde en clair (`[[data-theme=light]_&]:text-[var(--brand-accent-dark)]`), ou la teinte
+franche `text-accent`.
 
 ### Accent
 
@@ -143,7 +154,7 @@ Tous les boutons sont des pilules — `theme/buttons.css`. On compose une base, 
 | `.btn-play` | l'action de lecture : le dégradé du logo. Une par écran, et pour LIRE seulement |
 | `.btn-solid` | l'action principale neutre (ivoire en sombre, encre en clair) |
 | `.btn-soft` | l'action secondaire, sur la page ou un panneau |
-| `.btn-on-media` | l'action secondaire posée sur une image |
+| `.btn-on-media` | l'action secondaire posée sur une image : un voile d'ENCRE (58 %) et une arête claire — blanc ≥ 4,5:1 même sur une image blanche (un voile blanc y tombait à 2,1:1) |
 | `.btn-ghost` | l'action discrète (Annuler) |
 | `.btn-accent` · `.btn-danger` | l'action intermédiaire à la teinte franche · la destructive |
 | `.icon-btn` (+ taille, + peau) | le rond d'une icône ; `aria-pressed="true"` ou `data-on="true"` l'allume à l'accent |
@@ -255,6 +266,13 @@ pnpm --filter @tentacle-tv/tv-webos build    # le client LG compile apps/web : g
 node apps/web/bench/socle/capture.mjs <dossier>   # (depuis apps/web) le labo, capturé en sombre et en clair
 ```
 
+Le contraste se MESURE sur une instance réelle, écran par écran (`apps/web/bench/clair-verre/`, README) :
+`node bench/clair-verre/audit.mjs <dossier>` (thème clair ; `THEME=dark`, `GLASS=1`, `CEF=1`), puis
+`resume.mjs` pour savoir quel jeton corriger, et `pire-image.mjs <route>` pour un texte posé sur une image. Un écran
+nouveau y entre par `scenes.mjs`. ⚠️ Les labos des réglages (administration, profils, assistant) et du hors ligne ne
+se rendent pour de bon que dans la page de LEUR banc : `labos.mjs` les construit et les mesure — ouverts dans le
+client de dev, ils donnaient un « 0 en défaut » qui ne mesurait rien.
+
 Le labo : `/dev/socle` dans un paquet de développement (`?vue=jetons|boutons|controles|calques`), absent des paquets
 livrés et du client LG. On y pose un contrôle nouveau AVANT de le propager.
 
@@ -289,6 +307,22 @@ Ce que l'intégration a recousu entre les axes, et qu'un écran nouveau doit res
 
 - **Le focus clavier ne change pas la forme d'un contrôle** : le rayon de `:focus-visible` (base) est en `:where`, un
   `.field` porte son seul anneau (son ombre).
+- **Une barre de défilement INTERNE** (liste d'un menu, feuille, panneau) a une piste transparente et un pouce en
+  pilule (`index.css`) : opaque, sa piste rectangulaire remplissait le coin arrondi du calque. Seule la barre de la
+  page garde une piste pleine (fenêtre transparente du bureau).
+- **Un état atténué se GRISE, il ne se délave pas** : un profil verrouillé (« Qui regarde ? »), une invitation en
+  attente, un compte désactivé passent en `grayscale` (opacité de 80 % au plus). À 50-70 % d'opacité, l'initiale de
+  repli d'un avatar tombait à 1,7-3,2:1 sur le papier du thème clair.
+- **Rien de blanc à 80 % sur une assise à mi-hauteur** : le code d'un épisode (`CardEpisodeCaption`) et le
+  sous-libellé du bouton de lecture (« Reste 3 min ») sont en blanc plein — leur taille et leur graisse font la
+  hiérarchie. Le raccord d'une fiche vers la page claire (`--detail-page-fade`) vaut 0,78 à 20 % : la première
+  rangée y commence, et son compte (encre tertiaire) doit s'y lire sur une image sombre.
+- **L'assise du texte d'une fiche** (`.detail-text-scrim`) est un dégradé PLEINE LARGEUR, du bas de la scène
+  jusqu'au-dessus du surtitre, hors verre comme sous le verre : calée sur la colonne, c'était un rectangle aux bords
+  fondus qui se lisait comme une plaque grise sur un décor clair.
+- **Le bloc titre d'une bannière de catalogue** (`BannerHeading`) a son assise en thème clair
+  (`--banner-heading-focus`, `theme/scrims.css`) : les voiles du clair sont à 70 % de ceux du sombre et le texte posé
+  sur l'image reste blanc.
 - **La teinte franche posée sur une image** est constante entre les thèmes et n'a qu'une source :
   `components/cards/onMedia.ts` (en attendant un jeton `--on-media-accent`). Jamais `--accent` ni `--cta-primary-*`
   sur une image : ils s'inversent en thème clair.

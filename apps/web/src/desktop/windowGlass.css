@@ -43,9 +43,11 @@
   /* La barre de navigation garde la capsule et les tailles d'avant ; sa peau :
    * `windowGlassNav.css`. */
 
-  /* Les pastilles de compte (cloche, Watch Together) : l'accent UNI, sans
-   * halo — la marque en touche, jamais un dégradé. */
-  --lg-chrome-badge-bg: var(--brand);
+  /* Les pastilles de compte (cloche, Watch Together) : la teinte franche UNIE, sans halo — celle
+   * d'hors verre (`--accent`, encre `--on-accent` : 8,4:1 en sombre, 6,3:1 en clair). Le violet de
+   * marque (`--brand`, #8B5CF6 en sombre) est une zone morte : ni l'encre sombre (4,3:1) ni le
+   * blanc (4,2:1) n'y tiennent un chiffre de 10 px. */
+  --lg-chrome-badge-bg: var(--accent);
   --lg-chrome-badge-shadow: none;
 
   /* La barre latérale garde sa boîte d'avant ; sa PLAQUE de verre est peinte
@@ -67,8 +69,14 @@
 
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */
 
+/* Le titre de la fenêtre flotte sur ce qui passe dessous (le haut d'une bannière, une affiche) :
+ * une assise de la couleur de la PAGE, pleine sous le libellé puis éteinte au bas de la bande —
+ * l'effet de bord d'une barre de titre, peint une fois, sans flou. Sans elle, « Tentacle TV »
+ * tombait à 3,5:1 sur une image (mesuré dans la coquille) ; avec elle et l'encre secondaire, il
+ * tient 4,5:1 sur une image blanche comme sur une noire. */
 :root[data-liquid-glass="native"] .bandeau-hote {
-  background: transparent;
+  background: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.78) 0%, rgba(var(--scrim-page-rgb), 0.7) 62%, rgba(var(--scrim-page-rgb), 0) 100%);
+  --text-tertiary: var(--text-secondary);
 }
 
 /* Pendant une lecture native, la fenêtre de mpv passe SOUS le bandeau et y

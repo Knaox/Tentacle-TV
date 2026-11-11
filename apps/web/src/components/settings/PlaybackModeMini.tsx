@@ -12,7 +12,10 @@ import type { PlaybackPreset } from "@tentacle-tv/shared";
 const TRACK = "absolute inset-x-2 top-[14px] h-1 rounded-full bg-fill-strong";
 const PASSAGE = "absolute top-[14px] h-1 rounded-full";
 const JUMP = "absolute top-1 h-3 rounded-t-[10px] border-2 border-b-0 border-accent";
-const BUTTON = "absolute top-[5px] h-5 rounded-chip bg-content-primary px-1.5 text-[10px] font-bold leading-5 text-surface-1";
+// Le bouton plein du lecteur, en petit : les jetons du bouton plein (`--cta-primary-*`), fond et encre ensemble.
+// Avec `text-surface-1`, l'encre devenait un voile translucide sous le verre natif (`.lg-page` y redéfinit
+// `--surface-1`) : un libellé ivoire sur un bouton ivoire.
+const BUTTON = "absolute top-[5px] h-5 rounded-chip bg-[var(--cta-primary-bg)] px-1.5 text-[10px] font-bold leading-5 text-[var(--cta-primary-fg)]";
 
 interface PlaybackModeMiniProps {
   preset: PlaybackPreset;

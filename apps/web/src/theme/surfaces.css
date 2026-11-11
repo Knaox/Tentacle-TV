@@ -154,7 +154,7 @@
   --card-reveal-scrim: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(var(--scrim-media-rgb), 0.32) 34%,
+    rgba(var(--scrim-media-rgb), 0.38) 34%,
     rgba(var(--scrim-media-rgb), 0.88) 100%
   );
 
@@ -193,10 +193,12 @@
 :root[data-theme="light"] {
   /* Scrims de bannière : restent NOIRS, alphas ×0.7 (recette mobile — le texte
    * on-media est blanc, l'affiche garde ses couleurs). */
+  /* 0,70 et 0,50 (0,66 et 0,44 avant) : sur une image blanche, le sur-titre de la bannière (« Sélectionné pour
+   * vous », blanc) tombait à 4,4:1 — la seule ligne du bloc que le voile du bas n'atteint pas. */
   --hero-scrim-diagonal: linear-gradient(
     72deg,
-    rgba(var(--scrim-media-rgb), 0.66) 0%,
-    rgba(var(--scrim-media-rgb), 0.44) 26%,
+    rgba(var(--scrim-media-rgb), 0.7) 0%,
+    rgba(var(--scrim-media-rgb), 0.5) 26%,
     rgba(var(--scrim-media-rgb), 0.18) 48%,
     transparent 72%
   );

@@ -125,6 +125,12 @@
   color: var(--lgd-selected-fg);
 }
 
+/* Le compte d'un segment au repos prend l'encre de son segment : la tertiaire du thème, hors d'une page de
+ * verre, tombait à 4,3:1 sur la piste (labo du socle, coquille CEF) — sa pastille le distingue déjà. */
+:root[data-liquid-glass="native"] .lg-seg .lg-seg-count {
+  color: inherit;
+}
+
 /* Le compte d'un segment choisi (Ma liste) : neutre, comme son segment. */
 :root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"], [aria-current="page"]) .lg-seg-count {
   background: var(--lgd-control);
@@ -240,15 +246,19 @@
  * (lot lg7, R5 ; HIG Color : « refrain from adding color to the background of
  * multiple controls ») : le verre reste clair, le glyphe plein prend l'accent
  * — signet et coche violets, cœur rose —, réglé sur le TON du verre pour
- * tenir 3:1 (sombre : #A78BFA 5,4:1, #EC4899 4,2:1 ; clair : #6D28D9,
- * #BE185D). Le seul fond coloré de l'écran reste « Lecture ». */
+ * tenir 3:1 sur le givre « sur image », au PIRE dessous (`frostedMaterial.test.tsx` ;
+ * sombre : #B8A2FB 3,9:1, #F58BC2 3,8:1 sur une image blanche ; clair : #6D28D9
+ * 4,1:1, #BE185D 3,5:1 sur une image noire). Le rose de marque (#EC4899) y tombait
+ * à 2,4:1 et le violet #A78BFA à 2,8:1, mesurés sur une pastille : la courbe du givre
+ * éclaircit le verre sombre posé sur une image claire.
+ * Le seul fond coloré de l'écran reste « Lecture ». */
 :root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle] {
-  --lg-toggle-on: #a78bfa;
+  --lg-toggle-on: #b8a2fb;
   color: var(--lg-toggle-on);
 }
 
 :root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle="accent"] {
-  --lg-toggle-on: #ec4899;
+  --lg-toggle-on: #f58bc2;
 }
 
 :root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle][data-lg-tone="light"],

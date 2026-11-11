@@ -47,7 +47,7 @@ const GROUPS: UserMenuGroup[] = [
 /** Une ancre fixe : le menu se pose dessous comme sous son bouton. */
 function Anchor({ top, left, label, anchorRef }: { top: number; left: number; label: string; anchorRef?: RefObject<HTMLSpanElement | null> }) {
   return (
-    <span ref={anchorRef} style={{ position: "absolute", top, left, fontSize: 11, color: "#fff", textShadow: "0 1px 2px #000" }}>
+    <span ref={anchorRef} style={{ position: "absolute", top, left, fontSize: 11, color: "#fff", background: "rgba(0, 0, 0, 0.62)", boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.62)", borderRadius: 3 }}>
       {label}
     </span>
   );
@@ -56,7 +56,7 @@ function Anchor({ top, left, label, anchorRef }: { top: number; left: number; la
 function AccountScene({ top, left }: { top: number; left: number }) {
   return (
     <div style={{ position: "absolute", top, left }}>
-      <span style={{ fontSize: 11, color: "#fff", textShadow: "0 1px 2px #000" }}>Menu du compte</span>
+      <span style={{ fontSize: 11, color: "#fff", alignSelf: "flex-start", background: "rgba(0, 0, 0, 0.62)", boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.62)", borderRadius: 3 }}>Menu du compte</span>
       <Dropdown open onClose={noop} placement="bottom-start" minWidth={260}>
         <div data-lab-menu="account">
           <div className="lg-sep border-b border-line-subtle pb-1.5">

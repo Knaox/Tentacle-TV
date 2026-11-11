@@ -38,7 +38,8 @@ export const UserCard = memo(function UserCard({ user, isSelf, deviceCount, now,
           hasAvatar={user.hasAvatar}
           imageTag={user.imageTag}
           size={48}
-          className={user.isDisabled ? "opacity-50 grayscale" : undefined}
+          // Désactivé : grisé et un peu atténué — à 50 % d'opacité, l'initiale de repli tombait à 2,3:1.
+          className={user.isDisabled ? "opacity-80 grayscale" : undefined}
         />
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">

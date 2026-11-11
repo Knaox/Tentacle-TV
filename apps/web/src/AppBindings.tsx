@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GlassFilters } from "@tentacle-tv/ui";
+import { GlassToneCurves } from "./theme/glass/GlassToneCurves";
 import {
   useJellyfinClient,
   useStreamingConfig,
@@ -58,6 +59,8 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
           filtre non monte resoudrait sur rien et le verre retomberait
           silencieusement sur un flou plat. */}
       <GlassFilters />
+      {/* Les courbes de tons du verre givré posé sur une image (mode natif seulement). */}
+      <GlassToneCurves />
       {/* Pont connectivité ↔ TanStack : erreurs réseau → sonde, retour en
           ligne → invalidations échelonnées. Web ET desktop. */}
       <ConnectivityBinding />

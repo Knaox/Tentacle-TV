@@ -30,7 +30,8 @@ function Spot({ top, left, label, children }: { top: number; left: number; label
   const style: CSSProperties = { position: "absolute", top, left, display: "flex", flexDirection: "column", gap: 8 };
   return (
     <div style={style}>
-      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textShadow: "0 1px 2px #000" }}>{label}</span>
+      {/* Une légende du labo : sur son étiquette d'encre, elle se lit sur les affiches comme sur le fond blanc. */}
+      <span style={{ fontSize: 11, color: "#fff", alignSelf: "flex-start", background: "rgba(0, 0, 0, 0.62)", boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.62)", borderRadius: 3 }}>{label}</span>
       {children}
     </div>
   );
@@ -86,7 +87,7 @@ export function LabComponents({ top }: { top: number }) {
 
       <Spot top={top + 40} left={560} label="Menu (FloatingLayer .lg-menu)">
         <div className="relative">
-          <button type="button" onClick={() => setMenuOpen((open) => !open)} style={{ color: "#fff", fontSize: 12 }}>
+          <button type="button" onClick={() => setMenuOpen((open) => !open)} style={{ color: "#fff", fontSize: 12, background: "rgba(0, 0, 0, 0.62)", boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.62)", borderRadius: 3 }}>
             {menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
           </button>
           <Dropdown open={menuOpen} onClose={() => setMenuOpen(false)} placement="bottom-start" minWidth={240}>

@@ -61,11 +61,14 @@
   --lg-surface-glyph-on-dark: rgba(255, 255, 255, 0.96);
   --lg-surface-glyph-on-dark-secondary: rgba(255, 255, 255, 0.8);
   --lg-surface-danger-on-dark: #FFC4BC;
+  /* La teinte franche EN TEXTE (`.text-accent`) : celle du thème tombait à 3,2:1 sur le pire dessous. */
+  --lg-surface-accent-on-dark: #F7D2FD;
   --lg-surface-fill-on-light: rgba(246, 246, 248, 0.76);
   --lg-surface-sheen-on-light: rgba(255, 255, 255, 0.3);
   --lg-surface-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lg-surface-glyph-on-light-secondary: rgba(12, 12, 18, 0.72);
   --lg-surface-danger-on-light: #6E0B10;
+  --lg-surface-accent-on-light: #64136A;
   /* Le reflet de BORD discret : la lumière du bord de la lentille, en sourdine. */
   --lg-surface-edge-gain-on-dark: 0.5;
   --lg-surface-edge-white-on-dark: 0.06;
@@ -99,7 +102,8 @@
   --lg-separator: rgba(0, 0, 0, 0.1);
   --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
-  --lg-sidebar-selection-glyph: var(--brand);
+  /* Le violet de marque (#7C3AED) tombait à 2,8:1 sur une surface claire posée sur une image sombre. */
+  --lg-sidebar-selection-glyph: #6d28d9;
   --lg-surface-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 10px 24px -10px rgba(0, 0, 0, 0.16),
     0 28px 64px -16px rgba(0, 0, 0, 0.22);
   --lg-content-fill: #FFFFFF;
@@ -120,6 +124,7 @@
   --lg-separator: rgba(255, 255, 255, 0.12);
   --lg-section-label: var(--lg-surface-glyph-on-dark-secondary);
   --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
+  --lg-sidebar-selection-glyph: #b8a2fb;
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
@@ -127,4 +132,6 @@
   --lg-separator: rgba(0, 0, 0, 0.1);
   --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
+  /* Au TON, pas au thème : le violet clair du thème sombre tombait à 1,5:1 sur une surface au ton clair. */
+  --lg-sidebar-selection-glyph: #6d28d9;
 }

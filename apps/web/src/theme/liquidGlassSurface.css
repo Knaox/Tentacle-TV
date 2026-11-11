@@ -162,6 +162,7 @@
   --lg-surface-glyph: var(--lg-surface-glyph-on-dark);
   --lg-surface-glyph-secondary: var(--lg-surface-glyph-on-dark-secondary);
   --lg-surface-danger: var(--lg-surface-danger-on-dark);
+  --lg-surface-accent: var(--lg-surface-accent-on-dark);
   /* La lentille lit ces jetons SUR l'élément (`lensTokens.ts`) : réfraction
    * douce, et lumière du bord en sourdine (plus fort que la règle du ton). */
   --lg-refraction-regular: var(--lg-refraction-surface);
@@ -178,8 +179,15 @@
   --lg-surface-glyph: var(--lg-surface-glyph-on-light);
   --lg-surface-glyph-secondary: var(--lg-surface-glyph-on-light-secondary);
   --lg-surface-danger: var(--lg-surface-danger-on-light);
+  --lg-surface-accent: var(--lg-surface-accent-on-light);
   --lg-edge-gain: var(--lg-surface-edge-gain-on-light);
   --lg-edge-white: var(--lg-surface-edge-white-on-light);
+}
+
+/* La teinte franche EN TEXTE suit le TON de la surface, pas le thème : l'accent du thème clair sur une
+ * palette au ton clair posée sur une image sombre tombait à 2,9:1, celui du sombre sur un ton clair à 1,3:1. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"] .text-accent {
+  color: var(--lg-surface-accent);
 }
 
 /* La surface de la primitive (`.lg-surface`) prend le matériau. */

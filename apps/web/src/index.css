@@ -249,6 +249,23 @@
   ::-webkit-scrollbar-corner {
     background-color: var(--surface-0);
   }
+
+  /* Un conteneur INTERNE qui défile (liste d'un menu, feuille, panneau) n'a pas ce risque : sa
+   * piste repose sur SON fond, jamais sur le vide de la fenêtre. Opaque à la couleur de la page,
+   * elle y dessinait une bande rectangulaire — noire sur un menu, et jusque DANS le coin arrondi
+   * d'un calque : le « coin non arrondi » d'un menu de filtre sous le verre (vu dans la coquille
+   * CEF, qui n'a pas les barres en surimpression de macOS). Piste et coin transparents ; le pouce
+   * est une pilule en retrait de 2 px, qui ne touche ni le bord ni l'arrondi. */
+  :not(html):not(body)::-webkit-scrollbar,
+  :not(html):not(body)::-webkit-scrollbar-track,
+  :not(html):not(body)::-webkit-scrollbar-corner {
+    background-color: transparent;
+  }
+
+  :not(html):not(body)::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
 }
 
 /* Les échelles de titre du préset (`text-display-*`, `text-heading-1/2`) portent la police des

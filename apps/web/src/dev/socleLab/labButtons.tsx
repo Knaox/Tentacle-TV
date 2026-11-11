@@ -54,7 +54,7 @@ export function LabButtons() {
             <Specimen name=".btn-danger"><button type="button" className="btn btn-danger"><TrashIcon size={16} /> Supprimer</button></Specimen>
             <Specimen name=":disabled"><button type="button" className="btn btn-solid" disabled>Indisponible</button></Specimen>
           </LabRow>
-          <div className="flex flex-wrap items-end gap-6 rounded-tile p-5" style={{ background: "linear-gradient(120deg, #5b4033, #31536b)" }}>
+          <div className="flex flex-wrap items-end gap-6 rounded-tile p-5 [--text-quaternary:var(--on-media-secondary)]" style={{ background: "linear-gradient(120deg, #5b4033, #31536b)" }}>
             <Specimen name=".btn-on-media (sur une image)">
               <button type="button" className="btn btn-on-media"><InfoIcon size={16} /> Plus d'infos</button>
             </Specimen>
