@@ -93,11 +93,18 @@ const COLLECT = () => {
     if (!top || top === node || node.contains(top) || top.contains(node)) return null;
     // Des initiales de repli SOUS un portrait, un titre sous son affiche : l'image les remplace.
     if (top.matches("img, video, canvas, picture")) return "layer";
+    let solid = false;
     for (let el = top; el && el !== document.body; el = el.parentElement) {
-      const position = getComputedStyle(el).position;
-      if (position === "fixed" || position === "sticky" || el.matches('[role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')) {
+      const style = getComputedStyle(el);
+      if (style.position === "fixed" || style.position === "sticky" || el.matches('[role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')) {
         return el.contains(node) ? "other" : "layer";
       }
+      // Un calque POSITIONNÉ et peint franchement, étranger au texte (le lecteur d'Octave, translucide, posé en
+      // `absolute` sur la page qui défile) : le texte dessous se devine à travers, il ne se lit pas.
+      if (el.contains(node)) continue;
+      const alpha = Number(/rgba?\([^)]*?,\s*([0-9.]+)\)$/.exec(style.backgroundColor)?.[1] ?? (/^rgb\(/.test(style.backgroundColor) ? 1 : 0));
+      solid ||= (style.backdropFilter && style.backdropFilter !== "none") || alpha >= 0.5;
+      if (solid && style.position === "absolute" && (Number(style.zIndex) || 0) > 0) return "layer";
     }
     return "other";
   };
