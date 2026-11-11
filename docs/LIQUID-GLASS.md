@@ -989,6 +989,13 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   (`surfaceMaterial.ts` : ≥ 4,5:1 sur 216 dessous, et sur la pastille d'une rangée survolée pour les
   dessous que le ton tient). L'accent du thème clair sur une palette posée sur une image sombre
   tombait à 2,9:1 ; celui du sombre sur une surface au ton clair, à 1,3:1.
+- **La coche d'un menu** (`.lg-check`, la coche du Mac : rien devant une option non choisie) suit la case du
+  SOCLE : celle-ci est un anneau en `box-shadow` dont la coche est toujours montée, transparente au repos.
+  La règle du verre forçait l'encre et laissait l'anneau : chaque genre d'un menu de filtres paraissait
+  coché (vu dans la coquille, lot rf2 — une mesure de contraste ne le voit pas, il faut REGARDER).
+- **Une bascule allumée** (cœur, signet, coche) sur un verre posé sur une image : `--lg-toggle-on`, prouvé
+  à 3:1 au pire dessous (`frostedMaterial.test.tsx`) — le rose de marque y tombait à 2,2:1 sur une image
+  blanche, depuis que le givre « sur image » y éclaircit le verre sombre.
 - **Pastilles de compte** (cloche, Watch Together) : la teinte franche d'hors verre (`--accent`,
   encre `--on-accent`). Le violet de marque (#8B5CF6 en sombre) est une zone morte : ni l'encre
   sombre (4,3:1) ni le blanc (4,2:1) n'y tiennent un chiffre.
