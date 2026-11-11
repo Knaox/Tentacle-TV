@@ -140,6 +140,38 @@ describe("RouteExit — la page qui en remplace une autre", () => {
   });
 });
 
+describe("RouteExit — la plaque de la page quittée", () => {
+  const PLATE = "position:fixed;inset:0;z-index:-1;background-color:var(--surface-0)";
+  const leaving = (props: Record<string, unknown> = {}) => renderToStaticMarkup(
+    createElement(PresenceContext.Provider, { value: exitingRoute().value },
+      createElement(RouteExit, { ...props, children: createElement("p", null, "page") })),
+  );
+
+  it("une page qui sort couvre l'écran de l'encre de la page ; en place, elle n'a pas de plaque", () => {
+    expect(leaving()).toContain(PLATE);
+    const present = renderToStaticMarkup(
+      createElement(PresenceContext.Provider, { value: exitingRoute({ isPresent: true }).value },
+        createElement(RouteExit, { children: createElement("p", null, "page") })),
+    );
+    expect(present).not.toContain(PLATE);
+  });
+
+  it("sous le verre aussi : sans plaque, la page d'arrivée se lisait à travers celle qu'on quitte", () => {
+    const root = { getAttribute: (name: string) => (name === "data-liquid-glass" ? "native" : null) };
+    vi.stubGlobal("document", { documentElement: root });
+    try {
+      expect(leaving()).toContain(PLATE);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("reprend sur la plaque le fond que la page n'a pas dans son enveloppe (le fond ambiant de la coquille)", () => {
+    const html = leaving({ backdrop: createElement("i", { className: "lg-ambient" }) });
+    expect(html).toContain(`style="${PLATE}"><i class="lg-ambient"></i></div>`);
+  });
+});
+
 describe("pagePresence", () => {
   it("une page toujours présente, au registre muet", () => {
     const presence = pagePresence("route", undefined);

@@ -4,6 +4,7 @@ import { UNSAFE_LocationContext as LocationContext, useLocation, useNavigationTy
 import { PageEntranceContext } from "./PageEntranceContext";
 import { RouteExit } from "./RouteExit";
 import { shellSectionKey } from "./routeKeys";
+import { GlassAmbient } from "../../theme/glass";
 import { TransitionLevelContext, createTransitionLevel } from "./transitionLevel";
 
 /**
@@ -36,7 +37,9 @@ export function AnimatedOutlet() {
   return (
     <TransitionLevelContext.Provider value={level}>
       <AnimatePresence initial={false}>
-        <RouteExit key={section} replaces={replaces}>
+        {/* Sous le verre, la section n'a pas le fond ambiant dans son enveloppe (il est à la
+            coquille, `AppLayout`) : sa plaque le reprend. Ailleurs, `GlassAmbient` ne rend rien. */}
+        <RouteExit key={section} replaces={replaces} backdrop={<GlassAmbient className="lgc-ambient" />}>
           <LocationContext.Provider value={frozen}>
             {/* Sous une route : `PageTransition` ne joue aucune entrée (celle de la route suffit). */}
             <PageEntranceContext.Provider value>{outlet}</PageEntranceContext.Provider>

@@ -27,10 +27,13 @@ const HOLD_GUARD_MS = PAGE_HOLD_DATA_MS + PAGE_HOLD_IMAGES_MS + 200;
 const ENTRANCE_MAX_MS = 700;
 
 const HELD: CSSProperties = { visibility: "hidden" };
+/**
+ * La plaque de la page quittée : l'encre de la page, sur tout l'écran. Sous le verre aussi — le
+ * document y porte la même encre (`theme/paneShell.css`), seule la coquille s'efface devant le
+ * fond ambiant. Sans plaque, la page d'arrivée se lisait À TRAVERS celle qu'on quitte pendant le
+ * fondu : deux pages l'une sur l'autre (vu au banc, verre allumé, lot « rf2 »).
+ */
 const PLATE: CSSProperties = { position: "fixed", inset: 0, zIndex: -1, backgroundColor: "var(--surface-0)" };
-
-/** Sous le verre natif, la page est transparente sur la fenêtre : aucune plaque ne doit la boucher. */
-const nativeGlass = (): boolean => typeof document !== "undefined" && document.documentElement.getAttribute("data-liquid-glass") === "native";
 
 /**
  * Amène à leur terme les apparitions en cours sous `root` — les fondus d'image déclenchés par un
@@ -57,6 +60,12 @@ interface RouteExitProps {
   replaces?: boolean;
   /** Le calque où la page se tient pendant sa sortie (`SECTION_EXIT_LAYER`, `ROUTE_EXIT_LAYER`). */
   layer?: number;
+  /**
+   * Ce que la page a DERRIÈRE elle sans le porter dans son enveloppe (le fond ambiant de la
+   * coquille, sous le verre) : repris sur la plaque, pour que la page épinglée garde le fond
+   * qu'on lui voyait. Une page qui porte son propre fond (la coquille, la fiche) n'en passe pas.
+   */
+  backdrop?: ReactNode;
 }
 
 /**
@@ -84,7 +93,7 @@ interface RouteExitProps {
  * **La sortie n'attend que l'enveloppe.** Le contenu voit une présence à lui (`pagePresence`) :
  * rien de ce qu'il anime ne peut retenir la page quittée — ni, par elle, le lecteur.
  */
-export function RouteExit({ children, instant = false, replaces = false, layer = SECTION_EXIT_LAYER }: RouteExitProps) {
+export function RouteExit({ children, instant = false, replaces = false, layer = SECTION_EXIT_LAYER, backdrop }: RouteExitProps) {
   const [isPresent, safeToRemove] = usePresence();
   const reduced = useReducedMotion() === true;
   const level = useContext(TransitionLevelContext);
@@ -198,8 +207,8 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
 
   return (
     <div ref={ref} className="flow-root" style={revealed ? undefined : HELD} data-page-held={!revealed || undefined}>
-      {/* La plaque : la page quittée couvre tout l'écran, barre comprise, d'un fond uni. */}
-      {!isPresent && revealed && !nativeGlass() && <div aria-hidden style={PLATE} />}
+      {/* La plaque : la page quittée couvre tout l'écran, barre comprise, du fond qu'on lui voyait. */}
+      {!isPresent && revealed && <div aria-hidden style={PLATE}>{backdrop}</div>}
       <PageArrivalGateContext.Provider value={gate}>
         <PageRevealedContext.Provider value={revealed}>
           <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
