@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createElement, useContext, type ContextType, type ReactNode } from "react";
+import { createElement, useContext, type ContextType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
@@ -14,7 +14,8 @@ import { renderToStaticMarkup } from "react-dom/server";
  * framer-motion est REMPLACÉ (comme dans `NextEpisodeFullscreen.test.tsx`) :
  * chargé en vrai sous vitest, il tire une seconde copie de React. Ce qui compte
  * ici n'est pas l'animation mais la présence que VOIT le contenu : le contexte
- * est un vrai contexte React, `motion.div` une balise nue.
+ * est un vrai contexte React. L'enveloppe elle-même n'est plus un `motion.div` :
+ * elle tient sa sortie (`usePresence`) et l'efface en CSS.
  */
 
 vi.mock("framer-motion", async () => {
@@ -23,12 +24,12 @@ vi.mock("framer-motion", async () => {
   type Presence = { isPresent: boolean } | null;
   return {
     PresenceContext,
-    useIsPresent: () => (React.useContext(PresenceContext) as Presence)?.isPresent ?? true,
-    useReducedMotion: () => false,
-    motion: {
-      div: ({ children, className }: { children?: ReactNode; className?: string }) =>
-        React.createElement("div", { className }, children),
+    // Ce que `usePresence` rend : présent, ou sortant avec de quoi dire « partie ».
+    usePresence: () => {
+      const presence = React.useContext(PresenceContext) as Presence;
+      return presence && !presence.isPresent ? [false, () => undefined] : [true, null];
     },
+    useReducedMotion: () => false,
   };
 });
 
@@ -89,6 +90,44 @@ describe("RouteExit — la présence vue du contenu de la page", () => {
 
   it("hors de toute présence (rendu sans AnimatePresence), le contenu n'en voit aucune", () => {
     expect(presenceSeenInside(null)).toBeNull();
+  });
+});
+
+describe("RouteExit — la page qui en remplace une autre", () => {
+  /** Rend une page PRÉSENTE sous un niveau de transition ; renvoie son HTML et ce que son contenu voit. */
+  async function renderPresent(replaces: boolean) {
+    const { TransitionLevelContext, createTransitionLevel } = await import("./transitionLevel");
+    const level = createTransitionLevel();
+    let seen: Presence | "jamais lu" = "jamais lu";
+    function Probe() {
+      seen = useContext(PresenceContext);
+      return createElement("p", null, "page");
+    }
+    const html = renderToStaticMarkup(
+      createElement(TransitionLevelContext.Provider, { value: level },
+        createElement(PresenceContext.Provider, { value: exitingRoute({ isPresent: true, initial: undefined }).value },
+          createElement(RouteExit, { replaces, children: createElement(Probe) }))),
+    );
+    return { html, seen: seen as unknown as NonNullable<Presence> };
+  }
+
+  it("se prépare cachée, et son contenu ne joue pas ses entrées", async () => {
+    const { html, seen } = await renderPresent(true);
+    expect(html).toContain("visibility:hidden");
+    expect(html).toContain('data-page-held="true"');
+    expect(seen.initial).toBe(false);
+  });
+
+  it("la première page d'un niveau ne remplace rien : visible d'emblée, entrées laissées à leur contexte", async () => {
+    const { html, seen } = await renderPresent(false);
+    expect(html).not.toContain("visibility:hidden");
+    expect(html).not.toContain("data-page-held");
+    expect(seen.initial).toBeUndefined();
+  });
+
+  it("hors de tout niveau (test, banc), aucune tenue", () => {
+    const html = renderToStaticMarkup(createElement(RouteExit, { replaces: true, children: createElement("p", null, "page") }));
+    expect(html).not.toContain("visibility:hidden");
   });
 });
 

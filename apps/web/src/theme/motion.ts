@@ -42,6 +42,7 @@ export const duration = {
   base: 0.22,
   slow: 0.32,
   page: 0.14,
+  pageOut: 0.12,
   press: 0.12,
   hover: 0.16,
   menuIn: 0.18,
@@ -176,11 +177,18 @@ export const stagger = (delayChildren = 0.1, staggerChildren = 0.06): Variants =
   show: { transition: { delayChildren, staggerChildren } },
 });
 
-/** Le changement de page : un FONDU seul (140 ms à l'entrée, 120 à la sortie) — ni glissement, ni échelle. */
+/**
+ * Le changement de page : un FONDU seul — ni glissement, ni échelle.
+ *
+ * Entre deux routes, c'est la page QUITTÉE qui s'efface (`duration.pageOut`, 120 ms) par-dessus
+ * la suivante, déjà complète (`routeTransition/RouteExit`) : la page d'arrivée n'a pas de fondu
+ * à elle. `initial` / `animate` ne valent plus que pour une page rendue HORS des routes (une vue
+ * d'Octave, un écran posé seul), qui entre en 140 ms.
+ */
 export const pageTransition = {
   initial: { opacity: 0 },
   animate: { opacity: 1, transition: { duration: duration.page, ease: "easeOut" } },
-  exit: { opacity: 0, transition: { duration: 0.12, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: duration.pageOut, ease: "easeOut" } },
 } as const;
 
 export const respectReducedMotion = <T extends Transition>(t: T): T | { duration: 0 } => {

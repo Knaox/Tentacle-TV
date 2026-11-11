@@ -1,14 +1,15 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { UNSAFE_LocationContext as LocationContext, useLocation, useNavigationType, useOutlet } from "react-router-dom";
 import { PageEntranceContext } from "./PageEntranceContext";
-import { pageEntranceId } from "./pageEntranceMemory";
 import { RouteExit } from "./RouteExit";
 import { shellSectionKey } from "./routeKeys";
+import { TransitionLevelContext, createTransitionLevel } from "./transitionLevel";
 
 /**
- * L'`<Outlet>` de la coquille, avec une sortie : sous la barre, la section
- * quittée s'efface pendant que la suivante entre. La barre, elle, ne bouge pas.
+ * L'`<Outlet>` de la coquille, avec une sortie : sous la barre, la section quittée reste à
+ * l'écran le temps que la suivante soit prête, puis s'efface par-dessus elle (`RouteExit`). La
+ * barre, elle, ne bouge pas — son onglet courant change tout de suite : le clic a été entendu.
  *
  * La page sortante est rendue avec l'élément et l'adresse qu'elle avait :
  * `AnimatePresence` garde l'élément d'un enfant qui sort, donc ses props — ici
@@ -23,15 +24,25 @@ export function AnimatedOutlet() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const frozen = useMemo(() => ({ location, navigationType }), [location, navigationType]);
+  const [level] = useState(createTransitionLevel);
+  const section = shellSectionKey(location.pathname);
+  // La section affichée au rendu d'avant : celle qui arrive à sa place la remplace.
+  const shown = useRef<string | null>(null);
+  const replaces = shown.current !== null && shown.current !== section;
+  useLayoutEffect(() => {
+    shown.current = section;
+  }, [section]);
 
   return (
-    <AnimatePresence initial={false}>
-      <RouteExit key={shellSectionKey(location.pathname)}>
-        <LocationContext.Provider value={frozen}>
-          {/* L'identité d'entrée de la page (`PageTransition`) : figée avec son adresse. */}
-          <PageEntranceContext.Provider value={pageEntranceId(location)}>{outlet}</PageEntranceContext.Provider>
-        </LocationContext.Provider>
-      </RouteExit>
-    </AnimatePresence>
+    <TransitionLevelContext.Provider value={level}>
+      <AnimatePresence initial={false}>
+        <RouteExit key={section} replaces={replaces}>
+          <LocationContext.Provider value={frozen}>
+            {/* Sous une route : `PageTransition` ne joue aucune entrée (celle de la route suffit). */}
+            <PageEntranceContext.Provider value>{outlet}</PageEntranceContext.Provider>
+          </LocationContext.Provider>
+        </RouteExit>
+      </AnimatePresence>
+    </TransitionLevelContext.Provider>
   );
 }

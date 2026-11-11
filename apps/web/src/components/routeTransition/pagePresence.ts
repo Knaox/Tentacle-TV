@@ -36,10 +36,15 @@ export function pagePresence(id: string, initial: PresenceProps["initial"]): Pre
  * `pagePresence` d'après la présence de l'enveloppe. Mémoïsée sur ce qu'elle
  * reprend : le contexte de `PresenceChild` change d'identité à chaque rendu, et
  * chaque identité neuve re-rendrait tout le `motion` de la page.
+ *
+ * `blockEntrances` : la page REMPLACE une page affichée et se prépare cachée — son contenu
+ * rend son état final d'emblée (`initial: false`, comme le premier rendu de l'application).
+ * La transition de page est son entrée : une cascade de texte jouée dessous, invisible,
+ * n'aurait plus qu'à finir au mauvais moment. Ce qui se monte APRÈS s'anime comme toujours.
  */
-export function usePagePresence(): ContextType<typeof PresenceContext> {
+export function usePagePresence(blockEntrances = false): ContextType<typeof PresenceContext> {
   const outer = useContext(PresenceContext);
   const id = outer === null ? null : outer.id;
-  const initial = outer?.initial;
+  const initial = blockEntrances ? false : outer?.initial;
   return useMemo(() => (id === null ? null : pagePresence(id, initial)), [id, initial]);
 }

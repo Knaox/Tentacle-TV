@@ -20,6 +20,7 @@ import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../compon
 import { DetailTitle } from "../components/detail/DetailTitle";
 import { detailLogoUrl, detailPosterUrl } from "../components/detail/detailArtUrls";
 import { useDetailArrival } from "../components/detail/detailArrival";
+import { usePageArrivalGate } from "../components/routeTransition/pageArrival";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
@@ -161,6 +162,10 @@ export function MediaDetail() {
   const overlayInCharge = origin !== null && !reducedMotion;
   const holding = !!item && !arrivalReady && !overlayInCharge && shownFor.current !== item.Id;
   if (item && !holding) shownFor.current = item.Id;
+  // La page d'où l'on vient reste à l'écran jusqu'ici (`RouteExit`) : sous un calque d'ouverture,
+  // tant que sa base n'est pas opaque — puis elle part d'un coup, dessous, sans fondu à elle ;
+  // sans calque, tant que la fiche n'a rien à montrer (ni titre, ni échec à dire).
+  usePageArrivalGate(overlayInCharge ? overlayCovered : (!!item && !holding) || (isError && !item), overlayInCharge);
   // Depuis une mini-carte d'aperçu, c'est sa vidéo qui grandit jusqu'à la
   // scène (`PreviewLaunchOverlay`) ; depuis une carte, son visuel qui vole
   // jusqu'à l'affiche. Une clé par ouverture : la suivante repart de zéro.
