@@ -125,6 +125,12 @@
   color: var(--lgd-selected-fg);
 }
 
+/* Le compte d'un segment au repos prend l'encre de son segment : la tertiaire du thème, hors d'une page de
+ * verre, tombait à 4,3:1 sur la piste (labo du socle, coquille CEF) — sa pastille le distingue déjà. */
+:root[data-liquid-glass="native"] .lg-seg .lg-seg-count {
+  color: inherit;
+}
+
 /* Le compte d'un segment choisi (Ma liste) : neutre, comme son segment. */
 :root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"], [aria-current="page"]) .lg-seg-count {
   background: var(--lgd-control);
