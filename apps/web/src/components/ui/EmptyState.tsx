@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { duration, easeOut } from "../../theme/motion";
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -12,15 +13,16 @@ interface EmptyStateProps {
 
 /**
  * Unified empty-state — replaces "no items" / "no results" inline blocks.
- * Centered icon + title + description + CTA, with subtle entry animation.
+ * Centered icon + title + description + CTA ; il paraît en fondu (220 ms), sans glisser.
  */
 export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
   return (
     <motion.div
       className={`mx-auto flex max-w-md flex-col items-center px-6 py-16 text-center ${className ?? ""}`}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      // Un fondu, sans glissement : un écran qui dit « rien ici » n'a pas à arriver d'en bas.
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: duration.base, ease: easeOut }}
     >
       {icon && (
         <div

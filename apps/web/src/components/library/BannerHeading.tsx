@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { fadeUp, textCascade } from "../../theme/motion";
+import { fadeIn, fadeUp, textCascade } from "../../theme/motion";
 
 /** Un nombre de l'en-tête : « 1 284 titres », « 212 non vus ». Déjà formaté et traduit. */
 export interface BannerStat {
@@ -49,8 +49,10 @@ export function BannerHeading({ kicker, title, stats, subtitle }: BannerHeadingP
         {title}
       </motion.h1>
 
+      {/* Les nombres arrivent APRÈS la page (une requête) : ils fondent sans monter — une ligne
+          qui glisse seule sous un titre déjà posé se lit comme un sursaut. */}
       {total && (
-        <motion.p variants={line} className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-sm tabular-nums text-on-media-secondary">
+        <motion.p variants={reduced ? undefined : fadeIn} className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-sm tabular-nums text-on-media-secondary">
           <span className="text-[15px] font-semibold text-on-media-primary">{total.label}</span>
           {others.map((stat) => (
             <span key={stat.key} className="inline-flex items-baseline gap-2.5">

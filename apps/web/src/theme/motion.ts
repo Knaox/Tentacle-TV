@@ -124,8 +124,10 @@ export const AMBIENT_HZ = 30;
  * avaient chacune leur amplitude.
  */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: duration.base, ease: easeOut } },
+  // `transform` ENTIER, jamais `y` seul : framer 11 ne confie au compositeur que celui-là, et
+  // ces lignes paraissent à l'arrivée d'une page, pendant qu'elle se monte sur le fil principal.
+  hidden: { opacity: 0, transform: "translateY(10px)" },
+  show: { opacity: 1, transform: "translateY(0px)", transition: { duration: duration.base, ease: easeOut } },
 };
 
 /**
@@ -161,6 +163,17 @@ export const textCascadeDelayed: Variants = {
  */
 export const textCascadeArrival: Variants = {
   show: { transition: { delayChildren: 0.02, staggerChildren: 0.03 } },
+};
+
+/**
+ * Le texte d'une DIAPOSITIVE de bannière (accueil, « Pour vous », hors ligne) : toutes ses
+ * lignes fondent ENSEMBLE, sans monter. La cascade (`textCascade` + `fadeUp`) s'y rejouait à
+ * chaque diapositive — toutes les huit secondes, et à chaque flèche : le bouton de lecture
+ * n'était plein qu'à ~460 ms, et une rafale de clics faisait clignoter le texte. Les lignes
+ * prennent `fadeIn`.
+ */
+export const slideText: Variants = {
+  show: { transition: { staggerChildren: 0 } },
 };
 
 export const fadeIn: Variants = {

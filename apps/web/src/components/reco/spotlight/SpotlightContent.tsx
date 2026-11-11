@@ -6,7 +6,7 @@ import { recoMatchOf, type RecoRowItem } from "@tentacle-tv/api-client";
 import { formatDuration, type MediaItem } from "@tentacle-tv/shared";
 import { HeroEyebrow } from "../../hero/HeroEyebrow";
 import { StarIcon } from "../../icons/HeroIcons";
-import { fadeUp, textCascade } from "../../../theme/motion";
+import { fadeIn, fadeUp, textCascade } from "../../../theme/motion";
 import { SpotlightActions } from "./SpotlightActions";
 
 interface SpotlightContentProps {
@@ -82,8 +82,9 @@ export function SpotlightContent({ item, media, reason, onOpenDetail, onDismiss 
         )}
       </motion.div>
 
+      {/* Le synopsis arrive avec la fiche du titre, après le reste : il fond sans monter. */}
       {media?.Overview && (
-        <motion.p variants={line} className="mb-5 line-clamp-2 max-w-lg text-sm leading-relaxed text-on-media-secondary">
+        <motion.p variants={reduced ? undefined : fadeIn} className="mb-5 line-clamp-2 max-w-lg text-sm leading-relaxed text-on-media-secondary">
           {media.Overview}
         </motion.p>
       )}

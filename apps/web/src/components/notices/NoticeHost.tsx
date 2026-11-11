@@ -13,7 +13,7 @@ import { MIN_SERVER_VERSION, useServerCompat } from "../../hooks/useServerCompat
 import { useMessageCountdown } from "../session/useMessageCountdown";
 import { getUserInfo } from "../userMenu/menuItems";
 import { NoticeCard, type NoticeCardAction, type NoticeIcon } from "./NoticeCard";
-import { duration, exitDuration } from "../../theme/motion";
+import { duration, easeOut, exitDuration } from "../../theme/motion";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
 interface Confirmation {
@@ -135,10 +135,14 @@ const Banner = memo(function Banner({ severity, icon, title, lines, primary, sec
   const countdown = useMessageCountdown(durationMs, hovered || focused, onDone);
   return (
     <motion.div
-      initial={{ opacity: 0, y: reduced ? 0 : -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: exitDuration(duration.base) } }}
-      transition={{ duration: duration.base, ease: "easeOut" }}
+      // `transform` entier (le seul que framer confie au compositeur) ; un fondu seul sous
+      // « réduire les animations ».
+      initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(-12px)" }}
+      animate={reduced ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px)" }}
+      exit={reduced
+        ? { opacity: 0, transition: { duration: exitDuration(duration.base) } }
+        : { opacity: 0, transform: "translateY(-8px)", transition: { duration: exitDuration(duration.base), ease: easeOut } }}
+      transition={{ duration: duration.base, ease: easeOut }}
       className="pointer-events-auto w-[min(28rem,100%)]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
