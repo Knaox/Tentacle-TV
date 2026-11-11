@@ -115,6 +115,8 @@ garde 1 500 ms), elle se montre d'un bloc et la page quittée s'efface par-dessu
   de plus de 300 ms se dit par la barre fine (`RouteProgress`), jamais par un anneau plein écran ;
 - **le vol de l'affiche vers la fiche se tient SOUS la page quittée** (`DetailOpenOverlay`, `ROUTE_EXIT_LAYER - 1`),
   en `transform` : la première image est celle qu'on quittait, la carte cliquée n'est jamais touchée ;
+- **la page quittée reste VIVANTE pendant l'attente** (jusqu'à 1,3 s), mais plus rien ne doit y COMMENCER :
+  `useRouteHeld()` (peu d'abonnés) — l'aperçu d'une carte ne s'ouvre pas pendant qu'on attend sa fiche ;
 - **le clavier n'anime rien** : `lib/inputModality.ts` (`lastInputWasKeyboard()`, et `<html data-input="keyboard">`
   pour la feuille de style — pas de `:has()`, le client LG vise Chrome 53) ;
 - framer-motion 11 ne confie au compositeur que `opacity` et `transform` ENTIER : jamais `x` / `y` / `scale` seuls
