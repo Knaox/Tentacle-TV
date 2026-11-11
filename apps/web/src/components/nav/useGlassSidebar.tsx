@@ -1,14 +1,13 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { useMemo, type ReactNode } from "react";
 import type { SettingsShellSurface } from "@tentacle-tv/ui";
 
 import { useWindowGlass } from "../../desktop/windowGlass";
-import { glassMorphProps } from "../../theme/glass";
+import { SlidingMarker } from "../ui/SlidingMarker";
 
 /**
  * Rayon de la sélection, en px : CONCENTRIQUE à la plaque — `--lg-radius-lg`
- * (22) moins son débord (`--lg-chrome-sidebar-pad`, 8). En nombre et en `style`,
- * sinon framer ne le corrige pas pendant l'étirement.
+ * (22) moins son débord (`--lg-chrome-sidebar-pad`, 8).
  */
 const SELECTION_RADIUS = 14;
 
@@ -23,7 +22,8 @@ export interface GlassSidebar {
  * La barre latérale en verre (`SettingsShell` : Réglages, Administration) :
  * la plaque de verre de la maquette, peinte AUTOUR du rail sans changer sa
  * boîte, et une sélection (le dégradé rose → violet de la maquette) qui GLISSE
- * d'une entrée à l'autre sur le ressort de métamorphose (`windowGlassSidebar.css`).
+ * d'une entrée à l'autre sur le compositeur (`SlidingMarker`, mesurée dans la fenêtre : jamais
+ * une diagonale quand la page change de défilement — cf. `NavTab`).
  *
  * Mode natif seulement (`useWindowGlass`) ; ailleurs, rien (`undefined`) et
  * le rail d'avant, au pixel près. `id` distingue les barres (réglages,
@@ -35,12 +35,10 @@ export function useGlassSidebar(id: string): GlassSidebar {
 
   const selection = useMemo(() => {
     if (!glass) return undefined;
-    const morph = glassMorphProps(`sidebar-${id}`, reduced);
     return (
-      <motion.span
-        aria-hidden
-        layoutId={morph.layoutId}
-        transition={morph.transition}
+      <SlidingMarker
+        group={`sidebar-${id}`}
+        still={reduced}
         className="lgc-sidebar-selection absolute inset-0"
         style={{ borderRadius: SELECTION_RADIUS }}
       />

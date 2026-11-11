@@ -3,8 +3,7 @@
  * prototype validé ; l'icône de la destination reste dans « Plus » et dans
  * « Personnaliser la barre », où une liste se parcourt), et, pour l'onglet
  * courant, une pastille NEUTRE qui GLISSE d'un onglet à l'autre (le segmented
- * control d'iOS) — sur le compositeur (`SlidingMarker`), par `layoutId` sous le
- * verre natif.
+ * control d'iOS) — sur le compositeur (`SlidingMarker`), avec ou sans verre.
  *
  * `NavTabBody` est le même dessin sans lien ni indicateur : c'est lui que la
  * rangée fantôme mesure (`usePriorityOverflow`). Il est rendu en gras, la
@@ -24,45 +23,26 @@ export function menuAnchor(event: MouseEvent<HTMLElement>): { x: number; y: numb
 
 import { memo, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { GLASS_LENS_PROPS, glassMorphProps } from "../../theme/glass";
+import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { SlidingMarker } from "../ui/SlidingMarker";
-import { useWindowGlass } from "../../desktop/windowGlass";
 import type { NavIcon } from "./useNavDestinations";
 
 export const TAB_CLASS =
   "lgc-tab group relative flex h-[38px] shrink-0 items-center gap-1.5 rounded-pill px-3.5 text-sm outline-none transition-colors duration-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
 
-/** Rayon de la pastille en verre : la moitié de la hauteur d'un onglet, une capsule concentrique au groupe. */
-const LENS_RADIUS = 19;
-
 export function ActiveIndicator({ reduced }: { reduced: boolean }) {
-  // Liquid Glass (mode natif) : la pastille NEUTRE de la barre d'onglets
-  // d'iOS 26 (jetons du groupe, `windowGlassNav.css`) GLISSE d'un onglet à
-  // l'autre sur le ressort de métamorphose du verre, rayon corrigé pendant
-  // l'étirement (framer ne le corrige que passé en `style`). Ailleurs, le
-  // dessin d'avant.
-  const glass = useWindowGlass();
-  // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode
-  // natif — ailleurs, le repli est le dessin d'avant.
+  // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode natif (la pastille neutre
+  // de la barre d'onglets d'iOS 26) — ailleurs, le repli est le dessin d'avant.
   const paint = {
     background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
     boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
   };
-  // Hors du verre natif : le glissement se joue sur le compositeur (`SlidingMarker`). Il part au
-  // clic sur un onglet, à l'instant où la page suivante se rend sur le fil principal — là où la
-  // métamorphose de framer (`layoutId`, mesurée et projetée image par image) perdait ses images.
-  if (!glass) return <SlidingMarker group="nav-active" still={reduced} className="lgc-lens absolute inset-0 rounded-pill" style={paint} />;
-  const morph = glassMorphProps("nav-active", reduced);
-  return (
-    <motion.span
-      layoutId={morph.layoutId}
-      aria-hidden
-      className="lgc-lens absolute inset-0 rounded-pill"
-      style={{ ...paint, borderRadius: LENS_RADIUS }}
-      transition={morph.transition}
-    />
-  );
+  // UN glissement, avec ou sans verre : sur le compositeur (`SlidingMarker`), mesuré dans la
+  // FENÊTRE. Sous le verre natif il passait par la métamorphose de framer (`layoutId`), qui mesure
+  // dans la PAGE : changer d'onglet après avoir défilé remet la page en haut, et la pastille
+  // partait en DIAGONALE, du défilement quitté vers sa place (nov. 2026) — en perdant des images,
+  // la page suivante se rendant sur le même fil.
+  return <SlidingMarker group="nav-active" still={reduced} className="lgc-lens absolute inset-0 rounded-pill" style={paint} />;
 }
 
 export function TabIcon({ icon: Icon, active }: { icon: NavIcon; active: boolean }) {
