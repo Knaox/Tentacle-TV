@@ -983,6 +983,12 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   « coin non arrondi dans le Liquid Glass » de Damien, vu sur le menu « Genres » dans la coquille
   CEF (pas de barres en surimpression). Un menu qui défile se juge donc dans la vraie coquille
   (`apps/web/bench/clair-verre/cef-tour.mjs`), pas dans un Chrome sans tête, qui masque ses barres.
+- **La teinte franche EN TEXTE sur une grande surface** (`.text-accent` sous `data-lg-scale="surface"` :
+  la raison d'un résultat de la palette, un état actif d'un menu) suit le TON de la surface, pas le
+  thème : `--lg-surface-accent-on-dark` / `-on-light`, prouvés comme les autres textes du matériau
+  (`surfaceMaterial.ts` : ≥ 4,5:1 sur 216 dessous, et sur la pastille d'une rangée survolée pour les
+  dessous que le ton tient). L'accent du thème clair sur une palette posée sur une image sombre
+  tombait à 2,9:1 ; celui du sombre sur une surface au ton clair, à 1,3:1.
 - **Pastilles de compte** (cloche, Watch Together) : la teinte franche d'hors verre (`--accent`,
   encre `--on-accent`). Le violet de marque (#8B5CF6 en sombre) est une zone morte : ni l'encre
   sombre (4,3:1) ni le blanc (4,2:1) n'y tiennent un chiffre.
@@ -1114,7 +1120,8 @@ son héros, il ne se juge pas au pixel). Les preuves vont dans
 (README) : `audit.mjs` mesure chaque texte AU PIXEL sur le fond qu'il recouvre (verre compris),
 écran par écran, en clair et en sombre, dans un Chrome (`GLASS=1` : pont simulé) ou dans la vraie
 coquille CEF (`CEF=1`) ; `pire-image.mjs` rend les images blanches puis noires ; `coins.mjs` regarde
-les angles des formes de verre ; `cef-tour.mjs` capture la fenêtre de la coquille. ⚠️ Pour juger un
+les angles des formes de verre ; `cef-tour.mjs` capture la fenêtre de la coquille ; `labos.mjs` mesure
+l'administration, les profils et le hors ligne dans la page de leur propre banc (hors verre). ⚠️ Pour juger un
 verre dans un Chrome : `BANC_NAVIGATEUR=complet` — le « headless shell » ne givre pas toute une
 grande surface en densité 2 (une bande nette qui n'existe pas dans l'app).
 

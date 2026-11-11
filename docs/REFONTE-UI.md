@@ -245,7 +245,9 @@ node apps/web/bench/socle/capture.mjs <dossier>   # (depuis apps/web) le labo, c
 Le contraste se MESURE sur une instance réelle, écran par écran (`apps/web/bench/clair-verre/`, README) :
 `node bench/clair-verre/audit.mjs <dossier>` (thème clair ; `THEME=dark`, `GLASS=1`, `CEF=1`), puis
 `resume.mjs` pour savoir quel jeton corriger, et `pire-image.mjs <route>` pour un texte posé sur une image. Un écran
-nouveau y entre par `scenes.mjs`.
+nouveau y entre par `scenes.mjs`. ⚠️ Les labos des réglages (administration, profils, assistant) et du hors ligne ne
+se rendent pour de bon que dans la page de LEUR banc : `labos.mjs` les construit et les mesure — ouverts dans le
+client de dev, ils donnaient un « 0 en défaut » qui ne mesurait rien.
 
 Le labo : `/dev/socle` dans un paquet de développement (`?vue=jetons|boutons|controles|calques`), absent des paquets
 livrés et du client LG. On y pose un contrôle nouveau AVANT de le propager.
@@ -284,6 +286,13 @@ Ce que l'intégration a recousu entre les axes, et qu'un écran nouveau doit res
 - **Une barre de défilement INTERNE** (liste d'un menu, feuille, panneau) a une piste transparente et un pouce en
   pilule (`index.css`) : opaque, sa piste rectangulaire remplissait le coin arrondi du calque. Seule la barre de la
   page garde une piste pleine (fenêtre transparente du bureau).
+- **Un état atténué se GRISE, il ne se délave pas** : un profil verrouillé (« Qui regarde ? »), une invitation en
+  attente, un compte désactivé passent en `grayscale` (opacité de 80 % au plus). À 50-70 % d'opacité, l'initiale de
+  repli d'un avatar tombait à 1,7-3,2:1 sur le papier du thème clair.
+- **Rien de blanc à 80 % sur une assise à mi-hauteur** : le code d'un épisode (`CardEpisodeCaption`) et le
+  sous-libellé du bouton de lecture (« Reste 3 min ») sont en blanc plein — leur taille et leur graisse font la
+  hiérarchie. Le raccord d'une fiche vers la page claire (`--detail-page-fade`) vaut 0,78 à 20 % : la première
+  rangée y commence, et son compte (encre tertiaire) doit s'y lire sur une image sombre.
 - **Le bloc titre d'une bannière de catalogue** (`BannerHeading`) a son assise en thème clair
   (`--banner-heading-focus`, `theme/scrims.css`) : les voiles du clair sont à 70 % de ceux du sombre et le texte posé
   sur l'image reste blanc.
