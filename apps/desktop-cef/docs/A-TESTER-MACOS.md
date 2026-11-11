@@ -79,5 +79,5 @@ Prouvé le 11/11 par l'état des `<video>` et des captures CDP, fenêtre en arri
   d'autoplay le permet ; le banc tournait en `--mute`) : il doit monter en fondu, pas d'un coup.
 - Le lecteur de secours sur un film AV1 HDR (image COPIÉE, Chromium ramène le HDR à l'écran) :
   couleurs et hautes lumières à juger — le banc n'a vu qu'un carton de générique.
-- `TENTACLE_MPV_FAULT=fatal pnpm dev:cef -- --mute`, fenêtre ACTIVE : la bascule doit se faire
+- `TENTACLE_MPV_FAIL=fatal pnpm dev:cef -- --mute`, fenêtre ACTIVE : la bascule doit se faire
   sans éclair (la surface de mpv part, la page reprend) — non jugé image par image.

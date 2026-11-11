@@ -139,4 +139,4 @@ une sonde du flux qui n'aboutit pas (« connexion perdue ») ne les reclassent
 plus. La bascule emporte le titre et la position de l'arrêt : le lecteur web
 reprend là. Vu sur l'instance réelle : chute provoquée à 1 313,36 s, reprise à
 1 313,4 s, première image 5 s après la chute. Provoquer la panne :
-`TENTACLE_MPV_FAULT`, `mpv_debug_fault` (`apps/desktop-cef/README.md`).
+`TENTACLE_MPV_FAIL`, `mpv_debug_fail` (`apps/desktop-cef/README.md`).

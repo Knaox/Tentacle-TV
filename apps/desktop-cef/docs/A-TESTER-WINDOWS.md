@@ -185,13 +185,13 @@ lecteur officiel de YouTube sur la fiche — c'est voulu.
   s'ouvre, la bande-annonce AVANCE (pas une image figée) et le son part (la coquille pose
   `--autoplay-policy=no-user-gesture-required`).
 - Fiche d'un film → « Bande-annonce » → le lecteur joue (VP9 + Opus), Échap le ferme.
-- `set TENTACLE_MPV_FAULT=init` puis `pnpm dev:cef` → lancer un film : bandeau « Lecteur de
+- `set TENTACLE_MPV_FAIL=init` puis `pnpm dev:cef` → lancer un film : bandeau « Lecteur de
   secours », l'image vient du lecteur web (`document.querySelector("video")` existe dans les
   outils de développement), à la position de reprise de la fiche.
-- `set TENTACLE_MPV_FAULT=fatal` → la lecture part dans mpv, tombe dix secondes plus tard, le
+- `set TENTACLE_MPV_FAIL=fatal` → la lecture part dans mpv, tombe dix secondes plus tard, le
   lecteur web reprend AU MÊME ENDROIT (à une seconde près), bandeau affiché.
 - Autres modes : `stall` (bascule après 8 s), `load`, `absent` ; en route, dans les outils de
-  développement : `tentacle.invoke("mpv_debug_fault", { mode: "fatal" })`.
+  développement : `tentacle.invoke("mpv_debug_fail", { mode: "fatal" })`.
 - À noter : le décodage de l'AV1 par le lecteur web (logiciel si la carte n'a pas de décodeur AV1)
   — images perdues sur un film 4K, charge du processeur.
 

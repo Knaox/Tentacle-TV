@@ -28,14 +28,14 @@ const char* mpvFaultName(MpvFault fault) {
 }
 
 MpvFault mpvFaultFromEnv() {
-  const char* raw = std::getenv("TENTACLE_MPV_FAULT");
+  const char* raw = std::getenv("TENTACLE_MPV_FAIL");
   if (!raw || !*raw) return MpvFault::Off;
   const auto fault = parseMpvFault(raw);
   if (!fault) {
-    std::fprintf(stderr, "[pont] TENTACLE_MPV_FAULT=%s ignoree (off, init, stall, load, fatal, absent)\n", raw);
+    std::fprintf(stderr, "[pont] TENTACLE_MPV_FAIL=%s ignoree (off, init, stall, load, fatal, absent)\n", raw);
     return MpvFault::Off;
   }
-  if (*fault != MpvFault::Off) std::fprintf(stderr, "[pont] panne du lecteur PROVOQUEE : %s (TENTACLE_MPV_FAULT)\n", mpvFaultName(*fault));
+  if (*fault != MpvFault::Off) std::fprintf(stderr, "[pont] panne du lecteur PROVOQUEE : %s (TENTACLE_MPV_FAIL)\n", mpvFaultName(*fault));
   return *fault;
 }
 

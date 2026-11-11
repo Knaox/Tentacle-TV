@@ -119,7 +119,7 @@ l'administrateur de Jellyfin ait permis l'encodage AV1). Détail et mesures :
 Pour l'éprouver sans casser mpv (`src/bridge/mpv_fault.h`) :
 
 ```bash
-TENTACLE_MPV_FAULT=fatal pnpm dev:cef -- --mute   # la première lecture tombe 10 s après son départ
+TENTACLE_MPV_FAIL=fatal pnpm dev:cef -- --mute   # la première lecture tombe 10 s après son départ
 ```
 
 | Mode | Effet |
@@ -132,7 +132,7 @@ TENTACLE_MPV_FAULT=fatal pnpm dev:cef -- --mute   # la première lecture tombe 1
 | `off` | rien |
 
 En route, depuis la page (menu de débogage, outils de développement) :
-`tentacle.invoke("mpv_debug_fault", { mode: "fatal" })` → `{ mode, fired }`. Un mode reste
+`tentacle.invoke("mpv_debug_fail", { mode: "fatal" })` → `{ mode, fired }`. Un mode reste
 jusqu'au suivant, sauf `fatal`. La bascule est mémorisée pour la session de la page : recharger
 la page (ou `cancelFallbackSwitch()`, `apps/web/src/lib/fallbackPlayer.ts`) rend sa chance à mpv.
 

@@ -165,20 +165,20 @@ static void testFault() {
     VideoChannels video(reg, player, {}, {}, MpvFault::Init);
     auto a = ipc.invoke("tentacle:mpv_init", frontInit());
     CHECK(a.done && !a.ok && a.code == "mpv_init" && player.started.empty());
-    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "off"}});
+    a = ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "off"}});
     CHECK(a.ok && a.value["mode"] == "off" && a.value["fired"] == false);
     CHECK(ipc.invoke("tentacle:mpv_init", frontInit()).ok && player.started.size() == 1);
   }
   {  // stall : aucune réponse ; lever la panne rend la main à la page (un refus, pas un silence).
     FakeIpc ipc; FakePlayer player; Registry reg(ipc);
     VideoChannels video(reg, player);
-    CHECK(ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "stall"}}).value["mode"] == "stall");
+    CHECK(ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "stall"}}).value["mode"] == "stall");
     Answer pending;
     Reply reply{[&pending](Json v) { pending.done = pending.ok = true; pending.value = std::move(v); },
                 [&pending](std::string c, std::string m) { pending.done = true; pending.code = std::move(c); pending.message = std::move(m); }};
     ipc.handlers["tentacle:mpv_init"](frontInit(), reply);
     CHECK(!pending.done && player.started.empty());
-    ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "off"}});
+    ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "off"}});
     CHECK(pending.done && !pending.ok && pending.code == "mpv_init");
   }
   {  // load : `loadfile` accepté, jamais transmis à mpv, puis `end-file` en erreur de chargement.
@@ -196,13 +196,13 @@ static void testFault() {
     FakeIpc ipc; FakePlayer player; Registry reg(ipc);
     double now = 1000;
     VideoChannels video(reg, player, [&now] { return now; });
-    auto a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "fatal"}});
+    auto a = ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "fatal"}});
     CHECK(a.ok && a.value["fired"] == false);  // rien ne joue : rien ne tombe
     ipc.invoke("tentacle:mpv_init", frontInit());
     player.listener->onProperty("time-pos", 61.0);
     now += 40;
     player.listener->onProperty("time-pos", 61.04);  // retenue par l'étranglement
-    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "fatal"}});
+    a = ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "fatal"}});
     CHECK(a.ok && a.value["fired"] == true && a.value["mode"] == "off");
     CHECK(ipc.emitted.size() == 3 && ipc.emitted[1].second["data"] == 61.04);
     CHECK(ipc.emitted[2].first == "tentacle:mpv://event" && ipc.emitted[2].second["reason"] == 4 && ipc.emitted[2].second["error"] == -20);
@@ -224,9 +224,9 @@ static void testFault() {
     FakeIpc ipc; FakePlayer player; Registry reg(ipc);
     VideoChannels video(reg, player, {}, {}, MpvFault::Absent);
     CHECK(!ipc.handlers.count("tentacle:mpv_init") && !ipc.handlers.count("tentacle:mpv_command"));
-    auto a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "absent"}});
+    auto a = ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "absent"}});
     CHECK(a.done && !a.ok && a.code == "launch_only");
-    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "casse"}});
+    a = ipc.invoke("tentacle:mpv_debug_fail", {{"mode", "casse"}});
     CHECK(a.done && !a.ok && a.code == "bad_mode");
   }
 }

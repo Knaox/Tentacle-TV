@@ -11,7 +11,7 @@
 //   mpv_destroy     {}                            → null
 //   mpv://property-change { name, data, id, at }  (time-pos / audio-pts à 8 Hz au plus)
 //   mpv://event     { event, reason?, error? }
-//   mpv_debug_fault { mode }                      → { mode, fired }   (pannes provoquées : mpv_fault.h)
+//   mpv_debug_fail { mode }                      → { mode, fired }   (pannes provoquées : mpv_fault.h)
 #pragma once
 
 #include <chrono>

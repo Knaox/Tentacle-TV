@@ -2,8 +2,8 @@
 // (`apps/web/src/pages/Watch.tsx`) sans casser mpv ni retirer libmpv du paquet.
 //
 // Deux portes, le même mot :
-//   TENTACLE_MPV_FAULT=<mode>            au lancement de l'app ;
-//   tentacle.invoke("mpv_debug_fault", { mode })   en route (menu de débogage).
+//   TENTACLE_MPV_FAIL=<mode>            au lancement de l'app ;
+//   tentacle.invoke("mpv_debug_fail", { mode })   en route (menu de débogage).
 //
 //   off     rien (le défaut) ;
 //   init    `mpv_init` est refusé, comme un mpv qui ne s'initialise pas ;
@@ -30,7 +30,7 @@ enum class MpvFault { Off, Init, Stall, Load, Fatal, Absent };
 /// Le mode nommé par `text` ; `nullopt` pour un mot inconnu.
 std::optional<MpvFault> parseMpvFault(const std::string& text);
 const char* mpvFaultName(MpvFault fault);
-/// `TENTACLE_MPV_FAULT` ; `Off` sans elle, ou si elle est illisible (dit au journal).
+/// `TENTACLE_MPV_FAIL` ; `Off` sans elle, ou si elle est illisible (dit au journal).
 MpvFault mpvFaultFromEnv();
 
 /// Ce que la page reçoit d'une lecture qui tombe : `MPV_END_FILE_REASON_ERROR` et

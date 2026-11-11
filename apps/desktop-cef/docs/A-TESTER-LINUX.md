@@ -153,8 +153,8 @@ le lecteur officiel de YouTube sur la fiche — c'est voulu.
 
 - Juste après le lancement, SANS rien cliquer : survoler une carte de l'accueil → la mini-carte s'ouvre, la bande-annonce AVANCE (pas une image figée) et le son part (`--autoplay-policy=no-user-gesture-required`).
 - Fiche d'un film → « Bande-annonce » → le lecteur joue (VP9 + Opus), Échap le ferme.
-- `TENTACLE_MPV_FAULT=init pnpm dev:cef` → lancer un film : bandeau « Lecteur de secours », l'image vient du lecteur web, à la position de reprise de la fiche.
-- `TENTACLE_MPV_FAULT=fatal pnpm dev:cef` → la lecture part dans mpv, tombe dix secondes plus tard, le lecteur web reprend AU MÊME ENDROIT (à une seconde près).
-- Autres modes : `stall` (bascule après 8 s), `load`, `absent` ; en route : `tentacle.invoke("mpv_debug_fault", { mode: "fatal" })`.
-- Lecteur préchauffé (sous-surface Wayland) + `TENTACLE_MPV_FAULT=init` → l'instance préchauffée ne ressort pas à l'écran ; la noter si une fenêtre vidéo vide reste.
+- `TENTACLE_MPV_FAIL=init pnpm dev:cef` → lancer un film : bandeau « Lecteur de secours », l'image vient du lecteur web, à la position de reprise de la fiche.
+- `TENTACLE_MPV_FAIL=fatal pnpm dev:cef` → la lecture part dans mpv, tombe dix secondes plus tard, le lecteur web reprend AU MÊME ENDROIT (à une seconde près).
+- Autres modes : `stall` (bascule après 8 s), `load`, `absent` ; en route : `tentacle.invoke("mpv_debug_fail", { mode: "fatal" })`.
+- Lecteur préchauffé (sous-surface Wayland) + `TENTACLE_MPV_FAIL=init` → l'instance préchauffée ne ressort pas à l'écran ; la noter si une fenêtre vidéo vide reste.
 - À noter : décodage de l'AV1 par le lecteur web (VA-API ou logiciel) — images perdues sur un film 4K, charge du processeur.
