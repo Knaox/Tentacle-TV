@@ -22,10 +22,12 @@ interface UpdateDialogProps {
   children: ReactNode;
 }
 
+// `transform` ENTIER, jamais `scale` / `y` seuls : framer 11 ne confie au compositeur que celui-là,
+// et cette fenêtre s'ouvre au démarrage, pendant que l'application se charge sur le fil principal.
 const PANEL = {
-  hidden: { opacity: 0, scale: 0.97, y: 10 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { duration: duration.sheetIn, ease: easeDrawer, opacity: { duration: 0.22, ease: "easeOut" } } },
-  exit: { opacity: 0, scale: 0.97, y: 10, transition: { duration: duration.sheetOut, ease: easeOut, opacity: { duration: 0.16, ease: "easeOut" } } },
+  hidden: { opacity: 0, transform: "translateY(10px) scale(0.97)" },
+  show: { opacity: 1, transform: "translateY(0px) scale(1)", transition: { duration: duration.sheetIn, ease: easeDrawer, opacity: { duration: 0.22, ease: easeOut } } },
+  exit: { opacity: 0, transform: "translateY(10px) scale(0.97)", transition: { duration: duration.sheetOut, ease: easeOut, opacity: { duration: 0.16, ease: easeOut } } },
 } as const;
 const PANEL_REDUCED = {
   hidden: { opacity: 0 },
