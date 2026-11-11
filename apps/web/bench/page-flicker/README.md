@@ -52,3 +52,20 @@ suivante se préparait cachée (`routeTransition/RouteExit`).
 - `/api/trailers/*` n'est jamais relayé (YouTube refuse après ~150 extractions) : les aperçus de
   bande-annonce ne se jouent pas pendant le banc.
 - Le verre natif de macOS 26 ne se capture pas par CDP.
+
+## Lire un régime lent
+
+En réseau lent, une passe n'est pas à zéro : passé le plafond d'attente (1 000 ms de données +
+300 ms d'images), la page d'arrivée se montre et se complète sous les yeux. `phases.mjs` dit OÙ
+tombent les images signalées — pendant la tenue (la page quittée seule à l'écran), pendant le
+fondu (la transition elle-même), ou après (un chargement) :
+
+```sh
+node bench/page-flicker/phases.mjs <dossier de --out> dark-slow
+```
+
+Un recul PENDANT LA TENUE ou LE FONDU en réseau rapide est un défaut de la transition (relevés du
+lot « rf2 » : l'affiche qui recouvrait l'habillage de survol à l'envol, l'aperçu d'une carte qui
+s'ouvrait pendant l'attente de sa fiche — ce dernier ne se voit que dans la coquille, où les
+aperçus tournent : `--cdp http://127.0.0.1:<port> --sign-in --server <backend>`, après une passe
+d'échauffement, le premier lancement d'un profil neuf avalant quelques clics).
