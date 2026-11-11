@@ -26,7 +26,9 @@ export function CardEpisodeCaption({ code, title, inset }: CardEpisodeCaptionPro
   if (!code && !title) return null;
   return (
     <div className={`pointer-events-none absolute inset-x-0 bottom-3.5 z-30 pl-3 text-on-media-primary ${inset}`}>
-      {code && <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-on-media-secondary">{code}</p>}
+      {/* Blanc plein, comme le titre : à 80 %, le code tombait à 3,9:1 sur une image blanche — sa taille, sa
+          casse et son interlettrage le tiennent déjà sous le titre. */}
+      {code && <p className="text-[10px] font-bold uppercase tracking-[0.08em]">{code}</p>}
       {title && <p className="line-clamp-1 text-xs font-semibold">{title}</p>}
     </div>
   );

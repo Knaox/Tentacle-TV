@@ -154,7 +154,7 @@
   --card-reveal-scrim: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(var(--scrim-media-rgb), 0.32) 34%,
+    rgba(var(--scrim-media-rgb), 0.38) 34%,
     rgba(var(--scrim-media-rgb), 0.88) 100%
   );
 
