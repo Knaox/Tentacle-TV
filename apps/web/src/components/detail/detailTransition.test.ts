@@ -16,8 +16,7 @@ import {
   consumeDetailOrigin,
   markPluginNavigation,
   OPENING_LANDED_GUARD_MS,
-  OPENING_TARGETLESS_GUARD_MS,
-  openingGuardDelay,
+  openingStep,
 } from "./detailTransition";
 
 /** Doit rester égal à `MAX_AGE_MS` du module. */
@@ -70,17 +69,23 @@ describe("calque d'ouverture d'un titre sans image", () => {
     expect(consumeDetailOrigin("serie")?.imageUrl).toBe("/affiche.jpg");
   });
 
-  it("tant que la fiche n'est pas là, le calque occupe l'attente", () => {
-    expect(openingGuardDelay({ playing: true, hasTarget: false, settled: false })).toBeNull();
+  it("tant que la fiche se prépare, rien ne vole : la carte reste en place", () => {
+    expect(openingStep({ revealed: false, hasTarget: false, reduced: false })).toBe("wait");
+    // La fiche est en page (son affiche est mesurée) mais pas encore montrée : on attend encore.
+    expect(openingStep({ revealed: false, hasTarget: true, reduced: false })).toBe("wait");
   });
 
-  it("la fiche rendue SANS visuel à viser : le calque s'efface presque aussitôt", () => {
-    expect(openingGuardDelay({ playing: true, hasTarget: false, settled: true })).toBe(OPENING_TARGETLESS_GUARD_MS);
-    expect(OPENING_TARGETLESS_GUARD_MS).toBeLessThan(OPENING_LANDED_GUARD_MS);
+  it("la fiche se montre et son affiche a une place : le visuel décolle avec elle", () => {
+    expect(openingStep({ revealed: true, hasTarget: true, reduced: false })).toBe("fly");
   });
 
-  it("avec un visuel : le garde-fou habituel, et rien quand le calque est fini", () => {
-    expect(openingGuardDelay({ playing: true, hasTarget: true, settled: true })).toBe(OPENING_LANDED_GUARD_MS);
-    expect(openingGuardDelay({ playing: false, hasTarget: false, settled: true })).toBeNull();
+  it("la fiche montrée SANS visuel à viser : rien à jouer, le calque se retire", () => {
+    expect(openingStep({ revealed: true, hasTarget: false, reduced: false })).toBe("skip");
+  });
+
+  it("animations réduites : rien ne vole, jamais", () => {
+    expect(openingStep({ revealed: false, hasTarget: false, reduced: true })).toBe("skip");
+    expect(openingStep({ revealed: true, hasTarget: true, reduced: true })).toBe("skip");
+    expect(OPENING_LANDED_GUARD_MS).toBeGreaterThan(320);
   });
 });

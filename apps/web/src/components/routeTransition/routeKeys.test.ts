@@ -9,10 +9,15 @@ describe("clé de groupe (autour des routes)", () => {
     expect(routeGroupKey("/mon-plugin")).toBe("shell");
   });
   it("un écran immersif a la sienne, quel que soit l'élément affiché", () => {
-    expect(routeGroupKey("/media/a")).toBe("media");
-    expect(routeGroupKey("/media/b")).toBe("media");
+    expect(routeGroupKey("/person/a")).toBe(routeGroupKey("/person/b"));
     expect(routeGroupKey("/watch/a")).toBe("watch");
     expect(routeGroupKey("/offline/item/a")).toBe(routeGroupKey("/offline/series/b"));
+  });
+  it("chaque fiche est une page : d'un titre à un titre similaire, l'une sort et l'autre arrive", () => {
+    expect(routeGroupKey("/media/a")).toBe("media/a");
+    expect(routeGroupKey("/media/a")).not.toBe(routeGroupKey("/media/b"));
+    // La saison ouverte est dans la requête, pas dans le chemin : la même fiche.
+    expect(routeGroupKey("/media/a")).toBe(routeGroupKey("/media/a/"));
   });
   it("une redirection pure ne sort pas de la coquille", () => {
     expect(routeGroupKey("/setup")).toBe("shell");

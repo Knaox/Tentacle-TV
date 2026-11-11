@@ -10,8 +10,11 @@ export interface TargetRect {
 
 interface LayerProps {
   origin: DetailOrigin | null;
-  backdropUrl: string | null;
   target: TargetRect | null;
+  /** La fiche est montrée — sans objet ici : rien ne vole. */
+  revealed: boolean;
+  /** Le visuel est posé : la fiche montre son affiche, qu'elle cachait pendant le vol. */
+  onLanded?: () => void;
   onDone: () => void;
 }
 
@@ -46,14 +49,16 @@ interface LayerProps {
  * relâcher l'origine capturée ; ne pas l'appeler laisserait cette origine en
  * place et la ferait rejouer à l'ouverture suivante.
  */
-export function DetailOpenOverlay({ origin, onDone }: LayerProps) {
+export function DetailOpenOverlay({ origin, onLanded, onDone }: LayerProps) {
   const rendered = useRef(false);
 
   useEffect(() => {
     if (!origin || rendered.current) return;
     rendered.current = true;
+    // Rien ne vole : l'affiche de la fiche se montre tout de suite.
+    onLanded?.();
     onDone();
-  }, [origin, onDone]);
+  }, [origin, onLanded, onDone]);
 
   return null;
 }

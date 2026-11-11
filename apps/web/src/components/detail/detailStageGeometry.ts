@@ -1,6 +1,6 @@
 /**
  * Géométrie de la SCÈNE de la fiche, partagée avec le calque d'ouverture
- * (`DetailOpenOverlay`), qui monte les mêmes couches à l'avance pour que son
+ * d'un aperçu (`PreviewLaunchOverlay`), qui monte les mêmes couches à l'avance pour que son
  * effacement soit invisible. Changer une cote d'un côté sans l'autre fait
  * sauter le décor à l'atterrissage de CHAQUE ouverture de fiche — d'où ce
  * fichier, seul endroit où elles s'écrivent.

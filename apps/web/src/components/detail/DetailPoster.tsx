@@ -41,6 +41,12 @@ interface DetailPosterProps {
    * l'ouverture (relevé du lot 1017).
    */
   placeholderUrl?: string | null;
+  /**
+   * Le visuel de la carte est EN VOL vers cette place (`DetailOpenOverlay`) : l'affiche reste
+   * en page — c'est elle qu'il vise — mais ne se montre qu'une fois qu'il s'est posé. Deux
+   * affiches à l'écran, l'une qui arrive sur l'autre, ce serait un double.
+   */
+  concealed?: boolean;
 }
 
 /**
@@ -53,7 +59,7 @@ interface DetailPosterProps {
  *    haut de la case et flottait, minuscule, à côté d'un titre en display-2.
  *    Elle prend désormais toute la largeur de la colonne, en 16:9.
  */
-export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUrl, placeholderUrl }: DetailPosterProps) {
+export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUrl, placeholderUrl, concealed = false }: DetailPosterProps) {
   const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -124,7 +130,7 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
         isEpisode ? "w-72 md:w-[22rem] xl:w-[26rem]" : "w-40 md:w-52 xl:w-60"
       }`}
       // La couleur de l'affiche sous elle, et une seule ombre portée — plus de liseré de marque.
-      style={{ boxShadow: "0 24px 60px -20px rgba(0,0,0,0.9)", backgroundColor: tone ?? undefined }}
+      style={{ boxShadow: "0 24px 60px -20px rgba(0,0,0,0.9)", backgroundColor: tone ?? undefined, visibility: concealed ? "hidden" : undefined }}
     >
       {/* Seconde et dernière mesure : la boîte épouse son image, sa hauteur
           n'est donc définitive qu'une fois celle-ci placée. */}

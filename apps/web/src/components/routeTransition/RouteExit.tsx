@@ -1,7 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PresenceContext, usePresence, useReducedMotion } from "framer-motion";
 import { duration } from "../../theme/motion";
-import { PageArrivalGateContext, type PageArrivalGate } from "./pageArrival";
+import { PageArrivalGateContext, PageRevealedContext, type PageArrivalGate } from "./pageArrival";
 import { usePagePresence } from "./pagePresence";
 import { TransitionLevelContext, type PageArrival } from "./transitionLevel";
 import { usePageSettled } from "./usePageSettled";
@@ -145,7 +145,6 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
     el.style.setProperty("top", `${top}px`);
     el.style.setProperty("left", `${left}px`);
     el.style.setProperty("width", `${width}px`);
-    el.style.setProperty("pointer-events", "none");
     el.style.setProperty("z-index", String(layer));
   }, [isPresent, layer]);
 
@@ -170,6 +169,9 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
       const arrival = level?.arrival() ?? { ready: true, instant: false };
       if (!arrival.ready && !force) return;
       started = true;
+      // Les gestes ne se coupent qu'ici : tenue, la page garde ses survols — la carte qu'on
+      // vient de cliquer ne se dégonfle pas sous le curseur en attendant la suivante.
+      el.style.setProperty("pointer-events", "none");
       if (arrival.instant || reduced) return finish();
       el.style.setProperty("transition", `opacity ${EXIT_MS}ms var(--ease-out)`);
       el.style.setProperty("opacity", "0");
@@ -191,7 +193,9 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
       {/* La plaque : la page quittée couvre tout l'écran, barre comprise, d'un fond uni. */}
       {!isPresent && revealed && !nativeGlass() && <div aria-hidden style={PLATE} />}
       <PageArrivalGateContext.Provider value={gate}>
-        <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
+        <PageRevealedContext.Provider value={revealed}>
+          <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
+        </PageRevealedContext.Provider>
       </PageArrivalGateContext.Provider>
     </div>
   );

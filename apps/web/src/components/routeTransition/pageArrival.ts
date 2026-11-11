@@ -17,6 +17,17 @@ export interface PageArrivalGate {
 export const PageArrivalGateContext = createContext<PageArrivalGate | null>(null);
 
 /**
+ * La page est-elle MONTRÉE ? Faux tant qu'elle se prépare cachée sous la page quittée ; vrai
+ * hors de toute enveloppe de route. Une chorégraphie qui accompagne l'arrivée (le vol de
+ * l'affiche vers la fiche) part de ce signal : avec le fondu de la page quittée, pas avant.
+ */
+export const PageRevealedContext = createContext(true);
+
+export function usePageRevealed(): boolean {
+  return useContext(PageRevealedContext);
+}
+
+/**
  * À appeler par une page qui décide elle-même de son arrivée.
  *
  * @param ready   la page peut se montrer (la page quittée peut partir)

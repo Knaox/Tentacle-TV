@@ -27,6 +27,11 @@ export interface DetailOrigin {
    * vol de l'affiche, cachée sous la mini-carte.
    */
   launch?: PreviewLaunch | null;
+  /**
+   * Le visuel cliqué lui-même : il se cache à l'instant où sa copie décolle de lui
+   * (`DetailOpenOverlay`), et revient si l'ouverture est abandonnée.
+   */
+  source?: HTMLElement | null;
   stamp: number;
 }
 
@@ -84,6 +89,7 @@ export function captureDetailOrigin(
     imageUrl,
     radius,
     covered,
+    source: element,
     stamp: Date.now(),
   };
 }
@@ -180,27 +186,22 @@ export function skipsEntrance(origin: DetailOrigin | null): boolean {
     || (typeof window !== "undefined" && window.location.pathname === landingPath);
 }
 
-/** Le visuel se pose : au-delà, le calque s'efface quoi qu'il arrive (cf. `DetailOpenOverlay`). */
+/** Le visuel a décollé : au-delà, le calque se retire quoi qu'il arrive (cf. `DetailOpenOverlay`). */
 export const OPENING_LANDED_GUARD_MS = 1000;
-/**
- * La fiche est là mais n'a PAS de visuel à viser (aucune affiche, ou une
- * affiche qui ne se mesure pas) : le calque s'efface sur place, presque tout
- * de suite. Le délai laisse passer la mesure de `DetailPoster`, qui arrive
- * dans le même passage de mise en page que la fiche.
- */
-export const OPENING_TARGETLESS_GUARD_MS = 250;
 
 /**
- * Quand le calque d'ouverture doit-il s'effacer de lui-même ? `null` : pas
- * encore — la fiche n'est pas là (requête lente : c'est là que le calque
- * occupe l'attente). Une fois la fiche rendue, il s'efface TOUJOURS, cible ou
- * pas : sans cette règle, une fiche sans affiche (titre sans images) gardait
- * l'écran couvert pour toujours — page vide, ni « Lecture » ni rien.
+ * Que fait le calque d'ouverture, maintenant ?
+ *
+ * - `wait` : la fiche se prépare, cachée sous la page d'où l'on vient — rien n'est monté ;
+ * - `fly` : la fiche se montre et son affiche a une place : le visuel décolle AVEC elle ;
+ * - `skip` : il n'y a rien à jouer — animations réduites, ou une fiche montrée sans visuel à
+ *   viser (un titre sans affiche). Avant, le calque attendait là une cible qui ne venait pas et
+ *   gardait l'écran couvert : page vide, ni « Lecture » ni rien.
  */
-export function openingGuardDelay(state: { playing: boolean; hasTarget: boolean; settled: boolean }): number | null {
-  if (!state.playing) return null;
-  if (state.hasTarget) return OPENING_LANDED_GUARD_MS;
-  return state.settled ? OPENING_TARGETLESS_GUARD_MS : null;
+export function openingStep(state: { revealed: boolean; hasTarget: boolean; reduced: boolean }): "wait" | "fly" | "skip" {
+  if (state.reduced) return "skip";
+  if (!state.revealed) return "wait";
+  return state.hasTarget ? "fly" : "skip";
 }
 
 /**

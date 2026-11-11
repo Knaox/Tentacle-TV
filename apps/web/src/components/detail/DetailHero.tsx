@@ -39,7 +39,7 @@ interface DetailHeroProps {
 
 /**
  * Géométrie de la bannière, PARTAGÉE avec le calque d'ouverture
- * (`DetailOpenOverlay`), qui monte les mêmes couches à l'avance pour que son
+ * d'un aperçu (`PreviewLaunchOverlay`), qui monte les mêmes couches à l'avance pour que son
  * effacement soit invisible. C'est toute la raison d'être de ces constantes :
  * tant que les valeurs étaient recopiées de part et d'autre, il a suffi de
  * changer la hauteur d'un scrim d'un côté pour que le décor saute à
