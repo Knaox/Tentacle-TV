@@ -216,7 +216,10 @@ le tableau des trois coquilles est dans `PARITE-ELECTRON.md`, § 7. À essayer, 
 - **M · Lecteur mpv coupé**, en pleine lecture → le lecteur web prend le relais (bandeau
   « Lecteur de secours ») ; rallumer, relancer → mpv.
 - **P, T, G** → grisées, « tenu par la coquille CEF » ; **C** et **L** → grisées (sonde et verre
-  macOS seulement) ; **X** → grisée tant que la coquille n'annonce pas `mpv_debug_fail`.
+  macOS seulement).
+- **X · Simuler mpv en panne**, en pleine lecture → « Chute en lecture » : la lecture tombe, le
+  lecteur web prend le relais à la même position ; « Init refusée » puis une nouvelle lecture →
+  le lecteur web d'emblée ; la ligne dit « panne : init » ; « Lever la panne » → mpv rejoue.
 - **N** → l'écran des nouveautés ; **R** → « journal vidé — n requêtes effacées ».
 - Le panneau se déplace par son en-tête, se redimensionne par son coin bas-droit, garde sa place
   au relancement ; F9 le ferme et le rouvre sans animation.

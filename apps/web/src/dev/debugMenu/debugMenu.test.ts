@@ -76,4 +76,16 @@ describe("le catalogue des actions", () => {
     const passthrough = await DEBUG_ACTIONS.find((a) => a.id === "passthrough")?.status?.();
     expect(passthrough?.unavailable).toMatch(/navigateur/);
   });
+
+  it("« Simuler mpv en panne » parle les mots de la coquille (mpv_fault.h) et se tait sans sa commande", async () => {
+    const { DEBUG_ACTIONS } = await import("../playerDebugActions");
+    const { MPV_FAULT_COMMAND } = await import("./debugActionsPlayer");
+    const fault = DEBUG_ACTIONS.find((a) => a.id === "mpv-fail");
+    // Le nom et les modes traversent deux programmes : la commande de pont et ses mots.
+    expect(MPV_FAULT_COMMAND).toBe("mpv_debug_fault");
+    expect(fault?.choices?.map((c) => c.id)).toEqual(["fatal", "init", "stall", "load", "off"]);
+    // Une coquille qui n'annonce pas la commande (Electron, CEF d'avant) : indisponible, et dit pourquoi.
+    expect((await fault?.status?.())?.unavailable).toMatch(/mpv_debug_fault/);
+    expect(await fault?.run("fatal")).toMatch(/absente/);
+  });
 });
