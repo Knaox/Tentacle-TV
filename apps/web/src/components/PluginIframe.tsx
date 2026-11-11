@@ -26,6 +26,9 @@ import {
   trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
 } from "./pluginIframe/pluginTrailerPreview";
 
+/** Hauteur du cadre d'une extension : la fenêtre, moins le bandeau du bureau et la barre de navigation. */
+export const PLUGIN_FRAME_MIN_HEIGHT = "calc(100vh - var(--hote-bandeau, 0px) - var(--topnav-height, 64px))";
+
 
 interface PluginIframeProps {
   pluginId: string;
@@ -260,7 +263,13 @@ export function PluginIframe({
         sandbox={PLUGIN_IFRAME_SANDBOX}
         title={`plugin-${pluginId}`}
         className="h-full w-full border-0"
-        style={{ minHeight: "calc(100vh - 64px)" }}
+        // La place qui RESTE sous la barre, bandeau de fenêtre du bureau compris (`--hote-bandeau`,
+        // 0 ailleurs) : ni plus, ni moins. Avec « 100vh − 64 px » en dur, l'iframe dépassait de
+        // 42 px sur le bureau : la page hôte devenait défilable de ces 42 px, la molette posée sur
+        // une page d'extension faisait défiler la PAGE au lieu de l'extension — puis plus rien
+        // (11/11, Damien : « je ne peux pas défiler dans Vigie ») —, et le bas de l'extension
+        // restait sous le bord de la fenêtre.
+        style={{ minHeight: PLUGIN_FRAME_MIN_HEIGHT }}
       />
       {trailerState && (
         <TrailerModal

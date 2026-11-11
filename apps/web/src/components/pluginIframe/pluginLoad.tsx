@@ -19,7 +19,7 @@ const LOADER_TEXTS = {
 
 export function PluginLoader({ lang }: { lang: string }) {
   return (
-    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-6 bg-surface-1">
+    <div className="flex min-h-[calc(100vh-var(--hote-bandeau,0px)-var(--topnav-height,64px))] flex-col items-center justify-center gap-6 bg-surface-1">
       <div className="relative animate-pulse">
         <img
           src="/tentacle-logo-pirate.svg"
