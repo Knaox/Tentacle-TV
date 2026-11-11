@@ -213,4 +213,11 @@ export default {
   affinityFirstAnswer_other: "Le premier qui répond décide pour tout le groupe.",
   affinityInProgress: "en cours",
   affinityClosed: "L'affinité est terminée.",
+  // Le chat (lot rf2) : réduire, les non-lus, le retour en bas du fil, le débit.
+  chatCollapse: "Réduire le chat",
+  chatNewDivider: "Nouveaux messages",
+  chatJump: "{{count}} nouveau message",
+  chatJump_other: "{{count}} nouveaux messages",
+  chatJumpLatest: "Aller au dernier message",
+  chatSlowDown: "Doucement — un instant avant le prochain envoi.",
 } as const;

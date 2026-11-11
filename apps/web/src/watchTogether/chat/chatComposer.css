@@ -1,0 +1,191 @@
+/* ── Le chat de Watch Together — réagir, écrire, choisir un emoji ou un GIF ──
+ * La suite de `chat.css` (300 lignes par fichier) : mêmes variables `--wtc-*`, mêmes interdits. */
+
+/* ── La rangée des réactions ── six rapides, puis les emojis et les GIF. */
+.wtc-reactions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  box-shadow: 0 -1px 0 var(--wtc-line);
+}
+
+.wtc-react {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* Une réaction s'envoie en rafale : l'appui se voit franchement. */
+.wtc-react:active {
+  transform: scale(0.88);
+}
+
+.wtc-react:focus-visible,
+.wtc-pill:focus-visible,
+.wtc-tab:focus-visible,
+.wtc-gif:focus-visible {
+  box-shadow: 0 0 0 2px var(--wtc-focus);
+}
+
+.wtc-reactions__sep {
+  flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background-color: var(--wtc-line);
+}
+
+/* Le bouton « GIF » : une pilule de texte. */
+.wtc-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  color: var(--wtc-fg-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.wtc-pill:active {
+  transform: scale(var(--press-scale));
+}
+
+.wtc-pill[aria-pressed="true"] {
+  background-color: var(--wtc-fill-on);
+  color: var(--wtc-fg);
+}
+
+/* ── La saisie ── */
+.wtc-composer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  box-shadow: 0 -1px 0 var(--wtc-line);
+}
+
+.wtc-field-wrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+/* Un champ : une pilule d'encre claire, anneau de focus à la teinte franche. */
+.wtc-field {
+  min-width: 0;
+  flex: 1 1 0%;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background-color: var(--wtc-fill);
+  color: var(--wtc-fg);
+  font-size: 14px;
+  outline: none;
+  transition: box-shadow var(--duration-hover) ease;
+}
+
+.wtc-field::placeholder {
+  color: var(--wtc-fg-3);
+}
+
+.wtc-field:focus {
+  box-shadow: inset 0 0 0 1.5px var(--wtc-accent);
+}
+
+/* Le compte à rebours des caractères : il ne paraît qu'à l'approche de la limite. */
+.wtc-field[data-counting="true"] {
+  padding-right: 44px;
+}
+
+.wtc-count {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--wtc-fg-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  translate: 0 -50%;
+}
+
+.wtc-count[data-full="true"] {
+  color: var(--wtc-accent);
+  font-weight: 650;
+}
+
+.wtc-field--small {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+/* Envoyer : le seul plein du panneau. */
+.wtc-send {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background-color: var(--wtc-solid);
+  color: var(--wtc-solid-fg);
+  cursor: pointer;
+  outline: none;
+  transition:
+    opacity var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.wtc-send:active {
+  transform: scale(var(--press-scale));
+}
+
+.wtc-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wtc-react:hover,
+  .wtc-pill:hover {
+    background-color: var(--wtc-fill-hover);
+  }
+
+  .wtc-pill:hover {
+    color: var(--wtc-fg);
+  }
+}
+
+/* Fenêtre étroite (téléphone) : 16 px dans le champ — en dessous, Safari zoome la page au focus. */
+@media (max-width: 640px) {
+  .wtc-field {
+    font-size: 16px;
+  }
+}

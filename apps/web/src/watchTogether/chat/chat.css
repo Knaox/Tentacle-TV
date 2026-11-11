@@ -1,0 +1,216 @@
+/* ── Le chat de Watch Together (lot rf2, nov. 2026) — sa peau, le fil, les aperçus ──
+ *
+ * DEUX HABITS, par des variables locales (`--wtc-*`) :
+ *  - SUR LA VIDÉO (`data-on-video="true"`, une page de lecture) : une encre sombre, en dur,
+ *    identique dans les deux thèmes — comme les capsules du lecteur. C'est aussi le défaut.
+ *  - HORS LECTEUR (`data-on-video="false"`, n'importe quelle page pendant une séance) : les
+ *    jetons du thème — un menu du socle. En thème clair le chat est donc clair, et le verre
+ *    (qui redéfinit ces jetons) s'y applique sans une règle de plus.
+ *
+ * Ce que cette peau s'interdit (CLAUDE.md, « Coût GPU ») : le `backdrop-filter` (posé sur la
+ * vidéo il se recalcule à chaque image décodée ; sur le bureau il ne floute rien, mpv dessine
+ * sous la page), toute animation infinie hors de son moment (les points de frappe ne battent
+ * que tant que quelqu'un écrit), et tout mouvement qui ne soit pas `transform` ou `opacity`. */
+
+.wtc {
+  --wtc-surface: #131315;
+  --wtc-capsule: #18181b;
+  --wtc-fg: #ffffff;
+  --wtc-fg-2: rgba(255, 255, 255, 0.74);
+  --wtc-fg-3: rgba(255, 255, 255, 0.58);
+  --wtc-line: rgba(255, 255, 255, 0.1);
+  --wtc-fill: rgba(255, 255, 255, 0.09);
+  --wtc-fill-hover: rgba(255, 255, 255, 0.14);
+  --wtc-fill-on: rgba(255, 255, 255, 0.18);
+  --wtc-bubble: rgba(255, 255, 255, 0.1);
+  --wtc-bubble-self: rgba(229, 140, 240, 0.26);
+  --wtc-accent: #e58cf0;
+  --wtc-solid: #f4f2ee;
+  --wtc-solid-fg: #131315;
+  --wtc-focus: rgba(255, 255, 255, 0.7);
+  --wtc-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 50px -14px rgba(0, 0, 0, 0.85);
+  --wtc-edge: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  color: var(--wtc-fg);
+}
+
+/* La surface à canal alpha (macOS, Linux, sur la vidéo) : une ombre large y sort en aplat
+ * sombre (`lib/videoShadow.ts`) — le liseré seul. */
+.wtc[data-on-video="true"][data-alpha="true"] {
+  --wtc-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.wtc[data-on-video="false"] {
+  --wtc-surface: var(--surface-dropdown);
+  --wtc-capsule: var(--surface-dropdown);
+  --wtc-fg: var(--text-primary);
+  --wtc-fg-2: var(--text-secondary);
+  --wtc-fg-3: var(--text-tertiary);
+  --wtc-line: var(--border-subtle);
+  --wtc-fill: var(--fill-soft);
+  --wtc-fill-hover: var(--fill-medium);
+  --wtc-fill-on: var(--fill-medium);
+  --wtc-bubble: var(--fill-soft);
+  --wtc-bubble-self: rgba(var(--accent-rgb), 0.16);
+  --wtc-accent: var(--accent);
+  --wtc-solid: var(--cta-primary-bg);
+  --wtc-solid-fg: var(--cta-primary-fg);
+  --wtc-focus: var(--border-focus);
+  --wtc-shadow: var(--shadow-dropdown);
+  --wtc-edge: var(--shadow-dropdown);
+}
+
+/* ── Le panneau et la bulle ── */
+
+.wtc-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  background-color: var(--wtc-surface);
+  box-shadow: var(--wtc-shadow);
+}
+
+.wtc-capsule {
+  background-color: var(--wtc-capsule);
+  box-shadow: var(--wtc-edge);
+  color: var(--wtc-fg);
+}
+
+.wtc-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  box-shadow: 0 1px 0 var(--wtc-line);
+}
+
+.wtc-head__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--wtc-fg);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.wtc-head__title > svg {
+  flex-shrink: 0;
+  color: var(--wtc-fg-2);
+}
+
+/* Qui est là : un compte discret, à côté du titre. */
+.wtc-head__count {
+  color: var(--wtc-fg-3);
+  font-family: var(--font-sans, inherit);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Un bouton rond du chat : la pression répond, le survol éclaire — rien ne grossit. */
+.wtc-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  color: var(--wtc-fg-2);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.wtc-icon:active {
+  transform: scale(var(--press-scale));
+}
+
+.wtc-icon:focus-visible,
+.wtc-jump:focus-visible,
+.wtc-send:focus-visible {
+  box-shadow: 0 0 0 2px var(--wtc-focus);
+}
+
+.wtc-icon[aria-pressed="true"] {
+  background-color: var(--wtc-fill-on);
+  color: var(--wtc-fg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wtc-icon:hover {
+    background-color: var(--wtc-fill-hover);
+    color: var(--wtc-fg);
+  }
+}
+
+/* La poignée de redimensionnement (coin haut-gauche). */
+.wtc-grip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  padding: 6px;
+  color: var(--wtc-fg-3);
+  cursor: nwse-resize;
+  transition: color var(--duration-hover) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wtc-grip:hover {
+    color: var(--wtc-fg);
+  }
+}
+
+/* Le point des messages non lus : IMMOBILE (une onde sans fin se paierait à chaque image). */
+.wtc-unread {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--wtc-accent);
+  box-shadow: 0 0 0 2px var(--wtc-capsule);
+}
+
+/* ── Les aperçus (panneau fermé) ── */
+.wtc-toast {
+  min-width: 0;
+  padding: 6px 12px 7px;
+  border-radius: 18px;
+  border-top-left-radius: 6px;
+}
+
+.wtc-toast__name {
+  display: block;
+  overflow: hidden;
+  color: var(--wtc-accent);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.wtc-toast__text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--wtc-fg);
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

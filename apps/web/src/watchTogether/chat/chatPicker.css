@@ -1,0 +1,186 @@
+/* ── Le chat de Watch Together — le sélecteur d'emojis et de GIF ──
+ * La suite de `chatComposer.css` (300 lignes par fichier) : mêmes variables `--wtc-*`. */
+
+/* ── Le sélecteur (emojis, GIF) ── une FEUILLE posée sur le bas du fil : elle sort de la rangée
+ * des réactions (origine en bas), sans rien pousser — le fil garde sa taille et sa position.
+ * Avant : une hauteur animée de 0 à 240 px, qui remettait le fil en page à chaque image. */
+.wtc-picker {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  height: min(248px, 100%);
+  flex-direction: column;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background-color: var(--wtc-surface);
+  box-shadow: 0 -1px 0 var(--wtc-line), 0 -12px 24px -16px rgba(0, 0, 0, 0.5);
+  transform-origin: bottom center;
+}
+
+.wtc-picker__head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+.wtc-tab {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--wtc-fg-2);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.wtc-tab[aria-selected="true"] {
+  background-color: var(--wtc-fill-on);
+  color: var(--wtc-fg);
+}
+
+.wtc-picker__scroll {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px 8px;
+  scrollbar-width: thin;
+}
+
+.wtc-picker__label {
+  padding: 8px 2px 2px;
+  color: var(--wtc-fg-3);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wtc-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+}
+
+.wtc-emoji {
+  height: 34px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  line-height: 34px;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.wtc-emoji:active {
+  transform: scale(0.88);
+}
+
+.wtc-emoji:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--wtc-focus);
+}
+
+.wtc-cats {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 0 8px 4px;
+  scrollbar-width: none;
+}
+
+.wtc-cat {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) ease;
+}
+
+/* Les GIF : deux colonnes ; la vignette envoyée garde un anneau à la teinte franche. */
+.wtc-gif-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 6px;
+}
+
+.wtc-gif {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background-color: var(--wtc-fill);
+  cursor: pointer;
+  outline: none;
+  transition:
+    box-shadow var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.wtc-gif:active {
+  transform: scale(var(--press-scale));
+}
+
+.wtc-gif[data-sent="true"] {
+  box-shadow: 0 0 0 2px var(--wtc-accent);
+}
+
+.wtc-gif-skeleton {
+  height: 80px;
+  border-radius: var(--radius-md);
+  background-color: var(--wtc-fill);
+}
+
+.wtc-note {
+  padding: 28px 16px 0;
+  color: var(--wtc-fg-3);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.wtc-note > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--wtc-fg-2);
+  font-weight: 600;
+}
+
+.wtc-attribution {
+  flex-shrink: 0;
+  padding: 0 8px 4px;
+  color: var(--wtc-fg-3);
+  font-size: 10px;
+  text-align: right;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wtc-tab:hover,
+  .wtc-emoji:hover,
+  .wtc-cat:hover {
+    background-color: var(--wtc-fill-hover);
+  }
+
+  .wtc-tab:hover {
+    color: var(--wtc-fg);
+  }
+
+  .wtc-gif:hover {
+    box-shadow: 0 0 0 1.5px var(--wtc-fg-3);
+  }
+
+  .wtc-gif[data-sent="true"]:hover {
+    box-shadow: 0 0 0 2px var(--wtc-accent);
+  }
+}

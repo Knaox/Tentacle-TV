@@ -1,4 +1,3 @@
-import { CHAT_FIELD } from "../chatSkin";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-client";
@@ -10,9 +9,6 @@ import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-cli
  * client aligné sur le rate limit serveur évite les envois silencieusement
  * ignorés. La clé Klipy est au niveau application (image Docker) : l'état
  * « non disponible » ne concerne que les vieux serveurs / le dev sans .env.
- *
- * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
- * qui garde son verre sombre quel que soit le thème.
  */
 
 const GifCell = memo(function GifCell({
@@ -24,11 +20,7 @@ const GifCell = memo(function GifCell({
   sendLabel: string;
 }) {
   return (
-    <button
-      onClick={() => onSend(gif)}
-      aria-label={sendLabel}
-      className={`overflow-hidden rounded-field transition-shadow duration-hover hover:shadow-[0_0_0_1.5px_rgba(255,255,255,0.5)] ${sent ? "shadow-[0_0_0_2px_#E58CF0]" : ""}`}
-    >
+    <button type="button" onClick={() => onSend(gif)} aria-label={sendLabel} className="wtc-gif" data-sent={sent}>
       <img
         src={gif.url}
         alt=""
@@ -41,27 +33,30 @@ const GifCell = memo(function GifCell({
   );
 });
 
-export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
+export const GifTab = memo(function GifTab({ chat, onRefused }: { chat: WtChatApi; onRefused?: () => void }) {
   const { t, i18n } = useTranslation("watchTogether");
   const [query, setQuery] = useState("");
   const { data, isLoading } = useGifSearch(query, i18n.language);
   const [sentId, setSentId] = useState<string | null>(null);
 
   const sendGif = (gif: GifItem) => {
-    // Le débit partagé (six d'affilée, puis un par seconde) : refusé ici, rien ne part.
-    if (!chat.sendGif({ url: gif.url, w: gif.w || undefined, h: gif.h || undefined })) return;
-    // Flash bref sur la vignette : accusé visuel local (l'écho serveur suit).
+    // Le débit partagé (six d'affilée, puis un par seconde) : refusé ici, rien ne part — et on le dit.
+    if (!chat.sendGif({ url: gif.url, w: gif.w || undefined, h: gif.h || undefined })) {
+      onRefused?.();
+      return;
+    }
+    // Un anneau bref sur la vignette : accusé visuel local (l'écho du serveur suit).
     setSentId(gif.id);
     setTimeout(() => setSentId((cur) => (cur === gif.id ? null : cur)), 700);
   };
 
-  // Serveur sans clé GIF (vieille image / dev sans .env) : état explicite.
+  // Serveur sans clé GIF (vieille image, développement sans .env) : état explicite.
   if (data && !data.configured) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
-        <p className="text-xs font-medium text-white/70">{t("gifNotConfigured")}</p>
-        <p className="text-[11px] text-white/55">{t("gifNotConfiguredHint")}</p>
-      </div>
+      <p className="wtc-note flex-1">
+        <strong>{t("gifNotConfigured")}</strong>
+        {t("gifNotConfiguredHint")}
+      </p>
     );
   }
 
@@ -75,37 +70,30 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
           onKeyUp={(e) => e.stopPropagation()}
           maxLength={100}
           placeholder={t("gifSearchPlaceholder")}
-          className={`${CHAT_FIELD} h-8 w-full !px-3 !text-xs`}
+          aria-label={t("gifSearchPlaceholder")}
+          className="wtc-field wtc-field--small"
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-1">
+      <div className="wtc-picker__scroll">
         {isLoading && !data ? (
-          <div className="grid grid-cols-2 gap-1.5">
-            {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="h-20 rounded-field bg-white/[0.07]" />
-            ))}
+          <div className="wtc-gif-grid" aria-hidden>
+            {Array.from({ length: 6 }, (_, i) => <div key={i} className="wtc-gif-skeleton" />)}
           </div>
         ) : data?.error ? (
-          <p className="px-2 pt-8 text-center text-xs text-white/60">{t("gifError")}</p>
+          <p className="wtc-note" role="status">{t("gifError")}</p>
         ) : data && data.results.length === 0 ? (
-          <p className="px-2 pt-8 text-center text-xs text-white/60">{t("gifNoResults")}</p>
+          <p className="wtc-note" role="status">{t("gifNoResults")}</p>
         ) : (
-          <div className="grid grid-cols-2 items-start gap-1.5">
+          <div className="wtc-gif-grid">
             {data?.results.map((gif) => (
-              <GifCell
-                key={gif.id}
-                gif={gif}
-                sent={sentId === gif.id}
-                onSend={sendGif}
-                sendLabel={t("gifSendAria")}
-              />
+              <GifCell key={gif.id} gif={gif} sent={sentId === gif.id} onSend={sendGif} sendLabel={t("gifSendAria")} />
             ))}
           </div>
         )}
       </div>
 
-      <p className="shrink-0 px-2 pb-1 text-right text-[9px] text-white/45">{t("gifAttribution")}</p>
+      <p className="wtc-attribution">{t("gifAttribution")}</p>
     </div>
   );
 });

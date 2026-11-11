@@ -1,8 +1,11 @@
-import { CHAT_ACCENT, CHAT_CAPSULE } from "./chatSkin";
 import { memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { WtChatMessageDto } from "@tentacle-tv/shared";
 import { WtAvatar } from "../WatchTogetherRows";
+import { useWatchOverlayState } from "./chatUiStore";
+import { duration, easeOut } from "../../theme/motion";
+import "./chat.css";
+import "./chatThread.css";
 
 /**
  * Watch Together — aperçus éphémères des messages reçus panneau fermé :
@@ -11,36 +14,35 @@ import { WtAvatar } from "../WatchTogetherRows";
  * l'overlay lecteur (et donc la bulle) est masqué — on suit la conversation
  * sans rien ouvrir. Couche transparente aux interactions.
  *
- * Couleurs volontairement en dur : même famille overlay de chat, flotte sur
- * la vidéo comme sur n'importe quelle page — indépendant du thème.
+ * La peau du chat (`chat.css`) : l'encre des capsules sur la vidéo, les jetons
+ * du thème ailleurs.
  */
 
 const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto }) {
   return (
     <motion.div
       layout
+      // Il entre du bord droit (là où vit la bulle) et s'efface plus vite qu'il n'est venu.
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 24, transition: { duration: 0.4 } }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      exit={{ opacity: 0, transition: { duration: duration.menuOut, ease: easeOut } }}
+      transition={{ duration: duration.menuIn, ease: easeOut }}
       className="flex max-w-[300px] items-start gap-2"
     >
       <WtAvatar userId={message.userId} name={message.username} size={24} />
-      <div
-        // L'encre des capsules, opaque : posé sur la vidéo, un flou se paierait à chaque image.
-        className="min-w-0 rounded-tile rounded-tl-chip px-3 py-1.5"
-        style={CHAT_CAPSULE}
-      >
-        <span className="text-[11px] font-semibold" style={{ color: CHAT_ACCENT }}>{message.username}</span>
-        <p className="line-clamp-2 break-words text-sm text-white">{message.text}</p>
+      {/* Opaque : posé sur la vidéo, un flou se paierait à chaque image. */}
+      <div className="wtc-capsule wtc-toast">
+        <span className="wtc-toast__name">{message.username}</span>
+        <p className="wtc-toast__text">{message.text}</p>
       </div>
     </motion.div>
   );
 });
 
 export function MessageToastLayer({ toasts }: { toasts: WtChatMessageDto[] }) {
+  const { onWatchPage } = useWatchOverlayState();
   return (
-    <div className="pointer-events-none fixed bottom-56 right-6 z-50 flex flex-col items-end gap-1.5">
+    <div className="wtc pointer-events-none fixed bottom-56 right-6 z-50 flex flex-col items-end gap-1.5" data-on-video={onWatchPage} aria-live="polite">
       <AnimatePresence>
         {toasts.map((m) => <ToastRow key={m.id} message={m} />)}
       </AnimatePresence>

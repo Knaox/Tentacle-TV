@@ -6,6 +6,7 @@ import { Modal } from "../../components/ui/Modal";
 import { SkipSegmentButton } from "../../components/player/SkipSegmentButton";
 import { AffinityMatchView } from "../../watchTogether/affinity/AffinityMatchView";
 import { ChatOverlay } from "../../watchTogether/chat/ChatOverlay";
+import { useReportPlayerOverlay } from "../../watchTogether/chat/chatUiStore";
 import { MessageToastLayer } from "../../watchTogether/chat/MessageToastLayer";
 import { ReactionLayer } from "../../watchTogether/chat/ReactionLayer";
 import { ElsewhereNotice } from "../../watchTogether/ElsewhereNotice";
@@ -18,6 +19,7 @@ import { WatchTogetherPanel } from "../../watchTogether/WatchTogetherPanel";
 import { LAB_EPISODE_ID, LAB_USER_ID, labParam } from "./labFixtures";
 import { LabPlayerWeb } from "./labPlayerWeb";
 import { labWtContext } from "./labWatchTogether";
+import { LabLiveChat } from "./labChat";
 
 const noop = () => {};
 
@@ -89,6 +91,8 @@ function PlayerInRoom({ chatOpen }: { chatOpen: boolean }) {
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
   const chat = chatOpen ? CHAT : { ...CHAT, state: { ...CHAT.state, open: false, unread: 2, toasts: CHAT.state.messages.slice(3) } };
+  // Une page de lecture : le chat y prend son encre « sur la vidéo » (`chat.css`).
+  useReportPlayerOverlay(true);
   return (
     <Wt value={IN_ROOM}>
       <LabPlayerWeb />
@@ -102,6 +106,12 @@ function PlayerInRoom({ chatOpen }: { chatOpen: boolean }) {
       <ChatOverlay chat={chat} dragX={dragX} dragY={dragY} />
     </Wt>
   );
+}
+
+/** Le lecteur du labo, déclaré « page de lecture », sous le chat vivant. */
+function LivePlayer() {
+  useReportPlayerOverlay(true);
+  return <LabLiveChat><LabPlayerWeb /></LabLiveChat>;
 }
 
 const MATCH: WtAffinityMatchDto = { key: "k", itemId: "lab-movie", mediaType: "movie", title: "Sintel", year: 2010, likedBy: [LAB_USER_ID, "lab-lea", "lab-marc"], at: now };
@@ -129,6 +139,9 @@ export function LabWt() {
     case "invitations": return <Wt value={{ invites: INVITES }}><Page><InviteInboxModal onClose={noop} /></Page></Wt>;
     case "lecteur": return <PlayerInRoom chatOpen={false} />;
     case "chat": return <PlayerInRoom chatOpen />;
+    // Le chat VIVANT (`labChat.tsx`) : sur le lecteur, puis sur une page (les jetons du thème).
+    case "chat-vif": return <Wt value={IN_ROOM}><LivePlayer /></Wt>;
+    case "chat-page": return <Wt value={IN_ROOM}><LabLiveChat><Page><p className="mt-6 max-w-[60ch] text-sm text-content-secondary">Hors du lecteur, le chat suit le thème.</p></Page></LabLiveChat></Wt>;
     case "ailleurs":
       return <Wt value={{ elsewhere: ELSEWHERE }}><Page><ElsewhereNotice /></Page></Wt>;
     case "groupe-en-cours": return <Wt value={IN_ROOM}><Page><GroupPlaybackPill /></Page></Wt>;
