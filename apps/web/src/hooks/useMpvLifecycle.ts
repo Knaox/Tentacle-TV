@@ -3,7 +3,7 @@ import { invoke, isElectronShell } from "../desktop/bridge";
 import { setSurfaceOpaque, setSurfaceTransparent } from "../lib/playerSurface";
 import { MPV_END_FILE_REASON, type MpvEndFileEvent } from "../lib/mpvTypes";
 import { rememberActiveDecoder } from "../lib/hardwareDecoding";
-import type { PlaybackFailure } from "./playbackFailure";
+import { mpvInitFailure, type PlaybackFailure } from "./playbackFailure";
 import { queryTrackList } from "./mpvTrackList";
 import {
   awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
@@ -123,7 +123,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         }
       } catch (e) {
         // Échec ou timeout d'init : un défaut de LECTEUR, par nature.
-        setFailure({ kind: "player", detail: String(e) });
+        setFailure(mpvInitFailure(e));
         return;
       }
 

@@ -38,7 +38,7 @@ export default {
   mpvError: "Erreur mpv : {{error}}",
   fallbackPlayerTitle: "Lecteur de secours",
   fallbackPlayerHint:
-    "Le lecteur intégré n'a pas pu démarrer ; la lecture continue avec le lecteur web. HDR et HEVC peuvent être limités.",
+    "Le lecteur intégré ne répond pas ; la lecture continue avec le lecteur web, au même endroit. Le HDR et la qualité d'origine peuvent manquer.",
   secondsShort: "sec",
   nextEpisodeLabel: "Épisode suivant",
   scrubConfirmHint: "OK · Lire ici",

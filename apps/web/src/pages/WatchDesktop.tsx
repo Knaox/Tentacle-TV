@@ -31,8 +31,9 @@ import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
 import { usePictureInPicture } from "../pictureInPicture/pictureInPictureContext";
 import { useDesktopTrackHandlers } from "../hooks/useDesktopTrackHandlers";
+import type { FallbackHandover } from "../lib/fallbackPlayer";
 
-export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
+export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: (at?: FallbackHandover) => void } = {}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   // Erreur de MÉDIA (fichier local disparu) : le lecteur est DÉMONTÉ — son
@@ -177,9 +178,11 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     onFailed: groupSync.notifyFatalError,
   });
   const handlePlayerFailure = useCallback((failure: PlaybackFailure) => {
-    if (isLocalPlayback) { onFallbackToWeb?.(); return; }
-    playback.report(desktopPlaybackReport(failure), { started: failure.started, fallback: onFallbackToWeb });
-  }, [isLocalPlayback, onFallbackToWeb, playback.report]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Le relais : une lecture commencée passe au lecteur web avec sa position (`lib/fallbackPlayer.ts`).
+    const handOver = () => onFallbackToWeb?.(failure.started && itemId ? { itemId, positionSeconds: positionRef.current } : undefined);
+    if (isLocalPlayback) { handOver(); return; }
+    playback.report(desktopPlaybackReport(failure), { started: failure.started, fallback: handOver });
+  }, [isLocalPlayback, onFallbackToWeb, playback.report, itemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Un problème pendant le PiP se dit dans le lecteur : on y revient.
   const pipProblem = pip.active && (playback.problem !== null || mediaMissing);

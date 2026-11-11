@@ -1,4 +1,4 @@
-import { supportsMpv } from "../desktop/bridge";
+import { isDesktopApp, supportsMpv } from "../desktop/bridge";
 import { FallbackPlayerBanner } from "../components/player/FallbackPlayerBanner";
 import { useMpvDisabledByDebug } from "../lib/nativePlayer";
 import { reportFallbackSwitch, useFallbackPlayer } from "../lib/fallbackPlayer";
@@ -23,14 +23,20 @@ export function Watch() {
   // `mpvCoupe` est l'interrupteur de DEBUG (touche M du panneau) : réactif,
   // pour que couper mpv EN lecture démonte WatchDesktop — donc mpv_destroy —
   // et monte le lecteur web dans la foulée, sans relance.
+  //
+  // La bascule emporte la POSITION de l'arrêt (`reportFallbackSwitch`) : le
+  // lecteur web reprend là où mpv est tombé. Et le bandeau dit aussi un bureau
+  // dont la coquille n'a PAS de lecteur natif (libmpv absent du paquet) : le
+  // lecteur web y est un secours, pas le lecteur attendu.
   const fallback = useFallbackPlayer();
   const mpvCoupe = useMpvDisabledByDebug();
   if (supportsMpv() && !fallback && !mpvCoupe) {
     return <WatchDesktop onFallbackToWeb={reportFallbackSwitch} />;
   }
+  const backup = fallback || (isDesktopApp() && !supportsMpv());
   return (
     <>
-      {fallback ? <FallbackPlayerBanner /> : null}
+      {backup ? <FallbackPlayerBanner /> : null}
       <WatchWeb />
     </>
   );
