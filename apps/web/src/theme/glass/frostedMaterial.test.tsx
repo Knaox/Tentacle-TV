@@ -68,6 +68,26 @@ describe("lisible sur N'IMPORTE quelle image (216 dessous, blanc et noir purs co
   });
 });
 
+describe("une bascule allumée (cœur rose, signet violet) se voit sur le verre posé sur une image", () => {
+  const TOGGLES = strip(readFileSync(join(__dirname, "..", "liquidGlassContent.css"), "utf8"));
+  const hex = (h: string): Rgba => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16), a: 1 });
+  // Dans l'ordre de la feuille : violet puis rose du ton sombre, violet puis rose du ton clair.
+  const colors = [...TOGGLES.matchAll(/--lg-toggle-on:\s*(#[0-9a-f]{6});/gi)].map((m) => hex(m[1] as string));
+
+  it("quatre couleurs déclarées", () => {
+    expect(colors).toHaveLength(4);
+  });
+
+  it("un pictogramme : 3:1 au corps du verre, sur les 216 dessous", () => {
+    for (const color of colors.slice(0, 2)) expect(worstFrostedContrast(color, FROSTED_DARK, FROSTED_DARK.whiteBody)).toBeGreaterThanOrEqual(3);
+    for (const color of colors.slice(2)) expect(worstFrostedContrast(color, FROSTED_LIGHT, FROSTED_LIGHT.whiteBody)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("le rose de marque n'y tenait pas (garde-fou du test)", () => {
+    expect(worstFrostedContrast(hex("#ec4899"), FROSTED_DARK, FROSTED_DARK.whiteBody)).toBeLessThan(3);
+  });
+});
+
 describe("la courbe ne teinte que ce que l'image exige", () => {
   it("sombre : une ombre passe telle quelle (le verre reste transparent), un blanc est plafonné", () => {
     expect(curveChannel(0, FROST_CURVE.dark)).toBe(0);
