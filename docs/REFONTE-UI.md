@@ -81,7 +81,8 @@ porte `tabular-nums` ou `.num`. Un paragraphe ne dépasse pas `max-w-[65ch]`.
 | menu, déroulant, infobulle | 180 ms, sortie 120 | sortie | `--duration-menu-in/out` · `duration.menuIn/menuOut` |
 | survol d'une carte (+3 % sur place) | 220 ms | sortie | `--duration-card`, `--card-hover-scale` |
 | feuille, modale | 320 ms, sortie 200 | tiroir | `--duration-sheet-in/out` · `duration.sheetIn/sheetOut`, `easeDrawer` |
-| changement de page | fondu seul, 140 ms (sortie 120) | — | `pageTransition` (`PageTransition`, `RouteExit`) |
+| changement de page | la page quittée s'efface en 120 ms PAR-DESSUS la suivante, déjà prête | sortie | `duration.pageOut` (`routeTransition/RouteExit`) |
+| repère de l'option retenue (onglet, segment) | 220 ms | déplacement | `components/ui/SlidingMarker` (`markerSlide.ts`) |
 
 Courbes : `--ease-out` `cubic-bezier(.23,1,.32,1)` (ce qui entre, sort ou répond), `--ease-in-out`
 `cubic-bezier(.77,0,.175,1)` (ce qui se déplace), `--ease-drawer` `cubic-bezier(.32,.72,0,1)`. Classes : `ease-out`,
@@ -99,6 +100,27 @@ Les règles (Emil Kowalski, `.claude/refonte-ui/skills/`) :
   framer lit `useReducedMotion()` ;
 - **une durée qui est un RÉGLAGE de l'utilisateur ne se touche pas** (`previewDelay.ts` : l'aperçu paraît au délai
   choisi, exactement).
+
+**Le changement de page (lot « rf2 », nov. 2026) — la page quittée reste jusqu'à ce que la suivante soit prête.**
+Avant, elle s'effaçait au clic pendant que la suivante chargeait données et images : l'écran tombait vers le fond,
+puis se remplissait par à-coups (le « scintillement » ; 126 à 205 images parasites sur 22 transitions). Maintenant
+(`components/routeTransition/`) : la page d'arrivée se monte CACHÉE sous la page quittée, qui reste épinglée
+au-dessus ; quand ses requêtes puis ses images à l'écran sont là (`usePageSettled` ; plafonds 1 000 ms + 300 ms,
+garde 1 500 ms), elle se montre d'un bloc et la page quittée s'efface par-dessus — un seul calque, en opacité.
+À ne pas défaire :
+
+- **jamais un fondu d'ENTRÉE de page** (deux fondus croisés sur le fond passent par le noir), ni une entrée de
+  contenu rejouée sous la transition (`PageTransition` sous une route est un simple `div`) ;
+- une page qui sait mieux que la règle quand elle est prête le dit par `usePageArrivalGate` (la fiche) ; une attente
+  de plus de 300 ms se dit par la barre fine (`RouteProgress`), jamais par un anneau plein écran ;
+- **le vol de l'affiche vers la fiche se tient SOUS la page quittée** (`DetailOpenOverlay`, `ROUTE_EXIT_LAYER - 1`),
+  en `transform` : la première image est celle qu'on quittait, la carte cliquée n'est jamais touchée ;
+- **le clavier n'anime rien** : `lib/inputModality.ts` (`lastInputWasKeyboard()`, et `<html data-input="keyboard">`
+  pour la feuille de style — pas de `:has()`, le client LG vise Chrome 53) ;
+- framer-motion 11 ne confie au compositeur que `opacity` et `transform` ENTIER : jamais `x` / `y` / `scale` seuls
+  sur ce qui joue pendant un chargement, jamais `layoutId` (fil principal) hors du verre natif ;
+- le banc : `pnpm --filter @tentacle-tv/web bench:page-flicker` (image par image, sombre et clair, rapide et lent ;
+  il sort en erreur s'il reste une image parasite) — à rejouer après tout changement des routes ou de la fiche.
 
 ## 2. Faire un bouton
 
