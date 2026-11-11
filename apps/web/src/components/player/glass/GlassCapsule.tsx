@@ -14,9 +14,10 @@ interface GlassCapsuleProps {
 /**
  * Une CAPSULE de verre du lecteur (lot rf2, nov. 2026) : la capsule d'encre de l'habillage
  * sans verre (`.pl-caps`, `chrome/playerChrome.css`), au même endroit, à la même taille, avec
- * les mêmes boutons dans le même ordre — seul le MATÉRIAU change. Une forme native, du verre
- * clair, qui se matérialise à son rang ; l'atténuation sous les glyphes est son cœur
- * (`playerGlassDim.css`).
+ * les mêmes boutons dans le même ordre. Depuis nov. 2026 elle en a aussi la MATIÈRE : l'encre
+ * (`material="ink"`), plus une forme de verre natif — Damien : « le rendu Liquid Glass sur les
+ * boutons du lecteur n'est pas du tout beau ; on le garde pour les menus ». Elle garde le geste
+ * d'apparition des formes du lecteur en verre, à son rang (`playerGlassDim.css`, « L'encre »).
  *
  * Avant ce lot, le lecteur en verre avait SA disposition (des ronds séparés, le transport au
  * centre, le son à gauche) : allumer le réglage déplaçait toutes les commandes. Damien :
@@ -29,7 +30,7 @@ export function GlassCapsule({ visible, order = 0, instant = false, children }: 
   return (
     <GlassSurface
       className="lgp-caps"
-      present={visible} materialize={order} adaptiveTone instant={instant}
+      present={visible} materialize={order} material="ink" instant={instant}
       style={{ "--lgp-order": order } as CSSProperties}
     >
       <div className="lgp-content">{children}</div>

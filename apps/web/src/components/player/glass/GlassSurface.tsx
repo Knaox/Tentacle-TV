@@ -43,6 +43,11 @@
  *
  * # Matière
  *
+ * `material="ink"` : la forme n'est PAS du verre — ni région native, ni mesure du ton —, c'est
+ * la pastille d'encre de l'habillage sans verre, peinte par la page au même endroit (nov. 2026 :
+ * les COMMANDES du lecteur ne sont plus en verre, seuls ses menus le restent). Elle garde le
+ * geste d'apparition des formes de verre, joué par son contenu et son `::before`.
+ *
  * Verre CLAIR par défaut (HIG « Materials » : ce qui flotte sur la vidéo) ;
  * `variant="regular"` pour les surfaces de texte — panneaux, fiches, avis.
  * Le verre clair porte, SOUS son contenu, l'atténuation que la HIG exige de lui
@@ -113,13 +118,19 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
    * fenêtre — sinon le verre court au ressort derrière un contenu déjà en place.
    */
   instant?: boolean;
+  /**
+   * `ink` : la forme est une pastille d'ENCRE peinte par la page (les commandes du lecteur), sans
+   * région native ni mesure du ton ; `glass` (défaut) : une forme de verre natif.
+   */
+  material?: "glass" | "ink";
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
   present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing,
-  materialize, motion = MATERIALIZE, origin = CENTER_ORIGIN, originCss, adaptiveTone, instant = false, surfaceRef, className = "",
+  materialize, motion = MATERIALIZE, origin = CENTER_ORIGIN, originCss, adaptiveTone, instant = false, material = "glass", surfaceRef,
+  className = "",
   style, children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
@@ -145,8 +156,9 @@ export function GlassSurface({
     else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
   }, [surfaceRef]);
 
+  const glass = material === "glass";
   useNativeGlassRegion(ref, {
-    active: mode === "native" && shown && regionsAllowed,
+    active: glass && mode === "native" && shown && regionsAllowed,
     group: native === undefined ? group : undefined,
     variant,
     transition: resizing || instant ? 0 : gesture?.enterMs ?? transition,
@@ -154,7 +166,8 @@ export function GlassSurface({
     materialize: native,
   });
 
-  const measured = adaptiveTone ?? variant === "clear";
+  // L'encre ne dépend pas du dessous : aucune mesure (ni capture de la vidéo, ni bascule de ton).
+  const measured = glass && (adaptiveTone ?? variant === "clear");
   const tone = useVideoBackdropTone(element, measured && mode === "native" && shown && regionsAllowed);
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
@@ -167,7 +180,7 @@ export function GlassSurface({
       data-lgp-exiting={isPresent ? undefined : true}
       data-lgp-materialize={native === undefined ? undefined : ""}
       data-lg-tone={measured ? tone : undefined}
-      data-lgp-variant={variant}
+      data-lgp-variant={glass ? variant : "ink"}
       style={surfaceStyle}
       {...rest}
     >

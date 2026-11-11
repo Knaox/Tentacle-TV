@@ -146,6 +146,20 @@
   scale: none;
 }
 
+/* ── L'ENCRE (nov. 2026) : les COMMANDES du lecteur ne sont plus du verre ──
+ * Damien : « un rendu Liquid Glass pas du tout beau sur les boutons ; on le laisse pour les
+ * menus ». Le rond de la sortie et les deux capsules reprennent la pastille de l'habillage sans
+ * verre (`--pl-ink`, `chrome/playerChrome.css`) : un aplat d'encre à 0,74, le même sur toute image
+ * — ni région native, ni ton mesuré, ni cœur. Noir à alpha : il se compose juste sur la surface à
+ * canal alpha. Aucune règle du verre clair ne la vise (`data-lgp-variant="ink"`). */
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="ink"] {
+  --lgp-dim: 0.74;
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="ink"]::before {
+  background: rgb(24 24 27);
+}
+
 /* Mouvement réduit, matière pleine : ni resserrement ni éclaircie. */
 :root[data-liquid-glass="native"][data-lg-motion="reduce"] .lgp-surface::before,
 :root[data-liquid-glass="native"][data-lg-material] .lgp-surface[data-lgp-variant="clear"]:is(:hover, :active)::before {

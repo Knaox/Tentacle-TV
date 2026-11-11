@@ -14,10 +14,10 @@ interface GlassOrbProps {
 }
 
 /**
- * Un ROND de verre clair du lecteur : la SORTIE, seule sur l'image en haut à gauche
- * (la pastille `.pl-btn--solo` de l'habillage sans verre) — sa propre forme native,
- * qui se matérialise à son rang (`materialize` : elle monte pendant que son verre
- * s'allume). Le bouton qu'il porte le remplit. Les commandes du bas vivent dans deux
+ * Le ROND de la SORTIE, seul sur l'image en haut à gauche : la pastille d'ENCRE
+ * `.pl-btn--solo` de l'habillage sans verre (`material="ink"`, nov. 2026 : les
+ * commandes du lecteur ne sont plus en verre), qui garde le geste d'apparition des
+ * formes du lecteur à son rang (`materialize`). Le bouton qu'il porte le remplit. Les commandes du bas vivent dans deux
  * capsules (`GlassCapsule`).
  *
  * Au niveau du module : défini dans un rendu, il changerait d'identité à chaque
@@ -27,7 +27,7 @@ export function GlassOrb({ visible, order = 0, children }: GlassOrbProps) {
   return (
     <GlassSurface
       className="lgp-orb"
-      present={visible} materialize={order} adaptiveTone
+      present={visible} materialize={order} material="ink"
       style={{ "--lgp-order": order } as CSSProperties}
     >
       <div className="lgp-content">{children}</div>
