@@ -1,3 +1,4 @@
+import { useEffect, useRef, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { duration, easeOut } from "../../theme/motion";
 
@@ -21,8 +22,6 @@ interface DetailFlightProps {
   onLanded: () => void;
 }
 
-/** Le rayon de l'affiche de la fiche (`rounded-tile`) : celui où le vol se pose. */
-const LANDED_RADIUS = 16;
 /** Au-delà de cet écart de proportions, une échelle uniforme déformerait l'image : repli en mise en page. */
 const ASPECT_TOLERANCE = 0.06;
 const REST = "translate3d(0px, 0px, 0) scale(1)";
@@ -51,8 +50,8 @@ export function sameAspect(from: FlightRect, to: FlightRect): boolean {
  * `top` / `left` / `width` / `height`, il perdait ses images à ce moment-là (mesuré : jusqu'à
  * 78 ms). L'ombre monte avec lui, en opacité sur son propre calque — une ombre ne s'anime pas.
  *
- * Proportions différentes (la bannière 16:9 vers une affiche 2:3) : le vol en mise en page,
- * seul à recadrer sans déformer.
+ * Proportions différentes (la bannière 16:9 vers une affiche 2:3) : pas de vol — le visuel fond
+ * sur place (`FlightFade`).
  */
 export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: DetailFlightProps) {
   // `decoding="sync"` : l'image (celle de la carte, déjà en mémoire) est décodée AVANT la peinture
@@ -61,22 +60,9 @@ export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: 
   const image = <img src={imageUrl} alt="" draggable={false} decoding="sync" className="h-full w-full object-cover" />;
   const transition = { duration: travelS, ease: easeOut };
 
-  if (!sameAspect(from, to)) {
-    return (
-      <motion.div
-        data-detail-flight
-        className="absolute overflow-hidden"
-        initial={{ ...from, borderRadius: radius }}
-        animate={{ ...to, borderRadius: LANDED_RADIUS }}
-        exit={LIFT}
-        transition={transition}
-        onAnimationComplete={onLanded}
-        style={{ boxShadow: "var(--elev-3)" }}
-      >
-        {image}
-      </motion.div>
-    );
-  }
+  // Proportions différentes (le cadre 16:9 d'une bannière vers une affiche 2:3) : le visuel ne VOLE
+  // pas, il fond sur place (`FlightFade`).
+  if (!sameAspect(from, to)) return <FlightFade from={from} radius={radius} image={image} onLanded={onLanded} />;
 
   return (
     <motion.div
@@ -100,6 +86,30 @@ export function DetailFlight({ from, to, radius, imageUrl, travelS, onLanded }: 
       <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: radius }}>
         {image}
       </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Le départ d'une BANNIÈRE : son cadre 16:9 n'a pas les proportions de l'affiche 2:3 où il devrait
+ * se poser. Il ne vole donc pas : il reste à sa place et fond sur la fiche, qui montre son affiche
+ * d'emblée (`onLanded` dès le montage : le calque passe aussitôt à sa sortie, `LIFT` — une opacité,
+ * sur le compositeur).
+ *
+ * Il volait en MISE EN PAGE (`top`, `left`, `width`, `height`), seule façon de recadrer sans
+ * déformer : sur le fil principal, pendant que la fiche s'y monte (67 à 98 ms de gel mesurés dans
+ * la coquille) — le trajet sautait, et un fond de bannière recadré en affiche finissait par se
+ * fondre dans une AUTRE image (11/11, Damien : « l'animation vers la fiche déconne »).
+ */
+function FlightFade({ from, radius, image, onLanded }: { from: FlightRect; radius: number; image: ReactNode; onLanded?: () => void }) {
+  const landed = useRef(onLanded);
+  landed.current = onLanded;
+  useEffect(() => {
+    landed.current?.();
+  }, []);
+  return (
+    <motion.div data-detail-flight className="absolute overflow-hidden" style={{ ...from, borderRadius: radius }} exit={LIFT}>
+      {image}
     </motion.div>
   );
 }
