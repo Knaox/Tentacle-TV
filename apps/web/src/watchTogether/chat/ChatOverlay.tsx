@@ -4,7 +4,7 @@ import { duration, easeOut } from "../../theme/motion";
 import { surfaceHasAlpha } from "../../lib/videoShadow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
+import { animate, AnimatePresence, motion, useDragControls, useReducedMotion, type MotionValue } from "framer-motion";
 import type { WtChatApi } from "@tentacle-tv/api-client";
 import { ChatPanel } from "./ChatPanel";
 import { setChatResizeLock, useWatchOverlayState } from "./chatUiStore";
@@ -12,6 +12,7 @@ import { useChatPanelSize } from "./useChatPanelSize";
 import { useChatActivity } from "./useChatActivity";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { firstUnreadId } from "./chatThread";
+import { chatEntrance } from "./chatMotion";
 import "./chat.css";
 
 /** La surface de la page a-t-elle un alpha par pixel (macOS, Linux : la fenêtre posée sur mpv) ? */
@@ -59,6 +60,8 @@ export function ChatOverlay({
   const { t } = useTranslation("watchTogether");
   const isMobile = useIsMobile();
   const dragControls = useDragControls();
+  // Mouvement réduit : le panneau, sa bulle et la feuille fondent sur place (`chatMotion.ts`).
+  const entrance = chatEntrance(useReducedMotion() === true);
   const { open, unread } = chat.state;
   const watchOverlay = useWatchOverlayState();
   const { selfId, room } = useWatchTogether();
@@ -143,9 +146,9 @@ export function ChatOverlay({
   if (isMobile && open) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 32 }}
+        initial={{ opacity: 0, y: entrance.sheetY }}
         animate={{ opacity: hidden ? 0 : 1, y: 0 }}
-        exit={{ opacity: 0, y: 32 }}
+        exit={{ opacity: 0, y: entrance.sheetY }}
         transition={{ duration: 0.2, ease: easeOut }}
         className="wtc wtc-panel !fixed inset-x-2 bottom-2 z-50 h-[60vh] max-h-[60vh]"
         style={{ pointerEvents: hidden ? "none" : "auto" }}
@@ -187,9 +190,9 @@ export function ChatOverlay({
           <motion.div
             key="panel"
             // Il sort de sa bulle (en bas à droite) : 180 ms depuis 96 %, 120 ms au retour.
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: entrance.scale }}
             animate={{ opacity: 1, scale: 1, transition: { duration: duration.menuIn, ease: easeOut } }}
-            exit={{ opacity: 0, scale: 0.96, transition: { duration: duration.menuOut, ease: easeOut } }}
+            exit={{ opacity: 0, scale: entrance.scale, transition: { duration: duration.menuOut, ease: easeOut } }}
             className={`wtc-panel ${resizing ? "select-none" : ""}`}
             style={{ width: size.w, height: size.h, transformOrigin: "bottom right" }}
           >
@@ -211,12 +214,12 @@ export function ChatOverlay({
         ) : (
           <motion.button
             key="bubble"
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: entrance.scale }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
+            exit={{ opacity: 0, scale: entrance.scale }}
             transition={{ duration: duration.menuOut, ease: easeOut }}
             // La pression répond ; rien ne grossit au survol.
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: entrance.tapScale }}
             onPointerDown={(e) => dragControls.start(e)}
             onClick={() => { if (!wasDraggedRef.current) openPanel(); }}
             aria-label={unread > 0 ? t("chatUnreadAria", { count: unread }) : t("chatOpenAria")}
