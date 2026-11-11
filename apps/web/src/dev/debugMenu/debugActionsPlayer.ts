@@ -6,16 +6,16 @@ import { debugShell, liveMpvUnavailable, readMpvProp, shellHasCommand, writeMpvP
 
 /**
  * La commande de pont qui PROVOQUE une panne de mpv (lot rf2, axe lecture —
- * `apps/desktop-cef/src/bridge/mpv_fault.h`) : `mpv_debug_fault { mode }` → `{ mode, fired }`.
+ * `apps/desktop-cef/src/bridge/mpv_fault.h`) : `mpv_debug_fail { mode }` → `{ mode, fired }`.
  * L'entrée du menu ne s'allume que si la coquille ANNONCE cette commande dans ses capacités.
  * ⚠️ Le nom et les modes traversent deux programmes : ils ne se renomment pas d'un seul côté.
  */
-export const MPV_FAULT_COMMAND = "mpv_debug_fault";
+export const MPV_FAULT_COMMAND = "mpv_debug_fail";
 
 /**
  * Les modes, dans les mots de `mpv_fault.h`. `fatal` ne tire qu'UNE fois (la lecture en cours
  * tombe) ; les autres restent posés jusqu'à `off`. `absent` (aucun canal `mpv_*`) ne se pose
- * qu'au lancement : `TENTACLE_MPV_FAULT=absent`, pas d'ici.
+ * qu'au lancement : `TENTACLE_MPV_FAIL=absent`, pas d'ici.
  */
 const MPV_FAULT_CHOICES: readonly DebugChoice[] = [
   { id: "fatal", label: "Chute en lecture" },
