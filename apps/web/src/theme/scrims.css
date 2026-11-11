@@ -60,6 +60,9 @@
    * Mes favoris). Rien en sombre : les voiles de la bannière y suffisent sur une image blanche
    * (mesuré au banc, `bench/clair-verre/pire-image.mjs`). */
   --banner-heading-focus: none;
+
+  /* Rayon du bas de la scène de la fiche, en clair (cf. `.detail-stage-box`). */
+  --detail-stage-radius: 28px;
 }
 
 :root[data-theme="light"] {
@@ -77,7 +80,10 @@
   --hero-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
   --hero-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.85) 0%, rgba(var(--scrim-page-rgb), 0.40) 45%, rgba(var(--scrim-page-rgb), 0.10) 80%, transparent 100%);
   --detail-scrim-bottom: linear-gradient(180deg, transparent 0%, rgba(var(--scrim-media-rgb), 0.12) 26%, rgba(var(--scrim-media-rgb), 0.32) 50%, rgba(var(--scrim-media-rgb), 0.54) 76%, rgba(var(--scrim-media-rgb), 0.70) 100%);
-  --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-page-rgb), 0.45) 0%, transparent 100%);
+  /* Vignette HAUTE de la fiche : d'ENCRE, comme en sombre (×0,7), plus jamais nacrée. Le voile clair
+   * datait d'une barre de navigation au texte thémé posée à même l'image ; la barre est désormais
+   * une capsule qui porte son fond, et ce voile ne faisait plus qu'un nuage laiteux en haut du décor. */
+  --detail-scrim-top: linear-gradient(180deg, rgba(var(--scrim-media-rgb), 0.38) 0%, rgba(var(--scrim-media-rgb), 0) 100%);
 
   /* Raccord bas : fondu vers la page claire, confiné au bord inférieur
    * (calque dédié dans HeroBackdrop/DetailHero, SOUS la zone de texte).
@@ -112,16 +118,40 @@
    * blanche, le sur-titre et les nombres (blanc à 80 %) tombaient à 3,5:1. Une ellipse d'encre
    * sous le bloc, STATIQUE — l'image garde ses couleurs partout ailleurs. */
   --banner-heading-focus: radial-gradient(ellipse 70% 76% at 20% 56%, rgba(var(--scrim-media-rgb), 0.4) 0%, rgba(var(--scrim-media-rgb), 0.3) 46%, rgba(var(--scrim-media-rgb), 0) 82%);
-  /* La première rangée d'une fiche commence 64 px sous le haut de ce raccord (21 % de ses 300 px) : à 0,55, le
-   * compte d'une rangée (« 5 épisodes · 948 Mio », encre tertiaire) y tombait à 3,9:1 sur une image sombre. Le
-   * raccord y vaut maintenant 0,78 — la tertiaire tient 4,5:1 dès 0,72 sur un noir pur. */
-  --detail-page-fade: linear-gradient(
-    180deg,
-    rgba(var(--scrim-page-rgb), 0) 0%,
-    rgba(var(--scrim-page-rgb), 0.78) 20%,
-    rgba(var(--scrim-page-rgb), 0.94) 46%,
-    rgb(var(--scrim-page-rgb)) 100%
-  );
+  /* PLUS de raccord fondu sous la fiche (nov. 2026). Un décor sombre ne se dissout pas dans une page
+   * claire : entre le noir et le nacre il n'y a que du gris, et la première rangée commence 64 px
+   * sous la scène — le fondu y montait de 0 à 0,78 en 60 px, un mur de brume avec le fantôme de
+   * l'image derrière les rangées. En clair, la scène s'arrête NET (`.detail-stage-box`, plus bas),
+   * comme la bannière encadrée de l'accueil : une image reste une image, la page commence après. */
+  --detail-page-fade: none;
+}
+
+/* CLAIR — une bannière ENCADRÉE (accueil, « Pour vous », vedette) n'a pas de vignette haute. Le
+ * voile nacré était l'assise d'une barre de navigation posée sur une bannière à fond perdu ; la
+ * bannière est une carte, la barre flotte au-dessus d'elle, et ce voile n'était plus qu'un nuage
+ * blanc granuleux sur le haut de l'image. Les bannières à fond perdu (bibliothèque) le gardent. */
+:root[data-theme="light"] [data-hero-frame] {
+  --hero-scrim-top: none;
+}
+
+/* CLAIR — la scène de la fiche s'arrête NET, coins du bas arrondis : aucun débord sous la ligne de
+ * flottaison (il ne servait qu'au fondu), une ombre portée diffuse pour la détacher de la page.
+ * Statique : peinte une fois. Le calque d'ouverture porte la même classe, il atterrit au pixel. */
+:root[data-theme="light"] .detail-stage-box {
+  height: max(100svh, 640px);
+  border-radius: 0 0 var(--detail-stage-radius) var(--detail-stage-radius);
+  box-shadow: 0 28px 56px -40px rgba(24, 18, 38, 0.55);
+}
+
+/* Un bord net veut de l'air : la première rangée ne se colle pas sous le décor. */
+:root[data-theme="light"] .detail-stage {
+  margin-bottom: 20px;
+}
+
+/* La lueur de raccord n'a plus rien à raccorder en clair : démontée, pas masquée (une image floutée
+ * en fusion `screen` à 0 d'opacité se compose quand même). */
+:root[data-theme="light"] .detail-stage-box ~ .hero-glow {
+  display: none;
 }
 
 /* Le grain anti-banding est calibré pour des dégradés sombres pleine image ;

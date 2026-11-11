@@ -79,8 +79,9 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
   const tone = itemImageColor(item, "Backdrop");
 
   return (
-    <section className={`relative flex w-full flex-col justify-end ${DETAIL_STAGE_MIN_H}`} aria-label={item.Name}>
-      {/* `detail-stage-box` : marqueur de la boîte image (sans style). */}
+    <section className={`detail-stage relative flex w-full flex-col justify-end ${DETAIL_STAGE_MIN_H}`} aria-label={item.Name}>
+      {/* `detail-stage` et `detail-stage-box` : marqueurs de la scène et de sa boîte image — le thème
+          clair y arrête le décor net (`theme/scrims.css`). */}
       <div ref={boxRef} className={`detail-stage-box pointer-events-none absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
         {backdropUrl && !broken && (
           // La couleur de l'image dessous ; l'image fond dessus si elle arrive après l'entrée.
@@ -115,6 +116,7 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
           item={item}
           opacity="var(--detail-ambilight-opacity)"
           className={`hero-glow pointer-events-none absolute inset-x-0 top-0 ${DETAIL_STAGE_GLOW_BOX}`}
+          crossfade={false}
         />
       ) : (
         <AmbilightLayer
@@ -122,6 +124,7 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
           layerKey={item.Id}
           opacity="var(--detail-ambilight-opacity)"
           className={`hero-glow pointer-events-none absolute inset-x-0 top-0 ${DETAIL_STAGE_GLOW_BOX}`}
+          crossfade={false}
         />
       ))}
 

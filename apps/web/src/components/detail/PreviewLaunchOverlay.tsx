@@ -148,7 +148,7 @@ export function PreviewLaunchOverlay({ launch, backdropUrl, settled, ready = tru
             transition={{ duration: BASE_S, ease: "easeOut" }}
           />
           {/* La MÊME boîte que la scène de la fiche (`DetailStage`) : à l'effacement, rien ne bouge. */}
-          <div ref={stageRef} className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
+          <div ref={stageRef} className={`detail-stage-box absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
             {cover && from && (
               <motion.div
                 data-preview-launch
