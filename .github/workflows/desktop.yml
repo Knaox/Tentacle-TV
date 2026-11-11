@@ -1,5 +1,10 @@
 # Tentacle TV — BUREAU (macOS App Store + Microsoft Store + Linux)
 #
+# ⚠️ Coquille ELECTRON, jusqu'à la 1.49.x seulement : la 1.50.0 est la première version
+# livrée en CEF (apps/desktop-cef), que ce workflow ne sait pas encore construire — la garde
+# « Coquille de la version » de `prepare` refuse donc de livrer ≥ 1.50.0. Ce qui manque pour
+# CEF : apps/desktop-cef/docs/MISE-A-JOUR.md, « Livrer la 1.50.0 ».
+#
 # TROIS CRANS, choisis au lancement (`channel`) :
 #   • build — construire et archiver les artefacts. Rien ne part nulle part.
 #   • test  — macOS : TestFlight + distribution au groupe externe.
@@ -115,6 +120,18 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
+
+      # Ce workflow construit ELECTRON. La 1.50.0 est la première version du bureau livrée en
+      # CEF (apps/desktop-cef) : ni un bump vers elle, ni un cran test/store d'une version
+      # ≥ 1.50.0 ne partent d'ici — AVANT le bump, rien n'est poussé. Règle :
+      # .github/scripts/lib/desktop-shell.mjs.
+      - name: Coquille de la version (Electron < 1.50.0 ≤ CEF)
+        env:
+          CHANNEL: ${{ inputs.channel || 'store' }}
+          WANTED: ${{ inputs.version }}
+        run: |
+          node .github/scripts/desktop-shell-guard.mjs --shell electron --channel "$CHANNEL" \
+            --current "$(jq -r .desktop versions.json)" --bump "$WANTED"
 
       - name: Bump versions.json (si une version est demandée)
         id: bump
