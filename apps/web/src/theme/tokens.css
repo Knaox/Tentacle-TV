@@ -336,11 +336,17 @@
   --gauge-track: rgba(19, 19, 21, 0.14);
 
   /* ── Texte ──────────────────────────────────────────────────── */
+  /* Sur du papier, une encre translucide s'éclaircit vite : à 56 % la tertiaire tombait à 4,0:1
+   * sur une carte, à 40 % la quaternaire à 2,5:1 (mesuré au banc, nov. 2026). Toute encre qui
+   * porte du TEXTE tient 4,5:1 jusque sur un survol (`--surface-3`), et la plus faible encore sur
+   * une sélection (`--surface-4`) — `lightContrast.test.ts`. La hiérarchie se resserre donc en
+   * clair : elle se lit à la graisse et à la taille autant qu'au gris. Seule `--text-disabled`
+   * reste sous le seuil : un contrôle inactif n'a pas à se lire. */
   --text-primary: #131315;
-  --text-secondary: rgba(19, 19, 21, 0.74);
-  --text-tertiary: rgba(19, 19, 21, 0.56);
-  --text-quaternary: rgba(19, 19, 21, 0.4);
-  --text-disabled: rgba(19, 19, 21, 0.26);
+  --text-secondary: rgba(19, 19, 21, 0.8);
+  --text-tertiary: rgba(19, 19, 21, 0.7);
+  --text-quaternary: rgba(19, 19, 21, 0.64);
+  --text-disabled: rgba(19, 19, 21, 0.32);
 
   /* ── CTA — bouton BLANC + fin liseré sombre + ombre douce, plutôt
    *    qu'un aplat violet ou un slab noir. ─────────────────────────── */
@@ -370,19 +376,22 @@
   /* Le reflet du shimmer reste un ÉCLAT CLAIR, plus marqué sur fond clair. */
   --fill-shimmer: rgba(19, 19, 21, 0.06);
 
-  /* ── Statuts — assombris pour tenir le contraste AA sur fond clair ─── */
-  --status-success: #059669;
-  --status-warning: #B45309;
-  --status-error: #DC2626;
-  --status-info: #2563EB;
+  /* ── Statuts — assombris pour tenir le contraste AA sur fond clair. Un état sert de TEXTE
+   *    (« Connecté », « Échec ») autant que d'aplat : la couleur nue tient 4,5:1 sur la page, un
+   *    panneau et une carte, et son encre `-fg` sur son fond doux posé sur les mêmes
+   *    (`lightContrast.test.ts` ; le vert d'avant tombait à 3,4:1, l'ambre à 3,8:1 sur son fond). */
+  --status-success: #047854;
+  --status-warning: #A94E08;
+  --status-error: #CA2323;
+  --status-info: #245FE2;
 
-  --status-success-bg: rgba(5, 150, 105, 0.12);
-  --status-success-fg: #047857;
-  --status-error-bg: rgba(220, 38, 38, 0.12);
-  --status-error-fg: #B91C1C;
-  --status-warning-bg: rgba(180, 83, 9, 0.12);
-  --status-warning-fg: #B45309;
-  --status-info-bg: rgba(37, 99, 235, 0.12);
+  --status-success-bg: rgba(4, 120, 84, 0.12);
+  --status-success-fg: #046C4E;
+  --status-error-bg: rgba(202, 35, 35, 0.12);
+  --status-error-fg: #B51B1B;
+  --status-warning-bg: rgba(169, 78, 8, 0.12);
+  --status-warning-fg: #994708;
+  --status-info-bg: rgba(36, 95, 226, 0.12);
   --status-info-fg: #1D4ED8;
 
   /* ── Verre nacré — plus opaque qu'en sombre : sur #F4F4F7 un voile trop
