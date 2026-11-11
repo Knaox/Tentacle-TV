@@ -26,6 +26,8 @@ export interface SurfaceToneMaterial {
   glyph: Rgba;
   glyphSecondary: Rgba;
   danger: Rgba;
+  /** La teinte franche en TEXTE (`--lg-surface-accent-on-*`) : une raison, un état actif. */
+  accent: Rgba;
   /** La pastille d'une rangée survolée ou active (`--lg-row-highlight-on-*`) :
    * NEUTRE et translucide, au ton du verre — le texte y garde sa couleur. */
   rowHighlight: Rgba;
@@ -61,6 +63,7 @@ export const SURFACE_MATERIAL: SurfaceMaterial = {
     // Un corail plus clair que celui des contrôles (#FFB4AB) : sur le pire
     // dessous (blanc), le corail d'un contrôle tombait à 4,26:1.
     danger: rgba(255, 196, 188),
+    accent: rgba(247, 210, 253),
     // Le blanc à 0,14 : plus marqué que la page courante (0,1), et le texte
     // principal y tient ≥ 4,5:1 même sur un dessous blanc pur.
     rowHighlight: rgba(255, 255, 255, 0.14),
@@ -72,6 +75,7 @@ export const SURFACE_MATERIAL: SurfaceMaterial = {
     glyph: rgba(12, 12, 18, 0.88),
     glyphSecondary: rgba(12, 12, 18, 0.72),
     danger: rgba(110, 11, 16),
+    accent: rgba(100, 19, 106),
     // Le noir à 0,09 : plus marqué que la page courante (0,07).
     rowHighlight: rgba(0, 0, 0, 0.09),
   },
@@ -146,7 +150,7 @@ export function worstSurfaceContrast(
 /** Tous les textes du ton tiennent l'AA, sur tout dessous. */
 export function surfaceToneIsLegible(tone: BackdropTone, material: SurfaceMaterial = SURFACE_MATERIAL): boolean {
   const m = material[tone];
-  return [m.glyph, m.glyphSecondary, m.danger].every(
+  return [m.glyph, m.glyphSecondary, m.danger, m.accent].every(
     (text) => worstSurfaceContrast(text, tone, material) >= WCAG_AA_TEXT,
   );
 }

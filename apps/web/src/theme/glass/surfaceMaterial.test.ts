@@ -8,7 +8,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { BLACK, WCAG_AA_TEXT, WHITE, compositeOver, contrastRatio, parseColor, type Rgba } from "./contrast";
+import { TONE_LIGHT_ABOVE } from "./backdropTone";
+import { BLACK, WCAG_AA_TEXT, WHITE, compositeOver, contrastRatio, parseColor, relativeLuminance, type Rgba } from "./contrast";
 import {
   SURFACE_MATERIAL,
   backdropGrid,
@@ -49,11 +50,12 @@ const PRIMARIES: Rgba[] = [
 describe("le contraste du texte sur une surface, quel que soit le dessous", () => {
   for (const tone of ["dark", "light"] as const) {
     const m = SURFACE_MATERIAL[tone];
-    it(`ton ${tone} : principal, secondaire et danger ≥ 4,5:1 sur 216 dessous`, () => {
+    it(`ton ${tone} : principal, secondaire, danger et accent ≥ 4,5:1 sur 216 dessous`, () => {
       for (const [label, text] of [
         ["principal", m.glyph],
         ["secondaire", m.glyphSecondary],
         ["danger", m.danger],
+        ["accent", m.accent],
       ] as const) {
         expect(worstSurfaceContrast(text, tone), `${tone} ${label}`).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
       }
@@ -81,6 +83,12 @@ describe("le contraste du texte sur une surface, quel que soit le dessous", () =
     it(`ton ${tone} : sur la pastille NEUTRE d'une rangée, le texte principal tient ≥ 4,5:1 sur 216 dessous`, () => {
       // Le secondaire y monte au principal (`lgMenu.css`) : seul le principal compte.
       expect(worstRowHighlightContrast(SURFACE_MATERIAL[tone].glyph, tone)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    });
+
+    it(`ton ${tone} : sur la pastille d'une rangée, la teinte franche en texte tient ≥ 4,5:1`, () => {
+      // Sur les dessous que ce ton TIENT : le sombre cède au clair au-dessus de `TONE_LIGHT_ABOVE`.
+      const held = backdropGrid().filter((c) => tone === "light" || relativeLuminance(c) <= TONE_LIGHT_ABOVE);
+      expect(worstRowHighlightContrast(SURFACE_MATERIAL[tone].accent, tone, SURFACE_MATERIAL, held)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
     });
 
     it(`ton ${tone} : la pastille se voit sur le verre, et plus que la page courante`, () => {
@@ -139,6 +147,7 @@ describe("parité avec surfaceTokens.css", () => {
       expect(color(`--lg-surface-glyph-on-${tone}`)).toEqual(m.glyph);
       expect(color(`--lg-surface-glyph-on-${tone}-secondary`)).toEqual(m.glyphSecondary);
       expect(color(`--lg-surface-danger-on-${tone}`)).toEqual(m.danger);
+      expect(color(`--lg-surface-accent-on-${tone}`)).toEqual(m.accent);
       expect(color(`--lg-row-highlight-on-${tone}`)).toEqual(m.rowHighlight);
     }
   });

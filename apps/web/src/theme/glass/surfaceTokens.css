@@ -61,11 +61,14 @@
   --lg-surface-glyph-on-dark: rgba(255, 255, 255, 0.96);
   --lg-surface-glyph-on-dark-secondary: rgba(255, 255, 255, 0.8);
   --lg-surface-danger-on-dark: #FFC4BC;
+  /* La teinte franche EN TEXTE (`.text-accent`) : celle du thème tombait à 3,2:1 sur le pire dessous. */
+  --lg-surface-accent-on-dark: #F7D2FD;
   --lg-surface-fill-on-light: rgba(246, 246, 248, 0.76);
   --lg-surface-sheen-on-light: rgba(255, 255, 255, 0.3);
   --lg-surface-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lg-surface-glyph-on-light-secondary: rgba(12, 12, 18, 0.72);
   --lg-surface-danger-on-light: #6E0B10;
+  --lg-surface-accent-on-light: #64136A;
   /* Le reflet de BORD discret : la lumière du bord de la lentille, en sourdine. */
   --lg-surface-edge-gain-on-dark: 0.5;
   --lg-surface-edge-white-on-dark: 0.06;
