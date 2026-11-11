@@ -25,9 +25,9 @@ export function Credits() {
     { name: "TanStack Query", url: "https://tanstack.com/query", desc: t("about:techTanStackQuery") },
     { name: "React Router", url: "https://reactrouter.com", desc: t("about:techReactRouter") },
     { name: "Fastify", url: "https://fastify.dev", desc: t("about:techFastify") },
-    // Une seule coquille de bureau depuis la migration de Linux : les trois
-    // systèmes tournent sous Electron, avec la même libmpv pilotée par koffi.
-    { name: "Electron", url: "https://electronjs.org", desc: t("about:techElectron") },
+    // La coquille du bureau depuis la 1.50.0, sur les trois systèmes : CEF (Chromium
+    // Embedded Framework) + SDL3, avec libmpv liée directement (`apps/desktop-cef`).
+    { name: "Chromium Embedded Framework", url: "https://github.com/chromiumembedded/cef", desc: t("about:techCef") },
     { name: "Expo", url: "https://expo.dev", desc: t("about:techExpo") },
     { name: "React Native", url: "https://reactnative.dev", desc: t("about:techReactNative") },
     { name: "ExoPlayer / Media3", url: "https://developer.android.com/media/media3/exoplayer", desc: t("about:techExoPlayer") },

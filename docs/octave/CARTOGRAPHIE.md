@@ -1,5 +1,10 @@
 # Octave et Sillon — la cartographie
 
+> **Depuis la 1.50.0**, le bureau est la coquille CEF : le moteur mpv d'Octave est dans
+> `apps/desktop-cef/src/music/`, les requêtes déléguées et relais dans `src/net/`. Les
+> chemins `apps/desktop-electron/…` et le « principal Electron » cités plus bas désignent
+> l'ancienne coquille (retirée).
+
 Ce document dit comment fonctionne, de bout en bout, la musique de Tentacle : **Octave** (le mode musique
 du web et du bureau, dans ce dépôt) et **Sillon** (l'extension qui trouve et fait écouter la musique qui
 n'est pas encore dans la bibliothèque Jellyfin, dépôt `Tentacle-Plugin-Sillon`). Il s'adresse à trois

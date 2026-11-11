@@ -1,69 +1,79 @@
 import type { ThirdPartyComponent } from "../licenseTypes";
 import { DESKTOP } from "./platforms";
 
-// Le bureau : Electron, et la chaîne mpv + FFmpeg de chaque système.
-// - macOS (Mac App Store) : construite par build-mpv-lgpl-macos.sh, LGPL,
-//   bibliothèques dynamiques dans Contents/Frameworks ;
-// - Windows (Microsoft Store) : libmpv-2.dll de mpv-winbuild (variante
-//   LGPL, FFmpeg en --enable-version3 lié dedans), donc LGPL v3 ;
-// - Linux : construite par build-mpv-linux.sh, mpv en GPL (sa sortie X11
-//   n'existe pas autrement), FFmpeg LGPL lié dedans.
-// La variable TENTACLE_MPV_LIB charge une libmpv modifiée (LGPL : relier).
+// Le bureau depuis la 1.50.0 : la coquille CEF (`apps/desktop-cef` — Chromium Embedded
+// Framework, SDL3, libmpv), et la chaîne mpv + FFmpeg de chaque système.
+// - macOS : construite par scripts/deps/paquet-libs.sh et paquet-deps.sh, LGPL, bibliothèques
+//   dynamiques dans Contents/Frameworks (remplaçables : la LGPL permet de relier) ; licences
+//   copiées dans Contents/Resources/licenses (cmake/MacBundle.cmake) ;
+// - Windows : la libmpv-2.dll de mpv-winbuild (variante LGPL, FFmpeg en --enable-version3 lié
+//   dedans), donc LGPL v3, la même que le bureau d'avant ;
+// - Linux : notre libmpv (fork + correctifs, -Dgpl=false) ; FFmpeg, libplacebo et libass sont
+//   ceux de la distribution, pas encore embarqués (aucun paquet Linux de cette coquille).
 
-const MAC = "apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh";
-const LINUX = "apps/desktop-electron/scripts/build-mpv-linux.sh";
+const CEF_DEPS = "apps/desktop-cef/scripts/deps";
+const MAC = `${CEF_DEPS}/paquet-deps.sh, paquet-libs.sh`;
+const LINUX = "apps/desktop-cef/scripts/dev/mpv-linux.mjs";
+const MPV_FORK = "https://github.com/andrewrabert/mpv (branch jellium-desktop, ab0467ff24)";
 const WINBUILD = "https://github.com/zhongfly/mpv-winbuild (LGPL variant, mpv-winbuild-cmake)";
+const MAC_WIN: ThirdPartyComponent["platforms"] = ["macos", "windows"];
 
 export const DESKTOP_MEDIA: readonly ThirdPartyComponent[] = [
   {
-    name: "Electron", version: "43.2.0", license: "MIT", texts: ["MIT"], notice: "Copyright © Electron contributors; Copyright © GitHub Inc.",
-    source: "https://github.com/electron/electron", platforms: DESKTOP,
-    note: "Includes Chromium, whose third-party notices ship as LICENSES.chromium.html.",
+    name: "Chromium Embedded Framework (CEF)", version: "156.0.15", license: "BSD-3-Clause", texts: ["BSD-3-Clause"],
+    notice: "Copyright © Marshall A. Greenblatt. Portions copyright © The Chromium Authors.",
+    source: "https://github.com/chromiumembedded/cef — binaries: https://cef-builds.spotifycdn.com", platforms: DESKTOP,
   },
-  { name: "koffi", version: "3.1.2", license: "MIT", texts: ["MIT"], notice: "Copyright © Niels Martignène.", source: "https://koffi.dev", platforms: DESKTOP },
-  { name: "mpv (libmpv)", version: "0.40.0", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the mpv developers.", source: `https://github.com/mpv-player/mpv — recipe: ${MAC}`, platforms: ["macos"], note: "Built with -Dgpl=false; shipped as a separate dynamic library." },
-  { name: "FFmpeg", version: "7.1.1", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the FFmpeg developers.", source: `https://ffmpeg.org — recipe: ${MAC}`, platforms: ["macos"], note: "Configured with --disable-gpl --disable-nonfree; dynamic libraries." },
+  {
+    name: "Chromium", version: "156.0.8078.80", license: "BSD-3-Clause", texts: ["BSD-3-Clause"],
+    notice: "Copyright © The Chromium Authors.", source: "https://chromium.googlesource.com/chromium/src", platforms: DESKTOP,
+    note: "Includes third-party code under its own licenses; the full notices ship as CREDITS-Chromium.html.",
+  },
+  { name: "SDL3", version: "3.4.16", license: "Zlib", texts: ["Zlib"], notice: "Copyright © Sam Lantinga.", source: "https://github.com/libsdl-org/SDL", platforms: DESKTOP },
+  { name: "JSON for Modern C++ (nlohmann/json)", version: "3.12.0", license: "MIT", texts: ["MIT"], notice: "Copyright © Niels Lohmann.", source: "https://github.com/nlohmann/json", platforms: DESKTOP },
+  { name: "libsodium", version: "1.0.22", license: "ISC", texts: ["ISC"], notice: "Copyright © Frank Denis.", source: "https://github.com/jedisct1/libsodium", platforms: DESKTOP, note: "Statically linked into the updater." },
+  { name: "SQLite", version: "3.46.1", license: "blessing", texts: [], source: "https://sqlite.org", platforms: ["windows"], note: "Public domain. macOS and Linux use the system's SQLite." },
+  {
+    name: "mpv (libmpv)", version: "ab0467ff24 + patches", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the mpv developers.",
+    source: `${MPV_FORK}; patches: ${CEF_DEPS}/mpv-patches — recipe: ${MAC}`, platforms: ["macos"],
+    note: "Built with -Dgpl=false; shipped as a separate, replaceable dynamic library.",
+  },
+  { name: "FFmpeg", version: "9.0.2", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the FFmpeg developers.", source: `https://ffmpeg.org — recipe: ${MAC}`, platforms: ["macos"], note: "Configured with --disable-gpl --disable-nonfree; dynamic libraries." },
+  {
+    name: "mpv (libmpv, Linux)", version: "ab0467ff24 + patches", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the mpv developers.",
+    source: `${MPV_FORK}; patches: ${CEF_DEPS}/mpv-patches, mpv-patches-linux — recipe: ${LINUX}`, platforms: ["linux"],
+    note: "Built with -Dgpl=false. FFmpeg, libplacebo and libass come from the distribution.",
+  },
   { name: "mpv (libmpv-2.dll)", version: "0.41.0-dev", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the mpv developers.", source: `https://github.com/mpv-player/mpv — ${WINBUILD}`, platforms: ["windows"], note: "Built with -Dgpl=false." },
   { name: "FFmpeg (in libmpv-2.dll)", version: "8", license: "LGPL-3.0-or-later", texts: ["LGPL-3.0", "GPL-3.0"], notice: "Copyright © the FFmpeg developers.", source: `https://ffmpeg.org — ${WINBUILD}`, platforms: ["windows"], note: "Configured with --enable-version3, without --enable-gpl." },
-  { name: "mpv (libmpv.so)", version: "0.41.0", license: "GPL-2.0-or-later", texts: ["GPL-3.0", "GPL-2.0"], notice: "Copyright © the mpv developers.", source: `https://github.com/mpv-player/mpv — recipe: ${LINUX}`, platforms: ["linux"], note: "Built with -Dgpl=true, required by its X11 video output." },
-  { name: "FFmpeg (in libmpv.so)", version: "7.1.1", license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], notice: "Copyright © the FFmpeg developers.", source: `https://ffmpeg.org — recipe: ${LINUX}`, platforms: ["linux"] },
-  { name: "libplacebo", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://code.videolan.org/videolan/libplacebo", platforms: DESKTOP },
-  { name: "FriBidi", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://github.com/fribidi/fribidi", platforms: DESKTOP },
-  { name: "GLib, gettext (libintl)", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://gitlab.gnome.org/GNOME/glib — https://www.gnu.org/software/gettext/", platforms: ["macos"] },
-  { name: "Graphite2", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://github.com/silnrsi/graphite", platforms: ["macos", "linux"], note: "Multi-licensed; used under the LGPL." },
+  { name: "libplacebo", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://code.videolan.org/videolan/libplacebo", platforms: MAC_WIN, note: "macOS: 7.360.1, with glslang linked in." },
+  { name: "FriBidi", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://github.com/fribidi/fribidi", platforms: MAC_WIN },
+  { name: "uchardet", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://www.freedesktop.org/wiki/Software/uchardet/", platforms: MAC_WIN, note: "Triple-licensed; used under the LGPL." },
   { name: "libbluray", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://www.videolan.org/developers/libbluray.html", platforms: ["windows"] },
-  { name: "libsoxr", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://sourceforge.net/projects/soxr/", platforms: ["linux"] },
   { name: "LAME", version: null, license: "LGPL-2.0-or-later", texts: ["LGPL-2.1"], source: "https://lame.sourceforge.io", platforms: ["windows"] },
-  { name: "uchardet", version: null, license: "LGPL-2.1-or-later", texts: ["LGPL-2.1"], source: "https://www.freedesktop.org/wiki/Software/uchardet/", platforms: ["windows"], note: "Triple-licensed; used under the LGPL." },
-  { name: "libass", version: null, license: "ISC", texts: ["ISC"], notice: "Copyright © the libass contributors.", source: "https://github.com/libass/libass", platforms: DESKTOP },
+  { name: "libass", version: null, license: "ISC", texts: ["ISC"], notice: "Copyright © the libass contributors.", source: "https://github.com/libass/libass", platforms: MAC_WIN },
   {
     name: "FreeType", version: null, license: "FTL", texts: ["FTL"],
     notice: "Portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved.",
-    source: "https://freetype.org", platforms: DESKTOP,
+    source: "https://freetype.org", platforms: MAC_WIN,
   },
-  { name: "HarfBuzz", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © the HarfBuzz authors.", source: "https://github.com/harfbuzz/harfbuzz", platforms: DESKTOP },
-  { name: "Little CMS 2", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © Marti Maria Saguer.", source: "https://github.com/mm2/Little-CMS", platforms: DESKTOP },
-  { name: "dav1d", version: null, license: "BSD-2-Clause", texts: ["BSD-2-Clause"], notice: "Copyright © VideoLAN and dav1d authors.", source: "https://code.videolan.org/videolan/dav1d", platforms: DESKTOP },
-  { name: "libunibreak", version: null, license: "Zlib", texts: ["Zlib"], notice: "Copyright © Wu Yongwei and contributors.", source: "https://github.com/adah1972/libunibreak", platforms: DESKTOP },
-  { name: "libpng", version: "1.6", license: "libpng-2.0", texts: ["libpng-2.0"], notice: "Copyright © the PNG Reference Library Authors.", source: "http://www.libpng.org/pub/png/libpng.html", platforms: ["macos", "linux"] },
+  { name: "HarfBuzz", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © the HarfBuzz authors.", source: "https://github.com/harfbuzz/harfbuzz", platforms: MAC_WIN },
+  { name: "Little CMS 2", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © Marti Maria Saguer.", source: "https://github.com/mm2/Little-CMS", platforms: MAC_WIN },
+  { name: "dav1d", version: null, license: "BSD-2-Clause", texts: ["BSD-2-Clause"], notice: "Copyright © VideoLAN and dav1d authors.", source: "https://code.videolan.org/videolan/dav1d", platforms: MAC_WIN },
+  { name: "libunibreak", version: null, license: "Zlib", texts: ["Zlib"], notice: "Copyright © Wu Yongwei and contributors.", source: "https://github.com/adah1972/libunibreak", platforms: ["windows"] },
   {
-    name: "libjpeg-turbo", version: null, license: "IJG AND BSD-3-Clause AND Zlib", texts: ["IJG", "BSD-3-Clause", "Zlib"],
-    notice: "This software is based in part on the work of the Independent JPEG Group.", source: "https://libjpeg-turbo.org", platforms: ["macos"],
+    name: "glslang", version: "vulkan-sdk-1.4.357.0", license: "BSD-3-Clause AND BSD-2-Clause AND MIT AND Apache-2.0", texts: ["BSD-3-Clause", "BSD-2-Clause", "MIT", "Apache-2.0"],
+    notice: "Copyright © The Khronos Group Inc., 3Dlabs Inc. Ltd., Google Inc. and others.", source: "https://github.com/KhronosGroup/glslang", platforms: ["macos"],
+    note: "Statically linked into libplacebo.",
   },
-  { name: "PCRE2", version: null, license: "BSD-3-Clause", texts: ["BSD-3-Clause"], notice: "Copyright © University of Cambridge.", source: "https://github.com/PCRE2Project/pcre2", platforms: ["macos"] },
-  { name: "libX11, libxcb, libXau, libXdmcp", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © The X.Org Foundation and contributors.", source: "https://gitlab.freedesktop.org/xorg", platforms: ["macos"] },
-  { name: "Vulkan loader, shaderc, glslang, SPIRV-Cross", version: null, license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Khronos Group Inc., LunarG Inc. and Google LLC.", source: "https://github.com/KhronosGroup", platforms: ["macos", "windows"] },
+  { name: "Vulkan loader", version: "1.4.357", license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Khronos Group Inc., Valve Corporation and LunarG Inc.", source: "https://github.com/KhronosGroup/Vulkan-Loader", platforms: ["macos"] },
   { name: "MoltenVK", version: null, license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Brenwill Workshop Ltd. and The Khronos Group Inc.", source: "https://github.com/KhronosGroup/MoltenVK", platforms: ["macos"] },
-  { name: "OpenSSL", version: "3", license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The OpenSSL Project Authors.", source: "https://www.openssl.org", platforms: ["windows"] },
-  { name: "ANGLE", version: null, license: "BSD-3-Clause", texts: ["BSD-3-Clause"], notice: "Copyright © The ANGLE Project Authors.", source: "https://chromium.googlesource.com/angle/angle", platforms: ["windows"] },
+  { name: "Vulkan loader, shaderc, glslang, SPIRV-Cross (in libmpv-2.dll)", version: null, license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Khronos Group Inc., LunarG Inc. and Google LLC.", source: "https://github.com/KhronosGroup", platforms: ["windows"] },
+  { name: "OpenSSL", version: "3", license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The OpenSSL Project Authors.", source: "https://www.openssl.org", platforms: ["windows"], note: "Linked into libmpv-2.dll." },
+  { name: "ANGLE (in libmpv-2.dll)", version: null, license: "BSD-3-Clause", texts: ["BSD-3-Clause"], notice: "Copyright © The ANGLE Project Authors.", source: "https://chromium.googlesource.com/angle/angle", platforms: ["windows"] },
   {
     name: "Other libraries linked into libmpv-2.dll", version: null, license: "BSD-2-Clause AND BSD-3-Clause AND BSD-3-Clause-Clear AND MIT AND ISC AND Zlib AND WTFPL",
     texts: ["BSD-2-Clause", "BSD-3-Clause", "BSD-3-Clause-Clear", "MIT", "ISC", "Zlib", "WTFPL"], source: WINBUILD, platforms: ["windows"],
     note: "libarchive, libxml2, LuaJIT, mujs, fontconfig, SDL2, zimg, libvpx, libaom, SVT-AV1, libjxl, libwebp, Opus, Vorbis, Speex, libopenmpt, libmodplug, libmysofa, uavs3d, libaribcaption, AMF, libvpl, nv-codec-headers.",
-  },
-  {
-    name: "Other libraries shipped with libmpv.so", version: null, license: "MIT AND BSD-3-Clause AND bzip2-1.0.6 AND WTFPL",
-    texts: ["MIT", "BSD-3-Clause", "bzip2-1.0.6", "WTFPL"], source: LINUX, platforms: ["linux"],
-    note: "zimg, bzip2, Brotli, Opus, Vorbis, Ogg, libva, libvdpau, libunwind.",
   },
 ];

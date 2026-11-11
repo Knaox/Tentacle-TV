@@ -1,5 +1,11 @@
 # Liquid Glass — le verre de macOS 26 dans le bureau (1.40.0)
 
+> **Depuis la 1.50.0**, la coquille est CEF : le verre natif (`NSGlassEffectView`),
+> l'échantillonneur et les régions vivent dans `apps/desktop-cef/src/glass/` et
+> `src/platform/macos/glass_*` ; les chemins `apps/desktop-electron/…` cités plus bas
+> désignent l'ancienne coquille, retirée. Le côté page (`apps/web`, jetons, lentille,
+> primitive) n'a pas changé.
+
 Carnet du lot « Liquid Glass macOS » (nuit du 21 au 22/10/2026), écrit d'après
 ce qui a été FUSIONNÉ dans `dev`. Chaque section a été rédigée par la session
 qui a fait le morceau ; il se tient désormais comme le reste du dépôt.
@@ -1165,3 +1171,20 @@ grande surface en densité 2 (une bande nette qui n'existe pas dans l'app).
 `pnpm dev:electron` (drapeaux CDP passés SANS `--` : Chromium ignore tout ce qui
 suit un `--`), connexion, puis exige le pont `supported`, le natif `enabled`,
 html `native` et l'interrupteur allumé.
+
+## 12. Retouches du 11/11/2026 (retours de Damien sur la coquille CEF)
+
+- **Les COMMANDES du lecteur ne sont plus en verre** (« un rendu pas du tout beau ») : le rond de la sortie et les
+  deux capsules (transport ; son, réglages, PiP, plein écran) reprennent la pastille d'encre de l'habillage sans
+  verre — `GlassSurface material="ink"` : aucune région native, aucune mesure du ton, un aplat à 0,74
+  (`playerGlassDim.css`, « L'encre »). Même disposition, même geste d'apparition. Les MENUS (pistes, sous-titres,
+  qualité, vitesse, épisodes) restent du verre natif. Le § 7 décrit l'état d'avant pour ces trois formes.
+- **Le bord du verre de la page : UN filet** (`theme/glass/paneTokens.css`, « Le bord »). Trois traits s'empilaient —
+  bordure, anneau en dégradé (`::after` masqué, `--lg-pane-rim`) et reflet intérieur d'un pixel : deux pixels de clair
+  en haut, un contour blanc sur un dessous moyen ou clair ; et l'anneau, posé DANS la boîte avec le rayon du bord
+  extérieur, n'était pas concentrique (deux arcs à chaque coin d'un menu, de la palette de recherche). Il reste un
+  reflet `inset` d'un demi-pixel, vif en haut, à peine en bas ; l'anneau et son jeton sont retirés. La lumière de bord
+  de la lentille est adoucie de même (`--lg-edge-gain` 1,4 → 0,7, `--lg-edge-white` 0,2 → 0,08).
+- **La pastille de l'onglet courant et la sélection du rail glissent sur le compositeur** (`SlidingMarker`), avec ou
+  sans verre : la métamorphose de framer (`layoutId`) mesure dans la PAGE, et partait en diagonale quand on changeait
+  d'onglet après avoir défilé.

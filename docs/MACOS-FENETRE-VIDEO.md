@@ -1,5 +1,11 @@
 # macOS — la fenêtre vidéo, ce qu'elle coûte, et pourquoi deux montages
 
+> **Carnet de la coquille Electron** (bureau jusqu'à la 1.4x, retirée à la 1.50.0). Les
+> mesures restent vraies pour ce qu'elles mesuraient ; les deux montages et les fichiers
+> `apps/desktop-electron/…` cités ici n'existent plus. La coquille CEF (Apple Silicon)
+> range une `CAMetalLayer` de mpv SOUS la page, dans la même fenêtre :
+> `apps/desktop-cef/docs/INTERFACES.md`, « Surface vidéo ».
+
 Relevé mené le 10.09.2026, après le signalement d'un utilisateur sur Mac **Intel** :
 la machine chauffe dès la première image d'un épisode 1080p en lecture directe, depuis
 la migration Tauri → Electron. Sur le web (Chromium, `<video>`), la même machine ne

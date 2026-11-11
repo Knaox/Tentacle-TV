@@ -161,7 +161,7 @@ export function MaScene({ active, reduced }: SceneProps) {
 ## Crochets de développement
 
 Tous sous `updateDebugEnabled()` (`import.meta.env.DEV || __PLAYER_DEBUG__`), qui couvre Vite
-ET `pnpm dev:electron` (build web avec `TENTACLE_DEBUG=1`) ; rien n'en reste dans un build livré.
+ET `pnpm dev:cef` (build web avec `TENTACLE_DEBUG=1`) ; rien n'en reste dans un build livré.
 
 | Geste | Effet |
 |-------|-------|

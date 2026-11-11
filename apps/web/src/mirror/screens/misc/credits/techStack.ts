@@ -10,7 +10,7 @@ export const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "TanStack Query", descKey: "techTanStackQuery" },
   { name: "i18next", descKey: "techReact" },
   { name: "Fastify", descKey: "techFastify" },
-  { name: "Electron", descKey: "techElectron" },
+  { name: "Chromium Embedded Framework", descKey: "techCef" },
   { name: "mpv / libmpv", descKey: "techMpvMobile" },
   { name: "MPVKit", descKey: "techMpvkit" },
   { name: "FFmpeg", descKey: "techFFmpeg" },

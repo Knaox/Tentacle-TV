@@ -17,12 +17,14 @@ vi.mock("../../lib/openExternal", () => ({ externalLinkHandler: () => undefined 
 const { LicensesSection } = await import("./LicensesSection");
 
 describe("LicensesSection", () => {
-  it("macOS : la chaîne mpv LGPL du Mac App Store, la source au tag du bureau", () => {
+  it("macOS : la chaîne mpv LGPL et la coquille CEF, la source au tag du bureau", () => {
     const html = renderToStaticMarkup(<LicensesSection platform="macos" version="1.27.0" />);
     expect(html).toContain("about:tentacleLicense1.27.0");
     expect(html).toContain("https://github.com/Knaox/Tentacle-TV/tree/desktop-v1.27.0");
     expect(html).toContain("mpv (libmpv)");
-    expect(html).toContain("Electron");
+    // Le bureau n'embarque plus Electron : la coquille est CEF (1.50.0).
+    expect(html).toContain("Chromium Embedded Framework (CEF)");
+    expect(html).not.toContain("Electron");
     expect(html).toContain("GNU Affero General Public License v3.0");
     expect(html).not.toContain("Chromaprint");
   });

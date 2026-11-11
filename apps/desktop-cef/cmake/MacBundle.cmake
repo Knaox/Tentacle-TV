@@ -108,9 +108,13 @@ function(tentacle_add_mac_app)
       COMMAND find "${fw_dir}" -maxdepth 1 -name "*.dylib" -exec
               "${deps}/strip-symbols.sh" "${CMAKE_BINARY_DIR}/symbols" {} +
       COMMAND "${deps}/strip-symbols.sh" "${CMAKE_BINARY_DIR}/symbols" "$<TARGET_FILE:tentacle_app>"
-      # Licences : celles de la chaîne de lecture (paquet-deps.sh) et les crédits de Chromium.
+      # Licences : celles de la chaîne de lecture (paquet-deps.sh : libsodium et nlohmann/json
+      # compris), les crédits de Chromium, et celles de Tentacle TV (AGPL §5, permissions).
       COMMAND mkdir -p "${app_dir}/Contents/Resources/licenses"
       COMMAND cp -R "${TENTACLE_MPV_LIBDIR}/../licenses/." "${app_dir}/Contents/Resources/licenses/"
+      COMMAND cp "${CMAKE_SOURCE_DIR}/../../LICENSE" "${app_dir}/Contents/Resources/licenses/LICENSE"
+      COMMAND cp "${CMAKE_SOURCE_DIR}/../../LICENSE-EXCEPTIONS" "${app_dir}/Contents/Resources/licenses/LICENSE-EXCEPTIONS"
+      COMMAND cp "${CMAKE_SOURCE_DIR}/THIRD-PARTY-LICENSES.md" "${app_dir}/Contents/Resources/licenses/THIRD-PARTY-LICENSES.md"
       COMMAND cp "${CEF_ROOT}/CREDITS.html" "${app_dir}/Contents/Resources/licenses/CREDITS-Chromium.html"
       COMMAND cp "${CEF_ROOT}/LICENSE.txt" "${app_dir}/Contents/Resources/licenses/CEF.txt"
       COMMAND find "${fw_dir}" -maxdepth 1 -name "*.dylib" -exec codesign --force --sign - --timestamp=none {} +)

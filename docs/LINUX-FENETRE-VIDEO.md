@@ -1,5 +1,11 @@
 # Linux — la fenêtre vidéo, et ce qu'elle décide
 
+> **Carnet de la coquille Electron** (bureau jusqu'à la 1.4x, retirée à la 1.50.0). Les
+> faits sur Wayland, X.Org, le HDR et mpv restent mesurés ; la colle KWin, XWayland-auto
+> et les fichiers `apps/desktop-electron/…` cités ici n'existent plus. La coquille CEF
+> compose la vidéo dans SA fenêtre (sous-surface Wayland, API de rendu sous X11) :
+> `apps/desktop-cef/docs/INTERFACES.md`, « Surface vidéo » et « Linux ».
+
 Relevé de faisabilité mené AVANT d'écrire la coquille Electron pour Linux, le 25.08.2026.
 Il tranche trois questions dont dépend toute l'architecture, et dont la documentation ne
 donne pas la réponse. Chacune a été mesurée, pas supposée.

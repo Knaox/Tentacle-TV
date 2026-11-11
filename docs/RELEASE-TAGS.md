@@ -230,7 +230,7 @@ Trois choses peuvent annuler l'automatisation sans la moindre erreur visible :
 | Apple (commun) | `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_CONTENT` | ✅ en place |
 | Groupes TestFlight | `ASC_BETA_GROUP_ID` / `_MACOS_ID` / `_TVOS_ID` | ⚠️ à poser |
 
-> macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails
-> build : `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`. Voir aussi
+> macOS embarque libmpv/FFmpeg recompilés **LGPL**. Détails build (coquille CEF,
+> 1.50.0) : `apps/desktop-cef/scripts/deps/paquet-deps.sh` et `docs/PAQUET.md` du même dossier. Voir aussi
 > `docs/RELEASE.md`. Conformité chiffrement déclarée exemptée
 > (`ITSAppUsesNonExemptEncryption=false`).

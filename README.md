@@ -119,9 +119,9 @@ the overview notices the restarted server on its own.
 | Platform | Status | Get it | Technology |
 |----------|--------|--------|------------|
 | **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Served by your Tentacle server | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + native mpv player |
-| **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + native mpv player |
-| **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + native mpv player (HDR on Wayland) |
+| **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Native shell (CEF) + mpv player |
+| **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Native shell (CEF) + mpv player |
+| **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Native shell (CEF) + mpv player (HDR on Wayland) |
 | **iOS / iPadOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
 | **Apple TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) + AVPlayer |
@@ -135,9 +135,9 @@ the overview notices the restarted server on its own.
 | Plateforme | Statut | Où la trouver | Technologie |
 |------------|--------|---------------|-------------|
 | **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Servie par votre serveur Tentacle | React 19 + Vite 6 + Tailwind CSS |
-| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + lecteur mpv natif |
-| **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + lecteur mpv natif |
-| **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + lecteur mpv natif (HDR sous Wayland) |
+| **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Coquille native (CEF) + lecteur mpv |
+| **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Coquille native (CEF) + lecteur mpv |
+| **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Coquille native (CEF) + lecteur mpv (HDR sous Wayland) |
 | **iOS / iPadOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
 | **Apple TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) + AVPlayer |
@@ -200,14 +200,20 @@ router ports and tests them from the outside.
 
 ## Desktop App
 
-The desktop app wraps the web client with [Electron](https://www.electronjs.org/) on all three systems, and
-drives a native **mpv** through [koffi](https://koffi.dev/) for the video (Direct Play, Dolby Vision, HDR,
-Atmos). Windows and macOS update through their stores; **Linux has a built-in updater** that detects how the
-app was installed, verifies the SHA-256 and installs through polkit (or swaps the AppImage in place).
+Since **1.50.0** the desktop app is a native shell (`apps/desktop-cef`): the
+[Chromium Embedded Framework](https://github.com/chromiumembedded/cef) renders the web client, [SDL3](https://libsdl.org)
+owns the window and input, and **libmpv** is linked directly for the video (Direct Play, Dolby Vision, HDR, Atmos),
+composited under the page in the same window. The same code runs on macOS, Windows and Linux; macOS is the
+reference today, the Windows and Linux builds of this shell are still being tested. The app carries its own update
+engine (signed manifest, installed on quit) — see [`apps/desktop-cef/docs/MISE-A-JOUR.md`](apps/desktop-cef/docs/MISE-A-JOUR.md).
+
+To run it from a checkout: `pnpm cef` (web build + native build, then the app). Prerequisites per system:
+[`apps/desktop-cef/README.md`](apps/desktop-cef/README.md).
 
 ### Linux
 
-Four packages, and **mpv is bundled in every one of them** — nothing else to install.
+The packages below (deb, rpm, pacman, AppImage) are those of the latest published release; packages of the new shell
+are in preparation.
 
 **One command, any distribution** — detects the format, installs the right package and adds the menu entry
 (`--uninstall` removes both):
@@ -229,18 +235,16 @@ The AppImage needs FUSE (`fuse2` on Arch, `libfuse2t64` on Ubuntu); the install 
 
 #### HDR, Wayland and X11
 
-Linux forces a trade-off no other system does: **X.Org will never support HDR** (HDR on Linux goes through the
-Wayland `wp-color-management-v1` protocol), and **Wayland does not let an application position its own
-windows**. The app picks the best setup for your session at start-up:
+**X.Org will never support HDR**: HDR on Linux goes through the Wayland `wp-color-management-v1` protocol. The
+new shell follows the desktop session:
 
-| Session | Video window | HDR |
-|---------|--------------|-----|
-| **Wayland + KDE Plasma** | follows the window, windowed or fullscreen (KWin script) | **yes**, even windowed |
-| **Wayland, other compositors** (GNOME, wlroots) | windowed through XWayland; fullscreen when an HDR screen is plugged in | **yes** when an HDR screen is plugged in |
-| **X11** | windowed | no — tone-mapped to SDR |
+| Session | Video | HDR |
+|---------|-------|-----|
+| **Wayland** (any compositor) | a sub-surface under the page, in the app's own window — windowed or fullscreen | **yes**, with a colour-managed compositor |
+| **X11** | drawn by libmpv's render API inside the window; no picture-in-picture | no — tone-mapped to SDR |
 
-HDR needs a colour-managed compositor (KDE Plasma 6.2+, GNOME 48+, Hyprland), plus Mesa 25.1+ or NVIDIA 595+.
-X11 sessions need a compositing window manager — every modern desktop has one. A setting forces Wayland or X11.
+HDR needs a colour-managed compositor (KDE Plasma 6.2+, GNOME 48+, Hyprland), plus Mesa 25.1+ or a recent NVIDIA
+driver. A setting forces Wayland or X11.
 
 ### First Launch
 
@@ -333,7 +337,7 @@ pnpm dev:web        # Web client → http://localhost:5173 (proxies /api to :300
 ### Other commands
 
 ```bash
-pnpm dev:electron   # Desktop app (Windows, macOS, Linux)
+pnpm cef            # Desktop app (CEF shell: web build + native build, then the app)
 pnpm dev:mobile     # Expo app (iOS, Android)
 pnpm dev:tv         # Apple TV / Android TV app
 pnpm dev:webos      # LG webOS client
@@ -363,7 +367,7 @@ Releases are never triggered by a push: each platform has its own workflow, run 
 ```
 apps/
   web/               React 19 + Vite 6 + Tailwind (web client, also the desktop UI)
-  desktop-electron/  Electron shell + native mpv (Windows, macOS, Linux)
+  desktop-cef/       Desktop shell: CEF + SDL3 + libmpv, in C++ (macOS, Windows, Linux)
   mobile/            Expo 52 + React Native (iPhone, iPad, Android)
   tv/                React Native for Apple TV (tvOS) and Android TV
   tv-webos/          LG webOS shell (IPK); the client itself is a build variant of apps/web
@@ -460,7 +464,7 @@ structure.
 | Layer | Technology |
 |-------|------------|
 | Web | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
-| Desktop | Electron 43 (Windows, macOS, Linux), libmpv via koffi |
+| Desktop | C++ shell: CEF 156 (Chromium Embedded Framework), SDL3, libmpv (Windows, macOS, Linux) |
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
 | TV | React Native (react-native-tvos), AVPlayer (tvOS), ExoPlayer/Media3 (Android TV) |
 | Backend | Fastify 5, Prisma 6, SQLite |

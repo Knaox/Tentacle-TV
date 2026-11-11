@@ -1,22 +1,27 @@
-# Tentacle CEF — prototype
+# Tentacle TV Desktop — la coquille CEF
 
-Prototype de client de bureau pour Tentacle TV sur l'architecture de la réécriture CEF de
-Jellyfin Desktop (aujourd'hui `andrewrabert/jellium-desktop`) : **CEF** pour l'interface web,
-**libmpv** pour la lecture, **SDL3** pour la fenêtre. Objectif premier : un vrai HDR/EDR sur
-macOS. Linux et Windows viendront ensuite, sans refonte : tout ce qui dépend de l'OS vit
-derrière `src/platform/`.
+Le client de bureau de Tentacle TV depuis la **1.50.0**, sur macOS, Windows et Linux :
+**CEF** (Chromium Embedded Framework) pour l'interface web, **libmpv** (notre fork, liée
+directement) pour la lecture, **SDL3** pour la fenêtre et la saisie. Le front (`apps/web`) y
+est servi sous **`tentacle://app`**. L'architecture vient de la réécriture CEF de Jellyfin
+Desktop (aujourd'hui `andrewrabert/jellium-desktop`) ; tout ce qui dépend de l'OS vit derrière
+`src/platform/`. macOS (Apple Silicon) est la référence ; Windows et Linux sont construits mais
+encore à essayer sur de vraies machines ([A-TESTER-WINDOWS](docs/A-TESTER-WINDOWS.md),
+[A-TESTER-LINUX](docs/A-TESTER-LINUX.md)).
 
-Importé dans le monorepo (`apps/desktop-cef`) depuis le dépôt local `Tentacle-CEF`, branche
-`proto/cef-mpv-sdl3` au commit `0dbcfe7` ; son historique est resté dans ce dépôt-là.
+Importé dans le monorepo depuis le dépôt local `Tentacle-CEF`, branche `proto/cef-mpv-sdl3` au
+commit `0dbcfe7` ; l'historique d'avant l'import est resté dans ce dépôt-là.
 
 - Contrat entre les modules : [docs/INTERFACES.md](docs/INTERFACES.md)
-- Windows (prérequis, `pnpm cef`, recette) : [docs/A-TESTER-WINDOWS.md](docs/A-TESTER-WINDOWS.md)
-- Le menu de débogage, entrée par entrée sur Electron, CEF macOS et CEF Windows : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md), § 7
-- Ce que le bureau Electron offre et que CEF n'a pas encore : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md)
+- Mise à jour automatique (manifeste signé, assistant `tentacle-update`) : [docs/MISE-A-JOUR.md](docs/MISE-A-JOUR.md)
+- Paquet macOS (`--dist`), taille, signature : [docs/PAQUET.md](docs/PAQUET.md)
+- Licences et crédits de ce qui est embarqué : [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md)
+- Le menu de débogage, entrée par entrée : [docs/PARITE-ELECTRON.md](docs/PARITE-ELECTRON.md), § 7
+  (carnet historique de la parité avec l'ancienne coquille Electron)
 - Étude de la référence : `docs/etude/` (écrite par les sessions du lot)
 - Dépendances, builds, profils, médias de test : `~/.cache/tentacle-cef/` (hors dépôt)
 
-## Lancer — sur le profil d'Electron
+## Lancer
 
 Depuis la racine du monorepo :
 
@@ -28,8 +33,9 @@ pnpm cef -- --mute       # son coupé
 
 Le lanceur est `scripts/dev.mjs` (Node seul, aucune dépendance), le même sur les trois OS :
 
-- **macOS** : comme avant (`scripts/build.sh`, paquet `Tentacle.app`, libmpv du cache, SDL3 de
-  Homebrew).
+- **macOS** : `scripts/build.sh`, paquet `Tentacle.app`, libmpv du cache, SDL3 de Homebrew.
+  `scripts/build.sh --dist` construit le paquet autonome (chaîne de lecture LGPL embarquée,
+  licences dans `Contents/Resources/licenses`).
 - **Linux** : vérifie les prérequis et donne LA commande d'installation de la distribution
   (Fedora, Debian/Ubuntu, Arch, openSUSE), télécharge CEF de l'architecture (épinglé), prend
   SDL3 du système (sinon la construit, archive épinglée) et construit notre libmpv (fork +
@@ -42,31 +48,30 @@ Le lanceur est `scripts/dev.mjs` (Node seul, aucune dépendance), le même sur l
   avec une carte NVIDIA). `pnpm dev:cef` tapé sur l'hôte se REJOUE dans la boîte, tel quel
   (`scripts/dev/linux-box.mjs`) ; `TENTACLE_CEF_BOX=<nom>` choisit une autre boîte (et force ce
   passage sur un hôte ordinaire), `TENTACLE_CEF_BOX=off` le coupe.
-- **Windows** : Visual Studio Build Tools, CMake, Ninja ; CEF et SDL3 épinglés (axe windows).
+- **Windows** : Visual Studio Build Tools, CMake, Ninja ; CEF, SDL3, libsodium, nlohmann/json et
+  SQLite épinglés (`scripts/dev/windows-deps.mjs`).
 - `TENTACLE_DEV_DRY=1` imprime les builds et la commande de l'app sans rien lancer.
 
-L'app charge le front du monorepo (`apps/web/dist`, construit pour la coquille de bureau comme
-`pnpm dev:electron`) sous **`tentacle://app`**, l'origine d'Electron, et **partage le stockage
-de ce front avec Electron** : session, adresse du serveur, réglages, cache d'Octave. Se
-connecter dans l'un, c'est être connecté dans l'autre.
+L'app charge le front du monorepo (`apps/web/dist`, construit pour la coquille de bureau) sous
+**`tentacle://app`**.
 
-- **Profil d'Electron** : celui de `pnpm dev:electron` (`dataPaths.ts` : sous macOS
-  `~/Library/Application Support/com.tentacle.media`, sous Linux `$XDG_DATA_HOME` ou
-  `~/.local/share/com.tentacle.media`, sous Windows `%APPDATA%\com.tentacle.media`), passé
-  aussi à l'app par `--user-data`. Autre dossier :
-  `TENTACLE_ELECTRON_PROFILE=<dossier>` (l'app du Mac App Store vit dans son conteneur).
-- **Ce qui est partagé** : `Local Storage` et `IndexedDB`, par des liens depuis le profil CEF
+- **Dossier de données** : il garde le nom de celui du bureau d'avant, `com.tentacle.media` —
+  sous macOS `~/Library/Application Support/com.tentacle.media`, sous Linux `$XDG_DATA_HOME` ou
+  `~/.local/share/com.tentacle.media`, sous Windows `%APPDATA%\com.tentacle.media` —, passé à
+  l'app par `--user-data` : session, adresse du serveur, réglages et cache d'Octave d'une
+  installation précédente sont repris. Autre dossier : `TENTACLE_ELECTRON_PROFILE=<dossier>`
+  (nom de variable historique).
+- **Ce qui est repris** : `Local Storage` et `IndexedDB`, par des liens depuis le profil CEF
   (`~/.cache/tentacle-cef/profiles/electron/Default/`). Le reste du profil Chromium (cookies,
-  cache, historique) reste à CEF : autre version de Chromium, autre disposition, autre clé de
-  chiffrement des cookies. CEF garde ces bases en LevelDB, le format d'Electron
-  (`src/shell/browser_app.cpp`).
-- **Jamais les deux à la fois** : le lanceur refuse tant qu'un processus tient le profil
-  d'Electron (son `SingletonLock`, les verrous LevelDB). Ouvrir Electron pendant que CEF tourne
-  le ferait démarrer sur un stockage vide, en mémoire.
+  cache, historique) est propre à CEF. CEF garde ces bases en LevelDB, le format du bureau
+  d'avant (`src/shell/browser_app.cpp`).
+- **Une seule instance sur ce dossier** : le lanceur refuse tant qu'un processus le tient (son
+  `SingletonLock`, les verrous LevelDB) — une autre app ouverte dessus démarrerait sur un
+  stockage vide, en mémoire.
 - **Quitter par Cmd+Q ou en fermant la fenêtre.** Chromium diffère l'écriture du stockage
   (5 s et plus) et ne la termine qu'à une fermeture normale. Ctrl+C dans le terminal (ou un
   `kill`) arrête tout sans elle : ce qui a été fait dans les dernières secondes — une
-  connexion, un réglage — ne revient ni dans CEF ni dans Electron (mesuré).
+  connexion, un réglage — est perdu (mesuré).
 - `TENTACLE_URL=<URL>` pose l'adresse du serveur dans le front s'il n'en a aucune.
 
 ## Ce que la coquille surveille d'elle-même (Linux)
@@ -105,7 +110,7 @@ Les binaires publics de CEF n'ont pas les codecs propriétaires (`MediaSource.is
 qui lui relaie du VP9 + Opus s'il déclare `trailers.openCodecs` (serveur 1.41.0) : aperçus au
 survol et lecteur de la fiche jouent sans rien ajouter à l'installation. Face à un serveur plus
 ancien : aucun aperçu, aucune requête ; la fiche garde le lecteur officiel de YouTube. Un
-`<video>` de la page joue sans geste préalable, comme dans Electron
+`<video>` de la page joue sans geste préalable
 (`--autoplay-policy=no-user-gesture-required`, `src/shell/browser_app.cpp`) : sans elle,
 l'aperçu survolé avant le premier clic restait figé sur sa première image. Restent
 hors d'atteinte sans les codecs : les bandes-annonces AlloCiné (Dailymotion, H.264 seul), les

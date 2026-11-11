@@ -3,7 +3,7 @@
 Sous le seuil du bureau, le client web (`apps/web`) reproduit **à l'identique**
 l'app des stores (`apps/mobile`) : sur un téléphone, l'app iPhone/Android ; sur
 un iPad, l'app iPad. Le bureau — fenêtre large d'un navigateur ET application
-Electron, qui embarque ce même build — ne change pas.
+de bureau (coquille CEF), qui embarque ce même build — ne change pas.
 
 Tout le miroir vit dans `apps/web/src/mirror/`. Les pages du bureau ne sont pas
 retouchées : le routeur choisit l'une ou l'autre version (`ByFormFactor`).
@@ -12,7 +12,7 @@ retouchées : le routeur choisit l'une ou l'autre version (`ByFormFactor`).
 
 | Situation | Gabarit | Navigation |
 |-----------|---------|------------|
-| Application Electron, quelle que soit la fenêtre | **bureau** (hérité, inchangé) | barre du haut ; en fenêtre étroite, l'ancienne barre d'onglets |
+| Application de bureau, quelle que soit la fenêtre | **bureau** (hérité, inchangé) | barre du haut ; en fenêtre étroite, l'ancienne barre d'onglets |
 | Navigateur à la souris, largeur > 768 px | **bureau** | barre du haut |
 | Navigateur à la souris, largeur ≤ 768 px | téléphone | barre d'onglets flottante |
 | Écran tactile, petit côté < 700 px | téléphone | barre d'onglets flottante |

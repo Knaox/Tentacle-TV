@@ -20,8 +20,8 @@ const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "TanStack Query", descKey: "techTanStackQuery" },
   { name: "i18next", descKey: "techReact" },
   { name: "Fastify", descKey: "techFastify" },
-  // La coquille de bureau, désormais unique pour les trois systèmes.
-  { name: "Electron", descKey: "techElectron" },
+  // La coquille de bureau des trois systèmes (CEF depuis le bureau 1.50.0).
+  { name: "Chromium Embedded Framework", descKey: "techCef" },
   // Le lecteur avancé du mobile et ce qu'il embarque.
   { name: "mpv / libmpv", descKey: "techMpvMobile" },
   { name: "MPVKit", descKey: "techMpvkit" },

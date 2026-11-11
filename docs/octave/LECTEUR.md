@@ -1,5 +1,10 @@
 # Le lecteur d'Octave
 
+> **Depuis la 1.50.0**, le bureau est la coquille CEF : le moteur mpv d'Octave est dans
+> `apps/desktop-cef/src/music/`, les requêtes déléguées et relais dans `src/net/`. Les
+> chemins `apps/desktop-electron/…` cités plus bas désignent l'ancienne coquille (retirée) :
+> la règle décrite tient, le fichier a changé de place et de langage.
+
 Comment Octave joue un titre — de la bibliothèque Jellyfin ou hors bibliothèque (extension) — sur le web
 et sur le bureau : la file, le contrôleur, les deux moteurs audio, la position affichée, les échecs, la radio,
 le préchargement et la sécurité du jeton. La carte d'ensemble (recherche, extension, budgets) est dans

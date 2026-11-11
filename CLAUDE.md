@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows, macOS and Linux, driving a native mpv through koffi), an Expo mobile app, an Android TV app, and a Fastify backend with SQLite (one file, `data/tentacle.db`; MariaDB is only READ, once, to migrate older servers). The project is written primarily in French (comments, context docs, commit messages).
+Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (`apps/desktop-cef`, since desktop 1.50.0: a C++ shell on CEF — Chromium Embedded Framework — with SDL3 and libmpv linked directly, on Windows, macOS and Linux), an Expo mobile app, an Android TV app, and a Fastify backend with SQLite (one file, `data/tentacle.db`; MariaDB is only READ, once, to migrate older servers). The project is written primarily in French (comments, context docs, commit messages).
 
 ## Commands
 
@@ -12,7 +12,8 @@ Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It 
 # Development (run web + backend together for full stack)
 pnpm dev:web          # Web client on port 5173 (proxies /api to :3001)
 pnpm dev:backend      # Backend API on port 3001
-pnpm dev:electron     # Electron desktop app (Windows, macOS, Linux)
+pnpm cef              # Bureau (apps/desktop-cef, macOS, Linux, Windows) : build web + natif, puis l'app — voir son README
+pnpm dev:cef          # le même (alias)
 pnpm dev:mobile       # Expo mobile app
 pnpm dev:tv           # Android TV app
 
@@ -40,11 +41,38 @@ pnpm docker:logs      # Tail container logs
 
 # Livrer — voir « Livraison » plus bas. RIEN ne part d'un push :
 # tout passe par un déclenchement de workflow, depuis « Tentacle Deploy.html ».
-# Seule exception : une poussée sur la branche `dev` publie l'image `:dev`.
+# L'image `:dev` aussi : `gh workflow run server.yml --ref dev -f channel=dev`.
 gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ```
 
 > Le remote `production` n'existe plus. `origin` (GitHub) est le seul.
+
+## Preview privée (serveur 172.16.1.30) — « rebuild l'image preview, et Sillon »
+
+Le serveur 1.40 de Damien, réseau local / VPN, RIEN sur GitHub. Version fixée AU BUILD
+(`1.40.0+preview.<sha8>`), jamais dans `versions.json`. Script local, NON suivi (`scripts/` est
+ignoré) : `scripts/preview.sh image|plugin|all|redeploy`, qui s'appuie sur `preview-push`
+(`~/homelab/scripts/`, clé SSH `root@172.16.1.30`).
+
+1. `colima start` (le script refuse si Docker ne répond pas).
+2. **Image** : `scripts/preview.sh image` (en arrière-plan : buildx linux/amd64, ~10 min) — construit
+   le `dev` LOCAL tel qu'il est sur le disque, le pousse dans le registre privé sous
+   `172.16.1.30:5000/tentacle-tv:preview` (que tire la pile) ET `172.16.1.30:5000/tentacle-tv/preview:latest`,
+   puis **redéploie la pile Portainer n° 54** (`tentacle-tv`) : le push seul ne redémarre RIEN.
+3. **Sillon** : `SILLON_DIR=<dossier> scripts/preview.sh plugin` — empaquette et publie dans le dépôt
+   privé de plugins (`http://172.16.1.30:5011/…`, version `0.1.0.<horodatage>`). Défaut : le worktree
+   `../.claude/worktrees/sillon-dev` (branche `dev` de Sillon). Mieux : un worktree détaché TEMPORAIRE
+   au commit voulu (`git worktree add --detach <scratchpad> <sha>`, `node_modules` en lien vers celui
+   de `sillon-dev`), après `npm run typecheck` et `npm test` — l'empaquetage écrit `dist/` dans le dossier.
+4. **Vérifier** : `ssh root@172.16.1.30` → label `app.tentacletv.preview.version` de `tentacle-tv`
+   (`healthy`), `/app/apps/backend/data/plugins/installed.json` (version de Sillon), `/api/health` →
+   `pluginBackends` (`sillon` : `isolated`) et `[plugin:sillon] prêt` dans `docker logs`. Sillon pas à
+   jour : Administration › Plugins › « Mettre à jour ».
+
+Pièges vécus (26/10) : la ref `dev` de Sillon peut arriver par Syncthing AVANT ses objets (`bad object`)
+— attendre ou partir d'un commit présent, jamais recaler `dev` à la main (il avance pendant ce temps) ;
+l'index du dossier principal arrive périmé (statut « sale », disque = `HEAD`) : le script compare par un
+index neuf, sinon la version prenait un faux `.dirty`.
 
 ## Livraison (CI)
 
@@ -85,10 +113,10 @@ Server pour Windows » de la page : un seul run, image Docker + paquet Windows) 
 **Le cran `dev` (serveur seulement)** : l'image de la branche `dev`, pour qui
 veut l'éprouver avant une livraison — `ghcr.io/knaox/tentacle-tv:dev` et
 `:dev-<sha8>`, jamais `:latest` ni `:vX.Y.Z`, aucune Release, aucun bump.
-SEULE exception au « rien ne part d'un push » : une poussée sur `dev` qui
-touche le serveur lance `server.yml` d'elle-même (filtre `paths`, et la
-précédente encore en cours est annulée) ; `quality.yml` tourne aussi sur `dev`
-et garde ce cran comme les autres. La page de déploiement le propose aussi.
+Lui aussi se lance À LA MAIN seulement (décision du 2026-10-27 : plus de
+déclencheur `push` sur `dev`), depuis la page de déploiement ou
+`gh workflow run server.yml --ref dev -f channel=dev` ; `quality.yml` tourne
+aussi sur `dev` et garde ce cran comme les autres.
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** au lieu
 d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le
@@ -190,7 +218,7 @@ rev-parse HEAD) [--version X.Y.Z]`.
 
 - **Un seul run : image Docker + paquet Windows.** `server.yml` avec l'entrée
   **`windows`** (case de la page) : au cran test ou store SEULEMENT (refusé
-  avant le bump au cran build ; une poussée sur `dev` n'a pas d'entrée), il joue
+  avant le bump au cran build), il joue
   le pré-vol de l'app (variables, bloc `## [S]`), publie l'image, puis — image
   publiée, `:latest` basculé au cran store — APPELLE `server-windows.yml` comme
   un job (`workflow_call`, `secrets: inherit`, sur le modèle de
@@ -244,6 +272,75 @@ rev-parse HEAD) [--version X.Y.Z]`.
 - **Le SHA est figé** par le job `prepare` : tous les jobs d'un run lisent le
   même commit. Une retouche de changelog poussée pendant un run ne part pas.
 
+### Sécurité de la chaîne (depuis la PR 10, chantier du 2026-10-22)
+
+Après le ver npm ChainDrop (août 2026, aucun impact constaté chez nous).
+Rapports de l'audit : `~/.config/Claude/side-session-notes/local_d8f3eb89-9b1c-4dbf-a129-505bd4c954db/`.
+
+- **Commit** : `.githooks/pre-commit` passe gitleaks sur l'index (`.gitleaks.toml`).
+  Sans gitleaks installé, le commit est REFUSÉ (`brew install gitleaks`,
+  `winget install gitleaks.gitleaks`) ; échappatoire ponctuelle :
+  `TENTACLE_SKIP_GITLEAKS=1 git commit …`. Un vrai secret ne va JAMAIS en
+  exception. Avec `pnpm install --ignore-scripts`, le `prepare` ne pose pas
+  `core.hooksPath` : `git config core.hooksPath .githooks` à la main.
+- **Installer** : toujours `--ignore-scripts` hors lockfile figé. pnpm refuse une
+  version publiée depuis moins de 7 jours (`minimumReleaseAge` : à la RÉSOLUTION
+  seulement — `add`, `update`, lock modifié ; sans effet sur `--frozen-lockfile`).
+  Seuls Prisma et esbuild lancent un script d'installation
+  (`onlyBuiltDependencies`, `package.json`) ; un nouveau paquet à script reste
+  ignoré jusqu'à son ajout explicite à la liste.
+- **Workflows** : le `GITHUB_TOKEN` est en LECTURE par défaut (`contents: read`
+  en tête de chaque workflow + réglage du dépôt) — un job qui écrit (tag, push,
+  Release, packages, `id-token` pour cosign) le DÉCLARE dans ses `permissions`.
+  Toute action se référence par SHA complet, tag en commentaire (le dépôt
+  l'exige) ; Dependabot propose les montées chaque lundi (npm, actions, images
+  Docker), après 7 jours de quarantaine. Jamais `npm install`/`npx` en CI
+  (`play-tracks.yml` passe par `lib/play-api.mjs`). Un `workflow_call` ne reçoit
+  jamais plus que son appelant : `id-token: write` reste sur les jobs `image` de
+  `server.yml` et `webos.yml`.
+- **Sur chaque PR** : `quality.yml`, `secrets.yml` (gitleaks), `codeql.yml`
+  (TypeScript + workflows, aussi le mardi), `dependencies.yml` (pnpm audit — échoue
+  sur ce que la branche AJOUTE en high+, `lib/audit-diff.mjs` — et dependency
+  review). Un checkout de `needs.prepare.outputs.sha` / `inputs.sha` signalé par
+  CodeQL (« untrusted checkout », « cache poisoning ») est un faux positif connu :
+  ces workflows ne tournent jamais sur une PR.
+- **Image serveur** (`server-image.yml`) : bases épinglées par empreinte ; garde
+  **Trivy** AVANT toute étiquette — une CVE CRITICAL/HIGH corrigeable arrête la
+  livraison serveur ET webOS. `.trivyignore` n'en tolère que justifiées et
+  DATÉES (passé la date, la livraison s'arrête) ; la dette du 2026-10-22 est
+  soldée par la PR 13 (fastify 5.12, @fastify/static 10, Prisma 6.19.3 —
+  `setHeaders` reçoit la `reply` de Fastify —, planchers transitifs par majeure
+  dans `pnpm.overrides`). Vérifier localement : `podman build` avec
+  `--build-context tv-client=…` puis l'image `ghcr.io/aquasecurity/trivy`
+  (`image --input`, `--severity CRITICAL,HIGH --ignore-unfixed`). Chaque image est
+  signée par cosign (keyless) et porte son SBOM : `docs/server/image-security.md`.
+- **Dependabot, auto-fusionné quand c'est peu risqué** (`dependabot-automerge.yml`,
+  règle `lib/dependabot-policy.mjs`, testée) : un correctif de toute dépendance,
+  une mineure d'outillage (devDependencies) ou d'action, TOUS les checks verts →
+  fusion par le bot, puis `quality.yml` relancé sur main par dispatch (une fusion
+  par GITHUB_TOKEN ne déclenche rien ; sa file de concurrence est à part). Jamais
+  une majeure, ni electron, koffi, react, react-dom, react-native. Groupes
+  `server` / `tooling` / reste ; IGNORÉS : toute majeure (npm ET actions : des
+  chantiers), Expo, React Native, @react-navigation, nativewind, React, koffi,
+  `@expo-google-fonts/*`, les mineures 0.x d'esbuild et libpgs. Les mises à jour
+  de SÉCURITÉ ignorent ces règles : une majeure y arrive quand même — à juger.
+  Un plancher de `pnpm.overrides` qu'une montée dépasse se remonte avec elle,
+  sinon `checkLockfileDeps` refuse le verrou (vécu : PR 30). Un avis SANS
+  correctif dans un outil de build se tolère dans `dependencies.yml`
+  (`allow-ghsas`, justifié en commentaire), jamais en relâchant le seuil.
+- **Miroirs shared → backend** : le backend RECOPIE des fichiers de shared
+  (`*Mirror.test.ts`) sans en dépendre : la qualité d'une PR qui ne touche que
+  shared ne rejoue PAS ces tests. Modifier un fichier miroité = recopier (vécu :
+  PR 39 → 46).
+- **`git fetch` qui échoue sur « bad object refs/heads/claude/lg-… »** : des refs
+  de branches locales arrivent sans leurs objets (sessions du Mac, Syncthing ?).
+  Ne pas les réparer d'ici (le Mac les a) : `GIT_REF_PARANOIA=0 git fetch …`.
+- **`main` sous ruleset** (s'il est posé) : plus de push direct sur `main`, tout
+  passe par une PR aux checks verts ; les poussées de la CI (bumps, manifestes,
+  veilleur) passent par le bypass « GitHub Actions ». Une PR se fusionne en
+  « Create a merge commit » (garde un commit par étape). Pas de ruleset au
+  2026-10-22 : l'auto-fusion attend elle-même les checks.
+
 ### Changelogs
 
 `changelogs/{desktop,tv,server,mobile,webos,server-webos}.md`, blocs `## [X.Y.Z]` avec
@@ -290,13 +387,40 @@ la TV LG, dit à qui tire l'image). Fichier à part exprès : un `## [1.1.0]` de
   versionCode TV vaut `2e9 + build`, et les deux workflows partagent un groupe de
   concurrence — deux éditions Play concurrentes s'invalident l'une l'autre.
 
+## Travail en équipe — sessions parallèles
+
+**Le mode de travail PAR DÉFAUT** (décision du 2026-10-22, première fois : la
+recette Linux) : un chantier d'ampleur se mène en ÉQUIPE — une session cheffe
+et des coéquipiers en sessions parallèles de l'app (`start_session`), un par
+axe. Les petites tâches restent dans la session.
+
+- **Le brief d'abord**, dans `.claude/<SUJET>-BRIEF.md`, non commité : commit
+  de base, axes, règles communes, format du rapport. Un worktree neuf ne le voit
+  pas : chaque coéquipier reçoit son chemin ABSOLU, l'essentiel recopié dans
+  sa consigne.
+- **Chaque coéquipier** : son worktree, sa branche `claude/<chantier>-<axe>`
+  depuis la même base ; ni push, ni tag, ni dispatch CI ; un bug = reproduction
+  + correctif + test sur SA branche, un commit par étape. Rapport : tableau
+  cas × résultat, preuves (commande + sortie), commits, ce qui n'a PAS pu être
+  vérifié et pourquoi.
+- **La cheffe** contrôle chaque rapport sur pièces (commits, diff, sorties —
+  jamais sur parole), intègre UNE branche à la fois, relance tests, typecheck et
+  lint après chacune, rend le rapport final ; elle ne pousse rien sans demande.
+- **L'effort se PROPOSE à chaque lancement** : un niveau par coéquipier, avec sa
+  raison en une ligne (high pour un diagnostic fin, medium pour une matrice
+  répétitive…), appliqué par `set_session_effort` sur le oui de l'utilisateur —
+  jamais une équipe lancée sans cette proposition.
+- **Cette note ne se commite pas** : CLAUDE.md est synchronisé par Syncthing
+  depuis le checkout principal (les worktrees, `.claude/worktrees`, ne le sont
+  pas) — c'est là qu'il s'écrit.
+
 ## Architecture
 
 ### Monorepo Structure (pnpm workspaces)
 
 ```
 apps/web/        → React 19 + Vite 6 + Tailwind CSS (main web client)
-apps/desktop-electron/ → Electron (Windows, macOS, Linux — same web build, same libmpv)
+apps/desktop-cef/ → Desktop shell in C++: CEF + SDL3 + libmpv (Windows, macOS, Linux — serves the web build under tentacle://app)
 apps/mobile/     → Expo 52 + React Native 0.76 (iOS/Android)
 apps/tv/         → React Native (react-native-tvos) for Apple TV and Android TV
 apps/backend/    → Fastify 5 + Prisma 6 + SQLite
@@ -310,7 +434,7 @@ packages/plugins-api/ → Plugin system interfaces
 ### Dependency Graph
 
 - `web` → `ui`, `api-client`, `shared`, `plugins-api`
-- `desktop-electron` → wraps the `web` build via Electron (Windows, macOS, Linux)
+- `desktop-cef` → serves the `web` build (`apps/web/dist`) in CEF; no npm dependency (CMake/Ninja, launcher `scripts/dev.mjs`)
 - `mobile` → `api-client`, `shared` (own UI with NativeWind)
 - `backend` → `shared` only
 
@@ -1342,6 +1466,13 @@ secondes FILM, atterrissage du transcodage compris). Carnet :
   décompte serveur.
 - **Le mobile** n'a Watch Together qu'avec `watchTogether.deviceMembership` ;
   sans elle, sa séance reste éteinte (`WtPlatformPort.enabled: false`).
+- **Le chat a DEUX habits** (`apps/web/src/watchTogether/chat/chat.css`, variables `--wtc-*`) :
+  sur une page de lecture, l'encre sombre en dur des capsules du lecteur ; partout ailleurs,
+  les jetons du thème (clair en thème clair). Le fil se range en SUITES par des règles pures
+  (`chatThread.ts` : suites, emojis seuls, marque des non-lus) ; il reste en bas tant qu'on y
+  est, sinon une pilule compte ce qui arrive ; une réaction en rafale est UNE bulle qui pulse
+  (règle partagée `reactionBursts`), jamais une bulle par clic. Labo vivant :
+  `/dev/lecteur?vue=wt&etat=chat-vif` (`?donnees=pire`).
 - **Le chat est interactif** : débit par seau à jetons PARTAGÉ client/serveur
   (`watchTogetherChat.ts` — jamais un intervalle minimal entre deux envois),
   rafales d'emojis regroupées à l'affichage, « est en train d'écrire »
@@ -1483,99 +1614,67 @@ Feather (`download`, `download-cloud`), les statuts de base (`downloading`), les
 noms d'évènements du moteur (`downloads://changed`), les chemins et les
 identifiants de code. Les renommer ne gagnerait rien et casserait l'exécution.
 
-### Linux — le compromis Wayland / X11, et la troisième voie du compositeur
+### Linux — Wayland, X11, et la vidéo DANS la fenêtre
 
-Deux vérités s'opposent, et toute l'architecture du lecteur Linux en découle.
+Une vérité tient l'architecture : **X.Org n'aura jamais de HDR** — pas de protocole, et il
+n'y en aura pas ; le HDR sous Linux passe par `wp-color-management-v1`, un protocole
+**Wayland**. La coquille CEF (1.50.0) compose la vidéo dans SA fenêtre : plus de fenêtre mpv à
+placer, donc plus de colle KWin ni de détour XWayland (la contrainte d'Electron, dont
+`docs/LINUX-FENETRE-VIDEO.md` reste le relevé). Contrat : `apps/desktop-cef/docs/INTERFACES.md`.
 
-1. **X.Org n'aura jamais de HDR.** Ce n'est pas un manque de temps : il n'y a pas
-   de protocole et il n'y en aura pas. Le HDR sous Linux passe par
-   `wp-color-management-v1`, un protocole **Wayland**.
-2. **Sur Wayland, un client ne place pas ses fenêtres.** C'est une règle du
-   protocole — mais elle ne lie que le CLIENT : le **compositeur** place ce
-   qu'il veut, et KWin expose une API de script publique. La **colle KWin**
-   (`linux/kwinGlue.ts`, script QML : le moteur JS de KWin ne sait pas écrire
-   une géométrie — mesuré) cale la fenêtre mpv sous la nôtre et la suit.
+- **Session décidée AVANT CEF et SDL** (`src/platform/linux/graphics_session.h` :
+  `--ozone-platform`, `SDL_HINT_VIDEO_DRIVER`) ; `auto` = la session du bureau ; un réglage
+  (`session-graphique.json` du dossier de données, `TENTACLE_LINUX_SESSION`) force Wayland/X11.
+- **Wayland + notre libmpv** : `wl_subsurface` SOUS la surface de la page (désynchronisée,
+  sans saisie, `wp_viewport`), mpv y dessine par `--gpu-context=wlhostvk` (correctif
+  `scripts/deps/mpv-patches-linux/0004`) ; HDR par les espaces de couleur de la WSI Vulkan.
+  Fenêtre `SDL_WINDOW_TRANSPARENT` sous Wayland SEULEMENT : sans lui SDL déclare la surface
+  opaque et la sous-surface vidéo disparaît.
+- **Sinon** (X11, ou libmpv de la distribution) : API de rendu OpenGL de libmpv dans une
+  texture de NOTRE contexte EGL, sous la page — SDR, et pas de PiP sous X11.
+  `TENTACLE_VIDEO_RENDER_API=1` force ce chemin sous Wayland.
+- **Lecteur préchauffé** (`src/bridge/video_prewarm.h`, sous-surface Wayland) : une instance
+  mpv mince naît au REPOS de la page (3 s sans image ni saisie) et `mpv_init` la reprend —
+  première image 0,83 s → 0,18 s. Jamais sur batterie (`vkCreateDevice` coûte ~550 ms sur
+  NVIDIA, mesuré).
+- Construit et prouvé au banc (sway, X11), **jamais essayé sur de vraies machines** :
+  `apps/desktop-cef/docs/A-TESTER-LINUX.md`.
 
-D'où les montages, choisis au démarrage (`linux/sessionGraphique.ts`, puis
-`detecterFenetrage`) : Wayland + compositeur scriptable (KDE) → **lecture qui
-suit la fenêtre** — fenêtrée ou plein écran, comme Windows — et HDR réel, même
-fenêtré (mesuré : KWin sert le PQ aux surfaces fenêtrées) ; Wayland sans API de
-placement (GNOME, wlroots) → en `auto`, **XWayland tant qu'aucun écran HDR n'est
-branché** (EDID, `linux/edidHdr.ts` ; décision du 2026-10-22 : le bouton plein
-écran y était annulé par l'épingle, « cassé » sur Fedora 44), sinon HDR réel et
-lecture plein écran forcée ; X11 → lecture fenêtrée à la main, pas de HDR. Un
-XWayland-auto qui n'affiche pas se bloque seul (`sessionRescue.ts`). Un réglage
-force Wayland/X11 (relance).
-
-Cinq conséquences à ne pas défaire :
-- **`transparent: true` à la CONSTRUCTION** de la fenêtre (comme macOS, PAS comme
-  Windows). Mesuré : posé à l'exécution, la page peint du noir sur la vidéo.
-- **`target-colorspace-hint=yes`** sans condition sur Wayland. `auto` n'y décide
-  de rien (mpv#16305) et `no` supprime la transmission.
-- **Un compositeur est nécessaire sous X11.** Sans composition, X11 ne mélange
-  pas le canal alpha et l'overlay masque la vidéo.
-- **La colle ne rend JAMAIS l'activation à un hôte réduit** (`kwinGlueTemplate.ts`) :
-  `activateWindow` dé-réduit ce qu'il active, et KWin passe le focus à mpv
-  PENDANT la réduction — la réduction s'annulait elle-même. Pendant la lecture,
-  c'est la fenêtre mpv qui représente l'app dans Alt+Tab (la vignette n'y rend
-  qu'UNE fenêtre) ; son titre vide veut dire « garée ».
-- **mpv est préchauffé et reste chaud sur le montage collé**
-  (`ipc/videoPrewarm.ts`, `video/mpvPark.ts`) : `vkCreateDevice` coûte ~550 ms
-  sur NVIDIA, par instance (~390 sans la file de calcul, coupée sur NVIDIA).
-  Une instance MINCE naît d'avance (91 Mio, la page l'envoie avec les options
-  MÊMES de `mpv_init`, sinon rien n'est repris) ; après une lecture, l'instance
-  chaude reste 60 s puis est recyclée — gardée, elle retiendrait jusqu'à 2 Go
-  de VRAM. Rien sur batterie ni à travers une veille. Et hors Windows, aucune
-  lecture ni écriture SYNCHRONE de propriété mpv — elles retiennent le thread
-  principal le temps du montage vidéo (`mpvProperties.ts`). Mesures :
-  `docs/LINUX-FENETRE-VIDEO.md`, « Le démarrage, mesuré » et « deuxième passe ».
-
-**Le PiP (Linux, colle KWin)** : là où la coquille expose `pip_open`, le lecteur est
+**Le PiP** : là où la coquille expose `pip_open`, le lecteur est
 rendu par `PlayerStage` HORS des routes (la route `/watch` n'y rend rien) — c'est ce
 qui le fait survivre à la navigation ; une navigation demandée par le lecteur passe par
 `usePlayerNavigate` (pendant le PiP, l'épisode suivant y reste, toute autre sortie le
 ferme) ; une lecture lancée depuis l'application PENDANT le PiP — fiche, carte, autre
 titre — s'y joue et le PiP reste ouvert, comme sur YouTube (`PlayerStage` : la page rend
 aussitôt celle qu'on parcourait). Seuls « Quitter » et le retour au lecteur le ferment. La fenêtre PiP est ouverte par la page (`window.open`, portail React) et
-fabriquée par la coquille ; la colle la reconnaît à son TITRE (`pip/pipCaptions.ts`,
-jamais traduit). **Jamais `app-region: drag` dans le PiP** : Electron n'y transmet plus
-RIEN à la page (ni survol, ni molette, ni double-clic) — glisser et tirer un coin sont
-des gestes que la page annonce dans ce titre et que la colle exécute en suivant le
-curseur (`glueQml/pipGestureQml.ts`). La vidéo est collée DANS le cadre de la fenêtre PiP
-(`pip/pipFrame.ts` : liseré opaque qui arrondit les coins de mpv, marge d'ombre).
-Les mouvements ANIMÉS (entrée depuis l'image du lecteur, retour, molette) sont joués par la colle
-(`glueQml/pipMotionQml.ts`), demandés par le même titre (`[enter 280]`, `[restore 220]`, `[size L H 120]`),
-sur les règles de `pip/pipMotion.ts` que la coquille applique ailleurs ; ils partent de la géométrie DEMANDÉE
-(`pipRect`), jamais de `frameGeometry` relue — sous Wayland elle arrive en retard.
-La vidéo passe en plein écran AVEC l'hôte (règle « plein écran actif »
-de KWin, écran par écran) ; un script KWin se lance par `run` PUIS `Scripting.start`
-(KWin réattribue les identifiants). Détail : `docs/LINUX-FENETRE-VIDEO.md`, « Le PiP ».
+fabriquée par la coquille ; son TITRE dit le mode et le geste (`pip/pipCaptions.ts`, recopié
+dans `src/pip/rules/pip_captions.h`, jamais traduit). Règles communes de la coquille :
+`src/pip/rules/` (placement, mouvement, cadre). Sous Wayland, la MÊME `wl_surface` de mpv change
+de parent — de la fenêtre principale à celle du PiP et retour — sans que mpv le sache : HDR et
+lecture gardés. Reste sous Wayland : la PLACE de la fenêtre PiP (Electron la confiait à la colle
+KWin, d'après ce titre).
 
 Le verdict HDR se lit sur le COUPLE `video-params` / `video-target-params`, jamais
 sur l'un des deux : sur un écran laissé en HDR, un contenu SDR sort lui aussi en
-PQ. Relevé complet : `docs/LINUX-FENETRE-VIDEO.md`.
+PQ. Sous l'API de rendu (X11), `video-target-params` n'est pas renseigné : verdict null,
+jamais un faux « non ».
 
-### macOS — deux montages vidéo, choisis par la machine
+### macOS et Windows — la vidéo sous la page, dans la même fenêtre
 
-Apple Silicon : mpv ouvre SA fenêtre Metal (`gpu-context=macvk`), calée sous la
-nôtre — le seul chemin HDR mesuré. Intel : mpv dessine par la Render API OpenGL
-dans une `NSOpenGLView` de NOTRE fenêtre (`vo=libmpv`), la chaîne de l'ancienne
-coquille Tauri — une fenêtre, pas de MoltenVK, VideoToolbox zéro-copie par
-`CGLTexImageIOSurface2D`. La décision est `decideMacosMontage` (`process.arch`),
-forçable par `TENTACLE_VIDEO_MONTAGE=gl|fenetre`. Sur Intel, le montage Metal
-chauffait (mpv#12675 : import zéro-copie en échec, donc décodage logiciel en
-silence) pour un HDR qu'aucun écran Intel intégré n'affiche. `hwdec` macOS est
-une liste (`videotoolbox,videotoolbox-copy`) : jamais de repli logiciel silencieux.
-Aucun réglage exposé — un seul mode. Relevé : `docs/MACOS-FENETRE-VIDEO.md`.
-**Le PiP (Apple Silicon seulement)** : la fenêtre Metal de mpv CHANGE DE PARENT — de la
-nôtre à la fenêtre PiP et retour (`video/macosPipParent.ts`), sans que mpv le sache : HDR
-et lecture gardés. La coquille y fait ce que la colle fait sous Linux — placement, modes,
-gestes suivis au curseur (`pip/pipShell.ts`, règles communes `pip/pipPlacement.ts`) ; le
-chemin Linux (titre lu par la colle) ne change pas. Relevé : même fichier, « Le PiP ».
-**Windows** : la fenêtre fille de mpv change de parent par `SetParent` (`video/videoWindow.ts`) —
-mpv suit seul son nouveau parent (crochet sur le thread de sa fenêtre parente) ; PiP sans
-cadre dessiné (`pipFrame.ts` : fenêtre rendue transparente à l'exécution, jamais fabriquée
-`transparent`), ancré = fenêtre POSSÉDÉE (`setParentWindow`).
+**macOS, Apple Silicon** (distribution CEF `macosarm64` : plus de paquet Intel, ni du montage
+OpenGL qu'Electron y tenait) : mpv dessine dans NOTRE `CAMetalLayer` par MoltenVK (`--wid`,
+correctif `scripts/deps/mpv-patches/0001`, `src/platform/video_surface.h`), rangée SOUS la
+couche web (`CAMetalLayer` BGRA8 sRGB non opaque) dans la fenêtre SDL3 — le chemin HDR/EDR.
+`hwdec` est une liste (`videotoolbox,videotoolbox-copy`) : jamais de repli logiciel
+silencieux. **Le PiP** : fenêtre NATIVE (`platform/macos/compositor_pip_*`) à qui la couche
+vidéo est PRÊTÉE puis rendue, sans que mpv le sache : HDR et lecture gardés. Relevé de la
+coquille d'avant (deux montages, Intel) : `docs/MACOS-FENETRE-VIDEO.md`.
+**Windows** : un visuel DirectComposition dont le contenu est la chaîne d'échange de mpv
+(`gpu-api=d3d11`, `d3d11-output-mode=composition`), sous la page dans le même arbre ; au PiP,
+ce visuel QUITTE l'arbre de la fenêtre principale pour celui de la fenêtre PiP (un seul
+périphérique DComp pour le processus, `DcompDevice::shared()`), fenêtre PiP OPAQUE. libmpv :
+la `libmpv-2.dll` LGPL de mpv-winbuild. **Jamais essayé sur une vraie machine** :
+`apps/desktop-cef/docs/A-TESTER-WINDOWS.md`.
 
 ### Liquid Glass (bureau macOS 26) — une porte, deux verres
 
@@ -1593,16 +1692,18 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   réglage coupé gardent le RENDU D'AVANT au pixel près. L'option n'existe pas sur un macOS < 26.
   Fonction purement client : aucune capacité serveur.
 - **Deux verres.** Sur la VIDÉO, le vrai `NSGlassEffectView` (classe PUBLIQUE d'AppKit) par le pont
-  koffi du lecteur (`apps/desktop-electron/src/main/liquidGlass/`) — jamais `electron-liquid-glass`,
-  jamais une API privée (refus du Mac App Store ; `privateApi.test.ts`). Lecteur seulement, et sur
+  de la coquille (`apps/desktop-cef/src/glass/`, `src/platform/macos/glass_*`) — jamais une API
+  privée (refus du Mac App Store). Lecteur seulement, et sur
   Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant) :
-  de PETITES capsules `clear` séparées (10 px, au-delà de la fusion), qui se MATÉRIALISENT
-  (lot lg8 : montée de 6 px, verre qui s'allume, formes décalées, sortie plus rapide ; chaque
-  forme son conteneur natif ; `playerGlassMaterialize.ts` → coquille ET CSS), ATTÉNUÉES comme chez QuickTime — un noir à alpha de la page DANS
-  la forme, dosé par le ton mesuré (`playerGlassDim.css` : 0,65 clair, 0,5 sombre), glyphes
-  toujours blancs ; le verre normal (panneaux) s'adapte seul. ⚠️ Fenêtre ACTIVE, le verre
-  natif est bien plus clair qu'inactive (87 contre 33 sur du noir) : un banc sans focus ne
-  juge que l'inactif (`bench/liquid-glass/lg3/`). Sur la PAGE, la
+  les MENUS du lecteur (pistes, sous-titres, qualité, vitesse, épisodes : aux places de
+  `.pl-panel`, verre normal qui s'adapte seul) et ses avis. **Les COMMANDES ne sont plus en verre**
+  (décision de Damien du 11/11 au soir : « un rendu pas du tout beau ») : le rond de la sortie et
+  les deux capsules gardent la disposition du lecteur sans verre (lot rf2) et reprennent son ENCRE
+  — `GlassSurface material="ink"`, ni région native ni mesure du ton, un aplat à 0,74
+  (`playerGlassDim.css`, « L'encre ») —, avec le geste d'apparition des formes de verre (lot lg8 :
+  montée de 6 px, formes décalées, sortie plus rapide ; `playerGlassMaterialize.ts` → coquille ET
+  CSS). ⚠️ Fenêtre ACTIVE, le verre natif est bien plus clair qu'inactive (87 contre 33 sur du
+  noir) : un banc sans focus ne juge que l'inactif (`bench/liquid-glass/lg3/`). Sur la PAGE, la
   LENTILLE de Chromium : le verre natif vit SOUS la vue web et ne voit pas la page — jamais une
   région native qui défile avec elle.
 - **La lentille** (`@tentacle-tv/ui` glass/`lensProfile`, `refractionMap`) : presque transparente,
@@ -1614,9 +1715,19 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   une capture par seconde au plus, hors du fil principal ; `under: "window"` : la vidéo SEULE, page
   exclue, pour une forme posée dessus) → `useBackdropTone` → `data-lg-tone="dark|light"` :
   glyphes (`--lg-glyph*`), lumière du bord, reflet et DANGER (`--lg-danger-on-*`) en suivent ;
-  hystérésis, un appel par 250 ms au plus. Menus et feuilles : un ton PAR BANDE (`bands`,
-  `data-lg-band`) et, sur un dessous moyen seulement, un voile minimal calculé. Jamais un fond
+  hystérésis, un appel par 250 ms au plus. **Deux régimes (lot lg2, 22/10)** : `control` (petit :
+  bouton, capsule — le ton bascule) et `scale: "surface"` (menu, popover, feuille, palette, barre
+  latérale, avis — UN ton mesuré à l'ouverture et TENU, remesuré au seul changement de thème ;
+  matériau épais, saturation plafonnée). Plus jamais de ton par bande (`bandTones` supprimé). Le
+  verre est la couche FONCTIONNELLE : les dalles de contenu (cartes, groupes, tuiles) sont
+  opaques ; un CONTRÔLE (bouton, puce, segmenté, champ) est du verre même dans une page ; jamais
+  de verre sur du verre. Jamais un fond
   sombre pour lire : `--lg-clear-dim` et `--lg-media-dim` sont transparents (la page ; sur la vidéo, l'atténuation du lecteur ci-dessus).
+- **Le bord du verre de la page est UN filet** (11/11, `theme/glass/paneTokens.css`, « Le bord ») :
+  un reflet `inset` d'un demi-pixel dans `--lg-pane-shadow`, vif en haut, à peine en bas. Jamais
+  une bordure visible, un anneau en dégradé (`::after` masqué) ni un second reflet par-dessus :
+  empilés, ils donnaient un contour blanc de deux pixels, et l'anneau — posé dans la boîte au rayon
+  du bord extérieur — deux arcs à chaque coin d'un menu.
 - **Jetons `--lg-*`** dans `theme/liquidGlassTokens.css` (clair ET sombre ; pas `tokens.css`, que
   l'admin surcharge) ; les familles composent sans redéfinir (`--lg-chrome-*`, `--lgc-*`,
   `--lg-player-*`, `--lg-spring-*`). **Primitive** `theme/glass/` (`LiquidGlass`,
@@ -1632,7 +1743,7 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   240 × 54 px ; `modalPortal.test.ts`). Jamais de lentille (`data-lg-lens`) sur un verre natif.
 - **GPU** : les règles ci-dessous valent double — toute image qui change SOUS un verre en refait le
   flou et la réfraction. Le travelling du héros est joué par le COMPOSITEUR (`@keyframes` de
-  `transform` en `steps()`, `theme/heroMotion.css` : 60 % → 20 % du GPU d'Electron), la rotation des
+  `transform` en `steps()`, `theme/heroMotion.css` : 60 % → 20 % du GPU, mesuré sous Electron), la rotation des
   bannières seulement à l'écran ; contrôles du lecteur masqués = 0 région native.
 - **Budget de LENTILLES** (lot lg5, décision de Damien du 23/10) : une lentille coûte ~0,3-0,45 ms de
   dessin GPU par image redessinée QUELLE QUE SOIT sa taille (le coût suit la fenêtre) ; à 20 sur un
@@ -1643,9 +1754,10 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   et « Plus d'infos » gardent la leur). Un nouveau verre
   à lentille se compte : `node perf/census.mjs /route` (banc de fluidité, `bench/liquid-glass/perf/`).
 - **Bancs** : `TENTACLE_LIQUID_GLASS=off` simule un Mac sans verre (pont absent, option
-  invisible) ; `TENTACLE_BENCH_INACTIVE=1` ouvre la fenêtre sans voler le focus (jamais un banc
-  sous les doigts de l'utilisateur) ; recette `apps/desktop-electron/bench/liquid-glass/` (README) ;
-  coût de la lentille `apps/web/bench/glass-gpu/` (page et application réelle, `app-lens.mjs`).
+  invisible) ; `--background` ouvre la fenêtre sans voler le focus (jamais un banc sous les
+  doigts de l'utilisateur) ; bancs `apps/desktop-cef/bench/glass/` ;
+  coût du verre dans la coquille `apps/web/bench/clair-verre/gpu.mjs` (occupation GPU :
+  `apps/web/bench/glass-gpu/sampling.mjs`).
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
@@ -1675,8 +1787,10 @@ supprime une passe de compositing. Vérifier avant d'en poser un.
    d'une fenêtre transparente depuis son masque alpha, à CHAQUE recomposition —
    dès que quoi que ce soit bouge derrière ou dedans. Mesuré sur un build de
    production, app au repos sur l'accueil : 72 % d'utilisation GPU avec
-   l'ombre, 19 % sans — plus que la lecture d'un film. `hasShadow: false` à la
-   fabrication (`macosTitleBar.ts`), et rien ne la rallume.
+   l'ombre, 19 % sans — plus que la lecture d'un film (mesuré sous Electron). La
+   fenêtre principale de la coquille CEF n'est pas transparente sous macOS (la page
+   est une couche dessus) ; la fenêtre PiP naît `hasShadow = NO`
+   (`compositor_pip_window_mac.mm`), et rien ne la rallume.
 
 Mesure de référence : `sudo powermetrics --samplers gpu_power -i 1000 -n 10` sur
 un **build de production** (le compteur d'images de `dev/` tient une boucle
@@ -1690,7 +1804,7 @@ un **build de production** (le compteur d'images de `dev/` tient une boucle
 | Layer | Technology |
 |-------|-----------|
 | Web | React 19, Vite 6, Tailwind 3, Framer Motion 11 |
-| Desktop | Electron 43 (Windows, macOS, Linux), libmpv via koffi |
+| Desktop | CEF 156 (Chromium Embedded Framework), SDL3, libmpv — C++ (Windows, macOS, Linux) |
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
 | Backend | Fastify 5, Prisma 6, SQLite (moteur natif de Prisma, une connexion) |
 | Data | TanStack Query v5 |

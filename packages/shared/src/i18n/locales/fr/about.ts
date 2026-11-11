@@ -31,11 +31,11 @@ export default {
   techTanStackQuery: "Gestion de cache & requêtes",
   techReactRouter: "Navigation SPA",
   techFastify: "Serveur backend",
-  techElectron: "Application desktop Windows, macOS et Linux",
+  techCef: "Coquille de l'application de bureau Windows, macOS et Linux (Chromium Embedded Framework, avec SDL3)",
   techExpo: "Application mobile",
   techReactNative: "Framework mobile",
   techExoPlayer: "Lecteur vidéo Android TV (Media3)",
-  techMpv: "Lecteur vidéo du bureau (LGPL v2.1+ sur macOS et Windows ; GPL v2+ sous Linux)",
+  techMpv: "Lecteur vidéo du bureau (LGPL)",
   techFFmpeg: "Décodage audio/vidéo (LGPL ; GPL v3 dans libmpv-android sur Android TV)",
   techMoltenVK: "Rendu vidéo macOS — Vulkan sur Metal (Apache 2.0)",
   techVoidTV: "Inspiration architecture lecteur Android TV",
@@ -66,7 +66,7 @@ export default {
   licenseUsedBy_other: "{{count}} composants",
   readLicense: "Lire le texte",
   closeLicense: "Fermer",
-  licenseTextDesktop: "Le lecteur du bureau embarque mpv et FFmpeg : sur macOS en LGPL v2.1+ (bibliothèques dynamiques, remplaçables), sur Windows en LGPL v3+ (libmpv-2.dll), sous Linux mpv en GPL v2+ — sa sortie vidéo X11 n'existe pas autrement — avec FFmpeg en LGPL v2.1+. La variable d'environnement TENTACLE_MPV_LIB charge une libmpv modifiée.",
+  licenseTextDesktop: "Le lecteur du bureau embarque mpv et FFmpeg, sans composant GPL : sur macOS en LGPL v2.1+ (bibliothèques dynamiques du paquet, remplaçables), sur Windows en LGPL v3+ (libmpv-2.dll), sous Linux notre libmpv en LGPL v2.1+, liée au FFmpeg de la distribution. La coquille repose sur le Chromium Embedded Framework (BSD) ; les avis de Chromium sont joints à l'application (CREDITS-Chromium.html).",
   // Un texte de licence qu'aucun composant tiers ne porte : celui de Tentacle lui-même.
   licenseTentacle: "La licence de Tentacle TV",
 } as const;

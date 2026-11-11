@@ -76,17 +76,27 @@ source dans l'onglet Licences. `DvCompatRenderer.kt` cite « JellyDV / VoidTV »
 (VoidTV : GPL-3.0) : aucun fichier équivalent dans VoidTV, technique et non copie ;
 de toute façon compatible AGPL.
 
-### Bureau — `apps/desktop-electron`
+### Bureau — `apps/desktop-cef` (depuis la 1.50.0)
 
-| Canal | libmpv livrée | Licence effective | État |
+Le bureau quitte Electron à la 1.50.0 : coquille **CEF** (Chromium Embedded Framework
+156, BSD-3-Clause, avis de Chromium dans `CREDITS-Chromium.html`) + **SDL3** (zlib) +
+**libmpv** liée directement ; nlohmann/json (MIT) et libsodium (ISC, statique) dans
+l'exécutable ; SQLite (domaine public) embarqué sous Windows seulement. Plus d'Electron
+ni de koffi dans le bureau (koffi reste dans Tentacle Server pour Windows). Détail :
+`apps/desktop-cef/THIRD-PARTY-LICENSES.md`.
+
+| Système | libmpv livrée | Licence effective | État |
 |---|---|---|---|
-| Mac App Store | build maison `build-mpv-lgpl-macos.sh` : mpv 0.40.0 `-Dgpl=false`, FFmpeg 7.1.1, dylibs séparées | LGPL-2.1+ | ✅ vérifié dans l'app installée (« libavutil license: LGPL version 2.1 or later ») ; 🛠 `LICENSE` d'Electron et `LICENSES.chromium.html` étaient absents du `.app` (posés à côté puis non emballés) : désormais dans `Contents/Resources/licenses` (`scripts/macosLicenses.mjs`) |
-| Microsoft Store | **DLL tierce commitée** `lib/mpv/libmpv-2.dll` (zhongfly/mpv-winbuild, variante LGPL, mpv master 0.41.0-233, FFmpeg 8 `--enable-version3` + OpenSSL, statique) | LGPL-3.0+ | ⚠️ **source introuvable** (builds purgés après 30 jours, commit non reproductible) ; 🛠 l'app disait « LGPL v2.1+ » |
-| Linux (GitHub) | build maison `build-mpv-linux.sh` : mpv 0.41.0 `-Dgpl=true` (X11), FFmpeg 7.1.1 LGPL statique | GPL-2.0+ (→ GPL-3 combinée) | ✅ compatible AGPL ; ⚠️ aucune source jointe aux Releases |
+| macOS (Apple Silicon) | fork `andrewrabert/mpv@ab0467ff24` + correctifs du dépôt, `-Dgpl=false` ; FFmpeg n9.0.2 `--disable-gpl --disable-nonfree` ; 20 dylibs dans `Contents/Frameworks` (`scripts/deps/paquet-deps.sh`) | LGPL-2.1+ | ✅ garde `CONFIG_GPL 0` au build ; dans `Contents/Resources/licenses` : `LICENSE`, `LICENSE-EXCEPTIONS`, `THIRD-PARTY-LICENSES.md`, `CEF.txt`, `CREDITS-Chromium.html` et les licences des 16 bibliothèques tierces (libsodium et nlohmann/json comprises) |
+| Windows | **la même DLL tierce** `libmpv-2.dll` (zhongfly/mpv-winbuild, variante LGPL, FFmpeg 8 `--enable-version3` + OpenSSL, statique), rangée dans `apps/desktop-cef/resources/windows/mpv/` | LGPL-3.0+ | ⚠️ révisions des bibliothèques liées dans la DLL introuvables ; aucune licence copiée par la recette Windows |
+| Linux | notre libmpv (même fork, correctifs Linux en plus), `-Dgpl=false`, liée au FFmpeg de la distribution | LGPL-2.1+ | ✅ plus de mpv GPL ; ⚠️ aucun paquet Linux de cette coquille encore, donc aucune licence jointe |
 
-Electron 43.2.0 (MIT) + Chromium (`LICENSES.chromium.html`), koffi 3.1.2 (MIT ; koffi
-1.x était AGPL — ne pas rétrograder). La variable `TENTACLE_MPV_LIB` charge une libmpv
-modifiée : c'est le « relier » de la LGPL, désormais dit dans l'app.
+Liaison dynamique partout : la libmpv du paquet se remplace par une version modifiée
+(« relier » de la LGPL). La variable `TENTACLE_MPV_LIB` d'Electron n'existe plus.
+
+> Jusqu'à la 1.4x, le bureau était Electron 43 (MIT, `LICENSES.chromium.html`) avec
+> koffi (MIT), mpv 0.40.0 LGPL sur macOS et mpv 0.41.0 **GPL** sous Linux (sortie X11) :
+> ces paquets-là gardent leurs licences et leur offre de sources `sources-desktop-v*`.
 
 ### Serveur — image Docker `ghcr.io/knaox/tentacle-tv`
 
@@ -126,7 +136,7 @@ vers Google, RGPD) — servir les woff2 locaux.
 |---|---|---|
 | GPL-2.0-**only** lié au code de Tentacle | **aucun** trouvé | — |
 | GPL-2.0-only dans l'image, non lié | busybox, apk-tools, alpine-baselayout, scanelf | ✅ programmes séparés |
-| GPL-2.0-or-later / GPL-3.0 liés | mpv (Linux, Android), FFmpeg Android, décodeur Jellyfin (FFTW de fpcalc : images d'avant le 2026-10-15) | ✅ AGPL-3 §13 / GPL-3 §13 permettent la combinaison |
+| GPL-2.0-or-later / GPL-3.0 liés | mpv (Android TV ; Linux jusqu'au bureau 1.4x), FFmpeg Android, décodeur Jellyfin (FFTW de fpcalc : images d'avant le 2026-10-15) | ✅ AGPL-3 §13 / GPL-3 §13 permettent la combinaison |
 | Multi-licences dont une GPL-2.0 | mbedTLS (Apache-2.0 OR GPL-2.0+), FreeType (FTL OR GPL-2.0+), GMP/Nettle (LGPL-3 OR GPL-2+), uchardet, graphite2, node-forge | ✅ on choisit l'option permissive / LGPL |
 | LGPL-2.1 / LGPL-3 | FFmpeg, mpv (LGPL), libplacebo, GnuTLS, PrismCore… | ✅ compatibles |
 | Apache-2.0 | Media3, MoltenVK, OpenSSL 3, Prisma, hls.js, folly | ✅ compatible GPL-3/AGPL-3 (pas GPL-2 : sans objet ici) |
@@ -190,15 +200,17 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
    Reste : le relancer à la main pour les livraisons DÉJÀ publiées (server-v1.23.0 et son
    ffmpeg GPL d'Alpine, desktop-v1.26.0, mobile-v1.10.x, tv-v1.10.x) ; manifeste des
    versions Homebrew / apt réellement embarquées par le bureau.
-5. **Mac App Store** : fait sur cette branche (`scripts/macosLicenses.mjs`) — à vérifier
-   dans le prochain `.pkg` (`Contents/Resources/licenses`).
+5. **Bureau CEF (1.50.0)** : paquet macOS complet (`cmake/MacBundle.cmake`,
+   `paquet-deps.sh`) et `source-offer.mjs` (`desktop`) à la chaîne du fork — fait ; reste
+   la même copie des licences dans les recettes Windows et Linux, à écrire.
 6. **Boutiques** : CLUF personnalisé (App Store Connect, Partner Center) qui réserve les
    droits des composants LGPL/GPL (modification, rétro-ingénierie pour le débogage) ;
    fiches : « AGPL-3.0 » + URL de la source.
 7. **Notices générées** : `rollup-plugin-license` (web, LG), acknowledgements CocoaPods /
    SwiftPM, rapport Gradle — pour les centaines de paquets MIT/BSD dont l'écran ne liste
    que les principaux.
-8. **Dépôt** : retirer la mpv Homebrew GPL commitée `apps/desktop-electron/lib/mpv/libmpv.dylib`
-   et les `libmpv-wrapper.*` (jamais chargés, distribués sans source).
+8. **Dépôt** : `apps/desktop-electron` a quitté le dépôt avec la 1.50.0 — avec lui la mpv
+   Homebrew GPL commitée `lib/mpv/libmpv.dylib` et les `libmpv-wrapper.*` ; `libmpv-2.dll`
+   (Windows) est gardée dans `apps/desktop-cef/resources/windows/mpv/`.
 9. **Image** : retirer npm / corepack / yarn de l'étape finale ; figer `fftw-static` et
    l'URL de `tailwind.js` ; servir Inter en local aux iframes.

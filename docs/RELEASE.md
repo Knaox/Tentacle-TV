@@ -8,8 +8,9 @@
 
 - Node.js >= 20
 - pnpm >= 10
-- Rien de plus : les trois systèmes de bureau sortent d’Electron. La chaîne Rust
-  et Tauri ont disparu avec la migration de Linux.
+- Bureau (1.50.0 et après) : la coquille CEF `apps/desktop-cef` (C++ — CMake,
+  Ninja ; CEF, SDL3 et la chaîne mpv sont épinglés par ses scripts). Prérequis par
+  système : `apps/desktop-cef/README.md`.
 
 ## 1. Préparer une release
 
@@ -79,6 +80,10 @@ sans geste ensuite), `store` (en ligne, sans un clic de plus). Les tags
 
 ## 4. Mises à jour automatiques (desktop)
 
+> **Bureau CEF (1.50.0)** : la coquille a son propre moteur de mise à jour (manifeste
+> signé, `apps/desktop-cef/docs/MISE-A-JOUR.md`). Ce qui suit est le mécanisme du bureau
+> d'avant ; il reste à rapprocher de `desktop.yml` une fois celui-ci réécrit.
+
 Le mécanisme réel est le manifeste **`updates/store-versions.json`** (lu par l'app via
 raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 
@@ -94,67 +99,36 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 
 ## 5. Spécificités par plateforme
 
-### macOS (App Store)
+### Bureau — la coquille CEF (depuis la 1.50.0)
 
-- Coquille : **Electron** (`apps/desktop-electron`), comme Windows — même web build,
-  même libmpv piloté par koffi.
-- libmpv + FFmpeg recompilés **LGPL** (`build-mpv-lgpl-macos.sh`), sandbox,
-  bundle `com.tentacle.mobile` (fiche partagée avec iOS/tvOS, app id `6760205634`).
-- Version injectée par `--version` depuis `versions.json` (elle atterrit dans le
-  `package.json` embarqué, donc dans `app.getVersion()` — c'est elle que la
-  détection de MAJ compare au manifeste) ; CFBundleVersion = build auto (croissant
-  global — exigence Apple 90061 réglée à vie).
-- MAJ in-app = ouverture App Store (pas d'auto-update ; le paquet `mas` d'Electron
-  n'embarque pas Squirrel). Attributions LGPL :
-  `apps/desktop/THIRD-PARTY-LICENSES.md` + À propos → Crédits.
-- Deux jobs : `mac-libs` compile mpv/FFmpeg LGPL **par architecture** (et récolte
-  le binaire natif koffi de son arch, indisponible ailleurs), `mac-package` fusionne
-  au `lipo`, empaquette en universel, signe et envoie.
+Les trois systèmes sortent de `apps/desktop-cef` : CEF (Chromium Embedded
+Framework) + SDL3 + libmpv, le même front `apps/web` servi sous `tentacle://app`.
+La recette de CI vit dans `desktop.yml` (en cours de réécriture pour cette coquille :
+c'est lui qui fait foi pour les jobs, les secrets et les canaux). Ce qui est déjà
+établi :
 
-> ⚠️ Deux réglages du packaging ont un coût s'ils sautent, et il ne se voit
-> qu'après l'envoi : `osxUniversal.x64ArchFiles` (sans quoi la fusion universelle
-> refuse les `koffi.node` mono-architecture) et `preAutoEntitlements: false` (sans
-> quoi osx-sign ajoute `application-groups`, absent du profil de provisionnement —
-> build inéligible). Voir les commentaires de `package-macos.mjs`.
+- **Mise à jour** : moteur propre aux trois systèmes (manifeste signé ed25519,
+  assistant `tentacle-update`, installation à la fermeture, retour arrière) —
+  `apps/desktop-cef/docs/MISE-A-JOUR.md`.
+- **macOS (Apple Silicon)** : `scripts/build.sh --dist` construit un `Tentacle.app`
+  autonome — chaîne de lecture LGPL (`scripts/deps/paquet-deps.sh` : FFmpeg n9.0.2
+  `--disable-gpl --disable-nonfree`, libmpv du fork + correctifs du dépôt), 20 dylibs
+  dans `Contents/Frameworks`, licences dans `Contents/Resources/licenses`. Ordre de
+  signature exigé par Developer ID : `apps/desktop-cef/docs/PAQUET.md`, « Signature ».
+- **Windows** : build MSVC (`scripts/dev/windows.mjs`) ; libmpv = la `libmpv-2.dll`
+  LGPL de mpv-winbuild (épinglée par empreinte, `windows-deps.mjs`) ; mise à jour MSIX
+  reconnue (`src/platform/windows/msix_update_windows.*`). Jamais essayé sur une vraie
+  machine : `apps/desktop-cef/docs/A-TESTER-WINDOWS.md`.
+- **Linux** : notre libmpv (`-Dgpl=false`, sortie Wayland par sous-surface) ;
+  `cmake/LinuxApp.cmake` pose l'exécutable et ce que CEF cherche à côté — le paquet de
+  distribution (AppImage, rpm…) reste à écrire. HDR : sessions **Wayland** seulement, avec
+  un compositeur qui gère la couleur — X.Org n'a pas de gestion de couleur et n'en
+  aura pas. À essayer : `apps/desktop-cef/docs/A-TESTER-LINUX.md`.
+- **Attributions** : `apps/desktop-cef/THIRD-PARTY-LICENSES.md` + À propos → Crédits.
 
-Test local (paquet universel non distribuable, signature ad hoc) :
-```bash
-bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh    # dylibs LGPL de l'arch hôte
-cd apps/desktop-electron
-pnpm build:appstore
-node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
-```
-
-### Windows (Microsoft Store)
-
-- Construit par **Electron** depuis la 1.20.0 (`apps/desktop-electron`), plus par
-  Tauri : pas de chaîne Rust dans ce job. Même libmpv, piloté par koffi.
-- MSIX **non signé** (`makeappx`) — le Store signe. Identité
-  `DamienROUGE.Tentacle` (`apps/desktop-electron/msix/Package.appxmanifest`, patché
-  `Version="X.Y.Z.0"` par la CI).
-- Essai local du paquet : `pnpm --filter @tentacle-tv/desktop-electron package`,
-  puis lancer `apps/desktop-electron/release/Tentacle TV-win32-x64/Tentacle TV.exe`.
-- Soumission API automatique (`msstore-submit.mjs`) : clone de la dernière
-  soumission publiée, notes FR/EN depuis `changelogs/desktop.md`, publication
-  immédiate. ⚠️ version strictement supérieure à la publiée.
-
-### Linux
-
-- Coquille : **Electron**, comme Windows et macOS. Même `apps/desktop-electron`,
-  même libmpv pilotée par koffi.
-- Runner **ubuntu-22.04**, et le choix n’est pas historique : la glibc est
-  compatible vers l’avant et jamais vers l’arrière. Une chaîne bâtie là tourne
-  sur Arch ; bâtie sur Arch, elle ne tournerait pas sur Ubuntu.
-- Les quatre formats sortent du même job — electron-builder produit le paquet
-  pacman lui-même, il n’y a plus de conteneur Arch.
-- **mpv est embarqué** (`scripts/build-mpv-linux.sh`, mis en cache sur l’empreinte
-  du script). FFmpeg en LGPL, mpv en **GPL** : son backend X11 vient de MPlayer et
-  meson le refuse hors GPL — sans lui, aucune vidéo sur les sessions X11.
-- Release GitHub `desktop-vX.Y.Z` + `SHA256SUMS` + manifeste auto-update commité
-  sur `main` par le job `manifest`.
-- HDR : sessions **Wayland** seulement, avec un compositeur qui gère la couleur.
-  X.Org n’a pas de gestion de couleur et n’en aura pas. Voir
-  `docs/LINUX-FENETRE-VIDEO.md` pour le relevé complet.
+> Jusqu'à la 1.4x, le bureau était Electron (`apps/desktop-electron`, retiré du
+> dépôt) : Mac App Store universel, MSIX, deb/rpm/pacman/AppImage. Les Releases
+> `desktop-v1.4x` restent ce qu'elles sont.
 
 ### Android TV (Play Console uniquement)
 
@@ -218,4 +192,4 @@ de la piste de tests fermés « Alpha », puis installent depuis le Play Store d
 - [Microsoft Partner Center](https://partner.microsoft.com/dashboard)
 - [Google Play Console](https://play.google.com/console)
 - [App Store Connect](https://appstoreconnect.apple.com)
-- [Electron Documentation](https://www.electronjs.org/docs/latest) (coquilles Windows et macOS)
+- [CEF](https://github.com/chromiumembedded/cef) et ses [distributions binaires](https://cef-builds.spotifycdn.com) (coquille du bureau)

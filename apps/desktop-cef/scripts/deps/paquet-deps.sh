@@ -99,7 +99,9 @@ ninja -C build install >/dev/null
 
 # --- Licences (livrées dans Contents/Resources/licenses par le mode --dist) ----------------
 # LGPL (FFmpeg, mpv, libplacebo, fribidi) : texte de la licence et moyen de refaire le build
-# (ces scripts, versions et options ci-dessous). MoltenVK : celle de sa formule Homebrew.
+# (ces scripts, versions et options ci-dessous). MoltenVK et nlohmann/json (en-têtes compilés
+# dans l'exécutable) : celles de leur formule Homebrew. libsodium : liée statiquement (maj).
+# Celles de Tentacle (AGPL, permissions, THIRD-PARTY-LICENSES.md) : cmake/MacBundle.cmake.
 lic="$prefix/licenses"; rm -rf "$lic"; mkdir -p "$lic"
 s="$root/src"
 for pair in "FFmpeg-$FFMPEG_TAG:$s/ffmpeg/COPYING.LGPLv2.1" "mpv:$s/mpv/LICENSE.LGPL" \
@@ -107,13 +109,18 @@ for pair in "FFmpeg-$FFMPEG_TAG:$s/ffmpeg/COPYING.LGPLv2.1" "mpv:$s/mpv/LICENSE.
   "freetype:$s/freetype/docs/FTL.TXT" "fribidi:$s/fribidi/COPYING" "dav1d:$s/dav1d/COPYING" \
   "lcms2:$s/Little-CMS/LICENSE" "uchardet:$s/uchardet/COPYING" "SDL3:$s/SDL/LICENSE.txt" \
   "Vulkan-Loader:$s/Vulkan-Loader/LICENSE.txt" "glslang:$s/glslang/LICENSE.txt" \
-  "MoltenVK:/opt/homebrew/opt/molten-vk/LICENSE"; do
+  "MoltenVK:/opt/homebrew/opt/molten-vk/LICENSE" "libsodium:$s/libsodium/LICENSE" \
+  "nlohmann-json:/opt/homebrew/opt/nlohmann-json/LICENSE.MIT"; do
   cp "${pair#*:}" "$lic/${pair%%:*}.txt"
 done
-printf '%s\n' "Bibliothèques tierces de Tentacle (paquet macOS). Construites par" \
-  "scripts/deps/paquet-libs.sh et paquet-deps.sh du dépôt Tentacle CEF (versions, options et" \
-  "correctifs y figurent) ; FFmpeg $FFMPEG_TAG en LGPL 2.1, sans composant GPL ni nonfree." \
-  "Chromium Embedded Framework / Chromium : CREDITS-Chromium.html." >"$lic/LISEZMOI.txt"
+printf '%s\n' "Bibliothèques tierces de Tentacle TV (paquet macOS). Construites par" \
+  "apps/desktop-cef/scripts/deps/paquet-libs.sh et paquet-deps.sh du dépôt" \
+  "https://github.com/Knaox/Tentacle-TV (versions, options et correctifs y figurent, au tag" \
+  "desktop-vX.Y.Z de la version) ; FFmpeg $FFMPEG_TAG en LGPL 2.1, sans composant GPL ni" \
+  "nonfree ; libmpv et FFmpeg sont des bibliothèques dynamiques de Contents/Frameworks, que" \
+  "l'on peut remplacer par une version modifiée (LGPL)." \
+  "Chromium Embedded Framework : CEF.txt ; Chromium : CREDITS-Chromium.html." \
+  "Tentacle TV : LICENSE (AGPL-3.0-or-later), LICENSE-EXCEPTIONS, THIRD-PARTY-LICENSES.md." >"$lic/LISEZMOI.txt"
 
 # --- Garde-fous (grep -c : avec pipefail, grep -q coupe le tube et rend un faux négatif) ----
 libs=$(find "$prefix/lib" -name '*.dylib' -type f)

@@ -19,5 +19,5 @@ opens the full text of each license, offline. Main components:
 | Inter font (`@fontsource-variable/inter`) | SIL Open Font License 1.1 |
 | LG client only: core-js, SystemJS, regenerator-runtime (legacy build) | MIT |
 
-The desktop shell adds Electron, Chromium and the mpv / FFmpeg player:
-`apps/desktop-electron/THIRD-PARTY-LICENSES.md`.
+The desktop shell (since 1.50.0) adds the Chromium Embedded Framework (Chromium), SDL3 and
+the mpv / FFmpeg player: `apps/desktop-cef/THIRD-PARTY-LICENSES.md`.
