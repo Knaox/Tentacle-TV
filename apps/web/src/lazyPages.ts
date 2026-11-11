@@ -31,7 +31,7 @@ export const Person = lazy(() => import("./pages/Person").then((m) => ({ default
 export const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 export const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 export const AdminInvites = lazy(() => import("./pages/AdminInvites").then((m) => ({ default: m.AdminInvites })));
-export const Preferences = lazy(() => import("./pages/Preferences").then((m) => ({ default: m.Preferences })));
+export const Preferences = preloadable(() => import("./pages/Preferences").then((m) => m.Preferences));
 export const SettingsLayout = preloadable(() => import("./components/settings/SettingsLayout").then((m) => m.SettingsLayout));
 export const SettingsIndex = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsIndex })));
 export const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));

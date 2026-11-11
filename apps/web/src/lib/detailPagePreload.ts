@@ -1,4 +1,4 @@
-import { Favorites, Home, Library, MediaDetail, Search, SettingsLayout, Watchlist } from "../lazyPages";
+import { Favorites, Home, Library, MediaDetail, Preferences, Search, SettingsLayout, Watchlist } from "../lazyPages";
 
 /** Le démarrage d'abord : la fiche se charge quand la page affichée a fini. */
 const IDLE_TIMEOUT_MS = 4_000;
@@ -26,7 +26,9 @@ export function scheduleDetailPagePreload(): void {
     else setTimeout(run, FALLBACK_DELAY_MS);
   };
   // La fiche d'abord (la page qu'on ouvre le plus), puis les pages de la barre, l'une après l'autre.
-  const queue = [MediaDetail, Home, Library, Watchlist, Favorites, Search, SettingsLayout]
+  // `Preferences` : la rubrique où les réglages s'ouvrent — sans elle, la page se montrait avec
+  // son rail et un volet vide le temps du module (≈ 1 s en réseau lent, banc `bench:page-flicker`).
+  const queue = [MediaDetail, Home, Library, Watchlist, Favorites, Search, SettingsLayout, Preferences]
     .map((page) => (page as { preload?: () => Promise<void> }).preload)
     .filter((preload): preload is () => Promise<void> => typeof preload === "function");
   const next = (): void => {
