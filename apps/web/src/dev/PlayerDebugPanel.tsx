@@ -32,6 +32,7 @@ import { DEBUG_ACTIONS } from "./playerDebugActions";
 import { usePanelDrag } from "./usePanelDrag";
 import { usePanelResize } from "./usePanelResize";
 import "./debugMenu/debugMenu.css";
+import "./debugMenu/debugActions.css";
 import "./debugMenu/debugDiagnostic.css";
 
 const REFRESH_MS = 500;
