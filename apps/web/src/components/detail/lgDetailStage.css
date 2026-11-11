@@ -20,39 +20,5 @@
   background: var(--lg-pane-row-hover);
 }
 
-/* ── L'assise du texte : un dégradé PLEINE LARGEUR, jamais un rectangle ──
- *
- * L'assise d'avant (`.detail-text-scrim`, theme/scrims.css) suivait la colonne :
- * un rectangle gris aux bords flous, une dalle fantôme sur l'image, très
- * visible en clair. En verre natif, elle court sur toute la largeur de la
- * scène, du bas de la fenêtre jusqu'au-dessus du texte — comme le héros de
- * l'accueil —, à la même densité (`--detail-text-scrim-alpha`, qui tient le
- * texte de la colonne à 4,5:1 sur un blanc pur) : plus aucun bord vertical,
- * une montée en smoothstep au-dessus du surtitre, une extinction dans la
- * marge sous les actions. La colonne cède son positionnement : l'assise se mesure sur le bloc
- * de la scène (`relative z-10`), qui court d'un bord à l'autre. */
-:root[data-liquid-glass="native"] .lg-detail .detail-text-column {
-  position: static;
-}
-
-:root[data-liquid-glass="native"] .lg-detail .detail-text-scrim {
-  --lgd-scrim-a: var(--detail-text-scrim-alpha);
-  /* Jusqu'au bas de la scène, pas au-delà : en clair, la page qui suit
-   * (« Informations ») se posait sinon sur une bande grise. */
-  inset: -120px 0 0 0;
-  width: auto;
-  max-width: none;
-  background: linear-gradient(
-    180deg,
-    rgba(var(--scrim-media-rgb), 0) 0,
-    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.16)) 55px,
-    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.5)) 110px,
-    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.84)) 165px,
-    rgba(var(--scrim-media-rgb), var(--lgd-scrim-a)) 220px,
-    rgba(var(--scrim-media-rgb), var(--lgd-scrim-a)) calc(100% - 56px),
-    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.5)) calc(100% - 28px),
-    rgba(var(--scrim-media-rgb), 0) 100%
-  );
-  -webkit-mask-image: none;
-  mask-image: none;
-}
+/* L'assise du texte de la fiche (`.detail-text-scrim`) : le dégradé pleine largeur né ici est devenu la règle
+ * commune, hors verre aussi — `theme/scrims.css`. Rien à surcharger sous la porte. */

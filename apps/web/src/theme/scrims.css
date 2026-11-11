@@ -130,25 +130,32 @@
   display: none;
 }
 
-/* L'assise de la colonne de texte de la fiche : un rectangle sombre aux bords
- * ET aux coins fondus, fait du PRODUIT de deux fondus — vertical dans le fond,
- * horizontal dans le masque. Une ombre portée étalée avait été essayée : sa
- * jonction avec le fond de l'élément se voyait en liseré sur un décor clair.
- * Ici, aucune jonction. Les rampes (96 px en hauteur, 120 px en largeur)
- * tombent HORS du texte : la boîte déborde d'autant (`DetailTextColumn`).
- * Un seul masque linéaire, préfixé comme celui de `.hero-glow` : la dalle LG
- * le connaît ; il n'y a ni `mask-composite` ni `filter`. Statique, peinte une
- * fois ; seul son fondu d'entrée l'anime, en opacité. */
+/* L'assise du texte de la fiche : un dégradé PLEINE LARGEUR, jamais un rectangle.
+ * Elle suivait la colonne — un rectangle sombre aux bords fondus (le produit de deux
+ * rampes linéaires) : sur un décor clair, une plaque grise posée sur l'image, ses quatre
+ * bords et ses coins visibles, dans les deux thèmes (mesuré sur fond blanc, lot rf2). Le
+ * verre l'avait déjà remplacée ; c'est maintenant la règle partout. Elle court d'un bord
+ * à l'autre de la scène, du bas jusqu'au-dessus du surtitre — comme le héros de
+ * l'accueil —, à la même densité (`--detail-text-scrim-alpha` : le texte de la colonne
+ * tient 4,5:1 sur un blanc pur) : aucun bord vertical, une montée en smoothstep sur
+ * 220 px, une extinction dans la marge sous les actions. La colonne n'est pas
+ * positionnée : l'assise se mesure sur le bloc de la scène (`relative z-10`). Ni masque
+ * ni filtre ; statique, peinte une fois, seul son fondu d'entrée l'anime (opacité). */
 .detail-text-scrim {
+  --scrim-a: var(--detail-text-scrim-alpha);
+  /* Jusqu'au bas de la scène, pas au-delà : en clair, la page qui suit se poserait sur une bande grise. */
+  inset: -120px 0 0 0;
   background: linear-gradient(
     180deg,
     rgba(var(--scrim-media-rgb), 0) 0,
-    rgba(var(--scrim-media-rgb), var(--detail-text-scrim-alpha)) 96px,
-    rgba(var(--scrim-media-rgb), var(--detail-text-scrim-alpha)) calc(100% - 96px),
+    rgba(var(--scrim-media-rgb), calc(var(--scrim-a) * 0.16)) 55px,
+    rgba(var(--scrim-media-rgb), calc(var(--scrim-a) * 0.5)) 110px,
+    rgba(var(--scrim-media-rgb), calc(var(--scrim-a) * 0.84)) 165px,
+    rgba(var(--scrim-media-rgb), var(--scrim-a)) 220px,
+    rgba(var(--scrim-media-rgb), var(--scrim-a)) calc(100% - 56px),
+    rgba(var(--scrim-media-rgb), calc(var(--scrim-a) * 0.5)) calc(100% - 28px),
     rgba(var(--scrim-media-rgb), 0) 100%
   );
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 120px, #000 calc(100% - 120px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 120px, #000 calc(100% - 120px), transparent 100%);
 }
 
 /* Dans la colonne, le texte « secondaire » posé sur média passe de 80 à 90 %
