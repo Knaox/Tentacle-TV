@@ -47,6 +47,9 @@ export async function openSession(options = {}) {
   if (!session) throw new Error(`compte de banc inconnu : ${account}`);
   const browser = await chromium.launch({
     headless: true,
+    // BANC_NAVIGATEUR=complet : le Chromium entier (nouveau mode sans tête) au lieu du « headless shell » —
+    // son compositeur est celui d'un vrai Chrome ; à préférer pour juger un `backdrop-filter`.
+    ...(process.env.BANC_NAVIGATEUR === "complet" ? { channel: "chromium" } : {}),
     // BANC_CDP=0 : aucun port (une seconde passe en parallèle de la première).
     args: ["--mute-audio", "--disable-audio-output", ...(CDP_PORT > 0 ? [`--remote-debugging-port=${CDP_PORT}`] : [])],
   });

@@ -27,7 +27,9 @@ export const CORNERS = () => {
   };
   const visible = (r) => r.width >= 12 && r.height >= 12 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
   const isGlass = (el, s) => (s.backdropFilter && s.backdropFilter !== "none")
-    || el.matches("[data-lg-tone], [data-lg-scale], .lg-surface, .lgc-capsule, .lg-menu, .lg-sheet, .lg-pane, .lg-chip, .lg-pill, .lg-field, .lg-content-control, .lg-glass-btn, .lg-seg, .lg-segmented, .lg-panel, .lg-notice, .lg-bar, .lg-tray, .lg-disc, .lg-btn, .lg-toast");
+    || /(^|\s)lgc?-/.test(typeof el.className === "string" ? el.className : "")
+    || [...el.attributes].some((a) => a.name.startsWith("data-lg-"))
+    || el.matches(".nav-capsule-glass, .ctl-switch, .ctl-segment, .season-tab, .ui-tile");
   const out = [];
   for (const el of document.querySelectorAll("body *")) {
     const s = getComputedStyle(el);
@@ -93,3 +95,74 @@ export const CORNERS = () => {
   }
   return out;
 };
+
+/**
+ * Dans la page : toutes les formes ARRONDIES et peintes du viewport (verre ou non) — leur boîte et leurs quatre
+ * rayons. Le banc regarde ensuite leurs angles AU PIXEL : sous un coin arrondi, on doit voir le dessous.
+ */
+export const SHAPES = () => {
+  const px = (v) => parseFloat(v) || 0;
+  const out = [];
+  for (const el of document.querySelectorAll("body *")) {
+    const s = getComputedStyle(el);
+    if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) < 0.5) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 24 || r.height < 20 || r.left < 4 || r.top < 4 || r.right > innerWidth - 4 || r.bottom > innerHeight - 4) continue;
+    const radii = [s.borderTopLeftRadius, s.borderTopRightRadius, s.borderBottomRightRadius, s.borderBottomLeftRadius]
+      .map((v) => Math.min(v.includes("%") ? (px(v) / 100) * Math.min(r.width, r.height) : px(v), Math.min(r.width, r.height) / 2));
+    const before = getComputedStyle(el, "::before");
+    const after = getComputedStyle(el, "::after");
+    const paints = (st) => (st.backgroundImage && st.backgroundImage !== "none") || (st.backgroundColor && !/rgba?\(0, 0, 0, 0\)|transparent/.test(st.backgroundColor))
+      || (st.backdropFilter && st.backdropFilter !== "none") || (st.boxShadow && st.boxShadow !== "none");
+    const glass = (s.backdropFilter && s.backdropFilter !== "none") || /(^|\s)lgc?-/.test(typeof el.className === "string" ? el.className : "") || el.hasAttribute("data-lg-tone") || el.hasAttribute("data-lg-scale");
+    if (!glass) continue;
+    if (!paints(s) && !(before.content !== "none" && paints(before)) && !(after.content !== "none" && paints(after))) continue;
+    // Une forme rognée par un ancêtre n'a pas ses propres angles à l'écran.
+    let clipped = false;
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const ps = getComputedStyle(p);
+      if (ps.overflowX === "visible" && ps.overflowY === "visible") continue;
+      const pr = p.getBoundingClientRect();
+      if (r.left < pr.left + 1 || r.top < pr.top + 1 || r.right > pr.right - 1 || r.bottom > pr.bottom - 1) { clipped = true; break; }
+    }
+    if (clipped) continue;
+    const cls = typeof el.className === "string" ? el.className.trim().split(/\s+/).slice(0, 6).join(".") : "";
+    out.push({ who: el.tagName.toLowerCase() + (cls ? `.${cls}` : ""), rect: [r.left, r.top, r.width, r.height], radii });
+  }
+  return out;
+};
+
+/**
+ * Les angles d'une forme, au pixel. Juste DANS l'angle (1,5 px en diagonale), une forme arrondie de rayon ≥ 6 px
+ * laisse voir le dessous : ce pixel doit ressembler à celui d'à côté, HORS de la boîte, plus qu'au corps de la forme.
+ * @returns les angles qui paraissent carrés.
+ */
+export function squareCorners(shape, image, ratio = 1) {
+  const [x, y, w, h] = shape.rect;
+  const at = (px, py) => {
+    const ix = Math.round(px * ratio);
+    const iy = Math.round(py * ratio);
+    if (ix < 0 || iy < 0 || ix >= image.width || iy >= image.height) return null;
+    const o = (iy * image.width + ix) * 4;
+    return [image.data[o], image.data[o + 1], image.data[o + 2]];
+  };
+  const dist = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+  const corners = [[x, y, 1, 1, "haut-gauche"], [x + w, y, -1, 1, "haut-droit"], [x + w, y + h, -1, -1, "bas-droit"], [x, y + h, 1, -1, "bas-gauche"]];
+  const found = [];
+  corners.forEach(([cx, cy, dx, dy, name], i) => {
+    const radius = shape.radii[i];
+    // Dans l'angle, HORS de l'arc : à moins de r·(1 − 1/√2) du coin sur la diagonale (0,2 r par axe).
+    const inset = Math.min(2, radius * 0.14);
+    const inside = at(cx + dx * inset, cy + dy * inset);
+    const outside = at(cx - dx * 2.5, cy - dy * 2.5);
+    const body = at(cx + dx * Math.max(radius, 8) * 0.75, cy + dy * Math.max(radius, 8) * 0.75);
+    if (!inside || !outside || !body) return;
+    const toOutside = dist(inside, outside);
+    const toBody = dist(inside, body);
+    // Rayon nul sur une forme dont les autres angles sont arrondis, ou angle peint comme le corps.
+    const siblings = Math.max(...shape.radii);
+    if (radius < 2 && siblings >= 6 && dist(body, outside) > 14) found.push({ corner: name, why: `rayon ${radius} px (les autres : ${siblings})`, inside, outside, body });
+    else if (radius >= 10 && toOutside > 22 && toBody < toOutside) found.push({ corner: name, why: `angle peint (écart au dessous ${toOutside}, au corps ${toBody})`, inside, outside, body });
+  });
+  return found;
+}

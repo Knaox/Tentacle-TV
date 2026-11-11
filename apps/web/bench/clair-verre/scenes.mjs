@@ -26,6 +26,30 @@ const escape = async (page) => {
   await page.waitForTimeout(250);
 };
 
+const slug = (label) => label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+/** Les menus de la barre de filtres d'une bibliothèque (le tri est le premier déclencheur de la barre). */
+const FILTER_MENUS = ["Genres", "Année", "Note minimum", "Plateformes", "Langue audio", "Sous-titres"];
+
+/** Les écrans du labo des réglages qu'aucune session de banc n'atteint (administration, profils, installation). */
+const LAB_SETTINGS = [
+  "admin", "admin-a-regler", "admin-recommandations", "admin-sessions", "admin-tickets", "admin-utilisateurs",
+  "admin-invitations", "admin-famille", "admin-telechargements", "admin-services", "admin-metadonnees",
+  "admin-acces-distant", "admin-extensions", "admin-systeme", "qui-regarde", "connexion", "inscription", "assistant",
+];
+
+/** Pose un statut, les favoris et le premier genre : les pastilles allumées et la rangée « ce qui est posé ». */
+async function applyFilters(page) {
+  const bar = page.locator("section[aria-label]").first();
+  await bar.getByText("Non vus", { exact: true }).click({ timeout: 5000 }).catch(() => {});
+  await bar.locator('button:has-text("Favoris")').first().click({ timeout: 5000 }).catch(() => {});
+  await bar.locator('button[aria-haspopup="true"]:has-text("Genres")').click({ timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await page.locator('[role="menuitemcheckbox"], [role="option"], .ui-menu-item').first().click({ timeout: 4000 }).catch(() => {});
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(1500);
+}
+
 /** Les identifiants lus sur l'instance, gardés d'une passe à l'autre (la découverte coûte six chargements). */
 const CACHE = process.env.BANC_SCENES ?? join(homedir(), ".cache/tentacle-test/rf2/clair-verre/scenes.json");
 
@@ -69,6 +93,7 @@ export async function buildScenes(page) {
   }
   const { libraries, media, person } = ids;
 
+  const library = libraries[1] ?? libraries[0];
   const settings = ["", "/appearance", "/personalization", "/security", "/family", "/playback", "/languages", "/downloads", "/data"];
   const scenes = [
     { name: "accueil", route: "/", screens: 4, settle: 2500 },
@@ -97,6 +122,19 @@ export async function buildScenes(page) {
     { name: "notifications", route: "/", steps: click('button[aria-label*="otification"]'), after: escape },
     { name: "watch-together", route: "/", steps: click('button[aria-label*="Watch"], button[aria-label*="groupe"], button[aria-label*="ensemble"]'), after: escape },
     { name: "palette", route: "/", steps: async (p) => { await p.keyboard.press("Meta+k"); await p.waitForTimeout(600); await p.keyboard.type("iron"); await p.waitForTimeout(1500); }, after: escape },
+    // La bibliothèque et TOUS ses filtres : chaque menu ouvert, les filtres posés, l'état vide.
+    ...FILTER_MENUS.map((label) => ({ name: `filtre-${slug(label)}`, route: library, steps: click(`section[aria-label] button[aria-haspopup="true"]:has-text("${label}")`), after: escape })),
+    { name: "filtre-tri", route: library, steps: click('section[aria-label] button[aria-haspopup="true"] >> nth=0'), after: escape },
+    { name: "filtres-poses", route: library, steps: applyFilters, screens: 2 },
+    { name: "bibliotheque-vide", route: library, steps: async (p) => { await p.locator('section[aria-label] input').first().fill("zzzzqqqq"); await p.waitForTimeout(2500); } },
+    // Ce qu'un compte sans droits ne voit pas, ou ce qui ne se provoque pas : les labos du paquet de développement.
+    ...LAB_SETTINGS.map((id) => ({ name: `labo-${id}`, route: `/dev/reglages?vue=${id}`, screens: 3 })),
+    ...["jetons", "boutons", "controles", "calques"].map((id) => ({ name: `labo-socle-${id}`, route: `/dev/socle?vue=${id}`, screens: 3 })),
+    ...["avis", "etats", "cartes"].map((id) => ({ name: `labo-accueil-${id}`, route: `/dev/accueil?vue=${id}`, screens: 2 })),
+    ...["feuille-film", "feuille-saison", "feuille-serie", "file", "catalogue", "serie", "film", "boutons", "avis"].map((id) => ({ name: `labo-hors-ligne-${id}`, route: `/dev/hors-ligne?vue=${id}`, screens: 2 })),
+    // Le labo du verre : chaque surface de Liquid Glass sur de vrais dessous (mode natif seulement).
+    ...["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles", "feuilles"].flatMap((vue) =>
+      ["affiches", "blanc"].map((fond) => ({ name: `labo-verre-${vue}-${fond}`, route: `/dev/verre?vue=${vue}&fond=${fond}`, screens: 2 }))),
   ];
   return scenes;
 }

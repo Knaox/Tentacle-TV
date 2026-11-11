@@ -68,6 +68,8 @@ const COLLECT = () => {
   const coverOf = (node, [x, y, w, h]) => {
     const top = document.elementFromPoint(x + w / 2, y + h / 2);
     if (!top || top === node || node.contains(top) || top.contains(node)) return null;
+    // Des initiales de repli SOUS un portrait, un titre sous son affiche : l'image les remplace.
+    if (top.matches("img, video, canvas, picture")) return "layer";
     for (let el = top; el && el !== document.body; el = el.parentElement) {
       const position = getComputedStyle(el).position;
       if (position === "fixed" || position === "sticky" || el.matches('[role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')) {
@@ -190,6 +192,22 @@ async function settleImages(page) {
 }
 
 /**
+ * Les outils du paquet de développement (compteur d'images, bouton DEBUG) flottent sur la page sans
+ * capter le pointeur : ils ne sont pas l'interface, et faussent ce qui passe dessous. Masqués.
+ */
+async function hideDevTools(page) {
+  await page.evaluate(() => {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!/^\d+ i\/s|^DEBUG$/.test(node.nodeValue.trim())) continue;
+      for (let el = node.parentElement; el && el !== document.body; el = el.parentElement) {
+        if (getComputedStyle(el).position === "fixed") { el.style.visibility = "hidden"; break; }
+      }
+    }
+  });
+}
+
+/**
  * Mesure le viewport courant de la page.
  * @returns {Promise<Array<object>>} un relevé par texte ou pictogramme, avec son rapport de contraste médian et minimal.
  */
@@ -199,6 +217,7 @@ export async function measureViewport(page, dump = null) {
   let items = [];
   let seen = null;
   let png = null;
+  await hideDevTools(page);
   for (let attempt = 0; attempt < 4; attempt++) {
     await settleImages(page);
     const before = await page.evaluate(COLLECT);
