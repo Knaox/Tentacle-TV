@@ -44,7 +44,10 @@
   --wtc-capsule: var(--surface-dropdown);
   --wtc-fg: var(--text-primary);
   --wtc-fg-2: var(--text-secondary);
-  --wtc-fg-3: var(--text-tertiary);
+  /* Pas `--text-tertiary` : en thème clair il tombe à 4,2:1 sur le blanc, sous le seuil d'un
+   * texte de 12 px (l'heure, le compte des membres, l'invite du champ). 66 % de l'encre du
+   * thème : 5,9:1 en clair, 7,6:1 en sombre (mesuré, lot rf2). */
+  --wtc-fg-3: color-mix(in srgb, var(--text-primary) 66%, transparent);
   --wtc-line: var(--border-subtle);
   --wtc-fill: var(--fill-soft);
   --wtc-fill-hover: var(--fill-medium);
