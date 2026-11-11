@@ -14,7 +14,7 @@ const TABS: ReadonlyArray<{ id: UsersTab; to: string; labelKey: string; icon: Re
 
 /** Les pilules des onglets du kit (`ui/Tabs`) : un seul langage pour « choisir parmi ». */
 const PILL =
-  "lg-glass-btn inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-transparent px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus";
+  "lg-glass-btn inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-transparent px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:ring-2 focus-visible:ring-line-focus";
 const SELECTED = "lg-glass-selected bg-surface-4 font-semibold text-content-primary";
 const IDLE = "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary";
 

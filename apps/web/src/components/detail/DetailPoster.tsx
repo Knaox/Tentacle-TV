@@ -10,6 +10,7 @@ import { DetailPosterFallback } from "./DetailArtworkFallback";
 import { detailPosterUrl } from "./detailArtUrls";
 import { useLateReveal } from "./detailArrival";
 import { itemImageColor } from "../../lib/itemImageColor";
+import { duration, easeOut } from "../../theme/motion";
 
 interface DetailPosterProps {
   item: MediaItem;
@@ -117,7 +118,7 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
       // second on voyait l'affiche à mi-opacité sur le backdrop.
       initial={instant ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      transition={{ duration: duration.slow, ease: easeOut }}
       // `self-start` : sans lui la boîte s'ÉTIRE sur toute la hauteur de la
       // rangée flex (comportement par défaut, `align-items: stretch`), pendant
       // que l'image garde son ratio. Le cadre arrondi se retrouvait alors

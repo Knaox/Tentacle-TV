@@ -70,7 +70,7 @@ export function Tabs<T extends string>({ idPrefix, label, items, active, onChang
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-[color,background-color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
                 ? "lg-glass-btn lg-glass-selected border-transparent bg-surface-4 font-semibold text-content-primary"
                 : "lg-glass-btn border-transparent bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"

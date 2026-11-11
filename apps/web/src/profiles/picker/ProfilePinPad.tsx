@@ -108,7 +108,7 @@ function PadKey({ label, disabled, onPress, children }: { label: string; disable
       onClick={onPress}
       // Le clic ne vole pas le focus : le clavier continue de taper au même endroit.
       onMouseDown={(event) => event.preventDefault()}
-      className="num flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-xl font-semibold text-content-primary transition-transform duration-press ease-out hover:bg-surface-3 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-40"
+      className="num flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-xl font-semibold text-content-primary transition-transform duration-press ease-out hover:bg-surface-3 active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

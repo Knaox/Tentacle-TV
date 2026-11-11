@@ -100,7 +100,7 @@ export const SearchPageHeader = memo(function SearchPageHeader({ query, tab, cou
                   role="tab"
                   aria-selected={selected}
                   onClick={() => onTab(key)}
-                  className={`relative isolate inline-flex min-h-[32px] shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+                  className={`relative isolate inline-flex min-h-[32px] shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
                     selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"
                   }`}
                 >

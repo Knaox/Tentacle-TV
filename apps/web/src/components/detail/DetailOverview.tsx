@@ -31,16 +31,14 @@ export function DetailOverview({ item }: { item: MediaItem }) {
       )}
       {overview && (
         <>
-          <motion.p
-            key={expanded ? "full" : "clamped"}
-            initial={{ opacity: 0.4 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
+          {/* Déplié ou replié, le texte est là d'emblée : il retombait à 40 % puis revenait à
+              chaque « Afficher plus » — des lignes déjà lues qui clignotent. */}
+          <p
             id={`overview-${item.Id}`}
             className={`text-base leading-normal text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)] ${expanded ? "" : "line-clamp-3"}`}
           >
             <RichOverview text={overview} />
-          </motion.p>
+          </p>
           {overview.length > 180 && (
             <button
               type="button"

@@ -101,7 +101,7 @@ const LibraryTile = memo(function LibraryTile({ library, active, compact, onClos
           aria-label={`${pinLabel} — ${library.label}`}
           title={pinLabel}
           // Épinglée : l'épingle se voit toujours. Sinon, au survol ou au focus.
-          className={`lg-tile-pin absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-pill outline-none transition-[opacity,transform] duration-press ease-out active:scale-[0.97] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${ON_MEDIA_PILL} ${
+          className={`lg-tile-pin absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-pill outline-none transition-[opacity,transform] duration-press ease-out active:scale-[var(--press-scale)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${ON_MEDIA_PILL} ${
             library.pinned ? `opacity-100 ${ON_MEDIA_ACCENT_TEXT}` : "text-on-media-primary opacity-0 group-hover/tile:opacity-100"
           }`}
         >

@@ -22,7 +22,7 @@ export function InviteFilters({ value, counts, onChange }: InviteFiltersProps) {
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(filter)}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[color,background-color,transform] duration-hover active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[color,background-color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
                 ? "bg-surface-4 text-content-primary"
                 : "bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"

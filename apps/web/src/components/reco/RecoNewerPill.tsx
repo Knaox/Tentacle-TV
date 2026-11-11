@@ -44,7 +44,7 @@ export const RecoNewerPill = memo(function RecoNewerPill({ visible, onShow }: Re
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
             transition={{ duration: reduced ? 0.01 : 0.22, ease: "easeOut" }}
             aria-label={t("newerShowAria")}
-            className="pointer-events-auto flex min-h-[40px] items-center gap-2 rounded-pill bg-surface-3 px-4 text-sm font-semibold text-content-primary shadow-menu transition-[transform,background-color] duration-press ease-out hover:bg-surface-4 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+            className="pointer-events-auto flex min-h-[40px] items-center gap-2 rounded-pill bg-surface-3 px-4 text-sm font-semibold text-content-primary shadow-menu transition-[transform,background-color] duration-press ease-out hover:bg-surface-4 active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             <RefreshCw size={15} aria-hidden className="text-accent" />
             {t("newerAvailable")}

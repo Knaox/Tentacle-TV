@@ -85,7 +85,7 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
   // appelant) — les trois bascules pareil. La pression répond à 97 % ; le survol ne grossit rien.
   const tone = active ? ON_MEDIA_ACCENT_TEXT : "text-on-media-primary";
   const layout = `${box} flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white`;
-  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out hover:bg-white/10 active:scale-[0.97] ${tone}`;
+  const skin = `rounded-full transition-[transform,background-color] duration-press ease-out hover:bg-white/10 active:scale-[var(--press-scale)] ${tone}`;
   const glassAllowed = useContext(TrayGlass);
   const glass = useLiquidGlassSurface({
     material: "bead",

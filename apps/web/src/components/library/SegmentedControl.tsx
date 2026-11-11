@@ -88,7 +88,7 @@ export function SegmentedControl<T extends string>({
             title={opt.icon ? opt.label : undefined}
             tabIndex={radio ? (i === tabbable ? 0 : -1) : undefined}
             onClick={() => onChange(opt.value)}
-            className={`relative isolate inline-flex min-h-[32px] cursor-pointer items-center whitespace-nowrap rounded-full text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`relative isolate inline-flex min-h-[32px] cursor-pointer items-center whitespace-nowrap rounded-full text-[13px] font-semibold transition-[color,transform] duration-hover active:scale-[var(--press-scale)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               opt.icon ? "w-9 justify-center" : "px-3.5"
             } ${selected ? "text-content-primary" : "text-content-secondary hover:text-content-primary"}`}
           >

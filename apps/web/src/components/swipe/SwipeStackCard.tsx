@@ -1,3 +1,4 @@
+import { duration, easeOut } from "../../theme/motion";
 import { memo, useEffect, useRef } from "react";
 import { animate, motion, useIsPresent, useMotionValue, useTransform, type TargetAndTransition } from "framer-motion";
 import { exitTarget, verdictFromDrag } from "@tentacle-tv/api-client";
@@ -113,7 +114,9 @@ export const SwipeStackCard = memo(function SwipeStackCard({
               : {
                   ...exitTarget(verdict, width, { x: x.get(), y: y.get() }),
                   opacity: 0,
-                  transition: { duration: 0.32, ease: [0.4, 0, 1, 1] },
+                  // Une sortie : la courbe du socle, plus courte que l'entrée — plus de courbe
+                  // d'accélération (elle partait lentement, juste après le geste).
+                  transition: { duration: duration.base, ease: easeOut },
                 };
           return exitRef.current;
         },
