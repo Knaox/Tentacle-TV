@@ -37,6 +37,7 @@ class FakePlatform : public Platform {
   std::string dir;
   int64_t clock = 1'800'000'000;
   bool writable = true;
+  std::string cannotWhy = "read-only";  // raison rendue quand !writable (package-manager, msix-managed…)
   std::optional<std::string> feed;  // nullopt : hors ligne
   std::map<std::string, std::string> files;  // URL → contenu servi
   bool downloadNetworkError = false;
@@ -83,7 +84,7 @@ class FakePlatform : public Platform {
   std::string stateDir() override { return dir; }
   int64_t now() override { return clock; }
   bool canSelfUpdate(std::string* why) override {
-    if (!writable && why) *why = "read-only";
+    if (!writable && why) *why = cannotWhy;
     return writable;
   }
   void fetch(const std::string&, size_t, FetchDone done) override {

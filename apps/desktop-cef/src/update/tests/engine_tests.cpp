@@ -174,6 +174,59 @@ void testRefusals() {
   }
 }
 
+// Une installation que le moteur ne sait pas remplacer (paquet .deb, dossier en lecture seule)
+// n'apprendrait jamais qu'une version existe : chaque version y est ANNONCÉE, sans bloquer.
+void testManualInstallIsTold() {
+  {  // Paquet du gestionnaire de paquets : même une mineure est annoncée, « Plus tard » = demain.
+    Rig r;
+    r.fake.writable = false;
+    r.fake.cannotWhy = "package-manager";
+    r.serve(manifest("1.0.1", "minor"));
+    r.boot();
+    r.fake.runTimers();
+    CHECK(r.engine->phase() == Phase::Failed && r.last()["prompt"] == "toast" && r.last()["manual"] == true);
+    CHECK(r.last()["error"] == "cannot-install:package-manager" && r.last()["canMute"] == false);
+    r.engine->later();
+    CHECK(r.last()["prompt"] == "none" && r.last()["manual"] == false);
+    r.engine->checkNow();
+    CHECK(r.last()["prompt"] == "none");  // le même jour : toujours remise
+    r.fake.clock += 24 * 3600;
+    r.engine->checkNow();
+    CHECK(r.last()["prompt"] == "toast" && r.last()["manual"] == true);
+    // La version suivante est annoncée tout de suite, sans attendre le rappel.
+    r.engine->later();
+    r.serve(manifest("1.0.2", "minor", 200));
+    r.engine->checkNow();
+    CHECK(r.last()["prompt"] == "toast" && r.last()["update"]["version"] == "1.0.2");
+  }
+  {  // Une majeure : « Ne plus m'avertir… » reste proposé et tenu.
+    Rig r;
+    r.fake.writable = false;
+    r.serve(manifest("1.1.0", "major"));
+    r.boot();
+    r.fake.runTimers();
+    CHECK(r.last()["prompt"] == "toast" && r.last()["manual"] == true && r.last()["canMute"] == true);
+    r.engine->muteUntilNextMajor();
+    CHECK(r.last()["prompt"] == "none");
+  }
+  {  // Paquet MSIX : le Microsoft Store met à jour et la page le dit ; la surcouche se tait.
+    Rig r;
+    r.fake.writable = false;
+    r.fake.cannotWhy = "msix-managed";
+    r.serve(manifest("1.1.0", "major"));
+    r.boot();
+    r.fake.runTimers();
+    CHECK(r.engine->phase() == Phase::Failed && r.last()["prompt"] == "none" && r.last()["manual"] == false);
+  }
+  {  // Une installation qui SAIT se mettre à jour n'est jamais « manuelle ».
+    Rig r;
+    r.serve(manifest("1.0.1", "minor"));
+    r.boot();
+    r.fake.runTimers();
+    CHECK(r.last()["manual"] == false && r.last()["prompt"] == "none");
+  }
+}
+
 void testProbation() {
   Rig r;
   r.fake.version = "1.1.0";
@@ -242,5 +295,6 @@ void runEngineTests() {
   testMajorNotifiesOnceAndMutes();
   testCriticalBlocksButNotOffline();
   testRefusals();
+  testManualInstallIsTold();
   testProbation();
 }

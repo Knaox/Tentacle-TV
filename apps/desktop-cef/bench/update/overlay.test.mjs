@@ -73,6 +73,30 @@ test("obligatoire hors ligne : prévient sans bloquer, Réessayer", () => {
   assert.match(o.toastModel({ ...s, error: "cannot-install:translocated" }, "fr").body, /Applications/);
 });
 
+test("installation que l'app ne sait pas remplacer : chaque version annoncée, sans bloquer", () => {
+  const s = major({ phase: "failed", progress: null, manual: true, canMute: false, error: "cannot-install:package-manager",
+    update: { ...major().update, severity: "minor" } });
+  assert.equal(o.viewFor(s, idle), "toast");
+  assert.equal(o.viewFor(s, { ...idle, video: true }), "waiting");  // elle aussi attend la fin d'une lecture
+  const m = o.toastModel(s, "fr");
+  assert.equal(m.kind, "manual");
+  assert.equal(m.warn, false);
+  assert.equal(m.closable, true);
+  assert.equal(m.secondary.action, "later");
+  assert.equal(m.primary, null);
+  assert.match(m.title, /1\.1\.0 est disponible/);
+  assert.match(m.body, /gestionnaire de paquets/);
+  assert.match(m.body, /tentacletv\.app/);
+  assert.equal(m.links.map((l) => l.action).join(), "notes");
+  const other = o.toastModel({ ...s, error: "cannot-install:not-writable", canMute: true }, "en");
+  assert.match(other.body, /from tentacletv\.app/);
+  assert.equal(other.links.map((l) => l.action).join(), "mute,notes");
+  assert.match(o.toastModel({ ...s, error: "cannot-install:translocated" }, "fr").body, /^Déplacez/);
+  // Une obligatoire garde son avertissement de sécurité, « manual » ou pas.
+  assert.equal(o.toastModel({ ...s, update: { ...s.update, mandatory: true } }, "fr").kind, "manual");
+  assert.equal(o.toastModel({ ...s, update: { ...s.update, mandatory: true } }, "fr").warn, true);
+});
+
 test("retour arrière : annoncé une fois, puis oublié", () => {
   const s = major({ prompt: "none", rolledBack: "1.1.0" });
   assert.equal(o.viewFor(s, idle), "rolledBack");

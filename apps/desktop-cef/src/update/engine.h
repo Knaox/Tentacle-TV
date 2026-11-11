@@ -71,6 +71,7 @@ class Engine {
   void dropStaged();
   void checkProbation();
   void redecide();
+  bool manualNotice() const;  // annonce d'une version que le moteur ne sait pas poser ici
   void persist();
   void publish();
   std::string path(const char* name) const;

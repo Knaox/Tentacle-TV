@@ -1,19 +1,14 @@
-// Surcouche de mise à jour — injectée par le natif (src/update/update_shell.cpp) dans la
-// frame principale, comme le shim du pont, mais HORS de window.tentacle : le front de
-// Tentacle n'en sait rien et n'a rien à changer.
-//
-// Ce qu'elle montre vient de l'instantané natif (`update.state`) :
-//   prompt "toast"    → une notification discrète en bas à droite (verre sombre), qui
-//                       ATTEND la fin d'une lecture (vidéo ou musique) pour paraître ;
-//   prompt "blocking" → la mise à jour de sécurité : un voile qui bloque l'app tout de
-//                       suite, lecture comprise, sans bouton pour la masquer ;
-//   prompt "none"     → rien (mineure : installée en silence au prochain redémarrage) ;
-//   phase "applying"  → l'installation est LANCÉE : le même voile, sans bouton, jusqu'au redémarrage.
+// Surcouche de mise à jour — injectée par le natif (src/update/update_shell.cpp) dans la frame
+// principale, comme le shim du pont, mais HORS de window.tentacle : le front n'en sait rien.
+// Ce qu'elle montre vient de l'instantané natif (`update.state`) : prompt "toast" → une notification
+// en bas à droite (verre sombre) qui ATTEND la fin d'une lecture (vidéo ou musique) — `manual` : une
+// version que l'app ne sait pas poser ici, annoncée quand même ; "blocking" → la mise à jour de
+// sécurité, un voile qui bloque tout de suite, sans bouton pour le masquer ; "none" → rien (mineure :
+// posée en silence) ; phase "applying" → installation LANCÉE : le même voile jusqu'au redémarrage.
 // Tant que le voile est là, la surcouche l'ANNONCE au front par l'évènement de fenêtre
 // `tentacle:update-lock` ({ locked }) : il met la lecture en pause, coupe ses raccourcis et rend
 // son arrière-plan inerte (apps/web/src/components/update/updateLock.ts). Ce nom traverse deux
-// programmes : il ne se renomme pas. Un front qui ne l'écoute pas garde le voile seul.
-// Les fonctions pures (viewFor, toastModel…) sont testées par bench/update/overlay.test.mjs.
+// programmes : il ne se renomme pas. Les fonctions pures : bench/update/overlay.test.mjs.
 (function installUpdateOverlay(global) {
   "use strict";
   const TEXT = {
@@ -30,12 +25,12 @@
       pendingBody: "Pas de réseau pour l'instant : elle s'installera dès son retour. Vous pouvez continuer.",
       corrupt: "Le téléchargement était abîmé : nouvel essai dans quelques minutes.", retry: "Réessayer",
       retrying: "Nouvel essai de téléchargement… Vous pouvez continuer en attendant.",
-      manualBody: (v) => `Elle ne peut pas s'installer toute seule ici. Installez Tentacle ${v} depuis tentacle.tv.`,
+      manualBody: (v) => `Elle ne peut pas s'installer toute seule ici. Installez Tentacle ${v} depuis tentacletv.app.`,
+      packageBody: (v) => `Mettez Tentacle à jour par le gestionnaire de paquets de votre système, ou installez la ${v} depuis tentacletv.app.`,
       moveApp: "Déplacez d'abord Tentacle dans le dossier Applications.",
-      backTitle: "Mise à jour annulée", ok: "OK",
+      backTitle: "Mise à jour annulée", ok: "OK", available: (v) => `Tentacle ${v} est disponible`,
       backBody: (v) => `Tentacle ${v} n'a pas pu démarrer : la version précédente a été remise.`,
-      close: "Fermer (plus tard)",
-      applyTitle: (v) => `Installation de Tentacle ${v}`,
+      close: "Fermer (plus tard)", applyTitle: (v) => `Installation de Tentacle ${v}`,
       applyBody: "L'application redémarre dans un instant. La lecture est en pause et plus rien n'est à faire.",
     },
     en: {
@@ -51,12 +46,12 @@
       pendingBody: "No network right now: it will install as soon as you are back online. You can keep going.",
       corrupt: "The download was damaged: retrying in a few minutes.", retry: "Retry",
       retrying: "Retrying the download… You can keep going meanwhile.",
-      manualBody: (v) => `It can't install itself here. Please install Tentacle ${v} from tentacle.tv.`,
+      manualBody: (v) => `It can't install itself here. Please install Tentacle ${v} from tentacletv.app.`,
+      packageBody: (v) => `Update Tentacle with your system's package manager, or install ${v} from tentacletv.app.`,
       moveApp: "First move Tentacle to the Applications folder.",
-      backTitle: "Update rolled back", ok: "OK",
+      backTitle: "Update rolled back", ok: "OK", available: (v) => `Tentacle ${v} is available`,
       backBody: (v) => `Tentacle ${v} could not start: the previous version was restored.`,
-      close: "Close (later)",
-      applyTitle: (v) => `Installing Tentacle ${v}`,
+      close: "Close (later)", applyTitle: (v) => `Installing Tentacle ${v}`,
       applyBody: "The app restarts in a moment. Playback is paused and there is nothing left to do.",
     },
   };
@@ -94,6 +89,11 @@
     if (s.rolledBack && !u.mandatory) {
       return { kind: "back", warn: true, title: t.backTitle, body: t.backBody(s.rolledBack), progress: null,
         primary: { label: t.ok, action: "ack" }, secondary: null, links: [], lines: [] };
+    }
+    if (s.manual && !u.mandatory) {  // une version que le moteur ne sait pas poser ici (paquet, dossier en lecture seule)
+      const e = String(s.error), body = (e.includes("translocated") ? t.moveApp + " " : "") + (e.endsWith(":package-manager") ? t.packageBody(v) : t.manualBody(v));
+      return { kind: "manual", warn: false, title: t.available(v), body, progress: null, lines: noteLines(u.notes, lang), closable: true,
+        primary: null, secondary: { label: t.later, action: "later" }, links: (s.canMute ? [{ label: t.mute, action: "mute" }] : []).concat(notes) };
     }
     if (u.mandatory) {  // obligatoire qui ne peut pas bloquer : hors ligne, archive refusée, impossible ici
       const manual = !u.install || String(s.error).startsWith("cannot-install") || String(s.error).startsWith("stage");

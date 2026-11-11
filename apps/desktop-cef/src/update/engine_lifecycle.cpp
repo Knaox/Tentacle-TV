@@ -111,6 +111,12 @@ void Engine::onQuit() {
 }
 
 void Engine::later() {
+  if (manualNotice()) {  // rappel le lendemain, pour CETTE version (une mineure n'a pas de clé de majeure)
+    state_.snoozedVersion = manifest_->version.str();
+    state_.snoozedUntil = p_.now() + cfg_.snoozeSeconds;
+    persist();
+    return publish();
+  }
   if (decision_.prompt != Prompt::Toast || decision_.mandatory || decision_.muteKey.empty()) return;
   state_.snoozedVersion = decision_.muteKey;
   state_.snoozedUntil = p_.now() + cfg_.snoozeSeconds;
@@ -139,6 +145,21 @@ void Engine::redecide() {
 
 void Engine::persist() { saveState(path("state.json"), state_); }
 
+// Une installation que le moteur ne sait pas remplacer (paquet .deb/.rpm, dossier non
+// inscriptible, app transloquée…) : sans cette annonce, elle n'apprendrait JAMAIS qu'une version
+// existe — la règle tait une mineure, et l'échec d'une majeure est muet. Annoncée sans bloquer,
+// « Plus tard » la remet au lendemain ; une majeure garde « Ne plus m'avertir ». Le paquet de la
+// boutique (MSIX) se tait : le Store le met à jour et la page le dit (`check_msix_update`). Une
+// obligatoire garde son propre avertissement (`effectivePrompt`).
+bool Engine::manualNotice() const {
+  static const std::string kCannot = "cannot-install:";
+  if (phase_ != Phase::Failed || !manifest_ || decision_.mandatory || error_.rfind(kCannot, 0) != 0) return false;
+  const std::string why = error_.substr(kCannot.size());
+  if (why == "msix-managed" || why == "store-managed") return false;
+  if (decision_.reason == "major-muted" || decision_.reason == "major-snoozed") return false;
+  return !(state_.snoozedVersion == manifest_->version.str() && p_.now() < state_.snoozedUntil);
+}
+
 Engine::Json Engine::snapshot() const {
   Json update = nullptr;
   if (manifest_ && decision_.reason != "up-to-date") {
@@ -151,7 +172,8 @@ Engine::Json Engine::snapshot() const {
           {"current", current_.str()},
           {"phase", phaseName(phase_)},
           {"progress", progress_ < 0 ? Json(nullptr) : Json(progress_)},
-          {"prompt", promptName(effectivePrompt(decision_, phase_, failures_ > 0))},
+          {"prompt", manualNotice() ? "toast" : promptName(effectivePrompt(decision_, phase_, failures_ > 0))},
+          {"manual", manualNotice()},
           {"retrying", failures_ > 0},
           {"canMute", decision_.canMute},
           {"error", error_},
