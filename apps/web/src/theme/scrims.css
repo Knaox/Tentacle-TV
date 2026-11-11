@@ -55,6 +55,11 @@
    * colonne (blanc à 90 %, cf. `.detail-text-column`) tienne 4,5:1 au pire
    * endroit sur un blanc pur (mesuré au banc). */
   --detail-text-scrim-alpha: 0.52;
+
+  /* Assise du bloc TITRE d'une bannière de catalogue (`BannerHeading` : bibliothèque, Ma liste,
+   * Mes favoris). Rien en sombre : les voiles de la bannière y suffisent sur une image blanche
+   * (mesuré au banc, `bench/clair-verre/pire-image.mjs`). */
+  --banner-heading-focus: none;
 }
 
 :root[data-theme="light"] {
@@ -103,6 +108,10 @@
    * texte posé sur la scène reste blanc — « blanc sur noir 49-70 % » ne tenait
    * PAS 4,5:1 pour le blanc à 80 % (3,1:1 à 0,49). */
   --detail-text-scrim-alpha: 0.54;
+  /* En clair, les voiles sont à ×0,7 et le texte posé sur l'image reste blanc : sur une image
+   * blanche, le sur-titre et les nombres (blanc à 80 %) tombaient à 3,5:1. Une ellipse d'encre
+   * sous le bloc, STATIQUE — l'image garde ses couleurs partout ailleurs. */
+  --banner-heading-focus: radial-gradient(ellipse 70% 76% at 20% 56%, rgba(var(--scrim-media-rgb), 0.4) 0%, rgba(var(--scrim-media-rgb), 0.3) 46%, rgba(var(--scrim-media-rgb), 0) 82%);
     --detail-page-fade: linear-gradient(
     180deg,
     rgba(var(--scrim-page-rgb), 0) 0%,

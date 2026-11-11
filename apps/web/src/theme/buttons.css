@@ -109,8 +109,13 @@
   color: var(--text-primary);
 }
 
+/* Posé sur une image, le bouton porte SON fond : un voile d'encre (le même que les pastilles des
+ * cartes), jamais un voile blanc — à 15 % de blanc, « Retour » tombait à 2,1:1 sur le haut clair
+ * d'une image de fiche (mesuré). Blanc ≥ 4,5:1 même sur une image blanche ; l'arête claire le
+ * détache d'une image sombre. Constant entre les thèmes, comme tout ce qui se pose sur une image. */
 .btn-on-media {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(11, 11, 12, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
   color: var(--on-media-primary);
 }
 
@@ -162,7 +167,7 @@
   }
 
   .btn-on-media:hover {
-    background-color: rgba(255, 255, 255, 0.24);
+    background-color: rgba(11, 11, 12, 0.74);
     color: var(--on-media-primary);
   }
 
