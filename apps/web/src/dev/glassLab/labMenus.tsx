@@ -47,7 +47,7 @@ const GROUPS: UserMenuGroup[] = [
 /** Une ancre fixe : le menu se pose dessous comme sous son bouton. */
 function Anchor({ top, left, label, anchorRef }: { top: number; left: number; label: string; anchorRef?: RefObject<HTMLSpanElement | null> }) {
   return (
-    <span ref={anchorRef} style={{ position: "absolute", top, left, fontSize: 11, color: "#fff", textShadow: "0 1px 2px #000" }}>
+    <span ref={anchorRef} style={{ position: "absolute", top, left, fontSize: 11, color: "#fff", background: "rgba(0, 0, 0, 0.62)", boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.62)", borderRadius: 3 }}>
       {label}
     </span>
   );
