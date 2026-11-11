@@ -83,5 +83,21 @@ compris. C'est là que le « coin non arrondi » d'un menu s'est vu — la piste
 défilement, que ni le Chrome sans tête (barres masquées) ni macOS (barres en surimpression) ne
 montraient.
 
+### Ce que coûte le verre
+
+```bash
+# Le front en PRODUCTION (le client de dev tient un compteur d'images : il fabrique les images qu'on compte) :
+pnpm exec vite build --outDir <dist> && TENTACLE_DEV_API=http://127.0.0.1:3413 pnpm exec vite preview --outDir <dist> --port 5433
+"$B" --url=http://127.0.0.1:5433 --profile=<jetable> --user-data=<jetable> --mute --background --devtools-port=9413 &
+CEF_PID=$! BANC_ORIGIN=http://127.0.0.1:5433 node bench/clair-verre/gpu.mjs <étiquette>      # THEME, SANS_COURBE=1, ROUNDS
+```
+
+`gpu.mjs` trace les images de la coquille (`PipelineReporter`, la méthode du banc de fluidité
+`apps/desktop-electron/bench/liquid-glass/perf`) sur deux gestes où une image change SOUS un verre —
+la bannière de l'accueil sous la barre, une bibliothèque défilée sous la barre et le panneau
+d'outils : images présentées et abandonnées, temps de DESSIN du processus GPU par image, et
+l'occupation GPU des processus de l'app (`ioreg`, sans `sudo`). `SANS_COURBE=1` retire la courbe de
+tons du givre dans le MÊME build : un instrument, jamais un rendu. « Avant » : la base servie de même.
+
 Ce que ce banc ne juge PAS : le verre natif du lecteur (régions `NSGlassEffectView`, sous la vue
 web) — une fenêtre inactive n'a pas le verre d'une fenêtre active (`docs/LIQUID-GLASS.md`, § 7).
