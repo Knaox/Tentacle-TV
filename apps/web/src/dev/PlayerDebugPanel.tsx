@@ -13,7 +13,7 @@
  * `__PLAYER_DEBUG__` est faux dans tout build livré : ce module et ses voisins disparaissent
  * alors du bundle. Les libellés restent donc en clair, sans passer par i18n.
  *
- * Sa peau (`debugMenu/debugMenu.css`) : opaque, sombre dans les deux thèmes, sans flou.
+ * Sa peau (`debugMenu/debugMenu.css` et ses suites) : opaque, sombre dans les deux thèmes, sans flou.
  */
 
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";

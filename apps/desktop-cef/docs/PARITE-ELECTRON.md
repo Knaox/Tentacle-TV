@@ -177,7 +177,8 @@ rien n'y a tourné ; les cas sont dans `A-TESTER-WINDOWS.md`.
 | Copier le diagnostic | ✅ | ✅ « copié dans le presse-papiers » | presse-papiers de Chromium, repli `execCommand` |
 
 La démonstration de la surcouche passe par l'évènement de fenêtre `tentacle:update-demo`
-(`web/shim/update-overlay.js`, fin de fichier) : un instantané FACTICE, rien n'est demandé au
+(`web/shim/update-overlay-demo.js`, un fragment que CMake glisse dans la fermeture de
+`update-overlay.js` au jeton `/*__UPDATE_DEMO__*/`) : un instantané FACTICE, rien n'est demandé au
 natif, le vrai instantané revient à la fin. Trouvé en chemin : `<html lang>` restait « en », la
 surcouche parlait anglais sur une interface en français — le front le tient maintenant à jour.
 
