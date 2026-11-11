@@ -112,11 +112,14 @@
    * blanche, le sur-titre et les nombres (blanc à 80 %) tombaient à 3,5:1. Une ellipse d'encre
    * sous le bloc, STATIQUE — l'image garde ses couleurs partout ailleurs. */
   --banner-heading-focus: radial-gradient(ellipse 70% 76% at 20% 56%, rgba(var(--scrim-media-rgb), 0.4) 0%, rgba(var(--scrim-media-rgb), 0.3) 46%, rgba(var(--scrim-media-rgb), 0) 82%);
-    --detail-page-fade: linear-gradient(
+  /* La première rangée d'une fiche commence 64 px sous le haut de ce raccord (21 % de ses 300 px) : à 0,55, le
+   * compte d'une rangée (« 5 épisodes · 948 Mio », encre tertiaire) y tombait à 3,9:1 sur une image sombre. Le
+   * raccord y vaut maintenant 0,78 — la tertiaire tient 4,5:1 dès 0,72 sur un noir pur. */
+  --detail-page-fade: linear-gradient(
     180deg,
     rgba(var(--scrim-page-rgb), 0) 0%,
-    rgba(var(--scrim-page-rgb), 0.55) 22%,
-    rgba(var(--scrim-page-rgb), 0.92) 52%,
+    rgba(var(--scrim-page-rgb), 0.78) 20%,
+    rgba(var(--scrim-page-rgb), 0.94) 46%,
     rgb(var(--scrim-page-rgb)) 100%
   );
 }
