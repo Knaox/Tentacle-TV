@@ -6,6 +6,7 @@ import {
 import { useServerCapability } from "../../hooks/useServerCapabilities";
 import { useWatchTogether } from "../context";
 import { useWtTyping } from "./useWtTyping";
+import { shouldRequestChatHistory } from "./chatHistoryRecovery";
 import {
   chatReducer, initialChatState,
   type WtChatAction, type WtChatState,
@@ -59,6 +60,9 @@ export function useWtChat(): WtChatApi {
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
   // Le groupe dont le fil est arrivé (`wt:chatHistory`) depuis que ce crochet écoute.
   const historyGroupRef = useRef<string | null>(null);
+  // L'epoch de la salle, lu à l'entrée dans un groupe (sans relancer l'effet à chaque état).
+  const epochRef = useRef(0);
+  epochRef.current = room?.epoch ?? 0;
   const typingSupported = useServerCapability("watchTogether.typing");
   const { notifyTyping, sent } = useWtTyping(send, typingSupported && !!groupId, groupId);
 
@@ -151,11 +155,13 @@ export function useWtChat(): WtChatApi {
   // de vingt-cinq messages avec un fil vide. Si le fil du groupe n'est pas arrivé
   // peu après, on le redemande par le geste du rechargement (`wt:syncRequest` :
   // l'état de la salle et son fil) — une fois par groupe, aucun message nouveau.
+  // Jamais pour une salle qu'on vient de créer (`chatHistoryRecovery.ts`).
   useEffect(() => {
     dispatch({ type: "clear" });
     if (groupId === null) return undefined;
+    const epochAtEntry = epochRef.current;
     const timer = setTimeout(() => {
-      if (historyGroupRef.current !== groupId) send({ type: "wt:syncRequest" });
+      if (shouldRequestChatHistory({ groupId, epochAtEntry, receivedGroupId: historyGroupRef.current })) send({ type: "wt:syncRequest" });
     }, WT_CHAT_HISTORY_WAIT_MS);
     return () => clearTimeout(timer);
   }, [groupId, send]);
