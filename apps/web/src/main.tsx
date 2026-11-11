@@ -184,6 +184,16 @@ const jellyfinClient = new JellyfinClient(
 // Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
 jellyfinClient.followLanguage(i18n);
 
+// `<html lang>` suit la langue de l'interface (il restait à « en », la valeur d'index.html) :
+// un lecteur d'écran prononce dans la bonne langue, et la surcouche de mise à jour de la
+// coquille CEF — hors du front — y lit la sienne (vu : une notification en anglais sur une
+// interface en français).
+const followDocumentLanguage = (lang: string): void => {
+  document.documentElement.lang = lang;
+};
+followDocumentLanguage(i18n.language);
+i18n.on("languageChanged", followDocumentLanguage);
+
 // Web: use httpOnly cookies for auth (XSS-proof token storage)
 if (!isDesktop) {
   jellyfinClient.useCredentials = true;

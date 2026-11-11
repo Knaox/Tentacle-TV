@@ -1,0 +1,375 @@
+/* ── Le menu de débogage (lot rf2, nov. 2026) — DÉVELOPPEMENT UNIQUEMENT ──
+ *
+ * Un outil, pas un décor : il se lit d'un coup d'œil pendant qu'on regarde autre chose.
+ *  - Fond OPAQUE, franchement : posé sur une vidéo claire, un panneau translucide devient
+ *    illisible au pire moment. Et pas de `backdrop-filter` : il ne peut pas échantillonner
+ *    l'image de mpv, dessinée dans une fenêtre native sous la page.
+ *  - Sombre dans les DEUX thèmes : il flotte sur n'importe quoi, vidéo comprise.
+ *  - Les libellés en police d'interface, les VALEURS en chasse fixe (elles s'alignent).
+ *  - Mouvement : `transform` et `opacity` seulement ; un geste au CLAVIER ne s'anime pas. */
+
+.dbg {
+  --dbg-bg: #0c0c11;
+  --dbg-raised: #16161d;
+  --dbg-line: rgba(255, 255, 255, 0.09);
+  --dbg-fg: #f4f2ee;
+  --dbg-fg-2: rgba(244, 242, 238, 0.72);
+  --dbg-fg-3: rgba(244, 242, 238, 0.5);
+  --dbg-ok: #4ade80;
+  --dbg-bad: #fb7185;
+  --dbg-warn: #fbbf24;
+  --dbg-accent: #e58cf0;
+  --dbg-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  color: var(--dbg-fg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ── Le bouton replié ── */
+.dbg-launch {
+  position: fixed;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--dbg-bg);
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.4);
+  color: var(--dbg-ok);
+  font-family: var(--dbg-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: move;
+  user-select: none;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.dbg-launch:active {
+  transform: scale(var(--press-scale));
+}
+
+.dbg-launch__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* ── Le panneau ── */
+.dbg-panel {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  background-color: var(--dbg-bg);
+  user-select: none;
+}
+
+/* Ouvert au POINTEUR : il sort de son bouton (180 ms). Ouvert par F9 : il est là, sans mouvement. */
+.dbg-panel--pointer {
+  transform-origin: top left;
+  transition:
+    opacity var(--duration-menu-in) var(--ease-out),
+    transform var(--duration-menu-in) var(--ease-out);
+}
+
+@starting-style {
+  .dbg-panel--pointer {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.dbg-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  cursor: move;
+}
+
+.dbg-title {
+  font-family: var(--font-display, inherit);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Quelle coquille répond : c'est elle qui décide de ce qui marche. */
+.dbg-shell {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(74, 222, 128, 0.12);
+  color: var(--dbg-ok);
+  font-family: var(--dbg-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dbg-grow {
+  flex: 1 1 0%;
+}
+
+.dbg-iconbtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--dbg-fg-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.dbg-iconbtn:active {
+  transform: scale(var(--press-scale));
+}
+
+.dbg-iconbtn:focus-visible,
+.dbg-tab:focus-visible,
+.dbg-row:focus-visible,
+.dbg-choice:focus-visible {
+  outline: 2px solid var(--dbg-accent);
+  outline-offset: -2px;
+}
+
+/* Les onglets : un segment, l'actif sur une pastille. */
+.dbg-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  margin: 0 12px 8px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--dbg-raised);
+}
+
+.dbg-tab {
+  flex: 1 1 0%;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--dbg-fg-3);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.dbg-tab[aria-selected="true"] {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--dbg-fg);
+}
+
+.dbg-body {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px 12px;
+  scrollbar-width: thin;
+}
+
+.dbg-group {
+  margin-top: 12px;
+}
+
+.dbg-group:first-child {
+  margin-top: 2px;
+}
+
+.dbg-group__label {
+  margin: 0 4px 4px;
+  color: var(--dbg-fg-3);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dbg-card {
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: var(--dbg-raised);
+}
+
+/* ── Une action ── le libellé et sa phrase à gauche ; l'état, la touche à droite. */
+.dbg-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) ease;
+}
+
+.dbg-row + .dbg-row,
+.dbg-choices + .dbg-row {
+  box-shadow: 0 -1px 0 var(--dbg-line);
+}
+
+.dbg-row__text {
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+.dbg-row__label {
+  display: block;
+  font-weight: 600;
+}
+
+.dbg-row__hint {
+  display: block;
+  margin-top: 1px;
+  color: var(--dbg-fg-3);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+/* Indisponible ici : la ligne s'efface, sa RAISON reste lisible. */
+.dbg-row[aria-disabled="true"] {
+  cursor: default;
+}
+
+.dbg-row[aria-disabled="true"] .dbg-row__label {
+  color: var(--dbg-fg-3);
+}
+
+.dbg-row__why {
+  display: block;
+  margin-top: 1px;
+  color: var(--dbg-warn);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.dbg-value {
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--dbg-fg-2);
+  font-family: var(--dbg-mono);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dbg-key {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  color: var(--dbg-fg-3);
+  font-family: var(--dbg-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* L'interrupteur : la pastille glisse (`transform`), la piste change de teinte. */
+.dbg-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 255, 255, 0.16);
+  transition: background-color var(--duration-hover) ease;
+}
+
+.dbg-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.dbg-switch[data-on="true"] {
+  background-color: var(--dbg-ok);
+}
+
+.dbg-switch[data-on="true"]::after {
+  transform: translateX(14px);
+}
+
+.dbg-row[aria-disabled="true"] .dbg-switch {
+  opacity: 0.35;
+}
+
+/* Les variantes d'un geste (les états d'une pop-up) : des puces sous sa ligne. */
+.dbg-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+.dbg-choice {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--dbg-fg-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+.dbg-choice:active {
+  transform: scale(var(--press-scale));
+}
+
+.dbg-choice:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dbg-iconbtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--dbg-fg);
+  }
+
+  .dbg-tab:hover {
+    color: var(--dbg-fg);
+  }
+
+  .dbg-row:not([aria-disabled="true"]):hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .dbg-choice:not(:disabled):hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: var(--dbg-fg);
+  }
+}

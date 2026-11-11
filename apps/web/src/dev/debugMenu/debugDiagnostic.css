@@ -1,0 +1,183 @@
+/* ── Le menu de débogage — le diagnostic et le retour d'une action ──
+ * La suite de `debugMenu.css` (300 lignes par fichier) : mêmes variables `--dbg-*`. */
+
+/* Le verdict : ce qu'on lit en premier, en phrases. */
+.dbg-verdict {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: var(--dbg-raised);
+}
+
+.dbg-verdict__line {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+  line-height: 1.35;
+}
+
+.dbg-verdict__key {
+  flex-shrink: 0;
+  width: 76px;
+  color: var(--dbg-fg-3);
+  font-size: 12px;
+}
+
+.dbg-verdict__value {
+  min-width: 0;
+  flex: 1 1 0%;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Une section : son titre se replie ; ses lignes s'alignent, valeur à droite, en chasse fixe. */
+.dbg-section {
+  margin-top: 10px;
+}
+
+.dbg-section__head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--dbg-fg-3);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dbg-section__head:focus-visible {
+  outline: 2px solid var(--dbg-accent);
+  outline-offset: -2px;
+}
+
+.dbg-section__caret {
+  flex-shrink: 0;
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.dbg-section[data-open="false"] .dbg-section__caret {
+  transform: rotate(-90deg);
+}
+
+.dbg-section__count {
+  margin-left: auto;
+  font-family: var(--dbg-mono);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.dbg-lines {
+  padding: 2px 4px 0;
+}
+
+.dbg-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1.5px 0;
+  font-family: var(--dbg-mono);
+  font-size: 11.5px;
+}
+
+.dbg-line__key {
+  flex-shrink: 0;
+  color: var(--dbg-fg-3);
+}
+
+.dbg-line__value {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Une valeur se copie : le reste du panneau, non. */
+  user-select: text;
+}
+
+.dbg-good { color: var(--dbg-ok); }
+.dbg-bad { color: var(--dbg-bad); }
+
+/* ── Le retour de la dernière action ── épinglé en bas : on agit en haut, on lit ici. */
+.dbg-foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 26px 9px 14px;
+  box-shadow: 0 -1px 0 var(--dbg-line);
+  color: var(--dbg-fg-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dbg-foot__dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background-color: var(--dbg-warn);
+}
+
+/* Chaque retour ENTRE (il remplace le précédent) : 160 ms, quelques points de montée. */
+.dbg-foot__text {
+  min-width: 0;
+  flex: 1 1 0%;
+  color: var(--dbg-fg);
+  overflow-wrap: anywhere;
+  user-select: text;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    transform var(--duration-hover) var(--ease-out);
+}
+
+@starting-style {
+  .dbg-foot__text {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.dbg-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 3px;
+  color: var(--dbg-fg-3);
+  cursor: nwse-resize;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dbg-section__head:hover {
+    color: var(--dbg-fg);
+  }
+
+  .dbg-resize:hover {
+    color: var(--dbg-fg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dbg-panel--pointer,
+  .dbg-foot__text {
+    transition-property: opacity;
+  }
+
+  @starting-style {
+    .dbg-panel--pointer,
+    .dbg-foot__text {
+      transform: none;
+    }
+  }
+}

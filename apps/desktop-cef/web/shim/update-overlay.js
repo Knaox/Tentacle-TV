@@ -171,6 +171,7 @@
   }
 
   function act(action) {
+    if (demoOn) return demoAct(action);  // démonstration : rien ne part au natif
     if (action === "ack") ctx.rolledBackSeen = true;
     const channel = { ack: "update.dismissNotice", restart: "update.restart", later: "update.later", mute: "update.mute",
       notes: "update.openNotes", retry: "update.check" }[action];
@@ -285,7 +286,7 @@
   }
   ["keydown", "keyup", "keypress"].forEach((type) => window.addEventListener(type, swallowKey, true));
 
-  shell.on("update.state", (s) => { snapshot = s; render(); });
+  shell.on("update.state", (s) => { if (demoOn) held = s; else snapshot = s; render(); });
   shell.on("tentacle:mpv://event", (e) => {
     const name = e && e.event;
     if (name === "start-file" || name === "file-loaded" || name === "playback-restart") ctx.video = true;
@@ -296,5 +297,37 @@
     if (e && e.type === "state") { ctx.audio = e.state === "playing" || e.state === "buffering"; render(); }
   });
   document.addEventListener("DOMContentLoaded", render);
-  shell.invoke("update.state", {}).then((s) => { snapshot = s; render(); }).catch(() => {});
+  shell.invoke("update.state", {}).then((s) => { if (demoOn) held = s; else snapshot = s; render(); }).catch(() => {});
+
+  // --- Démonstration (menu de débogage du front, lot rf2) ----------------------------------
+  // Le front de développement envoie l'évènement de fenêtre `tentacle:update-demo`
+  // ({ snapshot }) : la surcouche montre alors cet instantané FACTICE, à la place du vrai.
+  // Rien n'est demandé au natif : ses boutons referment la démonstration, « Redémarrer » joue
+  // le voile d'installation trois secondes. `snapshot: null` la referme. Un voile bloquant se
+  // referme seul après six secondes — il rend le front inerte, menu de débogage compris.
+  // Le vrai instantané reste tenu (`held`) et revient à la fin. Ce nom traverse deux
+  // programmes (apps/web/src/dev/debugMenu/debugUpdateDemo.ts) : il ne se renomme pas.
+  let demoOn = false, held = null, heldSeen = false, demoTimer = 0;
+  function endDemo() {
+    clearTimeout(demoTimer);
+    if (!demoOn) return;
+    demoOn = false; snapshot = held; held = null; ctx.rolledBackSeen = heldSeen;
+    render();
+  }
+  function demoAct(action) {
+    if (action !== "restart") return endDemo();
+    snapshot = Object.assign({}, snapshot, { prompt: "toast", phase: "applying" });
+    clearTimeout(demoTimer); demoTimer = setTimeout(endDemo, 3000);
+    render();
+  }
+  window.addEventListener("tentacle:update-demo", (e) => {
+    const next = e && e.detail && e.detail.snapshot;
+    if (!next || typeof next !== "object") return endDemo();
+    if (!demoOn) { held = snapshot; heldSeen = ctx.rolledBackSeen; }
+    demoOn = true; ctx.rolledBackSeen = false; snapshot = next;
+    clearTimeout(demoTimer);
+    if (next.prompt === "blocking" || next.phase === "applying") demoTimer = setTimeout(endDemo, 6000);
+    render();
+  });
+  window.__tentacleUpdateDemo = true;  // le menu de débogage sait que la surcouche écoute
 })(this);
