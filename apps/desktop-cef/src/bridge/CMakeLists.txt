@@ -28,6 +28,7 @@ configure_file(shim_source.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/shim_source.cpp" 
 add_library(tentacle_bridge STATIC
   registry.cpp
   mpv_policy.cpp
+  mpv_fault.cpp
   video_channels.cpp
   video_prewarm.cpp
   window_channels.cpp

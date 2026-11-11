@@ -35,15 +35,22 @@ void failWith(Reply& reply, const std::string& code, const std::string& message)
 
 }  // namespace
 
-VideoChannels::VideoChannels(Registry& registry, PlayerPort& player, Clock clock, Defer defer)
+VideoChannels::VideoChannels(Registry& registry, PlayerPort& player, Clock clock, Defer defer, MpvFault fault)
     : registry_(registry), player_(player), clock_(clock ? std::move(clock) : Clock(nowMs)), defer_(std::move(defer)) {
   registry_.event("mpv://event");
   registry_.event("mpv://property-change");
-  registry_.command("mpv_init", [this](const Json& p, Reply r) { init(p, std::move(r)); });
-  registry_.command("mpv_destroy", [this](const Json&, Reply r) { destroy(std::move(r)); });
-  registry_.command("mpv_command", [this](const Json& p, Reply r) { command(p, std::move(r)); });
-  registry_.command("mpv_set_property", [this](const Json& p, Reply r) { setProperty(p, std::move(r)); });
-  registry_.command("mpv_get_property", [this](const Json& p, Reply r) { getProperty(p, std::move(r)); });
+  // `absent` : aucun canal mpv_* — la page ne voit pas de lecteur natif (`supportsMpv()`).
+  if (fault != MpvFault::Absent) {
+    registry_.command("mpv_init", [this](const Json& p, Reply r) { init(p, std::move(r)); });
+    registry_.command("mpv_destroy", [this](const Json&, Reply r) { destroy(std::move(r)); });
+    registry_.command("mpv_command", [this](const Json& p, Reply r) { command(p, std::move(r)); });
+    registry_.command("mpv_set_property", [this](const Json& p, Reply r) { setProperty(p, std::move(r)); });
+    registry_.command("mpv_get_property", [this](const Json& p, Reply r) { getProperty(p, std::move(r)); });
+  }
+  registry_.command("mpv_debug_fault", [this](const Json& p, Reply r) { debugFault(p, std::move(r)); });
+  // `fatal` n'est pas un état : au lancement, il s'arme et tire après le départ de la lecture.
+  fatalArmed_ = fault == MpvFault::Fatal;
+  fault_ = fault == MpvFault::Fatal || fault == MpvFault::Absent ? MpvFault::Off : fault;
   player_.setListener(this);
 }
 
@@ -53,6 +60,13 @@ VideoChannels::~VideoChannels() {
 }
 
 void VideoChannels::init(const Json& payload, Reply reply) {
+  // Pannes provoquées (mpv_fault.h) : un mpv qui refuse de s'initialiser, ou qui ne répond pas.
+  if (fault_ == MpvFault::Init) return failWith(reply, "mpv_init", "mpv_init : panne provoquee (mpv_debug_fault init)");
+  if (fault_ == MpvFault::Stall) {
+    std::fprintf(stderr, "[pont] mpv_init laisse sans reponse (mpv_debug_fault stall)\n");
+    stalled_.push_back(std::move(reply));
+    return;
+  }
   const Json options = payload.value("options", Json::object());
   const auto filtered = mpv_policy::filterInitOptions(options.value("initialOptions", Json::object()));
   // Écartées en silence chez Electron, et c'est ce qui rendait un écran noir muet :
@@ -108,6 +122,12 @@ void VideoChannels::command(const Json& payload, Reply reply) {
   Json shown = argv;
   if ((name == "loadfile" || name == "sub-add") && shown.size() > 1) shown[1] = "<url>";
   trace("mpv_command", shown);
+  // Panne provoquée `load` : la commande est acceptée (mpv charge en différé), puis rien ne s'ouvre.
+  if (fault_ == MpvFault::Load && name == "loadfile") {
+    reply.ok(nullptr);
+    registry_.emit("mpv://event", {{"event", "end-file"}, {"reason", kMpvEndFileError}, {"error", kMpvErrorLoadingFailed}});
+    return;
+  }
   // Les ARGUMENTS ne vont jamais au journal : l'URL d'un loadfile porte le jeton.
   player_.command(argv, [name, reply](std::optional<std::string> err) mutable {
     if (err) return failWith(reply, "mpv_command", name + " : " + *err);
@@ -163,6 +183,44 @@ void VideoChannels::onEvent(const Json& event) {
   if (!event.is_object() || !event.contains("event")) return;
   if (event["event"] == "playback-restart") flushHeld();  // seek abouti : la position d'abord
   registry_.emit("mpv://event", event);
+  // `TENTACLE_MPV_FAULT=fatal` : la première lecture partie tombe dix secondes plus tard.
+  if (fatalArmed_ && defer_ && event["event"] == "playback-restart") {
+    fatalArmed_ = false;
+    std::weak_ptr<bool> alive = alive_;
+    defer_(kFatalAfterStartMs, [this, alive] { if (!alive.expired()) failPlayback(); });
+  }
+}
+
+// La lecture en cours tombe comme un mpv en erreur fatale : la dernière position part, la page
+// reçoit `end-file` en erreur, et mpv s'arrête vraiment (image et son), comme après une vraie chute.
+bool VideoChannels::failPlayback() {
+  if (!player_.running()) return false;
+  std::fprintf(stderr, "[pont] lecture mise en echec (mpv_debug_fault fatal)\n");
+  flushHeld();
+  registry_.emit("mpv://event", {{"event", "end-file"}, {"reason", kMpvEndFileError}, {"error", kMpvErrorGeneric}});
+  player_.command(Json::array({"stop"}), [](std::optional<std::string>) {});
+  return true;
+}
+
+void VideoChannels::releaseStalled() {
+  for (auto& reply : stalled_) reply.fail("mpv_init", "mpv_init : abandonne (panne provoquee levee)");
+  stalled_.clear();
+}
+
+void VideoChannels::debugFault(const Json& payload, Reply reply) {
+  const auto asked = parseMpvFault(payload.value("mode", std::string()));
+  if (!asked) return failWith(reply, "bad_mode", "mpv_debug_fault : mode inconnu (off, init, stall, load, fatal)");
+  if (*asked == MpvFault::Absent) return failWith(reply, "launch_only", "mpv_debug_fault : absent ne se pose qu'au lancement (TENTACLE_MPV_FAULT=absent)");
+  bool fired = false;
+  if (*asked == MpvFault::Fatal) {
+    fired = failPlayback();
+  } else {
+    fault_ = *asked;
+    fatalArmed_ = false;
+    if (fault_ != MpvFault::Stall) releaseStalled();
+    std::fprintf(stderr, "[pont] panne du lecteur PROVOQUEE : %s (mpv_debug_fault)\n", mpvFaultName(fault_));
+  }
+  reply.ok({{"mode", mpvFaultName(fault_)}, {"fired", fired}});
 }
 
 void VideoChannels::scheduleFlush(double delayMs) {

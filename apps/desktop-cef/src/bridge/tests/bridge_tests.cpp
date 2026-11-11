@@ -155,6 +155,82 @@ static void testVideo() {
   CHECK(!a.ok && a.code == "no_player");
 }
 
+// Pannes provoquées du lecteur (mpv_fault.h) : chaque mode donne à la page ce qu'un vrai
+// mpv en panne lui donnerait — c'est ce qui éprouve le repli vers le lecteur web.
+static void testFault() {
+  CHECK(parseMpvFault("fatal") == MpvFault::Fatal && parseMpvFault("") == MpvFault::Off);
+  CHECK(!parseMpvFault("casse") && std::string(mpvFaultName(MpvFault::Stall)) == "stall");
+  {  // init : mpv_init refusé, mpv jamais démarré ; `off` rend le lecteur.
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    VideoChannels video(reg, player, {}, {}, MpvFault::Init);
+    auto a = ipc.invoke("tentacle:mpv_init", frontInit());
+    CHECK(a.done && !a.ok && a.code == "mpv_init" && player.started.empty());
+    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "off"}});
+    CHECK(a.ok && a.value["mode"] == "off" && a.value["fired"] == false);
+    CHECK(ipc.invoke("tentacle:mpv_init", frontInit()).ok && player.started.size() == 1);
+  }
+  {  // stall : aucune réponse ; lever la panne rend la main à la page (un refus, pas un silence).
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    VideoChannels video(reg, player);
+    CHECK(ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "stall"}}).value["mode"] == "stall");
+    Answer pending;
+    Reply reply{[&pending](Json v) { pending.done = pending.ok = true; pending.value = std::move(v); },
+                [&pending](std::string c, std::string m) { pending.done = true; pending.code = std::move(c); pending.message = std::move(m); }};
+    ipc.handlers["tentacle:mpv_init"](frontInit(), reply);
+    CHECK(!pending.done && player.started.empty());
+    ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "off"}});
+    CHECK(pending.done && !pending.ok && pending.code == "mpv_init");
+  }
+  {  // load : `loadfile` accepté, jamais transmis à mpv, puis `end-file` en erreur de chargement.
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    VideoChannels video(reg, player, {}, {}, MpvFault::Load);
+    CHECK(ipc.invoke("tentacle:mpv_init", frontInit()).ok);
+    auto a = ipc.invoke("tentacle:mpv_command", {{"name", "loadfile"}, {"args", {"http://serveur/film?api_key=secret"}}});
+    CHECK(a.ok && player.commands.empty());
+    auto events = ipc.payloadsOf("tentacle:mpv://event");
+    CHECK(events.size() == 1 && events[0]["event"] == "end-file" && events[0]["reason"] == 4 && events[0]["error"] == -13);
+    a = ipc.invoke("tentacle:mpv_command", {{"name", "seek"}, {"args", {5}}});  // le reste passe
+    CHECK(a.ok && player.commands.size() == 1);
+  }
+  {  // fatal, en route : la position retenue part D'ABORD, puis `end-file` en erreur, et mpv s'arrête.
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    double now = 1000;
+    VideoChannels video(reg, player, [&now] { return now; });
+    auto a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "fatal"}});
+    CHECK(a.ok && a.value["fired"] == false);  // rien ne joue : rien ne tombe
+    ipc.invoke("tentacle:mpv_init", frontInit());
+    player.listener->onProperty("time-pos", 61.0);
+    now += 40;
+    player.listener->onProperty("time-pos", 61.04);  // retenue par l'étranglement
+    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "fatal"}});
+    CHECK(a.ok && a.value["fired"] == true && a.value["mode"] == "off");
+    CHECK(ipc.emitted.size() == 3 && ipc.emitted[1].second["data"] == 61.04);
+    CHECK(ipc.emitted[2].first == "tentacle:mpv://event" && ipc.emitted[2].second["reason"] == 4 && ipc.emitted[2].second["error"] == -20);
+    CHECK(player.commands.back() == Json::array({"stop"}));
+  }
+  {  // fatal, au lancement : armé, il tire dix secondes après le départ de la PREMIÈRE lecture, une fois.
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    std::vector<std::pair<int, std::function<void()>>> deferred;
+    VideoChannels video(reg, player, {}, [&deferred](int ms, std::function<void()> f) { deferred.emplace_back(ms, std::move(f)); }, MpvFault::Fatal);
+    CHECK(ipc.invoke("tentacle:mpv_init", frontInit()).ok);  // mpv démarre normalement
+    player.listener->onEvent({{"event", "playback-restart"}});
+    CHECK(deferred.size() == 1 && deferred[0].first == 10000);
+    deferred[0].second();
+    CHECK(ipc.payloadsOf("tentacle:mpv://event").back()["error"] == -20);
+    player.listener->onEvent({{"event", "playback-restart"}});
+    CHECK(deferred.size() == 1);
+  }
+  {  // absent : aucun canal mpv_* (la page ne voit pas de lecteur natif) ; jamais posé en route.
+    FakeIpc ipc; FakePlayer player; Registry reg(ipc);
+    VideoChannels video(reg, player, {}, {}, MpvFault::Absent);
+    CHECK(!ipc.handlers.count("tentacle:mpv_init") && !ipc.handlers.count("tentacle:mpv_command"));
+    auto a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "absent"}});
+    CHECK(a.done && !a.ok && a.code == "launch_only");
+    a = ipc.invoke("tentacle:mpv_debug_fault", {{"mode", "casse"}});
+    CHECK(a.done && !a.ok && a.code == "bad_mode");
+  }
+}
+
 static void testWindow() {
   FakeIpc ipc;
   FakeWindow win;
@@ -208,6 +284,7 @@ int main() {
   testRegistry();
   testPolicy();
   testVideo();
+  testFault();
   testWindow();
   std::printf(failures ? "%d échec(s)\n" : "tous les tests du pont passent\n", failures);
   return failures ? 1 : 0;
