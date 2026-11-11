@@ -45,7 +45,7 @@ g.document = fakeDocument;
 
 const {
   getTrailerPreviewBlock, reportTrailerPreviewCodecRefusal, setTrailerPreviewDecodes, setTrailerPreviewHostState,
-  subscribeTrailerPreviewBlock, trailerPreviewCodecBlocked,
+  setTrailerPreviewServerOpenCodecs, subscribeTrailerPreviewBlock, trailerPreviewCodecBlocked,
 } = await import("./previewEnvironment");
 const { trailerPreviewsFlag } = await import("./previewSettings");
 
@@ -60,6 +60,7 @@ beforeEach(() => {
   trailerPreviewsFlag.set(true);
   setTrailerPreviewHostState({ offline: false, mirror: false });
   setTrailerPreviewDecodes(null);
+  setTrailerPreviewServerOpenCodecs(true);
 });
 
 afterEach(() => {
@@ -95,6 +96,29 @@ describe("le lecteur qui ne décode rien de ce que le relais sert", () => {
     expect(getTrailerPreviewBlock()).toBe("codec");
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
+  });
+});
+
+describe("le bureau CEF face à un serveur qui ne sert pas le VP9 et l'Opus", () => {
+  it("aucun aperçu (les extensions le lisent aussi) ; le serveur à jour le rend, et les cartes sont prévenues", () => {
+    setTrailerPreviewDecodes(["vp9", "opus"]);
+    const listener = vi.fn();
+    const unsubscribe = subscribeTrailerPreviewBlock(listener);
+    setTrailerPreviewServerOpenCodecs(false);
+    expect(getTrailerPreviewBlock()).toBe("codec");
+    expect(listener).toHaveBeenCalledTimes(1);
+    setTrailerPreviewServerOpenCodecs(true);
+    expect(getTrailerPreviewBlock()).toBeNull();
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+
+  it("un lecteur qui lit le H.264 ne regarde pas cette capacité", () => {
+    setTrailerPreviewDecodes(["h264", "aac", "vp9", "opus"]);
+    setTrailerPreviewServerOpenCodecs(false);
+    expect(getTrailerPreviewBlock()).toBeNull();
+    setTrailerPreviewDecodes(null);
+    expect(getTrailerPreviewBlock()).toBeNull();
   });
 });
 

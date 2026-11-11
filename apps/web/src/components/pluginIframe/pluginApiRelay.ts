@@ -1,3 +1,4 @@
+import { declareHostTrailerDecodes } from "./pluginTrailerDecodes";
 import { resolveBridgeUrl } from "./resolveBridgeUrl";
 
 /**
@@ -17,16 +18,18 @@ export async function answerPluginApiRequest(
   backendUrl: string,
   reply: (message: Record<string, unknown>) => void,
 ): Promise<void> {
-  const { id, method, path, body } = data;
+  const { id, method, path } = data;
   // Cette requête part avec les identifiants de l'utilisateur (Bearer
   // + cookies) et son chemin vient du greffon. Une CONCATÉNATION n'est
   // pas une résolution : `@pirate/x` accolé à la base donne une URL
   // valide dont l'hôte est `pirate`. Voir `resolveBridgeUrl.ts`.
-  const target = resolveBridgeUrl(backendUrl, path, window.location.origin);
-  if (target === null) {
+  const resolved = resolveBridgeUrl(backendUrl, path, window.location.origin);
+  if (resolved === null) {
     reply({ type: "API_RESPONSE", id, error: "chemin refuse" });
     return;
   }
+  // Une bande-annonce relayée : l'hôte dit ce que le lecteur de l'appareil décode (`pluginTrailerDecodes.ts`).
+  const { target, body } = declareHostTrailerDecodes({ target: resolved, body: data.body });
   try {
     const headers: Record<string, string> = { ...getAuthHeaders() };
     if (body) headers["Content-Type"] = "application/json";
