@@ -1,4 +1,5 @@
 import Hls, { type HlsConfig } from "hls.js";
+import { initFirstFragmentLoader, type FragmentLoaderClass } from "./hlsInitFirstLoader";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -90,6 +91,9 @@ export function configHls(seekTo: number): Partial<HlsConfig> {
     maxBufferLength: 30,          // buffer 30s ahead for smooth playback
     maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
     startFragPrefetch: true,      // prefetch next fragment during current load
+    // fMP4 : l'init d'abord, le segment ensuite — demandés ensemble, ils cassaient l'encodage de
+    // Jellyfin 10.11 quand la lecture part loin du début (`hlsInitFirstLoader.ts`).
+    fLoader: initFirstFragmentLoader(Hls.DefaultConfig.loader as unknown as FragmentLoaderClass),
     // A/V sync: fix audio desync with transcoded streams (fMP4/TS segments).
     // stretchShortVideoTrack extends the last audio frame to fill micro-gaps between segments.
     // maxAudioFramesDrift forces audio resync when drift exceeds 1 frame.
