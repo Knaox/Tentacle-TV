@@ -21,27 +21,41 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     expect(hls.config).toMatchObject({ autoStartLoad: false, capLevelToPlayerSize: false, testBandwidth: false });
     hls.fire(EVENTS.MANIFEST_PARSED, { levels: [{ height: 360, bitrate: 1 }, { height: 1080, bitrate: 5 }, { height: 720, bitrate: 3 }] });
     expect(hls.startLevelValue).toBe(1);
-    // Départ quelques secondes plus loin que le noir ou le logo du distributeur.
-    expect(hls.calls).toContain("startLoad:4");
+    // Le chargement part du premier segment (celui que le serveur a lu d'avance).
+    expect(hls.calls).toContain("startLoad:0");
     expect(video.calls).not.toContain("play");
   });
 
-  it("départ décalé gardé dans le premier segment d'une vidéo assez longue, sinon départ à 0", async () => {
+  it("la LECTURE part du départ décalé quand il tient dans le premier segment, sinon de 0 — sans jamais recharger", async () => {
     const segments = (first: number) => [{ duration: first }, { duration: 5 }];
     const { HlsClass, instances } = fakeHlsClass();
-    attachPreviewSource(new FakeVideo() as never, HLS, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
-    attachPreviewSource(new FakeVideo() as never, HLS, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
+    const [longVideo, shortVideo, briefVideo] = [new FakeVideo(), new FakeVideo(), new FakeVideo()];
+    for (const video of [longVideo, shortVideo, briefVideo]) {
+      attachPreviewSource(video as never, HLS, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
+    }
     await flush();
-    const [long, short] = instances;
+    const [long, short, brief] = instances;
+    const startOf = (video: FakeVideo) => (video as unknown as { currentTime?: number }).currentTime ?? 0;
+    // Quelques secondes plus loin que le noir ou le logo du distributeur — dans le même segment.
     long.fire(EVENTS.MANIFEST_PARSED, { levels: [{ height: 1080, bitrate: 5 }] });
     long.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 138, fragments: segments(5.48) } });
-    expect(long.calls).not.toContain("stopLoad");
+    expect(startOf(longVideo)).toBe(4);
+    // Vidéo courte, ou premier segment trop bref (3,04 s : mesuré sur un flux VP9 de YouTube) : départ à 0.
     short.fire(EVENTS.MANIFEST_PARSED, { levels: [{ height: 1080, bitrate: 5 }] });
     short.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 20, fragments: segments(5.48) } });
-    expect(short.calls.slice(-2)).toEqual(["stopLoad", "startLoad:0"]);
+    brief.fire(EVENTS.MANIFEST_PARSED, { levels: [{ height: 1080, bitrate: 5 }] });
+    brief.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 138, fragments: segments(3.04) } });
+    expect(startOf(shortVideo)).toBe(0);
+    expect(startOf(briefVideo)).toBe(0);
+    // Jamais d'arrêt suivi d'un redémarrage : avec une piste audio séparée, hls.js n'en revenait pas.
+    for (const hls of [long, short, brief]) {
+      expect(hls.calls).not.toContain("stopLoad");
+      expect(hls.calls.filter((call) => call.startsWith("startLoad"))).toEqual(["startLoad:0"]);
+    }
     // Une seule fois : les listes suivantes (changement de niveau) ne redécident rien.
-    short.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 20, fragments: segments(5.48) } });
-    expect(short.calls.filter((c) => c === "stopLoad")).toHaveLength(1);
+    (longVideo as unknown as { currentTime: number }).currentTime = 9;
+    long.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 138, fragments: segments(5.48) } });
+    expect(startOf(longVideo)).toBe(9);
   });
 
   it("le décalage ne vaut que dans le premier segment, avec une marge, et pour 30 s au moins", () => {

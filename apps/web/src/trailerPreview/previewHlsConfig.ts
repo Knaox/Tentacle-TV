@@ -1,5 +1,4 @@
 import type { HlsConfig } from "hls.js";
-import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
 
 /** La configuration hls.js d'un aperçu (`previewSource.ts`) : départ, tampon, délais. */
 
@@ -42,7 +41,9 @@ export const PREVIEW_PLAY_MAX_BUFFER_S = 15;
 export function previewHlsConfig(): Partial<HlsConfig> {
   return {
     autoStartLoad: false,
-    startPosition: TRAILER_PREVIEW_TIMING.startOffsetS,
+    // Le chargement part toujours de 0 (ou de la reprise, par `startLoad`) : c'est la LECTURE
+    // qui se cale au départ décalé, une fois la liste connue (`previewSource.ts`).
+    startPosition: 0,
     capLevelToPlayerSize: false,
     capLevelOnFPSDrop: false,
     enableWorker: true,
