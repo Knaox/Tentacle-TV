@@ -6,7 +6,7 @@ import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
  * progresse plus, et le glissement du volume. Sur un élément réduit à ce
  * qu'il faut — les tests passent un double.
  */
-export type PlaybackVideo = Pick<HTMLVideoElement, "muted" | "volume" | "play" | "pause" | "addEventListener" | "removeEventListener">;
+export type PlaybackVideo = Pick<HTMLVideoElement, "muted" | "volume" | "paused" | "ended" | "play" | "pause" | "addEventListener" | "removeEventListener">;
 
 export interface PlaybackCallbacks {
   onSoundBlocked: () => void;
@@ -19,31 +19,54 @@ const isNamed = (error: unknown, name: string) =>
 /**
  * Lance la lecture. Le son part de zéro (le fondu le monte, cf. `rampVolume`).
  * Le navigateur refuse une lecture SONORE sans geste de l'utilisateur sur la
- * page (web) : la lecture repart en muet, sans erreur, et `onSoundBlocked` le
- * dit — le bouton du son le rendra d'un clic. Electron ne refuse jamais
- * (politique `no-user-gesture-required`, son défaut).
+ * page : la lecture repart en muet, sans erreur, et `onSoundBlocked` le dit —
+ * le bouton du son le rendra d'un clic. Le refus prend DEUX formes :
+ *
+ *   - `play()` rejetée (`NotAllowedError`) ;
+ *   - `play()` ACCEPTÉE puis la vidéo mise en PAUSE par le navigateur. Mesuré
+ *     le 11/11/2026 dans Chromium 156 (bureau CEF, et Chrome sans clic sur la
+ *     page) : une vidéo au volume NUL passe pour muette, sa lecture est
+ *     permise — et le premier pas du fondu, qui la rend audible, la fait
+ *     arrêter par la politique d'autoplay. Aucune erreur, aucun `waiting` :
+ *     l'aperçu restait figé sur sa première image.
+ *
+ * Electron ne refuse jamais (politique `no-user-gesture-required`, son
+ * défaut), le bureau CEF non plus (même politique, posée par la coquille).
  *
  * Rend l'annulation : une réponse tardive de `play()` ne fait plus rien.
  */
 export function startPreviewPlayback(video: PlaybackVideo, wantSound: boolean, callbacks: PlaybackCallbacks): () => void {
   let cancelled = false;
+  let sound = wantSound;
   video.volume = 0;
   video.muted = !wantSound;
-  const attempt = (sound: boolean): void => {
+  const attempt = (): void => {
     video.play().catch((error: unknown) => {
       if (cancelled || isNamed(error, "AbortError")) return;
       if (sound && isNamed(error, "NotAllowedError")) {
-        video.muted = true;
-        callbacks.onSoundBlocked();
-        attempt(false);
+        silence();
         return;
       }
       callbacks.onError();
     });
   };
-  attempt(wantSound);
+  const silence = (): void => {
+    sound = false;
+    video.muted = true;
+    callbacks.onSoundBlocked();
+    attempt();
+  };
+  // Une pause que PERSONNE ici n'a demandée, pendant une lecture sonore : le navigateur vient de
+  // refuser le son. `paused` écarte l'écho tardif d'une pause d'avant (la lecture a repris depuis).
+  const onPause = (): void => {
+    if (cancelled || !sound || !video.paused || video.ended) return;
+    silence();
+  };
+  video.addEventListener("pause", onPause);
+  attempt();
   return () => {
     cancelled = true;
+    video.removeEventListener("pause", onPause);
   };
 }
 
