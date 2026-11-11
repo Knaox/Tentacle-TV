@@ -672,7 +672,8 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   `PONT_CDP_PORT=… node apps/desktop-cef/bench/glass/disposition.mjs` — 18 commandes,
   3 groupes, le volume survolé et 3 menus au demi-pixel près, verre coupé contre verre
   allumé, et les 3 vues d'AppKit aux rectangles de leurs formes. Avant : 12 commandes sur
-  18 ailleurs (le transport 551 px plus à droite, le son 1137 px plus à gauche).
+  13 ailleurs (le transport 551 px plus à droite, le son 1137 px plus à gauche), et le
+  titre, la barre et le temps avec elles.
   `playerGlassGeometry.test.ts` lie chaque jeton `--lg-player-*` à sa règle d'en face.
 - **Le décor : celui du lecteur de tvOS 26** (lot lg8, 27/10 ; avant, des capsules
   grises et plates — « vraiment dégueulasse », Damien). Du TEXTE sur un VOILE, et du
