@@ -109,13 +109,21 @@ if(TARGET tentacle_shell)
   set(TENTACLE_UPDATE_PUBLIC_KEYS "" CACHE STRING "Clés publiques ed25519 de confiance : id:base64;…")
 
   # La surcouche JS est embarquée, comme le shim du pont, sa feuille de style glissée dans
-  # le jeton __UPDATE_CSS__. Absente : script vide.
+  # le jeton __UPDATE_CSS__. Absente : script vide. Son fragment de démonstration (menu de
+  # débogage du front) est glissé DANS sa fermeture, au jeton /*__UPDATE_DEMO__*/.
   set(overlay_js "${CMAKE_CURRENT_SOURCE_DIR}/../../web/shim/update-overlay.js")
   set(overlay_css "${CMAKE_CURRENT_SOURCE_DIR}/../../web/shim/update-overlay.css")
+  set(overlay_demo "${CMAKE_CURRENT_SOURCE_DIR}/../../web/shim/update-overlay-demo.js")
   set(TENTACLE_UPDATE_OVERLAY "")
   if(EXISTS "${overlay_js}")
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${overlay_js}" "${overlay_css}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${overlay_js}" "${overlay_css}" "${overlay_demo}")
     file(READ "${overlay_js}" TENTACLE_UPDATE_OVERLAY)
+    file(READ "${overlay_demo}" overlay_demo_text)
+    string(FIND "${TENTACLE_UPDATE_OVERLAY}" "/*__UPDATE_DEMO__*/" demo_slot)
+    if(demo_slot EQUAL -1)
+      message(FATAL_ERROR "update-overlay.js n'a plus le jeton /*__UPDATE_DEMO__*/ de son fragment de démonstration")
+    endif()
+    string(REPLACE "/*__UPDATE_DEMO__*/" "\n${overlay_demo_text}" TENTACLE_UPDATE_OVERLAY "${TENTACLE_UPDATE_OVERLAY}")
     file(READ "${overlay_css}" overlay_css_text)
     string(FIND "${overlay_css_text}" "`" backtick)
     string(FIND "${overlay_css_text}" "\${" interpolation)
