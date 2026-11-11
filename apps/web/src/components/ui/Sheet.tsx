@@ -2,10 +2,35 @@ import { useCallback, useEffect, useRef } from "react";
 import { useGlassControl } from "./glass/useGlassControl";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { focusableIn } from "./Modal";
 import { duration, easeDrawer, easeOut } from "../../theme/motion";
+import { lastInputWasKeyboard } from "../../lib/inputModality";
+import { exitOr } from "../floating/floatingMotion";
 import { useLiquidGlassMode } from "../../theme/glass";
+
+/**
+ * Le tiroir glisse de sa propre taille (`translate` en pourcentage), en `transform` ENTIER — le
+ * seul que framer 11 confie au compositeur, et un tiroir s'ouvre pendant que son contenu se
+ * monte. Sous « réduire les animations », il ne glisse plus : un fondu. Au clavier, rien.
+ */
+const drawer = (hidden: string, settled: string): Variants => ({
+  hidden: { transform: hidden },
+  show: { transform: settled, transition: { duration: duration.sheetIn, ease: easeDrawer } },
+  exit: exitOr({ transform: hidden, transition: { duration: duration.sheetOut, ease: easeOut } }),
+});
+const PANEL_RIGHT = drawer("translateX(100%)", "translateX(0%)");
+const PANEL_BOTTOM = drawer("translateY(100%)", "translateY(0%)");
+const PANEL_REDUCED: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.fast, ease: easeOut } },
+  exit: exitOr({ opacity: 0, transition: { duration: duration.menuOut, ease: easeOut } }),
+};
+const SCRIM: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: duration.sheetOut, ease: easeOut } },
+  exit: exitOr({ opacity: 0, transition: { duration: duration.fast, ease: easeOut } }),
+};
 
 const NATIVE_BACKDROP = {
   backdropFilter: "blur(var(--blur-sheet))",
@@ -132,21 +157,25 @@ export function Sheet({
   }, [open, lockScroll]);
 
   const isRight = placement === "right";
-  const initialOffset = isRight ? { x: "100%" } : { y: "100%" };
-  const settledOffset = isRight ? { x: 0 } : { y: 0 };
+  const reduced = useReducedMotion() === true;
+  // Le geste qui ouvre ou ferme, lu au rendu qu'il déclenche : au clavier, rien ne s'anime.
+  const keyboard = lastInputWasKeyboard();
+  const panelVariants = reduced ? PANEL_REDUCED : isRight ? PANEL_RIGHT : PANEL_BOTTOM;
 
   const panelStyle = isRight
     ? { width: size, height: "100%", right: 0, top: 0, bottom: 0 }
     : { maxHeight: size, width: "100%", left: 0, right: 0, bottom: 0 };
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence custom={keyboard}>
       {open && (
         <motion.div
           className="fixed inset-0 z-[90]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.2 } }}
-          exit={{ opacity: 0, transition: { duration: 0.16 } }}
+          variants={SCRIM}
+          custom={keyboard}
+          initial={keyboard ? false : "hidden"}
+          animate="show"
+          exit="exit"
           onClick={onClose}
           role="presentation"
           // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
@@ -172,10 +201,9 @@ export function Sheet({
               ...(native ? NATIVE_BACKDROP : null),
               overflowY: "auto",
             }}
-            initial={initialOffset}
             // Le tiroir : 320 ms sur sa courbe à l'entrée, 200 ms à la sortie, par le même chemin.
-            animate={{ ...settledOffset, transition: { duration: duration.sheetIn, ease: easeDrawer } }}
-            exit={{ ...initialOffset, transition: { duration: duration.sheetOut, ease: easeOut } }}
+            variants={panelVariants}
+            custom={keyboard}
             onClick={(e) => e.stopPropagation()}
           >
             {children}

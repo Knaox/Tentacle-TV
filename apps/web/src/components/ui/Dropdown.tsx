@@ -28,8 +28,8 @@ const SIDES: Record<DropdownPlacement, [FloatingSide, FloatingAlign]> = {
 
 /**
  * Canonical dropdown primitive — replaces 4+ ad-hoc dropdown surfaces.
- * - surface-dropdown bg, blur 12px, border-subtle, shadow-dropdown
- * - 150ms scale-in / 100ms scale-out
+ * - surface-dropdown, opaque (aucun flou hors du verre natif), shadow-dropdown
+ * - il sort de son bouton : 180 ms à l'entrée, 120 à la sortie (`floatingMotion`) ; rien au clavier
  * - Échap et clic dehors ferment ; le clic sur le déclencheur reste à lui.
  *
  * L'ANCRE est le parent du composant (le `relative` qui entoure le

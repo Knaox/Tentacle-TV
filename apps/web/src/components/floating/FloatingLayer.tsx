@@ -1,3 +1,4 @@
+import { lastInputWasKeyboard } from "../../lib/inputModality";
 import { useCallback, useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -51,6 +52,8 @@ export function FloatingLayer({
   // SURFACE — `lgMenu.css`). Le ton se lit sous le panneau entier.
   const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass, scale: menuGlass ? "surface" : "control" });
   const variants = floatingVariants(useLiquidGlassMode() === "native", glassMotionReduced());
+  // Le geste qui ouvre ou ferme, lu au rendu qu'il déclenche : au clavier, rien ne s'anime.
+  const keyboard = lastInputWasKeyboard();
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     (ref as { current: HTMLDivElement | null }).current = node;
@@ -84,7 +87,7 @@ export function FloatingLayer({
 
   if (typeof document === "undefined") return null;
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence custom={keyboard}>
       {open && (
         <motion.div
           {...attrs}
@@ -107,7 +110,8 @@ export function FloatingLayer({
             transformOrigin: placement?.transformOrigin,
           }}
           variants={variants}
-          initial="hidden"
+          custom={keyboard}
+          initial={keyboard ? false : "hidden"}
           animate="show"
           exit="exit"
         >
