@@ -7,6 +7,7 @@ import { beginRouteHold } from "./routeHold";
 import { TransitionLevelContext, type PageArrival } from "./transitionLevel";
 import { usePageSettled } from "./usePageSettled";
 import { PAGE_HOLD_DATA_MS, PAGE_HOLD_IMAGES_MS } from "./pageSettled";
+import { CarriedScrollEdge } from "../../desktop/ScrollEdgeEffect";
 
 /** Propriétés posées le temps de la sortie, retirées si la page revient. */
 const PINNED = ["position", "top", "left", "width", "pointer-events", "z-index", "opacity", "transition"] as const;
@@ -118,6 +119,12 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
   // Les entrées du contenu restent coupées jusqu'à la fin du fondu de la page quittée.
   const [entrancesBlocked, setEntrancesBlocked] = useState(holds);
   const inside = usePagePresence(entrancesBlocked);
+  // Le défilement de la fenêtre à l'instant où la page se met à sortir — lu au rendu, avant que
+  // la fenêtre ne soit remise à celui de la page suivante : ce qui en dépendait sous la barre
+  // (l'effet de bord du verre) reste avec la page épinglée.
+  const [leftAt, setLeftAt] = useState<number | null>(null);
+  if (!isPresent && leftAt === null) setLeftAt(typeof window === "undefined" ? 0 : window.scrollY);
+  if (isPresent && leftAt !== null) setLeftAt(null);
 
   // La page en place dit où elle en est ; prête, elle se montre — dans la même image.
   useLayoutEffect(() => {
@@ -209,6 +216,7 @@ export function RouteExit({ children, instant = false, replaces = false, layer =
     <div ref={ref} className="flow-root" style={revealed ? undefined : HELD} data-page-held={!revealed || undefined}>
       {/* La plaque : la page quittée couvre tout l'écran, barre comprise, du fond qu'on lui voyait. */}
       {!isPresent && revealed && <div aria-hidden style={PLATE}>{backdrop}</div>}
+      {!isPresent && revealed && leftAt !== null && <CarriedScrollEdge scrollY={leftAt} />}
       <PageArrivalGateContext.Provider value={gate}>
         <PageRevealedContext.Provider value={revealed}>
           <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
