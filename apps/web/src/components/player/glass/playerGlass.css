@@ -99,10 +99,12 @@
   --lg-player-track-height: 4px;
   --lg-player-track-hover-scale: 1.7;
 
-  /* Lignes des panneaux : la surbrillance façon menu macOS — l'ACCENT uni, jamais le dégradé
-     (lg7) ; blanc dessus 5,7:1. Même accent pour la saison affichée du panneau des épisodes. */
+  /* L'accent uni (jamais le dégradé, lg7) : la saison affichée du panneau des épisodes, l'action
+     principale d'une fiche. */
   --lg-player-accent: var(--brand-dark);
-  --lg-player-row-hover: var(--lg-player-accent);
+  /* Lignes des panneaux : un survol NEUTRE, un voile clair — plus l'aplat violet (11/11, Damien :
+     « ce violet en mode Liquid Glass, c'est non »). Le texte reste blanc. */
+  --lg-player-row-hover: rgb(255 255 255 / 0.14);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
   /* Une étiquette (débit, codec) : un remplissage noir à alpha, sans trait (lg7, R11). */

@@ -83,6 +83,9 @@
    native de la capsule doit sauter avec elle). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-volume {
   display: inline-flex;
+  /* Le curseur paraît À GAUCHE du bouton : la capsule, calée à droite, grandit vers la gauche — le
+     bouton du son reste sous le pointeur (11/11 : il partait à gauche au survol). */
+  flex-direction: row-reverse;
   align-items: center;
 }
 

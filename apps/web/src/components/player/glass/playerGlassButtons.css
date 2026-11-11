@@ -16,16 +16,12 @@
   cursor: pointer;
 }
 
-/* Lire / pause : le disque d'ivoire de l'habillage sans verre (`.pl-btn--main`), le seul
-   plein de la capsule — opaque, il se compose juste sur la surface à alpha. */
+/* Lire / pause : PLUS de disque d'ivoire (11/11, Damien : « le bouton play est vraiment moche en
+   blanc » — le symbole y sortait blanc sur blanc, la règle des symboles l'emportant plus bas). Le
+   symbole blanc des autres boutons, sur un voile clair qui le désigne comme l'action principale :
+   un blanc à alpha posé sur l'encre de la capsule, où il se compose juste. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--main {
-  background-color: #f4f2ee;
-  color: #131315;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--main > svg {
-  color: #131315;
-  filter: none;
+  background-color: rgb(255 255 255 / 0.16);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--small {
@@ -87,7 +83,7 @@
   }
 
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-caps .lgp-btn--main:hover {
-    background-color: #ffffff;
+    background-color: rgb(255 255 255 / 0.26);
   }
 }
 

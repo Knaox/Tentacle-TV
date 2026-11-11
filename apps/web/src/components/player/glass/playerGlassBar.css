@@ -156,13 +156,13 @@
 }
 
 /* Curseur de volume : la piste et le dégradé de marque de la barre ; la place et la
-   largeur de `.pl-volume__range` (84 px, 2 px après le bouton, 8 px avant le suivant). */
+   largeur de `.pl-volume__range` (84 px, à GAUCHE du bouton : 8 px du bord, 2 px du bouton). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range {
   display: none;
   width: 84px;
   /* La hauteur de `.ctl-range` : la même cible que sans verre. */
   height: 24px;
-  margin: 0 8px 0 2px;
+  margin: 0 2px 0 8px;
   appearance: none;
   -webkit-appearance: none;
   background: transparent;

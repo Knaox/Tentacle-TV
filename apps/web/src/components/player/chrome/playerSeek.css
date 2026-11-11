@@ -99,16 +99,19 @@
   }
 }
 
-/* Le volume : le curseur ne paraît qu'au survol ou au focus de son groupe. */
+/* Le volume : le curseur ne paraît qu'au survol ou au focus de son groupe — À GAUCHE du bouton :
+   la capsule, calée à droite, grandit vers la gauche et le bouton du son reste sous le pointeur
+   (11/11 : il partait à gauche au survol). */
 .pl-volume {
   display: inline-flex;
+  flex-direction: row-reverse;
   align-items: center;
 }
 
 .pl-volume__range {
   display: none;
   width: 84px;
-  margin: 0 8px 0 2px;
+  margin: 0 2px 0 8px;
 }
 
 .pl-volume:focus-within .pl-volume__range {

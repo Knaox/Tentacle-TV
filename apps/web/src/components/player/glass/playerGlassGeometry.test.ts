@@ -81,10 +81,11 @@ describe("la géométrie du lecteur en verre suit celle de l'habillage de la pag
   it("le curseur du volume a la place de celui d'avant : 84 px, dans la capsule de droite", () => {
     const legacy = rule("../chrome/playerSeek.css", ".pl-volume__range {");
     expect(legacy).toContain("width: 84px");
-    expect(legacy).toContain("margin: 0 8px 0 2px");
+    // À GAUCHE du bouton du son (le bouton ne bouge plus au survol) : 8 px du bord, 2 px du bouton.
+    expect(legacy).toContain("margin: 0 2px 0 8px");
     const glass = rule("playerGlassBar.css", ".lgp-range {");
     expect(glass).toContain("width: 84px");
-    expect(glass).toContain("margin: 0 8px 0 2px");
+    expect(glass).toContain("margin: 0 2px 0 8px");
     expect(glass).toContain("height: 24px");
     expect(glass).toContain("display: none");
   });
