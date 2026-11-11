@@ -13,10 +13,11 @@ import { compositeOver, contrastRatio, parseColor, WCAG_AA_LARGE, WCAG_AA_TEXT, 
 
 const TOKENS = readFileSync(join(__dirname, "tokens.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 const LIGHT = TOKENS.slice(TOKENS.indexOf(':root[data-theme="light"] {'));
+const DARK = TOKENS.slice(0, TOKENS.indexOf(':root[data-theme="light"] {'));
 
-function token(name: string): Rgba {
-  const raw = new RegExp(`^\\s*${name}:\\s*([^;]+);`, "m").exec(LIGHT)?.[1]?.trim();
-  if (!raw) throw new Error(`jeton clair introuvable : ${name}`);
+function token(name: string, block = LIGHT): Rgba {
+  const raw = new RegExp(`^\\s*${name}:\\s*([^;]+);`, "m").exec(block)?.[1]?.trim();
+  if (!raw) throw new Error(`jeton introuvable : ${name}`);
   const color = parseColor(raw.replace(/var\(--accent-rgb\)/, "162, 28, 175"));
   if (!color) throw new Error(`couleur illisible pour ${name} : ${raw}`);
   return color;
@@ -92,5 +93,31 @@ describe("la teinte franche et les états, sur le papier", () => {
   it("un séparateur n'est pas un texte : il reste discret, mais se voit (≥ 1,15:1 pour le fort)", () => {
     expect(on(token("--border-strong"), surface(1))).toBeGreaterThanOrEqual(1.15);
     expect(on(token("--border-strong"), surface(1))).toBeLessThan(WCAG_AA_LARGE);
+  });
+});
+
+describe("les encres du thème sombre", () => {
+  const ink = (n: number): Rgba => token(`--surface-${n}`, DARK);
+
+  for (const name of ["--text-primary", "--text-secondary", "--text-tertiary", "--text-quaternary"]) {
+    it(`${name} : ≥ 4,5:1 sur la page, un panneau, une carte et un survol`, () => {
+      for (const n of PAPERS) expect(on(token(name, DARK), ink(n)), `sur --surface-${n}`).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    });
+  }
+
+  it("la plus faible tient encore un pictogramme (3:1) sur une sélection", () => {
+    expect(on(token("--text-quaternary", DARK), ink(4))).toBeGreaterThanOrEqual(WCAG_AA_LARGE);
+  });
+
+  it("la hiérarchie reste ordonnée", () => {
+    const [p, s, t, q] = ["--text-primary", "--text-secondary", "--text-tertiary", "--text-quaternary"].map((n) => on(token(n, DARK), ink(1)));
+    expect(p).toBeGreaterThan(s);
+    expect(s).toBeGreaterThan(t);
+    expect(t).toBeGreaterThan(q);
+  });
+
+  it("la teinte franche et son encre", () => {
+    for (const n of PAPERS) expect(on(token("--accent", DARK), ink(n))).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    expect(on(token("--on-accent", DARK), token("--accent", DARK))).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
   });
 });

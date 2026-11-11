@@ -52,8 +52,10 @@ button.ui-tile:active,
   transition: box-shadow var(--duration-hover) ease;
 }
 
+/* Le texte d'invite se LIT : la tertiaire (5,5:1 en sombre, 4,5:1 au moins en clair). À la quaternaire
+ * du thème sombre, « Rechercher un réglage » restait à 3,1:1 (mesuré). */
 .field::placeholder {
-  color: var(--text-quaternary);
+  color: var(--text-tertiary);
 }
 
 textarea.field {
@@ -247,7 +249,9 @@ textarea.field {
   padding: 4px 6px;
   border-radius: 5px;
   background-color: var(--fill-soft);
-  color: var(--text-tertiary);
+  /* La secondaire : dans la barre flottante, la touche passe sur des images — à la tertiaire, « ⌘K »
+   * descendait à 4,3:1 sur une bannière claire. */
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;

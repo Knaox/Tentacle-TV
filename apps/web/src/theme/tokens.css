@@ -107,7 +107,10 @@
   --text-primary: #F4F2EE;
   --text-secondary: rgba(244, 242, 238, 0.74);
   --text-tertiary: rgba(244, 242, 238, 0.55);
-  --text-quaternary: rgba(244, 242, 238, 0.36);
+  /* 50 %, plus 36 % : la quaternaire porte aussi du TEXTE (une version, un délai, « Changer la photo
+   * de profil ») — à 36 % il restait à 3,1:1 sur l'encre, et l'étoile vide d'une note à 2,98:1 sous
+   * le verre (mesuré). À 50 %, 4,5:1 de la page au survol (`lightContrast.test.ts`, bloc sombre). */
+  --text-quaternary: rgba(244, 242, 238, 0.5);
   --text-disabled: rgba(244, 242, 238, 0.24);
 
   /* ── Action / CTA (primaire neutre, pas un aplat de marque) ─── */
@@ -399,8 +402,9 @@
   --glass-tint: rgba(255, 255, 255, 0.76);
   --glass-tint-strong: rgba(255, 255, 255, 0.88);
   --glass-panel: #FFFFFF;
-  /* Le scrim de modale reste un voile SOMBRE, seulement plus léger. */
-  --glass-backdrop: rgba(19, 19, 21, 0.32);
+  /* Le scrim de modale reste un voile SOMBRE, seulement plus léger. À 40 % (plus 32 %) : sous ce
+   * seuil une feuille blanche se détachait mal d'une page de papier, qui restait en concurrence. */
+  --glass-backdrop: rgba(19, 19, 21, 0.4);
 
   /* ── Actions destructives ───────────────────────────────────── */
   --danger-surface: rgba(220, 38, 38, 0.08);
