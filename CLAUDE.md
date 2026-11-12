@@ -1676,6 +1676,19 @@ périphérique DComp pour le processus, `DcompDevice::shared()`), fenêtre PiP O
 la `libmpv-2.dll` LGPL de mpv-winbuild. **Jamais essayé sur une vraie machine** :
 `apps/desktop-cef/docs/A-TESTER-WINDOWS.md`.
 
+### Molette et cadres d'extension (coquille CEF) — deux règles à ne pas défaire
+
+- **Un cadre d'extension vit dans le Renderer de la page** (`disable-site-isolation-trials`,
+  `src/shell/browser_app.cpp`, 12/11) : isolé dans son processus, il ne reçoit jamais la fin d'un geste de
+  molette (défaut de CEF en rendu hors écran) et reste accroché pour toujours à la première zone défilée —
+  « la fiche de Vigie ne défile pas », puis « la page ne défile plus ». Le pont n'est donné qu'au cadre
+  principal ; les sites tiers embarqués (YouTube, Vimeo, Dailymotion) gardent leur processus
+  (`isolate-origins`). Ne jamais chercher ce blocage dans le code de l'extension : ses verrous sont justes.
+- **La coquille dit elle-même où un geste commence** (`InputRouter::wheel`) : CEF ne transmet pas les phases
+  du geste, Chromium garde la molette sur la zone du geste précédent tant qu'un évènement arrive à moins de
+  500 ms (l'inertie de macOS dure une à trois secondes). Nouveau geste, clic ou touche : l'accroche est rompue ;
+  un évènement sans déplacement n'est pas transmis. Banc : `shell.debug.native` avec `phase`.
+
 ### Liquid Glass (bureau macOS 26) — une porte, deux verres
 
 Le bureau 1.40.0 prend le verre de macOS 26 ; carnet complet : `docs/LIQUID-GLASS.md`. **La cible est

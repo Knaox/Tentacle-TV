@@ -118,6 +118,22 @@ redimensionnement, 120 Hz, repos) et `scripts/banc-socle-edr.sh` (EDR sous la pa
   `app {action: state|unhide|deminiaturize}` rend `{hidden, miniaturized, fullscreen, visible}`.
 - Banc : `scripts/banc-saisie.sh [build] [cas…|connexion]` (DevTools 9314) ; tableau dans
   `docs/SAISIE.md`.
+- **Molette (12/11/2026)** : CEF ne transmet pas les PHASES d'un geste de défilement
+  (`SendMouseWheelEvent` n'a que des deltas) ; Chromium en invente et garde la molette accrochée à la
+  zone du geste précédent tant qu'un évènement arrive à moins de 500 ms — l'inertie de macOS en envoie
+  pendant une à trois secondes. Le routeur (`InputRouter::wheel`) rompt donc l'accroche lui-même : un bit
+  de modificateur invisible pour la page (`EVENTFLAG_IS_KEY_PAD`) bascule à chaque nouveau geste
+  (`NativeWheel::begins`, lu sur `NSEvent.phase`), à chaque clic et à chaque touche ; un évènement sans
+  déplacement (doigts posés, fin de geste) n'est plus transmis. `shell.debug.native {type:"scroll",
+  phase:"began"|"changed"|"ended"}` rejoue un geste de trackpad.
+- **Cadres d'extension dans le Renderer de la page** (`disable-site-isolation-trials`,
+  `browser_app.cpp`) : en rendu hors écran, CEF n'envoie jamais la FIN d'un geste de molette à un cadre
+  isolé dans son processus (la fin synthétique part au cadre principal sans passer par le routeur) ; le
+  cadre restait accroché POUR TOUJOURS à la première zone défilée — fiche de Vigie immobile après avoir
+  défilé la page, puis page immobile après la fiche. Le pont n'est donné qu'au cadre principal et le
+  cadre reste sandboxé : aucun accès de plus. YouTube, Vimeo et Dailymotion gardent un processus à part
+  (`isolate-origins`). Conséquence pour les bancs : le cadre d'une extension n'est plus une cible CDP à
+  lui (`/json` ne liste que la page) ; on y entre par son contexte d'exécution ou par messages.
 
 ### Lecteur (vidéo-HDR) — `src/player/player.h` (cible CMake `tentacle_player`, `add_subdirectory(src/player)`)
 - `Player::create(PlayerOptions{post, options, audioOnly, logFile, logLevel}, &err)` — `post` =
