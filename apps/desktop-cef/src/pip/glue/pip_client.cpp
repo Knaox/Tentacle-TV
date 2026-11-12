@@ -85,13 +85,13 @@ void PipClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
     browser->GetHost()->CloseBrowser(true);
     return;
   }
-  controller_->popupCreated(std::make_unique<BrowserPage>(browser), inputFor(browser));
-#ifdef __linux__
-  // Linux (mesuré au banc, sway) : le fond transparent posé dans OnBeforePopup n'atteint pas
-  // Blink pour CE popup — son canevas reste opaque (#121212 en schéma sombre, blanc sinon) et
-  // cache la vidéo prêtée ; le navigateur principal, lui, est transparent. Le fond de base de
+  // Le fond transparent posé dans OnBeforePopup n'atteint pas Blink pour CE popup — son canevas
+  // reste opaque (#121212 en schéma sombre, blanc sinon) et cache la vidéo prêtée, marge d'ombre
+  // comprise ; le navigateur principal, lui, est transparent. Mesuré sous Linux (sway) PUIS sous
+  // macOS (12/11 : PiP uniformément #121212, pas d'image, « la fenêtre noire déborde du cadre ») :
+  // ce n'est pas une affaire de plateforme, la garde vaut partout. Le fond de base de
   // l'inspecteur, posé par la session DevTools interne de CEF (tenue tant que le navigateur vit),
-  // le rend transparent : la vidéo paraît sous la page.
+  // le rend transparent : la vidéo paraît sous la page. Avant la fenêtre : jamais une image opaque.
   auto color = CefDictionaryValue::Create();
   color->SetInt("r", 0);
   color->SetInt("g", 0);
@@ -100,7 +100,7 @@ void PipClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   auto params = CefDictionaryValue::Create();
   params->SetDictionary("color", color);
   browser->GetHost()->ExecuteDevToolsMethod(0, "Emulation.setDefaultBackgroundColorOverride", params);
-#endif
+  controller_->popupCreated(std::make_unique<BrowserPage>(browser), inputFor(browser));
 }
 
 bool PipClient::DoClose(CefRefPtr<CefBrowser>) {

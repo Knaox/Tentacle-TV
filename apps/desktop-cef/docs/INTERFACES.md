@@ -650,8 +650,10 @@ Portage du PiP d'Electron (`apps/desktop-electron/src/main/pip/`, `ipc/pip.ts`,
     rendu : le rendu reste dans le contexte principal, la pile du PiP partage ses textures
     (contextes EGL partagés, `egl_linux.cpp`). X11 : pas de PiP (`canLendVideo` faux), comme
     Electron. Le navigateur du PiP reçoit son fond transparent par l'inspecteur
-    (`Emulation.setDefaultBackgroundColorOverride`, `pip_client.cpp`) : sans lui, son canevas
-    restait opaque (#121212) sous Linux. Preuve : `bench/linux/prove-pip.mjs` (sway).
+    (`Emulation.setDefaultBackgroundColorOverride`, `pip_client.cpp`), SUR TOUS LES SYSTÈMES :
+    sans lui, son canevas restait opaque (#121212 en schéma sombre, blanc sinon) et couvrait la
+    vidéo prêtée, marge d'ombre comprise — sous Linux (`bench/linux/prove-pip.mjs`, sway) comme
+    sous macOS (12/11, capture de la fenêtre PiP : #121212 partout, aucune image).
   - **Windows** (fait, jamais essayé sur une machine) : `canLendVideo()` vrai ; le visuel de la
     chaîne de mpv QUITTE l'arbre DirectComposition de la fenêtre principale (commit) et entre dans
     celui de la fenêtre PiP — possible parce que tous les arbres viennent du MÊME périphérique
