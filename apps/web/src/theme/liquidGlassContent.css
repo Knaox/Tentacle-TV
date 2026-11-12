@@ -94,6 +94,22 @@
   --surface-2: var(--lgd-raised);
 }
 
+/* Les OPTIONS d'un `<select>` : le menu ouvert est une fenêtre à part, peinte par le moteur sur un
+ * fond BLANC — il ne voit pas la page dessous (CEF hors écran : plus le NSMenu d'Electron, qui
+ * ignorait le style des options). Une option en `bg-surface-2` y devenait un voile à 3 % sur du
+ * blanc, sous un texte clair : « English » illisible dans Réglages › Langues (12/11). Elles gardent la
+ * surface OPAQUE d'avant le verre, figée sur `:root` (une variable s'y résout, puis s'hérite telle
+ * quelle) — spécificité (0,3,2), au-dessus de `[&>option]:bg-surface-2` (0,1,1). */
+:root[data-liquid-glass="native"] {
+  --lgd-option-bg: var(--surface-2);
+}
+
+:root[data-liquid-glass="native"] .lg-page select option,
+:root[data-liquid-glass="native"] .lg-page select optgroup {
+  background-color: var(--lgd-option-bg);
+  color: var(--text-primary);
+}
+
 /* Les conteneurs eux-mêmes (`.lg-content`, cartes ad hoc, carte dans une
  * carte, survol d'une tuile) : le panneau de la maquette, `theme/paneContent.css`. */
 
