@@ -1707,7 +1707,10 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   montée de 6 px, formes décalées, sortie plus rapide ; `playerGlassMaterialize.ts` → coquille ET
   CSS). Lecture/pause : le symbole blanc sur un voile clair, JAMAIS un disque blanc ; le curseur du
   volume paraît à GAUCHE de son bouton (le bouton reste sous le pointeur) ; une ligne de menu se
-  survole d'un voile neutre, jamais de l'aplat violet. ⚠️ Fenêtre ACTIVE, le verre natif est bien plus clair qu'inactive (87 contre 33 sur du
+  survole d'un voile neutre, jamais de l'aplat violet. Les TÉMOINS éphémères (lecture/pause au centre,
+  pilule de saut, anneau d'attente) sont à l'encre aussi (12/11, `PlaybackBadge`) : leur bulle de verre
+  portait la classe `lgp-badge`, celle de la pastille de vitesse d'un bouton — le témoin partait en haut
+  à droite, en disque blanc. ⚠️ Fenêtre ACTIVE, le verre natif est bien plus clair qu'inactive (87 contre 33 sur du
   noir) : un banc sans focus ne juge que l'inactif (`bench/liquid-glass/lg3/`). Sur la PAGE, la
   LENTILLE de Chromium : le verre natif vit SOUS la vue web et ne voit pas la page — jamais une
   région native qui défile avec elle.
@@ -1800,6 +1803,19 @@ supprime une passe de compositing. Vérifier avant d'en poser un.
 Mesure de référence : `sudo powermetrics --samplers gpu_power -i 1000 -n 10` sur
 un **build de production** (le compteur d'images de `dev/` tient une boucle
 `requestAnimationFrame` permanente qui fausse toute mesure au repos).
+
+### Fin d'un fondu (framer-motion) — une garde, jamais un cas par cas
+
+À la fin d'une animation confiée au compositeur (`opacity`, `transform`), framer-motion écrit la valeur
+finale à la passe de rAF suivante puis ANNULE l'animation aussitôt. Dans une page AU CALME, Chromium peint
+l'annulation une image avant l'écriture : pendant une image l'élément retombe à sa valeur de départ — le
+voile d'une feuille disparaît à la fin de son ouverture, la feuille reparaît pleine après sa fermeture
+(le « scintillement » de « garder hors ligne », 12/11). `lib/waapiFinishGuard.ts`, posée dans `main.tsx`
+avant le premier rendu, fige le style final (`commitStyles`) à l'évènement `finish`, avant l'annulation ;
+elle ne touche que les animations à la forme de framer-motion (une propriété en objet, `fill: "both"`).
+Ce scintillement ne se corrige donc jamais composant par composant. ⚠️ Une boucle `requestAnimationFrame`
+active le MASQUE (une sonde posée par rAF ne le voit pas, la capture d'écran CDP non plus) : on le mesure
+page au calme, par `shell.debug.webPixel` (pixels de la dernière image reçue par la coquille, lus en boucle).
 - **Functional components only**, strict TypeScript everywhere
 - **Jellyfin admin API key stays in backend `.env` only**, never exposed to frontend
 - **UI theme**: dark glassmorphism, gradient accents (purple → pink)

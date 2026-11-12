@@ -1185,6 +1185,11 @@ html `native` et l'interrupteur allumé.
   extérieur, n'était pas concentrique (deux arcs à chaque coin d'un menu, de la palette de recherche). Il reste un
   reflet `inset` d'un demi-pixel, vif en haut, à peine en bas ; l'anneau et son jeton sont retirés. La lumière de bord
   de la lentille est adoucie de même (`--lg-edge-gain` 1,4 → 0,7, `--lg-edge-white` 0,2 → 0,08).
+- **Les témoins éphémères du lecteur sont à l'encre aussi** (12/11) : lecture/pause au centre (`PlaybackBadge`),
+  pilule de saut (`SkipBadge`), anneau d'attente (`PlaybackSpinner`). Leur bulle de verre (`GlassSurface
+  className="lgp-badge …"`, groupe `player-flash`) portait la classe de la pastille de vitesse d'un bouton
+  (`playerGlassButtons.css` : `position: absolute; top; right`, fond clair) — le témoin partait en haut à droite, en
+  disque blanc. Plus de branche « verre » dans ces trois composants ; le groupe `player-flash` n'existe plus.
 - **La pastille de l'onglet courant et la sélection du rail glissent sur le compositeur** (`SlidingMarker`), avec ou
   sans verre : la métamorphose de framer (`layoutId`) mesure dans la PAGE, et partait en diagonale quand on changeait
   d'onglet après avoir défilé.
