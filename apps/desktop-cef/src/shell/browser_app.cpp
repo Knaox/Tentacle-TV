@@ -56,6 +56,21 @@ void BrowserApp::OnBeforeCommandLineProcessing(const CefString& processType,
     // - service réseau dans le processus principal, comme Chromium sur les appareils
     //   modestes : un processus de moins (−12 Mo d'empreinte, −74 Mo de RSS, mesuré).
     cl->AppendSwitchWithValue("renderer-process-limit", "1");
+    // Les cadres d'extension (tentacle://plugin/…, sandboxés) vivent dans le Renderer de la page,
+    // pas dans un processus à eux. En rendu hors écran, CEF n'envoie jamais la FIN d'un geste de
+    // molette à un cadre isolé (render_widget_host_view_osr : la fin synthétique part au cadre
+    // principal, sans passer par le routeur) : le cadre restait accroché pour toujours à la
+    // première zone défilée — une fiche de Vigie ouverte après avoir défilé la page ne défilait
+    // plus, puis la page non plus (mesuré au banc, 12/11/2026 : 0 px avec isolation, défilement
+    // rendu sans). Le pont n'est donné qu'au cadre PRINCIPAL (renderer_ipc.cpp) et le cadre reste
+    // sandboxé, d'origine opaque : il n'y gagne aucun accès. Les sites tiers que la page embarque
+    // (lecteur officiel de YouTube, Vimeo) gardent, eux, un processus à part.
+    cl->AppendSwitch("disable-site-isolation-trials");
+    if (!cl->HasSwitch("isolate-origins")) {
+      cl->AppendSwitchWithValue("isolate-origins",
+                                "https://[*.]youtube.com,https://[*.]youtube-nocookie.com,"
+                                "https://[*.]vimeo.com,https://[*.]dailymotion.com");
+    }
     // Pas d'échantillonneur de piles de Chrome (métriques UMA) : un fil qui se réveille au repos
     // dans chaque processus pour des statistiques que nous n'envoyons pas (−0,08 % d'un cœur
     // dans le principal, mesuré par fil ; les helpers ne reçoivent plus --start-stack-profiler).
