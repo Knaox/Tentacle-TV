@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_ADMIN_ID, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { THREAD_RUN_GAP_MS, buildThread, firstUnreadId, isEmojiOnly } from "./chatThread";
 
 const at = 1_700_000_000_000;
@@ -64,5 +64,23 @@ describe("le fil du chat — la marque des non-lus", () => {
 
   it("un compteur plus grand que le fil (fil rogné par le serveur) : le premier message connu", () => {
     expect(firstUnreadId(messages, 40, "moi")).toBe("a");
+  });
+});
+
+describe("le fil du chat — un message de l'administration", () => {
+  // L'administrateur est aussi dans la salle (« moi ») : son message du tableau de bord n'est pas « le sien ».
+  const admin: WtChatMessageDto = { ...message("adm", WT_CHAT_ADMIN_ID, 2_000, "Maintenance à 23 h"), username: "moi", from: "admin" };
+
+  it("une ligne à part : ni à soi, ni dans une suite, jamais « emojis seuls »", () => {
+    const rows = buildThread([message("a", "lea", 0), admin, message("b", "lea", 4_000, "🔥")], "moi");
+    expect(rows[1]).toMatchObject({ isAdmin: true, isSelf: false, first: true, last: true, emojiOnly: false });
+    // La suite de Léa est coupée par la note : elle rouvre la sienne après.
+    expect(rows[0]).toMatchObject({ isAdmin: false, last: true });
+    expect(rows[2]).toMatchObject({ first: true, emojiOnly: true });
+    expect(buildThread([{ ...admin, text: "👍" }], "moi")[0]!.emojiOnly).toBe(false);
+  });
+
+  it("elle compte parmi les non-lus, même pour l'administrateur qui l'a écrite", () => {
+    expect(firstUnreadId([message("a", "moi", 0), admin], 1, "moi")).toBe("adm");
   });
 });

@@ -1,12 +1,15 @@
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { ShieldCheckIcon } from "@phosphor-icons/react/dist/csr/ShieldCheck";
+import { isWtAdminChatMessage, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { WtAvatar } from "../WatchTogetherRows";
 import { chatEntrance } from "./chatMotion";
 import { useWatchOverlayState } from "./chatUiStore";
 import { duration, easeOut } from "../../theme/motion";
 import "./chat.css";
 import "./chatThread.css";
+import "./chatAdmin.css";
 
 /**
  * Watch Together — aperçus éphémères des messages reçus panneau fermé :
@@ -22,6 +25,9 @@ import "./chatThread.css";
 const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto }) {
   // Mouvement réduit : l'aperçu fond sur place, et la pile ne glisse pas quand l'un d'eux s'en va.
   const reduced = useReducedMotion() === true;
+  const { t } = useTranslation("watchTogether");
+  // L'administration n'est pas un membre : un insigne à la place de l'avatar, son nom à la place d'un compte.
+  const admin = isWtAdminChatMessage(message);
   return (
     <motion.div
       layout={!reduced}
@@ -32,10 +38,15 @@ const ToastRow = memo(function ToastRow({ message }: { message: WtChatMessageDto
       transition={{ duration: duration.menuIn, ease: easeOut }}
       className="flex max-w-[300px] items-start gap-2"
     >
-      <WtAvatar userId={message.userId} name={message.username} size={24} />
+      {admin ? (
+        <span className="wtc-admin__badge" aria-hidden><ShieldCheckIcon size={14} weight="bold" /></span>
+      ) : (
+        <WtAvatar userId={message.userId} name={message.username} size={24} />
+      )}
       {/* Opaque : posé sur la vidéo, un flou se paierait à chaque image. */}
       <div className="wtc-capsule wtc-toast">
-        <span className="wtc-toast__name">{message.username}</span>
+        <span className="wtc-toast__name">{admin ? t("chatAdmin") : message.username}</span>
+        {admin && message.header && <p className="wtc-toast__text font-semibold">{message.header}</p>}
         <p className="wtc-toast__text">{message.text}</p>
       </div>
     </motion.div>

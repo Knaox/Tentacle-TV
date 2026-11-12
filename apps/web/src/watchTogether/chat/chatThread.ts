@@ -1,4 +1,4 @@
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { isWtAdminChatMessage, type WtChatMessageDto } from "@tentacle-tv/shared";
 
 /**
  * Watch Together — le FIL du chat, en règles pures (sans React ni DOM) : comment les messages
@@ -12,6 +12,8 @@ export const THREAD_RUN_GAP_MS = 120_000;
 export interface ThreadRow {
   message: WtChatMessageDto;
   isSelf: boolean;
+  /** Un message de l'administration : une ligne à part, ni à soi ni d'un membre, hors des suites. */
+  isAdmin: boolean;
   /** Premier message d'une suite : il porte l'avatar, le nom et l'heure. */
   first: boolean;
   /** Dernier message d'une suite : ses coins se referment. */
@@ -20,9 +22,11 @@ export interface ThreadRow {
   emojiOnly: boolean;
 }
 
-/** Deux messages se suivent-ils dans la même suite ? Même auteur, moins de deux minutes d'écart. */
+/** Deux messages se suivent-ils dans la même suite ? Même auteur, moins de deux minutes d'écart. Un
+ *  message de l'administration n'entre dans aucune suite. */
 function sameRun(a: WtChatMessageDto | undefined, b: WtChatMessageDto | undefined): boolean {
-  return a !== undefined && b !== undefined && a.userId === b.userId && Math.abs(b.at - a.at) <= THREAD_RUN_GAP_MS;
+  if (a === undefined || b === undefined || isWtAdminChatMessage(a) || isWtAdminChatMessage(b)) return false;
+  return a.userId === b.userId && Math.abs(b.at - a.at) <= THREAD_RUN_GAP_MS;
 }
 
 /**
@@ -33,12 +37,14 @@ export function buildThread(messages: readonly WtChatMessageDto[], selfId: strin
   return messages.map((message, index) => {
     const previous = messages[index - 1];
     const next = messages[index + 1];
+    const isAdmin = isWtAdminChatMessage(message);
     return {
       message,
-      isSelf: selfId !== null && message.userId === selfId,
+      isSelf: !isAdmin && selfId !== null && message.userId === selfId,
+      isAdmin,
       first: message.id === breakBefore || !sameRun(previous, message),
       last: next?.id === breakBefore || !sameRun(message, next),
-      emojiOnly: isEmojiOnly(message.text),
+      emojiOnly: !isAdmin && isEmojiOnly(message.text),
     };
   });
 }
@@ -100,7 +106,7 @@ export function firstUnreadId(messages: readonly WtChatMessageDto[], unread: num
   let found: string | null = null;
   for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
     const message = messages[i]!;
-    if (selfId !== null && message.userId === selfId) continue;
+    if (!isWtAdminChatMessage(message) && selfId !== null && message.userId === selfId) continue;
     found = message.id;
     remaining -= 1;
   }

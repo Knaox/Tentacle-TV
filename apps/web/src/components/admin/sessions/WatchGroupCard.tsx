@@ -39,6 +39,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   now,
   clockOffsetMs,
   feedback,
+  closesWhenIdle,
   onMessage,
   onStop,
 }: {
@@ -47,6 +48,8 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   now: number;
   clockOffsetMs: number;
   feedback: Feedback | undefined;
+  /** Le serveur ferme une salle où personne ne lit (`sessions.groupChat`) : la confirmation le dit. */
+  closesWhenIdle: boolean;
   onMessage: (group: AdminWatchGroupDto) => void;
   onStop: (group: AdminWatchGroupDto) => void;
 }) {
@@ -60,6 +63,9 @@ export const WatchGroupCard = memo(function WatchGroupCard({
     .find((n) => n != null);
   const position = livePositionTicks(group.positionTicks, group.positionAt, group.isPaused, now, clockOffsetMs, item?.runTimeTicks);
   const label = item ? nowPlayingTitle(item) : null;
+  // Personne ne lit (la règle du serveur : aucun membre dans son lecteur, aucune session qui lit) —
+  // « Arrêter pour tous » fermera la salle.
+  const closing = closesWhenIdle && group.members.every((m) => !m.inPlayback && m.sessionId === null);
 
   return (
     <motion.article
@@ -134,8 +140,8 @@ export const WatchGroupCard = memo(function WatchGroupCard({
           className="ml-auto"
           label={t("stopAll")}
           busyLabel={t("stopping")}
-          title={t("stopAllConfirm")}
-          body={t("stopAllConfirmBody", { count: group.members.length })}
+          title={closing ? t("stopAllCloseConfirm") : t("stopAllConfirm")}
+          body={closing ? t("stopAllCloseBody", { count: group.members.length }) : t("stopAllConfirmBody", { count: group.members.length })}
           confirmLabel={t("confirmStop")}
           cancelLabel={t("cancel")}
           status={buttonStatus(feedback, ["Stop"])}

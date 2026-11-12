@@ -17,7 +17,7 @@ import { WatchGroupCard } from "../components/admin/sessions/WatchGroupCard";
 import { MessageComposer } from "../components/admin/sessions/MessageComposer";
 import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
 import { GroupRecipient, SessionRecipient } from "../components/admin/sessions/ComposerRecipient";
-import { useCommandFeedback } from "@tentacle-tv/api-client";
+import { useCommandFeedback, useServerCapability } from "@tentacle-tv/api-client";
 import { AdminNotice, AdminPage, StatusPill } from "../components/admin/kit";
 import { cls } from "./adminUtils";
 
@@ -46,6 +46,8 @@ export function AdminSessions() {
   const toast = useToast();
   const query = useAdminSessions();
   const { playstate, message, groupMessage, groupStop } = useAdminSessionActions();
+  // Le serveur dépose le message d'un groupe dans son CHAT, et ferme une salle où personne ne lit.
+  const groupChat = useServerCapability("sessions.groupChat");
   const [composer, setComposerState] = useState<ComposerTarget>(null);
   const [composerFailed, setComposerFailed] = useState(false);
   // Ouvrir (ou fermer) la rédaction repart d'une feuille sans erreur.
@@ -80,8 +82,10 @@ export function AdminSessions() {
   // l'annonce, la session a pu changer depuis l'appui.
   const namesRef = useRef(sessionsById);
   namesRef.current = sessionsById;
+  // Les salles FERMÉES (personne n'y lisait) : leur disparition n'est pas une lecture arrêtée.
+  const closedRef = useRef(new Set<string>());
   const onConfirmed = useCallback((id: string, command: CommandKind) => {
-    if (command !== "Stop") return;
+    if (command !== "Stop" || closedRef.current.delete(id)) return;
     const name = namesRef.current.get(id)?.userName;
     toast.show("success", name ? t("stoppedWho", { name }) : t("stopped"));
   }, [toast, t]);
@@ -115,6 +119,12 @@ export function AdminSessions() {
     begin(group.groupId, "Stop");
     sendGroupStop({ groupId: group.groupId }).then(
       (r) => {
+        if (r.dissolved) {
+          closedRef.current.add(group.groupId);
+          accept(group.groupId);
+          toast.show("success", t("groupClosed", { count: r.delivered, delivered: r.delivered }));
+          return;
+        }
         if (r.delivered > 0) accept(group.groupId);
         else fail(group.groupId);
         toast.show(r.delivered > 0 ? "success" : "error", t("stoppedGroup", { count: r.delivered, delivered: r.delivered, total: r.total }));
@@ -150,6 +160,13 @@ export function AdminSessions() {
     begin(groupId, "message");
     groupMessage.mutateAsync({ groupId, input }).then(
       (r) => {
+        // Dans le chat, le message est GARDÉ : un membre hors ligne le lira à son retour.
+        if (r.viaChat) {
+          accept(groupId);
+          toast.show("success", t("sentGroupChat", { count: r.delivered, delivered: r.delivered, total: r.total }));
+          done();
+          return;
+        }
         if (r.delivered > 0) accept(groupId);
         else fail(groupId);
         toast.show(r.delivered > 0 ? "success" : "error", t("sentGroup", { count: r.delivered, delivered: r.delivered, total: r.total }));
@@ -227,6 +244,7 @@ export function AdminSessions() {
                   now={now}
                   clockOffsetMs={data.clockOffsetMs}
                   feedback={feedback.entries.get(group.groupId)}
+                  closesWhenIdle={groupChat}
                   onMessage={onGroupMessage}
                   onStop={onGroupStop}
                 />
@@ -248,6 +266,7 @@ export function AdminSessions() {
           title={composer.kind === "session" ? t("composerTitle", { name: composer.session.userName }) : t("composerGroupTitle")}
           recipient={composer.kind === "session" ? <SessionRecipient session={composer.session} /> : <GroupRecipient group={composer.group} />}
           previewName={composer.kind === "session" ? composer.session.userName : null}
+          toChat={composer.kind === "group" && groupChat}
           pending={message.isPending || groupMessage.isPending}
           failed={composerFailed}
           onSend={send}

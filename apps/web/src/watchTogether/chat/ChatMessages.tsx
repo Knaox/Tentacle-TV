@@ -5,18 +5,15 @@ import { useTranslation } from "react-i18next";
 import type { WtChatMessageDto } from "@tentacle-tv/shared";
 import { WtAvatar } from "../WatchTogetherRows";
 import { buildThread, type ThreadRow } from "./chatThread";
+import { AdminChatNote, formatChatTime as formatTime } from "./AdminChatNote";
 import "./chatThread.css";
 
 /** À moins de 48 px du bas, le fil est « tenu en bas » : il suit les messages qui arrivent. */
 const STICK_PX = 48;
 
-/** L'heure dans la langue de l'INTERFACE (24 h en français), pas dans celle du système. */
-function formatTime(at: number, language: string): string {
-  return new Date(at).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
-}
-
 const MessageRow = memo(function MessageRow({ row, arriving, language }: { row: ThreadRow; arriving: boolean; language: string }) {
   const { message, isSelf, first, last, emojiOnly } = row;
+  if (row.isAdmin) return <AdminChatNote message={message} arriving={arriving} language={language} />;
   const time = formatTime(message.at, language);
   return (
     <div className={arriving ? "wtc-row wtc-row--in" : "wtc-row"} data-self={isSelf} data-first={first} data-last={last}>

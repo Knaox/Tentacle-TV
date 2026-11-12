@@ -6,6 +6,8 @@ import { PaperPlaneTiltIcon as Send } from "@phosphor-icons/react/dist/csr/Paper
 import { Modal } from "../../ui/Modal";
 import { ModalHeader } from "../../ui/ModalHeader";
 import { MessageBannerCard } from "../../session/SessionMessageHost";
+import { AdminChatNote } from "../../../watchTogether/chat/AdminChatNote";
+import "../../../watchTogether/chat/chat.css";
 import { isAppleKeyboard } from "../../../lib/shortcutLabel";
 import { cls } from "../../../pages/adminUtils";
 import type { MessageInput } from "../../../hooks/useAdminSessions";
@@ -24,6 +26,9 @@ import { ActionPill } from "./ActionPill";
  *
  * Par défaut, « jusqu'à ce qu'il soit fermé » : un message d'administrateur
  * est fait pour être lu.
+ *
+ * Vers le CHAT d'un groupe (`toChat`, serveur avec `sessions.groupChat`) : pas
+ * de durée — un fil garde ses messages —, l'aperçu est la note du fil.
  */
 
 const TEXT_MAX = 1_000;
@@ -67,6 +72,7 @@ export function MessageComposer({
   title,
   recipient,
   previewName,
+  toChat = false,
   pending,
   failed,
   onSend,
@@ -78,12 +84,14 @@ export function MessageComposer({
   recipient: ReactNode;
   /** Pour la légende de l'aperçu : « Ce que verra Alice ». */
   previewName: string | null;
+  /** Le message entre dans le chat du groupe (au lieu d'un bandeau sur chaque lecteur). */
+  toChat?: boolean;
   pending: boolean;
   failed: boolean;
   onSend: (input: MessageInput) => void;
   onClose: () => void;
 }) {
-  const { t } = useTranslation("sessions");
+  const { t, i18n } = useTranslation("sessions");
   const titleId = useId();
   const headerId = useId();
   const textId = useId();
@@ -96,7 +104,7 @@ export function MessageComposer({
 
   const submit = () => {
     if (!ready) return;
-    onSend({ header: header.trim(), text: text.trim(), ...(duration === null ? {} : { timeoutMs: duration }) });
+    onSend({ header: header.trim(), text: text.trim(), ...(duration === null || toChat ? {} : { timeoutMs: duration }) });
   };
 
   const onTextKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -141,18 +149,32 @@ export function MessageComposer({
           <p className="num mt-1 text-right text-xs text-content-tertiary">{text.length} / {TEXT_MAX}</p>
         </div>
 
-        <DurationPicker value={duration} onChange={setDuration} />
+        {toChat ? (
+          <p className="text-sm text-content-tertiary">{t("composerChatHint")}</p>
+        ) : (
+          <DurationPicker value={duration} onChange={setDuration} />
+        )}
 
         <div>
           <p className={cls.lbl}>{previewName ? t("composerPreviewFor", { name: previewName }) : t("composerPreview")}</p>
           <div className={empty ? "opacity-60" : undefined}>
-            <MessageBannerCard
-              header={header.trim()}
-              text={text.trim() || t("composerPreviewEmpty")}
-              durationMs={duration}
-              countdown={duration === null ? null : { secondsLeft: duration / 1000, running: true }}
-              still
-            />
+            {toChat ? (
+              // La note telle que le fil la montre, hors lecteur (les jetons du thème).
+              <div className="wtc" data-on-video="false">
+                <AdminChatNote
+                  message={{ at: Date.now(), header: header.trim(), text: text.trim() || t("composerPreviewEmpty"), username: "" }}
+                  language={i18n.language}
+                />
+              </div>
+            ) : (
+              <MessageBannerCard
+                header={header.trim()}
+                text={text.trim() || t("composerPreviewEmpty")}
+                durationMs={duration}
+                countdown={duration === null ? null : { secondsLeft: duration / 1000, running: true }}
+                still
+              />
+            )}
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useMotionValue } from "framer-motion";
 import type { WtChatApi, WtChatState } from "@tentacle-tv/api-client";
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_ADMIN_ID, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { ChatOverlay } from "../../watchTogether/chat/ChatOverlay";
 import { MessageToastLayer } from "../../watchTogether/chat/MessageToastLayer";
 import { ReactionLayer } from "../../watchTogether/chat/ReactionLayer";
@@ -29,6 +29,8 @@ const DEMO: WtChatMessageDto[] = [
   msg("d4", "lab-marc", "Marc", "Voilà, c'est bon.", 290),
   msg("d5", "lab-lea", "Léa", "Le lama est incroyable 😂", 60),
   msg("d6", "lab-lea", "Léa", "😂", 55),
+  // Un message du tableau de bord des sessions, écrit par l'administrateur… qui est aussi dans la salle.
+  { ...msg("d7", WT_CHAT_ADMIN_ID, "Knaoxtest", "Le serveur redémarre à 23 h : la séance reprendra toute seule.", 30), from: "admin", header: "Maintenance" },
 ];
 
 const LONG_NAME = "Maximilien-Alexandre de la Rochefoucauld-Montmorency";
@@ -44,10 +46,14 @@ const WORST: WtChatMessageDto[] = [
   msg("x7", LAB_USER_ID, "Knaoxtest", "Plusieurs lignes :\n— la première ;\n— la deuxième, nettement plus longue que la première pour forcer un retour à la ligne ;\n\n— et une dernière après un blanc.", 500),
   msg("x8", "lab-jp", "山田 太郎", "x".repeat(500), 480),
   ...Array.from({ length: 6 }, (_, i) => msg(`r${i}`, "lab-lea", "Léa", ["Une suite", "de six messages", "du même auteur", "pour juger", "les coins", "des bulles."][i]!, 120 - i * 4)),
+  { ...msg("a1", WT_CHAT_ADMIN_ID, "Knaoxtest", URL_TEXT, 40), from: "admin", header: "x".repeat(100) },
+  { ...msg("a2", WT_CHAT_ADMIN_ID, "Knaoxtest", "Sans titre.", 20), from: "admin" },
 ];
 
 interface LabChatControls {
   receive: (username: string, text: string, userId?: string) => void;
+  /** Un message du tableau de bord des sessions (`from: "admin"`). */
+  admin: (text: string, header?: string) => void;
   typing: (names: string[]) => void;
   react: (emoji: string, username?: string) => void;
   refuseNext: (count?: number) => void;
@@ -75,6 +81,7 @@ function useLabChat(seed: WtChatMessageDto[], startOpen: boolean, startUnread: n
     });
     const controls: LabChatControls = {
       receive: (username, text, userId = `lab-${username}`) => push({ id: `in-${serial.current++}`, userId, username, text, at: Date.now() }, false),
+      admin: (text, header) => push({ id: `in-${serial.current++}`, userId: WT_CHAT_ADMIN_ID, username: "Knaoxtest", text, at: Date.now(), from: "admin", ...(header ? { header } : {}) }, false),
       typing: (names) => setState((s) => ({ ...s, typing: names.map((name) => ({ userId: `lab-${name}`, username: name, expiresAt: Date.now() + 60_000 })) })),
       // Une réaction du labo s'efface seule, comme celle d'une vraie séance.
       react: (emoji, username = "Léa") => {
