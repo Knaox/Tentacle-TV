@@ -77,6 +77,10 @@ bool installNativeWheel(SDL_Window* window, std::function<void(const NativeWheel
                                                                     : [win convertPointFromScreen:e.locationInWindow];
                                      NSPoint p = [v convertPoint:inWin fromView:nil];
                                      if (!e.window && !NSPointInRect(p, v.bounds)) return e;
+                                     // Les doigts se posent (MayBegin) ou partent (Began) : le
+                                     // prochain évènement qui défile ouvre un nouveau geste.
+                                     static bool pendingBegin = false;
+                                     if (e.phase & (NSEventPhaseBegan | NSEventPhaseMayBegin)) pendingBegin = true;
                                      NativeWheel w;
                                      w.x = p.x;
                                      w.y = v.isFlipped ? p.y : v.bounds.size.height - p.y;
@@ -84,6 +88,12 @@ bool installNativeWheel(SDL_Window* window, std::function<void(const NativeWheel
                                      const float k = w.precise ? 1.0f : kPixelsPerTick;
                                      w.dx = e.scrollingDeltaX * k;
                                      w.dy = e.scrollingDeltaY * k;
+                                     // Sans déplacement (doigts posés, fin de geste ou d'inertie) :
+                                     // rien à défiler, et transmis il ne ferait que prolonger
+                                     // l'accroche de Chromium à la zone en cours (500 ms par évènement).
+                                     if (w.dx == 0 && w.dy == 0) return e;
+                                     w.begins = pendingBegin;
+                                     pendingBegin = false;
                                      sink(w);
                                      return e;  // SDL le voit aussi ; le socle ignore sa version
                                    }];
@@ -197,6 +207,14 @@ std::string injectNative(SDL_Window* window, const Json& ev) {
         nullptr, precise ? kCGScrollEventUnitPixel : kCGScrollEventUnitLine, 2,
         ev.value("dy", 0), ev.value("dx", 0), 0);
     CGEventSetLocation(cg, CGPointMake(screenPt.x, NSScreen.screens[0].frame.size.height - screenPt.y));
+    // Phase du geste, comme un trackpad : « began », « changed », « ended » (banc d'accroche).
+    const std::string phase = ev.value("phase", "");
+    if (!phase.empty()) {
+      CGEventSetIntegerValueField(cg, kCGScrollWheelEventIsContinuous, 1);
+      CGEventSetIntegerValueField(cg, kCGScrollWheelEventScrollPhase,
+                                  phase == "began" ? kCGScrollPhaseBegan
+                                  : phase == "ended" ? kCGScrollPhaseEnded : kCGScrollPhaseChanged);
+    }
     e = [NSEvent eventWithCGEvent:cg];
     CFRelease(cg);
   } else if (type == "app") {

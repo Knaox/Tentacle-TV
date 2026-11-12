@@ -19,6 +19,10 @@ struct NativeWheel {
   float x = 0, y = 0;    // position en points (origine en haut à gauche de la vue)
   float dx = 0, dy = 0;  // pixels (convention Chromium : dy > 0 = vers le haut du document)
   bool precise = false;  // trackpad / souris Magic (deltas continus)
+  // Un NOUVEAU geste physique commence (trackpad, souris Magic : les doigts se reposent). CEF ne
+  // transmet pas les phases du geste à Chromium : le routeur s'en sert pour rompre l'accroche
+  // de la molette à la zone du geste précédent (input.cpp). Toujours faux pour une molette à crans.
+  bool begins = false;
 };
 
 // Pixels par cran quand SDL3 est la source (Linux ; la fenêtre PiP partout). Linux : la valeur

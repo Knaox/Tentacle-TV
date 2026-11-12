@@ -43,6 +43,7 @@ class InputRouter {
   bool composing_ = false;
   std::set<int> imeKeys_;  // touches enfoncées pendant une composition (cf. key())
   bool nativeWheel_ = false;
+  bool wheelGesture_ = false;  // bascule à chaque nouveau geste de défilement (cf. wheel())
 };
 
 uint32_t cefModifiers(SDL_Keymod mod);

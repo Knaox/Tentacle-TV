@@ -110,6 +110,9 @@ void InputRouter::handle(const SDL_Event& e, CefRefPtr<CefBrowser> browser) {
       const bool up = e.type == SDL_EVENT_MOUSE_BUTTON_UP;
       if (up) pressed_ &= ~SDL_BUTTON_MASK(e.button.button);
       else pressed_ |= SDL_BUTTON_MASK(e.button.button);
+      // Un clic ouvre ou ferme ce qui défile (fiche, menu) : la molette qui suit est un nouveau
+      // geste, même pour une molette à crans, qui n'a pas de phases (cf. wheel()).
+      if (!up) wheelGesture_ = !wheelGesture_;
       me.x = int(std::lround(e.button.x * windowToDip_));
       me.y = int(std::lround(e.button.y * windowToDip_));
       me.modifiers = mouseModifiers();
@@ -160,6 +163,14 @@ void InputRouter::wheel(const platform::NativeWheel& w, CefRefPtr<CefBrowser> br
   me.y = int(std::lround(w.y));
   me.modifiers = mouseModifiers();
   if (w.precise) me.modifiers |= EVENTFLAG_PRECISION_SCROLLING_DELTA;
+  // CEF ne transmet pas les phases du geste : Chromium en invente, et garde la molette ACCROCHÉE à
+  // la zone du geste précédent tant qu'un évènement arrive à moins de 500 ms — or l'inertie de macOS
+  // en envoie pendant une à trois secondes. Défiler la page, ouvrir une fiche, défiler aussitôt :
+  // c'est encore la page (verrouillée) qui recevait le défilement. Chromium rompt l'accroche quand
+  // les modificateurs changent (MouseWheelPhaseHandler) : un bit que la page ne voit pas sur une
+  // molette bascule donc à chaque nouveau geste physique.
+  if (w.begins) wheelGesture_ = !wheelGesture_;
+  if (wheelGesture_) me.modifiers |= EVENTFLAG_IS_KEY_PAD;
   browser->GetHost()->SendMouseWheelEvent(me, int(std::lround(w.dx)), int(std::lround(w.dy)));
 }
 
@@ -184,6 +195,8 @@ void InputRouter::key(const SDL_KeyboardEvent& k, CefRefPtr<CefBrowser> browser)
   ke.modifiers = cefModifiers(k.mod) | nk.extraModifiers;
   if (k.repeat) ke.modifiers |= EVENTFLAG_IS_REPEAT;
   if (k.down) {
+    // Échap ferme une fiche, Entrée en ouvre une : la molette qui suit repart de zéro (cf. wheel()).
+    if (!k.repeat) wheelGesture_ = !wheelGesture_;
     lastNativeKey_ = nk.nativeCode;
     ke.type = KEYEVENT_RAWKEYDOWN;
     browser->GetHost()->SendKeyEvent(ke);
