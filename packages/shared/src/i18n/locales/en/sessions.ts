@@ -83,6 +83,9 @@ export default {
   stopAllConfirm: "Stop playback for the whole group?",
   stopAllConfirmBody: "Playback will close for the member of the room.",
   stopAllConfirmBody_other: "Playback will close for all {{count}} members of the room.",
+  stopAllCloseConfirm: "Close the group?",
+  stopAllCloseBody: "Nobody is watching: the group will close for its member.",
+  stopAllCloseBody_other: "Nobody is watching: the group will close for its {{count}} members.",
   messageGroup: "Message the group",
 
   // A command's feedback, from the press to the observed effect
@@ -109,6 +112,7 @@ export default {
   composerText: "Message",
   composerDuration: "Display",
   composerPreview: "Preview",
+  composerChatHint: "It goes into the group chat, for every member, watching or not.",
   composerPreviewFor: "What {{name}} will see",
   composerPreviewEmpty: "Your message will appear here.",
   composerShortcut: "{{keys}} to send",
@@ -127,6 +131,10 @@ export default {
   stoppedWho: "{{name}}'s playback stopped",
   stoppedGroup: "Stop received by {{delivered}} player out of {{total}}",
   stoppedGroup_other: "Stop received by {{delivered}} players out of {{total}}",
+  sentGroupChat: "Message in the group chat — {{delivered}} member online out of {{total}}",
+  sentGroupChat_other: "Message in the group chat — {{delivered}} members online out of {{total}}",
+  groupClosed: "Group closed — {{delivered}} member notified",
+  groupClosed_other: "Group closed — {{delivered}} members notified",
   actionFailed: "Jellyfin did not accept the command.",
 
   // Jellyfin's reasons (`TranscodeReasons`), in an admin's words.

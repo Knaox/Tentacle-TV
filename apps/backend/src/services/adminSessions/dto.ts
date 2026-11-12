@@ -150,4 +150,10 @@ export type AdminPlaystateCommand = "Pause" | "Unpause" | "Stop";
 export interface AdminGroupActionResultDto {
   delivered: number;
   total: number;
+  /** « Arrêter pour tous » sur une salle où personne ne lit : la salle est FERMÉE (chaque membre
+   *  en sort), `delivered` = les membres prévenus (capacité `sessions.groupChat`). Absent : un arrêt. */
+  dissolved?: boolean;
+  /** Le message est parti dans le CHAT de la salle (capacité `sessions.groupChat`), `delivered` = les
+   *  membres qui ont un appareil en ligne. Absent : un bandeau Jellyfin par session de lecture. */
+  viaChat?: boolean;
 }

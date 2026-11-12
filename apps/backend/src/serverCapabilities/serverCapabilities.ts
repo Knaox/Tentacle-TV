@@ -360,6 +360,12 @@ export const SERVER_CAPABILITIES = {
    *  ce client-là ne demande RIEN : ni aperçu au survol, ni lecteur de bandes-annonces relayé (il
    *  garde le lecteur officiel de YouTube). Un client qui lit le H.264 ne la regarde pas. */
   "trailers.openCodecs": "1.41.0",
+  /** Les salles Watch Together du tableau de bord des sessions, même SANS lecture : « Message au
+   *  groupe » part dans le CHAT de la salle (`wt:chat` marqué `from: "admin"`, à chaque appareil lié,
+   *  en lecture ou non) au lieu d'un bandeau Jellyfin par session de lecture ; « Arrêter pour tous »
+   *  FERME une salle où personne ne lit (`wt:dissolved`). Sans elle : le compositeur d'avant (durée
+   *  d'affichage), un groupe sans lecture ne reçoit rien. */
+  "sessions.groupChat": "1.50.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

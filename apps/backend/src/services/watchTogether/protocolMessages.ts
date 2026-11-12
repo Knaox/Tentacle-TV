@@ -168,6 +168,23 @@ export interface WtChatMessageDto {
   text: string;
   /** Date.now() serveur à la réception. */
   at: number;
+  /**
+   * Un message de l'ADMINISTRATION (« Message au groupe » du tableau de bord des sessions,
+   * capacité `sessions.groupChat`) : `userId` vaut alors `WT_CHAT_ADMIN_ID` (ce n'est ni un
+   * membre ni soi, même si l'administrateur est dans la salle), `username` le compte qui l'a
+   * écrit. Un client d'avant le lit comme le message d'un membre de ce nom. Absent : un membre.
+   */
+  from?: "admin";
+  /** Le titre facultatif d'un message de l'administration. */
+  header?: string;
+}
+
+/** L'auteur d'un message de l'administration dans le chat : aucun compte Jellyfin ne s'appelle ainsi. */
+export const WT_CHAT_ADMIN_ID = "admin";
+
+/** Ce message vient-il de l'administration (et non d'un membre) ? */
+export function isWtAdminChatMessage(message: Pick<WtChatMessageDto, "from">): boolean {
+  return message.from === "admin";
 }
 
 // ── Messages client → serveur ──

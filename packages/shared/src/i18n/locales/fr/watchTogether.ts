@@ -120,6 +120,8 @@ export default {
   chatPlaceholder: "Écrire un message…",
   chatSend: "Envoyer",
   chatEmpty: "Aucun message pour l'instant. Dites bonjour !",
+  // L'auteur d'un message déposé par le tableau de bord des sessions.
+  chatAdmin: "Administration",
   chatOpenAria: "Ouvrir le chat du groupe",
   chatUnreadAria: "Ouvrir le chat du groupe ({{count}} message non lu)",
   chatUnreadAria_other: "Ouvrir le chat du groupe ({{count}} messages non lus)",

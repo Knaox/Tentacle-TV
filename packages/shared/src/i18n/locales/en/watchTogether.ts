@@ -116,6 +116,7 @@ export default {
   chatPlaceholder: "Type a message…",
   chatSend: "Send",
   chatEmpty: "No messages yet. Say hi!",
+  chatAdmin: "Admin",
   chatOpenAria: "Open group chat",
   chatUnreadAria: "Open group chat ({{count}} unread message)",
   chatUnreadAria_other: "Open group chat ({{count}} unread messages)",

@@ -83,6 +83,10 @@ export default {
   stopAllConfirm: "Arrêter la lecture pour tout le groupe ?",
   stopAllConfirmBody: "La lecture se fermera chez le membre de la salle.",
   stopAllConfirmBody_other: "La lecture se fermera chez les {{count}} membres de la salle.",
+  // Personne ne lit : « Arrêter pour tous » ferme la salle (serveur avec `sessions.groupChat`).
+  stopAllCloseConfirm: "Fermer le groupe ?",
+  stopAllCloseBody: "Personne ne regarde : le groupe se fermera pour son membre.",
+  stopAllCloseBody_other: "Personne ne regarde : le groupe se fermera pour ses {{count}} membres.",
   messageGroup: "Message au groupe",
 
   // Le retour d'une commande, de l'appui à l'effet constaté
@@ -109,6 +113,7 @@ export default {
   composerText: "Message",
   composerDuration: "Affichage",
   composerPreview: "Aperçu",
+  composerChatHint: "Il entre dans le chat du groupe, chez chaque membre, qu'il regarde ou non.",
   composerPreviewFor: "Ce que verra {{name}}",
   composerPreviewEmpty: "Votre message apparaîtra ici.",
   composerShortcut: "{{keys}} pour envoyer",
@@ -127,6 +132,10 @@ export default {
   stoppedWho: "Lecture de {{name}} arrêtée",
   stoppedGroup: "Arrêt reçu par {{delivered}} lecteur sur {{total}}",
   stoppedGroup_other: "Arrêt reçu par {{delivered}} lecteurs sur {{total}}",
+  sentGroupChat: "Message dans le chat du groupe — {{delivered}} membre en ligne sur {{total}}",
+  sentGroupChat_other: "Message dans le chat du groupe — {{delivered}} membres en ligne sur {{total}}",
+  groupClosed: "Groupe fermé — {{delivered}} membre prévenu",
+  groupClosed_other: "Groupe fermé — {{delivered}} membres prévenus",
   actionFailed: "Jellyfin n'a pas accepté la commande.",
 
   // Les raisons de Jellyfin (`TranscodeReasons`), en mots d'administrateur.
