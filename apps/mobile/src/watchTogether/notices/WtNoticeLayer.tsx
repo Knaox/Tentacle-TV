@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { isWtAdminChatMessage, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
 import { useWtNotices, type WtNoticeKind } from "./wtNotices";
 
@@ -20,6 +21,7 @@ export const WtNoticeLayer = memo(function WtNoticeLayer({ chatToasts, typingTex
 }) {
   const notices = useWtNotices();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("watchTogether");
   if (notices.length === 0 && chatToasts.length === 0 && !typingText) return null;
   return (
     <View pointerEvents="none" style={[st.layer, { left: 16 + insets.left, bottom: 140 + insets.bottom }]}>
@@ -32,7 +34,9 @@ export const WtNoticeLayer = memo(function WtNoticeLayer({ chatToasts, typingTex
       {chatToasts.map((m) => (
         <View key={`c${m.id}`} style={st.card} accessibilityLiveRegion="polite">
           <Text style={st.text} numberOfLines={2}>
-            <Text style={st.author}>{m.username} </Text>
+            {/* L'administration n'est pas un membre : son nom à la place d'un compte, son titre devant. */}
+            <Text style={st.author}>{isWtAdminChatMessage(m) ? t("chatAdmin") : m.username} </Text>
+            {isWtAdminChatMessage(m) && m.header ? <Text style={st.author}>{m.header} — </Text> : null}
             {m.text}
           </Text>
         </View>

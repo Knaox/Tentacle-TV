@@ -3,7 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import { useTranslation } from "react-i18next";
 import { SendHorizontal } from "lucide-react-native";
 import type { GifItem } from "@tentacle-tv/api-client";
-import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, type WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, isWtAdminChatMessage, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
 import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { haptic } from "@/utils/haptics";
@@ -68,7 +68,7 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
         data={reversed}
         inverted
         keyExtractor={(m) => m.id}
-        renderItem={({ item }) => <ChatLine message={item} self={item.userId === selfId} />}
+        renderItem={({ item }) => <ChatLine message={item} self={!isWtAdminChatMessage(item) && item.userId === selfId} />}
         contentContainerStyle={st.list}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<Text style={st.empty}>{t("chatEmpty")}</Text>}
@@ -143,6 +143,17 @@ function TrayToggle({ label, a11y, active, onPress, testID }: {
 }
 
 const ChatLine = memo(function ChatLine({ message, self }: { message: WtChatMessageDto; self: boolean }) {
+  const { t } = useTranslation("watchTogether");
+  // L'administration (tableau de bord des sessions) : une note sur toute la largeur, jamais « soi ».
+  if (isWtAdminChatMessage(message)) {
+    return (
+      <View style={[st.line, st.lineAdmin]} accessibilityRole="text">
+        <Text style={[st.author, st.authorAdmin]} numberOfLines={1}>{t("chatAdmin")}</Text>
+        {message.header ? <Text style={[st.text, st.headerAdmin]}>{message.header}</Text> : null}
+        <Text style={st.text}>{message.text}</Text>
+      </View>
+    );
+  }
   return (
     <View style={[st.line, self && st.lineSelf]}>
       {!self && <Text style={st.author} numberOfLines={1}>{message.username}</Text>}
@@ -160,6 +171,9 @@ const st = StyleSheet.create({
     borderRadius: RADIUS.xl, backgroundColor: PLAYER.fillSoft,
   },
   lineSelf: { alignSelf: "flex-end", backgroundColor: PLAYER.accent },
+  lineAdmin: { alignSelf: "stretch", maxWidth: "100%", borderWidth: StyleSheet.hairlineWidth, borderColor: PLAYER.accent },
+  authorAdmin: { color: PLAYER.accent, textTransform: "uppercase", letterSpacing: 0.5 },
+  headerAdmin: { fontFamily: FONT_FAMILY.semibold },
   author: { color: PLAYER.textTertiary, fontSize: 12, marginBottom: 2, fontFamily: FONT_FAMILY.semibold },
   text: { color: PLAYER.text, fontSize: 15, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
   reactions: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingTop: 4 },
