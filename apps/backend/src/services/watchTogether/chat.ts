@@ -2,7 +2,7 @@ import type { JellyfinUser } from "../../middleware/auth";
 import type { WsServerMessage } from "../wsManager";
 import { sendToMember, sendToRoom } from "./memberDevices";
 import type { Room } from "./roomTypes";
-import { WT_CHAT_HISTORY_SIZE, type WtChatMessageDto } from "./protocol";
+import { WT_CHAT_ADMIN_ID, WT_CHAT_HISTORY_SIZE, type WtChatMessageDto } from "./protocol";
 import { allowChat } from "./chatRate";
 import { stopTyping } from "./chatTyping";
 
@@ -43,6 +43,29 @@ export function handleChat(room: Room, user: JellyfinUser, text: string): void {
   if (room.chat.length > WT_CHAT_HISTORY_SIZE) room.chat.shift();
 
   broadcastToMembers(room, { type: "wt:chat", message });
+}
+
+/**
+ * Un message de l'ADMINISTRATION (tableau de bord des sessions, `sessions.groupChat`) : dans le
+ * fil comme un message — à chaque appareil lié, en lecture ou non, gardé pour l'historique —, mais
+ * d'aucun membre (`WT_CHAT_ADMIN_ID`), même si l'administrateur est dans la salle. Aucun débit :
+ * la route est réservée à l'administration.
+ */
+export function postAdminChat(room: Room, author: string, content: { header: string; text: string }): WtChatMessageDto {
+  const header = content.header.trim();
+  const message: WtChatMessageDto = {
+    id: `${room.groupId}:${++room.chatSeq}`,
+    userId: WT_CHAT_ADMIN_ID,
+    username: author,
+    text: content.text,
+    at: Date.now(),
+    from: "admin",
+    ...(header ? { header } : {}),
+  };
+  room.chat.push(message);
+  if (room.chat.length > WT_CHAT_HISTORY_SIZE) room.chat.shift();
+  broadcastToMembers(room, { type: "wt:chat", message });
+  return message;
 }
 
 /** Réaction emoji : rate limit, diffusion. Transient, jamais stockée. */

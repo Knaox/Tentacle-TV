@@ -6,7 +6,11 @@ import { loadRawSessions, sendMessage, sendPlaystate } from "../services/adminSe
 import { buildSnapshot } from "../services/adminSessions/snapshot";
 import { transcodeMemory } from "../services/adminSessions/transcodeMemory";
 import type { AdminGroupActionResultDto } from "../services/adminSessions/dto";
-import { allRooms } from "../services/watchTogether/roomRegistry";
+import { allRooms, getRoom } from "../services/watchTogether/roomRegistry";
+import { postAdminChat } from "../services/watchTogether/chat";
+import { dissolveRoom, isRoomIdle, onlineMemberCount } from "../services/watchTogether/roomDissolve";
+import { isCapabilityDeclared } from "../serverCapabilities/declaredCapabilities";
+import type { JellyfinUser } from "../middleware/auth";
 import { familyGuestOwners } from "../services/family/familyGuestMarkers";
 import { refusesMessage } from "../services/adminSessions/listening";
 
@@ -14,10 +18,13 @@ import { refusesMessage } from "../services/adminSessions/listening";
  * Le tableau de bord des sessions en direct — enregistré depuis adminRoutes,
  * donc derrière `requireAdmin`. Voir `services/adminSessions/`.
  *
- * Les actions de GROUPE (Watch Together) visent la session Jellyfin de chaque
- * membre : un message, un arrêt, partent à tous — et la réponse dit combien
- * les ont reçus (un lecteur sans télécommande, comme les applications mobiles
- * d'avant, n'en reçoit aucune).
+ * Les actions de GROUPE (Watch Together) partent à tous — et la réponse dit
+ * combien les ont reçues. Depuis `sessions.groupChat` (1.50.0), elles valent
+ * aussi pour une salle SANS lecture : le message entre dans le chat de la salle
+ * (chaque appareil lié le reçoit), « Arrêter pour tous » ferme une salle où
+ * personne ne lit. Avant : la session Jellyfin de chaque membre qui lit (un
+ * lecteur sans télécommande, comme les applications mobiles d'avant, n'en
+ * reçoit aucune) — et un groupe sans lecture ne recevait rien.
  */
 
 const sessionParams = z.object({ sessionId: z.string().regex(/^[A-Za-z0-9-]{1,64}$/) });
@@ -89,6 +96,17 @@ export const adminSessionsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/watch-groups/:groupId/message", async (request, reply) => {
     const { groupId } = groupParams.parse(request.params);
     const message = messageBody.parse(request.body);
+    // Dans le chat de la salle : chaque appareil lié le lit, en lecture ou non. La durée
+    // d'affichage d'un bandeau n'a pas de sens dans un fil : elle est ignorée.
+    if (isCapabilityDeclared("sessions.groupChat")) {
+      const room = getRoom(groupId);
+      if (!room) return reply.status(404).send({ message: "Groupe introuvable" });
+      const author = (request as { user?: JellyfinUser }).user?.username ?? "";
+      postAdminChat(room, author, message);
+      request.log.info({ groupId, members: room.members.size }, "[wt] message de l'administration au groupe");
+      const result: AdminGroupActionResultDto = { delivered: onlineMemberCount(room), total: room.members.size, viaChat: true };
+      return result;
+    }
     const targets = await groupSessionIds(groupId);
     if (!targets) return reply.status(404).send({ message: "Groupe introuvable" });
     const results = await Promise.all(targets.ids.map((id) => sendMessage(id, message)));
@@ -101,6 +119,15 @@ export const adminSessionsRoutes: FastifyPluginAsync = async (app) => {
     const { groupId } = groupParams.parse(request.params);
     const targets = await groupSessionIds(groupId);
     if (!targets) return reply.status(404).send({ message: "Groupe introuvable" });
+    // Personne ne lit : il n'y a rien à arrêter — « Arrêter pour tous » ferme la salle.
+    const room = getRoom(groupId);
+    if (isCapabilityDeclared("sessions.groupChat") && room && targets.ids.length === 0 && isRoomIdle(room)) {
+      const total = room.members.size;
+      const notified = dissolveRoom(room);
+      request.log.info({ groupId, members: total }, "[wt] groupe fermé par l'administration");
+      const result: AdminGroupActionResultDto = { delivered: notified, total, dissolved: true };
+      return result;
+    }
     const results = await Promise.all(targets.ids.map((id) => sendPlaystate(id, "Stop")));
     const result: AdminGroupActionResultDto = { delivered: results.filter(Boolean).length, total: targets.total };
     return result;
