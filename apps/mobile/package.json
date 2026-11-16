@@ -20,7 +20,7 @@
     "postinstall": "node -e \"['@tanstack/react-query','@tanstack/query-core','react-native-reanimated'].forEach(p=>{try{const f=require.resolve(p+'/package.json');const j=JSON.parse(require('fs').readFileSync(f,'utf8'));if(j['react-native']){delete j['react-native'];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')}}catch{}})\""
   },
   "dependencies": {
-    "@babel/runtime": "^7.29.10",
+    "@babel/runtime": "^7.29.13",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo/metro-runtime": "~6.1.2",
     "@react-native-async-storage/async-storage": "~2.2.0",
